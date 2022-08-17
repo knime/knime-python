@@ -7,39 +7,48 @@
             modulePath="src/main/python" moduleName="knime.types.builtin">
          <PythonValueFactory
                PythonClassName="FsLocationValueFactory"
-               ValueFactory="org.knime.filehandling.core.data.location.FSLocationValueFactory">
+               ValueFactory="org.knime.filehandling.core.data.location.FSLocationValueFactory"
+               ValueTypeName="knime.types.builtin.FSLocationValue">
          </PythonValueFactory>
          <PythonValueFactory
                PythonClassName="ZonedDateTimeValueFactory2"
-               ValueFactory="org.knime.core.data.v2.time.ZonedDateTimeValueFactory2">
+               ValueFactory="org.knime.core.data.v2.time.ZonedDateTimeValueFactory2"
+               ValueTypeName="knime.types.builtin.ZonedDateTimeValue">
          </PythonValueFactory>
          <PythonValueFactory
                PythonClassName="DurationValueFactory"
-               ValueFactory="org.knime.core.data.v2.time.DurationValueFactory">
+               ValueFactory="org.knime.core.data.v2.time.DurationValueFactory"
+               ValueTypeName="knime.types.builtin.DurationValue">
          </PythonValueFactory>
          <PythonValueFactory
                PythonClassName="LocalDateTimeValueFactory"
-               ValueFactory="org.knime.core.data.v2.time.LocalDateTimeValueFactory">
+               ValueFactory="org.knime.core.data.v2.time.LocalDateTimeValueFactory"
+               ValueTypeName="knime.types.builtin.LocalDateTimeValue">
          </PythonValueFactory>
          <PythonValueFactory
                PythonClassName="LocalTimeValueFactory"
-               ValueFactory="org.knime.core.data.v2.time.LocalTimeValueFactory">
+               ValueFactory="org.knime.core.data.v2.time.LocalTimeValueFactory"
+               ValueTypeName="knime.types.builtin.LocalTimeValue">
          </PythonValueFactory>
          <PythonValueFactory
                PythonClassName="LocalDateValueFactory"
-               ValueFactory="org.knime.core.data.v2.time.LocalDateValueFactory">
+               ValueFactory="org.knime.core.data.v2.time.LocalDateValueFactory"
+               ValueTypeName="knime.types.builtin.LocalDateValue">
          </PythonValueFactory>
          <PythonValueFactory
                PythonClassName="BooleanSetValueFactory"
-               ValueFactory="org.knime.core.data.v2.value.BooleanSetValueFactory">
+               ValueFactory="org.knime.core.data.v2.value.BooleanSetValueFactory"
+               ValueTypeName="knime.types.builtin.BooleanSetValue">
          </PythonValueFactory>
          <PythonValueFactory
                PythonClassName="DenseBitVectorValueFactory"
-               ValueFactory="org.knime.core.data.v2.value.DenseBitVectorValueFactory">
+               ValueFactory="org.knime.core.data.v2.value.DenseBitVectorValueFactory"
+               ValueTypeName="knime.types.builtin.DenseBitVectorValue">
          </PythonValueFactory>
          <PythonValueFactory
                PythonClassName="DenseByteVectorValueFactory"
-               ValueFactory="org.knime.core.data.v2.value.DenseByteVectorValueFactory">
+               ValueFactory="org.knime.core.data.v2.value.DenseByteVectorValueFactory"
+               ValueTypeName="knime.types.builtin.DenseByteVectorValue">
          </PythonValueFactory>
       </Module>
    </extension>

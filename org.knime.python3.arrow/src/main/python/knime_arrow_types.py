@@ -419,7 +419,9 @@ class LogicalTypeExtensionType(pa.ExtensionType):
     the converter is an instance of a PythonValueFactory.
     """
 
-    def __init__(self, converter, storage_type, java_value_factory):
+    def __init__(
+        self, converter: kt.PythonValueFactory, storage_type, java_value_factory
+    ):
         self._converter = converter
         self._logical_type = java_value_factory
         pa.ExtensionType.__init__(self, storage_type, "knime.logical_type")

@@ -275,10 +275,9 @@ class LogicalType(KnimeType):
         This only returns a type if a PythonValueFactory has been registered
         for this extension type.
         """
-        if self.logical_type not in kt._java_value_factory_to_python_type:
-            raise TypeError()
-
-        return kt._java_value_factory_to_python_type[self.logical_type]
+        return kt.get_value_factory_bundle_for_java_value_factory(
+            self.logical_type
+        ).python_type
 
     @property
     def proxy_type(self) -> Type:
@@ -300,17 +299,19 @@ class LogicalType(KnimeType):
         )
 
     def __str__(self) -> str:
-        if self.logical_type in kt._java_value_factory_to_python_type:
-            dtype = kt._java_value_factory_to_python_type[self.logical_type]
-            type_name = ".".join([dtype.__module__, dtype.__name__])
-            proxy_type = self.proxy_type
-            if proxy_type:
-                return f"extension<proxy={proxy_type}, internal={type_name}>"
-            return f"extension<{type_name}>"
-        else:
+        try:
+            bundle = kt.get_value_factory_bundle_for_java_value_factory(
+                self.logical_type
+            )
+        except ValueError:
             return (
                 f"extension<logical={self.logical_type}, storage={self.storage_type}>"
             )
+        type_name = bundle.python_type
+        proxy_type = self.proxy_type
+        if proxy_type:
+            return f"extension<proxy={proxy_type}, internal={type_name}>"
+        return f"extension<{type_name}>"
 
     def __hash__(self):
         return hash(str(self))
@@ -320,7 +321,9 @@ class LogicalType(KnimeType):
 
         try:
             # decode the storage type of this value_type from the info provided with the java value factory
-            bundle = kt.get_bundle_by_logical_type(self.logical_type)
+            bundle = kt.get_value_factory_bundle_for_java_value_factory(
+                self.logical_type
+            )
         except (KeyError, AttributeError):
             raise ValueError(
                 f"Unknown value_type. Are you missing an extension? Possible value types: {kt.get_python_type_list()}"
@@ -474,10 +477,11 @@ def logical(value_type) -> LogicalType:
         proxy_value_factory = None
 
     try:
-        java_value_factory = kt.get_logical_by_python_type(value_type)
-
+        java_value_factory = kt.get_value_factory_bundle_for_python_type(
+            value_type
+        ).java_value_factory
         # decode the storage type of this value_type from the info provided with the java value factory
-        bundle = kt.get_bundle_by_logical_type(java_value_factory)
+        bundle = kt.get_value_factory_bundle_for_java_value_factory(java_value_factory)
         specs = bundle.data_spec_json
         traits = bundle.data_traits
         logical_type = _dict_to_knime_type(specs, traits)

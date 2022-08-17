@@ -53,6 +53,9 @@ from contextlib import contextmanager
 import importlib
 import json
 from typing import List, Tuple, Type
+import logging
+
+LOGGER = logging.getLogger(__name__)
 
 
 class PythonValueFactory:
@@ -80,9 +83,6 @@ class PythonValueFactory:
     def needs_conversion(self):
         return True
 
-    def can_convert(self, value):
-        return type(value) == self._compatible_type
-
 
 class FallbackPythonValueFactory(PythonValueFactory):
     def __init__(self):
@@ -93,57 +93,124 @@ class FallbackPythonValueFactory(PythonValueFactory):
 
 
 class PythonValueFactoryBundle:
-    def __init__(self, java_value_factory, data_spec_json, value_factory, data_traits):
+    def __init__(
+        self,
+        java_value_factory: str,
+        data_spec_json: str,
+        data_traits: str,
+        python_module: str,
+        python_value_factory_name: str,
+        python_value_type_name: str,
+    ):
         self._java_value_factory = java_value_factory
         self._data_spec_json = json.loads(data_spec_json)
-        self._value_factory = value_factory
+        self._value_factory = None
         self._data_traits = json.loads(data_traits)
+        self._python_module = python_module
+        self._python_value_factory_name = python_value_factory_name
+        self._python_value_type_name = python_value_type_name
 
     @property
-    def java_value_factory(self):
+    def java_value_factory(self) -> str:
+        """Also called 'logical type'."""
         return self._java_value_factory
 
     @property
-    def data_spec_json(self):
+    def logical_type(self) -> str:
+        """Also called 'java value factory'."""
+        return self.java_value_factory
+
+    @property
+    def data_spec_json(self) -> dict:
         return self._data_spec_json
 
     @property
-    def value_factory(self):
+    def value_factory(self) -> PythonValueFactory:
+        if self._value_factory == None:
+            value_factory = _get_value_factory(
+                _get_module(self._python_module), self._python_value_factory_name
+            )
+            self._value_factory = value_factory
         return self._value_factory
 
     @property
-    def data_traits(self):
+    def data_traits(self) -> dict:
         return self._data_traits
 
+    @property
+    def python_type(self):
+        """String representation of the python type."""
+        return self._python_value_type_name
+
+
+def _get_module(module_name):
+    try:
+        return importlib.import_module(module_name)
+    except AttributeError:
+        # If instead of a string we got a module
+        return importlib.import_module(module_name.__name__)
+    except ImportError:
+        msg = f"The module {module_name} does not exist. Do you have the necessary extensions installed?"
+        raise ValueError(msg)
+
+
+def _get_value_factory(module, python_value_factory_name):
+    try:
+        value_factory_class = getattr(module, python_value_factory_name)
+    except AttributeError:
+        raise ValueError(
+            f"The module {module.__name__} does not have a value factory called '{python_value_factory_name}'."
+        )
+    if not issubclass(value_factory_class, PythonValueFactory):
+        raise ValueError(
+            f"The value factory {python_value_factory_name} in {module.__name__} is not compatible, must be of type knime_types.PythonValueFactory"
+        )
+    value_factory = value_factory_class()
+    return value_factory
+
+
+# all values are of type PythonValueFactoryBundle
+_bundles = []
 
 _java_value_factory_to_bundle = {}
 
-_bundles = []
-
-_python_type_to_java_value_factory = {}
-_java_value_factory_to_python_type = {}
+_python_type_to_bundle = {}
 
 # Proxy types are alternative Python logical types that map to the same
 # Java ValueFactory as the "original" logical type by being converted
 # to the same storage type internally.
-_python_proxy_type_to_value_factory = {}
+_python_proxy_type_to_factory_info = {}
 
 
-def get_proxy_by_python_type(python_type) -> Tuple[PythonValueFactory, Type]:
-    return _python_proxy_type_to_value_factory[python_type]
-
-
-def get_logical_by_python_type(python_type) -> str:
-    return _python_type_to_java_value_factory[python_type]
+def get_proxy_by_python_type(
+    python_type: Type,
+) -> Tuple[PythonValueFactory, Type]:
+    if not isinstance(python_type, type):
+        raise TypeError(f" The Python type '{python_type}' is not a type.")
+    complete_type = str(python_type.__module__) + "." + str(python_type.__qualname__)
+    try:
+        (
+            python_module,
+            python_value_factory_name,
+            orig_python_type_name,
+        ) = _python_proxy_type_to_factory_info[complete_type]
+    except AttributeError:
+        raise TypeError(
+            f"The Python type '{python_type}' is not registered. A list of valid types can be obtained via get_python_type_list()."
+        )
+    orig_bundle = get_value_factory_bundle_for_python_type_name(orig_python_type_name)
+    orig_value_factory = orig_bundle.value_factory
+    proxy_value_factory = _get_value_factory(
+        _get_module(python_module), python_value_factory_name
+    )
+    return (
+        proxy_value_factory,
+        orig_value_factory.compatible_type,
+    )
 
 
 def get_python_type_list():
-    return _python_type_to_java_value_factory.keys()
-
-
-def get_bundle_by_logical_type(logical_type: str):
-    """Logical type, also called Java value factory."""
-    return _java_value_factory_to_bundle[logical_type]
+    return [bundle.python_type for bundle in _bundles]
 
 
 def register_python_value_factory(
@@ -151,30 +218,54 @@ def register_python_value_factory(
     python_value_factory_name,
     data_spec_json,
     data_traits,
+    python_value_type_name,
     is_default_python_representation=True,
 ):
-    module = importlib.import_module(python_module)
-    python_value_factory_class = getattr(module, python_value_factory_name)
-    python_value_factory = python_value_factory_class()
+    """
+    Creates a bundle containing python value factory (e.g. SmilesValueFactory),
+    java value factory (a.k.a. logical type), python type name  (e.g. 'knime.types.chemistry.SmilesValue'),
+    as well as data_traits and data_spec_json.
+
+    Args:
+        python_module: The module containing the factory
+        python_value_factory_name: The factory to be registered
+        data_spec_json: A dict used to create a PythonValueFactoryBundle
+        data_traits: A dict used to get the logical_type,
+            e.g. '{"value_factory_class":"org.knime.chem.types.SmilesCellValueFactory"}'
+            (holds information on where to find the Java pendant to the
+            Python value factory)
+        python_value_type_name: The name of the value type, which is handled by the
+            factory; the name is taken from the plugin.xml of the module containing
+            the factory
+        is_default_python_representation: only false, if an alternative representation
+            is provided; note that we assume that a default (i.e. normal) Python
+            representation is already given
+    """
     unpacked_data_traits = json.loads(data_traits)["traits"]
     logical_type = unpacked_data_traits["logical_type"]
-    python_type = python_value_factory.compatible_type
 
     if is_default_python_representation:
         value_factory_bundle = PythonValueFactoryBundle(
-            logical_type, data_spec_json, python_value_factory, data_traits
+            logical_type,
+            data_spec_json,
+            data_traits,
+            python_module,
+            python_value_factory_name,
+            python_value_type_name,
         )
-        _java_value_factory_to_bundle[logical_type] = value_factory_bundle
         _bundles.append(value_factory_bundle)
+        _java_value_factory_to_bundle[logical_type] = value_factory_bundle
+        _python_type_to_bundle[python_value_type_name] = value_factory_bundle
 
-        _java_value_factory_to_python_type[logical_type] = python_type
-        _python_type_to_java_value_factory[python_type] = logical_type
     else:
-        orig_python_type = _java_value_factory_to_python_type[logical_type]
+        proxy_python_value_type_name = python_value_type_name
+        orig_bundle = get_value_factory_bundle_for_java_value_factory(logical_type)
+        orig_python_type_name = orig_bundle.python_type
 
-        _python_proxy_type_to_value_factory[python_type] = (
-            python_value_factory,
-            orig_python_type,
+        _python_proxy_type_to_factory_info[proxy_python_value_type_name] = (
+            python_module,
+            python_value_factory_name,
+            orig_python_type_name,
         )
 
 
@@ -183,18 +274,44 @@ _fallback_value_factory = FallbackPythonValueFactory()
 
 def get_converter(logical_type):
     try:
-        return _java_value_factory_to_bundle[logical_type].value_factory
-    except KeyError:
+        return get_value_factory_bundle_for_java_value_factory(
+            logical_type
+        ).value_factory
+    except ValueError:
+        LOGGER.debug(
+            f"The fallback value factory is used for the following type: {logical_type}"
+        )
         return _fallback_value_factory
 
 
-def get_value_factory_bundle_for_type(value):
-    for bundle in _bundles:
-        if bundle.value_factory.can_convert(value):
-            return bundle
-
+def get_value_factory_bundle_for_java_value_factory(
+    logical_type: str,
+) -> PythonValueFactoryBundle:
+    if logical_type in _java_value_factory_to_bundle:
+        return _java_value_factory_to_bundle[logical_type]
     raise ValueError(
-        f"The value {value} is not compatible with any registered PythonValueFactory."
+        f"The logical type {logical_type} is not compatible with any registered Python value factory."
+    )
+
+
+def get_value_factory_bundle_for_python_type_name(
+    python_type_name: str,
+) -> PythonValueFactoryBundle:
+    if python_type_name in _python_type_to_bundle:
+        return _python_type_to_bundle[python_type_name]
+    raise ValueError(
+        f"The python type name {python_type_name} is not compatible with any registered Python value factory."
+    )
+
+
+def get_value_factory_bundle_for_python_type(
+    python_type: type,
+) -> PythonValueFactoryBundle:
+    complete_type = str(python_type.__module__) + "." + str(python_type.__qualname__)
+    if complete_type in _python_type_to_bundle:
+        return _python_type_to_bundle[complete_type]
+    raise TypeError(
+        f"The python type {python_type} is not compatible with any registered Python value factory."
     )
 
 

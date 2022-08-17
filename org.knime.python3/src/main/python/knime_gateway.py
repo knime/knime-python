@@ -110,6 +110,7 @@ class EntryPoint:
         python_value_factory_name,
         data_spec,
         data_traits,
+        python_value_type_name,
         is_default_python_representation,
     ):
         import knime_types
@@ -119,6 +120,7 @@ class EntryPoint:
             python_value_factory_name,
             data_spec,
             data_traits,
+            python_value_type_name,
             is_default_python_representation,
         )
 

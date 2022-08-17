@@ -83,7 +83,7 @@ public final class PythonEntryPointUtils {
                     continue;
                 }
                 entryPoint.registerPythonValueFactory(pythonModule, factory.getPythonValueFactoryName(),
-                    factory.getDataSpecRepresentation(), factory.getDataTraitsJson(),
+                    factory.getDataSpecRepresentation(), factory.getDataTraitsJson(), factory.getValueTypeName(),
                     factory.isDefaultPythonRepresentation());
             }
         }
@@ -96,7 +96,8 @@ public final class PythonEntryPointUtils {
                     continue;
                 }
                 entryPoint.registerPythonValueFactory(pythonModule, factory.getPythonValueFactoryName(),
-                    factory.getDataSpecRepresentation(), factory.getDataTraitsJson(), false);
+                    factory.getDataSpecRepresentation(), factory.getDataTraitsJson(), factory.getValueTypeName(),
+                    false);
             }
         }
     }

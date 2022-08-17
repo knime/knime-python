@@ -215,7 +215,8 @@ public final class PythonValueFactoryRegistry {
         final String pythonValueFactoryName = factory.getAttribute("PythonClassName");
         final boolean isDefault = factory.getAttribute(IS_DEFAULT_PYTHON_REPRESENTATION) == null
             || factory.getAttribute(IS_DEFAULT_PYTHON_REPRESENTATION).equalsIgnoreCase("true");
-        return new PythonValueFactory(valueFactory, pythonValueFactoryName, isDefault);
+        final String valueTypeName = factory.getAttribute("ValueTypeName");
+        return new PythonValueFactory(valueFactory, pythonValueFactoryName, valueTypeName, isDefault);
     }
 
     /**

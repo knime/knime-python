@@ -66,14 +66,24 @@ public final class PythonValueFactory {
     private final ValueFactory<?, ?> m_valueFactory;
 
     private final String m_pythonValueFactoryName;
+    private final String m_valueTypeName;
 
     private boolean m_isDefaultPythonRepresentation;
 
-    PythonValueFactory(final ValueFactory<?, ?> valueFactory, final String pythonClassName,
+    PythonValueFactory(final ValueFactory<?, ?> valueFactory, final String pythonClassName, final String ValueTypeName,
         final boolean isDefaultPythonRepresentation) {
         m_valueFactory = valueFactory;
         m_pythonValueFactoryName = pythonClassName;
+        m_valueTypeName = ValueTypeName;
         m_isDefaultPythonRepresentation = isDefaultPythonRepresentation;
+        }
+
+    /**
+     * @return the string representation of the type of the value,
+     *          which is created by the value factory
+     */
+    public String getValueTypeName() {
+        return m_valueTypeName;
     }
 
     /**

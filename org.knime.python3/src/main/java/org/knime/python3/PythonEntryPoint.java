@@ -107,9 +107,11 @@ public interface PythonEntryPoint {
      * @param pythonValueFactoryName The name of the PythonValueFactory
      * @param dataSpec String representation of the {@link DataSpec} created by the {@link ValueFactory}
      * @param dataTraits String representation of the {@link DataTraits} created by the {@link ValueFactory}
+     * @param pythonValueTypeName String representation of the value type
      * @param isDefaultPythonRepresentation Whether or not this data type is supposed to be the default Python
      *            representation for the java {@link ValueFactory}
      */
     void registerPythonValueFactory(final String pythonModule, final String pythonValueFactoryName,
-        final String dataSpec, final String dataTraits, final boolean isDefaultPythonRepresentation);
+        final String dataSpec, final String dataTraits, final String pythonValueTypeName,
+        final boolean isDefaultPythonRepresentation);
 }
