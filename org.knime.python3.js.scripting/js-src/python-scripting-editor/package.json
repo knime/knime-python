@@ -31,6 +31,9 @@
     "postcss-preset-env": "6.7.0",
     "postcss-url": "8.0.0",
     "typescript": "~4.5.5",
+    "vue-svg-loader": "0.17.0-beta.2",
+    "url-loader": "^4.1.1",
+    "file-loader": "^6.2.0",
     "vue-template-compiler": "2.6.14"
   }
 }
