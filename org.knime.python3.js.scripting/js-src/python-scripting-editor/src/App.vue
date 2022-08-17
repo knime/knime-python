@@ -2,6 +2,7 @@
 import Vue from 'vue';
 import * as monaco from 'monaco-editor';
 import Button from '~/webapps-common/ui/components/Button.vue';
+import LoadingIcon from '~/webapps-common/ui/assets/img/icons/reload.svg'; // TODO(AP-19344) switch to LoadingIcon for the animation
 import ScriptingEditor from 'scripting-editor/src/components/ScriptingEditor.vue';
 import OutputConsole from 'scripting-editor/src/components/OutputConsole.vue';
 import WorkspaceTable from './components/WorkspaceTable.vue';
@@ -26,6 +27,7 @@ export default Vue.extend({
     components: {
         ScriptingEditor,
         Button,
+        LoadingIcon,
         WorkspaceTable,
         InputObjectsView,
         CondaEnvironment,
@@ -153,9 +155,12 @@ export default Vue.extend({
 </script>
 
 <template>
-  <div v-if="loading">
-    <!-- TODO(AP-19344) loading animation -->
-    Loading...
+  <!-- TODO move loading animation into mixin -->
+  <div
+    v-if="loading"
+    class="loading"
+  >
+    <LoadingIcon class="loading-icon" />
   </div>
   <div
     v-else
@@ -218,11 +223,33 @@ export default Vue.extend({
   </div>
 </template>
 
-<style>
+<style lang="postcss">
 @import 'webapps-common/ui/css';
 
 :root {
     font-size: 16px;
     line-height: 1.44;
+}
+</style>
+
+<style type="postcss" scoped>
+/* TODO(AP-19344) remove and use LoadingIcon.vue */
+@keyframes spin {
+    100% {
+        transform: rotate(-360deg);
+    }
+}
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+
+    & .loading-icon {
+        width: 32px;
+        stroke: var(--knime-masala);
+        /* TODO(AP-19344) remove and use LoadingIcon.vue */
+        animation: spin 2s linear infinite;
+    }
 }
 </style>
