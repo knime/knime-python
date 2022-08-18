@@ -114,9 +114,12 @@ def _get_arrow_storage_to_ext_fn(dtype):
     Finds and returns the specific function to convert a pa.array of the given datatype to an extension array. Handles
     nested types (like list value factories) and dictionary encoding. This includes finding the dict decode function
     for all inner types via recursion, meaning that it resolves all structures contained in the dtype (eg it can encode
-    into a StructDictEncodedLogicalTypeExtensionType containing a list of structs which contains dict encoded data)
-    @param dtype: dtype of the target extensiontype
-    @return: converter function
+    into a StructDictEncodedLogicalTypeExtensionType containing a list of structs which contains dict encoded data).
+
+    Args:
+        dtype: dtype of the target extensiontype
+    Returns:
+        converter function
     """
     if is_dict_encoded_value_factory_type(
         dtype
@@ -190,9 +193,12 @@ def _create_list_array(offsets, values):
 
 def _to_storage_array(array: pa.Array) -> pa.Array:
     """
-    Calls the ´:func:`_get_array_to_storage_fn`
-    @param array: pa.array to be converted to storage array
-    @return:
+    Calls the :func:`_get_array_to_storage_fn`.
+
+    Args:
+        array: pa.array to be converted to storage array
+    Returns:
+        Storage array
     """
     compatibility_fn = _get_array_to_storage_fn(array.type)
     if compatibility_fn is None:
@@ -207,8 +213,11 @@ def _get_array_to_storage_fn(dtype: pa.DataType):
     storage array. For instance, decoding a dict encoded pa.array. This includes finding the dict decode function
     for all inner types via recursion, meaning that it resolves all structures contained in the dtype (eg it can decode
     a StructDictEncodedLogicalTypeExtensionType containing a list of structs which contains dict encoded data)
-    @param dtype: dtype of the pa.array
-    @return: converter function
+
+    Args:
+        dtype: dtype of the pa.array
+    Returns:
+        converter function
     """
     if is_dict_encoded_value_factory_type(
         dtype
@@ -323,10 +332,13 @@ def get_object_to_storage_fn(dtype: pa.DataType):
 
 def _to_extension_array(data, target_type):
     """
-    Wraps a pa.array in an extension array
-    @param data: pa.array or pa.chunkedArray
-    @param target_type: type of data
-    @return: wrapped data
+    Wraps a pa.array in an extension array.
+
+    Args:
+        data: pa.array or pa.chunkedArray
+        target_type: type of data
+    Returns:
+        wrapped data
     """
     if data.type != target_type:
         assert target_type is not None
@@ -537,8 +549,12 @@ def data_spec_to_arrow(data_spec):
     """
     Gives the pyarrow representation of a data spec.
     Used, for example, to get the storage_type of logical extension types.
-    @param data_spec: A dict containing the data specification
-    @return: wrapped data
+
+    Args:
+        data_spec:
+            A dict containing the data specification.
+    Returns:
+        Wrapped pyarrow representation of KNIME data spec.
     """
     if isinstance(data_spec, str):
         return _primitive_type_map[data_spec]
@@ -796,8 +812,22 @@ def _wrap_primitive_array(
     array: Union[pa.Array, pa.ChunkedArray], is_row_key: bool, column_name: str
 ) -> Union[pa.Array, pa.ChunkedArray]:
     """
-    wraps the given column array in the corresponding LogicalTypeExtensionType and returns it
-    @rtype: Union[pa.Array, pa.ChunkedArray]
+    Wraps the column array in the corresponding LogicalTypeExtensionType and returns it.
+
+    Args:
+        array:
+            The pa.Array or pa.ChunkedArray which is to be wrapped.
+        is_row_key:
+            The wrapped_type differs if the array is_row_key.
+        column_name:
+            Used for error message.
+    Returns:
+        The wrapped array.
+
+    Raises:
+        ValueError:
+            If the array.type is no LogicalTypeExtensionType / value factory type.
+
     """
     wrapped_type = _get_wrapped_type(array.type, is_row_key)
 

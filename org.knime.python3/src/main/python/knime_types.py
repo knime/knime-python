@@ -63,6 +63,7 @@ class PythonValueFactory:
 
         Args:
             compatible_type:
+                The class of the value, for which this factory is created.
         """
         self._compatible_type = compatible_type
 
@@ -132,7 +133,7 @@ def get_python_type_list():
 
 
 def get_bundle_by_logical_type(logical_type: str):
-    "Logical type, also called Java value factory."
+    """Logical type, also called Java value factory."""
     return _java_value_factory_to_bundle[logical_type]
 
 
