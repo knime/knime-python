@@ -10,6 +10,8 @@
   
     <properties>
         <revision>4.5.0</revision>
+	<sonar.sources></sonar.sources>
+	<sonar.tests>src</sonar.tests>
     </properties>
 
 	<build>
