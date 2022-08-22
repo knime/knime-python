@@ -241,7 +241,9 @@ public final class Python3ScriptingPreferencePage extends AbstractPythonPreferen
     }
 
     private void displayPanelForEnvironmentType(final String environmentTypeId) {
-        setMessage("", NONE); // clear warning message as soon as settings are changed
+        // As soon as the settings are changed, the warning message can be set to the title of the
+        // preference page; as the preference page title points to this message
+        setMessage("Python (Labs)", NONE);
         final var environmentType = PythonEnvironmentType.fromId(environmentTypeId);
         if (PythonEnvironmentType.CONDA == environmentType) {
             m_environmentConfigurationLayout.topControl = m_condaEnvironmentPanel.getPanel();
