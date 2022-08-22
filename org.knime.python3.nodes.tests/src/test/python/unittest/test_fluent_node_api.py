@@ -42,11 +42,12 @@
 #  when such Node is propagated with or for interoperation with KNIME.
 # ------------------------------------------------------------------------
 
-from typing import List, Tuple, Type
 import unittest
 import knime_node as kn
-import knime_node_table as kt
 import knime_schema as ks
+
+BINARY_PORT_ID = "org.knime.python3.nodes.test.port"
+TEST_DESCR = "We read data from here"
 
 
 @kn.node(
@@ -56,7 +57,7 @@ import knime_schema as ks
     category="/",
     id="My Test Node",
 )
-@kn.input_table(name="Input Data", description="We read data from here")
+@kn.input_table(name="Input Data", description=TEST_DESCR)
 @kn.input_table(
     name="Second input table", description="We might also read data from there"
 )
@@ -64,7 +65,7 @@ import knime_schema as ks
 @kn.output_binary(
     name="Some output port",
     description="Maybe a model",
-    id="org.knime.python3.nodes.test.port",
+    id=BINARY_PORT_ID,
 )
 @kn.output_view(name="Test View", description="lalala")
 class MyTestNode:
@@ -113,7 +114,7 @@ class MyTestNode:
         kn.Port(
             type=kn.PortType.TABLE,
             name="Input Data",
-            description="We read data from here",
+            description=TEST_DESCR,
         ),
         kn.Port(
             type=kn.PortType.TABLE,
@@ -135,7 +136,7 @@ class MyTestNode:
                 type=kn.PortType.BINARY,
                 name="Some output port",
                 description="Maybe a model",
-                id="org.knime.python3.nodes.test.port",
+                id=BINARY_PORT_ID,
             ),
         ]
 
@@ -146,7 +147,7 @@ class MyTestNode:
         )
 
     def configure(self, config_ctx, schema_1, schema_2):
-        return schema_1, ks.BinaryPortTypeSpec(id="org.knime.python3.nodes.test.port")
+        return schema_1, ks.BinaryPortTypeSpec(id=BINARY_PORT_ID)
 
     def execute(self, exec_context, table_1, table_2):
         return [table_1, b"random bytes"]
@@ -178,7 +179,7 @@ class InstanceAttributePortsTest(unittest.TestCase):
 class PortTest(unittest.TestCase):
     def test_port_must_have_id(self):
         with self.assertRaises(TypeError):
-            p = kn.Port(type=kn.PortType.BINARY, name="A", description="a")
+            kn.Port(type=kn.PortType.BINARY, name="A", description="a")
 
         p = kn.Port(type=kn.PortType.BINARY, name="A", description="a", id="test")
         self.assertEqual("test", p.id)
@@ -195,7 +196,7 @@ class PortTest(unittest.TestCase):
     category="/",
     id="My Third Node",
 )
-@kn.input_table(name="Input Data", description="We read data from here")
+@kn.input_table(name="Input Data", description=TEST_DESCR)
 @kn.input_table(
     name="Second input table", description="We might also read data from there"
 )
@@ -203,7 +204,7 @@ class PortTest(unittest.TestCase):
 @kn.output_binary(
     name="Some output port",
     description="Maybe a model",
-    id="org.knime.python3.nodes.test.port",
+    id=BINARY_PORT_ID,
 )
 def my_node_generating_func():
     class MyHiddenNode:
@@ -248,13 +249,13 @@ class DoubleInputPortsTest(unittest.TestCase):
     def test_cannot_use_decorator_and_instance_attrib(self):
         with self.assertRaises(ValueError):
 
-            @kn.input_table(name="Input Data", description="We read data from here")
+            @kn.input_table(name="Input Data", description=TEST_DESCR)
             class MyDummyNode:
                 input_ports = [
                     kn.Port(
                         type=kn.PortType.TABLE,
                         name="Overriden Input Data",
-                        description="We read data from here",
+                        description=TEST_DESCR,
                     )
                 ]
 
@@ -273,7 +274,7 @@ class MyPropertyOverridingNode:
         kn.Port(
             type=kn.PortType.TABLE,
             name="Overriden Input Data",
-            description="We read data from here",
+            description=TEST_DESCR,
         )
     ] * 3
 
