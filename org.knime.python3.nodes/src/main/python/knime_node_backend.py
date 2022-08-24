@@ -278,15 +278,15 @@ class _PythonNodeProxy:
         parameters: str,
         specs: List[_PythonPortObjectSpec],
         extension_version: str,
+        parameters_version: str,
     ):
+        # self.setParameters(parameters, extension_version, parameters_version, False)
         self.setParameters(parameters, extension_version, False)
 
         inputs = self._specs_to_python(specs)
 
         json_forms_dict = {
-            "data": kp.extract_parameters(
-                self._node, extension_version, for_dialog=True
-            ),
+            "data": kp.extract_parameters(self._node, for_dialog=True),
             "schema": kp.extract_schema(self._node, extension_version, inputs),
             "ui_schema": kp.extract_ui_schema(self._node, extension_version),
         }
@@ -299,23 +299,30 @@ class _PythonNodeProxy:
             for port, spec in zip(self._node.input_ports, specs)
         ]
 
-    def getParameters(self, extension_version=None) -> str:
-        parameters_dict = kp.extract_parameters(self._node, extension_version)
+    def getParameters(self) -> str:
+        parameters_dict = kp.extract_parameters(self._node)
         return json.dumps(parameters_dict)
 
     def getSchema(self, version=None, specs: List[str] = None) -> str:
         if specs is not None:
             specs = self._specs_to_python(specs)
-
         schema = kp.extract_schema(self._node, version, specs)
         return json.dumps(schema)
 
     def setParameters(
-        self, parameters: str, extension_version: str, fail_on_missing: bool = False
+        self,
+        parameters: str,
+        extension_version: str,
+        # parameters_version: str = None,
+        fail_on_missing: bool = False,
     ) -> None:
         parameters_dict = json.loads(parameters)
         kp.inject_parameters(
-            self._node, parameters_dict, extension_version, fail_on_missing
+            self._node,
+            parameters_dict,
+            extension_version,
+            # parameters_version,
+            fail_on_missing,
         )
 
     def validateParameters(self, parameters: str, version: str) -> None:

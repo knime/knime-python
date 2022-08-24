@@ -92,7 +92,7 @@ public final class DelegatingJsonSettingsDataService implements JsonNodeSettings
             var specsWithoutFlowVars = Stream.of(specs).skip(1).toArray(PortObjectSpec[]::new);
             m_lastSettingsSchema = proxy.getSettingsSchema(m_extensionVersion);
             var jsonSettings = loadSettings(settings.get(SettingsType.MODEL));
-            return proxy.getDialogRepresentation(jsonSettings, specsWithoutFlowVars, m_extensionVersion);
+            return proxy.getDialogRepresentation(jsonSettings, specsWithoutFlowVars, m_extensionVersion, jsonSettings.getCreationVersion());
         }
     }
 

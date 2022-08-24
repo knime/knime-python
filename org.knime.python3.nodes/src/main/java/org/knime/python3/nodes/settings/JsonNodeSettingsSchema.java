@@ -99,7 +99,7 @@ public final class JsonNodeSettingsSchema {
      * @throws InvalidSettingsException if the settings are invalid
      */
     public JsonNodeSettings createFromSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
-        return new JsonNodeSettings(settings, m_schema, m_version);
+        return new JsonNodeSettings(settings, m_schema, readVersion(settings));
     }
 
     /**

@@ -74,59 +74,45 @@ def _get_parameters(obj) -> Dict[str, "_BaseParameter"]:
     return {**class_params, **instance_params}
 
 
-def extract_parameters(obj, extension_version=None, for_dialog=False) -> dict:
+def extract_parameters(obj, for_dialog=False) -> dict:
     """
     Get all parameter values from obj as a nested dict.
     """
-    extension_version = parse_version(extension_version)
-    return {"model": _extract_parameters(obj, extension_version, for_dialog)}
+    return {"model": _extract_parameters(obj, for_dialog)}
 
 
-def _extract_parameters(obj, extension_version: Version, for_dialog: bool) -> dict:
+def _extract_parameters(obj, for_dialog: bool) -> dict:
     result = dict()
     params = _get_parameters(obj)
     for name, param_obj in params.items():
-        if param_obj._since_version <= extension_version:
-            if _is_group(param_obj):
-                result[name] = _extract_parameters(
-                    param_obj, extension_version, for_dialog
-                )
-            else:
-                result[name] = param_obj._get_value(obj)
-
+        result[name] = param_obj._get_value(obj, for_dialog)
     return result
 
 
-def _is_group(param):
-    return hasattr(param, "__kind__") and param.__kind__ == "parameter_group"
-
-
 def inject_parameters(
-    obj, parameters: dict, extension_version=None, fail_on_missing: bool = True
+    obj,
+    parameters: dict,
+    extension_version=None,
+    fail_on_missing: bool = True,
 ) -> None:
     extension_version = parse_version(extension_version)
     _inject_parameters(obj, parameters["model"], extension_version, fail_on_missing)
 
 
 def _inject_parameters(
-    obj, parameters: dict, extension_version: Version, fail_on_missing: bool
+    obj,
+    parameters: dict,
+    extension_version: Version,
+    fail_on_missing: bool,
 ) -> None:
     for name, param_obj in _get_parameters(obj).items():
-        if _is_group(param_obj):
+        if param_obj._since_version <= extension_version:
             if name in parameters:
-                group_params = parameters[name]
-            else:
-                group_params = _get_parameters(param_obj).items()
-            _inject_parameters(
-                param_obj, group_params, extension_version, fail_on_missing
-            )
-        else:
-            if name in parameters:
-                param_obj._inject(obj, parameters[name])
-            elif param_obj._since_version <= extension_version:
-                if fail_on_missing:
-                    raise ValueError(f"No value available for parameter '{name}'")
-                param_obj._inject(obj, param_obj._default_value)
+                param_obj._inject(
+                    obj, parameters[name], extension_version, fail_on_missing
+                )
+            elif fail_on_missing:
+                raise ValueError(f"No value available for parameter '{name}'")
 
 
 def validate_parameters(obj, parameters: dict) -> str:
@@ -159,14 +145,13 @@ def extract_schema(obj, extension_version=None, specs=None) -> dict:
     }
 
 
-def _extract_schema(obj, extension_version, specs=None):
+def _extract_schema(obj, extension_version, specs):
     properties = {}
     for name, param_obj in _get_parameters(obj).items():
         if param_obj._since_version <= extension_version:
-            if _is_group(param_obj):
-                properties[name] = _extract_schema(param_obj, extension_version, specs)
-            else:
-                properties[name] = param_obj._extract_schema(specs)
+            properties[name] = param_obj._extract_schema(
+                extension_version=extension_version, specs=specs
+            )
 
     return {"type": "object", "properties": properties}
 
@@ -220,6 +205,10 @@ def extract_parameter_descriptions(obj) -> dict:
 def _extract_parameter_descriptions(obj, scope: "_Scope"):
     params = _get_parameters(obj).values()
     return [param._extract_description(scope) for param in params]
+
+
+def _is_group(param):
+    return hasattr(param, "__kind__") and param.__kind__ == "parameter_group"
 
 
 def _is_parameter_or_group(obj) -> bool:
@@ -282,7 +271,7 @@ class _BaseParameter(ABC):
         if self._label is None:
             self._label = name
 
-    def _get_value(self, obj: Any):
+    def _get_value(self, obj, for_dialog=None):
         return getattr(obj, self._name)
 
     def __get__(self, obj, objtype=None):
@@ -296,7 +285,7 @@ class _BaseParameter(ABC):
             obj.__parameters__[self._name] = self._default_value
             return self._default_value
 
-    def _inject(self, obj, value):
+    def _inject(self, obj, value, extension_version=None, fail_on_missing=True):
         # TODO only set if the parameter was available in the version
         self.__set__(obj, value)
 
@@ -349,7 +338,7 @@ class _BaseParameter(ABC):
         """
         self._validator = func
 
-    def _extract_schema(self, specs: List[ks.Schema] = None):
+    def _extract_schema(self, extension_version=None, specs: List[ks.Schema] = None):
         return {"title": self._label, "description": self.__doc__}
 
     def _extract_ui_schema(self, name, parent_scope: _Scope, extension_version=None):
@@ -407,7 +396,7 @@ class _NumericParameter(_BaseParameter):
         if self.max_value is not None and value > self.max_value:
             raise ValueError(f"{value} is > the max value {self.max_value}")
 
-    def _extract_schema(self, specs):
+    def _extract_schema(self, extension_version=None, specs=None):
         schema = super()._extract_schema(specs)
         schema["type"] = "number"
         if self.min_value is not None:
@@ -449,7 +438,7 @@ class IntParameter(_NumericParameter):
                 f"{value} is of type {type(value)}, but should be of type int."
             )
 
-    def _extract_schema(self, specs):
+    def _extract_schema(self, extension_version=None, specs=None):
         prop = super()._extract_schema(specs)
         prop["type"] = "integer"
         prop["format"] = "int32"
@@ -490,7 +479,7 @@ class DoubleParameter(_NumericParameter):
                 f"{value} is of type {type(value)}, but should be of type float."
             )
 
-    def _extract_schema(self, specs):
+    def _extract_schema(self, extension_version=None, specs=None):
         schema = super()._extract_schema(specs)
         schema["format"] = "double"
         return schema
@@ -526,7 +515,7 @@ class StringParameter(_BaseParameter):
         self._enum = enum
         super().__init__(label, description, default_value, validator, since_version)
 
-    def _extract_schema(self, specs):
+    def _extract_schema(self, extension_version=None, specs=None):
         schema = super()._extract_schema(specs)
         if self._enum is None:
             schema["type"] = "string"
@@ -564,7 +553,7 @@ class _BaseColumnParameter(_BaseParameter):
         self._column_filter = column_filter
         self._schema_option = schema_option
 
-    def _extract_schema(self, specs: List[ks.Schema] = None):
+    def _extract_schema(self, extension_version=None, specs: List[ks.Schema] = None):
         schema = super()._extract_schema(specs)
         values = _filter_columns(specs, self._port_index, self._column_filter)
         schema[self._schema_option] = values
@@ -702,7 +691,7 @@ class BoolParameter(_BaseParameter):
             validator = self.default_validator
         super().__init__(label, description, default_value, validator, since_version)
 
-    def _extract_schema(self, specs):
+    def _extract_schema(self, extension_version=None, specs=None):
         schema = super()._extract_schema(specs)
         schema["type"] = "boolean"
         return schema
@@ -805,8 +794,8 @@ def parameter_group(label: str):
         def _get_value(self, obj, for_dialog=False):
             param_holder = _get_param_holder(self, obj)
             return {
-                name: param._get_value(param_holder, for_dialog)
-                for name, param in _get_parameters(param_holder).items()
+                name: param_obj._get_value(param_holder, for_dialog)
+                for name, param_obj in _get_parameters(param_holder).items()
             }
 
         def _get_param_holder(parameter_group, obj):
@@ -836,9 +825,9 @@ def parameter_group(label: str):
         def __set__(self, obj, values):
             raise RuntimeError("Cannot set parameter group values directly.")
 
-        def _inject(self, obj, values, version=None, fail_on_missing=True):
+        def _inject(self, obj, values, extension_version, fail_on_missing):
             param_holder = _get_param_holder(self, obj)
-            _inject_parameters(param_holder, values, version, fail_on_missing)
+            _inject_parameters(param_holder, values, extension_version, fail_on_missing)
 
         def __str__(self):
             return f"\tGroup name: {self._name}\n\tGroup label: {self._label}"

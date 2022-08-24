@@ -898,19 +898,19 @@ class ParameterTest(unittest.TestCase):
         # injection of custom parameter/parameter group validators can only be done
         # inside their "parent" class declaration
 
-    #### Test versioning of node settings ####
-    def test_extracting_parameters_with_version(self):
-        for version in ["0.1.0", "0.2.0", "0.3.0"]:
-            params = kp.extract_parameters(self.versioned_parameterized, version)
-            expected = generate_versioned_values_dict(extension_version=version)
-            self.assertEqual(params, expected)
+    ### Test versioning of node settings ####
+    # def test_extracting_parameters_with_version(self):
+    #     for version in ["0.1.0", "0.2.0", "0.3.0"]:
+    #         params = kp.extract_parameters(self.versioned_parameterized, version)
+    #         expected = generate_versioned_values_dict(extension_version=version)
+    #         self.assertEqual(params, expected)
 
-    def test_inject_parameters_with_version(self):
-        for version in ["0.1.0", "0.2.0", "0.3.0"]:
-            params = generate_versioned_values_dict(extension_version=version)
-            kp.inject_parameters(self.versioned_parameterized, params, version)
-            extracted = kp.extract_parameters(self.versioned_parameterized, version)
-            self.assertEqual(params, extracted)
+    # def test_inject_parameters_with_version(self):
+    #     for version in ["0.1.0", "0.2.0", "0.3.0"]:
+    #         params = generate_versioned_values_dict(extension_version=version)
+    #         kp.inject_parameters(self.versioned_parameterized, params, version)
+    #         extracted = kp.extract_parameters(self.versioned_parameterized, version)
+    #         self.assertEqual(params, extracted)
 
     def test_extract_schema_with_version(self):
         for version in ["0.1.0", "0.2.0", "0.3.0"]:
