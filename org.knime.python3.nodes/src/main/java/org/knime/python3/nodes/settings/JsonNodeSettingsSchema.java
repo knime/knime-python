@@ -59,7 +59,7 @@ import org.knime.core.node.defaultnodesettings.SettingsModel;
  */
 public final class JsonNodeSettingsSchema {
 
-    private static final String CFG_VERSION = "version" + SettingsModel.CFGKEY_INTERNAL;
+    private static final String EXTENSION_VERSION = "extension_version" + SettingsModel.CFGKEY_INTERNAL;;
 
     private final String m_schema;
 
@@ -82,7 +82,13 @@ public final class JsonNodeSettingsSchema {
      * @throws InvalidSettingsException if settings are missing the version field
      */
     public static String readVersion(final NodeSettingsRO settings) throws InvalidSettingsException {
-        return settings.getString(CFG_VERSION);
+        try {
+            // settings won't have the appropriate field if they were saved before versioning
+            // was introduced. In this case the version defaults to 0.0.0.
+            return settings.getString(EXTENSION_VERSION);
+        } catch (Exception e) {
+            return "0.0.0";
+        }
     }
 
     /**
@@ -93,7 +99,7 @@ public final class JsonNodeSettingsSchema {
      * @throws InvalidSettingsException if the settings are invalid
      */
     public JsonNodeSettings createFromSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
-        return new JsonNodeSettings(settings, m_schema);
+        return new JsonNodeSettings(settings, m_schema, m_version);
     }
 
     /**

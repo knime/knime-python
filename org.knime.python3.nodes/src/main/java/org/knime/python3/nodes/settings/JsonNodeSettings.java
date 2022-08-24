@@ -64,7 +64,7 @@ import org.knime.core.node.defaultnodesettings.SettingsModel;
  */
 public final class JsonNodeSettings {
 
-    private static final String CFG_VERSION = "version" + SettingsModel.CFGKEY_INTERNAL;
+    static final String EXTENSION_VERSION = "extension_version" + SettingsModel.CFGKEY_INTERNAL;;
 
     private final String m_parameters;
 
@@ -79,7 +79,7 @@ public final class JsonNodeSettings {
      * @param schema the JSON schema of the parameters
      * @param version the extension version
      */
-    public JsonNodeSettings(final String parametersJson, final String schema, final String version) {
+    JsonNodeSettings(final String parametersJson, final String schema, final String version) {
         m_schema = schema;
         m_parameters = parametersJson;
         m_version = version;
@@ -90,13 +90,14 @@ public final class JsonNodeSettings {
      *
      * @param settings containing the stored settings
      * @param schema of the settings
+     * @param version the extension version
      * @throws InvalidSettingsException if the settings are invalid
      */
-    public JsonNodeSettings(final NodeSettingsRO settings, final String schema) throws InvalidSettingsException {
+    JsonNodeSettings(final NodeSettingsRO settings, final String schema, final String version) throws InvalidSettingsException {
         m_schema = schema;
         var preprocessed = preprocess(settings);
         m_parameters = JsonNodeSettingsMapperUtil.nodeSettingsToJsonString(preprocessed);
-        m_version = settings.getString(CFG_VERSION);
+        m_version = version;
     }
 
     /**
@@ -127,7 +128,7 @@ public final class JsonNodeSettings {
         } catch (InvalidSettingsException ex) {
             throw new IllegalStateException("Parameter conversion did not add model settings.", ex);
         }
-        settings.addString(CFG_VERSION, m_version);
+        settings.addString(EXTENSION_VERSION, m_version);
     }
 
     private static NodeSettings preprocess(final NodeSettingsRO settings) {
@@ -141,7 +142,7 @@ public final class JsonNodeSettings {
     private static NodeSettings settingsWithoutVersion(final NodeSettings settingsWithVersion) {
         var settingsWithoutVersion = new NodeSettings(settingsWithVersion.getKey());
         for (var key : settingsWithVersion) {
-            if (!CFG_VERSION.equals(key)) {
+            if (!EXTENSION_VERSION.equals(key)) {
                 var entry = settingsWithVersion.getEntry(key);
                 settingsWithoutVersion.addEntry(entry);
             }

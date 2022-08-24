@@ -91,7 +91,8 @@ public class JsonNodeSettingsTest {
 
     @Test
     public void testSimpleSaveTo() {
-        var jsonSettings = new JsonNodeSettings(SIMPLE_MODEL_JSON, SIMPLE_MODEL_SCHEMA, KNIMEConstants.VERSION);
+        var jsonSettingsSchema = new JsonNodeSettingsSchema(SIMPLE_MODEL_SCHEMA, KNIMEConstants.VERSION);
+        var jsonSettings = jsonSettingsSchema.createFromJson(SIMPLE_MODEL_JSON);
         var nodeSettings = new NodeSettings("test");
         jsonSettings.saveTo(nodeSettings);
         var expected = JsonTestUtils.createSimpleSettings();
@@ -102,8 +103,8 @@ public class JsonNodeSettingsTest {
 
     @Test
     public void testSimpleLoadFrom() throws Exception {
-        var jsonSettings = new JsonNodeSettings(SIMPLE_MODEL_JSON, SIMPLE_MODEL_SCHEMA, KNIMEConstants.VERSION);
         var jsonSettingsSchema = new JsonNodeSettingsSchema(SIMPLE_MODEL_SCHEMA, KNIMEConstants.VERSION);
+        var jsonSettings = jsonSettingsSchema.createFromJson(SIMPLE_MODEL_SCHEMA);
         var oldVersion = "4.3.0.qualifier";
         var nodeSettings = JsonTestUtils.createSimpleSettings();
         addVersion(nodeSettings, oldVersion);
@@ -115,7 +116,8 @@ public class JsonNodeSettingsTest {
 
     @Test
     public void testNestedSaveTo() throws Exception {
-        var jsonSettings = new JsonNodeSettings(NESTED_MODEL_JSON, NESTED_MODEL_SCHEMA, KNIMEConstants.VERSION);
+        var jsonSettingsSchema = new JsonNodeSettingsSchema(NESTED_MODEL_SCHEMA, KNIMEConstants.VERSION);
+        var jsonSettings = jsonSettingsSchema.createFromJson(NESTED_MODEL_JSON);
         var nodeSettings = new NodeSettings("test");
         jsonSettings.saveTo(nodeSettings);
         var expected = JsonTestUtils.createNestedSettings();
@@ -128,8 +130,8 @@ public class JsonNodeSettingsTest {
 
     @Test
     public void testNestedLoadFrom() throws Exception {
-        var jsonSettings = new JsonNodeSettings(NESTED_MODEL_JSON, NESTED_MODEL_SCHEMA, KNIMEConstants.VERSION);
-        var jsonSettingsSchema = new JsonNodeSettingsSchema(SIMPLE_MODEL_SCHEMA, KNIMEConstants.VERSION);
+        var jsonSettingsSchema = new JsonNodeSettingsSchema(NESTED_MODEL_SCHEMA, KNIMEConstants.VERSION);
+        var jsonSettings = jsonSettingsSchema.createFromJson(NESTED_MODEL_JSON);
         var oldVersion = "4.3.0.qualifier";
         var nodeSettings = JsonTestUtils.createNestedSettings();
         addVersion(nodeSettings, oldVersion);
@@ -142,7 +144,8 @@ public class JsonNodeSettingsTest {
     }
 
     private static void addVersion(final NodeSettingsWO settings, final String version) {
-        settings.addString("version" + SettingsModel.CFGKEY_INTERNAL, version);
+//        settings.addString("version" + SettingsModel.CFGKEY_INTERNAL, version);
+        settings.addString("extension_version" + SettingsModel.CFGKEY_INTERNAL, version);
     }
 
     private static void addJsonType(final NodeSettings expected) {
