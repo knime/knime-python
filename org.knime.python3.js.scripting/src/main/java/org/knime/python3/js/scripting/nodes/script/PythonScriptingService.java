@@ -115,7 +115,7 @@ final class PythonScriptingService extends ScriptingService {
             final var fileStoreHandler = NotInWorkflowWriteFileStoreHandler.create();
             m_interactiveSession = new PythonScriptingSession(pythonCommand,
                 PythonScriptingService.this::addConsoleOutputEvent, fileStoreHandler);
-            m_interactiveSession.setupIO(workflowControl.getInputData(), workflowControl.getNC().getNrOutPorts(),
+            m_interactiveSession.setupIO(workflowControl.getInputData(), workflowControl.getNrOutPorts(),
                 new ExecutionMonitor());
         }
 
