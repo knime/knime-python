@@ -52,7 +52,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Callable, Dict, List
 import knime_schema as ks
 
-from utils import parse_version, Version
+from knime_utils import parse_version, Version
 
 
 def _get_parameters(obj) -> Dict[str, "_BaseParameter"]:
@@ -91,24 +91,24 @@ def _extract_parameters(obj, for_dialog: bool) -> dict:
 def inject_parameters(
     obj,
     parameters: dict,
-    extension_version=None,
+    parameters_version=None,
     fail_on_missing: bool = True,
 ) -> None:
-    extension_version = parse_version(extension_version)
-    _inject_parameters(obj, parameters["model"], extension_version, fail_on_missing)
+    parameters_version = parse_version(parameters_version)
+    _inject_parameters(obj, parameters["model"], parameters_version, fail_on_missing)
 
 
 def _inject_parameters(
     obj,
     parameters: dict,
-    extension_version: Version,
+    parameters_version: Version,
     fail_on_missing: bool,
 ) -> None:
     for name, param_obj in _get_parameters(obj).items():
-        if param_obj._since_version <= extension_version:
+        if param_obj._since_version <= parameters_version:
             if name in parameters:
                 param_obj._inject(
-                    obj, parameters[name], extension_version, fail_on_missing
+                    obj, parameters[name], parameters_version, fail_on_missing
                 )
             elif fail_on_missing:
                 raise ValueError(f"No value available for parameter '{name}'")
@@ -128,7 +128,7 @@ def _validate_parameters(obj, parameters: dict, version: Version) -> str:
             if name in parameters:
                 param_obj._validate(parameters[name], version)
             else:
-                raise ValueError(f"Cannot validate parameter '{name}'.")
+                raise ValueError(f"Value missing for parameter {name}.")
 
 
 def validate_specs(obj, specs) -> None:
@@ -287,12 +287,10 @@ class _BaseParameter(ABC):
             obj.__parameters__[self._name] = self._default_value
             return self._default_value
 
-    def _inject(self, obj, value, extension_version=None, fail_on_missing=True):
-        # TODO only set if the parameter was available in the version
+    def _inject(self, obj, value, parameters_version=None, fail_on_missing=True):
         self.__set__(obj, value)
 
     def __set__(self, obj, value):
-        # TODO: version support
         if not hasattr(obj, "__kind__"):
             # obj is the root parameterised object
             _create_param_dict_if_not_exists(obj)
@@ -302,7 +300,6 @@ class _BaseParameter(ABC):
         obj.__parameters__[self._name] = value
 
     def __str__(self):
-        # return f"\n\t - name: {self._name}\n\t - label: {self._label}\n\t - value: {self._value}"
         return f"\n\t - name: {self._name}\n\t - label: {self._label}\n\t"
 
     # TODO does version make sense here?
@@ -827,9 +824,11 @@ def parameter_group(label: str):
         def __set__(self, obj, values):
             raise RuntimeError("Cannot set parameter group values directly.")
 
-        def _inject(self, obj, values, extension_version, fail_on_missing):
+        def _inject(self, obj, values, parameters_version, fail_on_missing):
             param_holder = _get_param_holder(self, obj)
-            _inject_parameters(param_holder, values, extension_version, fail_on_missing)
+            _inject_parameters(
+                param_holder, values, parameters_version, fail_on_missing
+            )
 
         def __str__(self):
             return f"\tGroup name: {self._name}\n\tGroup label: {self._label}"
@@ -867,11 +866,8 @@ def parameter_group(label: str):
 
         def _extract_ui_schema(self, name, parent_scope: _Scope, version=None):
             scope = parent_scope.create_child(name, is_group=True)
-            version = parse_version(version)
             elements = _extract_ui_schema_elements(self, version, scope)
-            # TODO how do we get the name in case of composition? Pass name as parameter!
-            # TODO treat first level groups as sections and deeper nested groups as groups
-            # TODO can we have nested sections?
+
             if scope.level() == 1:
                 group_type = "Section"
             else:

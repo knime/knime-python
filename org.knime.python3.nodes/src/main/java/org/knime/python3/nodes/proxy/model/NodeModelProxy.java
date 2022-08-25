@@ -93,9 +93,8 @@ public interface NodeModelProxy extends AsynchronousCloseable<RuntimeException>,
 
     /**
      * @param settings
-     * @param extensionVersion
      */
-    void loadValidatedSettings(JsonNodeSettings settings, String extensionVersion);
+    void loadValidatedSettings(JsonNodeSettings settings);
 
 
 

@@ -60,10 +60,9 @@ public interface PythonNodeDialogProxy {
      * @param parameters current node configuration
      * @param portObjectSpecs specs of all input port objects
      * @param extensionVersion the version of the installed extension
-     * @param parametersVersion the version of the extension the settings were created with
      * @return the representation of the dialog e.g. JSON Forms
      */
-    String getDialogRepresentation(String parameters, PythonPortObjectSpec[] portObjectSpecs, String extensionVersion, String parametersVersion);
+    String getDialogRepresentation(String parameters, PythonPortObjectSpec[] portObjectSpecs, String extensionVersion);
 
     /**
      * @return the node's settings encoded as JSON

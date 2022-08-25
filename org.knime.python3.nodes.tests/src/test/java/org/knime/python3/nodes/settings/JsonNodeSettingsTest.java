@@ -144,7 +144,6 @@ public class JsonNodeSettingsTest {
     }
 
     private static void addVersion(final NodeSettingsWO settings, final String version) {
-//        settings.addString("version" + SettingsModel.CFGKEY_INTERNAL, version);
         settings.addString("extension_version" + SettingsModel.CFGKEY_INTERNAL, version);
     }
 
