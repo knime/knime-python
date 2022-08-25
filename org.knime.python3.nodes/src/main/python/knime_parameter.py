@@ -52,7 +52,6 @@ from abc import ABC, abstractmethod
 from typing import Any, Callable, Dict, List
 import knime_schema as ks
 
-
 from utils import parse_version, Version
 
 
@@ -115,18 +114,21 @@ def _inject_parameters(
                 raise ValueError(f"No value available for parameter '{name}'")
 
 
-def validate_parameters(obj, parameters: dict) -> str:
+def validate_parameters(obj, parameters: dict, version: str = None) -> str:
     """
     Perform validation on the individual parameters of obj.
     """
-    return _validate_parameters(obj, parameters["model"])
+    version = parse_version(version)
+    return _validate_parameters(obj, parameters["model"], version)
 
 
-def _validate_parameters(obj, parameters: dict) -> str:
-    for name, param in _get_parameters(obj).items():
-        # TODO test if that also works for parameter groups
-        if name in parameters:
-            param._validate(parameters[name])
+def _validate_parameters(obj, parameters: dict, version: Version) -> str:
+    for name, param_obj in _get_parameters(obj).items():
+        if param_obj._since_version <= version:
+            if name in parameters:
+                param_obj._validate(parameters[name], version)
+            else:
+                raise ValueError(f"Cannot validate parameter '{name}'.")
 
 
 def validate_specs(obj, specs) -> None:
@@ -304,7 +306,7 @@ class _BaseParameter(ABC):
         return f"\n\t - name: {self._name}\n\t - label: {self._label}\n\t"
 
     # TODO does version make sense here?
-    def _validate(self, value):
+    def _validate(self, value, version=None):
         self._validator(value)
 
     def _validate_specs(self, specs):
@@ -832,9 +834,9 @@ def parameter_group(label: str):
         def __str__(self):
             return f"\tGroup name: {self._name}\n\tGroup label: {self._label}"
 
-        def _validate(self, values):
+        def _validate(self, values, version):
             # validate individual parameters
-            _validate_parameters(self, values)
+            _validate_parameters(self, values, version)
 
             # use the "internal" group validator if exists
             if (

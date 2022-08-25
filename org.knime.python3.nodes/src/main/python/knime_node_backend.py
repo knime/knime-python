@@ -280,7 +280,7 @@ class _PythonNodeProxy:
         extension_version: str,
         parameters_version: str,
     ):
-        # self.setParameters(parameters, extension_version, parameters_version, False)
+        # keep parameters_version in case we need it for versioning
         self.setParameters(parameters, extension_version, False)
 
         inputs = self._specs_to_python(specs)
@@ -313,7 +313,6 @@ class _PythonNodeProxy:
         self,
         parameters: str,
         extension_version: str,
-        # parameters_version: str = None,
         fail_on_missing: bool = False,
     ) -> None:
         parameters_dict = json.loads(parameters)
@@ -321,14 +320,13 @@ class _PythonNodeProxy:
             self._node,
             parameters_dict,
             extension_version,
-            # parameters_version,
             fail_on_missing,
         )
 
     def validateParameters(self, parameters: str, version: str) -> None:
         parameters_dict = json.loads(parameters)
         try:
-            kp.validate_parameters(self._node, parameters_dict)
+            kp.validate_parameters(self._node, parameters_dict, version)
             return None
         except BaseException as error:
             return str(error)
