@@ -81,7 +81,9 @@ public final class DelegatingJsonSettingsDataService implements JsonNodeSettings
      * @param proxyProvider provides proxy objects
      * @param extensionVersion the version of the extension
      */
-    public DelegatingJsonSettingsDataService(final Supplier<NodeDialogProxy> proxyProvider, final String extensionVersion) {
+    public DelegatingJsonSettingsDataService(
+        final Supplier<NodeDialogProxy> proxyProvider,
+        final String extensionVersion) {
         m_proxyProvider = proxyProvider;
         m_extensionVersion = extensionVersion;
     }
@@ -90,10 +92,13 @@ public final class DelegatingJsonSettingsDataService implements JsonNodeSettings
     public String fromNodeSettingsToObject(final Map<SettingsType, NodeSettingsRO> settings, final PortObjectSpec[] specs) {
         try (var proxy = m_proxyProvider.get()) {
             var specsWithoutFlowVars = Stream.of(specs).skip(1).toArray(PortObjectSpec[]::new);
+
+            // this is assigned here to accommodate changing the set of parameters during development
             m_lastSettingsSchema = proxy.getSettingsSchema(m_extensionVersion);
             var jsonSettings = loadSettings(settings.get(SettingsType.MODEL));
-            // note that we always use the current extension version below, since we want the dialog to follow the current extension's
-            // set of parameters. Missing parameters will be set to their default values.
+
+            // note that we always use the current extension version below, since we want the dialog to follow the
+            // current extension's set of parameters. Missing parameters will be set to their default values.
             return proxy.getDialogRepresentation(jsonSettings, specsWithoutFlowVars, m_extensionVersion);
         }
     }

@@ -83,8 +83,13 @@ final class FluentPythonNodeExtension implements PyNodeExtension {
 
     private final String m_version;
 
-    FluentPythonNodeExtension(final String id, final String extensionModule, final PythonNode[] nodes,
-        final List<CategoryExtension.Builder> categoryBuilders, final PythonNodeGatewayFactory gatewayFactory, final String version) {
+    FluentPythonNodeExtension(
+        final String id,
+        final String extensionModule,
+        final PythonNode[] nodes,
+        final List<CategoryExtension.Builder> categoryBuilders,
+        final PythonNodeGatewayFactory gatewayFactory,
+        final String version) {
         m_id = id;
         m_extensionModule = extensionModule;
         m_nodes = Stream.of(nodes).collect(toMap(PythonNode::getId, Function.identity()));

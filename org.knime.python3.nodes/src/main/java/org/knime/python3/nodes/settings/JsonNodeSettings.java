@@ -64,7 +64,7 @@ import org.knime.core.node.defaultnodesettings.SettingsModel;
  */
 public final class JsonNodeSettings {
 
-    static final String EXTENSION_VERSION = "extension_version" + SettingsModel.CFGKEY_INTERNAL;;
+    static final String EXTENSION_VERSION = "extension_version" + SettingsModel.CFGKEY_INTERNAL;
 
     private final String m_parameters;
 
@@ -91,9 +91,11 @@ public final class JsonNodeSettings {
      * @param settings containing the stored settings
      * @param schema of the settings
      * @param version the extension version
-     * @throws InvalidSettingsException if the settings are invalid
      */
-    JsonNodeSettings(final NodeSettingsRO settings, final String schema, final String version) throws InvalidSettingsException {
+    JsonNodeSettings(
+        final NodeSettingsRO settings,
+        final String schema,
+        final String version) {
         m_schema = schema;
         var preprocessed = preprocess(settings);
         m_parameters = JsonNodeSettingsMapperUtil.nodeSettingsToJsonString(preprocessed);

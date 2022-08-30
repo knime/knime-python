@@ -50,6 +50,7 @@ package org.knime.python3.nodes.settings;
 
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
+import org.knime.core.node.config.base.ConfigBaseRO;
 import org.knime.core.node.defaultnodesettings.SettingsModel;
 
 /**
@@ -59,7 +60,7 @@ import org.knime.core.node.defaultnodesettings.SettingsModel;
  */
 public final class JsonNodeSettingsSchema {
 
-    private static final String EXTENSION_VERSION = "extension_version" + SettingsModel.CFGKEY_INTERNAL;;
+    private static final String EXTENSION_VERSION = "extension_version" + SettingsModel.CFGKEY_INTERNAL;
 
     private final String m_schema;
 
@@ -81,25 +82,43 @@ public final class JsonNodeSettingsSchema {
      * @return the version the settings were saved with
      * @throws InvalidSettingsException if settings are missing the version field
      */
-    public static String readVersion(final NodeSettingsRO settings) throws InvalidSettingsException {
+    public static String readVersion(final ConfigBaseRO settings) throws InvalidSettingsException {
         try {
             // settings won't have the appropriate field if they were saved before versioning
             // was introduced. In this case the version defaults to 0.0.0.
             return settings.getString(EXTENSION_VERSION);
-        } catch (Exception e) {
+        } catch (InvalidSettingsException e) { //NOSONAR
             return "0.0.0";
         }
     }
 
     /**
-     * Creates a new instance with the same schema but the settings stored in {@code settings}.
+     * Creates a new instance of JsonNodeSettings with this schema and the settings stored in {@code settings}.
+     * The version attached to the JsonNodeSettings object is either the version the settings were saved with,
+     * or the current extension version, depending on how this JsonNodeSettingsSchema object is instantiated.
      *
      * @param settings to load into the newly created object
-     * @return a new instance with the same schema as this instance but the values from settings
+     * @return a new instance of JsonNodeSettings with this schema and the values from settings
      * @throws InvalidSettingsException if the settings are invalid
      */
-    public JsonNodeSettings createFromSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
+    public JsonNodeSettings createFromSettings(
+        final NodeSettingsRO settings) throws InvalidSettingsException {
         return new JsonNodeSettings(settings, m_schema, readVersion(settings));
+
+    }
+
+    /**
+     * Creates a new instance of JsonNodeSettings with this schema and the settings stored in {@code settings}.
+     * The version attached to the JsonNodeSettings object is the current extension version, which is needed
+     * to enable detection of missing parameters in the settings when performing validation on the Python side.
+     *
+     * @param settings to load into the newly created object
+     * @return a new instance of JsonNodeSettings with this schema and the values from settings
+     */
+    public JsonNodeSettings createFromSettingsForValidation(
+        final NodeSettingsRO settings) {
+        return new JsonNodeSettings(settings, m_schema, m_version);
+
     }
 
     /**

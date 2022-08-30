@@ -51,8 +51,11 @@ Contains the implementation of the Parameter Dialogue API for building native Py
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Dict, List
 import knime_schema as ks
+import logging
 
 from knime_utils import parse_version, Version
+
+LOGGER = logging.getLogger("Python backend")
 
 
 def _get_parameters(obj) -> Dict[str, "_BaseParameter"]:
@@ -104,6 +107,13 @@ def _inject_parameters(
     parameters_version: Version,
     fail_on_missing: bool,
 ) -> None:
+    """
+    This method injects the provided values into the parameter descriptors of the parameterised object,
+    which can be a node or a parameter group.
+
+    Note that the default value for a parameter will be set if the provided value violates validation
+    (see the ._inject method of BaseParameter).
+    """
     for name, param_obj in _get_parameters(obj).items():
         if param_obj._since_version <= parameters_version:
             if name in parameters:
@@ -111,6 +121,8 @@ def _inject_parameters(
                     obj, parameters[name], parameters_version, fail_on_missing
                 )
             elif fail_on_missing:
+                # Clarify behaviour for missing parameters
+                # TODO https://knime-com.atlassian.net/browse/AP-19387
                 raise ValueError(f"No value available for parameter '{name}'")
 
 
@@ -123,12 +135,21 @@ def validate_parameters(obj, parameters: dict, version: str = None) -> str:
 
 
 def _validate_parameters(obj, parameters: dict, version: Version) -> str:
+    """
+    This method will raise a ValueError if a parameter is invalid, or if a parameter
+    was missing in the version the setting being validated were saved with.
+    """
     for name, param_obj in _get_parameters(obj).items():
         if param_obj._since_version <= version:
             if name in parameters:
                 param_obj._validate(parameters[name], version)
             else:
-                raise ValueError(f"Value missing for parameter {name}.")
+                # one of the possible causes of this is that the parameter was
+                # not available in the version of the saved settings being validated
+
+                # Clairfy behaviour for missing parameters
+                # TODO https://knime-com.atlassian.net/browse/AP-19387
+                LOGGER.warning(f"Missing value for parameter '{name}'.")
 
 
 def validate_specs(obj, specs) -> None:
@@ -147,7 +168,7 @@ def extract_schema(obj, extension_version=None, specs=None) -> dict:
     }
 
 
-def _extract_schema(obj, extension_version, specs):
+def _extract_schema(obj, extension_version: Version, specs):
     properties = {}
     for name, param_obj in _get_parameters(obj).items():
         if param_obj._since_version <= extension_version:
@@ -166,7 +187,6 @@ def extract_ui_schema(obj, extension_version=None) -> dict:
 
 
 def _extract_ui_schema_elements(obj, extension_version, scope=None) -> dict:
-    # TODO discuss with UIEXT if we can unpack the dicts
     if scope is None:
         scope = _Scope("#/properties/model/properties")
     elements = []

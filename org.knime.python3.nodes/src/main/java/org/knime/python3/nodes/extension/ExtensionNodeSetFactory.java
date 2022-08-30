@@ -195,7 +195,9 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
             m_extensionVersion = extension.getVersion();
             var proxyProvider = extension.createProxyProvider(nodeId);
             m_proxyProvider = proxyProvider;
-            m_dialogSettingsService = new DelegatingJsonSettingsDataService(m_proxyProvider::getNodeDialogProxy, m_extensionVersion);
+            m_dialogSettingsService = new DelegatingJsonSettingsDataService(
+                m_proxyProvider::getNodeDialogProxy,
+                m_extensionVersion);
             super.loadAdditionalFactorySettings(config);
         }
 
