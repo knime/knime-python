@@ -20,6 +20,28 @@ The code is organized as follows:
 * _org.knime.python3.scripting.nodes_: Implementation of Python scripting nodes for KNIME AP
 * _org.knime.python3.views_: Library for creating node views in Python
 
+## Tests
+
+Test the unit tests locally:
+1. Pip install pytest
+2. pytest
+
+Test the unit tests locally and see the coverage:
+1. Pip install coverage
+2. coverage run -m pytest
+3. coverage report # to get a report
+4. coverage html   # to transform report to an html site for better view
+
+Additionally, you can enhance VS Code to see the coverage:
+1. Install the VS Code extension `Coverage Gutters`
+2. coverage xml (after you did `coverage run -m pytest` and `coverage report`; this transforms the report to xml, which is read by VS Code)
+3. Left bottom: click `watch` to see the coverage generally indicated
+
+You can also test within VS Code:
+1. Setup a testing framework (e.g. pytest) by using the `Testing` icon at the left sidebar
+2. Regularly execute tests from there
+
+
 ## Development Notes
 
 You can find instructions on how to work with our code or develop extensions for KNIME Analytics Platform in the _knime-sdk-setup_ repository on [BitBucket](https://bitbucket.org/KNIME/knime-sdk-setup) or [GitHub](http://github.com/knime/knime-sdk-setup).
