@@ -65,7 +65,6 @@ import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
-import org.knime.python3.CondaPythonCommand;
 import org.knime.python3.PythonCommand;
 import org.knime.scripting.editor.ScriptingService.ConsoleText;
 
@@ -95,9 +94,8 @@ final class PythonScriptNodeModel extends NodeModel {
     @Override
     protected BufferedDataTable[] execute(final BufferedDataTable[] inData, final ExecutionContext exec)
         throws Exception {
-        // TODO(AP-19331) use the command from the configuration
-        final PythonCommand pythonCommand = new CondaPythonCommand("/home/benjamin/miniconda3",
-            "/home/benjamin/miniconda3/envs/knime-python-scripting-pa7");
+        final PythonCommand pythonCommand =
+            ExecutableSelectionUtils.getPythonCommand(m_settings.getExecutableSelection());
 
         try (final var session =
             new PythonScriptingSession(pythonCommand, this::handleConsoleText, getWriteFileStoreHandler())) {

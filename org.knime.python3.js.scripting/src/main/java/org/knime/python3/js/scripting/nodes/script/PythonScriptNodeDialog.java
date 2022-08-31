@@ -56,6 +56,7 @@ import org.knime.core.webui.data.rpc.json.impl.JsonRpcServer;
 import org.knime.core.webui.node.dialog.NodeDialog;
 import org.knime.core.webui.node.dialog.SettingsType;
 import org.knime.core.webui.node.dialog.TextNodeSettingsService;
+import org.knime.core.webui.node.dialog.TextVariableSettingsService;
 import org.knime.core.webui.page.Page;
 
 final class PythonScriptNodeDialog extends NodeDialog {
@@ -88,6 +89,11 @@ final class PythonScriptNodeDialog extends NodeDialog {
 
     @Override
     protected TextNodeSettingsService getNodeSettingsService() {
-        return PythonScriptNodeSettings.createSettingsService();
+        return PythonScriptNodeSettings.createNodeSettingsService();
+    }
+
+    @Override
+    protected Optional<TextVariableSettingsService> getVariableSettingsService() {
+        return Optional.of(PythonScriptNodeSettings.createVariableSettingsService());
     }
 }
