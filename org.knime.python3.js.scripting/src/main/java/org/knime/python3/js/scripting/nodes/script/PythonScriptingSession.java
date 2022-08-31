@@ -52,7 +52,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -67,17 +66,18 @@ import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.util.ThreadUtils;
-import org.knime.python3.DefaultPythonGateway;
+import org.knime.python3.Activator;
 import org.knime.python3.Python3SourceDirectory;
 import org.knime.python3.PythonCommand;
 import org.knime.python3.PythonGateway;
-import org.knime.python3.PythonPath.PythonPathBuilder;
+import org.knime.python3.PythonGatewayFactory.PythonGatewayDescription;
 import org.knime.python3.arrow.Python3ArrowSourceDirectory;
 import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.arrow.PythonArrowTableConverter;
 import org.knime.python3.js.scripting.PythonJsScriptingEntryPoint;
 import org.knime.python3.js.scripting.PythonJsScriptingSourceDirectory;
 import org.knime.python3.js.scripting.Utf8StreamConsumer;
+import org.knime.python3.views.Python3ViewsSourceDirectory;
 import org.knime.scripting.editor.ScriptingService.ConsoleText;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -147,13 +147,13 @@ final class PythonScriptingSession implements AutoCloseable {
     private static PythonGateway<PythonJsScriptingEntryPoint> createGateway(final PythonCommand pythonCommand)
         throws IOException, InterruptedException {
         // TODO(AP-19430) set working directory to workflow dir
-        // TODO(AP-19331) use kernel queue
-        final var pythonPathBuilder = new PythonPathBuilder() //
-            .add(Python3SourceDirectory.getPath()) //
-            .add(Python3ArrowSourceDirectory.getPath()); //
-        //            .add(Python3ViewsSourceDirectory.getPath());
-        return DefaultPythonGateway.create(pythonCommand.createProcessBuilder(), LAUNCHER.toAbsolutePath().toString(),
-            PythonJsScriptingEntryPoint.class, Collections.emptyList(), pythonPathBuilder.build());
+        final var gatewayDescription = PythonGatewayDescription
+            .builder(pythonCommand, LAUNCHER.toAbsolutePath(), PythonJsScriptingEntryPoint.class) //
+            .addToPythonPath(Python3SourceDirectory.getPath()) //
+            .addToPythonPath(Python3ArrowSourceDirectory.getPath()) //
+            .addToPythonPath(Python3ViewsSourceDirectory.getPath()) //
+            .build();
+        return Activator.GATEWAY_FACTORY.create(gatewayDescription);
     }
 
     @Override
