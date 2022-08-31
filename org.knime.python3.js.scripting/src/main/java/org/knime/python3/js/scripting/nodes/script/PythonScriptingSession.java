@@ -146,7 +146,7 @@ final class PythonScriptingSession implements AutoCloseable {
 
     private static PythonGateway<PythonJsScriptingEntryPoint> createGateway(final PythonCommand pythonCommand)
         throws IOException, InterruptedException {
-        // TODO(AP-19331) set working directory to workflow dir
+        // TODO(AP-19430) set working directory to workflow dir
         // TODO(AP-19331) use kernel queue
         final var pythonPathBuilder = new PythonPathBuilder() //
             .add(Python3SourceDirectory.getPath()) //
