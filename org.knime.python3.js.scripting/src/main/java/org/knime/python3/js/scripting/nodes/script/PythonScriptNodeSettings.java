@@ -48,6 +48,8 @@
  */
 package org.knime.python3.js.scripting.nodes.script;
 
+import static org.knime.python3.js.scripting.nodes.script.ExecutableSelectionUtils.EXEC_SELECTION_PREF_ID;
+
 import java.util.Map;
 
 import org.knime.core.node.InvalidSettingsException;
@@ -55,7 +57,11 @@ import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.webui.node.dialog.JsonNodeSettingsService;
+import org.knime.core.webui.node.dialog.JsonVariableSettingsService;
 import org.knime.core.webui.node.dialog.SettingsType;
+import org.knime.core.webui.node.dialog.TextNodeSettingsService;
+import org.knime.core.webui.node.dialog.TextVariableSettingsService;
+import org.knime.core.webui.node.dialog.VariableSettingsWO;
 
 import com.google.gson.Gson;
 
@@ -70,6 +76,8 @@ final class PythonScriptNodeSettings {
 
     private static final String SCRIPT_CFG_KEY = "script";
 
+    private static final String EXECUTABLE_SELECTION_CFG_KEY = "python3_command";
+
     private Settings m_settings;
 
     PythonScriptNodeSettings() {
@@ -78,6 +86,10 @@ final class PythonScriptNodeSettings {
 
     String getScript() {
         return m_settings.script;
+    }
+
+    String getExecutableSelection() {
+        return m_settings.executableSelection;
     }
 
     void saveSettingsTo(final NodeSettingsWO settings) {
@@ -90,11 +102,15 @@ final class PythonScriptNodeSettings {
 
     private static void saveSettings(final Settings s, final NodeSettingsWO settings) {
         settings.addString(SCRIPT_CFG_KEY, s.script);
+        // NB: only configured via flow variables
+        settings.addString(EXECUTABLE_SELECTION_CFG_KEY, EXEC_SELECTION_PREF_ID);
     }
 
     private static Settings loadSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
         final var script = settings.getString(SCRIPT_CFG_KEY);
-        return new Settings(script);
+        // NB: might be overwritten by a flow variable
+        final var executableSelection = settings.getString(EXECUTABLE_SELECTION_CFG_KEY);
+        return new Settings(script, executableSelection);
     }
 
     /** For JSON serialization */
@@ -102,36 +118,43 @@ final class PythonScriptNodeSettings {
 
         private final String script;
 
+        private final String executableSelection;
+
         Settings() {
             // Defaults are given here
             // TODO(AP-19335) provide the template selection if the script is emtpy
             script = "";
+            executableSelection = EXEC_SELECTION_PREF_ID;
+
         }
 
         @SuppressWarnings("hiding")
-        Settings(final String script) {
+        Settings(final String script, final String executableSelection) {
             this.script = script;
+            this.executableSelection = executableSelection;
         }
     }
 
-    static JsonNodeSettingsService<Settings> createSettingsService() {
-        return new SettingsService();
+    static TextNodeSettingsService createNodeSettingsService() {
+        return new NodeSettingsService();
     }
 
-    private static final class SettingsService implements JsonNodeSettingsService<Settings> {
+    static TextVariableSettingsService createVariableSettingsService() {
+        return new VariableSettingsService();
+    }
 
+    private static final class NodeSettingsService extends JsonSettingsConverter
+        implements JsonNodeSettingsService<Settings> {
         @Override
         public void getDefaultNodeSettings(final Map<SettingsType, NodeSettingsWO> settings,
             final PortObjectSpec[] specs) {
-            toNodeSettingsFromObject(new Settings(), settings);
+            saveSettings(new Settings(), settings.get(SettingsType.MODEL));
         }
 
         @Override
         public void toNodeSettingsFromObject(final Settings settingsObj,
             final Map<SettingsType, NodeSettingsWO> settings) {
-            final var modelSettings = settings.get(SettingsType.MODEL);
-            saveSettings(settingsObj, modelSettings);
-
+            saveSettings(settingsObj, settings.get(SettingsType.MODEL));
         }
 
         @Override
@@ -144,16 +167,34 @@ final class PythonScriptNodeSettings {
                 throw new IllegalStateException(e.getMessage(), e);
             }
         }
+    }
+
+    private static final class VariableSettingsService extends JsonSettingsConverter
+        implements JsonVariableSettingsService<Settings> {
 
         @Override
+        public void toVariableSettingsFromObject(final Settings settingsObj,
+            final Map<SettingsType, VariableSettingsWO> settings) {
+            if (!settingsObj.executableSelection.isEmpty()) {
+                try {
+                    settings.get(SettingsType.MODEL).addUsedVariable(EXECUTABLE_SELECTION_CFG_KEY,
+                        settingsObj.executableSelection);
+                } catch (final InvalidSettingsException e) {
+                    // Cannot happen because we have a setting with the key EXECUTABLE_SELECTION_CFG_KEY
+                    throw new IllegalStateException(e);
+                }
+            }
+        }
+    }
+
+    private static class JsonSettingsConverter {
+
         public Settings fromJson(final String json) {
             return GSON.fromJson(json, Settings.class);
         }
 
-        @Override
         public String toJson(final Settings obj) {
             return GSON.toJson(obj);
         }
-
     }
 }
