@@ -48,15 +48,20 @@
  */
 package org.knime.python3.js.scripting.nodes.script;
 
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
+import org.knime.conda.CondaEnvironmentDirectory;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.filestore.internal.NotInWorkflowWriteFileStoreHandler;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.port.PortObjectSpec;
-import org.knime.python3.CondaPythonCommand;
-import org.knime.python3.PythonCommand;
+import org.knime.core.node.workflow.FlowVariable;
+import org.knime.python3.js.scripting.nodes.script.PythonScriptingService.ExecutableOption.ExecutableOptionType;
 import org.knime.scripting.editor.ScriptingService;
 
 /**
@@ -65,6 +70,8 @@ import org.knime.scripting.editor.ScriptingService;
  * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
  */
 final class PythonScriptingService extends ScriptingService {
+
+    private Map<String, ExecutableOption> m_executableOptions = Collections.emptyMap();
 
     // TODO(AP-19357) close the session when the dialog is closed
     // TODO(AP-19332) should the Python session be started immediately? (or whenever the frontend requests it?)
@@ -76,6 +83,35 @@ final class PythonScriptingService extends ScriptingService {
         super(PythonLanguageServer.instance().connect());
         // TODO(AP-19357) stop the language server when the dialog is closed
         // TODO(AP-19338) make language server configurable
+    }
+
+    private ExecutableOption getExecutableOption(final String id) {
+        if (!m_executableOptions.containsKey(id)) {
+            final Map<String, FlowVariable> allFlowVars =
+                getWorkflowControl().getFlowObjectStack().getAllAvailableFlowVariables();
+            if (allFlowVars.containsKey(id)) {
+                var value = allFlowVars.get(id).getStringValue();
+                if (value != null) {
+                    // String variable selected
+                    if (ExecutableSelectionUtils.isPathToCondaEnv(value)) {
+                        // Points to a conda environment
+                        return new ExecutableOption(ExecutableOptionType.STRING_VAR, id,
+                            CondaEnvironmentDirectory.getPythonExecutableString(value),
+                            Paths.get(value).getFileName().toString(), value);
+                    } else {
+                        // Points to single Python executable
+                        return new ExecutableOption(ExecutableOptionType.STRING_VAR, id, value, null, null);
+                    }
+                } else {
+                    // Variable selected but it is not a string -> not usable
+                    return new ExecutableOption(ExecutableOptionType.MISSING_VAR, id, null, null, null);
+                }
+            } else {
+                // Missing variable selected
+                return new ExecutableOption(ExecutableOptionType.MISSING_VAR, id, null, null, null);
+            }
+        }
+        return m_executableOptions.get(id);
     }
 
     @Override
@@ -92,11 +128,21 @@ final class PythonScriptingService extends ScriptingService {
     public final class PythonJsonRpcService extends JsonRpcService {
 
         /**
+         * Notify that a new dialog has been opened. Must be called before calling any other method of the RPC server.
+         */
+        public void openedDialog() {
+            // Set the executable options with the currently available flow variables
+            m_executableOptions =
+                ExecutableSelectionUtils.getExecutableOptions(getWorkflowControl().getFlowObjectStack());
+        }
+
+        /**
          * Start the interactive Python session.
          *
+         * @param executableSelection the id of the selected executable option
          * @throws Exception
          */
-        public void startInteractive() throws Exception {
+        public void startInteractive(final String executableSelection) throws Exception {
             // TODO(AP-19332) Error handling
             if (m_interactiveSession != null) {
                 m_interactiveSession.close();
@@ -105,10 +151,8 @@ final class PythonScriptingService extends ScriptingService {
 
             // Start the interactive Python session and setup the IO
             final var workflowControl = getWorkflowControl();
-
-            // TODO(AP-19331) use the command from the configuration
-            final PythonCommand pythonCommand = new CondaPythonCommand("/home/benjamin/miniconda3",
-                "/home/benjamin/miniconda3/envs/knime-python-scripting-pa7");
+            final var pythonCommand =
+                ExecutableSelectionUtils.getPythonCommand(getExecutableOption(executableSelection));
 
             // TODO do we need to do more with the NotInWorkflowWriteFileStoreHandler?
             // TODO report the progress of converting the tables using the ExecutionMonitor?
@@ -152,6 +196,112 @@ final class PythonScriptingService extends ScriptingService {
                 }
             }
             return columnNames.toArray(String[][]::new);
+        }
+
+        /**
+         * @param executableSelection the id of the selected executable option (which might not be available anymore)
+         * @return a sorted list of executable options that the user can select from
+         */
+        public List<ExecutableOption> getExecutableOptions(final String executableSelection) {
+            final var availableOptions = m_executableOptions.values().stream().sorted((o1, o2) -> {
+                if (!o1.type.equals(o2.type)) {
+                    return o1.type.compareTo(o2.type);
+                }
+                return o1.id.compareTo(o2.id);
+            }).collect(Collectors.toList());
+
+            if (!m_executableOptions.containsKey(executableSelection)) {
+                // The selected option is not available: String variable selected or variable missing
+                // We add the option to the available options such that the frontend can display it nicely
+                availableOptions.add(getExecutableOption(executableSelection));
+            }
+
+            return availableOptions;
+        }
+
+        /**
+         * @param id the identifier of the executable option
+         * @return information about the executable
+         */
+        public ExecutableInfo getExecutableInfo(final String id) {
+            return ExecutableSelectionUtils.getExecutableInfo(getExecutableOption(id));
+        }
+    }
+
+    /** Information about an Python executable */
+    public static class ExecutableInfo {
+        public final String pythonVersion;
+
+        public final List<CondaPackageInfo> packages;
+
+        @SuppressWarnings("hiding")
+        ExecutableInfo(final String pythonVersion, final List<CondaPackageInfo> packages) {
+            this.pythonVersion = pythonVersion;
+            this.packages = packages;
+        }
+    }
+
+    /** Information about an installed Conda package */
+    public static class CondaPackageInfo {
+        public final String name;
+
+        public final String version;
+
+        public final String build;
+
+        public final String channel;
+
+        @SuppressWarnings("hiding")
+        CondaPackageInfo(final String name, final String version, final String build, final String channel) {
+            this.name = name;
+            this.version = version;
+            this.build = build;
+            this.channel = channel;
+        }
+    }
+
+    /** An option to set as a Python executable */
+    public static class ExecutableOption {
+        /** The type of the option */
+        public final ExecutableOptionType type;
+
+        /** "" for the preference options or the name of the flow variable otherwise */
+        public final String id;
+
+        public final String pythonExecutable;
+
+        public final String condaEnvName;
+
+        public final String condaEnvDir;
+
+        @SuppressWarnings("hiding")
+        ExecutableOption(final ExecutableOptionType type, final String id, final String pythonExecutable,
+            final String condaEnvName, final String condaEnvDir) {
+            this.type = type;
+            this.id = id;
+            this.pythonExecutable = pythonExecutable;
+            this.condaEnvName = condaEnvName;
+            this.condaEnvDir = condaEnvDir;
+        }
+
+        public enum ExecutableOptionType {
+                /** Bundled on the preference page */
+                PREF_BUNDLED,
+
+                /** Conda on the preference page */
+                PREF_CONDA,
+
+                /** Manual on the preference page */
+                PREF_MANUAL,
+
+                /** Conda environment variable */
+                CONDA_ENV_VAR,
+
+                /** String variable that contains the path to a Python executable */
+                STRING_VAR,
+
+                /** A variable of any type that is missing now */
+                MISSING_VAR,
         }
     }
 }

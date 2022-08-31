@@ -61,11 +61,15 @@ export default Vue.extend({
     async mounted() {
         this.scriptingService = await createScriptingService();
         this.loading = false;
-        this.getScriptingService().startInteractive();
+        this.startInteractive();
         this.inputObjects = await this.getScriptingService().getInputObjects();
         registerMonacoInputColumnCompletions(this.inputObjects);
     },
     methods: {
+        startInteractive() {
+            // TODO(AP-19332) handle gracefully if starting the interactive session fails
+            this.getScriptingService().startInteractive(this.getScriptingService().getExecutableSelection());
+        },
         runSelectedLines() {
             const selection = this.getEditor().getSelection();
             if (selection) {
@@ -139,6 +143,9 @@ export default Vue.extend({
             // if not: Add quotes, else: don't add quotes
             this.getEditor().trigger('keyboard', 'type', { text: column });
         },
+        onExecutableChanged() {
+            this.startInteractive();
+        },
 
         // Null-safe access to editor and editor model
         getScriptingService(): PythonScriptingService {
@@ -204,7 +211,10 @@ export default Vue.extend({
           :input-objects="inputObjects"
           @column-clicked="onColumnClicked"
         />
-        <CondaEnvironment v-if="activeTab === 'conda_env'" />
+        <CondaEnvironment
+          v-if="activeTab === 'conda_env'"
+          @executable-changed="onExecutableChanged"
+        />
       </template>
 
       <template #bottomtabs="{ activeTab }">
