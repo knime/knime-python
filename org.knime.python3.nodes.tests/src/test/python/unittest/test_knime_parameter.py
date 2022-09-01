@@ -89,6 +89,13 @@ class Parameterized:
             raise ValueError(f"Length of string must not exceed 10!")
 
 
+class ParameterizedWithoutGroup:
+    int_param = kp.IntParameter("Int Parameter", "An integer parameter", 3)
+    double_param = kp.DoubleParameter("Double Parameter", "A double parameter", 1.5)
+    string_param = kp.StringParameter("String Parameter", "A string parameter", "foo")
+    bool_param = kp.BoolParameter("Boolean Parameter", "A boolean parameter", True)
+
+
 #### Secondary parameterised objects for testing composition: ####
 @kp.parameter_group("Parameter group to be used for multiple descriptor instances.")
 class ReusableGroup:
@@ -142,6 +149,7 @@ class NestedComposedParameterized:
 class ParameterTest(unittest.TestCase):
     def setUp(self):
         self.parameterized = Parameterized()
+        self.parameterized_without_group = ParameterizedWithoutGroup()
 
         self.maxDiff = None
 
@@ -572,7 +580,21 @@ class ParameterTest(unittest.TestCase):
                 ],
             },
         ]
-        description = kp.extract_parameter_descriptions(self.parameterized)
+        description, use_tabs = kp.extract_parameter_descriptions(self.parameterized)
+        self.assertTrue(use_tabs)
+        self.assertEqual(description, expected)
+
+        # Without a group -> only top level options
+        expected = [
+            {"name": "Int Parameter", "description": "An integer parameter"},
+            {"name": "Double Parameter", "description": "A double parameter"},
+            {"name": "String Parameter", "description": "A string parameter"},
+            {"name": "Boolean Parameter", "description": "A boolean parameter"},
+        ]
+        description, use_tabs = kp.extract_parameter_descriptions(
+            self.parameterized_without_group
+        )
+        self.assertFalse(use_tabs)
         self.assertEqual(description, expected)
 
     def test_inject_validates(self):
