@@ -51,7 +51,7 @@ Arrow implementation of the knime_types.
 from typing import Union
 
 import knime_types as kt
-import knime_arrow_struct_dict_encoding as kas
+import knime_arrow_struct_dict_encoding as kasde
 import pyarrow as pa
 import pyarrow.types as pat
 import numpy as np
@@ -91,7 +91,7 @@ def _pretty_type_string(dtype: pa.DataType):
     elif is_value_factory_type(dtype):
         # return f"LogicalType<{dtype.logical_type}>[{_pretty_type_string(dtype.storage_type)}]"
         return f"LogicalType[{_pretty_type_string(dtype.storage_type)}]"
-    elif kas.is_struct_dict_encoded(dtype):
+    elif kasde.is_struct_dict_encoded(dtype):
         return f"StructDictEncoded<key={dtype.key_type}>[{_pretty_type_string(dtype.value_type)}]"
     elif isinstance(dtype, pa.ExtensionType):
         return f"{str(dtype)}[{_pretty_type_string(dtype.storage_type)}]"
@@ -124,14 +124,14 @@ def _get_arrow_storage_to_ext_fn(dtype):
     if is_dict_encoded_value_factory_type(
         dtype
     ):  # if datatype is a StructDictEncodedLogicalTypeExtensionType
-        key_gen = kas.DictKeyGenerator()
+        key_gen = kasde.DictKeyGenerator()
         # gets conversion fct for nested dtypes
         storage_fn = _get_arrow_storage_to_ext_fn(dtype.storage_type) or _identity
 
         # dict encodes the data
         def wrap_and_struct_dict_encode(a):
             unencoded_storage = storage_fn(a)
-            encoded_storage = kas.create_storage_for_struct_dict_encoded_array(
+            encoded_storage = kasde.create_storage_for_struct_dict_encoded_array(
                 unencoded_storage,
                 key_gen,
                 value_type=dtype.value_type,
@@ -141,12 +141,12 @@ def _get_arrow_storage_to_ext_fn(dtype):
 
         return wrap_and_struct_dict_encode
 
-    elif kas.is_struct_dict_encoded(
+    elif kasde.is_struct_dict_encoded(
         dtype
     ):  # if datatype is a dict encoded pa.struct type
         # this is the base case: we found the dict encoded data and return the dict encoding function
-        key_gen = kas.DictKeyGenerator()
-        return lambda a: kas.struct_dict_encode(a, key_gen, key_type=dtype.key_type)
+        key_gen = kasde.DictKeyGenerator()
+        return lambda a: kasde.struct_dict_encode(a, key_gen, key_type=dtype.key_type)
 
     elif is_value_factory_type(dtype):  # if datatype is a LogicalTypeExtensionType
         # finds nested encoding function
@@ -228,7 +228,7 @@ def _get_array_to_storage_fn(dtype: pa.DataType):
         storage_fn = _get_array_to_storage_fn(dtype.value_type) or _identity
         return lambda a: storage_fn(a.dictionary_decode())
 
-    elif kas.is_struct_dict_encoded(
+    elif kasde.is_struct_dict_encoded(
         dtype
     ):  # if datatype is a dict encoded pa.struct type
         # this is the base case: we found the dict encoded data and return the dict decoding function
@@ -280,7 +280,7 @@ def _get_array_to_storage_fn(dtype: pa.DataType):
 def contains_knime_extension_type(dtype: pa.DataType):
     if (
         is_value_factory_type(dtype)
-        or kas.is_struct_dict_encoded(dtype)
+        or kasde.is_struct_dict_encoded(dtype)
         or is_dict_encoded_value_factory_type(dtype)
     ):
         return True
@@ -293,7 +293,7 @@ def contains_knime_extension_type(dtype: pa.DataType):
 
 
 def needs_conversion(dtype: pa.DataType):
-    if kas.is_struct_dict_encoded(dtype) or is_dict_encoded_value_factory_type(dtype):
+    if kasde.is_struct_dict_encoded(dtype) or is_dict_encoded_value_factory_type(dtype):
         return True
     elif is_value_factory_type(dtype):
         return dtype.needs_conversion
@@ -316,7 +316,7 @@ def get_object_to_storage_fn(dtype: pa.DataType):
     elif is_value_factory_type(dtype):
         storage_fn = get_object_to_storage_fn(dtype.storage_type)
         return lambda a: storage_fn(dtype.encode(a))
-    elif kas.is_struct_dict_encoded(dtype):
+    elif kasde.is_struct_dict_encoded(dtype):
         return _identity
     elif is_list_type(dtype):
         inner_fn = get_object_to_storage_fn(dtype.value_type)
@@ -483,7 +483,7 @@ class StructDictEncodedLogicalTypeExtensionType(pa.ExtensionType):
 
     @staticmethod
     def version():
-        return kas.StructDictEncodedType.version()
+        return kasde.StructDictEncodedType.version()
 
     def __arrow_ext_serialize__(self):
         # StructDictEncodedType doesn't have any meta data
@@ -491,7 +491,7 @@ class StructDictEncodedLogicalTypeExtensionType(pa.ExtensionType):
 
     @classmethod
     def __arrow_ext_deserialize__(cls, storage_type, serialized):
-        struct_dict_encoded_type = kas.StructDictEncodedType.__arrow_ext_deserialize__(
+        struct_dict_encoded_type = kasde.StructDictEncodedType.__arrow_ext_deserialize__(
             storage_type, b""
         )
         value_factory_type = LogicalTypeExtensionType.__arrow_ext_deserialize__(
@@ -509,12 +509,12 @@ class StructDictEncodedLogicalTypeExtensionType(pa.ExtensionType):
 pa.register_extension_type(
     StructDictEncodedLogicalTypeExtensionType(
         LogicalTypeExtensionType(None, pa.null(), ""),
-        kas.StructDictEncodedType(pa.null()),
+        kasde.StructDictEncodedType(pa.null()),
     )
 )
 
 
-class StructDictEncodedLogicalTypeArray(kas.StructDictEncodedArray):
+class StructDictEncodedLogicalTypeArray(kasde.StructDictEncodedArray):
     """
     An array of logical values where the underlying data is struct-dict-encoded.
     """
@@ -573,9 +573,45 @@ def data_spec_to_arrow(data_spec):
             raise ValueError("Invalid data_spec: " + str(data_spec))
 
 
+def _struct_type_from_values(*args):
+    """Utility method to create a pyarrow.struct type object for structs coming from KNIME.
+
+    Structs coming from KNIME have no names for the children. Instead the children are named
+    "0", "1", "2", ...
+
+    Arguments:
+        args: The pyarrow types for the children.
+    """
+    return pa.struct([pa.field(f"{i}", t.type) for i, t in enumerate(args)])
+
+
 class KnimeExtensionArray(pa.ExtensionArray):
+
+    def _get_int_item_from_struct_arr(self, storage: pa.StructArray, item: int):
+        """ This Method unpacks nested struct arrays and takes
+
+        :param storage: Struct array, which needs to be unpacked
+        :param item: index to be searched
+        :return: Storage Scalar for the value at item
+        """
+        storage_scalar_list = []
+        for field in storage.flatten():  # we unpack each sub-array
+            # if we have a nested struct array and not the final dict encoded array we recursively access its fields
+            if isinstance(field, pa.StructArray) and not isinstance(field.type, kasde.StructDictEncodedType):
+                storage_scalar_list.append(self._get_int_item_from_struct_arr(field, item))
+            else:
+                storage_scalar_list.append(field[item])
+        storage_scalar_type = _struct_type_from_values(*storage_scalar_list)
+        storage_scalar = pa.scalar(tuple(i.as_py() for i in storage_scalar_list),
+                                   type=storage_scalar_type)
+        return storage_scalar
+
+
     def __getitem__(self, idx):
-        storage_scalar = self.storage[idx]
+        if isinstance(self.storage, pa.StructArray):
+            storage_scalar = self._get_int_item_from_struct_arr(self.storage, idx)
+        else:
+            storage_scalar = self.storage[idx]
         # TODO return Scalar once there is a customizable ExtensionScalar in pyarrow
         #  to be consistent with other pa.Arrays
         return KnimeExtensionScalar(self.type, storage_scalar)

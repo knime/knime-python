@@ -1,3 +1,4 @@
+import os
 from codecs import ignore_errors
 from os import pardir
 from typing import Type, Union
@@ -149,6 +150,30 @@ class GeoSpatialExtensionTypeTest(unittest.TestCase):
     def _to_pandas(self, arrow):
         return kap.arrow_data_to_pandas_df(arrow)
 
+    def _generate_test_data_frame(
+            self, file_name="generatedTestData.zip", lists=True, sets=True, columns=None,
+    ) -> pd.DataFrame:
+        """
+        Creates a Dataframe from a KNIME table on disk
+        @param path: path for the KNIME Table
+        @param lists: allow lists in output table (extension lists have difficulties)
+        @param sets: allow sets in output table (extension sets have difficulties)
+        @return: pandas dataframe containing data from KNIME GenerateTestTable node
+        """
+        knime_generated_table_path = os.path.normpath(
+            os.path.join(__file__, "..", file_name)
+        )
+        test_data_source = TestDataSource(knime_generated_table_path)
+        pa_data_source = knar.ArrowDataSource(test_data_source)
+        arrow = pa_data_source.to_arrow_table()
+        arrow = katy.unwrap_primitive_arrays(arrow)
+
+        df = kap.arrow_data_to_pandas_df(arrow)
+        if columns is not None:
+            df.columns = columns
+
+        return df
+
     def test_load_table(self):
         if not GeoSpatialExtensionTypeTest.geospatial_types_found:
             return
@@ -264,6 +289,38 @@ class GeoSpatialExtensionTypeTest(unittest.TestCase):
         gdf_copy = gdf.copy(deep=True)
         table = arrow_backend.write_table(gdf_copy)
         pd.testing.assert_frame_equal(gdf, gdf_copy)
+
+    def test_dict_decoding_geospatials(self):
+        kt.register_python_value_factory(
+            "geospatial_types",
+            "GeoValueFactory",
+            '{"type": "struct", "inner_types": ["variable_width_binary", "string"]}',
+            """
+            {
+                "type": "struct", 
+                "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.geospatial.core.data.cell.GeoCell$ValueFactory\\"}" }, 
+                "inner_types": [
+                    {"type": "simple", "traits": {}},
+                    {"type": "simple", "traits": {}}
+                ]
+            }
+            """,
+        )
+
+        df = self._generate_test_data_frame("ChunkedDictEncGeoSpatials.zip",
+                                            columns=["Name", "geometry"])
+        import geopandas as gpd
+        gdf = gpd.GeoDataFrame(df)
+
+        self.assertEqual(str(gdf["geometry"].iloc[-1]), "POINT (50 10)")
+        self.assertEqual(str(gdf["geometry"].iloc[0]), "LINESTRING (30 10, 10 30, 40 40)")
+
+        # test slicing over a chunked extension array
+        sliced = (gdf["geometry"].iloc[-11:])
+        self.assertEqual(str(sliced[0]), "POINT (50 10)")
+        self.assertEqual(str(sliced[3]), "LINESTRING (30 10, 10 30, 40 40)")
+        self.assertEqual(str(sliced[5]), "POINT (30 10)")
+
 
 
 if __name__ == "__main__":

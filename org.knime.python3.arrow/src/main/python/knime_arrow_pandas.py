@@ -49,6 +49,7 @@ import pandas.api.extensions as pdext
 import pyarrow as pa
 from pandas.core.dtypes.dtypes import register_extension_dtype
 
+import knime_arrow_struct_dict_encoding as kasde
 import knime_arrow_types as kat
 import knime_types as kt
 
@@ -103,6 +104,7 @@ def arrow_data_to_pandas_df(data: Union[pa.Table, pa.RecordBatch]) -> pd.DataFra
     # Use Pandas' String data type if available instead of "object" if we're using a
     # Pandas version that is new enough. Gives better type safety and preserves its
     # type even if all values are missing in a column.
+
     if hasattr(pd, "StringDtype"):
 
         def mapper(dtype):
@@ -115,7 +117,6 @@ def arrow_data_to_pandas_df(data: Union[pa.Table, pa.RecordBatch]) -> pd.DataFra
         data_frame = data.to_pandas(types_mapper=mapper)
     else:
         data_frame = data.to_pandas()
-
     for col_name, col_type in zip(data.schema.names, data.schema.types):
         col_converter = kt.get_first_matching_to_pandas_col_converter(col_type)
         if col_converter is not None:
@@ -123,7 +124,6 @@ def arrow_data_to_pandas_df(data: Union[pa.Table, pa.RecordBatch]) -> pd.DataFra
                 data_frame[col_name] = col_converter.convert_column(
                     data_frame, col_name
                 )
-
     # The first column is interpreted as the index (row keys)
     data_frame.set_index(data_frame.columns[0], inplace=True)
 
@@ -161,6 +161,37 @@ class PandasLogicalTypeExtensionType(pdext.ExtensionDtype):
 
     def __str__(self):
         return f"PandasLogicalTypeExtensionType({self._storage_type}, {self._logical_type})"
+
+def _calc_correct_chunk_and_idx(chunked_arr: pa.ChunkedArray, item:int):
+    """
+
+    :param chunked_arr: Chunked Array
+    :param idx:
+    :return:
+    """
+    if not isinstance(chunked_arr, pa.ChunkedArray):
+        raise TypeError(f"The input array must be of type pa.ChunkedArray not type {type(chunked_arr)}")
+    chunk_start, chunk_end, chunk_idx = 0, 0, 0
+    for idx, chunk in enumerate(chunked_arr.chunks):
+        chunk_start = chunk_end
+        chunk_end += len(chunk)
+        if chunk_end > item:
+            correct_chunk = chunked_arr.chunks[idx]
+            item = item - chunk_start
+            return correct_chunk, item
+    raise IndexError(f"Could not locate the item at index {item} in array with len {chunk_end}")
+
+
+def _struct_type_from_values(*args):
+    """Utility method to create a pyarrow.struct type object for structs coming from KNIME.
+
+    Structs coming from KNIME have no names for the children. Instead the children are named
+    "0", "1", "2", ...
+
+    Arguments:
+        args: The pyarrow values for the children.
+    """
+    return pa.struct([pa.field(f"{i}", t.type) for i, t in enumerate(args)])
 
 
 class KnimePandasExtensionArray(pdext.ExtensionArray):
@@ -260,9 +291,47 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
             "KnimePandasExtensionArray cannot be created from factorized yet."
         )
 
+    def _get_int_item_from_struct_arr(self, storage: pa.StructArray, item: int):
+        """ This Method unpacks nested struct arrays and takes the value at index: item
+
+        it recursively goes into all sub struct arrays.
+        :param storage: Struct array, which needs to be unpacked
+        :param item: index to be searched
+        :return: Storage Scalar for the value at item
+        """
+        storage_scalar_list = []
+        for field in storage.flatten():  # we unpack each sub-array
+            # if we have a nested struct array and not the final dict encoded array we recursively access its fields
+            if isinstance(field, pa.StructArray) and not isinstance(field.type, kasde.StructDictEncodedType):
+                storage_scalar_list.append(self._get_int_item_from_struct_arr(field, item))
+            else:
+                storage_scalar_list.append(field[item])
+        storage_scalar_type = _struct_type_from_values(*storage_scalar_list)
+        storage_scalar = pa.scalar(tuple(i.as_py() for i in storage_scalar_list),
+                                   type=storage_scalar_type)
+        return storage_scalar
+
     def __getitem__(self, item):
         if isinstance(item, int):
+            if isinstance(self._storage_type, pa.StructType):
+                # if the storage is a struct type, the unpacking only works for top layer
+                # thus, we have to manually access the chunks
+                if isinstance(self._data, pa.ChunkedArray):
+                    # if it's a chunked array, the correct chunk needs to be determined
+                    data, item = _calc_correct_chunk_and_idx(self._data, item)
+                    storage = data.storage
+                elif isinstance(self._data, pa.StructArray):
+                    # else we just access the struct
+                    storage = self._data
+                else:
+                    raise TypeError("Data can't be of type pa.StructType and not a Chunked or Struct Array")
+                # we recursively unpack the struct arrays and finally return the decoded value
+                value = self._get_int_item_from_struct_arr(storage, item)
+                decoded = self._converter.decode(value.as_py())
+                return decoded
+
             return self._data[item].as_py()
+
         elif isinstance(item, slice):
             (start, stop, step) = item.indices(len(self._data))
             indices = list(range(start, stop, step))
