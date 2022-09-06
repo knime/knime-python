@@ -729,7 +729,7 @@ def _flatten(lst: list) -> list:
     return flat
 
 
-def parameter_group(label: str):
+def parameter_group(label: str, since_version: str = None):
     """
     Used for injecting descriptor protocol methods into a custom parameter group class.
     "obj" in this context is the parameterized object instance or a parameter group instance.
