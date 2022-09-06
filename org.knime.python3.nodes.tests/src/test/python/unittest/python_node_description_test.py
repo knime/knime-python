@@ -97,7 +97,6 @@ class MarkdownDocstringTest(unittest.TestCase):
         _s = self.parser.parse_basic(_s)
         self.assertEqual(_s, _expected)
 
-
     def test_basic_em_strong(self):
 
         s = "*strong*"
@@ -224,20 +223,42 @@ class MarkdownDocstringTest(unittest.TestCase):
     def test_html_escape(self):
         desc = '<test id="id"></test>'
         self.assertEqual(
-                self.parser.parse_basic(desc),
-                f"<p>{html.escape(desc)}</p>",
-                )
+            self.parser.parse_basic(desc),
+            f"<p>{html.escape(desc)}</p>",
+        )
 
-    def test_pre(self):
-        """
-        ```
-        This should be pre code.
-        ```
-        """
-        pass
+    def test_code_formatting(self):
+
+        desc = """
+        No Code
+        
+            Code"""
+        _expected = "<p>No Code</p>\n<pre>Code\n</pre>"
+
+        self.assertEqual(self.parser.parse_basic(desc), textwrap.dedent(_expected))
+
+        desc = """
+        No Code
+        
+                Code"""
+        _expected = "<p>No Code</p>\n<pre>    Code\n</pre>"
+
+        self.assertEqual(self.parser.parse_basic(desc), textwrap.dedent(_expected))
 
     def test_tt(self):
-        pass
+        desc = """`Test`"""
+        self.assertEqual(
+            self.parser.parse_basic(desc),
+            f"<p><tt>Test</tt></p>",
+        )
+
+        desc = """
+        ``` Test ```
+        """
+        self.assertEqual(
+            self.parser.parse_basic(desc),
+            f"<p><tt>Test</tt></p>",
+        )
 
     def test_line_break(self):
         desc = """

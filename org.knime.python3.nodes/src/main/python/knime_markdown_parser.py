@@ -11,6 +11,7 @@ from markdown.extensions import Extension
 
 from markdown.preprocessors import Preprocessor
 from markdown.postprocessors import Postprocessor
+from markdown.blockprocessors import BlockProcessor
 from markdown.extensions import Extension
 
 from markdown.inlinepatterns import (
@@ -106,6 +107,15 @@ class _KnimePostHeader(Postprocessor):
         return text
 
 
+class _KnimePostCode(Postprocessor):
+    def run(self, text):
+        text = re.sub(r"<pre><code>", "<pre>", text)
+        text = re.sub(r"</code></pre>", "</pre>", text)
+        text = re.sub(r"<code>", "<tt>", text)
+        text = re.sub(r"</code>", "</tt>", text)
+        return text
+
+
 class _KnExtension(Extension):
     """
     Basic extension for Knime schema.
@@ -130,6 +140,7 @@ class _KnExtension(Extension):
         #
         _md.postprocessors.register(_KnimeTable(), "knime_table", 200)
         _md.postprocessors.register(_KnimePostHeader(), "knime_post_headder", 200)
+        _md.postprocessors.register(_KnimePostCode(), "knime_post_code", 200)
 
 
 class KnimeMarkdownParser:
