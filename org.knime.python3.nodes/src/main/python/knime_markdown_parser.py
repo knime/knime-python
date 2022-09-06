@@ -90,6 +90,16 @@ class _KnimeTable(Postprocessor):
         return text
 
 
+class _KnimePostHeader(Postprocessor):
+    # AP-19260
+    def run(self, text):
+        text = re.sub(r"<h1>", "<h3>", text)
+        text = re.sub(r"</h1>", "</h3>", text)
+        text = re.sub(r"<h2>", "<h4>", text)
+        text = re.sub(r"</h2>", "</h4>", text)
+        return text
+
+
 class _KnExtension(Extension):
     """
     Basic extension for Knime schema.
@@ -112,6 +122,7 @@ class _KnExtension(Extension):
 
         #
         _md.postprocessors.register(_KnimeTable(), "knime_table", 200)
+        _md.postprocessors.register(_KnimePostHeader(), "knime_post_headder", 200)
 
 
 class KnimeMarkdownParser:
