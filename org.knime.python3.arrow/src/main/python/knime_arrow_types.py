@@ -505,6 +505,23 @@ class StructDictEncodedLogicalTypeExtensionType(pa.ExtensionType):
     def __arrow_ext_class__(self):
         return StructDictEncodedLogicalTypeArray
 
+    def __arrow_ext_scalar_class__(self):
+        """
+        Specify which scalar class to use when accessing individual values of this type.
+        This feature was introduced in pyarrow 9. Before that, we were using
+        KnimeExtensionScalar (see below), but that stopped working in pyarrow 8 due to
+        their internal treatment of ExtensionArrays.
+
+        We define a special scalar type that references this logical type when this method is
+        called, the scalar invokes the decode method of this logical type in as_py().
+        """
+
+        class StructDictEncodedLogicalTypeExtensionScalar(pa.ExtensionScalar):
+            def as_py(self):
+                return self.value.as_py()
+
+        return StructDictEncodedLogicalTypeExtensionScalar
+
 
 pa.register_extension_type(
     StructDictEncodedLogicalTypeExtensionType(
@@ -639,7 +656,9 @@ class KnimeExtensionArray(pa.ExtensionArray):
 class KnimeExtensionScalar:
     """
     Mimics the behavior of an Arrow Scalar.
-    TODO Replace with an ExtensionScalar once pyarrow has proper support (AP-17422)
+
+    Only used up to pyarrow 7, broken for our use case in pyarrow 8, and superceeded
+    by LogicalTypeExtensionType.__arrow_ext_scalar_class__() from pyarrow 9 on.
     """
 
     def __init__(self, ext_type: LogicalTypeExtensionType, storage_scalar: pa.Scalar):

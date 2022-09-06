@@ -652,13 +652,9 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
 
         self.assertTrue(df.iloc[2].equals(df.iloc[9]), msg="The rows are not equal")
 
-        # # test appending
-        # df = df.append(df.iloc[2])
-        # self.assertTrue(df.iloc[2].equals(df.iloc[-1]))
-        #
-        # # test appending with len
-        # df.loc[len(df)] = df.loc[0]
-        # self.assertTrue(df.iloc[0].equals(df.iloc[-1]))
+        # test appending with concat
+        df = pd.concat([df, df.iloc[2].to_frame().T])
+        self.assertTrue(df.iloc[2].equals(df.iloc[-1]))
 
 
     def test_append_sets_lists_2(self):

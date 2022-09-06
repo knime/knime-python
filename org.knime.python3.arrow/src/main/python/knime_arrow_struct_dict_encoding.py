@@ -458,6 +458,23 @@ class StructDictEncodedType(pa.ExtensionType):
     def __arrow_ext_class__(self):
         return StructDictEncodedArray
 
+    def __arrow_ext_scalar_class__(self):
+        """
+        If we are using PyArrow 9 and try to access a struct dict encoded array that is wrapped inside
+        a StructArray or a ChunkedArray, then PyArrow returns the type of ExtensionScalar that we provide here.
+
+        Unfortunately, this bypasses our StructDictEncodedArray that we defined below, so we have no
+        way to access other values inside the array and cannot look up the dictionary encoded value.
+
+        For now, we raise an error in that case to make it obvious that the values cannot be accessed.
+        """
+        raise NotImplementedError(
+            """
+            Since PyArrow 8, accessing values that are dictionary encoded by KNIME is no longer supported.
+            Please use PyArrow 7 or refrain from accessing values in this column.
+            """
+        )
+
 
 def is_struct_dict_encoded(dtype: pa.DataType):
     return isinstance(dtype, StructDictEncodedType)
