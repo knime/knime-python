@@ -1,6 +1,7 @@
 import markdown
 import textwrap
 import re
+import html
 
 from markdown.inlinepatterns import (
     EmStrongItem,
@@ -44,6 +45,11 @@ class _HeaderPreprocessor(Preprocessor):
             else:
                 new_lines.append(line)
         return new_lines
+
+
+class _HTMLEncodePreprocessor(Preprocessor):
+    def run(self, lines):
+        return [html.escape(line) for line in lines]
 
 
 class _KnimeProcessorAsterisk(AsteriskProcessor):
@@ -108,6 +114,7 @@ class _KnExtension(Extension):
     def extendMarkdown(self, _md) -> None:
         # Preprocessors
         _md.preprocessors.register(_HeaderPreprocessor(), "headerlines", 100)
+        _md.preprocessors.register(_HTMLEncodePreprocessor(), "html_encode", 100)
 
         # Remove not supported extensions
         _md.inlinePatterns.deregister("image_reference")

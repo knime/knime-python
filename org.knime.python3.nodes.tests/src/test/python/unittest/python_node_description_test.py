@@ -1,5 +1,6 @@
 import textwrap
 import unittest
+import html
 
 try:
     import markdown
@@ -78,6 +79,24 @@ class MarkdownDocstringTest(unittest.TestCase):
         _expected = "<h4>HEADER</h4>"
         _s = self.parser.parse_basic(_s)
         self.assertEqual(_s, _expected)
+
+    def test_line_header(self):
+        _s = """
+        Head
+        ---
+        """
+        _expected = "<h4>Head</h4>"
+        _s = self.parser.parse_basic(_s)
+        self.assertEqual(_s, _expected)
+
+        _s = """
+        Head
+        ===
+        """
+        _expected = "<h3>Head</h3>"
+        _s = self.parser.parse_basic(_s)
+        self.assertEqual(_s, _expected)
+
 
     def test_basic_em_strong(self):
 
@@ -186,21 +205,11 @@ class MarkdownDocstringTest(unittest.TestCase):
 
     def test_hr(self):
         desc = """
-        this
-        ----
-        that
-        """
-        _excpected = "<h2>this</h2>\n<p>that</p>"
-        _res = self.parser.parse_basic(desc)
-        self.assertEqual(_excpected, _res)
 
-        desc = """
-        ***
         ---
-        ___ 
         """
         _res = self.parser.parse_fulldescription(desc)
-        _expected = "<h2>***</h2>\n<hr />"
+        _expected = "<hr />"
         self.assertEqual(_expected, _res)
 
     def test_link(self):
@@ -211,6 +220,13 @@ class MarkdownDocstringTest(unittest.TestCase):
         _res = self.parser.parse_basic(desc)
 
         self.assertEqual(_res, _expected)
+
+    def test_html_escape(self):
+        desc = '<test id="id"></test>'
+        self.assertEqual(
+                self.parser.parse_basic(desc),
+                f"<p>{html.escape(desc)}</p>",
+                )
 
     def test_pre(self):
         """
