@@ -42,6 +42,7 @@
 #  when such Node is propagated with or for interoperation with KNIME.
 # ------------------------------------------------------------------------
 from typing import Type, Union
+import bisect
 
 import numpy as np
 import pandas as pd
@@ -162,25 +163,6 @@ class PandasLogicalTypeExtensionType(pdext.ExtensionDtype):
     def __str__(self):
         return f"PandasLogicalTypeExtensionType({self._storage_type}, {self._logical_type})"
 
-def _calc_correct_chunk_and_idx(chunked_arr: pa.ChunkedArray, item:int):
-    """
-
-    :param chunked_arr: Chunked Array
-    :param idx:
-    :return:
-    """
-    if not isinstance(chunked_arr, pa.ChunkedArray):
-        raise TypeError(f"The input array must be of type pa.ChunkedArray not type {type(chunked_arr)}")
-    chunk_start, chunk_end, chunk_idx = 0, 0, 0
-    for idx, chunk in enumerate(chunked_arr.chunks):
-        chunk_start = chunk_end
-        chunk_end += len(chunk)
-        if chunk_end > item:
-            correct_chunk = chunked_arr.chunks[idx]
-            item = item - chunk_start
-            return correct_chunk, item
-    raise IndexError(f"Could not locate the item at index {item} in array with len {chunk_end}")
-
 
 def _struct_type_from_values(*args):
     """Utility method to create a pyarrow.struct type object for structs coming from KNIME.
@@ -195,6 +177,7 @@ def _struct_type_from_values(*args):
 
 
 class KnimePandasExtensionArray(pdext.ExtensionArray):
+    chunk_end_lst = None
     def __init__(
         self,
         storage_type: pa.DataType,
@@ -311,14 +294,35 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
                                    type=storage_scalar_type)
         return storage_scalar
 
+    @staticmethod
+    def _get_all_chunk_start_indices(chunked_arr: pa.ChunkedArray) -> list:
+        """ iterate over chunks to find their start indices
+
+        :param chunked_arr: chunked array from which we calculate the chunk indices
+        :return: list containing the end indices for each chunk
+        """
+        if not isinstance(chunked_arr, pa.ChunkedArray):
+            raise TypeError(f"The input array must be of type pa.ChunkedArray not type {type(chunked_arr)}")
+        chunk_start = 0
+        chunk_start_list = []
+
+        for chunk in chunked_arr.chunks:
+            chunk_start_list.append(chunk_start)
+            chunk_start += len(chunk) # chunks end at len - 1
+        return chunk_start_list
+
     def __getitem__(self, item):
         if isinstance(item, int):
             if isinstance(self._storage_type, pa.StructType):
                 # if the storage is a struct type, the unpacking only works for top layer
                 # thus, we have to manually access the chunks
                 if isinstance(self._data, pa.ChunkedArray):
-                    # if it's a chunked array, the correct chunk needs to be determined
-                    data, item = _calc_correct_chunk_and_idx(self._data, item)
+                    if self.chunk_end_lst is None:
+                        self.chunk_start_list = self._get_all_chunk_start_indices(self._data)
+                    # use a right bisection to locate the closest chunk index
+                    chunk_idx = bisect.bisect_right(self.chunk_start_list, item) - 1
+                    item = item - self.chunk_start_list[chunk_idx]  # get the index inside the chunk
+                    data = self._data.chunks[chunk_idx]  # get the correct chunk
                     storage = data.storage
                 elif isinstance(self._data, pa.StructArray):
                     # else we just access the struct
@@ -331,7 +335,6 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
                 return decoded
 
             return self._data[item].as_py()
-
         elif isinstance(item, slice):
             (start, stop, step) = item.indices(len(self._data))
             indices = list(range(start, stop, step))
