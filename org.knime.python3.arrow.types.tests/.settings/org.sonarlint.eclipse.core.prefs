@@ -3,4 +3,4 @@ eclipse.preferences.version=1
 idePrefixKey=
 projectKey=KNIME_knime-python
 serverId=SonarCloud/knime
-sqPrefixKey=org.knime.python3.nodes
+sqPrefixKey=org.knime.python3.arrow.types.tests
