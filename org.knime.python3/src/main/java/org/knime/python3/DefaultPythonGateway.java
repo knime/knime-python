@@ -118,6 +118,7 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
 
     /**
      * Creates a {@link PythonGateway} to a new Python process.
+     *
      * @param <T> the type of {@link PythonEntryPoint}
      * @param pythonProcessBuilder the builder used to configure and start the Python process
      * @param launcherPath the Python script that bootstraps the py4j-based communication on the Python side (via
@@ -158,8 +159,8 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
         final var startupStderr = new CollectingStringConsumer();
         try {
             m_clientServer = new ClientServerBuilder()//
-                    .javaPort(0)//
-                    .build();
+                .javaPort(0)//
+                .build();
             final int javaPort = m_clientServer.getJavaServer().getListeningPort();
 
             final var pb = pythonProcessBuilder;
@@ -223,10 +224,9 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
         };
         server.addListener(listener);
         if (!connectionLatch.await(timeout, TimeUnit.MILLISECONDS)) {
-            throw new ConnectException(String.format(
-                "The connection to the Python process timed out. The current timeout is %s milliseconds. "
-                + "You can set a longer timeout via the %s system property.",
-                timeout, CONNECT_TIMEOUT_VM_OPT));
+            throw new ConnectException(
+                String.format("The connection to the Python process timed out. The current timeout is %s milliseconds. "
+                    + "You can set a longer timeout via the %s system property.", timeout, CONNECT_TIMEOUT_VM_OPT));
         }
         server.removeListener(listener);
         do {
@@ -240,11 +240,11 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
                 //NOSONAR: Expected control flow as the Python process may not be connected yet
             } catch (final Py4JException ex) {//NOSONAR
                 // try again
-            	// TODO AP-19073: Ideally, we only retry if the connection is not established
-            	// i.e. ex.getCause() instanceof ConnectException. However, the connection might be live
-            	// but we get a Py4JException because Python is concurrently resetting the callback client
-            	// If we can somehow wait for this process to finish, then this would likely reduce startup time
-            	// because we could avoid the exception handling
+                // TODO AP-19073: Ideally, we only retry if the connection is not established
+                // i.e. ex.getCause() instanceof ConnectException. However, the connection might be live
+                // but we get a Py4JException because Python is concurrently resetting the callback client
+                // If we can somehow wait for this process to finish, then this would likely reduce startup time
+                // because we could avoid the exception handling
             }
         } while (process.isAlive() && (System.currentTimeMillis() - start) <= timeout);
         throw new ConnectException("Could not connect to the Python process.");
