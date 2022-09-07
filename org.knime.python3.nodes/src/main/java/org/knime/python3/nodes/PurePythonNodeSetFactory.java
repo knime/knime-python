@@ -63,8 +63,8 @@ import org.knime.python3.nodes.PythonExtensionRegistry.PyExtensionEntry;
 import org.knime.python3.nodes.extension.ExtensionNode;
 import org.knime.python3.nodes.extension.ExtensionNodeSetFactory;
 import org.knime.python3.nodes.extension.KnimeExtension;
-import org.knime.python3.nodes.proxy.PythonNodeProxy;
 import org.knime.python3.nodes.proxy.NodeProxyProvider;
+import org.knime.python3.nodes.proxy.PythonNodeProxy;
 import org.knime.python3.nodes.pycentric.PythonCentricExtensionParser;
 
 /**
@@ -132,7 +132,8 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
         } catch (Exception ex) { //NOSONAR
             // any kind of exception must be prevented, otherwise a single corrupted extension would prevent the whole
             // class from loading
-            LOGGER.error(String.format("Failed to parse Python node extension at path '%s'.", extensionPath), ex);
+            LOGGER.error(ex);
+            LOGGER.errorWithFormat("Failed to parse Python node extension at path '%s'.", extensionPath);
             return null;
         }
     }
