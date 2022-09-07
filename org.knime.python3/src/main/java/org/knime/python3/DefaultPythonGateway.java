@@ -56,6 +56,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.SystemUtils;
@@ -153,6 +154,8 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
     private DefaultPythonGateway(final ProcessBuilder pythonProcessBuilder, final String launcherPath,
         final Class<T> entryPointClass, final Collection<PythonExtension> extensions, final PythonPath pythonPath)
         throws IOException, InterruptedException {
+        final var startupStdout = new CollectingStringConsumer();
+        final var startupStderr = new CollectingStringConsumer();
         try {
             m_clientServer = new ClientServerBuilder()//
                     .javaPort(0)//
@@ -168,8 +171,8 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
             m_stdError = new UncloseableInputStream(m_process.getErrorStream());
             // NOSONAR: PythonGatewayUtils only uses the #getOutputStream and #getErrorStream methods that are already
             // fully functional at this point in time.
-            try (var startupOutputConsumer =
-                PythonGatewayUtils.redirectGatewayOutput(this, LOGGER::debug, LOGGER::debug, 1000)) {//NOSONAR
+            try (var startupOutputConsumer = PythonGatewayUtils.redirectGatewayOutput(this, // NOSONAR
+                startupStdout.andThen(LOGGER::debug), startupStderr.andThen(LOGGER::debug), 1000)) {
 
                 @SuppressWarnings("unchecked")
                 final var casted = (T)m_clientServer.getPythonServerEntryPoint(new Class[]{entryPointClass});
@@ -185,6 +188,12 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
                 close();
             } catch (final Exception ex) { // NOSONAR We want to propagate the original error.
                 th.addSuppressed(ex);
+            }
+            if (th instanceof ConnectException) {
+                // A ConnectException doesn't contain useful information itself
+                // There might be useful information in the stdout or stderr
+                LOGGER.warn("Python standard output: " + startupStdout.toString());
+                LOGGER.warn("Python standard error: " + startupStderr.toString());
             }
             if (th instanceof IOException) {
                 throw (IOException)th;
@@ -328,5 +337,20 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
             // don't close the underlying stream
         }
 
+    }
+
+    private static final class CollectingStringConsumer implements Consumer<String> {
+
+        private final StringBuilder m_value = new StringBuilder();
+
+        @Override
+        public void accept(final String v) {
+            m_value.append(v).append("\n");
+        }
+
+        @Override
+        public String toString() {
+            return m_value.toString();
+        }
     }
 }
