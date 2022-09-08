@@ -45,11 +45,8 @@
 
 package org.knime.python3.scripting.nodes.prefs;
 
-import java.io.IOException;
-
 import org.eclipse.core.runtime.preferences.AbstractPreferenceInitializer;
-import org.knime.conda.Conda;
-import org.knime.conda.prefs.CondaPreferences;
+import org.knime.conda.CondaEnvironmentIdentifier;
 import org.knime.python2.config.CondaEnvironmentsConfig;
 import org.knime.python2.config.ManualEnvironmentsConfig;
 import org.knime.python2.config.PythonConfigStorage;
@@ -76,18 +73,15 @@ public final class Python3ScriptingPreferencesInitializer extends AbstractPrefer
         final PythonConfigStorage defaultPreferences = Python3ScriptingPreferences.DEFAULT;
 
         var bundledEnvConfig = new BundledCondaEnvironmentConfig(Python3ScriptingPreferences.BUNDLED_PYTHON_ENV_ID);
-        bundledEnvConfig.saveConfigTo(defaultPreferences);
-
         // To store the settings from the PythonPreferences we need to use "saveConfigTo" instead of "saveDefaultsTo"
+        bundledEnvConfig.saveConfigTo(defaultPreferences);
         var defaultPythonEnvTypeConfig = getDefaultPythonEnvironmentTypeConfig();
 
-        if (defaultPythonEnvTypeConfig.getEnvironmentType().getStringValue().equals(PythonEnvironmentType.CONDA.getId())//
-            && !isCondaConfigured() //
-            //&& bundledEnvConfig.isAvailable()
-            ) {
-            // We use bundled as default IF it is available and conda was currently active but is not configured.
-            // This should make bundled the default option for users who never configured conda. The Python (Labs)
-            // preference page does this as well, but for that the page needs to be opened first.
+        if (defaultPythonEnvTypeConfig.getEnvironmentType().getStringValue().equals(PythonEnvironmentType.CONDA.getId())
+            && isPlaceholderCondaEnvSelected()) {
+            // We use bundled as default if conda was currently active but no Python environment has been selected yet.
+            // This should make bundled the default option for users who have not configured a Python environment to use.
+            // The Python (Labs) preference page does this as well, but for that the page needs to be opened first.
             new PythonEnvironmentTypeConfig(PythonEnvironmentType.BUNDLED).saveConfigTo(defaultPreferences);
         } else {
             defaultPythonEnvTypeConfig.saveConfigTo(defaultPreferences);
@@ -108,14 +102,10 @@ public final class Python3ScriptingPreferencesInitializer extends AbstractPrefer
         return (ManualEnvironmentsConfig)PythonPreferences.getPythonEnvironmentsConfig(PythonEnvironmentType.MANUAL);
     }
 
-    static boolean isCondaConfigured() {
-        try {
-            final var condaDir = CondaPreferences.getCondaInstallationDirectory();
-            final var conda = new Conda(condaDir);
-            conda.testInstallation();
-            return true;
-        } catch (IOException ex) { // NOSONAR: we handle the exception by returning false, no need to rethrow
-            return false;
-        }
+    static boolean isPlaceholderCondaEnvSelected() {
+        final var placeholderPath = CondaEnvironmentIdentifier.PLACEHOLDER_CONDA_ENV.getDirectoryPath();
+        final var selectedPath =
+            getDefaultCondaEnvironmentsConfig().getPython3Config().getEnvironmentDirectory().getStringValue();
+        return placeholderPath.equals(selectedPath);
     }
 }
