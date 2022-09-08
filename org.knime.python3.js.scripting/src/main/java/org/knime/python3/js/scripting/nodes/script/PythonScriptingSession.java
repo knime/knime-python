@@ -107,17 +107,20 @@ final class PythonScriptingSession implements AutoCloseable {
 
     private final PythonArrowTableConverter m_tableConverter;
 
+    private final Consumer<ConsoleText> m_consoleTextConsumer;
+
     PythonScriptingSession(final PythonCommand pythonCommand, final Consumer<ConsoleText> consoleTextConsumer,
         final IWriteFileStoreHandler fileStoreHandler) throws IOException, InterruptedException {
         m_gateway = createGateway(pythonCommand);
         m_entryPoint = m_gateway.getEntryPoint();
         m_tableConverter = new PythonArrowTableConverter(EXECUTOR_SERVICE, ARROW_STORE_FACTORY, fileStoreHandler);
-
-        @SuppressWarnings("resource") // The stdout stream of a process doesn't have to be closed
-        final var stdout = m_gateway.getStandardOutputStream();
-        @SuppressWarnings("resource") // The stderr stream of a process doesn't have to be closed
-        final var stderr = m_gateway.getStandardErrorStream();
-        startStreamConsumer(stdout, stderr, consoleTextConsumer);
+//
+//        @SuppressWarnings("resource") // The stdout stream of a process doesn't have to be closed
+//        final var stdout = m_gateway.getStandardOutputStream();
+//        @SuppressWarnings("resource") // The stderr stream of a process doesn't have to be closed
+//        final var stderr = m_gateway.getStandardErrorStream();
+//        startStreamConsumer(stdout, stderr, consoleTextConsumer);
+        m_consoleTextConsumer = consoleTextConsumer;
     }
 
     void setupIO(final PortObject[] inData, final int numOutPorts, final ExecutionMonitor exec)
@@ -130,6 +133,22 @@ final class PythonScriptingSession implements AutoCloseable {
             @Override
             public PythonArrowDataSink create_sink() throws IOException {
                 return m_tableConverter.createSink();
+            }
+
+            @Override
+            public void add_stdout(final String text) {
+                var str = text.replace("\n", "\\n");
+                str = str.replace("\r", "\\r");
+                LOGGER.warn(System.currentTimeMillis() + ", stdout: " + str);
+                m_consoleTextConsumer.accept(new ConsoleText(text, false));
+            }
+
+            @Override
+            public void add_stderr(final String text) {
+                var str = text.replace("\n", "\\n");
+                str = str.replace("\r", "\\r");
+                LOGGER.warn(System.currentTimeMillis() + ", stderr: " + str);
+                m_consoleTextConsumer.accept(new ConsoleText(text, true));
             }
         };
         m_entryPoint.setupIO(sources, numOutPorts, callback);

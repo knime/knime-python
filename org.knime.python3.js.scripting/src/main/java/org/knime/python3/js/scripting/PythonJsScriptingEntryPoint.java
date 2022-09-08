@@ -87,5 +87,19 @@ public interface PythonJsScriptingEntryPoint extends PythonEntryPoint {
          * @throws IOException if the temporary file for the sink could not be created
          */
         PythonArrowDataSink create_sink() throws IOException; //NOSONAR
+
+        /**
+         * Report that the given text was added to the standard output.
+         *
+         * @param text the text
+         */
+        void add_stdout(String text); //NOSONAR
+
+        /**
+         * Report that the given text was added to the standard error.
+         *
+         * @param text the text
+         */
+        void add_stderr(String text); //NOSONAR
     }
 }
