@@ -50,6 +50,7 @@ package org.knime.python3.js.scripting.nodes.script;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.function.Consumer;
 
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.filestore.internal.IFileStoreHandler;
@@ -59,13 +60,13 @@ import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.NodeLogger;
 import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.python3.PythonCommand;
+import org.knime.python3.js.scripting.nodes.script.ConsoleOutputUtils.ConsoleOutputStorage;
 import org.knime.scripting.editor.ScriptingService.ConsoleText;
 
 /**
@@ -75,9 +76,15 @@ import org.knime.scripting.editor.ScriptingService.ConsoleText;
  */
 final class PythonScriptNodeModel extends NodeModel {
 
-    private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonScriptNodeModel.class);
+    private static final String SEND_LAST_OUTPUT_PREFIX =
+        "------------ START - Console output of the last execution ------------\n\n";
+
+    private static final String SEND_LAST_OUTPUT_SUFFIX =
+        "\n\n------------- END - Console output of the last execution -------------\n\n";
 
     private final PythonScriptNodeSettings m_settings;
+
+    private ConsoleOutputStorage m_consoleOutputStorage;
 
     // TODO(AP-19337) support multiple inputs and outputs
     // TODO(AP-19337) support different port types
@@ -96,24 +103,18 @@ final class PythonScriptNodeModel extends NodeModel {
         throws Exception {
         final PythonCommand pythonCommand =
             ExecutableSelectionUtils.getPythonCommand(m_settings.getExecutableSelection());
-
+        m_consoleOutputStorage = null;
+        final var consoleConsumer = ConsoleOutputUtils.createConsoleConsumer();
         try (final var session =
-            new PythonScriptingSession(pythonCommand, this::handleConsoleText, getWriteFileStoreHandler())) {
+            new PythonScriptingSession(pythonCommand, consoleConsumer, getWriteFileStoreHandler())) {
             exec.setMessage("Setting up inputs...");
             session.setupIO(inData, getNrOutPorts(), exec.createSubProgress(0.3));
             exec.setProgress(0.3, "Running script...");
             session.execute(m_settings.getScript());
             exec.setProgress(0.7, "Processing output...");
             return session.getOutputs(false, exec.createSubExecutionContext(0.3));
-        }
-    }
-
-    private void handleConsoleText(final ConsoleText text) {
-        // TODO(AP-19334) remember stdout and stderr
-        if (text.stderr) {
-            LOGGER.warn("stderr: '" + text.text + "'");
-        } else {
-            LOGGER.warn("stdout: '" + text.text + "'");
+        } finally {
+            m_consoleOutputStorage = consoleConsumer.finish();
         }
     }
 
@@ -135,19 +136,36 @@ final class PythonScriptNodeModel extends NodeModel {
 
     @Override
     protected void reset() {
-        // TODO(AP-19334) delete stdout/stderr from last execution
+        if (m_consoleOutputStorage == null) {
+            return; // Nothing to do
+        }
+
+        m_consoleOutputStorage.close();
+        m_consoleOutputStorage = null;
+    }
+
+    void sendLastConsoleOutputs(final Consumer<ConsoleText> consumer) throws IOException {
+        if (m_consoleOutputStorage != null) {
+            consumer.accept(new ConsoleText(SEND_LAST_OUTPUT_PREFIX, false));
+            ConsoleOutputUtils.sendConsoleOutputs(m_consoleOutputStorage, consumer);
+            consumer.accept(new ConsoleText(SEND_LAST_OUTPUT_SUFFIX, false));
+        }
     }
 
     @Override
     protected void loadInternals(final File nodeInternDir, final ExecutionMonitor exec)
         throws IOException, CanceledExecutionException {
-        // TODO(AP-19334) load stdout/stderr from last execution
+        m_consoleOutputStorage = ConsoleOutputUtils.openConsoleOutput(nodeInternDir.toPath());
     }
 
     @Override
     protected void saveInternals(final File nodeInternDir, final ExecutionMonitor exec)
         throws IOException, CanceledExecutionException {
-        // TODO(AP-19334) save stdout/stderr from last execution
+        if (m_consoleOutputStorage != null) {
+            final var nodeInternPath = nodeInternDir.toPath();
+            ConsoleOutputUtils.saveConsoleOutput(m_consoleOutputStorage, nodeInternPath);
+            m_consoleOutputStorage = ConsoleOutputUtils.openConsoleOutput(nodeInternPath);
+        }
     }
 
     private static IWriteFileStoreHandler getWriteFileStoreHandler() {

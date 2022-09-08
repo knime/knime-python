@@ -59,8 +59,10 @@ import org.knime.conda.CondaEnvironmentDirectory;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.filestore.internal.NotInWorkflowWriteFileStoreHandler;
 import org.knime.core.node.ExecutionMonitor;
+import org.knime.core.node.NodeLogger;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.workflow.FlowVariable;
+import org.knime.core.webui.data.DataServiceContext;
 import org.knime.python3.js.scripting.nodes.script.PythonScriptingService.ExecutableOption.ExecutableOptionType;
 import org.knime.scripting.editor.ScriptingService;
 
@@ -134,6 +136,16 @@ final class PythonScriptingService extends ScriptingService {
             // Set the executable options with the currently available flow variables
             m_executableOptions =
                 ExecutableSelectionUtils.getExecutableOptions(getWorkflowControl().getFlowObjectStack());
+
+            // Send the console output of the last execution to the dialog
+            try {
+                ((PythonScriptNodeModel)getWorkflowControl().getNodeModel())
+                    .sendLastConsoleOutputs(PythonScriptingService.this::addConsoleOutputEvent);
+            } catch (final Exception e) {
+                final var message = "Sending the console output of the last execution to the dialog failed.";
+                NodeLogger.getLogger(PythonScriptingService.class).warn(message, e);
+                DataServiceContext.getContext().addWarningMessage(message);
+            }
         }
 
         /**
