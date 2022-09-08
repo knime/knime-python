@@ -49,7 +49,6 @@
 package org.knime.python3.js.scripting.nodes.script;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
@@ -71,12 +70,12 @@ import org.knime.python3.Python3SourceDirectory;
 import org.knime.python3.PythonCommand;
 import org.knime.python3.PythonGateway;
 import org.knime.python3.PythonGatewayFactory.PythonGatewayDescription;
+import org.knime.python3.PythonGatewayUtils;
 import org.knime.python3.arrow.Python3ArrowSourceDirectory;
 import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.arrow.PythonArrowTableConverter;
 import org.knime.python3.js.scripting.PythonJsScriptingEntryPoint;
 import org.knime.python3.js.scripting.PythonJsScriptingSourceDirectory;
-import org.knime.python3.js.scripting.Utf8StreamConsumer;
 import org.knime.python3.types.PythonValueFactoryModule;
 import org.knime.python3.types.PythonValueFactoryRegistry;
 import org.knime.python3.views.Python3ViewsSourceDirectory;
@@ -109,18 +108,15 @@ final class PythonScriptingSession implements AutoCloseable {
 
     private final Consumer<ConsoleText> m_consoleTextConsumer;
 
+    private final AutoCloseable m_outputRedirector;
+
     PythonScriptingSession(final PythonCommand pythonCommand, final Consumer<ConsoleText> consoleTextConsumer,
         final IWriteFileStoreHandler fileStoreHandler) throws IOException, InterruptedException {
+        m_consoleTextConsumer = consoleTextConsumer;
         m_gateway = createGateway(pythonCommand);
         m_entryPoint = m_gateway.getEntryPoint();
         m_tableConverter = new PythonArrowTableConverter(EXECUTOR_SERVICE, ARROW_STORE_FACTORY, fileStoreHandler);
-//
-//        @SuppressWarnings("resource") // The stdout stream of a process doesn't have to be closed
-//        final var stdout = m_gateway.getStandardOutputStream();
-//        @SuppressWarnings("resource") // The stderr stream of a process doesn't have to be closed
-//        final var stderr = m_gateway.getStandardErrorStream();
-//        startStreamConsumer(stdout, stderr, consoleTextConsumer);
-        m_consoleTextConsumer = consoleTextConsumer;
+        m_outputRedirector = PythonGatewayUtils.redirectGatewayOutput(m_gateway, LOGGER::info, LOGGER::info, 100);
     }
 
     void setupIO(final PortObject[] inData, final int numOutPorts, final ExecutionMonitor exec)
@@ -137,17 +133,11 @@ final class PythonScriptingSession implements AutoCloseable {
 
             @Override
             public void add_stdout(final String text) {
-                var str = text.replace("\n", "\\n");
-                str = str.replace("\r", "\\r");
-                LOGGER.warn(System.currentTimeMillis() + ", stdout: " + str);
                 m_consoleTextConsumer.accept(new ConsoleText(text, false));
             }
 
             @Override
             public void add_stderr(final String text) {
-                var str = text.replace("\n", "\\n");
-                str = str.replace("\r", "\\r");
-                LOGGER.warn(System.currentTimeMillis() + ", stderr: " + str);
                 m_consoleTextConsumer.accept(new ConsoleText(text, true));
             }
         };
@@ -184,23 +174,13 @@ final class PythonScriptingSession implements AutoCloseable {
 
     @Override
     public void close() throws Exception {
+        try {
+            m_outputRedirector.close();
+        } catch (final Exception e) {
+            LOGGER.warn("Could not close the Python output redirector. "
+                + "Log messages of the Python process might be missing in the console.", e);
+        }
         m_tableConverter.close();
         m_gateway.close();
-    }
-
-    private static void startStreamConsumer(final InputStream stdout, final InputStream stderr,
-        final Consumer<ConsoleText> consumer) {
-        // NB: We set the charset of the stream to UTF-8 on Python side
-        // NB: The threads end automatically whenever the Python process dies
-        EXECUTOR_SERVICE.submit(new Utf8StreamConsumer( //
-            stdout, //
-            s -> consumer.accept(new ConsoleText(s, false)), //
-            e -> LOGGER.error("Reading the Python process stdout failed: " + e.getMessage(), e) //
-        ));
-        EXECUTOR_SERVICE.submit(new Utf8StreamConsumer( //
-            stderr, //
-            s -> consumer.accept(new ConsoleText(s, true)), //
-            e -> LOGGER.error("Reading the Python process stderr failed: " + e.getMessage(), e) //
-        ));
     }
 }
