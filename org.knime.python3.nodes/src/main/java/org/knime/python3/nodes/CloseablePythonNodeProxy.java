@@ -175,6 +175,9 @@ final class CloseablePythonNodeProxy
         final String extensionVersion) {
         final PythonPortObjectSpec[] serializedSpecs = Arrays.stream(specs)
             .map(PythonPortObjectTypeRegistry::convertToPythonPortObjectSpec).toArray(PythonPortObjectSpec[]::new);
+        // extensionVersion must always be the version of the installed extension, since it is used
+        // on the Python side to generate the schema and UI schema, which need to correspond to the
+        // set of parameters available in the installed version of the extension.
         return m_proxy.getDialogRepresentation(settings.getParameters(), serializedSpecs, extensionVersion);
     }
 

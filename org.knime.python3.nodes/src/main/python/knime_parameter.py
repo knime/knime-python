@@ -76,7 +76,7 @@ def _get_parameters(obj) -> Dict[str, "_BaseParameter"]:
     return {**class_params, **instance_params}
 
 
-def extract_parameters(obj, for_dialog=False) -> dict:
+def extract_parameters(obj, for_dialog: bool = False) -> dict:
     """
     Get all parameter values from obj as a nested dict.
     """
@@ -94,7 +94,7 @@ def _extract_parameters(obj, for_dialog: bool) -> dict:
 def inject_parameters(
     obj,
     parameters: dict,
-    parameters_version=None,
+    parameters_version: str = None,
     fail_on_missing: bool = True,
 ) -> None:
     parameters_version = parse_version(parameters_version)
@@ -160,7 +160,7 @@ def validate_specs(obj, specs) -> None:
         param._validate_specs(specs)
 
 
-def extract_schema(obj, extension_version=None, specs=None) -> dict:
+def extract_schema(obj, extension_version: str = None, specs=None) -> dict:
     extension_version = parse_version(extension_version)
     return {
         "type": "object",
@@ -179,14 +179,14 @@ def _extract_schema(obj, extension_version: Version, specs):
     return {"type": "object", "properties": properties}
 
 
-def extract_ui_schema(obj, extension_version=None) -> dict:
+def extract_ui_schema(obj, extension_version: str = None) -> dict:
     extension_version = parse_version(extension_version)
     elements = _extract_ui_schema_elements(obj, extension_version)
 
     return {"type": "VerticalLayout", "elements": elements}
 
 
-def _extract_ui_schema_elements(obj, extension_version, scope=None) -> dict:
+def _extract_ui_schema_elements(obj, extension_version: Version, scope=None) -> dict:
     if scope is None:
         scope = _Scope("#/properties/model/properties")
     elements = []
@@ -280,7 +280,12 @@ class _BaseParameter(ABC):
     __kind__ = "parameter"
 
     def __init__(
-        self, label, description, default_value, validator=None, since_version=None
+        self,
+        label,
+        description,
+        default_value,
+        validator=None,
+        since_version: str = None,
     ):
         self._label = label
         self._default_value = default_value
@@ -294,6 +299,8 @@ class _BaseParameter(ABC):
             self._label = name
 
     def _get_value(self, obj, for_dialog=None):
+        # the for_dialog parameter is needed to match the signature of the
+        # _get_value method for parameter groups
         return getattr(obj, self._name)
 
     def __get__(self, obj, objtype=None):
@@ -307,7 +314,11 @@ class _BaseParameter(ABC):
             obj.__parameters__[self._name] = self._default_value
             return self._default_value
 
-    def _inject(self, obj, value, parameters_version=None, fail_on_missing=True):
+    def _inject(
+        self, obj, value, parameters_version: Version = None, fail_on_missing=True
+    ):
+        # the parameters_version and fail_on_missing parameters are needed to match the signature of the
+        # _inject method for parameter groups
         self.__set__(obj, value)
 
     def __set__(self, obj, value):
@@ -322,8 +333,9 @@ class _BaseParameter(ABC):
     def __str__(self):
         return f"\n\t - name: {self._name}\n\t - label: {self._label}\n\t"
 
-    # TODO does version make sense here?
     def _validate(self, value, version=None):
+        # the version parameter is needed to match the signature of the
+        # _validate method for parameter groups
         self._validator(value)
 
     def _validate_specs(self, specs):
@@ -357,12 +369,16 @@ class _BaseParameter(ABC):
         """
         self._validator = func
 
-    def _extract_schema(self, extension_version=None, specs: List[ks.Schema] = None):
+    def _extract_schema(
+        self, extension_version: Version = None, specs: List[ks.Schema] = None
+    ):
         return {"title": self._label, "description": self.__doc__}
 
-    def _extract_ui_schema(self, name, parent_scope: _Scope, extension_version=None):
-        # note the extension_version parameter - not used but needed for conciseness;
-        # see the general _extract_ui_schema method
+    def _extract_ui_schema(
+        self, name, parent_scope: _Scope, extension_version: Version = None
+    ):
+        # the extension_version parameter is needed to match the signature of the
+        # _extract_ui_schema method for parameter groups
         return {
             "type": "Control",
             "label": self._label,
@@ -810,7 +826,7 @@ def parameter_group(label: str, since_version: str = None):
             """
             return _create_group_view(self, obj)
 
-        def _get_value(self, obj, for_dialog=False):
+        def _get_value(self, obj, for_dialog: bool = False):
             param_holder = _get_param_holder(self, obj)
             return {
                 name: param_obj._get_value(param_holder, for_dialog)
@@ -844,7 +860,9 @@ def parameter_group(label: str, since_version: str = None):
         def __set__(self, obj, values):
             raise RuntimeError("Cannot set parameter group values directly.")
 
-        def _inject(self, obj, values, parameters_version, fail_on_missing):
+        def _inject(
+            self, obj, values, parameters_version: Version, fail_on_missing: bool
+        ):
             param_holder = _get_param_holder(self, obj)
             _inject_parameters(
                 param_holder, values, parameters_version, fail_on_missing
@@ -853,7 +871,7 @@ def parameter_group(label: str, since_version: str = None):
         def __str__(self):
             return f"\tGroup name: {self._name}\n\tGroup label: {self._label}"
 
-        def _validate(self, values, version):
+        def _validate(self, values, version: Version):
             # validate individual parameters
             _validate_parameters(self, values, version)
 
@@ -884,7 +902,9 @@ def parameter_group(label: str, since_version: str = None):
                 self._validator = func
                 self._override_internal_validator = True
 
-        def _extract_ui_schema(self, name, parent_scope: _Scope, version=None):
+        def _extract_ui_schema(
+            self, name, parent_scope: _Scope, version: Version = None
+        ):
             scope = parent_scope.create_child(name, is_group=True)
             elements = _extract_ui_schema_elements(self, version, scope)
 
