@@ -192,6 +192,11 @@ final class CloseablePythonNodeProxy
         m_proxy.setParameters(settings.getParameters(), settings.getCreationVersion());
     }
 
+    @Override
+    public void determineCompatibility(final String savedVersion, final String extensionVersion, final String savedParams) {
+        m_proxy.determineCompatibility(savedVersion, extensionVersion, savedParams);
+    }
+
     private void initTableManager() {
         if (m_tableManager == null) {
             m_tableManager =

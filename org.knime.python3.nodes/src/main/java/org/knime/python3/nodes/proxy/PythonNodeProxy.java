@@ -61,4 +61,11 @@ public interface PythonNodeProxy extends PythonNodeModelProxy, PythonNodeDialogP
      */
     int getNumViews();
 
+    /**
+     * @param savedVersion
+     * @param extensionVersion
+     * @param savedParams
+     */
+    void determineCompatibility(String savedVersion, String extensionVersion, String savedParams);
+
 }

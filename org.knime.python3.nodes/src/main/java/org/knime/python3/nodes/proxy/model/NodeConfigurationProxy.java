@@ -80,4 +80,11 @@ public interface NodeConfigurationProxy extends NodeModelProxy {
      * @throws InvalidSettingsException if the settings are invalid
      */
     void validateSettings(JsonNodeSettings settings) throws InvalidSettingsException;
+
+    /**
+     * @param savedVersion
+     * @param extensionVersion
+     * @param savedParams
+     */
+    void determineCompatibility(String savedVersion, String extensionVersion, String savedParams);
 }

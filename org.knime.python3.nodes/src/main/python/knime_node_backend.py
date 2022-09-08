@@ -331,6 +331,14 @@ class _PythonNodeProxy:
         except BaseException as error:
             return str(error)
 
+    def determineCompatibility(
+        self, saved_version: str, current_version: str, saved_parameters: str
+    ) -> None:
+        saved_parameters_dict = json.loads(saved_parameters)
+        kp.determine_compatability(
+            self._node, saved_version, current_version, saved_parameters_dict
+        )
+
     def initializeJavaCallback(self, java_callback: JavaClass) -> None:
         self._java_callback = java_callback
 

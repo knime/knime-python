@@ -176,6 +176,12 @@ public final class DelegatingNodeModel extends NodeModel implements FlowVariable
             node -> {
                 var savedVersion = JsonNodeSettingsSchema.readVersion(settings);
                 m_settings = node.getSettingsSchema(savedVersion).createFromSettings(settings);
+
+                // if the extension version the settings were saved with is different from
+                // the installed extension version, we need to let the user know
+                if (!savedVersion.equals(m_extensionVersion)) {
+                    node.determineCompatibility(savedVersion, m_extensionVersion, m_settings.getParameters());
+                }
             });
     }
 

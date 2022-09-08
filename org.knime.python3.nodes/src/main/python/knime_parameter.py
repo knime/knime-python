@@ -139,6 +139,7 @@ def _validate_parameters(obj, parameters: dict, version: Version) -> str:
     This method will raise a ValueError if a parameter is invalid, or if a parameter
     was missing in the version the setting being validated were saved with.
     """
+    missing_params = []
     for name, param_obj in _get_parameters(obj).items():
         if param_obj._since_version <= version:
             if name in parameters:
@@ -149,7 +150,11 @@ def _validate_parameters(obj, parameters: dict, version: Version) -> str:
 
                 # Clairfy behaviour for missing parameters
                 # TODO https://knime-com.atlassian.net/browse/AP-19387
-                LOGGER.warning(f"Missing value for parameter '{name}'.")
+                # LOGGER.warning(f"Missing value for parameter '{name}'.")
+                missing_params.append(name)
+
+    # if missing_params:
+    #     LOGGER.warning(f"Missing parameters: {missing_params}")
 
 
 def validate_specs(obj, specs) -> None:
@@ -227,6 +232,69 @@ def extract_parameter_descriptions(obj) -> dict:
 def _extract_parameter_descriptions(obj, scope: "_Scope"):
     params = _get_parameters(obj).values()
     return [param._extract_description(scope) for param in params]
+
+
+def determine_compatability(
+    obj, saved_version: str, current_version: str, saved_parameters: dict
+) -> None:
+    """
+    Determine if backward/forward compatibility is taking place based on the saved and current version
+    of the node settings and provide appropriate feedback to the user. When this function is called,
+    the saved and current versions are already known to be different.
+    """
+    saved_version = parse_version(saved_version)
+    current_version = parse_version(current_version)
+    saved_parameters = saved_parameters["model"]
+    _determine_compatability(obj, saved_version, current_version, saved_parameters)
+
+
+def _determine_compatability(
+    obj, saved_version: Version, current_version: Version, saved_parameters: dict
+):
+    missing_params = _detect_missing_parameters(obj, saved_parameters, current_version)
+    if saved_version < current_version:
+        LOGGER.warning(
+            f"The node was previously configured with an older version of the extension: {saved_version}, current version is {current_version}."
+        )
+        if missing_params:
+            LOGGER.warning(
+                f"The following parameters have since been added, and are configured with their default values: {', '.join(missing_params)}."
+            )
+    else:
+        LOGGER.error(
+            f"The node was previously configured with a newer version of the extension: {saved_version}, current version is {current_version}."
+        )
+        LOGGER.error(
+            f"Please note that forward compatibility is not supported. Please update the extension to {saved_version} or later, or reconfigure the node."
+        )
+
+
+def _detect_missing_parameters(
+    obj, saved_parameters: dict, current_version: Version
+) -> list:
+    """
+    Returns a list containing the names of the parameters that could not be found in the saved parameters
+    of the node.
+    """
+    result = []
+    for name, param_obj in _get_parameters(obj).items():
+        if param_obj._since_version <= current_version:
+            if name not in saved_parameters:
+                if _is_group(param_obj):
+                    result.extend(
+                        _detect_missing_parameters(param_obj, {}, current_version)
+                    )
+                else:
+                    result.append(param_obj._label)
+            else:
+                if _is_group(param_obj):
+                    result.extend(
+                        _detect_missing_parameters(
+                            param_obj, saved_parameters[name], current_version
+                        )
+                    )
+
+    return result
 
 
 def _is_group(param):
