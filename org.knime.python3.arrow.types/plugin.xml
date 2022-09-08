@@ -37,6 +37,10 @@
                PythonClassName="DenseBitVectorValueFactory"
                ValueFactory="org.knime.core.data.v2.value.DenseBitVectorValueFactory">
          </PythonValueFactory>
+         <PythonValueFactory
+               PythonClassName="DenseByteVectorValueFactory"
+               ValueFactory="org.knime.core.data.v2.value.DenseByteVectorValueFactory">
+         </PythonValueFactory>
       </Module>
    </extension>
 

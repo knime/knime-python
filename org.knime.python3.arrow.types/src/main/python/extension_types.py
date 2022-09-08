@@ -308,48 +308,56 @@ class BooleanSetValueFactory(kt.PythonValueFactory):
         return {"0": value.has_true, "1": value.has_false, "2": value.has_missing}
 
 
-try:
-    from bitarray import bitarray
-    from bitarray.util import ba2hex, hex2ba
+class DenseBitVector(str):
+    """
+    Represents a DenseBitVector from KNIME as bitstring in Python
+    """
 
-    class DenseBitVectorValueFactory(kt.PythonValueFactory):
-        def __init__(self):
-            kt.PythonValueFactory.__init__(self, bitarray)
+    def to_bytes(self):
+        length = len(self)
+        length_bytes = length.to_bytes(length=8, byteorder="little")
+        return length_bytes + int(self, 2).to_bytes(length=length, byteorder="little")
 
-        def decode(self, storage):
-            if storage is None:
-                return None
-            return hex2ba(storage)
+    @classmethod
+    def from_bytes(cls, data):
+        length = int.from_bytes(data[:8], byteorder="little")
+        binary_strings = [format(b, "08b") for b in reversed(data[8:])]
+        return cls("".join(binary_strings)[-length:])
 
-        def encode(self, value):
-            if value is None:
-                return None
-            return ba2hex(value)
 
-        def can_convert(self, value):
-            return type(value) == bitarray
+class DenseBitVectorValueFactory(kt.PythonValueFactory):
+    def __init__(self):
+        kt.PythonValueFactory.__init__(self, DenseBitVector)
 
-except ImportError:
-    import logging
+    def decode(self, storage):
+        if storage is None:
+            return None
+        return DenseBitVector.from_bytes(storage)
 
-    LOGGER = logging.getLogger(__name__)
-    LOGGER.warning(
-        "Could not find library bitarray, KNIME BitVectorValues will only be represented as hex string in Python"
-    )
+    def encode(self, value):
+        if value is None:
+            return None
+        return value.to_bytes()
 
-    class DenseBitVectorValueFactory(kt.PythonValueFactory):
-        """
-        Barebones variant of a BitVector representation as hex string
-        """
 
-        def __init__(self):
-            kt.PythonValueFactory.__init__(self, str)
+class DenseByteVector(bytes):
+    def __str__(self):
+        return "{" + ",".join([str(b) for b in self]) + "}"
 
-        def decode(self, storage):
-            return storage
 
-        def encode(self, value):
-            return value
+class DenseByteVectorValueFactory(kt.PythonValueFactory):
+    def __init__(self):
+        kt.PythonValueFactory.__init__(self, DenseByteVector)
+
+    def decode(self, storage):
+        if storage is None:
+            return None
+        return DenseByteVector(storage)
+
+    def encode(self, value):
+        if value is None:
+            return None
+        return value
 
 
 def _knime_value_factory(name):
