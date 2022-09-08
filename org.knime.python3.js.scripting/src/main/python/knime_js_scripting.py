@@ -47,10 +47,12 @@
 """
 
 import json
-import py4j.clientserver
 import sys
+from io import StringIO
+from contextlib import redirect_stdout, redirect_stderr
+import py4j.clientserver
 from py4j.java_collections import ListConverter
-from typing import Any, Dict, List
+from typing import Any, Dict, List, TextIO, Callable
 
 import knime_arrow_table as kat
 import knime_gateway as kg
@@ -76,6 +78,8 @@ class ScriptingEntryPoint(kg.EntryPoint):
         self._workspace: Dict[str, Any] = {}
 
     def setupIO(self, data_sources, num_outputs, java_callback):
+        self._java_callback = java_callback
+
         # TODO(AP-19339) adapt to new API with Table
         def create_python_sink():
             java_sink = java_callback.create_sink()
@@ -97,11 +101,13 @@ class ScriptingEntryPoint(kg.EntryPoint):
         kt._backend = kat.ArrowBackend(create_python_sink)
 
     def execute(self, script):
-        # Run the script
-        exec(script, self._workspace)
-
-        sys.stdout.flush()
-        sys.stderr.flush()
+        with redirect_stdout(
+            _ForwardingTextIO(sys.stdout, self._java_callback.add_stdout)
+        ), redirect_stderr(
+            _ForwardingTextIO(sys.stderr, self._java_callback.add_stderr)
+        ):
+            # Run the script
+            exec(script, self._workspace)
 
         return self._getVariablesInWorkspace()
 
@@ -149,7 +155,12 @@ class ScriptingEntryPoint(kg.EntryPoint):
                 continue  # Hide magic objects.
 
             var_type = type(value).__name__
-            if var_type not in ["module", "type", "function", "builtin_function_or_method"]:
+            if var_type not in [
+                "module",
+                "type",
+                "function",
+                "builtin_function_or_method",
+            ]:
                 # Not a special type: Get the readable string for the user
                 var_value = object_to_string(value)
             elif var_type == "builtin_function_or_method":
@@ -168,6 +179,46 @@ class ScriptingEntryPoint(kg.EntryPoint):
 
     class Java:
         implements = ["org.knime.python3.js.scripting.PythonJsScriptingEntryPoint"]
+
+
+class _ForwardingTextIO:
+    """
+    Forwards outputs intended for a wrapped output file while mimicking the file. All attribute look-ups except for the
+    ones that are relevant for copying are simply delegated to the original file. Look-ups of magic attributes cannot
+    be delegated. The only remotely relevant magic attributes should be the ones for entering/exiting the runtime
+    context (and even those will most likely not matter in practice).
+    """
+
+    def __init__(self, original: TextIO, consumer: Callable[[str], None]):
+        self._original = original
+        self._original_context = None
+        self._consumer = consumer
+
+    def write(self, s):
+        self._get_original().write(s)
+        self._consumer(s)
+
+    def writelines(self, lines):
+        self._get_original().writelines(lines)
+        for l in lines:
+            self._consumer(l)
+
+    def __enter__(self):
+        self._original_context = self._original.__enter__()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        suppress = self._original_context.__exit__(exc_type, exc_val, exc_tb)
+        self._original_context = None
+        return suppress
+
+    def __getattr__(self, item):
+        return getattr(self._get_original(), item)
+
+    def _get_original(self):
+        return (
+            self._original if self._original_context is None else self._original_context
+        )
 
 
 if __name__ == "__main__":
