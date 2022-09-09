@@ -47,6 +47,7 @@
 """
 import abc
 import functools
+from collections import OrderedDict
 from typing import Any, Callable
 import pyarrow as pa
 import numpy as np
@@ -465,6 +466,47 @@ def is_struct_dict_encoded(dtype: pa.DataType):
 pa.register_extension_type(StructDictEncodedType(pa.null()))
 
 
+def get_unique_array_key(array: pa.Array):
+    """ extracts and combines the memory address of the buffer of a given array as key
+
+    :param array: array for which the key is needed
+    :return: tuple containing each address
+    """
+    buffers = array.buffers()
+    keys = []
+    for buffer in buffers:
+        if buffer:
+            keys.append(buffer.address)
+        else:
+            keys.append(None)
+    return tuple(keys)
+
+
+class LRUCacheDict(OrderedDict):
+    """Dictionary with a limited length utilizing a LRU cache strategy."""
+
+    def __init__(self, *args, cache_len: int = 128, **kwargs):
+        self.cache_len = cache_len
+
+        super().__init__(*args, **kwargs)
+
+    def __setitem__(self, key, value):
+        super().__setitem__(key, value)
+        super().move_to_end(key)
+
+        while len(self) > self.cache_len:
+            oldkey = next(iter(self))
+            super().__delitem__(oldkey)
+
+    def __getitem__(self, key):
+        val = super().__getitem__(key)
+        super().move_to_end(key)
+        return val
+
+
+value_indices_per_array = LRUCacheDict()
+
+
 class StructDictEncodedArray(_AbstractArray, pa.ExtensionArray):
     """A struct dictionary encoded array.
 
@@ -515,7 +557,11 @@ class StructDictEncodedArray(_AbstractArray, pa.ExtensionArray):
         # OPTION 2:
         # Initialize an array with all indices like in Java
         # TODO this can probably be optimized (maybe list comprehension)
-        if not hasattr(self, "value_indices"):
+        # pyarrow re-instantiates our DictEncodedExtensionArray for every access
+        # Thus, the dict keys need to be recalculated. To save them a global LRU Cache dictionary is used,
+        # to map the memory addresses of the data contained in each array to its keys
+        key = get_unique_array_key(self)
+        if key not in value_indices_per_array:
             dict_key_to_index = {}
             value_indices = []
             for idx, dict_key in enumerate(self._dict_keys()):
@@ -529,8 +575,8 @@ class StructDictEncodedArray(_AbstractArray, pa.ExtensionArray):
                     # This is the first occurrence of the dict key
                     dict_key_to_index[dict_key] = idx
                     value_indices.append(idx)
-            self.value_indices = value_indices  # TODO use pyarrow.array?
-        return self.value_indices[index]
+            value_indices_per_array[key] = value_indices  # TODO use pyarrow.array?
+        return value_indices_per_array[key][index]
 
         # OPTION 3:
         # Use a Map from dictKey to index and add all dictKeys that appear before the current index

@@ -660,6 +660,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         # df.loc[len(df)] = df.loc[0]
         # self.assertTrue(df.iloc[0].equals(df.iloc[-1]))
 
+
     def test_append_sets_lists_2(self):
         columns = [
             "StringCol",

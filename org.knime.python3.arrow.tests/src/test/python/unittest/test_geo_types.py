@@ -307,7 +307,7 @@ class GeoSpatialExtensionTypeTest(unittest.TestCase):
             """,
         )
 
-        df = self._generate_test_data_frame("ChunkedDictEncGeoSpatials.zip",
+        df = self._generate_test_data_frame("5kDictEncodedChunkedGeospatials.zip",
                                             columns=["Name", "geometry"])
         import geopandas as gpd
         gdf = gpd.GeoDataFrame(df)
@@ -316,11 +316,10 @@ class GeoSpatialExtensionTypeTest(unittest.TestCase):
         self.assertEqual(str(gdf["geometry"].iloc[0]), "LINESTRING (30 10, 10 30, 40 40)")
 
         # test slicing over a chunked extension array
-        sliced = (gdf["geometry"].iloc[-11:])
+        sliced = (gdf["geometry"].iloc[-21:])
         self.assertEqual(str(sliced[0]), "POINT (50 10)")
         self.assertEqual(str(sliced[3]), "LINESTRING (30 10, 10 30, 40 40)")
         self.assertEqual(str(sliced[5]), "POINT (30 10)")
-
 
 
 if __name__ == "__main__":

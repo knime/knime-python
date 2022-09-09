@@ -177,7 +177,7 @@ def _struct_type_from_values(*args):
 
 
 class KnimePandasExtensionArray(pdext.ExtensionArray):
-    chunk_end_lst = None
+    chunk_start_list = None
     def __init__(
         self,
         storage_type: pa.DataType,
@@ -283,7 +283,8 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
         :return: Storage Scalar for the value at item
         """
         storage_scalar_list = []
-        for field in storage.flatten():  # we unpack each sub-array
+        for field_idx in range(storage.type.num_fields): # we unpack each sub-array
+            field = storage.field(field_idx)
             # if we have a nested struct array and not the final dict encoded array we recursively access its fields
             if isinstance(field, pa.StructArray) and not isinstance(field.type, kasde.StructDictEncodedType):
                 storage_scalar_list.append(self._get_int_item_from_struct_arr(field, item))
@@ -311,19 +312,20 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
             chunk_start += len(chunk) # chunks end at len - 1
         return chunk_start_list
 
+
     def __getitem__(self, item):
         if isinstance(item, int):
             if isinstance(self._storage_type, pa.StructType):
                 # if the storage is a struct type, the unpacking only works for top layer
                 # thus, we have to manually access the chunks
                 if isinstance(self._data, pa.ChunkedArray):
-                    if self.chunk_end_lst is None:
+                    if self.chunk_start_list is None:
                         self.chunk_start_list = self._get_all_chunk_start_indices(self._data)
                     # use a right bisection to locate the closest chunk index
                     chunk_idx = bisect.bisect_right(self.chunk_start_list, item) - 1
                     item = item - self.chunk_start_list[chunk_idx]  # get the index inside the chunk
-                    data = self._data.chunks[chunk_idx]  # get the correct chunk
-                    storage = data.storage
+                    chunk = self._data.chunk(chunk_idx)  # get the correct chunk
+                    storage = chunk.storage
                 elif isinstance(self._data, pa.StructArray):
                     # else we just access the struct
                     storage = self._data
