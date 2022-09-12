@@ -90,6 +90,5 @@ export const createScriptingService = async () => {
         overwritePythonCommandByFlowVarName(await createJsonServiceAndLoadSettings())
     );
     muteReactivity(scriptingService);
-    scriptingService.dialogOpened();
     return scriptingService;
 };

@@ -11,7 +11,9 @@ import CondaEnvironment from './components/CondaEnvironment.vue';
 import { createScriptingService,
     PythonScriptingService,
     Workspace,
-    InputObjects } from './utils/python-scripting-service';
+    InputObjects,
+    ExecutableOption,
+    ExecutableInfo } from './utils/python-scripting-service';
 import { registerMonacoInputColumnCompletions } from './utils/python-completions';
 
 const getOrThrow = <T, >(obj: T | undefined, name: string) => {
@@ -20,6 +22,49 @@ const getOrThrow = <T, >(obj: T | undefined, name: string) => {
     } else {
         throw Error(`The ${name} is not yet defined. This is an implementation error.`);
     }
+};
+
+const getSelectedLines = (editorModel: monaco.editor.ITextModel, selection: monaco.Selection) => {
+    const { startLineNumber, endLineNumber, endColumn } =
+        selection.selectionStartLineNumber <= selection.positionLineNumber
+            ? {
+                // Selection goes from top to bottom
+                startLineNumber: selection.selectionStartLineNumber,
+                endLineNumber: selection.positionLineNumber,
+                endColumn: selection.positionColumn
+            }
+            : {
+                // Selection goes from bottom to top
+                startLineNumber: selection.positionLineNumber,
+                endLineNumber: selection.selectionStartLineNumber,
+                endColumn: selection.selectionStartColumn
+            };
+    return editorModel.getValueInRange({
+        startLineNumber,
+        endLineNumber: endLineNumber + (endColumn > 1 ? 1 : 0),
+        startColumn: 0,
+        endColumn: 0
+    });
+};
+
+type AppData = {
+    scriptingService?: PythonScriptingService;
+    loading: boolean;
+
+    // Monaco editor
+    editor?: monaco.editor.IStandaloneCodeEditor;
+    editorModel?: monaco.editor.ITextModel;
+    hasEditorSelection: boolean;
+
+    // Python process handling
+    pythonExecutableId: string;
+    pythonExecutableOptions: ExecutableOption[];
+    pythonExecutableInfo: ExecutableInfo | null;
+    status: 'idle' | 'running';
+    workspace: Workspace;
+
+    // Script inputs
+    inputObjects: InputObjects;
 };
 
 export default Vue.extend({
@@ -36,33 +81,41 @@ export default Vue.extend({
     provide(): { getScriptingService: () => PythonScriptingService } {
         return { getScriptingService: () => this.getScriptingService() };
     },
-    data() {
+    data(): AppData {
         return {
             loading: true,
-            status: 'idle',
-            inputObjects: [],
             hasEditorSelection: false,
+
+            // Python process handling
+            pythonExecutableId: '',
+            pythonExecutableOptions: [],
+            pythonExecutableInfo: null,
+            status: 'idle',
             workspace: {
                 names: ['no workspace'],
                 types: [''],
                 values: ['']
-            }
-        } as {
-            loading: boolean;
-            scriptingService?: PythonScriptingService;
-            editor?: monaco.editor.IStandaloneCodeEditor;
-            editorModel?: monaco.editor.ITextModel;
-            status: 'idle' | 'running';
-            hasEditorSelection: boolean;
-            inputObjects: InputObjects;
-            workspace: Workspace;
+            },
+
+            // Script inputs
+            inputObjects: []
         };
     },
     async mounted() {
         this.scriptingService = await createScriptingService();
         this.loading = false;
-        this.startInteractive();
+
+        // Notify the backend that the dialog is ready
+        this.scriptingService.dialogOpened();
+
+        // Set the python executable to the currently selected option -> will start the interactive session
+        this.pythonExecutableChanged(this.scriptingService.getExecutableSelection());
+
+        // Get some more information from the backend
+        this.pythonExecutableOptions = await this.scriptingService.getExecutableOptions(this.pythonExecutableId);
         this.inputObjects = await this.getScriptingService().getInputObjects();
+
+        // Add special autocompletion
         registerMonacoInputColumnCompletions(this.inputObjects);
     },
     methods: {
@@ -70,30 +123,36 @@ export default Vue.extend({
             // TODO(AP-19332) handle gracefully if starting the interactive session fails
             this.getScriptingService().startInteractive(this.getScriptingService().getExecutableSelection());
         },
+        /**
+         * Select another executable option. Updates the state, restarts the interactive Python session and requests
+         * information about the selected executable.
+         *
+         * @param id the identifier of the selected python executable
+         * @returns
+         */
+        pythonExecutableChanged(id: string) {
+            // Update the state
+            this.pythonExecutableId = id;
+
+            // Update the node settings
+            this.getScriptingService().setExecutableSelection(id);
+
+            // Restart the interactive Python process
+            this.startInteractive();
+
+            // Get the packages of the selected environment
+            this.pythonExecutableInfo = null;
+            this.getScriptingService().getExecutableInfo(id).then((info: ExecutableInfo) => {
+                if (this.pythonExecutableId === id) {
+                    // Only set the packages if this environment is still selected
+                    this.pythonExecutableInfo = info;
+                }
+            });
+        },
         runSelectedLines() {
             const selection = this.getEditor().getSelection();
             if (selection) {
-                const { startLineNumber, endLineNumber, endColumn } =
-                    selection.selectionStartLineNumber <= selection.positionLineNumber
-                        ? {
-                            // Selection goes from top to bottom
-                            startLineNumber: selection.selectionStartLineNumber,
-                            endLineNumber: selection.positionLineNumber,
-                            endColumn: selection.positionColumn
-                        }
-                        : {
-                            // Selection goes from bottom to top
-                            startLineNumber: selection.positionLineNumber,
-                            endLineNumber: selection.selectionStartLineNumber,
-                            endColumn: selection.selectionStartColumn
-                        };
-                const script = this.getEditorModel().getValueInRange({
-                    startLineNumber,
-                    endLineNumber: endLineNumber + (endColumn > 1 ? 1 : 0),
-                    startColumn: 0,
-                    endColumn: 0
-                });
-                this.runScript(script);
+                this.runScript(getSelectedLines(this.getEditorModel(), selection));
             } else {
                 // NB: This cannot happen because getSelection never returns null
                 // and the button is disabled if there is no selection
@@ -143,9 +202,6 @@ export default Vue.extend({
             // if not: Add quotes, else: don't add quotes
             this.getEditor().trigger('keyboard', 'type', { text: column });
         },
-        onExecutableChanged() {
-            this.startInteractive();
-        },
 
         // Null-safe access to editor and editor model
         getScriptingService(): PythonScriptingService {
@@ -187,6 +243,7 @@ export default Vue.extend({
       @monaco-created="onMonacoCreated"
     >
       <template #buttons>
+        <!-- TODO(AP-19344) extract into a dumb component to cleanup the template -->
         <Button
           with-border
           compact
@@ -213,7 +270,10 @@ export default Vue.extend({
         />
         <CondaEnvironment
           v-if="activeTab === 'conda_env'"
-          @executable-changed="onExecutableChanged"
+          :value="pythonExecutableId"
+          :executable-options="pythonExecutableOptions"
+          :executable-info="pythonExecutableInfo"
+          @input="pythonExecutableChanged"
         />
       </template>
 

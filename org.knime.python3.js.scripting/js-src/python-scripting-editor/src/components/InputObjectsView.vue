@@ -9,7 +9,6 @@ import Button from '~/webapps-common/ui/components/Button.vue';
 export default Vue.extend({
     name: 'InputObjectsView',
     components: { Button },
-    inject: ['getScriptingService'],
     props: {
         inputObjects: {
             type: Array as PropType<InputObjects>,
