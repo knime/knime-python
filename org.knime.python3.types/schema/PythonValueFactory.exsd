@@ -50,7 +50,10 @@
    <element name="Module">
       <complexType>
          <sequence>
-            <element ref="PythonValueFactory" minOccurs="1" maxOccurs="unbounded"/>
+            <choice minOccurs="1" maxOccurs="unbounded">
+               <element ref="PythonValueFactory"/>
+               <element ref="PythonProxyType"/>
+            </choice>
          </sequence>
          <attribute name="modulePath" type="string" use="required">
             <annotation>
@@ -66,6 +69,33 @@
    </element>
 
    <element name="PythonValueFactory">
+      <complexType>
+         <attribute name="PythonClassName" type="string" use="required">
+            <annotation>
+               <documentation>
+                  Name of the class that represents the PythonValueFactory
+               </documentation>
+            </annotation>
+         </attribute>
+         <attribute name="ValueFactory" type="string">
+            <annotation>
+               <documentation>
+                  
+               </documentation>
+               <appinfo>
+                  <meta.attribute kind="java" basedOn=":org.knime.core.data.v2.ValueFactory"/>
+               </appinfo>
+            </annotation>
+         </attribute>
+      </complexType>
+   </element>
+
+   <element name="PythonProxyType">
+      <annotation>
+         <documentation>
+            A Python proxy type that maps to the same Java ValueFactory as some other PythonValueFactory. ProxyTypes can only used while writing, when reading a value from a table in Python it will always use the main PyhonValueFactory.
+         </documentation>
+      </annotation>
       <complexType>
          <attribute name="PythonClassName" type="string" use="required">
             <annotation>

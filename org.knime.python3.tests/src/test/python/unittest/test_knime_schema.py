@@ -680,6 +680,64 @@ class SchemaTest(unittest.TestCase):
             "struct<0: struct<0: struct<0: int64, 1: int64>, 1: struct<0: large_list<item: int64>, 1: struct<0: int64, 1: int64>>>, 1: large_list<item: struct<0: large_list<item: int64>, 1: int64>>>",
         )
 
+    def test_proxy_types(self):
+        """
+        Tests knime_schema.logical with registered proxy types.
+        """
+        import pyarrow as pa
+        import knime_types as kt
+        import extension_types as et
+        import knime_arrow_types as kat
+
+        class MyTime:
+            def __init__(self, nano_of_day):
+                self.nano_of_day = nano_of_day
+
+        class MyLocalTimeValueFactory(kt.PythonValueFactory):
+            def __init__(self) -> None:
+                kt.PythonValueFactory.__init__(self, MyTime)
+
+            def decode(self, nano_of_day):
+                if nano_of_day is None:
+                    return None
+                return MyTime(nano_of_day)
+
+            def encode(self, time):
+                if time is None:
+                    return None
+                return time.nano_of_day
+
+        kt._python_proxy_type_to_value_factory[MyTime] = (
+            MyLocalTimeValueFactory(),
+            dt.time,
+        )
+
+        EXPECTED_VALUE_FACTORY = '{"value_factory_class":"org.knime.core.data.v2.time.LocalTimeValueFactory"}'
+
+        logical_type = k.logical(MyTime)
+        self.assertEqual(k.int64(), logical_type.storage_type)
+        self.assertEqual(EXPECTED_VALUE_FACTORY, logical_type.logical_type)
+        self.assertEqual(MyTime, logical_type.proxy_type)
+
+        # Test pandas dtype
+        pandas_dtype = logical_type.to_pandas()
+        self.assertEqual(
+            pandas_dtype.name,
+            f"PandasLogicalTypeExtensionType(int64, {EXPECTED_VALUE_FACTORY})",
+        )
+
+        # Test pyarrow extension type
+        pyarrow_extension_type = logical_type.to_pyarrow()
+        self.assertEqual(pyarrow_extension_type.storage_type, pa.int64())
+        self.assertEqual(
+            pyarrow_extension_type.logical_type,
+            EXPECTED_VALUE_FACTORY,
+        )
+        self.assertEqual(
+            pyarrow_extension_type._converter.__class__, MyLocalTimeValueFactory
+        )
+        self.assertEqual(pyarrow_extension_type.__class__, kat.LogicalTypeExtensionType)
+
 
 if __name__ == "__main__":
     unittest.main()

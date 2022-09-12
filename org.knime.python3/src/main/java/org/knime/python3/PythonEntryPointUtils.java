@@ -81,6 +81,15 @@ public final class PythonEntryPointUtils {
                     factory.getDataSpecRepresentation(), factory.getDataTraitsJson());
             }
         }
+
+        // Register proxy types after all other types because they will reference the original value factories
+        for (final var module : modules) {
+            final var pythonModule = module.getModuleName();
+            for (final var proxyType : module.getPythonProxyTypes()) {
+                entryPoint.registerPythonProxyType(pythonModule, proxyType.getPythonValueFactoryName(),
+                    proxyType.getJavaValueFactoryName());
+            }
+        }
     }
 
 }

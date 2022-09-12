@@ -410,6 +410,15 @@ def _apply_to_array(array, func):
 
 
 class LogicalTypeExtensionType(pa.ExtensionType):
+    """
+    The LogicalTypeExtensionType encodes the KNIME logical type - given in form of a
+    Java ValueFactory class name - so that it can be used as Arrow ExtensionType.
+    The storage type is the type of the values stored in the "physical" Arrow table.
+
+    A converter can be given to convert the value during read and write access,
+    the converter is an instance of a PythonValueFactory.
+    """
+
     def __init__(self, converter, storage_type, java_value_factory):
         self._converter = converter
         self._logical_type = java_value_factory

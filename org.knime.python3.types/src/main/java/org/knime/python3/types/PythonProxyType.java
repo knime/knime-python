@@ -44,51 +44,43 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Aug 27, 2021 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   12 Sep 2022 (Carsten Haubold): created
  */
 package org.knime.python3.types;
 
-import java.nio.file.Path;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import org.knime.core.data.v2.ValueFactory;
 
 /**
- * Module holding one or more {@link PythonValueFactory PythonValueFactories}.
+ * Bundles a Java {@link ValueFactory} with a PythonValueFactory that defines the converter for
+ * a proxy type on the Python side. This means that it allows alternative Python types to be
+ * converted to the same Java {@link ValueFactory}, hence representing a type proxy on the Python
+ * side.
  *
- * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+ * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
-public final class PythonValueFactoryModule implements Iterable<PythonValueFactory>, PythonModule {
+public final class PythonProxyType {
 
-    private final Path m_modulePath;
+    private final ValueFactory<?, ?> m_valueFactory;
 
-    private final List<PythonValueFactory> m_factories;
+    private final String m_pythonValueFactoryName;
 
-    private final List<PythonProxyType> m_proxyTypes;
-
-    PythonValueFactoryModule(final Path modulePath, final PythonValueFactory[] factories, final PythonProxyType[] proxyTypes) {
-        m_modulePath = modulePath;
-        m_factories = List.of(factories);
-        m_proxyTypes = Collections.unmodifiableList(List.of(proxyTypes));
+    PythonProxyType(final ValueFactory<?, ?> valueFactory, final String pythonClassName) {
+        m_valueFactory = valueFactory;
+        m_pythonValueFactoryName = pythonClassName;
     }
 
-    @Override
-    public Path getParentDirectory() {
-        return m_modulePath.getParent();
+    /**
+     * @return the name of the ValueFactory on Python side
+     */
+    public String getPythonValueFactoryName() {
+        return m_pythonValueFactoryName;
     }
 
-    @Override
-    public String getModuleName() {
-        return m_modulePath.getFileName().toString().replace(".py", "");
-    }
-
-    @Override
-    public Iterator<PythonValueFactory> iterator() {
-        return m_factories.iterator();
-    }
-
-    public List<PythonProxyType> getPythonProxyTypes() {
-        return m_proxyTypes;
+    /**
+     * @return the name of the {@link ValueFactory} on the Java side
+     */
+    public String getJavaValueFactoryName() {
+        return m_valueFactory.getClass().getName();
     }
 
 }

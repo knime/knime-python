@@ -248,6 +248,7 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
             storage_type = dtype._storage_type
             logical_type = dtype._logical_type
             converter = dtype._converter
+
             if converter is not None and converter.needs_conversion():
                 scalars = [converter.encode(s) for s in scalars]
 

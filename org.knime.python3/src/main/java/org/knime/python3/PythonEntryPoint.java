@@ -111,4 +111,17 @@ public interface PythonEntryPoint {
     void registerPythonValueFactory(final String pythonModule, final String pythonValueFactoryName,
         final String dataSpec, final String dataTraits);
 
+    /**
+     * Register a combination of a {@link ValueFactory} of KNIME with its equivalent PythonValueFactory,
+     * to be used as a proxy type, allowing alternative type representations on the Python side to be
+     * written into a column using a Java {@link ValueFactory} that usually maps to a different type
+     * in Python.
+     *
+     * @param pythonModule The module in which the PythonValueFactory is defined
+     * @param pythonValueFactoryName The name of the PythonValueFactory
+     * @param javaValueFactory The name of the Java {@link ValueFactory}
+     */
+    void registerPythonProxyType(final String pythonModule, final String pythonValueFactoryName,
+        final String javaValueFactory);
+
 }

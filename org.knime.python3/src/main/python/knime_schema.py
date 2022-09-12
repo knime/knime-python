@@ -239,11 +239,19 @@ class LogicalType(KnimeType):
     Some LogicalTypes, such as date and time formats, are also implemented on the Python
     side. For these, the value_type property represents the Python type, and these
     logical types can be created using the helper method knime_schema.logical(value_type) below.
+
+    To allow multiple Python types to map to the same KNIME logical type, a
+    proxy_type_converter can be provided. The proxy type converter is also a PythonValueFactory
+    and must take care of the full type conversion, such that it populates the appropriate storage
+    type of the underlying logical type.
     """
 
-    def __init__(self, logical_type, storage_type: KnimeType):
+    def __init__(
+        self, logical_type, storage_type: KnimeType, proxy_type_converter=None
+    ):
         self._logical_type = logical_type
         self._storage_type = storage_type
+        self._proxy_type_converter = proxy_type_converter
 
     @property
     def logical_type(self):
@@ -271,17 +279,33 @@ class LogicalType(KnimeType):
 
         return kt._java_value_factory_to_python_type[self.logical_type]
 
+    @property
+    def proxy_type(self) -> Type:
+        """
+        Optional: a proxy type that can be used on the Python side to read or write
+        the values which are internally treated like the original logical type.
+        """
+        if self._proxy_type_converter:
+            return self._proxy_type_converter.compatible_type
+        else:
+            return None
+
     def __eq__(self, other: object) -> bool:
         return (
             other.__class__ == self.__class__
             and other.logical_type == self.logical_type
             and other.storage_type == self.storage_type
+            and other.proxy_type == self.proxy_type
         )
 
     def __str__(self) -> str:
         if self.logical_type in kt._java_value_factory_to_python_type:
             dtype = kt._java_value_factory_to_python_type[self.logical_type]
-            return f"extension<{'.'.join([dtype.__module__, dtype.__name__])}>"
+            type_name = ".".join([dtype.__module__, dtype.__name__])
+            proxy_type = self.proxy_type
+            if proxy_type:
+                return f"extension<proxy={proxy_type}, internal={type_name}>"
+            return f"extension<{type_name}>"
         else:
             return (
                 f"extension<logical={self.logical_type}, storage={self.storage_type}>"
@@ -302,9 +326,14 @@ class LogicalType(KnimeType):
             )
         data_spec = bundle.data_spec_json
         pa_storage_type = kat.data_spec_to_arrow(data_spec)
+        converter = (
+            self._proxy_type_converter
+            if self._proxy_type_converter
+            else bundle.value_factory
+        )
 
         return kat.LogicalTypeExtensionType(
-            converter=bundle.value_factory,
+            converter=converter,
             storage_type=pa_storage_type,
             java_value_factory=self.logical_type,
         )
@@ -432,13 +461,25 @@ def logical(value_type) -> LogicalType:
             with `knime_types.register_python_value_factory`
     """
     try:
+        proxy_type = value_type
+        proxy_value_factory, value_type = kt.get_proxy_by_python_type(proxy_type)
+    except KeyError:
+        # we're not dealing with a proxy type here.
+        proxy_value_factory = None
+
+    try:
         java_value_factory = kt.get_logical_by_python_type(value_type)
 
         # decode the storage type of this value_type from the info provided with the java value factory
         bundle = kt.get_bundle_by_logical_type(java_value_factory)
         specs = bundle.data_spec_json
         traits = bundle.data_traits
-        return _dict_to_knime_type(specs, traits)
+        logical_type = _dict_to_knime_type(specs, traits)
+
+        if proxy_value_factory:
+            logical_type._proxy_type_converter = proxy_value_factory
+
+        return logical_type
     except Exception as e:
         raise TypeError(
             f"Could not find registered KNIME extension type for Python logical type {value_type}",
@@ -1112,7 +1153,7 @@ def _create_knime_type_from_id(type_id):
         return blob()
 
 
-def _dict_to_knime_type(spec, traits):
+def _dict_to_knime_type(spec, traits) -> KnimeType:
     if traits["type"] == "simple":
         if "traits" in traits and "dict_encoding" in traits["traits"]:
             key = DictEncodingKeyType(traits["traits"]["dict_encoding"])

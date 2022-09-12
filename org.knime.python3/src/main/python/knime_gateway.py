@@ -117,6 +117,15 @@ class EntryPoint:
             python_module, python_value_factory_name, data_spec, data_traits
         )
 
+    def registerPythonProxyType(
+        self, python_module, python_value_factory_name, java_value_factory
+    ):
+        import knime_types
+
+        knime_types.register_python_proxy_type(
+            python_module, python_value_factory_name, java_value_factory
+        )
+
     class Java:
         implements = ["org.knime.python3.PythonEntryPoint"]
 

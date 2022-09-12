@@ -106,7 +106,8 @@ public final class PythonValueFactoryRegistry {
             return null;
         }
         final PythonValueFactory[] factories = extractFactories(module);
-        return new PythonValueFactoryModule(modulePath, factories);
+        final PythonProxyType[] proxyTypes = extractProxyTypes(module);
+        return new PythonValueFactoryModule(modulePath, factories, proxyTypes);
     }
 
     private static Path extractModulePath(final IConfigurationElement module) {
@@ -143,6 +144,28 @@ public final class PythonValueFactoryRegistry {
         final ValueFactory<?, ?> valueFactory = (ValueFactory<?, ?>)factory.createExecutableExtension("ValueFactory");
         final String pythonValueFactoryName = factory.getAttribute("PythonClassName");
         return new PythonValueFactory(valueFactory, pythonValueFactoryName);
+    }
+
+
+    private static PythonProxyType[] extractProxyTypes(final IConfigurationElement module) {
+        final List<PythonProxyType> proxyTypes = new ArrayList<>();
+        for (IConfigurationElement proxyType : module.getChildren("PythonProxyType")) {
+            try {
+                proxyTypes.add(extractProxyType(proxyType));
+            } catch (CoreException ex) {
+                LOGGER.error(
+                    String.format("An error occurred during registration of a PythonValueFactory provided by '%s'.",
+                        module.getContributor().getName()),
+                    ex);
+            }
+        }
+        return proxyTypes.toArray(PythonProxyType[]::new);
+    }
+
+    private static PythonProxyType extractProxyType(final IConfigurationElement factory) throws CoreException {
+        final ValueFactory<?, ?> valueFactory = (ValueFactory<?, ?>)factory.createExecutableExtension("ValueFactory");
+        final String pythonValueFactoryName = factory.getAttribute("PythonClassName");
+        return new PythonProxyType(valueFactory, pythonValueFactoryName);
     }
 
     /**

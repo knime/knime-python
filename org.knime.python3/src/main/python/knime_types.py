@@ -52,7 +52,7 @@ from abc import ABC, abstractmethod
 from contextlib import contextmanager
 import importlib
 import json
-from typing import List
+from typing import List, Tuple, Type
 
 
 class PythonValueFactory:
@@ -123,8 +123,17 @@ _bundles = []
 _python_type_to_java_value_factory = {}
 _java_value_factory_to_python_type = {}
 
+# Proxy types are alternative Python logical types that map to the same
+# Java ValueFactory as the "original" logical type by being converted
+# to the same storage type internally.
+_python_proxy_type_to_value_factory = {}
 
-def get_logical_by_python_type(python_type: str) -> str:
+
+def get_proxy_by_python_type(python_type) -> Tuple[PythonValueFactory, Type]:
+    return _python_proxy_type_to_value_factory[python_type]
+
+
+def get_logical_by_python_type(python_type) -> str:
     return _python_type_to_java_value_factory[python_type]
 
 
@@ -157,6 +166,23 @@ def register_python_value_factory(
 
     _java_value_factory_to_python_type[logical_type] = python_type
     _python_type_to_java_value_factory[python_type] = logical_type
+
+
+def register_python_proxy_type(
+    python_module, python_value_factory_name, java_value_factory
+):
+    module = importlib.import_module(python_module)
+    value_factory_class = getattr(module, python_value_factory_name)
+    proxy_value_factory = value_factory_class()
+    proxy_type = proxy_value_factory.compatible_type
+
+    value_factory_key = '{"value_factory_class":"' + java_value_factory + '"}'
+    orig_python_type = _java_value_factory_to_python_type[value_factory_key]
+
+    _python_proxy_type_to_value_factory[proxy_type] = (
+        proxy_value_factory,
+        orig_python_type,
+    )
 
 
 _fallback_value_factory = FallbackPythonValueFactory()
