@@ -149,6 +149,9 @@ export default Vue.extend({
                 }
             });
         },
+        variableClicked(event: string) {
+            this.runScript(`print('print>' + '\\n' + str(${event}))`);
+        },
         runSelectedLines() {
             const selection = this.getEditor().getSelection();
             if (selection) {
@@ -287,6 +290,7 @@ export default Vue.extend({
         <WorkspaceTable
           v-if="activeTab === 'workspace'"
           :workspace="workspace"
+          @clicked="variableClicked"
         />
       </template>
     </ScriptingEditor>
