@@ -37,6 +37,7 @@ export default Vue.extend({
     <tr
       v-for="item in workspaceTable"
       :key="item.name"
+      @click="$emit('clicked', item.name)"
     >
       <td>{{ item.name }}</td>
       <td>{{ item.type }}</td>
