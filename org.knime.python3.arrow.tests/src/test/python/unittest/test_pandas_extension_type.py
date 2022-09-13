@@ -977,5 +977,15 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         self.assertEqual(complex_array[2].as_py(), {'0': 2, '1': 'foo'})
         self.assertEqual(complex_array[3].as_py(), {'0': 3, '1': 'car'})
 
+    def test_struct_dict_encoded_logical_type_extension_type(self):
+        # tests the usage of StructDictEncodedLogicalTypeExtensionType for dict decoded strings
+        # the type is not used yet
+        df = self._generate_test_data_frame("DictEncString.zip", columns=["Name"])
+        self.assertEqual(df["Name"][0].as_py(), "LINESTRING (30 10, 10 30, 40 40)")
+        self.assertEqual(df["Name"][4].as_py(), "POINT (30 10)")
+        self.assertEqual(df["Name"][5].as_py(), "LINESTRING (40 20, 10 30, 35 40)")
+        self.assertEqual(df["Name"][6].as_py(), "LINESTRING (30 10, 10 30, 40 40)")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -544,6 +544,13 @@ class StructDictEncodedLogicalTypeExtensionType(pa.ExtensionType):
 
         return StructDictEncodedLogicalTypeExtensionScalar
 
+    def to_pandas_dtype(self):
+        from knime_arrow_pandas import PandasLogicalTypeExtensionType
+
+        return PandasLogicalTypeExtensionType(
+            self.struct_dict_encoded_type, self.value_factory_type.logical_type, self.value_factory_type._converter
+        )
+
 
 pa.register_extension_type(
     StructDictEncodedLogicalTypeExtensionType(

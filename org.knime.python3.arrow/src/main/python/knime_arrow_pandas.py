@@ -231,19 +231,27 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
         """
         if scalars is None:
             raise ValueError("Cannot create KnimePandasExtensionArray from empty data")
-
-        # easy case
+            # easy case
         if isinstance(scalars, pa.Array) or isinstance(scalars, pa.ChunkedArray):
-            if not isinstance(scalars.type, kat.LogicalTypeExtensionType):
+            if isinstance(scalars.type, kat.LogicalTypeExtensionType):
+                return KnimePandasExtensionArray(
+                    scalars.type.storage_type,
+                    scalars.type.logical_type,
+                    scalars.type._converter,
+                    scalars,
+                )
+            elif isinstance(scalars.type, kat.StructDictEncodedLogicalTypeExtensionType):
+                return KnimePandasExtensionArray(
+                    scalars.type.struct_dict_encoded_type,
+                    scalars.type.value_factory_type.logical_type,
+                    scalars.type.value_factory_type._converter,
+                    scalars
+                )
+
+            else:
                 raise ValueError(
                     "KnimePandasExtensionArray must be backed by LogicalTypeExtensionType values"
                 )
-            return KnimePandasExtensionArray(
-                scalars.type.storage_type,
-                scalars.type.logical_type,
-                scalars.type._converter,
-                scalars,
-            )
 
         if isinstance(dtype, PandasLogicalTypeExtensionType):
             # in this case we can extract storage, logical_type and converter
@@ -315,7 +323,7 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
 
     def __getitem__(self, item):
         if isinstance(item, int):
-            if isinstance(self._storage_type, pa.StructType):
+            if isinstance(self._storage_type, pa.StructType) or isinstance(self._storage_type, kasde.StructDictEncodedType):
                 # if the storage is a struct type, the unpacking only works for top layer
                 # thus, we have to manually access the chunks
                 if isinstance(self._data, pa.ChunkedArray):
@@ -325,6 +333,9 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
                     chunk_idx = bisect.bisect_right(self.chunk_start_list, item) - 1
                     item = item - self.chunk_start_list[chunk_idx]  # get the index inside the chunk
                     chunk = self._data.chunk(chunk_idx)  # get the correct chunk
+                    # if we would use the StructDictEncodedLogicalTypeExtensionType this access is necessary
+                    if isinstance(self._storage_type, kasde.StructDictEncodedType):
+                        return chunk[item]
                     storage = chunk.storage
                 elif isinstance(self._data, pa.StructArray):
                     # else we just access the struct
