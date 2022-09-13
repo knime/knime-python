@@ -77,6 +77,8 @@ import org.knime.python3.arrow.PythonArrowTableConverter;
 import org.knime.python3.js.scripting.PythonJsScriptingEntryPoint;
 import org.knime.python3.js.scripting.PythonJsScriptingSourceDirectory;
 import org.knime.python3.js.scripting.Utf8StreamConsumer;
+import org.knime.python3.types.PythonValueFactoryModule;
+import org.knime.python3.types.PythonValueFactoryRegistry;
 import org.knime.python3.views.Python3ViewsSourceDirectory;
 import org.knime.scripting.editor.ScriptingService.ConsoleText;
 
@@ -147,13 +149,18 @@ final class PythonScriptingSession implements AutoCloseable {
     private static PythonGateway<PythonJsScriptingEntryPoint> createGateway(final PythonCommand pythonCommand)
         throws IOException, InterruptedException {
         // TODO(AP-19430) set working directory to workflow dir
-        final var gatewayDescription = PythonGatewayDescription
+        final var gatewayDescriptionBuilder = PythonGatewayDescription
             .builder(pythonCommand, LAUNCHER.toAbsolutePath(), PythonJsScriptingEntryPoint.class) //
             .addToPythonPath(Python3SourceDirectory.getPath()) //
             .addToPythonPath(Python3ArrowSourceDirectory.getPath()) //
-            .addToPythonPath(Python3ViewsSourceDirectory.getPath()) //
-            .build();
-        return Activator.GATEWAY_FACTORY.create(gatewayDescription);
+            .addToPythonPath(Python3ViewsSourceDirectory.getPath());
+
+        // Add the paths to the extension types
+        PythonValueFactoryRegistry.getModules().stream() //
+            .map(PythonValueFactoryModule::getParentDirectory) //
+            .forEach(gatewayDescriptionBuilder::addToPythonPath);
+
+        return Activator.GATEWAY_FACTORY.create(gatewayDescriptionBuilder.build());
     }
 
     @Override
