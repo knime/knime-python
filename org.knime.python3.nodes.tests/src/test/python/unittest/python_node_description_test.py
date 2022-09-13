@@ -227,22 +227,13 @@ class MarkdownDocstringTest(unittest.TestCase):
             f"<p>{html.escape(desc)}</p>",
         )
 
-    def test_code_formatting(self):
-
+    def test_pre_decoded(self):
         desc = """
         No Code
         
-            Code"""
-        _expected = "<p>No Code</p>\n<pre>Code\n</pre>"
-
-        self.assertEqual(self.parser.parse_basic(desc), textwrap.dedent(_expected))
-
-        desc = """
-        No Code
-        
-                Code"""
-        _expected = "<p>No Code</p>\n<pre>    Code\n</pre>"
-
+            Code<o>
+        """
+        _expected = "<p>No Code</p>\n<pre>\nCode<o>\n</pre>"
         self.assertEqual(self.parser.parse_basic(desc), textwrap.dedent(_expected))
 
     def test_tt(self):

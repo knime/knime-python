@@ -12,6 +12,7 @@ from markdown.extensions import Extension
 from markdown.preprocessors import Preprocessor
 from markdown.postprocessors import Postprocessor
 from markdown.blockprocessors import BlockProcessor
+from markdown.treeprocessors import Treeprocessor
 from markdown.extensions import Extension
 
 from markdown.inlinepatterns import (
@@ -48,9 +49,40 @@ class _HeaderPreprocessor(Preprocessor):
         return new_lines
 
 
-class _HTMLEncodePreprocessor(Preprocessor):
-    def run(self, lines):
-        return [html.escape(line) for line in lines]
+class _HTMLTreeprocessor(Treeprocessor):
+    @staticmethod
+    def _unescape(s, quote=True):
+        """
+        symmetric html.escape
+        """
+        s = s.replace("&amp;", "&")  # Must be done first!
+        s = s.replace("&lt;", "<")
+        s = s.replace("&gt;", ">")
+        if quote:
+            s = s.replace("&quot;", '"')
+            s = s.replace("&#x27;", "'")
+        return s
+
+    def run(self, e):
+
+        print(e.tag, type(e), e.text)
+        if e.tag == "code":
+            if e.text is not None:
+                e.text = self._unescape(e.text)
+            elif e.tail is not None:
+                e.text = self._unescape(e.tail)
+
+        elif e.tag == "pre":
+            if e.text is not None:
+                e.text = self._unescape(e.text)
+            elif e.tail is not None:
+                e.text = self._unescape(e.tail)
+        else:
+            if e.text is not None:
+                e.text = html.escape(e.text)
+            if e.tail is not None:
+                e.tail = html.escape(e.tail)
+        [self.run(x) for x in e]
 
 
 class _KnimeProcessorAsterisk(AsteriskProcessor):
@@ -109,10 +141,31 @@ class _KnimePostHeader(Postprocessor):
 
 class _KnimePostCode(Postprocessor):
     def run(self, text):
-        text = re.sub(r"<pre><code>", "<pre>", text)
-        text = re.sub(r"</code></pre>", "</pre>", text)
-        text = re.sub(r"<code>", "<tt>", text)
-        text = re.sub(r"</code>", "</tt>", text)
+        # regex
+        _pre_code = r"<pre>(.|\n)*?<code>(.|\n)*?<\/code>(.|\n)*?<\/pre>"
+        _pre = r"<pre>(.|\n)*?<\/pre>"
+        _code = r"<code>(.|\n)*?<\/code>"
+
+        def replace_code(match):
+            text = match.string[match.start() : match.end()]
+            text = text.replace("&lt;", "<")
+            text = text.replace("&gt;", ">")
+            return text
+
+        def replace_pre_code(match):
+            text = match.string[match.start() : match.end()]
+            text = text.replace("&lt;", "<")
+            text = text.replace("&gt;", ">")
+            text = text.replace("<code>", "")
+            text = text.replace("</code>", "")
+            return text
+
+        text = re.sub(_pre_code, replace_pre_code, text)
+        text = re.sub(_pre, replace_code, text)
+        text = re.sub(_code, replace_code, text)
+        text = re.sub("<code>", "<tt>", text)
+        text = re.sub("</code>", "</tt>", text)
+
         return text
 
 
@@ -124,7 +177,7 @@ class _KnExtension(Extension):
     def extendMarkdown(self, _md) -> None:
         # Preprocessors
         _md.preprocessors.register(_HeaderPreprocessor(), "headerlines", 100)
-        _md.preprocessors.register(_HTMLEncodePreprocessor(), "html_encode", 100)
+        _md.preprocessors.deregister("html_block")
 
         # Remove not supported extensions
         _md.inlinePatterns.deregister("image_reference")
@@ -132,15 +185,18 @@ class _KnExtension(Extension):
         _md.inlinePatterns.deregister("short_image_ref")
         _md.inlinePatterns.deregister("autolink")
         _md.inlinePatterns.deregister("automail")
+        _md.inlinePatterns.deregister("html")
 
-        # Register
+        # _md.treeprocessors.deregister("unescape")
+
         _md.inlinePatterns.register(_KnimeProcessorAsterisk(r"\*"), "i_strong", 110)
         _md.inlinePatterns.register(_KnimeProcessorUnderscore(r"_"), "strong_i", 100)
 
-        #
         _md.postprocessors.register(_KnimeTable(), "knime_table", 200)
         _md.postprocessors.register(_KnimePostHeader(), "knime_post_headder", 200)
-        _md.postprocessors.register(_KnimePostCode(), "knime_post_code", 200)
+
+        _md.treeprocessors.register(_HTMLTreeprocessor(), "knime_code", 5)
+        _md.postprocessors.register(_KnimePostCode(), "knime_post_code", 0)
 
 
 class KnimeMarkdownParser:
@@ -154,10 +210,9 @@ class KnimeMarkdownParser:
 
         # TODO headerlines
         self.md_basic = markdown.Markdown(
-            extensions=[_KnExtension(), "sane_lists"],
+            extensions=[_KnExtension(), "sane_lists"],  # , "fenced_code"],
             output_format="xhtml",
         )
-        # self.md_basic.preprocessors.deregister("headerlines")
 
     def parse_fulldescription(self, doc):
         doc = textwrap.dedent(doc)
