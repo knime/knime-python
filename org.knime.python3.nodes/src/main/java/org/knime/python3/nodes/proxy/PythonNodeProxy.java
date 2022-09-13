@@ -62,9 +62,13 @@ public interface PythonNodeProxy extends PythonNodeModelProxy, PythonNodeDialogP
     int getNumViews();
 
     /**
-     * @param savedVersion
-     * @param extensionVersion
-     * @param savedParams
+     * Determines whether the node was saved with a higher or lower version of the extension,
+     * and displays appropriate log messages notifying the user whether backward or forward
+     * compatibility is taking place.
+     *
+     * @param savedVersion the extension version the node setting were saved with
+     * @param extensionVersion the version of the installed extension
+     * @param savedParams the saved node settings needed for detecting newly added parameters
      */
     void determineCompatibility(String savedVersion, String extensionVersion, String savedParams);
 

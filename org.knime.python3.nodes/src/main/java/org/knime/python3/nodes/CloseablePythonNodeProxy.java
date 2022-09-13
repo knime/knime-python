@@ -193,7 +193,10 @@ final class CloseablePythonNodeProxy
     }
 
     @Override
-    public void determineCompatibility(final String savedVersion, final String extensionVersion, final String savedParams) {
+    public void determineCompatibility(
+        final String savedVersion,
+        final String extensionVersion,
+        final String savedParams) {
         m_proxy.determineCompatibility(savedVersion, extensionVersion, savedParams);
     }
 

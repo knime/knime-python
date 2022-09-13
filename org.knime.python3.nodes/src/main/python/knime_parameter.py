@@ -110,9 +110,6 @@ def _inject_parameters(
     """
     This method injects the provided values into the parameter descriptors of the parameterised object,
     which can be a node or a parameter group.
-
-    Note that the default value for a parameter will be set if the provided value violates validation
-    (see the ._inject method of BaseParameter).
     """
     for name, param_obj in _get_parameters(obj).items():
         if param_obj._since_version <= parameters_version:
@@ -121,8 +118,6 @@ def _inject_parameters(
                     obj, parameters[name], parameters_version, fail_on_missing
                 )
             elif fail_on_missing:
-                # Clarify behaviour for missing parameters
-                # TODO https://knime-com.atlassian.net/browse/AP-19387
                 raise ValueError(f"No value available for parameter '{name}'")
 
 
@@ -136,6 +131,8 @@ def validate_parameters(obj, parameters: dict, version: str = None) -> None:
 
 def _validate_parameters(obj, parameters: dict, version: Version) -> None:
     """
+    TODO: Change this docstring and clarify the intended behavior of the function.
+
     This method will raise a ValueError if a parameter is invalid, or if a parameter
     was missing in the version the setting being validated were saved with.
     """
@@ -143,14 +140,6 @@ def _validate_parameters(obj, parameters: dict, version: Version) -> None:
         if param_obj._since_version <= version:
             if name in parameters:
                 param_obj._validate(parameters[name], version)
-            # else:
-            # one of the possible causes of this is that the parameter was
-            # not available in the version of the saved settings being validated
-
-            # Clairfy behaviour for missing parameters
-            # TODO https://knime-com.atlassian.net/browse/AP-19387
-            # LOGGER.warning(f"Missing value for parameter '{name}'.")
-            # missing_params.append(name)
 
 
 def validate_specs(obj, specs) -> None:
@@ -235,8 +224,9 @@ def determine_compatability(
 ) -> None:
     """
     Determine if backward/forward compatibility is taking place based on the saved and current version
-    of the extension, and provide appropriate feedback to the user. When this function is called,
-    the saved and current versions are already known to be different.
+    of the extension, and provide appropriate feedback to the user.
+
+    When this function is called, the saved and current versions are already known to be different.
     """
     saved_version = parse_version(saved_version)
     current_version = parse_version(current_version)
@@ -250,7 +240,7 @@ def _determine_compatability(
     missing_params = _detect_missing_parameters(obj, saved_parameters, current_version)
     if saved_version < current_version:
         LOGGER.warning(
-            f" The node was previously configured with an older version of the extension: {saved_version}, current version is {current_version}."
+            f" The node was previously configured with an older version of the extension, {saved_version}, while the current version is {current_version}."
         )
         if missing_params:
             LOGGER.warning(
@@ -260,10 +250,10 @@ def _determine_compatability(
                 LOGGER.warning(f' - "{param}"')
     else:
         LOGGER.error(
-            f" The node was previously configured with a newer version of the extension: {saved_version}, current version is {current_version}."
+            f" The node was previously configured with a newer version of the extension, {saved_version}, while the current version is {current_version}."
         )
         LOGGER.error(
-            f" Forward compatibility is not supported. Please update the extension to {saved_version} or later, or reconfigure the node."
+            f" Please note that the node might not work as expected without being reconfigured."
         )
 
 
