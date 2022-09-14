@@ -58,7 +58,9 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.knime.core.node.NodeLogger;
 import org.knime.core.node.extension.CategoryExtension;
+import org.knime.python3.PythonGatewayUtils;
 import org.knime.python3.nodes.KnimeNodeBackend;
 import org.knime.python3.nodes.PurePythonNodeSetFactory.PythonExtensionParser;
 import org.knime.python3.nodes.PyNodeExtension;
@@ -91,6 +93,8 @@ import com.google.gson.Gson;
  */
 public final class PythonCentricExtensionParser implements PythonExtensionParser {
 
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonCentricExtensionParser.class);
+
     @Override
     public PyNodeExtension parseExtension(final Path path) throws IOException {
         var staticInfo = readStaticInformation(path);
@@ -116,14 +120,19 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
         }
     }
 
-    private static PyNodeExtension retrieveDynamicInformationFromPython(final StaticExtensionInfo staticInfo) throws IOException {
-        var gatewayFactory = new PythonNodeGatewayFactory(staticInfo.m_id, staticInfo.m_environmentName,
-            staticInfo.m_modulePath);
-        try (var gateway = gatewayFactory.create()) {
+    private static PyNodeExtension retrieveDynamicInformationFromPython(final StaticExtensionInfo staticInfo)
+        throws IOException {
+        var gatewayFactory =
+            new PythonNodeGatewayFactory(staticInfo.m_id, staticInfo.m_environmentName, staticInfo.m_modulePath);
+        try (var gateway = gatewayFactory.create();
+                var outputConsumer =
+                    PythonGatewayUtils.redirectGatewayOutput(gateway, LOGGER::debug, LOGGER::debug, 1000)) {
             return createNodeExtension(gateway.getEntryPoint(), staticInfo, gatewayFactory);
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
             throw new IOException("Python gateway creation was interrupted.", ex);
+        } catch (Exception ex) {
+            throw new IOException("Exception while closing the outputConsumer", ex);
         }
     }
 
