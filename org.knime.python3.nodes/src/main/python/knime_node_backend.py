@@ -188,6 +188,8 @@ def _spec_from_python(spec, port: kn.Port):
     if port.type == kn.PortType.TABLE:
         if isinstance(spec, ks._ColumnarView):
             spec = spec.get()
+        if isinstance(spec, ks.Column):
+            spec = ks.Schema.from_columns(spec)
         assert isinstance(spec, ks.Schema)
         data = spec.to_knime_dict()
         class_name = "org.knime.core.data.DataTableSpec"

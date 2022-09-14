@@ -234,7 +234,8 @@ class PythonNode(ABC):
         Configure this Python node.
 
         Args:
-            config_context: The ConfigurationContext providing KNIME utilities during execution
+            config_context:
+                The ConfigurationContext providing KNIME utilities during execution
             *inputs:
                 Each input table spec or binary port spec will be added as parameter,
                 in the same order that the ports were defined.
@@ -242,6 +243,8 @@ class PythonNode(ABC):
         Returns:
             Either a single spec, or a tuple or list of specs. The number of specs
             must match the number of defined output ports, and they must be returned in this order.
+            Alternatively, instead of a spec, a knext.Column can be returned (if the spec shall
+            only consist of one column).
 
         Raise:
             InvalidConfigurationError:
@@ -255,7 +258,8 @@ class PythonNode(ABC):
         Execute this Python node.
 
         Args:
-            exec_context: The ExecutionContext providing KNIME utilities during execution
+            exec_context:
+                The ExecutionContext providing KNIME utilities during execution
             *inputs:
                 Each input table or binary port object will be added as parameter,
                 in the same order that the ports were defined.
