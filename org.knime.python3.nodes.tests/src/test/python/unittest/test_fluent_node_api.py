@@ -42,12 +42,15 @@
 #  when such Node is propagated with or for interoperation with KNIME.
 # ------------------------------------------------------------------------
 
+import test_utilities as util
 import unittest
 import knime_node as kn
 import knime_schema as ks
+import json
 
 BINARY_PORT_ID = "org.knime.python3.nodes.test.port"
 TEST_DESCR = "We read data from here"
+# TODO When writing more nodes to test execute, we need to also test a configure method returning None and a configure method returning a schema directly and return schema[:]
 
 
 @kn.node(
@@ -62,6 +65,7 @@ TEST_DESCR = "We read data from here"
     name="Second input table", description="We might also read data from there"
 )
 @kn.output_table(name="Output Data", description="Whatever the node has produced")
+@kn.output_table(name="Second output Data", description="Only a column")
 @kn.output_binary(
     name="Some output port",
     description="Maybe a model",
@@ -70,7 +74,11 @@ TEST_DESCR = "We read data from here"
 @kn.output_view(name="Test View", description="lalala")
 class MyTestNode:
     def configure(self, config_ctx, schema_1, schema_2):
-        return schema_1
+        return (
+            schema_1,
+            ks.Column(ks.string(), "first col of second output table"),
+            ks.BinaryPortObjectSpec(id=BINARY_PORT_ID),
+        )
 
     def execute(self, exec_context, table_1, table_2):
         return [table_1, b"random bytes"]
@@ -97,9 +105,67 @@ class NodeApiTest(unittest.TestCase):
         self.assertEqual(kn.PortType.TABLE, self.node.input_ports[1].type)
 
     def test_output_ports(self):
-        self.assertEqual(2, len(self.node.output_ports))
+        self.assertEqual(3, len(self.node.output_ports))
         self.assertEqual(kn.PortType.TABLE, self.node.output_ports[0].type)
-        self.assertEqual(kn.PortType.BINARY, self.node.output_ports[1].type)
+        self.assertEqual(kn.PortType.TABLE, self.node.output_ports[1].type)
+        self.assertEqual(kn.PortType.BINARY, self.node.output_ports[2].type)
+
+    def test_configure(self):
+        self.node_instance: kn.PythonNode
+
+        node_proxy = util.knb._PythonNodeProxy(self.node_instance)
+
+        json_string_data = '{"schema": {"specs": ["string", "double"], "traits": [{"traits": {"logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.value.DefaultRowKeyValueFactory\\"}"}, "type": "simple"}, {"traits": {"logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.value.DoubleValueFactory\\"}"}, "type": "simple"}]}, "columnNames": ["RowKey", "column423"], "columnMetaData": [null, null]}'
+        TABLE_SPEC_JAVA_CLASS = "org.knime.core.data.DataTableSpec"
+
+        input_spec = util.knb._PythonPortObjectSpec(
+            java_class_name=TABLE_SPEC_JAVA_CLASS,
+            json_string_data=json_string_data,
+        )
+
+        configuration = node_proxy.configure(
+            input_specs=[input_spec, input_spec], java_config_context=None
+        )
+
+        self.assertEqual(configuration[0].getJavaClassName(), TABLE_SPEC_JAVA_CLASS)
+        self.assertEqual(configuration[1].getJavaClassName(), TABLE_SPEC_JAVA_CLASS)
+        self.assertEqual(
+            configuration[2].getJavaClassName(),
+            "org.knime.python3.nodes.ports.PythonBinaryBlobPortObjectSpec",
+        )
+
+        config_table_schema = json.loads(configuration[0].toJsonString())
+        schema = ks.Schema.from_knime_dict(config_table_schema)
+        self.assertIsInstance(schema, ks.Schema)
+        column = schema._columns[0]
+        self.assertEqual(column.ktype, ks.double())
+        self.assertEqual(column.name, "column423")
+        self.assertEqual(
+            config_table_schema["schema"]["traits"][0]["traits"]["logical_type"],
+            '{"value_factory_class":"org.knime.core.data.v2.value.DefaultRowKeyValueFactory"}',
+        )
+        self.assertEqual(
+            config_table_schema["schema"]["traits"][1]["traits"]["logical_type"],
+            '{"value_factory_class":"org.knime.core.data.v2.value.DoubleValueFactory"}',
+        )
+
+        config_single_column = json.loads(configuration[1].toJsonString())
+        schema = ks.Schema.from_knime_dict(config_single_column)
+        self.assertIsInstance(schema, ks.Schema)
+        column = schema._columns[0]
+        self.assertEqual(column.ktype, ks.string())
+        self.assertEqual(column.name, "first col of second output table")
+        self.assertEqual(
+            config_single_column["schema"]["traits"][0]["traits"]["logical_type"],
+            '{"value_factory_class":"org.knime.core.data.v2.value.DefaultRowKeyValueFactory"}',
+        )
+        self.assertEqual(
+            config_single_column["schema"]["traits"][1]["traits"]["logical_type"],
+            '{"value_factory_class":"org.knime.core.data.v2.value.StringValueFactory"}',
+        )
+
+        config_bin_object = json.loads(configuration[2].toJsonString())
+        self.assertEqual(config_bin_object["id"], BINARY_PORT_ID)
 
 
 @kn.node(
