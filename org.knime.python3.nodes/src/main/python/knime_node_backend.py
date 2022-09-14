@@ -510,6 +510,11 @@ class _KnimeNodeBackend(kg.EntryPoint):
     def __init__(self) -> None:
         super().__init__()
         self._main_loop = MainLoop()
+        try:
+            from knime_markdown_parser import KnimeMarkdownParser
+            self._knime_parser = KnimeMarkdownParser()
+        except ModuleNotFoundError:
+            self._knime_parser = FallBackMarkdownParser()
 
     def initializeJavaCallback(self, callback):
         _push_log_callback(lambda msg, sev: callback.log(msg, sev))
@@ -536,13 +541,6 @@ class _KnimeNodeBackend(kg.EntryPoint):
 
         param_doc, tabs_used = kp.extract_parameter_descriptions(node)
 
-        try:
-            from knime_markdown_parser import KnimeMarkdownParser
-
-            knime_parser = KnimeMarkdownParser()
-        except ModuleNotFoundError:
-            knime_parser = FallBackMarkdownParser()
-
         if node_doc is None:
             logging.warning(
                 f"No docstring available for node {name}. Please document the node class with a docstring or set __doc__ in the init of the node."
@@ -552,7 +550,7 @@ class _KnimeNodeBackend(kg.EntryPoint):
             short_description = split_description[0]
             if len(split_description) > 1:
                 full_description = "\n".join(split_description[1:])
-                full_description = knime_parser.parse_fulldescription(full_description)
+                full_description = self._knime_parser.parse_fulldescription(full_description)
             else:
                 full_description = "Missing description."
 
@@ -563,14 +561,14 @@ class _KnimeNodeBackend(kg.EntryPoint):
             )
 
         if tabs_used:
-            tabs = knime_parser.parse_tabs(param_doc)
+            tabs = self._knime_parser.parse_tabs(param_doc)
             options = []
         else:
-            options = knime_parser.parse_options(param_doc)
+            options = self._knime_parser.parse_options(param_doc)
             tabs = []
 
-        input_ports = knime_parser.parse_ports(node.input_ports)
-        output_ports = knime_parser.parse_ports(node.output_ports)
+        input_ports = self._knime_parser.parse_ports(node.input_ports)
+        output_ports = self._knime_parser.parse_ports(node.output_ports)
 
         return {
             "short_description": short_description,
