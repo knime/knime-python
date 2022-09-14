@@ -545,6 +545,7 @@ class _KnimeNodeBackend(kg.EntryPoint):
             logging.warning(
                 f"No docstring available for node {name}. Please document the node class with a docstring or set __doc__ in the init of the node."
             )
+            short_description = full_description = "Missing description."
         else:
             split_description = node_doc.splitlines()
             short_description = split_description[0]
