@@ -44,42 +44,25 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Feb 15, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   15 Sept 2022 (Ivan Prigarin): created
  */
-package org.knime.python3.nodes.proxy.model;
-
-import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.port.PortObjectSpec;
-import org.knime.python3.nodes.proxy.PythonNodeModelProxy;
-import org.knime.python3.nodes.proxy.VersionedProxy;
-import org.knime.python3.nodes.settings.JsonNodeSettings;
+package org.knime.python3.nodes.proxy;
 
 /**
- * A {@link PythonNodeModelProxy} that can be closed to release its resources (i.e. the Python process/connection)
+ * Proxy for Python nodes with versioned parameters/settings.
  *
- * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+ * @author Ivan Prigarin, KNIME GmbH, Konstanz, Germany
  */
-public interface NodeConfigurationProxy extends NodeModelProxy, VersionedProxy {
+public interface VersionedProxy {
 
     /**
-     * Performs configure with the proxy. In order to retrieve changed settings call
-     * {@link NodeModelProxy#getParameters()}.
+     * Determines whether the node was saved with a higher or lower version of the extension,
+     * and displays appropriate log messages notifying the user whether backward or forward
+     * compatibility is taking place.
      *
-     * @param inSpecs the incoming port specs
-     * @param flowVariableProxy for flow variable access
-     * @param warningConsumer for setting warning messages
-     * @return the output specs of the node
-     * @throws InvalidSettingsException if the node can't be configured because the settings are invalid
+     * @param savedVersion the extension version the node setting were saved with
+     * @param extensionVersion the version of the installed extension
+     * @param savedParams the saved node settings needed for detecting newly added parameters
      */
-    PortObjectSpec[] configure(final PortObjectSpec[] inSpecs, FlowVariablesProxy flowVariableProxy,
-        WarningConsumer warningConsumer) throws InvalidSettingsException;
-
-    /**
-     * Validates the provided settings.
-     *
-     * @param settings to validate
-     * @throws InvalidSettingsException if the settings are invalid
-     */
-    void validateSettings(JsonNodeSettings settings) throws InvalidSettingsException;
-
+    void determineCompatibility(String savedVersion, String extensionVersion, String savedParams);
 }

@@ -63,14 +63,14 @@ def _get_parameters(obj) -> Dict[str, "_BaseParameter"]:
     Get all parameter objects from obj as a nested dict.
     """
     class_params = {
-        name: param
-        for name, param in type(obj).__dict__.items()
-        if _is_parameter_or_group(param)
+        name: param_obj
+        for name, param_obj in type(obj).__dict__.items()
+        if _is_parameter_or_group(param_obj)
     }
     instance_params = {
-        name: param
-        for name, param in obj.__dict__.items()
-        if _is_parameter_or_group(param)
+        name: param_obj
+        for name, param_obj in obj.__dict__.items()
+        if _is_parameter_or_group(param_obj)
     }
 
     return {**class_params, **instance_params}
@@ -97,6 +97,10 @@ def inject_parameters(
     parameters_version: str = None,
     fail_on_missing: bool = True,
 ) -> None:
+    """
+    This method injects the provided values into the parameter descriptors of the parameterised object,
+    which can be a node or a parameter group.
+    """
     parameters_version = parse_version(parameters_version)
     _inject_parameters(obj, parameters["model"], parameters_version, fail_on_missing)
 
@@ -107,10 +111,6 @@ def _inject_parameters(
     parameters_version: Version,
     fail_on_missing: bool,
 ) -> None:
-    """
-    This method injects the provided values into the parameter descriptors of the parameterised object,
-    which can be a node or a parameter group.
-    """
     for name, param_obj in _get_parameters(obj).items():
         if param_obj._since_version <= parameters_version:
             if name in parameters:
@@ -118,24 +118,21 @@ def _inject_parameters(
                     obj, parameters[name], parameters_version, fail_on_missing
                 )
             elif fail_on_missing:
+                # TODO: fail_on_missing is never set to True - remove it altogether?
                 raise ValueError(f"No value available for parameter '{name}'")
 
 
 def validate_parameters(obj, parameters: dict, version: str = None) -> None:
     """
-    Perform validation on the individual parameters of obj.
+    Perform validation on the individual parameters of obj, which can be a node or a parameter group.
+
+    This method will raise a ValueError if a parameter violates its validator.
     """
     version = parse_version(version)
     _validate_parameters(obj, parameters["model"], version)
 
 
 def _validate_parameters(obj, parameters: dict, version: Version) -> None:
-    """
-    TODO: Change this docstring and clarify the intended behavior of the function.
-
-    This method will raise a ValueError if a parameter is invalid, or if a parameter
-    was missing in the version the setting being validated were saved with.
-    """
     for name, param_obj in _get_parameters(obj).items():
         if param_obj._since_version <= version:
             if name in parameters:
@@ -239,6 +236,7 @@ def _determine_compatability(
 ) -> None:
     missing_params = _detect_missing_parameters(obj, saved_parameters, current_version)
     if saved_version < current_version:
+        # backward compatibilitiy
         LOGGER.warning(
             f" The node was previously configured with an older version of the extension, {saved_version}, while the current version is {current_version}."
         )
@@ -249,6 +247,7 @@ def _determine_compatability(
             for param in missing_params:
                 LOGGER.warning(f' - "{param}"')
     else:
+        # forward compatibility (not supported)
         LOGGER.error(
             f" The node was previously configured with a newer version of the extension, {saved_version}, while the current version is {current_version}."
         )
@@ -267,20 +266,15 @@ def _detect_missing_parameters(
     result = []
     for name, param_obj in _get_parameters(obj).items():
         if param_obj._since_version <= current_version:
-            if name not in saved_parameters:
-                if _is_group(param_obj):
-                    result.extend(
-                        _detect_missing_parameters(param_obj, {}, current_version)
-                    )
-                else:
-                    result.append(param_obj._label)
-            else:
-                if _is_group(param_obj):
-                    result.extend(
-                        _detect_missing_parameters(
-                            param_obj, saved_parameters[name], current_version
-                        )
-                    )
+            if _is_group(param_obj):
+                group_params = (
+                    saved_parameters[name] if name in saved_parameters else {}
+                )
+                result.extend(
+                    _detect_missing_parameters(param_obj, group_params, current_version)
+                )
+            elif name not in saved_parameters:
+                result.append(name)
 
     return result
 
@@ -833,6 +827,7 @@ def parameter_group(label: str, since_version: str = None):
         class MySettings:
             name = knext.StringParameter("Name", "The name of the person", "Bario")
             num_repetitions = knext.IntParameter("NumReps", "How often do we repeat?", 1, min_value=1)
+
             @num_repetitions.validator
             def reps_validator(value):
                 if value == 2:

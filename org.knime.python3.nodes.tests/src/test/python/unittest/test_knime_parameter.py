@@ -942,6 +942,70 @@ class ParameterTest(unittest.TestCase):
         self.assertTrue(kp.Version(0, 0, 1) >= kp.Version(0, 0, 0))
         self.assertTrue(kp.Version(1, 1, 2) >= kp.Version(1, 1, 1))
 
+    def test_determining_compatibility(self):
+        # given the version of the extension that the node settings were saved with,
+        # and the version of the installed extension, test identifying whether
+        # we have a case of backward or forward compatibility
+
+        cases = [
+            # (saved_version, installed_version, saved_params)
+            (
+                "0.2.0",
+                "0.1.0",
+                generate_versioned_values_dict(extension_version="0.2.0"),
+            ),
+            (
+                "0.1.0",
+                "0.2.0",
+                generate_versioned_values_dict(extension_version="0.1.0"),
+            ),
+            (
+                "0.1.0",
+                "0.3.0",
+                generate_versioned_values_dict(extension_version="0.1.0"),
+            ),
+            (
+                "0.2.0",
+                "0.3.0",
+                generate_versioned_values_dict(extension_version="0.2.0"),
+            ),
+        ]
+
+        with self.assertLogs() as context_manager:
+            for saved_version, installed_version, saved_params in cases:
+                kp.determine_compatability(
+                    self.versioned_parameterized,
+                    saved_version,
+                    installed_version,
+                    saved_params,
+                )
+
+            self.assertEqual(
+                [
+                    # 0.2.0 -> 0.1.0: forward compatibility (not supported)
+                    "ERROR:Python backend: The node was previously configured with a newer version of the extension, 0.2.0, while the current version is 0.1.0.",
+                    "ERROR:Python backend: Please note that the node might not work as expected without being reconfigured.",
+                    # 0.1.0 -> 0.2.0: backward compatibility
+                    "WARNING:Python backend: The node was previously configured with an older version of the extension, 0.1.0, while the current version is 0.2.0.",
+                    "WARNING:Python backend: The following parameters have since been added, and are configured with their default values:",
+                    'WARNING:Python backend: - "string_param"',
+                    'WARNING:Python backend: - "first"',
+                    # 0.1.0 -> 0.3.0: backward compatibility
+                    "WARNING:Python backend: The node was previously configured with an older version of the extension, 0.1.0, while the current version is 0.3.0.",
+                    "WARNING:Python backend: The following parameters have since been added, and are configured with their default values:",
+                    'WARNING:Python backend: - "string_param"',
+                    'WARNING:Python backend: - "bool_param"',
+                    'WARNING:Python backend: - "first"',
+                    'WARNING:Python backend: - "second"',
+                    # 0.2.0 -> 0.3.0: backward compatibility
+                    "WARNING:Python backend: The node was previously configured with an older version of the extension, 0.2.0, while the current version is 0.3.0.",
+                    "WARNING:Python backend: The following parameters have since been added, and are configured with their default values:",
+                    'WARNING:Python backend: - "bool_param"',
+                    'WARNING:Python backend: - "second"',
+                ],
+                context_manager.output,
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

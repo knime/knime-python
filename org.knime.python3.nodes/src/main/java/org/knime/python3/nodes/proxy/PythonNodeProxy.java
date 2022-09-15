@@ -54,22 +54,11 @@ package org.knime.python3.nodes.proxy;
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-public interface PythonNodeProxy extends PythonNodeModelProxy, PythonNodeDialogProxy {
+public interface PythonNodeProxy extends PythonNodeModelProxy, PythonNodeDialogProxy, VersionedProxy {
 
     /**
      * @return The number of views of the node
      */
     int getNumViews();
-
-    /**
-     * Determines whether the node was saved with a higher or lower version of the extension,
-     * and displays appropriate log messages notifying the user whether backward or forward
-     * compatibility is taking place.
-     *
-     * @param savedVersion the extension version the node setting were saved with
-     * @param extensionVersion the version of the installed extension
-     * @param savedParams the saved node settings needed for detecting newly added parameters
-     */
-    void determineCompatibility(String savedVersion, String extensionVersion, String savedParams);
 
 }
