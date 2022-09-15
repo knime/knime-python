@@ -12,12 +12,13 @@ from pandas.core.dtypes.dtypes import register_extension_dtype
 
 import knime_arrow as ka
 import knime_arrow as knar
-import knime_arrow_pandas
+import knime_arrow_pandas as kap
 import knime_arrow_types as katy
 import knime_arrow_table as kat
 import knime_node_arrow_table as knat
 import knime_arrow_struct_dict_encoding as kasde
 import knime_types as kt
+
 
 class MyArrowExtType(pa.ExtensionType):
     def __init__(self, storage_type, logical_type):
@@ -370,7 +371,6 @@ class DummyWriter:
 
 
 class DummyConverter:
-
     def needs_conversion(self):
         return False
 
@@ -390,6 +390,41 @@ def _create_dummy_arrow_sink():
 
 
 class PyArrowExtensionTypeTest(unittest.TestCase):
+    _TEST_TABLE_COLUMNS = [
+        "StringCol",
+        "StringListCol",
+        "StringSetCol",
+        "IntCol",
+        "IntListCol",
+        "IntSetCol",
+        "LongCol",
+        "LongListCol",
+        "LongSetCol",
+        "DoubleCol",
+        "DoubleListCol",
+        "DoubleSetCol",
+        "TimestampCol",
+        "TimestampListCol",
+        "TimestampSetCol",
+        "BooleanCol",
+        "BooleanListCol",
+        "BooleanSetCol",
+        "URICol",
+        "URIListCol",
+        "URISetCol",
+        "MissingValStringCol",
+        "MissingValStringListCol",
+        "MissingValStringSetCol",
+        "LongStringColumnName",
+        "LongDoubleColumnName",
+        "Local Date",
+        "Local Time",
+        "Local Date Time",
+        "Zoned Date Time",
+        "Period",
+        "Duration",
+    ]
+
     def _create_test_table(self):
         d = {"test_data": [0, 1, 2, 3, 4], "reference": [0, 1, 2, 3, 4]}
         plain = pa.Table.from_pydict(d)
@@ -401,7 +436,11 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         return pa.Table.from_arrays(columns, names=list(d.keys()))
 
     def _generate_test_data_frame(
-            self, file_name="generatedTestData.zip", lists=True, sets=True, columns=None,
+        self,
+        file_name="generatedTestData.zip",
+        lists=True,
+        sets=True,
+        columns=None,
     ) -> pd.DataFrame:
         """
         Creates a Dataframe from a KNIME table on disk
@@ -418,11 +457,13 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         arrow = pa_data_source.to_arrow_table()
         arrow = katy.unwrap_primitive_arrays(arrow)
 
-        df = knime_arrow_pandas.arrow_data_to_pandas_df(arrow)
+        df = kap.arrow_data_to_pandas_df(arrow)
         if columns is not None:
             df.columns = columns
 
-        df = df[df.columns.drop(list(df.filter(regex="DoubleSetCol")))]  # this column is buggy (DoubleSetColumns)
+        df = df[
+            df.columns.drop(list(df.filter(regex="DoubleSetCol")))
+        ]  # this column is buggy (DoubleSetColumns)
         if not lists:
             df = df[df.columns.drop(list(df.filter(regex="List")))]
         if not sets:
@@ -538,41 +579,10 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
 
     def test_complicated_setitem_in_pandas(self):
         # loads a table with all knime extension types
-        columns = [
-            "StringCol",
-            "StringListCol",
-            "StringSetCol",
-            "IntCol",
-            "IntListCol",
-            "IntSetCol",
-            "LongCol",
-            "LongListCol",
-            "LongSetCol",
-            "DoubleCol",
-            "DoubleListCol",
-            "DoubleSetCol",
-            "TimestampCol",
-            "TimestampListCol",
-            "TimestampSetCol",
-            "BooleanCol",
-            "BooleanListCol",
-            "BooleanSetCol",
-            "URICol",
-            "URIListCol",
-            "URISetCol",
-            "MissingValStringCol",
-            "MissingValStringListCol",
-            "MissingValStringSetCol",
-            "LongStringColumnName",
-            "LongDoubleColumnName",
-            "Local Date",
-            "Local Time",
-            "Local Date Time",
-            "Zoned Date Time",
-            "Period",
-            "Duration",
-        ]
-        df = self._generate_test_data_frame(columns=columns, lists=False, sets=False)
+
+        df = self._generate_test_data_frame(
+            columns=self._TEST_TABLE_COLUMNS, lists=False, sets=False
+        )
 
         # currently, it does not work for lists, sets and dicts
         dict_columns = [
@@ -618,7 +628,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
             df.loc[[1, 2], col_key] = df.loc[[5, 6], col_key]
             if isinstance(
                 df.loc[[5], col_key].dtype,
-                knime_arrow_pandas.PandasLogicalTypeExtensionType,
+                kap.PandasLogicalTypeExtensionType,
             ):
                 n_type = df.loc[[5], col_key].dtype.na_value
                 self.assertTrue(df.iloc[1, col_index] == n_type)
@@ -637,7 +647,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
             col_index = df.columns.get_loc(col_key)
             if isinstance(
                 df.loc[[10], col_key].dtype,
-                knime_arrow_pandas.PandasLogicalTypeExtensionType,
+                kap.PandasLogicalTypeExtensionType,
             ):
                 n_type = df.loc[[10], col_key].dtype.na_value
 
@@ -653,48 +663,16 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         self.assertTrue(df.iloc[2].equals(df.iloc[9]), msg="The rows are not equal")
 
         # test appending with concat
+        # this column seems not to work as pandas overwrites NA values with NaN values, when concatenating
+        # this heavily depends on the pandas version
+        df = df.drop(columns=["MissingValStringCol"])
         df = pd.concat([df, df.iloc[2].to_frame().T])
         self.assertTrue(df.iloc[2].equals(df.iloc[-1]))
 
-
     def test_append_sets_lists_2(self):
-        columns = [
-            "StringCol",
-            "StringListCol",
-            "StringSetCol",
-            "IntCol",
-            "IntListCol",
-            "IntSetCol",
-            "LongCol",
-            "LongListCol",
-            "LongSetCol",
-            "DoubleCol",
-            "DoubleListCol",
-            "DoubleSetCol",
-            "TimestampCol",
-            "TimestampListCol",
-            "TimestampSetCol",
-            "BooleanCol",
-            "BooleanListCol",
-            "BooleanSetCol",
-            "URICol",
-            "URIListCol",
-            "URISetCol",
-            "MissingValStringCol",
-            "MissingValStringListCol",
-            "MissingValStringSetCol",
-            "LongStringColumnName",
-            "LongDoubleColumnName",
-            "Local Date",
-            "Local Time",
-            "Local Date Time",
-            "Zoned Date Time",
-            "Period",
-            "Duration",
-        ]
-        df = self._generate_test_data_frame(columns=columns, lists=True, sets=True)
-
-
+        df = self._generate_test_data_frame(
+            columns=self._TEST_TABLE_COLUMNS, lists=True, sets=True
+        )
 
         # currently, it does not work for dicts
         dict_columns = [
@@ -755,41 +733,9 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         """
         arrow_backend = kat.ArrowBackend(_create_dummy_arrow_sink)
 
-        columns = [
-            "StringCol",
-            "StringListCol",
-            "StringSetCol",
-            "IntCol",
-            "IntListCol",
-            "IntSetCol",
-            "LongCol",
-            "LongListCol",
-            "LongSetCol",
-            "DoubleCol",
-            "DoubleListCol",
-            "DoubleSetCol",
-            "TimestampCol",
-            "TimestampListCol",
-            "TimestampSetCol",
-            "BooleanCol",
-            "BooleanListCol",
-            "BooleanSetCol",
-            "URICol",
-            "URIListCol",
-            "URISetCol",
-            "MissingValStringCol",
-            "MissingValStringListCol",
-            "MissingValStringSetCol",
-            "LongStringColumnName",
-            "LongDoubleColumnName",
-            "Local Date",
-            "Local Time",
-            "Local Date Time",
-            "Zoned Date Time",
-            "Period",
-            "Duration",
-        ]
-        df = self._generate_test_data_frame(columns=columns, lists=False, sets=False)
+        df = self._generate_test_data_frame(
+            columns=self._TEST_TABLE_COLUMNS, lists=False, sets=False
+        )
         # currently, it does not work for lists, sets and dicts
         wrong_cols = [
             "StringCol",
@@ -839,41 +785,10 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
             t = kat.ArrowBatchWriteTable(arrow_sink)
 
             # Create table
-            columns = [
-                "StringCol",
-                "StringListCol",
-                "StringSetCol",
-                "IntCol",
-                "IntListCol",
-                "IntSetCol",
-                "LongCol",
-                "LongListCol",
-                "LongSetCol",
-                "DoubleCol",
-                "DoubleListCol",
-                "DoubleSetCol",
-                "TimestampCol",
-                "TimestampListCol",
-                "TimestampSetCol",
-                "BooleanCol",
-                "BooleanListCol",
-                "BooleanSetCol",
-                "URICol",
-                "URIListCol",
-                "URISetCol",
-                "MissingValStringCol",
-                "MissingValStringListCol",
-                "MissingValStringSetCol",
-                "LongStringColumnName",
-                "LongDoubleColumnName",
-                "Local Date",
-                "Local Time",
-                "Local Date Time",
-                "Zoned Date Time",
-                "Period",
-                "Duration",
-            ]
-            df = self._generate_test_data_frame(columns=columns, lists=True, sets=True)
+
+            df = self._generate_test_data_frame(
+                columns=self._TEST_TABLE_COLUMNS, lists=True, sets=True
+            )
             # print(df.columns)
             remove_cols = [
                 "StringCol",
@@ -937,12 +852,16 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
 
         struct_dict_enc_type = kasde.StructDictEncodedType(pa.string())
         dict_enc_storage_array = kasde.create_storage_for_struct_dict_encoded_array(
-            pa.array(array),
-            kasde.DictKeyGenerator()
+            pa.array(array), kasde.DictKeyGenerator()
         )
         dtype = katy.LogicalTypeExtensionType(conv, pa.string(), "java_value_factory")
-        decoded_dtype = katy.StructDictEncodedLogicalTypeExtensionType(dtype, struct_dict_enc_type)
-        array = _apply_to_array(dict_enc_storage_array, lambda a: pa.ExtensionArray.from_storage(decoded_dtype, a))
+        decoded_dtype = katy.StructDictEncodedLogicalTypeExtensionType(
+            dtype, struct_dict_enc_type
+        )
+        array = _apply_to_array(
+            dict_enc_storage_array,
+            lambda a: pa.ExtensionArray.from_storage(decoded_dtype, a),
+        )
 
         self.assertEqual(array[2].as_py(), "foo")
         self.assertEqual(array[3].as_py(), "car")
@@ -957,34 +876,76 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         array = ["foo", "bar", "foo", "car", "foo", "bar", "foo"]
         struct_dict_enc_type = kasde.StructDictEncodedType(pa.string())
         dict_enc_storage_array = kasde.create_storage_for_struct_dict_encoded_array(
-            pa.array(array),
-            kasde.DictKeyGenerator()
+            pa.array(array), kasde.DictKeyGenerator()
         )
-        dict_enc_array = _apply_to_array(dict_enc_storage_array,
-                                         lambda a: pa.ExtensionArray.from_storage(struct_dict_enc_type, a))
+        dict_enc_array = _apply_to_array(
+            dict_enc_storage_array,
+            lambda a: pa.ExtensionArray.from_storage(struct_dict_enc_type, a),
+        )
 
         # combine a simple int array with our dict encoded array to created nested array
         double_structed = pa.StructArray.from_arrays(
             [pa.array([i for i in range(len(array))]), dict_enc_array], names=["0", "1"]
         )
-        combined_storage_type = pa.struct([
-            pa.field("0", pa.int64()),
-            pa.field("1", kasde.StructDictEncodedType(pa.string()))
-        ])
-        dtype = katy.LogicalTypeExtensionType(conv, combined_storage_type, "java_value_factory")
-        complex_array = _apply_to_array(double_structed, lambda a: pa.ExtensionArray.from_storage(dtype, a))
+        combined_storage_type = pa.struct(
+            [
+                pa.field("0", pa.int64()),
+                pa.field("1", kasde.StructDictEncodedType(pa.string())),
+            ]
+        )
+        dtype = katy.LogicalTypeExtensionType(
+            conv, combined_storage_type, "java_value_factory"
+        )
+        complex_array = _apply_to_array(
+            double_structed, lambda a: pa.ExtensionArray.from_storage(dtype, a)
+        )
 
-        self.assertEqual(complex_array[2].as_py(), {'0': 2, '1': 'foo'})
-        self.assertEqual(complex_array[3].as_py(), {'0': 3, '1': 'car'})
+        self.assertEqual(complex_array[2].as_py(), {"0": 2, "1": "foo"})
+        self.assertEqual(complex_array[3].as_py(), {"0": 3, "1": "car"})
 
     def test_struct_dict_encoded_logical_type_extension_type(self):
         # tests the usage of StructDictEncodedLogicalTypeExtensionType for dict decoded strings
-        # the type is not used yet
+        # the type is not used yet anywhere else but in this test
         df = self._generate_test_data_frame("DictEncString.zip", columns=["Name"])
         self.assertEqual(df["Name"][0].as_py(), "LINESTRING (30 10, 10 30, 40 40)")
         self.assertEqual(df["Name"][4].as_py(), "POINT (30 10)")
         self.assertEqual(df["Name"][5].as_py(), "LINESTRING (40 20, 10 30, 35 40)")
         self.assertEqual(df["Name"][6].as_py(), "LINESTRING (30 10, 10 30, 40 40)")
+
+    def test_chunk_calculation(self):
+        def _get_chunked_array_for_start_indices(chunk_start_indices):
+            chunk_list = []
+            for i in range(len(chunk_start_indices) - 1):
+                tmp = chunk_start_indices[i]
+                nxt = chunk_start_indices[i + 1]
+                chunk_list.append([tmp] * (nxt - tmp))
+            chunk_list.append([chunk_start_indices[-1]])
+            chunked_array = pa.chunked_array(chunk_list)
+            return chunked_array
+
+        # power 2 chunks
+        correct_chunk_start_indices = [0] + [2**i for i in range(16)]
+        chunked_array = _get_chunked_array_for_start_indices(
+            correct_chunk_start_indices
+        )
+        calc = kap.KnimePandasExtensionArray._get_all_chunk_start_indices(chunked_array)
+        self.assertEqual(correct_chunk_start_indices, calc)
+
+        # random chunks
+        correct_chunk_start_indices = [0, 3, 5, 23, 123, 250]
+        chunked_array = _get_chunked_array_for_start_indices(
+            correct_chunk_start_indices
+        )
+        calc = kap.KnimePandasExtensionArray._get_all_chunk_start_indices(chunked_array)
+        self.assertEqual(correct_chunk_start_indices, calc)
+
+        # equal size chunks
+        correct_chunk_start_indices = [30 * i for i in range(11)]
+        chunked_array = _get_chunked_array_for_start_indices(
+            correct_chunk_start_indices
+        )
+        calc = kap.KnimePandasExtensionArray._get_all_chunk_start_indices(chunked_array)
+        self.assertEqual(correct_chunk_start_indices, calc)
 
 
 if __name__ == "__main__":

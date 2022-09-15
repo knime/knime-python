@@ -513,8 +513,8 @@ class StructDictEncodedLogicalTypeExtensionType(pa.ExtensionType):
 
     @classmethod
     def __arrow_ext_deserialize__(cls, storage_type, serialized):
-        struct_dict_encoded_type = kasde.StructDictEncodedType.__arrow_ext_deserialize__(
-            storage_type, b""
+        struct_dict_encoded_type = (
+            kasde.StructDictEncodedType.__arrow_ext_deserialize__(storage_type, b"")
         )
         value_factory_type = LogicalTypeExtensionType.__arrow_ext_deserialize__(
             storage_type, serialized
@@ -548,7 +548,9 @@ class StructDictEncodedLogicalTypeExtensionType(pa.ExtensionType):
         from knime_arrow_pandas import PandasLogicalTypeExtensionType
 
         return PandasLogicalTypeExtensionType(
-            self.struct_dict_encoded_type, self.value_factory_type.logical_type, self.value_factory_type._converter
+            self.struct_dict_encoded_type,
+            self.value_factory_type.logical_type,
+            self.value_factory_type._converter,
         )
 
 
@@ -632,10 +634,10 @@ def _struct_type_from_values(*args):
 
 
 class KnimeExtensionArray(pa.ExtensionArray):
-
     def _get_int_item_from_struct_arr(self, storage: pa.StructArray, item: int):
-        """ This Method unpacks nested struct arrays and takes
+        """This Method unpacks nested struct arrays and takes the value at index: item
 
+        it recursively goes into all sub struct arrays and collects the value at item.
         :param storage: Struct array, which needs to be unpacked
         :param item: index to be searched
         :return: Storage Scalar for the value at item
@@ -643,15 +645,19 @@ class KnimeExtensionArray(pa.ExtensionArray):
         storage_scalar_list = []
         for field in storage.flatten():  # we unpack each sub-array
             # if we have a nested struct array and not the final dict encoded array we recursively access its fields
-            if isinstance(field, pa.StructArray) and not isinstance(field.type, kasde.StructDictEncodedType):
-                storage_scalar_list.append(self._get_int_item_from_struct_arr(field, item))
+            if isinstance(field, pa.StructArray) and not isinstance(
+                field.type, kasde.StructDictEncodedType
+            ):
+                storage_scalar_list.append(
+                    self._get_int_item_from_struct_arr(field, item)
+                )
             else:
                 storage_scalar_list.append(field[item])
         storage_scalar_type = _struct_type_from_values(*storage_scalar_list)
-        storage_scalar = pa.scalar(tuple(i.as_py() for i in storage_scalar_list),
-                                   type=storage_scalar_type)
+        storage_scalar = pa.scalar(
+            tuple(i.as_py() for i in storage_scalar_list), type=storage_scalar_type
+        )
         return storage_scalar
-
 
     def __getitem__(self, idx):
         if isinstance(self.storage, pa.StructArray):

@@ -484,7 +484,7 @@ pa.register_extension_type(StructDictEncodedType(pa.null()))
 
 
 def get_unique_array_key(array: pa.Array):
-    """ extracts and combines the memory address of the buffer of a given array as key
+    """extracts and combines the memory address of the buffer of a given array as key
 
     :param array: array for which the key is needed
     :return: tuple containing each address

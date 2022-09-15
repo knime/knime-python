@@ -151,7 +151,11 @@ class GeoSpatialExtensionTypeTest(unittest.TestCase):
         return kap.arrow_data_to_pandas_df(arrow)
 
     def _generate_test_data_frame(
-            self, file_name="generatedTestData.zip", lists=True, sets=True, columns=None,
+        self,
+        file_name="generatedTestData.zip",
+        lists=True,
+        sets=True,
+        columns=None,
     ) -> pd.DataFrame:
         """
         Creates a Dataframe from a KNIME table on disk
@@ -291,6 +295,8 @@ class GeoSpatialExtensionTypeTest(unittest.TestCase):
         pd.testing.assert_frame_equal(gdf, gdf_copy)
 
     def test_dict_decoding_geospatials(self):
+        if not GeoSpatialExtensionTypeTest.geospatial_types_found:
+            return
         kt.register_python_value_factory(
             "geospatial_types",
             "GeoValueFactory",
@@ -307,16 +313,20 @@ class GeoSpatialExtensionTypeTest(unittest.TestCase):
             """,
         )
 
-        df = self._generate_test_data_frame("5kDictEncodedChunkedGeospatials.zip",
-                                            columns=["Name", "geometry"])
+        df = self._generate_test_data_frame(
+            "5kDictEncodedChunkedGeospatials.zip", columns=["Name", "geometry"]
+        )
         import geopandas as gpd
+
         gdf = gpd.GeoDataFrame(df)
 
         self.assertEqual(str(gdf["geometry"].iloc[-1]), "POINT (50 10)")
-        self.assertEqual(str(gdf["geometry"].iloc[0]), "LINESTRING (30 10, 10 30, 40 40)")
+        self.assertEqual(
+            str(gdf["geometry"].iloc[0]), "LINESTRING (30 10, 10 30, 40 40)"
+        )
 
         # test slicing over a chunked extension array
-        sliced = (gdf["geometry"].iloc[-21:])
+        sliced = gdf["geometry"].iloc[-21:]
         self.assertEqual(str(sliced[0]), "POINT (50 10)")
         self.assertEqual(str(sliced[3]), "LINESTRING (30 10, 10 30, 40 40)")
         self.assertEqual(str(sliced[5]), "POINT (30 10)")
