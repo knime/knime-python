@@ -77,6 +77,19 @@ final class StoppableInputStream extends InputStream {//NOSONAR
     }
 
     @Override
+    public int read(final byte[] b, final int off, final int len) throws IOException {
+        boolean inputAvailable;
+        while ((inputAvailable = isInputAvailable()) || m_isRunning.get()) {
+            if (inputAvailable) {
+                return m_in.read(b, off, len);
+            } else {
+                waitForStop();
+            }
+        }
+        return -1;
+    }
+
+    @Override
     public int read() throws IOException {
         boolean inputAvailable;
         while ((inputAvailable = isInputAvailable()) || m_isRunning.get()) {
@@ -119,6 +132,9 @@ final class StoppableInputStream extends InputStream {//NOSONAR
         m_stopper.countDown();
     }
 
+    /**
+     * Closing this stream has no effect. It especially doesn't close the delegate stream.
+     */
     @Override
     public void close() throws IOException {
         m_in.close();
