@@ -274,7 +274,7 @@ def _detect_missing_parameters(
                     _detect_missing_parameters(param_obj, group_params, current_version)
                 )
             elif name not in saved_parameters:
-                result.append(name)
+                result.append(param_obj._label)
 
     return result
 

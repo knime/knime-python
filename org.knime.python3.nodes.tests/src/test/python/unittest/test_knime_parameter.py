@@ -988,20 +988,20 @@ class ParameterTest(unittest.TestCase):
                     # 0.1.0 -> 0.2.0: backward compatibility
                     "WARNING:Python backend: The node was previously configured with an older version of the extension, 0.1.0, while the current version is 0.2.0.",
                     "WARNING:Python backend: The following parameters have since been added, and are configured with their default values:",
-                    'WARNING:Python backend: - "string_param"',
-                    'WARNING:Python backend: - "first"',
+                    'WARNING:Python backend: - "String Parameter"',
+                    'WARNING:Python backend: - "First Parameter"',
                     # 0.1.0 -> 0.3.0: backward compatibility
                     "WARNING:Python backend: The node was previously configured with an older version of the extension, 0.1.0, while the current version is 0.3.0.",
                     "WARNING:Python backend: The following parameters have since been added, and are configured with their default values:",
-                    'WARNING:Python backend: - "string_param"',
-                    'WARNING:Python backend: - "bool_param"',
-                    'WARNING:Python backend: - "first"',
-                    'WARNING:Python backend: - "second"',
+                    'WARNING:Python backend: - "String Parameter"',
+                    'WARNING:Python backend: - "Boolean Parameter"',
+                    'WARNING:Python backend: - "First Parameter"',
+                    'WARNING:Python backend: - "Second Parameter"',
                     # 0.2.0 -> 0.3.0: backward compatibility
                     "WARNING:Python backend: The node was previously configured with an older version of the extension, 0.2.0, while the current version is 0.3.0.",
                     "WARNING:Python backend: The following parameters have since been added, and are configured with their default values:",
-                    'WARNING:Python backend: - "bool_param"',
-                    'WARNING:Python backend: - "second"',
+                    'WARNING:Python backend: - "Boolean Parameter"',
+                    'WARNING:Python backend: - "Second Parameter"',
                 ],
                 context_manager.output,
             )
