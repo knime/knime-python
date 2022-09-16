@@ -584,8 +584,23 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
 
     def copy(self):
         # needed for pandas ExtensionArray API
-        # TODO: do we really want to copy the data? This thing is read only anyways... Unless we implement __setitem__ and concat
-        return self
+
+        # A copy should have its own copy of data, but as plain arrow arrays are immutable,
+        # it suffices to hand over the array. Chunked arrays however behave like lists and
+        # changes to their underlying data would be reflected in the copy, too.
+        data_copy = self._data
+        if isinstance(data_copy, pa.ChunkedArray):
+            data_copy = pa.chunked_array(self._data.chunks)
+
+        return KnimePandasExtensionArray(
+            self._storage_type, self._logical_type, self._converter, data_copy
+        )
+
+    def astype(self, dtype, copy: bool = True):
+        # TODO: will be implemented in https://knime-com.atlassian.net/browse/AP-19514
+        raise NotImplementedError(
+            "KNIME extension type columns cannot be casted to other types"
+        )
 
     @classmethod
     def _concat_same_type(cls, to_concat):
