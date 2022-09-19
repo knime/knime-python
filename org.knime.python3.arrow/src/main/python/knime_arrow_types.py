@@ -485,8 +485,54 @@ class LogicalTypeExtensionType(pa.ExtensionType):
         )
 
 
+class ProxyExtensionType(LogicalTypeExtensionType):
+    """
+    A proxy extension type is similar to a LogicalTypeExtensionType, but has a PythonValueFactory as
+    converter that is not the one that is registered for the data type by default.
+
+    The only thing it needs to do differently from a LogicalTypeExtensionType is make sure this
+    non-standard PythonValueFactory(=converter) is restored when the type is deserialized.
+    """
+
+    def __init__(self, converter, storage_type, java_value_factory):
+        self._converter = converter
+        self._logical_type = java_value_factory
+
+        if type(converter) == type(kt.get_converter(java_value_factory)):
+            raise TypeError(
+                """
+                ProxyExtensionTypes should only be created if their converter differs from the
+                original value factory. This is an implementation error.
+                """
+            )
+
+        pa.ExtensionType.__init__(self, storage_type, "knime.proxy_type")
+
+    def __arrow_ext_serialize__(self):
+        import pickle
+
+        compatible_type = self._converter.compatible_type if self._converter else None
+        return pickle.dumps((self._logical_type, compatible_type))
+
+    @classmethod
+    def __arrow_ext_deserialize__(cls, storage_type, serialized):
+        import pickle
+
+        logical_type, compatible_type = pickle.loads(serialized)
+        converter = kt.get_proxy_by_python_type(compatible_type)[0]
+
+        return ProxyExtensionType(converter, storage_type, logical_type)
+
+    @property
+    def original_type(self):
+        return LogicalTypeExtensionType(
+            kt.get_converter(self._logical_type), self.storage_type, self._logical_type
+        )
+
+
 # Register our extension type with
 pa.register_extension_type(LogicalTypeExtensionType(None, pa.null(), ""))
+pa.register_extension_type(ProxyExtensionType(None, pa.null(), ""))
 
 
 class StructDictEncodedLogicalTypeExtensionType(pa.ExtensionType):
@@ -942,7 +988,17 @@ def _wrap_primitive_array(
                 f"Data type '{array.type}' in column '{column_name}' is not supported in KNIME Python."
                 + " Please use a different data type."
             )
-        return array
+
+        if isinstance(array.type, ProxyExtensionType):
+            # unpack to matching LogicalType because we don't want to save the proxy type to disk
+            original_type = array.type.original_type
+            return _apply_to_array(
+                array,
+                lambda a: pa.ExtensionArray.from_storage(original_type, a.storage),
+            )
+        else:
+            # is already LogicalTypeExtensionType
+            return array
     elif array.type == pa.null():
         return _apply_to_array(array, lambda a: _nulls(len(a), dtype=wrapped_type))
     elif is_list_type(array.type) and array.type.value_type == pa.null():

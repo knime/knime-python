@@ -332,11 +332,16 @@ class LogicalType(KnimeType):
             else bundle.value_factory
         )
 
-        return kat.LogicalTypeExtensionType(
-            converter=converter,
-            storage_type=pa_storage_type,
-            java_value_factory=self.logical_type,
-        )
+        if self._proxy_type_converter:
+            return kat.ProxyExtensionType(
+                self._proxy_type_converter, pa_storage_type, self.logical_type
+            )
+        else:
+            return kat.LogicalTypeExtensionType(
+                converter=bundle.value_factory,
+                storage_type=pa_storage_type,
+                java_value_factory=self.logical_type,
+            )
 
     def to_pandas(self):
         return self.to_pyarrow().to_pandas_dtype()

@@ -52,6 +52,7 @@ import json
 import datetime as dt
 
 import knime_schema as k
+import knime_types as kt
 
 
 class TypeTest(ABC):
@@ -680,32 +681,34 @@ class SchemaTest(unittest.TestCase):
             "struct<0: struct<0: struct<0: int64, 1: int64>, 1: struct<0: large_list<item: int64>, 1: struct<0: int64, 1: int64>>>, 1: large_list<item: struct<0: large_list<item: int64>, 1: int64>>>",
         )
 
+
+class MyTime:
+    def __init__(self, nano_of_day):
+        self.nano_of_day = nano_of_day
+
+
+class MyLocalTimeValueFactory(kt.PythonValueFactory):
+    def __init__(self) -> None:
+        kt.PythonValueFactory.__init__(self, MyTime)
+
+    def decode(self, nano_of_day):
+        if nano_of_day is None:
+            return None
+        return MyTime(nano_of_day)
+
+    def encode(self, time):
+        if time is None:
+            return None
+        return time.nano_of_day
+
+
+class ProxyTests(unittest.TestCase):
     def test_proxy_types(self):
         """
         Tests knime_schema.logical with registered proxy types.
         """
         import pyarrow as pa
-        import knime_types as kt
-        import extension_types as et
         import knime_arrow_types as kat
-
-        class MyTime:
-            def __init__(self, nano_of_day):
-                self.nano_of_day = nano_of_day
-
-        class MyLocalTimeValueFactory(kt.PythonValueFactory):
-            def __init__(self) -> None:
-                kt.PythonValueFactory.__init__(self, MyTime)
-
-            def decode(self, nano_of_day):
-                if nano_of_day is None:
-                    return None
-                return MyTime(nano_of_day)
-
-            def encode(self, time):
-                if time is None:
-                    return None
-                return time.nano_of_day
 
         kt._python_proxy_type_to_value_factory[MyTime] = (
             MyLocalTimeValueFactory(),
@@ -736,7 +739,7 @@ class SchemaTest(unittest.TestCase):
         self.assertEqual(
             pyarrow_extension_type._converter.__class__, MyLocalTimeValueFactory
         )
-        self.assertEqual(pyarrow_extension_type.__class__, kat.LogicalTypeExtensionType)
+        self.assertEqual(pyarrow_extension_type.__class__, kat.ProxyExtensionType)
 
 
 if __name__ == "__main__":

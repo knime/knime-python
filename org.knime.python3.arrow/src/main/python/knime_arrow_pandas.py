@@ -164,6 +164,13 @@ class PandasLogicalTypeExtensionType(pdext.ExtensionDtype):
         return f"PandasLogicalTypeExtensionType({self._storage_type}, {self._logical_type})"
 
 
+def _apply_to_array(array, func):
+    if isinstance(array, pa.ChunkedArray):
+        return pa.chunked_array([func(chunk) for chunk in array.chunks])
+    else:
+        return func(array)
+
+
 class KnimePandasExtensionArray(pdext.ExtensionArray):
     def __init__(
         self,
@@ -249,7 +256,10 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
             logical_type = dtype._logical_type
             converter = dtype._converter
 
-            if converter is not None and converter.needs_conversion():
+            if isinstance(scalars, KnimePandasExtensionArray):
+                return cls._as_ext_type(scalars, logical_type, storage_type, converter)
+
+            elif converter is not None and converter.needs_conversion():
                 scalars = [converter.encode(s) for s in scalars]
 
         if storage_type is None:
@@ -257,14 +267,69 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
                 "Can only create KnimePandasExtensionArray from a sequence if the storage type is given."
             )
 
-        # needed for pandas ExtensionArray API
         arrow_type = kat.LogicalTypeExtensionType(converter, storage_type, logical_type)
+        if converter and type(converter) != type(kt.get_converter(logical_type)):
+            # If we slice a Pandas series based on a ProxyExtensionType, we should return
+            # the appropriate type as well:
+            proxy_value_factories = [
+                v[0] for v in kt._python_proxy_type_to_value_factory.values()
+            ]
+            if converter not in proxy_value_factories:
+                raise TypeError(
+                    f"""
+                    The given configuration is not a valid ProxyExtensionType, converter {converter} was not 
+                    found in list of registered proxy converters: {proxy_value_factories}
+                    """
+                )
+
+            arrow_type = kat.ProxyExtensionType(converter, storage_type, logical_type)
 
         a = pa.array(scalars, type=storage_type)
         extension_array = pa.ExtensionArray.from_storage(arrow_type, a)
         return KnimePandasExtensionArray(
             storage_type, logical_type, converter, extension_array
         )
+
+    @classmethod
+    def _as_ext_type(cls, scalars, logical_type, storage_type, converter):
+        """
+        Create a new ExtensionArray from the given scalars using the provided type,
+        can be used for type casting.
+        """
+
+        # We are casting between different extension types, but then the
+        # storage and logical types must match
+        if (
+            scalars._storage_type != storage_type
+            or scalars._logical_type != logical_type
+        ):
+            raise TypeError(
+                f"""
+                Cannot cast array of type {scalars.dtype} to ({logical_type}, {storage_type}, {converter}). 
+                Types are incompatible.
+                """
+            )
+
+        # we just "reinterpret" the storage data as different dtype -> uses a different converter
+        new_data_dtype = kat.ProxyExtensionType(converter, storage_type, logical_type)
+
+        def astype(a):
+            b = pa.ExtensionArray.from_storage(new_data_dtype, a.storage)
+            return b
+
+        casted_data = _apply_to_array(
+            scalars._data,
+            astype,
+        )
+        assert casted_data.type == new_data_dtype
+        arr = cls(
+            storage_type,
+            logical_type,
+            converter,
+            casted_data,
+        )
+
+        return arr
 
     @classmethod
     def _from_factorized(cls, values, original):
@@ -388,12 +453,6 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
         -------
         None
         """
-
-        def _apply_to_array(array, func):
-            if isinstance(array, pa.ChunkedArray):
-                return pa.chunked_array([func(chunk) for chunk in array.chunks])
-            else:
-                return func(array)
 
         def _set_data_from_input(inp: Union[list, np.ndarray]):
             # todo check if data contains lists > recursive mapping
@@ -597,10 +656,12 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
         )
 
     def astype(self, dtype, copy: bool = True):
-        # TODO: will be implemented in https://knime-com.atlassian.net/browse/AP-19514
-        raise NotImplementedError(
-            "KNIME extension type columns cannot be casted to other types"
-        )
+        if not isinstance(dtype, PandasLogicalTypeExtensionType):
+            # fall back to default
+            return super().astype(dtype, copy)
+
+        cls = dtype.construct_array_type()
+        return cls._from_sequence(self, dtype=dtype, copy=copy)
 
     @classmethod
     def _concat_same_type(cls, to_concat):

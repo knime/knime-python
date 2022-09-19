@@ -704,6 +704,24 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         :func:`~ka.ArrowDataSink.write_table` thats why the assertion is just looking at the table result.
 
         """
+        # Setup
+        import knime_types as kt
+
+        kt.register_python_value_factory(
+            "extension_types",
+            "LocalDateTimeValueFactory",
+            '{"type": "struct", "inner_types": ["long", "long"]}',
+            """
+                    {
+                        "type": "struct",
+                        "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.time.LocalDateTimeValueFactory\\"}" },
+                        "inner": [
+                            {"type": "simple", "traits": {}},
+                            {"type": "simple", "traits": {}}
+                        ]
+                    }
+                    """,
+        )
         arrow_backend = kat.ArrowBackend(_create_dummy_arrow_sink)
 
         # Create table
