@@ -50,14 +50,14 @@ package org.knime.python3.arrow;
 
 import java.util.List;
 
-import org.knime.python3.PythonDataSource;
+import org.knime.python3.PythonTableDataSource;
 
 /**
  * A source of Arrow data to a Python process.
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
  */
-public interface PythonArrowDataSource extends PythonDataSource {
+public interface PythonArrowDataSource extends PythonTableDataSource {
 
     @Override
     default String getIdentifier() {

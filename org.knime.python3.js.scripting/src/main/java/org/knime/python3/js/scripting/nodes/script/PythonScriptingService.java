@@ -74,6 +74,8 @@ import org.knime.scripting.editor.lsp.LanguageServerProxy;
  */
 final class PythonScriptingService extends ScriptingService {
 
+    private final PythonScriptPortsConfiguration m_ports;
+
     private Map<String, ExecutableOption> m_executableOptions = Collections.emptyMap();
 
     // TODO(AP-19357) close the session when the dialog is closed
@@ -84,6 +86,7 @@ final class PythonScriptingService extends ScriptingService {
     @SuppressWarnings("resource") // TODO(AP-19357) fix this
     PythonScriptingService() {
         super(connectToLanguageServer());
+        m_ports = PythonScriptPortsConfiguration.fromCurrentNodeContext();
         // TODO(AP-19357) stop the language server when the dialog is closed
     }
 
@@ -182,8 +185,9 @@ final class PythonScriptingService extends ScriptingService {
             final var fileStoreHandler = NotInWorkflowWriteFileStoreHandler.create();
             m_interactiveSession = new PythonScriptingSession(pythonCommand,
                 PythonScriptingService.this::addConsoleOutputEvent, fileStoreHandler);
-            m_interactiveSession.setupIO(workflowControl.getInputData(), workflowControl.getNrOutPorts(),
-                new ExecutionMonitor());
+
+            m_interactiveSession.setupIO(workflowControl.getInputData(), m_ports.getNumOutTables(),
+                m_ports.getNumOutImages(), m_ports.getNumOutObjects(), new ExecutionMonitor());
         }
 
         /**

@@ -50,15 +50,13 @@ package org.knime.python3.js.scripting.nodes.script;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import org.knime.core.columnar.arrow.ArrowColumnStoreFactory;
 import org.knime.core.data.filestore.internal.IWriteFileStoreHandler;
-import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
@@ -110,6 +108,12 @@ final class PythonScriptingSession implements AutoCloseable {
 
     private final AutoCloseable m_outputRedirector;
 
+    private int m_numOutTables;
+
+    private int m_numOutImages;
+
+    private int m_numOutObjects;
+
     PythonScriptingSession(final PythonCommand pythonCommand, final Consumer<ConsoleText> consoleTextConsumer,
         final IWriteFileStoreHandler fileStoreHandler) throws IOException, InterruptedException {
         m_consoleTextConsumer = consoleTextConsumer;
@@ -119,12 +123,13 @@ final class PythonScriptingSession implements AutoCloseable {
         m_outputRedirector = PythonGatewayUtils.redirectGatewayOutput(m_gateway, LOGGER::info, LOGGER::info, 100);
     }
 
-    void setupIO(final PortObject[] inData, final int numOutPorts, final ExecutionMonitor exec)
-        throws IOException, CanceledExecutionException {
-        // TODO(AP-19337) support all kinds of input and output ports
-        final BufferedDataTable[] inTables =
-            Arrays.stream(inData).map(BufferedDataTable.class::cast).toArray(BufferedDataTable[]::new);
-        final var sources = m_tableConverter.createSources(inTables, exec);
+    void setupIO(final PortObject[] inData, final int numOutTables, final int numOutImages, final int numOutObjects,
+        final ExecutionMonitor exec) throws IOException, CanceledExecutionException {
+        m_numOutTables = numOutTables;
+        m_numOutImages = numOutImages;
+        m_numOutObjects = numOutObjects;
+
+        final var sources = PythonIOUtils.createSources(inData, m_tableConverter, exec);
         final var callback = new PythonJsScriptingEntryPoint.Callback() {
             @Override
             public PythonArrowDataSink create_sink() throws IOException {
@@ -141,18 +146,38 @@ final class PythonScriptingSession implements AutoCloseable {
                 m_consoleTextConsumer.accept(new ConsoleText(text, true));
             }
         };
-        m_entryPoint.setupIO(sources, numOutPorts, callback);
+        m_entryPoint.setupIO(sources, numOutTables, numOutImages, numOutObjects, callback);
     }
 
     String execute(final String script) {
         return m_entryPoint.execute(script);
     }
 
-    BufferedDataTable[] getOutputs(final boolean allowIncomplete, final ExecutionContext exec)
-        // TODO(AP-19337) support all kinds of output ports
-        throws IOException, CanceledExecutionException {
-        final List<PythonArrowDataSink> sinks = m_entryPoint.getOutputs(allowIncomplete);
-        return m_tableConverter.convertToTables(sinks, exec.createSubExecutionContext(0.3));
+    PortObject[] getOutputs(final ExecutionContext exec) throws IOException, CanceledExecutionException {
+        m_entryPoint.closeOutputs(true);
+
+        // Progress handling
+        final var totalProgress = 3 * m_numOutTables + m_numOutImages + m_numOutObjects;
+        final var tableProgress = (3 * m_numOutTables) / (double)totalProgress;
+        final var imageProgress = m_numOutImages / (double)totalProgress;
+        final var objectProgress = m_numOutObjects / (double)totalProgress;
+
+        // Retrieve the tables
+        var execTables = exec.createSubExecutionContext(tableProgress);
+        var tables = PythonIOUtils.getOutputTables(m_numOutTables, m_entryPoint, m_tableConverter, execTables);
+
+        // Retrieve the images
+        var execImages = exec.createSubProgress(imageProgress);
+        var images = PythonIOUtils.getOutputImages(m_numOutImages, m_entryPoint, execImages);
+
+        // Retrieve the objects
+        var execObjects = exec.createSubExecutionContext(objectProgress);
+        var objects = PythonIOUtils.getOutputObjects(m_numOutObjects, m_entryPoint, execObjects);
+
+        // NB: The output ports always have the order tables, images, objects
+        return Stream.of(tables, images, objects) //
+            .flatMap(Stream::of) //
+            .toArray(PortObject[]::new);
     }
 
     private static PythonGateway<PythonJsScriptingEntryPoint> createGateway(final PythonCommand pythonCommand)

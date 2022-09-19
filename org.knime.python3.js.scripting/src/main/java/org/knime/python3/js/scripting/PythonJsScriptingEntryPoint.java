@@ -49,8 +49,8 @@
 package org.knime.python3.js.scripting;
 
 import java.io.IOException;
-import java.util.List;
 
+import org.knime.python3.PythonDataSource;
 import org.knime.python3.PythonEntryPoint;
 import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.arrow.PythonArrowDataSource;
@@ -63,9 +63,17 @@ import org.knime.python3.arrow.PythonArrowDataSource;
  */
 public interface PythonJsScriptingEntryPoint extends PythonEntryPoint {
 
-    // TODO(AP-19337) support all kinds of inputs and outputs
-    @SuppressWarnings("javadoc") // TODO(AP-19337) write javadoc
-    void setupIO(PythonArrowDataSource[] inputs, int numOutputs, Callback callback);
+    /**
+     * Setup input and output variables in knime_io.
+     *
+     * @param sources the sources for the inputs. Either {@link PythonArrowDataSource} or
+     *            {@link PickledObjectDataSource}.
+     * @param numOutTables the number of output tables of the node
+     * @param numOutImages the number of output images of the node
+     * @param numOutObjects the number of output objects of the node
+     * @param callback a callback for accessing Java functionality
+     */
+    void setupIO(PythonDataSource[] sources, int numOutTables, int numOutImages, int numOutObjects, Callback callback);
 
     /**
      * Execute the given script in Python.
@@ -75,9 +83,52 @@ public interface PythonJsScriptingEntryPoint extends PythonEntryPoint {
      */
     String execute(String script);
 
-    // TODO(AP-19337) support all kinds of outputs
-    @SuppressWarnings("javadoc") // TODO(AP-19337) write javadoc
-    List<PythonArrowDataSink> getOutputs(boolean allowIncomplete);
+    /**
+     * Close the outputs. After calling this, the output tables cannot be modified anymore.
+     *
+     * @param checkOutputs if the validity of the outputs should be checked
+     */
+    void closeOutputs(boolean checkOutputs);
+
+    /**
+     * Get the sink of the table at the given output index.
+     *
+     * @param idx the index of the output table
+     * @return the data sink of the table from which the table can be created again
+     */
+    PythonArrowDataSink getOutputTable(int idx);
+
+    /**
+     * Write the output image to the given file.
+     *
+     * @param idx the index of the image to write to the file
+     * @param path the path to write the file to
+     */
+    void writeOutputImage(int idx, String path);
+
+    /**
+     * Write the output object to the given file using pickle.
+     *
+     * @param idx the index of the object to write to the file
+     * @param path the path to write the file to
+     */
+    void writeOutputObject(int idx, String path);
+
+    /**
+     * Get the type of the output object at the given index.
+     *
+     * @param idx the index of the output object
+     * @return the name of the type of the object
+     */
+    String getOutputObjectType(int idx);
+
+    /**
+     * Get the string representation of the output object at the given index.
+     *
+     * @param idx the index of the output object
+     * @return the string representation of the object
+     */
+    String getOutputObjectStringRepr(int idx);
 
     /** A callback to call Java functions in Python code */
     public interface Callback {

@@ -52,10 +52,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.function.Consumer;
 
-import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.filestore.internal.IFileStoreHandler;
 import org.knime.core.data.filestore.internal.IWriteFileStoreHandler;
-import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
@@ -63,6 +61,9 @@ import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
+import org.knime.core.node.context.ports.PortsConfiguration;
+import org.knime.core.node.port.PortObject;
+import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.python3.PythonCommand;
@@ -84,23 +85,23 @@ final class PythonScriptNodeModel extends NodeModel {
 
     private final PythonScriptNodeSettings m_settings;
 
+    private final PythonScriptPortsConfiguration m_ports;
+
     private ConsoleOutputStorage m_consoleOutputStorage;
 
-    // TODO(AP-19337) support multiple inputs and outputs
-    // TODO(AP-19337) support different port types
-    PythonScriptNodeModel() {
-        super(1, 1);
+    PythonScriptNodeModel(final PortsConfiguration portsConfiguration) {
+        super(portsConfiguration.getInputPorts(), portsConfiguration.getOutputPorts());
         m_settings = new PythonScriptNodeSettings();
+        m_ports = PythonScriptPortsConfiguration.fromPortsConfiguration(portsConfiguration);
     }
 
     @Override
-    protected DataTableSpec[] configure(final DataTableSpec[] inSpecs) throws InvalidSettingsException {
-        return new DataTableSpec[]{null};
+    protected PortObjectSpec[] configure(final PortObjectSpec[] inSpecs) throws InvalidSettingsException {
+        return null; // NOSONAR
     }
 
     @Override
-    protected BufferedDataTable[] execute(final BufferedDataTable[] inData, final ExecutionContext exec)
-        throws Exception {
+    protected PortObject[] execute(final PortObject[] inObjects, final ExecutionContext exec) throws Exception {
         final PythonCommand pythonCommand =
             ExecutableSelectionUtils.getPythonCommand(m_settings.getExecutableSelection());
         m_consoleOutputStorage = null;
@@ -108,14 +109,17 @@ final class PythonScriptNodeModel extends NodeModel {
         try (final var session =
             new PythonScriptingSession(pythonCommand, consoleConsumer, getWriteFileStoreHandler())) {
             exec.setMessage("Setting up inputs...");
-            session.setupIO(inData, getNrOutPorts(), exec.createSubProgress(0.3));
+            session.setupIO(inObjects, m_ports.getNumOutTables(), m_ports.getNumOutImages(), m_ports.getNumOutObjects(),
+                exec.createSubProgress(0.3));
             exec.setProgress(0.3, "Running script...");
             session.execute(m_settings.getScript());
             exec.setProgress(0.7, "Processing output...");
-            return session.getOutputs(false, exec.createSubExecutionContext(0.3));
+            return session.getOutputs(exec.createSubExecutionContext(0.3));
         } finally {
             m_consoleOutputStorage = consoleConsumer.finish();
         }
+
+        // TODO we probably need something like the kernelShutdownTracker in AbstractPythonScriptingNode
     }
 
     @Override
