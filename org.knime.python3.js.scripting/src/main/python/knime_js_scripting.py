@@ -48,13 +48,14 @@
 
 import json
 import sys
-from io import StringIO
 from contextlib import redirect_stdout, redirect_stderr
-import py4j.clientserver
-from py4j.java_collections import ListConverter
+import pickle
 from typing import Any, Dict, List, TextIO, Callable
 
+import py4j.clientserver
+
 import knime_arrow_table as kat
+import knime_arrow as ka
 import knime_gateway as kg
 import knime_io as kio
 import knime_table as kt
@@ -62,10 +63,17 @@ from knime_main_loop import MainLoop
 
 # TODO(AP-19333) organize imports
 # TODO(AP-19333) logging (see knime_node_backend)
-# TODO(AP-19337) support multiple inputs/outputs
-# TODO(AP-19337) support different port types
 # TODO(AP-19333) immediately check the output when it is assined
 #      Also do row checking etc. -> If the interactive run works the node execution should also work
+
+
+@kg.data_source("org.knime.python3.pickledobject")
+def read_pickled_obj(java_data_source):
+    """
+    Read the pickled object from the file that is provided by the java_data_source object
+    """
+    with open(java_data_source.getAbsolutePath(), "rb") as file:
+        return pickle.load(file)
 
 
 class ScriptingEntryPoint(kg.EntryPoint):
@@ -77,8 +85,17 @@ class ScriptingEntryPoint(kg.EntryPoint):
 
         self._workspace: Dict[str, Any] = {}
 
-    def setupIO(self, data_sources, num_outputs, java_callback):
+    def setupIO(
+        self,
+        data_sources,
+        num_out_tables,
+        num_out_images,
+        num_out_objects,
+        java_callback,
+    ):
         self._java_callback = java_callback
+
+        # TODO(AP-19551) make flow variables available in knio.flow_variables
 
         # TODO(AP-19339) adapt to new API with Table
         def create_python_sink():
@@ -88,13 +105,23 @@ class ScriptingEntryPoint(kg.EntryPoint):
         sources = [kg.data_source_mapper(d) for d in data_sources]
 
         # Set the input_tables in knime_io
-        kio._pad_up_to_length(kio._input_tables, len(sources))
-        for idx, s in enumerate(sources):
+        # Note: We only support arrow tables
+        table_sources = [s for s in sources if isinstance(s, ka.ArrowDataSource)]
+        kio._pad_up_to_length(kio._input_tables, len(table_sources))
+        for idx, s in enumerate(table_sources):
             # TODO(AP-19333) we need to close the input tables?
             kio._input_tables[idx] = kat.ArrowReadTable(s)
 
-        # Prepare the output_tables in knime_io
-        kio._pad_up_to_length(kio._output_tables, num_outputs)
+        # Set the input_objects in knime_io (every other source)
+        objects = [s for s in sources if not isinstance(s, ka.ArrowDataSource)]
+        kio._pad_up_to_length(kio._input_objects, len(objects))
+        for idx, obj in enumerate(objects):
+            kio._input_objects[idx] = obj
+
+        # Prepare the output_* lists in knime_io
+        kio._pad_up_to_length(kio._output_tables, num_out_tables)
+        kio._pad_up_to_length(kio._output_images, num_out_images)
+        kio._pad_up_to_length(kio._output_objects, num_out_objects)
 
         # Set the table backend such that new tables can be
         # created in the script
@@ -111,19 +138,35 @@ class ScriptingEntryPoint(kg.EntryPoint):
 
         return self._getVariablesInWorkspace()
 
-    def getOutputs(self, allow_incomplete):
+    def closeOutputs(self, check_outputs):
         # TODO(AP-19333) check the outputs? See knime_kernel _check_outputs
-        # TODO(AP-19333) allow incomplete outputs for interactive runs
 
         # Close the backend to finish up the outputs
         kt._backend.close()
         kt._backend = None
 
-        # Collect the outputs
-        # TODO(AP-19333) check if the table is a valid table?
-        output_sinks = [table._sink._java_data_sink for table in kio.output_tables]
+    def getOutputTable(self, idx: int):
+        return kio.output_tables[idx]._sink._java_data_sink
 
-        return ListConverter().convert(output_sinks, kg.client_server._gateway_client)
+    def writeOutputImage(self, idx: int, path: str):
+        with open(path, "wb") as file:
+            file.write(kio.output_images[idx])
+
+    def writeOutputObject(self, idx: int, path: str) -> None:
+        obj = kio.output_objects[idx]
+        with open(path, "wb") as file:
+            pickle.dump(obj=obj, file=file)
+
+    def getOutputObjectType(self, idx: int) -> str:
+        return type(kio.output_objects[idx]).__name__
+
+    def getOutputObjectStringRepr(self, idx: int) -> str:
+        object_as_string = str(kio.output_objects[idx])
+        return (
+            (object_as_string[:996] + "\n...")
+            if len(object_as_string) > 1000
+            else object_as_string
+        )
 
     def _getVariablesInWorkspace(self) -> List[Dict[str, str]]:
         # TODO(AP-19345) provide integers + doubles not as string

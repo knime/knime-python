@@ -44,23 +44,55 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Apr 30, 2021 (benjamin): created
+ *   Sep 19, 2022 (benjamin): created
  */
-package org.knime.python3;
+package org.knime.python3.js.scripting;
+
+import java.io.IOException;
+import java.nio.file.Path;
+
+import org.knime.python2.port.PickledObjectFileStorePortObject;
+import org.knime.python3.PythonDataSource;
 
 /**
- * A source for data to a Python process.
- *
- * Objects of this interface will be given to methods in the {@link PythonEntryPoint} to provide the Python process with
- * data. On the Python side they should be wrapped into a Python object (which provides a pythonic API) using
- * <code>knime._backend._gateway.data_source_mapper(java_data_source:JavaObject)</code>.
+ * A data source for pickled objects that are saved in a local file system file.
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
  */
-public interface PythonDataSource {
+public class PickledObjectDataSource implements PythonDataSource {
+
+    private final Path m_pathToPickledFile;
 
     /**
-     * @return an unique identifier which will be used to identify the Python class wrapping this data source.
+     * Create a source for a pickled object from a port object.
+     *
+     * @param portObject the port object which points to a file containing a pickled object.
+     * @return the source for Python to read back the pickled object
+     * @throws IOException if the Path to the pickled object file could not be created
      */
-    String getIdentifier();
+    public static PickledObjectDataSource fromPortObject(final PickledObjectFileStorePortObject portObject)
+        throws IOException {
+        return new PickledObjectDataSource(portObject.getPickledObjectFile().getFile().toPath());
+    }
+
+    /**
+     * Create a source for a pickled object from a file.
+     *
+     * @param pathToPickledFile the path to the file containing the pickled object
+     */
+    public PickledObjectDataSource(final Path pathToPickledFile) {
+        m_pathToPickledFile = pathToPickledFile;
+    }
+
+    /**
+     * @return the absolute path to the file containing the pickled object
+     */
+    public String getAbsolutePath() {
+        return m_pathToPickledFile.toAbsolutePath().toString();
+    }
+
+    @Override
+    public String getIdentifier() {
+        return "org.knime.python3.pickledobject";
+    }
 }
