@@ -49,18 +49,19 @@
 package org.knime.python3;
 
 /**
- * A source for data to a Python process.
- *
- * Objects of this interface will be given to methods in the {@link PythonEntryPoint} to provide the Python process with
- * data. On the Python side they should be wrapped into a Python object (which provides a pythonic API) using
- * <code>knime._backend._gateway.data_source_mapper(java_data_source:JavaObject)</code>.
+ * A source for table data to a Python process.
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
  */
-public interface PythonDataSource {
+public interface PythonTableDataSource extends PythonDataSource {
 
     /**
-     * @return an unique identifier which will be used to identify the Python class wrapping this data source.
+     * @return the names of the columns
      */
-    String getIdentifier();
+    String[] getColumnNames();
+
+    /**
+     * @return indicates whether column names are available
+     */
+    boolean hasColumnNames();
 }

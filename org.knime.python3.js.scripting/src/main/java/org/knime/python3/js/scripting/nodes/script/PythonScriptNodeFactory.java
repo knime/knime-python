@@ -48,27 +48,36 @@
  */
 package org.knime.python3.js.scripting.nodes.script;
 
+import static org.knime.python3.js.scripting.nodes.script.PythonScriptPortsConfiguration.PORTGR_ID_INP_OBJECT;
+import static org.knime.python3.js.scripting.nodes.script.PythonScriptPortsConfiguration.PORTGR_ID_INP_TABLE;
+import static org.knime.python3.js.scripting.nodes.script.PythonScriptPortsConfiguration.PORTGR_ID_OUT_IMAGE;
+import static org.knime.python3.js.scripting.nodes.script.PythonScriptPortsConfiguration.PORTGR_ID_OUT_OBJECT;
+import static org.knime.python3.js.scripting.nodes.script.PythonScriptPortsConfiguration.PORTGR_ID_OUT_TABLE;
+
+import java.util.Optional;
+
+import org.knime.core.node.BufferedDataTable;
+import org.knime.core.node.ConfigurableNodeFactory;
 import org.knime.core.node.NodeDialogPane;
-import org.knime.core.node.NodeFactory;
 import org.knime.core.node.NodeView;
+import org.knime.core.node.context.NodeCreationConfiguration;
+import org.knime.core.node.port.PortType;
+import org.knime.core.node.port.image.ImagePortObject;
 import org.knime.core.webui.node.dialog.NodeDialog;
 import org.knime.core.webui.node.dialog.NodeDialogFactory;
+import org.knime.python2.port.PickledObjectFileStorePortObject;
 
 /**
  * The factory for the Python scripting node.
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
  */
-public final class PythonScriptNodeFactory extends NodeFactory<PythonScriptNodeModel> implements NodeDialogFactory {
+public final class PythonScriptNodeFactory extends ConfigurableNodeFactory<PythonScriptNodeModel>
+    implements NodeDialogFactory {
 
     @Override
     public NodeDialog createNodeDialog() {
         return new PythonScriptNodeDialog();
-    }
-
-    @Override
-    public PythonScriptNodeModel createNodeModel() {
-        return new PythonScriptNodeModel();
     }
 
     @Override
@@ -87,8 +96,28 @@ public final class PythonScriptNodeFactory extends NodeFactory<PythonScriptNodeM
     }
 
     @Override
-    protected NodeDialogPane createNodeDialogPane() {
+    protected PythonScriptNodeModel createNodeModel(final NodeCreationConfiguration creationConfig) {
+        final var portsConfig = creationConfig.getPortConfig().orElseThrow(
+            () -> new IllegalStateException("Ports configuration missing. This is an implementation error"));
+        return new PythonScriptNodeModel(portsConfig);
+    }
+
+    @Override
+    protected NodeDialogPane createNodeDialogPane(final NodeCreationConfiguration creationConfig) {
         // TODO(AP-19377) Display settings that are overwritten by a flow variable correctly
         return createNodeDialog().createLegacyFlowVariableNodeDialog();
+    }
+
+    @Override
+    protected Optional<PortsConfigurationBuilder> createPortsConfigBuilder() {
+        final var b = new PortsConfigurationBuilder();
+        b.addExtendableInputPortGroup(PORTGR_ID_INP_OBJECT, PickledObjectFileStorePortObject.TYPE);
+        b.addExtendableInputPortGroupWithDefault(PORTGR_ID_INP_TABLE, new PortType[0],
+            new PortType[]{BufferedDataTable.TYPE}, BufferedDataTable.TYPE);
+        b.addExtendableOutputPortGroupWithDefault(PORTGR_ID_OUT_TABLE, new PortType[0],
+            new PortType[]{BufferedDataTable.TYPE}, BufferedDataTable.TYPE);
+        b.addExtendableOutputPortGroup(PORTGR_ID_OUT_IMAGE, ImagePortObject.TYPE);
+        b.addExtendableOutputPortGroup(PORTGR_ID_OUT_OBJECT, PickledObjectFileStorePortObject.TYPE);
+        return Optional.of(b);
     }
 }
