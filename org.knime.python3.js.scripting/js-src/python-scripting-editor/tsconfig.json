@@ -1,33 +1,26 @@
 {
-  "compilerOptions": {
-    "target": "ESNext",
-    "useDefineForClassFields": true,
-    "module": "ESNext",
-    "lib": [
-      "ESNext",
-      "DOM"
-    ],
-    "moduleResolution": "node",
-    "strict": true,
-    "sourceMap": true,
-    "resolveJsonModule": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "rootDirs": [
-      "/"
-    ],
-    "baseUrl": "./",
-    "noEmit": true,
-    "noUnusedParameters": true,
-    "noImplicitReturns": true
-  },
+  "extends": "@vue/tsconfig/tsconfig.web.json",
   "include": [
+    "env.d.ts",
     "src/**/*",
-    "test/**/*"
+    "src/**/*.vue"
   ],
-  "exclude": [
-    "node_modules",
-    "webapps-common",
-    "dist"
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    },
+    "lib": [
+      "es2020"
+    ],
+    "strict": false,
+    "allowJs": true
+  },
+  "references": [
+    {
+      "path": "./tsconfig.config.json"
+    }
   ]
 }

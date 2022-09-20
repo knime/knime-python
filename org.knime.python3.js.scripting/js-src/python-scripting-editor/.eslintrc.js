@@ -1,11 +1,21 @@
-/* eslint-disable no-process-env */
+// This is a workaround for https://github.com/eslint/eslint/issues/3458
+require('@rushstack/eslint-patch/modern-module-resolution');
+
 module.exports = {
-    extends: ['./webapps-common/lint/.eslintrc-vue.js', '@vue/typescript/recommended'],
-    env: {
-        node: true
+    root: true,
+    extends: ['@knime/eslint-config/vue3-typescript'],
+    globals: {
+        consola: true,
+        window: true
     },
-    rules: {
-        'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
-        'no-debugger': process.env.NODE_ENV === 'production' ? 'warn' : 'off'
+    settings: {
+        'import/resolver': {
+            alias: {
+                map: [
+                    ['@', './src'],
+                    ['@@', '.']
+                ]
+            }
+        }
     }
 };

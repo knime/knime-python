@@ -189,7 +189,7 @@ final class ExecutableSelectionUtils {
 
     private static PythonCommand commandForPreferences() {
         // TODO(AP-19391) Get the Python command from the preferences
-        return new CondaPythonCommand("/home/benjamin/miniconda3",
-            "/home/benjamin/miniconda3/envs/knime-python-scripting-pa7");
+        return new CondaPythonCommand("/home/david/anaconda3",
+            "/home/david/anaconda3/envs/knime-python-scripting");
     }
 }
