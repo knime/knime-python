@@ -1,12 +1,13 @@
 <script lang="ts">
-import Vue, { PropType } from 'vue';
-import RadioButtons from '~/webapps-common/ui/components/forms/RadioButtons.vue';
-import { ExecutableOption, ExecutableInfo } from '../utils/python-scripting-service';
+import type { PropType } from 'vue';
+import { defineComponent } from 'vue';
+import RadioButtons from 'webapps-common/ui/components/forms/RadioButtons.vue';
+import type { ExecutableOption, ExecutableInfo } from '../utils/python-scripting-service';
 
 // TODO(AP-19168) backend for setting and getting the conda environment
 // TODO(AP-19349) nice frontend
 
-export default Vue.extend({
+export default defineComponent({
     name: 'CondaEnvironment',
     components: {
         RadioButtons
@@ -26,6 +27,7 @@ export default Vue.extend({
             default: () => null
         }
     },
+    emits: ['input'],
     computed: {
         executablePossibleSelections(): { id: string; text: string }[] {
             // TODO(AP-19349) Move this into its own component

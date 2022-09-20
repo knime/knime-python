@@ -1,13 +1,14 @@
 <script lang="ts">
-import { InputPortInfo } from '../utils/python-scripting-service';
-import Vue, { PropType } from 'vue';
-import Button from '~/webapps-common/ui/components/Button.vue';
+import type { InputPortInfo } from '../utils/python-scripting-service';
+import type { PropType } from 'vue';
+import { defineComponent } from 'vue';
+import Button from 'webapps-common/ui/components/Button.vue';
 
 // TODO(AP-19346) use knime-ui-table or a tree view
 // TODO(AP-19346) make this more general and move to knime-scripting-editor
 
-export default Vue.extend({
-    name: 'InputPortsView',
+export default defineComponent({
+    name: 'InputObjectsView',
     components: { Button },
     props: {
         inputPortInfos: {

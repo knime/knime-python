@@ -1,10 +1,11 @@
 <script lang="ts">
-import Vue, { PropType } from 'vue';
-import { Workspace } from '../utils/python-scripting-service';
+import type { PropType } from 'vue';
+import type { Workspace } from '../utils/python-scripting-service';
+import { defineComponent } from 'vue';
 
 // TODO(AP-19345) use knime-ui-table
 
-export default Vue.extend({
+export default defineComponent({
     name: 'WorkspaceTable',
     props: {
         workspace: {
@@ -18,6 +19,7 @@ export default Vue.extend({
             }
         }
     },
+    emits: ['clicked'],
     computed: {
         workspaceTable() {
             const { names, types, values } = this.workspace;

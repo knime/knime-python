@@ -1,39 +1,46 @@
 {
   "name": "python-scripting-editor",
   "version": "0.1.0",
-  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "KNIME AG, Zurich, Switzerland",
   "scripts": {
-    "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build",
-    "dev": "vue-cli-service build --mode development --watch",
-    "lint": "vue-cli-service lint",
-    "lint:ci": "eslint --ext .js,.ts,.json . -f json -o target/eslint.json || true; stylelint '**/*.css' -f json -o target/stylelint.json || true",
-    "audit": "npm audit --production --json > target/audit.json || true"
+    "dev": "vite",
+    "build": "run-p type-check build-only",
+    "preview": "vite preview --port 4173",
+    "build-only": "vite build",
+    "type-check": "vue-tsc --noEmit",
+    "lint": "run-p lint:*",
+    "lint:js": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
+    "lint:css": "stylelint '**/*.{css,vue}' --fix"
   },
   "dependencies": {
-    "core-js": "^3.8.3",
+    "@vue/compat": "^3.2.38",
+    "knime-ui-extension-service": "file:knime-scripting-editor/org.knime.scripting.editor/js-src/scripting-editor/knime-ui-extension-service",
+    "path-browserify": "^1.0.1",
     "scripting-editor": "file:knime-scripting-editor/org.knime.scripting.editor/js-src/scripting-editor",
-    "vue": "2.6.14",
     "webapps-common": "file:webapps-common"
   },
   "devDependencies": {
-    "@types/splitpanes": "^2.2.1",
-    "@typescript-eslint/eslint-plugin": "^5.4.0",
-    "@typescript-eslint/parser": "^5.4.0",
-    "@vue/cli-plugin-babel": "~5.0.0",
-    "@vue/cli-plugin-eslint": "~5.0.0",
-    "@vue/cli-plugin-typescript": "~5.0.0",
-    "@vue/cli-service": "~5.0.0",
-    "@vue/eslint-config-typescript": "^9.1.0",
-    "eslint": "^7.32.0",
-    "eslint-plugin-vue": "^8.0.3",
-    "postcss-import": "12.0.1",
-    "postcss-preset-env": "6.7.0",
-    "postcss-url": "8.0.0",
-    "typescript": "~4.5.5",
-    "vue-svg-loader": "0.17.0-beta.2",
-    "url-loader": "^4.1.1",
-    "file-loader": "^6.2.0",
-    "vue-template-compiler": "2.6.14"
+    "@knime/eslint-config": "7.0.4",
+    "@types/node": "^18.7.12",
+    "@vitejs/plugin-vue": "^3.0.1",
+    "@vue/compiler-sfc": "^3.1.0",
+    "@vue/tsconfig": "^0.1.3",
+    "eslint": "8.23.0",
+    "npm-run-all": "^4.1.5",
+    "postcss-preset-env": "^7.8.1",
+    "stylelint": "^14.11.0",
+    "typescript": "~4.7.4",
+    "vite": "^3.0.4",
+    "vite-plugin-monaco-editor": "^1.1.0",
+    "vite-svg-loader": "3.5.1",
+    "vue-tsc": "^0.39.5"
+  },
+  "engines": {
+    "node": "18.x"
+  },
+  "volta": {
+    "node": "18.0.0"
   }
 }

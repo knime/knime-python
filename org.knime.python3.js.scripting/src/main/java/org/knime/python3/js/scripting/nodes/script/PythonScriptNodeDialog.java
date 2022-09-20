@@ -74,9 +74,9 @@ final class PythonScriptNodeDialog extends NodeDialog {
     public Page getPage() {
         return Page //
             .builder(PythonScriptNodeDialog.class, "js-src/python-scripting-editor/dist", "index.html") //
-            .addResourceDirectory("js") //
-            .addResourceDirectory("fonts") //
-            .addResourceDirectory("css") // NOTE: Only available in production build
+            .addResourceDirectory("assets") //
+            .addResourceDirectory("monacoeditorwork") //
+            // .addResourceDirectory("css") // NOTE: Only available in production build
             .build();
     }
 
