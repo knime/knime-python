@@ -24,6 +24,7 @@
 	<modules>
 		<module>org.knime.ext.py4j</module>
 		<module>org.knime.features.python3.scripting</module>
+		<module>org.knime.features.python3.js.scripting</module>
 		<module>org.knime.features.python3.nodes</module>
 		<module>org.knime.python3</module>
 		<module>org.knime.python3.tests</module>
