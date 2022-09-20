@@ -1,14 +1,16 @@
-import Vue from 'vue';
-import App from './App.vue';
-import c from 'consola';
+import { createApp } from 'vue';
+import consola from 'consola';
+import { configureCompat } from 'vue';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any, no-extra-parens
-(window as any).consola = c.create({
-    level: -1
+import App from './App.vue';
+
+(window as any).consola = consola.create({ // eslint-disable-line
+    level: 4 // TODO: make configurable
 });
 
-Vue.config.productionTip = false;
 
-new Vue({
-    render: (h) => h(App)
-}).$mount('#app');
+configureCompat({ RENDER_FUNCTION: false });
+
+const app = createApp(App);
+
+app.mount('#app');

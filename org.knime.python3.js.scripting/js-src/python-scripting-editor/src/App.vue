@@ -1,19 +1,21 @@
 <script lang="ts">
-import Vue from 'vue';
-import * as monaco from 'monaco-editor';
-import Button from '~/webapps-common/ui/components/Button.vue';
-import LoadingIcon from '~/webapps-common/ui/assets/img/icons/reload.svg'; // TODO(AP-19344) switch to LoadingIcon for the animation
+import { defineComponent } from 'vue';
+import type { editor,
+    Selection } from 'monaco-editor';
+import Button from 'webapps-common/ui/components/Button.vue';
+import LoadingIcon from 'webapps-common/ui/assets/img/icons/reload.svg'; // TODO(AP-19344) switch to LoadingIcon for the animation
 import ScriptingEditor from 'scripting-editor/src/components/ScriptingEditor.vue';
 import OutputConsole from 'scripting-editor/src/components/OutputConsole.vue';
 import WorkspaceTable from './components/WorkspaceTable.vue';
 import InputPortsView from './components/InputPortsView.vue';
 import CondaEnvironment from './components/CondaEnvironment.vue';
-import { createScriptingService,
-    PythonScriptingService,
-    Workspace,
+import { createScriptingService, PythonScriptingService } from './utils/python-scripting-service';
+import type { Workspace,
     InputPortInfo,
     ExecutableOption,
-    ExecutableInfo } from './utils/python-scripting-service';
+    ExecutableInfo,
+    PythonNodeSettings } from './utils/python-scripting-service';
+
 import { registerMonacoInputColumnCompletions } from './utils/python-completions';
 
 const getOrThrow = <T, >(obj: T | undefined, name: string) => {
@@ -24,7 +26,7 @@ const getOrThrow = <T, >(obj: T | undefined, name: string) => {
     }
 };
 
-const getSelectedLines = (editorModel: monaco.editor.ITextModel, selection: monaco.Selection) => {
+const getSelectedLines = (editorModel: editor.ITextModel, selection: Selection) => {
     const { startLineNumber, endLineNumber, endColumn } =
         selection.selectionStartLineNumber <= selection.positionLineNumber
             ? {
@@ -48,12 +50,13 @@ const getSelectedLines = (editorModel: monaco.editor.ITextModel, selection: mona
 };
 
 type AppData = {
-    scriptingService?: PythonScriptingService;
+    scriptingService: PythonScriptingService;
+    scriptingSettings?: PythonNodeSettings;
     loading: boolean;
 
     // Monaco editor
-    editor?: monaco.editor.IStandaloneCodeEditor;
-    editorModel?: monaco.editor.ITextModel;
+    editor?: editor.IStandaloneCodeEditor;
+    editorModel?: editor.ITextModel;
     hasEditorSelection: boolean;
 
     // Python process handling
@@ -67,7 +70,7 @@ type AppData = {
     inputPortInfos: InputPortInfo[];
 };
 
-export default Vue.extend({
+export default defineComponent({
     name: 'App',
     components: {
         ScriptingEditor,
@@ -85,7 +88,7 @@ export default Vue.extend({
         return {
             loading: true,
             hasEditorSelection: false,
-
+            scriptingService: null,
             // Python process handling
             pythonExecutableId: '',
             pythonExecutableOptions: [],
@@ -178,8 +181,8 @@ export default Vue.extend({
             editor,
             editorModel
         }: {
-            editor: monaco.editor.IStandaloneCodeEditor;
-            editorModel: monaco.editor.ITextModel;
+            editor: editor.IStandaloneCodeEditor;
+            editorModel: editor.ITextModel;
         }) {
             this.editor = editor;
             this.editorModel = editorModel;
@@ -208,12 +211,15 @@ export default Vue.extend({
 
         // Null-safe access to editor and editor model
         getScriptingService(): PythonScriptingService {
+            // TODO(review) is this the right way to make the scripting service available?
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore type inference does not work!
             return getOrThrow(this.scriptingService, 'scripting service');
         },
-        getEditor(): monaco.editor.IStandaloneCodeEditor {
+        getEditor(): editor.IStandaloneCodeEditor {
             return getOrThrow(this.editor, 'editor');
         },
-        getEditorModel(): monaco.editor.ITextModel {
+        getEditorModel(): editor.ITextModel {
             return getOrThrow(this.editorModel, 'editor model');
         }
     }
@@ -313,6 +319,7 @@ export default Vue.extend({
         transform: rotate(-360deg);
     }
 }
+
 .loading {
     display: flex;
     align-items: center;

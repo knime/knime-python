@@ -64,7 +64,7 @@ final class PythonLanguageServer {
     // TODO(AP-19338) make language server configurable
 
     // TODO(AP-19338) use the path to a bundled language server
-    private static final String LSP_PATH = "/home/benjamin/miniconda3/envs/allinone/bin/pylsp";
+    private static final String LSP_PATH = "/home/david/anaconda3/bin/pylsp";
 
     private static PythonLanguageServer INSTANCE;
 

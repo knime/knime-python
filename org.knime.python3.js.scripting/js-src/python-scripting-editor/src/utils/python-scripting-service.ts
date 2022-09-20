@@ -1,9 +1,9 @@
-import { JsonDataService } from 'knime-ui-extension-service';
-import { FlowVariableSetting } from 'knime-ui-extension-service/src/types/FlowVariableSettings';
+import type { JsonDataService } from 'knime-ui-extension-service';
+import type { FlowVariableSetting } from 'knime-ui-extension-service/src/types/FlowVariableSettings';
 import { ScriptingService,
     muteReactivity,
-    createJsonServiceAndLoadSettings,
-    NodeSettings } from 'scripting-editor/src/utils/scripting-service';
+    createJsonServiceAndLoadSettings } from 'scripting-editor/src/utils/scripting-service';
+import type { NodeSettings } from 'scripting-editor/src/utils/scripting-service';
 
 export type Workspace = { names: string[]; types: string[]; values: string[] };
 
@@ -34,6 +34,8 @@ export type ExecutableInfo = { pythonVersion: string | null; packages: CondaPack
 export interface PythonNodeSettings extends NodeSettings {
     executableSelection: string;
 }
+
+// export interface PythonScriptingService extends
 
 export class PythonScriptingService extends ScriptingService<PythonNodeSettings> {
     dialogOpened(): Promise<void> {
