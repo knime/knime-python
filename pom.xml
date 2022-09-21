@@ -23,9 +23,6 @@
 
 	<modules>
 		<module>org.knime.ext.py4j</module>
-		<module>org.knime.features.python3.scripting</module>
-		<module>org.knime.features.python3.js.scripting</module>
-		<module>org.knime.features.python3.nodes</module>
 		<module>org.knime.python3</module>
 		<module>org.knime.python3.tests</module>
 		<module>org.knime.python3.types</module>
@@ -49,6 +46,9 @@
 			TODO: Should be enabled once Jenkins supports Python unit tests.
 			<module>org.knime.python3.views.tests</module>
 		-->
+		<module>org.knime.features.python3.scripting</module>
+		<module>org.knime.features.python3.js.scripting</module>
+		<module>org.knime.features.python3.nodes</module>
 		<module>org.knime.update.python</module>
 	</modules>
 
