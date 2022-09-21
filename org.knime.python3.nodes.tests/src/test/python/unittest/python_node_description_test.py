@@ -236,6 +236,25 @@ class MarkdownDocstringTest(unittest.TestCase):
         _expected = "<p>No Code</p>\n<pre>\nCode<o>\n</pre>"
         self.assertEqual(self.parser.parse_basic(desc), textwrap.dedent(_expected))
 
+    def test_pre_in_code(self):
+        desc = """
+        No Code
+
+            <pre>This is test code</pre>
+        """
+        _expected = "<p>No Code</p>\n<pre>\n<pre>This is test code</pre>\n</pre>"
+        self.assertEqual(self.parser.parse_basic(desc), textwrap.dedent(_expected))
+
+        desc = """
+        No Code
+
+        ```
+        <pre>This is test code</pre>
+        ```
+        """
+        _expected = "<p>No Code</p>\n<pre><pre>This is test code</pre>\n</pre>"
+        self.assertEqual(self.parser.parse_basic(desc), textwrap.dedent(_expected))
+
     def test_tt(self):
         desc = """`Test`"""
         self.assertEqual(

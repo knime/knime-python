@@ -204,13 +204,13 @@ class KnimeMarkdownParser:
 
     def __init__(self):
         self.md = markdown.Markdown(
-            extensions=[_KnExtension(), "sane_lists", "tables"],
+            extensions=[_KnExtension(), "sane_lists", "fenced_code", "tables"],
             output_format="xhtml",
         )
 
         # TODO headerlines
         self.md_basic = markdown.Markdown(
-            extensions=[_KnExtension(), "sane_lists"],  # , "fenced_code"],
+            extensions=[_KnExtension(), "sane_lists", "fenced_code"],
             output_format="xhtml",
         )
 
