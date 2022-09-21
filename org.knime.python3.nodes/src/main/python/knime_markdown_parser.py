@@ -64,24 +64,16 @@ class _HTMLTreeprocessor(Treeprocessor):
         return s
 
     def run(self, e):
-
-        print(e.tag, type(e), e.text)
-        if e.tag == "code":
+        def apply_to_entity(e, func):
             if e.text is not None:
-                e.text = self._unescape(e.text)
+                e.text = func(e.text)
             elif e.tail is not None:
-                e.text = self._unescape(e.tail)
+                e.text = func(e.tail)
 
-        elif e.tag == "pre":
-            if e.text is not None:
-                e.text = self._unescape(e.text)
-            elif e.tail is not None:
-                e.text = self._unescape(e.tail)
+        if e.tag == "code" or e.tag == "pre":
+            apply_to_entity(e, self._unescape)
         else:
-            if e.text is not None:
-                e.text = html.escape(e.text)
-            if e.tail is not None:
-                e.tail = html.escape(e.tail)
+            apply_to_entity(e, html.escape)
         [self.run(x) for x in e]
 
 
@@ -143,26 +135,14 @@ class _KnimePostCode(Postprocessor):
     def run(self, text):
         # regex
         _pre_code = r"<pre>(.|\n)*?<code>(.|\n)*?<\/code>(.|\n)*?<\/pre>"
-        _pre = r"<pre>(.|\n)*?<\/pre>"
-        _code = r"<code>(.|\n)*?<\/code>"
-
-        def replace_code(match):
-            text = match.string[match.start() : match.end()]
-            text = text.replace("&lt;", "<")
-            text = text.replace("&gt;", ">")
-            return text
 
         def replace_pre_code(match):
             text = match.string[match.start() : match.end()]
-            text = text.replace("&lt;", "<")
-            text = text.replace("&gt;", ">")
             text = text.replace("<code>", "")
             text = text.replace("</code>", "")
             return text
 
         text = re.sub(_pre_code, replace_pre_code, text)
-        text = re.sub(_pre, replace_code, text)
-        text = re.sub(_code, replace_code, text)
         text = re.sub("<code>", "<tt>", text)
         text = re.sub("</code>", "</tt>", text)
 
