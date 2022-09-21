@@ -265,6 +265,16 @@ class _ArrowWriteTableImpl(kta.WriteTable):
             b = kat.wrap_primitive_arrays(b)
             self._sink.write(b)
 
+        if self._last_batch_schema is None:
+            return
+        # as when resolving pa.dict_encoding the schema isn't updated properly, we manually replace all Dict types
+        for i, field in enumerate(self._last_batch_schema):
+            if isinstance(field.type, pa.DictionaryType):
+                # get values from old field and replace it
+                self._last_batch_schema = self._last_batch_schema.set(
+                    i, pa.field(field.name, field.type.value_type)
+                )
+
     def _split_table(self, data: pa.Table):
         desired_num_batches = data.nbytes / self._MAX_NUM_BYTES_PER_BATCH
         if desired_num_batches < 1:

@@ -947,6 +947,24 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         calc = kap.KnimePandasExtensionArray._get_all_chunk_start_indices(chunked_array)
         self.assertEqual(correct_chunk_start_indices, calc)
 
+    def test_categorical_types(self):
+        arrow_backend = kat.ArrowBackend(_create_dummy_arrow_sink)
+
+        # Create table
+        df = pd.DataFrame({"A": ["a", "b", "c", "d"]})
+        df["B"] = df["A"].astype("category")
+        raw_cat = pd.Categorical(
+            ["a", "b", "c", "a"], categories=["b", "c", "d"], ordered=False
+        )
+        df["C"] = pd.Series(raw_cat)
+        A = arrow_backend.write_table(df)
+        self.assertEqual(str(A.column_names), "['<Row Key>', 'A', 'B', 'C']")
+        # check if categorical columns where converted to strings
+        self.assertEqual(
+            str(A._schema.types),
+            "[DataType(string), DataType(string), DataType(string), DataType(string)]",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

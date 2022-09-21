@@ -866,6 +866,12 @@ def _get_wrapped_type(dtype, is_row_key):
             outer_logical_type,
         )
         return outer_ext_type
+    # for dictionary decoded types
+    elif isinstance(dtype, pa.DictionaryType):
+        logical_type = _arrow_to_knime_primitive_list_types[dtype.value_type]
+        return LogicalTypeExtensionType(
+            kt.get_converter(logical_type), dtype.value_type, logical_type
+        )
     else:
         return None
 
@@ -943,6 +949,14 @@ def _wrap_primitive_array(
         return _apply_to_array(
             array,
             to_list_of_nulls,
+        )
+    # if we have dictionary encoding on the pyarrow site we use pa's decoding before wrapping
+    elif isinstance(array.type, pa.DictionaryType):
+        return _apply_to_array(
+            array,
+            lambda a: pa.ExtensionArray.from_storage(
+                wrapped_type, a.dictionary_decode()
+            ),
         )
     else:
         return _apply_to_array(
