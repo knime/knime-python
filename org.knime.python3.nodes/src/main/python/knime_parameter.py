@@ -49,13 +49,14 @@ Contains the implementation of the Parameter Dialogue API for building native Py
 @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
 """
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Tuple
 import knime_schema as ks
 import logging
 
 from knime_utils import parse_version, Version
 
 LOGGER = logging.getLogger("Python backend")
+__version__ = "local-dev"
 
 
 def _get_parameters(obj) -> Dict[str, "_BaseParameter"]:
@@ -88,6 +89,7 @@ def _extract_parameters(obj, for_dialog: bool) -> dict:
     params = _get_parameters(obj)
     for name, param_obj in params.items():
         result[name] = param_obj._get_value(obj, for_dialog)
+
     return result
 
 
@@ -213,6 +215,7 @@ def extract_parameter_descriptions(obj) -> dict:
 
 def _extract_parameter_descriptions(obj, scope: "_Scope"):
     params = _get_parameters(obj).values()
+
     return [param._extract_description(scope) for param in params]
 
 
@@ -573,7 +576,29 @@ class DoubleParameter(_NumericParameter):
         return {"format": "number"}
 
 
-class StringParameter(_BaseParameter):
+class _BaseMultipleChoiceParameter(_BaseParameter):
+    """
+    Base class for Multiple Choice-based parameter types (and StringParameter for backward compatibility).
+    """
+
+    def __init__(
+        self,
+        label=None,
+        description=None,
+        default_value="",
+        validator=None,
+        since_version=None,
+    ):
+        super().__init__(label, description, default_value, validator, since_version)
+
+    def _get_options(self) -> dict:
+        if self._enum is None or len(self._enum) > 4:
+            return {"format": "string"}
+        else:
+            return {"format": "radio"}
+
+
+class StringParameter(_BaseMultipleChoiceParameter):
     """
     Parameter class for primitive string types.
     """
@@ -608,11 +633,48 @@ class StringParameter(_BaseParameter):
             schema["oneOf"] = [{"const": e, "title": e} for e in self._enum]
         return schema
 
-    def _get_options(self) -> dict:
-        if self._enum is None or len(self._enum) > 4:
-            return {"format": "string"}
-        else:
-            return {"format": "radio"}
+
+class EnumParameter(_BaseMultipleChoiceParameter):
+    """
+    Parameter class for multiple-choice parameter types.
+    Expects a list of triples of the form (selection_value, selection_label, selection_description).
+
+    Replicates and extends the enum functionality previously implemented as part of StringParameter.
+    """
+
+    # TODO: rewrite to be the default validator for EnumParameter
+    def default_validator(self, value):
+        pass
+
+    def __init__(
+        self,
+        label=None,
+        description=None,
+        default_value: str = "",
+        enum: List[Tuple[str, str, str]] = [],
+        validator=None,
+        since_version=None,
+    ):
+        self._enum = enum
+        super().__init__(label, description, default_value, validator, since_version)
+
+    def _extract_schema(self, extension_version=None, specs=None):
+        schema = super()._extract_schema(specs)
+        schema["oneOf"] = [{"const": e[0], "title": e[1]} for e in self._enum]
+        return schema
+
+    def _extract_description(self, parent_scope: _Scope):
+        description = (
+            self.__doc__
+            + """
+            # Available options
+            """
+        )
+        for _, enum_label, enum_description in self._enum:
+            description += f"""
+            - {enum_label}: {enum_description}"""
+
+        return {"name": self._label, "description": description}
 
 
 class _BaseColumnParameter(_BaseParameter):
