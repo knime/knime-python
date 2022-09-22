@@ -1,5 +1,5 @@
 <script lang="ts">
-import { InputObjects } from '../utils/python-scripting-service';
+import { InputPortInfo } from '../utils/python-scripting-service';
 import Vue, { PropType } from 'vue';
 import Button from '~/webapps-common/ui/components/Button.vue';
 
@@ -7,11 +7,11 @@ import Button from '~/webapps-common/ui/components/Button.vue';
 // TODO(AP-19346) make this more general and move to knime-scripting-editor
 
 export default Vue.extend({
-    name: 'InputObjectsView',
+    name: 'InputPortsView',
     components: { Button },
     props: {
-        inputObjects: {
-            type: Array as PropType<InputObjects>,
+        inputPortInfos: {
+            type: Array as PropType<InputPortInfo[]>,
             default() {
                 return [];
             }
@@ -23,13 +23,13 @@ export default Vue.extend({
 <template>
   <ul>
     <li
-      v-for="(table, index) in inputObjects"
+      v-for="(port, index) in inputPortInfos"
       :key="index"
     >
-      knio.input_tables[{{ index }}]
-      <ul>
+      {{ port.variableName }}
+      <ul v-if="port.type === 'table'">
         <li
-          v-for="column in table"
+          v-for="column in port.columnNames"
           :key="column"
         >
           {{ column }}

@@ -1,4 +1,5 @@
 import * as monaco from 'monaco-editor';
+import { InputPortInfo, InputTableInfo } from './python-scripting-service';
 
 const columnCompletionFor = (
     tableIdx: number,
@@ -43,7 +44,8 @@ const tableCompletionFor = (
     ];
 };
 
-export const registerMonacoInputColumnCompletions = (inputTables: string[][]) => {
+export const registerMonacoInputColumnCompletions = (inputPortInfos: InputPortInfo[]) => {
+    // TODO make autocompletion faster by pre-computing the options and only adding the range to them
     monaco.languages.registerCompletionItemProvider('python', {
         provideCompletionItems(model, position) {
             const word = model.getWordUntilPosition(position);
@@ -55,7 +57,15 @@ export const registerMonacoInputColumnCompletions = (inputTables: string[][]) =>
             };
 
             return {
-                suggestions: inputTables.flatMap((table, tableIdx) => tableCompletionFor(tableIdx, table, range))
+                suggestions: inputPortInfos.flatMap((portInfo, tableIdx) => {
+                    if (portInfo.type === 'table') {
+                        const tableInfo = portInfo as InputTableInfo;
+                        return tableCompletionFor(tableIdx, tableInfo.columnNames, range);
+                    } else {
+                        // TODO add autocompletion for object ports
+                        return [];
+                    }
+                })
             };
         }
     });
