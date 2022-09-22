@@ -6,7 +6,21 @@ import { ScriptingService,
     NodeSettings } from 'scripting-editor/src/utils/scripting-service';
 
 export type Workspace = { names: string[]; types: string[]; values: string[] };
-export type InputObjects = string[][];
+
+// Types for the input port view
+export type InputPortInfo = { type: 'table' | 'object'; variableName: string };
+export interface InputTableInfo extends InputPortInfo {
+    type: 'table';
+    columnNames: string[];
+    columnTypes: string[];
+}
+export interface InputObjectInfo extends InputPortInfo {
+    type: 'object';
+    objectType: string;
+    objectRepr: string;
+}
+
+// Types for the executable selection
 export type ExecutableOption = {
     type: 'PREF_BUNDLED' | 'PREF_CONDA' | 'PREF_MANUAL' | 'CONDA_ENV_VAR' | 'STRING_VAR' | 'MISSING_VAR';
     id: string;
@@ -34,7 +48,7 @@ export class PythonScriptingService extends ScriptingService<PythonNodeSettings>
         return this.sendToService('runInteractive', [script]);
     }
 
-    getInputObjects(): Promise<string[][]> {
+    getInputObjects(): Promise<InputPortInfo[]> {
         return this.sendToService('getInputObjects');
     }
 

@@ -49,20 +49,20 @@
 package org.knime.python3.js.scripting.nodes.script;
 
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.knime.conda.CondaEnvironmentDirectory;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.filestore.internal.NotInWorkflowWriteFileStoreHandler;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.NodeLogger;
-import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.webui.data.DataServiceContext;
+import org.knime.python2.port.PickledObjectPortObjectSpec;
 import org.knime.python3.js.scripting.nodes.script.PythonScriptingService.ExecutableOption.ExecutableOptionType;
 import org.knime.scripting.editor.ScriptingService;
 import org.knime.scripting.editor.lsp.LanguageServerProxy;
@@ -207,22 +207,25 @@ final class PythonScriptingService extends ScriptingService {
         }
 
         /**
-         * List the inputs that are available to the script.
-         *
-         * @return the list of input object
+         * @return information about all input ports that are available to the script
          */
-        public String[][] getInputObjects() {
-            // TODO(AP-19337) better javadoc
-            // TODO(AP-19337) support other input objects
-            // TODO(AP-19337) move to general scripting service?
-            final PortObjectSpec[] inputSpec = getWorkflowControl().getInputSpec();
-            final List<String[]> columnNames = new ArrayList<>();
-            for (var s : inputSpec) {
-                if (s instanceof DataTableSpec) {
-                    columnNames.add(((DataTableSpec)s).getColumnNames());
+        public InputPortInfo[] getInputObjects() {
+            final var inputSpec = getWorkflowControl().getInputSpec();
+            final var inputInfos = new InputPortInfo[inputSpec.length];
+
+            int tableIdx = 0;
+            int objectIdx = 0;
+            for (int i = 0; i < inputSpec.length; i++) {
+                final var spec = inputSpec[i];
+                if (spec instanceof DataTableSpec) {
+                    inputInfos[i] = InputTableInfo.createFromTableSpec(tableIdx++, (DataTableSpec)spec);
+                } else if (spec instanceof PickledObjectPortObjectSpec) {
+                    inputInfos[i] = InputObjectInfo.createFromPortSpec(objectIdx++, (PickledObjectPortObjectSpec)spec);
+                } else {
+                    throw new IllegalStateException("Unsupported input port. This is an implementation error.");
                 }
             }
-            return columnNames.toArray(String[][]::new);
+            return inputInfos;
         }
 
         /**
@@ -329,6 +332,60 @@ final class PythonScriptingService extends ScriptingService {
 
                 /** A variable of any type that is missing now */
                 MISSING_VAR,
+        }
+    }
+
+    /** Information about an input port */
+    public abstract static class InputPortInfo {
+        public final String type;
+
+        public final String variableName;
+
+        @SuppressWarnings("hiding")
+        protected InputPortInfo(final String type, final String variableName) {
+            this.type = type;
+            this.variableName = variableName;
+        }
+    }
+
+    /** Information about a table input port */
+    public static final class InputTableInfo extends InputPortInfo {
+
+        public final String[] columnNames;
+
+        public final String[] columnTypes;
+
+        @SuppressWarnings("hiding")
+        private InputTableInfo(final int tableIdx, final String[] columnNames, final String[] columnTypes) {
+            super("table", "knio.input_tables[" + tableIdx + "]");
+            this.columnNames = columnNames;
+            this.columnTypes = columnTypes;
+        }
+
+        private static InputTableInfo createFromTableSpec(final int tableIdx, final DataTableSpec spec) {
+            final var columnNames = spec.getColumnNames();
+            final var columnTypes = IntStream.range(0, spec.getNumColumns())
+                .mapToObj(i -> spec.getColumnSpec(i).getType().getName()).toArray(String[]::new);
+            return new InputTableInfo(tableIdx, columnNames, columnTypes);
+        }
+    }
+
+    /** Information about a pickled object input port */
+    public static final class InputObjectInfo extends InputPortInfo {
+
+        public final String objectType;
+
+        public final String objectRepr;
+
+        @SuppressWarnings("hiding")
+        public InputObjectInfo(final int objectIdx, final String objectType, final String objectRepr) {
+            super("object", "knio.input_objects[" + objectIdx + "]");
+            this.objectType = objectType;
+            this.objectRepr = objectRepr;
+        }
+
+        private static InputObjectInfo createFromPortSpec(final int objectIdx, final PickledObjectPortObjectSpec spec) {
+            return new InputObjectInfo(objectIdx, spec.getType(), spec.getRepresentation());
         }
     }
 }

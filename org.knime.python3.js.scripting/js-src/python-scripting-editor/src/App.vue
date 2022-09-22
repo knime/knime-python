@@ -6,12 +6,12 @@ import LoadingIcon from '~/webapps-common/ui/assets/img/icons/reload.svg'; // TO
 import ScriptingEditor from 'scripting-editor/src/components/ScriptingEditor.vue';
 import OutputConsole from 'scripting-editor/src/components/OutputConsole.vue';
 import WorkspaceTable from './components/WorkspaceTable.vue';
-import InputObjectsView from './components/InputObjectsView.vue';
+import InputPortsView from './components/InputPortsView.vue';
 import CondaEnvironment from './components/CondaEnvironment.vue';
 import { createScriptingService,
     PythonScriptingService,
     Workspace,
-    InputObjects,
+    InputPortInfo,
     ExecutableOption,
     ExecutableInfo } from './utils/python-scripting-service';
 import { registerMonacoInputColumnCompletions } from './utils/python-completions';
@@ -64,7 +64,7 @@ type AppData = {
     workspace: Workspace;
 
     // Script inputs
-    inputObjects: InputObjects;
+    inputPortInfos: InputPortInfo[];
 };
 
 export default Vue.extend({
@@ -74,7 +74,7 @@ export default Vue.extend({
         Button,
         LoadingIcon,
         WorkspaceTable,
-        InputObjectsView,
+        InputPortsView,
         CondaEnvironment,
         OutputConsole
     },
@@ -98,7 +98,7 @@ export default Vue.extend({
             },
 
             // Script inputs
-            inputObjects: []
+            inputPortInfos: []
         };
     },
     async mounted() {
@@ -113,10 +113,10 @@ export default Vue.extend({
 
         // Get some more information from the backend
         this.pythonExecutableOptions = await this.scriptingService.getExecutableOptions(this.pythonExecutableId);
-        this.inputObjects = await this.getScriptingService().getInputObjects();
+        this.inputPortInfos = await this.getScriptingService().getInputObjects();
 
         // Add special autocompletion
-        registerMonacoInputColumnCompletions(this.inputObjects);
+        registerMonacoInputColumnCompletions(this.inputPortInfos);
     },
     methods: {
         startInteractive() {
@@ -266,9 +266,9 @@ export default Vue.extend({
       </template>
 
       <template #lefttabs="{ activeTab }">
-        <InputObjectsView
+        <InputPortsView
           v-if="activeTab === 'inputs'"
-          :input-objects="inputObjects"
+          :input-port-infos="inputPortInfos"
           @column-clicked="onColumnClicked"
         />
         <CondaEnvironment
