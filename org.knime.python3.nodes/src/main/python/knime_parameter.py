@@ -51,12 +51,13 @@ Contains the implementation of the Parameter Dialogue API for building native Py
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Dict, List, Tuple
 import knime_schema as ks
+import knime_markdown_parser as kmd
 import logging
 
 from knime_utils import parse_version, Version
 
 LOGGER = logging.getLogger("Python backend")
-__version__ = "local-dev"
+MARKDOWN_PARSER = kmd.KnimeMarkdownParser()
 
 
 def _get_parameters(obj) -> Dict[str, "_BaseParameter"]:
@@ -660,19 +661,33 @@ class EnumParameter(_BaseMultipleChoiceParameter):
 
     def _extract_schema(self, extension_version=None, specs=None):
         schema = super()._extract_schema(specs)
+        schema["description"] = self._generate_description_with_options(
+            parse_markdown=True
+        )
         schema["oneOf"] = [{"const": e[0], "title": e[1]} for e in self._enum]
         return schema
 
-    def _extract_description(self, parent_scope: _Scope):
-        description = (
-            self.__doc__
-            + """
-            # Available options
-            """
+    def _generate_description_with_options(self, parse_markdown=True):
+        """
+        Collates the developer-provided option descriptions into a single Markdown string.
+
+        The Markdown can optionally be parsed into HTML in order to be correctly displayed
+        in the configuration dialogue of the node.
+        """
+        description = "\n**Available options:**\n\n"
+        description += "\n".join(
+            [
+                f"- **{enum_label}**: {enum_description}"
+                for _, enum_label, enum_description in self._enum
+            ]
         )
-        for _, enum_label, enum_description in self._enum:
-            description += f"""
-            - {enum_label}: {enum_description}"""
+        if parse_markdown:
+            return MARKDOWN_PARSER.parse_fulldescription(self.__doc__ + description)
+
+        return self.__doc__ + description
+
+    def _extract_description(self, parent_scope: _Scope):
+        description = self._generate_description_with_options(parse_markdown=False)
 
         return {"name": self._label, "description": description}
 
