@@ -66,6 +66,7 @@ import org.knime.core.node.port.AbstractSimplePortObjectSpec;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.util.RawValue;
 
 /**
  * Specification for the {@link PythonBinaryBlobPortObjectSpec}.
@@ -80,7 +81,10 @@ public final class PythonBinaryBlobPortObjectSpec extends AbstractSimplePortObje
     }
 
     // effectively final
-    private String m_id = null;
+    private String m_id;
+
+    // effectively final
+    private String m_data;
 
     /**
      * Deserialization constructor. Fields will be populated in load()
@@ -93,8 +97,9 @@ public final class PythonBinaryBlobPortObjectSpec extends AbstractSimplePortObje
      *
      * @param id An ID describing the type of data inside the binary blob
      */
-    public PythonBinaryBlobPortObjectSpec(final String id) {
+    PythonBinaryBlobPortObjectSpec(final String id, final String data) {
         m_id = id;
+        m_data = data;
     }
 
     String getId() {
@@ -108,26 +113,34 @@ public final class PythonBinaryBlobPortObjectSpec extends AbstractSimplePortObje
     public JsonNode toJson(final JsonNodeFactory factory) {
         final var node = factory.objectNode();
         node.put("id", m_id);
+        if (m_data != null) {
+            node.putRawValue("data", new RawValue(m_data));
+        }
         return node;
     }
 
     /**
      * Construct a {@link PythonBinaryBlobPortObjectSpec} from its JSON representation
+     *
      * @param data the JSON data
      * @return a new {@link PythonBinaryBlobPortObjectSpec} object
      */
     public static PythonBinaryBlobPortObjectSpec fromJson(final JsonNode data) {
-        return new PythonBinaryBlobPortObjectSpec(data.get("id").asText());
+        var specData = data.get("data");
+        return new PythonBinaryBlobPortObjectSpec(data.get("id").asText(),
+            specData == null ? null : specData.toString());
     }
 
     @Override
     protected void save(final ModelContentWO model) {
         model.addString("id", m_id);
+        model.addString("data", m_data);
     }
 
     @Override
     protected void load(final ModelContentRO model) throws InvalidSettingsException {
         m_id = model.getString("id", null);
+        m_data = model.getString("data", null);
     }
 
     @Override
@@ -139,12 +152,12 @@ public final class PythonBinaryBlobPortObjectSpec extends AbstractSimplePortObje
             return false;
         }
         final PythonBinaryBlobPortObjectSpec spec = (PythonBinaryBlobPortObjectSpec)ospec;
-        return m_id.equals(spec.m_id);
+        return Objects.equals(m_id, spec.m_id) && Objects.equals(m_data, spec.m_data);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(m_id);
+        return Objects.hash(m_id, m_data);
     }
 
     /**
@@ -152,6 +165,7 @@ public final class PythonBinaryBlobPortObjectSpec extends AbstractSimplePortObje
      */
     @Override
     public JComponent[] getViews() {
+        // TODO display spec values?
         String text;
         if (m_id != null) {
             text = "<html><b>" + m_id + "</b></html>";

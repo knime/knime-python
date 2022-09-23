@@ -51,9 +51,10 @@ Type system and schema definition for KNIME tables.
 # --------------------------------------------------------------------
 # Types
 # --------------------------------------------------------------------
-from abc import ABC, abstractmethod, abstractclassmethod, abstractproperty
+from abc import ABC, abstractmethod
 from typing import Dict, Iterator, List, Sequence, Type, Union
 import logging
+import copy
 from enum import Enum, unique
 
 import knime_types as kt
@@ -501,10 +502,11 @@ class PortObjectSpec(ABC):
     """
 
     @abstractmethod
-    def to_knime_dict():
+    def to_knime_dict() -> dict:
         pass
 
-    @abstractclassmethod
+    @classmethod
+    @abstractmethod
     def from_knime_dict(cls, data: Dict):
         pass
 
@@ -517,7 +519,7 @@ class BinaryPortObjectSpec(PortObjectSpec):
     that only ports with equal ID can be connected.
     """
 
-    def __init__(self, id):
+    def __init__(self, id: str) -> None:
         """
         Create a BinaryPortObjectSpec
 
@@ -527,14 +529,16 @@ class BinaryPortObjectSpec(PortObjectSpec):
         self._id = id
 
     @property
-    def id(self):
+    def id(self) -> str:
         return self._id
 
-    def to_knime_dict(self):
+
+    def to_knime_dict(self) -> dict:
         return {"id": self._id}
 
     @classmethod
     def from_knime_dict(cls, data):
+        # spec is optional therefore we use get instead of __get_item__
         return cls(data["id"])
 
 
@@ -596,11 +600,13 @@ class _Columnar(ABC):
     which return a View into the "real" object.
     """
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def num_columns(self):
         pass
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def column_names(self):
         pass
 

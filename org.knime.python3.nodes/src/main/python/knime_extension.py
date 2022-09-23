@@ -67,6 +67,7 @@ MultiColumnParameter = _kn.MultiColumnParameter
 
 PortType = _kn.PortType
 Port = _kn.Port
+PortObject = _kn.PortObject
 ViewDeclaration = _kn.ViewDeclaration
 ConfigurationContext = _kn.ConfigurationContext
 ExecutionContext = _kn.ExecutionContext
@@ -74,11 +75,14 @@ PythonNode = _kn.PythonNode
 category = _kn.category
 NodeType = _kn.NodeType
 node = _kn.node
+port_type = _kn.port_type
 InvalidParametersError = _kn.InvalidParametersError
 input_binary = _kn.input_binary
 input_table = _kn.input_table
+input_port = _kn.input_port
 output_binary = _kn.output_binary
 output_table = _kn.output_table
+output_port = _kn.output_port
 output_view = _kn.output_view
 
 

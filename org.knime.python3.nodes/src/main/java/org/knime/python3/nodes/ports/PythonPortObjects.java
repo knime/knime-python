@@ -91,6 +91,7 @@ public final class PythonPortObjects {
          * @return the class name of the Java {@link PortObject} that is being wrapped here. Used for registration
          */
         String getJavaClassName();
+
     }
 
     /**
@@ -111,11 +112,11 @@ public final class PythonPortObjects {
      * @author Carsten Haubold
      */
     public interface PurePythonBinaryPortObject extends PythonPortObject {
+
         /**
-         * @return The string that identifies the binary port object content, must match the ID of the corresponding
-         *         {@link PythonBinaryPortObjectSpec}
+         * @return the spec
          */
-        String getPortId();
+        PythonPortObjectSpec getSpec();
 
         /**
          * @return The key identifying the file store
@@ -205,6 +206,8 @@ public final class PythonPortObjects {
     public static final class PythonBinaryPortObject implements PythonPortObject, PortObjectProvider {
         private final PythonBinaryBlobFileStorePortObject m_data;
 
+        private final PythonBinaryPortObjectSpec m_spec;
+
         /**
          * Create a {@link PythonBinaryPortObject} with data
          *
@@ -215,6 +218,7 @@ public final class PythonPortObjects {
         public PythonBinaryPortObject(final PythonBinaryBlobFileStorePortObject binaryData,
             final PythonArrowTableConverter tableConverter) {
             m_data = binaryData;
+            m_spec = new PythonBinaryPortObjectSpec(binaryData.getSpec());
         }
 
         /**
@@ -233,8 +237,9 @@ public final class PythonPortObjects {
             final ExecutionContext execContext) throws IOException {
             final var key = portObject.getFileStoreKey();
             final var fileStore = fileStoresByKey.get(key);
+            var spec = PythonBinaryPortObjectSpec.fromJsonString(portObject.getSpec().toJsonString()).m_spec;
             return new PythonBinaryPortObject(
-                PythonBinaryBlobFileStorePortObject.create(fileStore, portObject.getPortId(), execContext), null);
+                PythonBinaryBlobFileStorePortObject.create(fileStore, spec, execContext), null);
         }
 
         @Override
@@ -254,6 +259,10 @@ public final class PythonPortObjects {
          */
         public String getFilePath() {
             return m_data.getFilePath();
+        }
+
+        public PythonBinaryPortObjectSpec getSpec() {
+            return m_spec;
         }
     }
 
@@ -381,7 +390,7 @@ public final class PythonPortObjects {
         }
 
         @Override
-        public PortObjectSpec getPortObjectSpec() {
+        public PythonBinaryBlobPortObjectSpec getPortObjectSpec() {
             return m_spec;
         }
     }
@@ -398,9 +407,12 @@ public final class PythonPortObjects {
             return BufferedDataTable.TYPE;
         } else if (identifier.startsWith("PortType.BINARY")) {
             return PythonBinaryBlobFileStorePortObject.TYPE;
+        } else {
+            // TODO verify format?
+            return PythonBinaryBlobFileStorePortObject.TYPE;
         }
 
-        throw new IllegalStateException("Found unknown PortType: " + identifier);
+//        throw new IllegalStateException("Found unknown PortType: " + identifier);
     }
 
     /**

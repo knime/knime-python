@@ -301,8 +301,10 @@ final class CloseablePythonNodeProxy
         failure.throwIfFailure();
 
         final var outputExec = exec.createSubExecutionContext(0.1);
-        executionResult.m_portObjects = pythonOutputs.stream().map(ppo -> PythonPortObjectTypeRegistry
-            .convertFromPythonPortObject(ppo, fileStoresByKey, m_tableManager, outputExec)).toArray(PortObject[]::new);
+        executionResult.m_portObjects = pythonOutputs.stream()//
+            .map(ppo -> PythonPortObjectTypeRegistry.convertFromPythonPortObject(ppo, fileStoresByKey, m_tableManager,
+                outputExec))//
+            .toArray(PortObject[]::new);
         return executionResult;
     }
 
@@ -325,8 +327,9 @@ final class CloseablePythonNodeProxy
     @Override
     public PortObjectSpec[] configure(final PortObjectSpec[] inSpecs, final FlowVariablesProxy flowVariablesProxy,
         final WarningConsumer warningConsumer) throws InvalidSettingsException {
-        final PythonPortObjectSpec[] serializedInSpecs = Arrays.stream(inSpecs)
-            .map(PythonPortObjectTypeRegistry::convertToPythonPortObjectSpec).toArray(PythonPortObjectSpec[]::new);
+        final PythonPortObjectSpec[] serializedInSpecs = Arrays.stream(inSpecs)//
+            .map(PythonPortObjectTypeRegistry::convertToPythonPortObjectSpec)//
+            .toArray(PythonPortObjectSpec[]::new);
 
         final var failure = new FailureState();
 

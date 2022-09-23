@@ -89,26 +89,26 @@ public final class PythonBinaryBlobFileStorePortObject extends FileStorePortObje
         m_spec = spec;
     }
 
-    private PythonBinaryBlobFileStorePortObject(final FileStore fileStore, final String id) throws IOException {
+    private PythonBinaryBlobFileStorePortObject(final FileStore fileStore, final PythonBinaryBlobPortObjectSpec spec) {
         super(Arrays.asList(fileStore));
-        m_spec = new PythonBinaryBlobPortObjectSpec(id);
+        m_spec = spec;
     }
 
     /**
      * Construction with data inside a FileStore and spec
      *
      * @param fileStore the {@link FileStore} holding the data
-     * @param id identification of the binary object port
+     * @param spec of the port object
      * @param exec The {@link ExecutionContext}
      * @return Newly created {@link PythonBinaryBlobFileStorePortObject}
      * @throws IOException
      */
-    public static PythonBinaryBlobFileStorePortObject create(final FileStore fileStore, final String id,
-        final ExecutionContext exec) throws IOException {
+    public static PythonBinaryBlobFileStorePortObject create(final FileStore fileStore,
+        final PythonBinaryBlobPortObjectSpec spec, final ExecutionContext exec) throws IOException {
         if (fileStore == null) {
             throw new IOException("FileStore cannot be null for PythonBinaryBlobFileStorePortObject");
         }
-        return new PythonBinaryBlobFileStorePortObject(fileStore, id);
+        return new PythonBinaryBlobFileStorePortObject(fileStore, spec);
     }
 
     /**
