@@ -52,6 +52,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -63,6 +64,7 @@ import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.util.ThreadUtils;
+import org.knime.core.util.asynclose.AsynchronousCloseable;
 import org.knime.python3.Activator;
 import org.knime.python3.Python3SourceDirectory;
 import org.knime.python3.PythonCommand;
@@ -86,7 +88,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
  */
-final class PythonScriptingSession implements AutoCloseable {
+final class PythonScriptingSession implements AsynchronousCloseable<IOException> {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonScriptingSession.class);
 
@@ -107,6 +109,9 @@ final class PythonScriptingSession implements AutoCloseable {
     private final Consumer<ConsoleText> m_consoleTextConsumer;
 
     private final AutoCloseable m_outputRedirector;
+
+    final AsynchronousCloseable<IOException> m_closer =
+        AsynchronousCloseable.createAsynchronousCloser(this::closeInternal);
 
     private int m_numOutTables;
 
@@ -198,7 +203,18 @@ final class PythonScriptingSession implements AutoCloseable {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() throws IOException {
+        // Calls #closeInternal (but only if #asynchronousClose is not already running)
+        m_closer.close();
+    }
+
+    @Override
+    public Future<Void> asynchronousClose() throws IOException {
+        // Calls #closeInternal asynchronously
+        return m_closer.asynchronousClose();
+    }
+
+    private void closeInternal() throws IOException {
         try {
             m_outputRedirector.close();
         } catch (final Exception e) {
