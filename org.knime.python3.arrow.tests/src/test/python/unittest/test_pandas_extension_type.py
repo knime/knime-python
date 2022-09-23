@@ -339,7 +339,6 @@ class TestDataSource:
 
 
 class DummyJavaDataSinkFactory:
-
     def __init__(self) -> None:
         self._sinks = []
 
@@ -350,7 +349,6 @@ class DummyJavaDataSinkFactory:
         for sink in self._sinks:
             os.remove(sink)
 
-
     def create_data_sink(self):
         dummy_java_sink = DummyJavaDataSink()
         dummy_writer = DummyWriter()
@@ -358,6 +356,7 @@ class DummyJavaDataSinkFactory:
         arrow_sink._writer = dummy_writer
         self._sinks.append(dummy_java_sink._path)
         return arrow_sink
+
 
 class DummyJavaDataSink:
     def __init__(self) -> None:
@@ -793,7 +792,9 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
                 "Duration",
             ]
             df.drop(wrong_cols, axis=1, inplace=True)  # remove all dicts
-            df.reset_index(inplace=True, drop=True)  # drop index as it messes up equality
+            df.reset_index(
+                inplace=True, drop=True
+            )  # drop index as it messes up equality
 
             # self.assertTrue(isinstance(df.iloc[0,0], datetime.datetime)) # this can be out commented to evaluate
 
@@ -806,7 +807,9 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
                 "extension<logical=structDictEncoded, storage=string>>>"
             )
 
-            self.assertEqual("<class 'knime_arrow_table.ArrowWriteTable'>", str(type(A)))
+            self.assertEqual(
+                "<class 'knime_arrow_table.ArrowWriteTable'>", str(type(A))
+            )
             self.assertEqual(
                 knime_ts_ext_str,
                 str(knat._convert_arrow_schema_to_knime(A._schema)[0].ktype),

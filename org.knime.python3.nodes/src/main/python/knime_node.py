@@ -57,7 +57,6 @@ from knime_schema import PortObjectSpec
 
 
 class PortObject(ABC):
-
     def __init__(self, spec: PortObjectSpec) -> None:
         self._spec = spec
 
@@ -77,6 +76,7 @@ class PortObject(ABC):
         """Creates the PortObject from its spec and storage."""
         pass
 
+
 @dataclass
 class PortType:
     id: str
@@ -84,22 +84,28 @@ class PortType:
     object_class: type
     spec_class: type
 
+
 # special PortTypes that are treated separately
 PortType.BINARY = "PortType.BINARY"
 PortType.TABLE = "PortType.TABLE"
 
+
 class _KnimeNodeBackend(ABC):
     @abstractmethod
-    def register_port_type(self, name: str, object_class: type, spec_class: type, id: Optional[str] = None):
+    def register_port_type(
+        self, name: str, object_class: type, spec_class: type, id: Optional[str] = None
+    ):
         raise RuntimeError("Not implemented")
 
-_backend : _KnimeNodeBackend = None
+
+_backend: _KnimeNodeBackend = None
+
 
 def port_type(
     name: str,
     object_class: Type[PortObject],
     spec_class: Type[PortObjectSpec],
-    id: Optional[str] = None
+    id: Optional[str] = None,
 ) -> PortType:
     """
     Use this decorator to annotate a PortObject class that should correspond to a PortType in KNIME.
@@ -126,9 +132,7 @@ class Port:
         Perform validation after __init__
         """
         if self.type is PortType.BINARY and self.id is None:
-            raise TypeError(
-                f"{type(self)}s of type BINARY must have a unique 'id' set"
-            )
+            raise TypeError(f"{type(self)}s of type BINARY must have a unique 'id' set")
 
 
 @dataclass
@@ -615,10 +619,11 @@ def input_table(name: str, description: str):
         node_factory, "input_ports", Port(PortType.TABLE, name, description)
     )
 
-def input_port(name: str, description:str, port_type: PortType):
+
+def input_port(name: str, description: str, port_type: PortType):
     """
     Use this decorator to add an input port of the provided type to a node.
-    
+
     Args:
         name: The name of the input port
         description: A description of the input port
@@ -627,6 +632,7 @@ def input_port(name: str, description:str, port_type: PortType):
     return lambda node_factory: _add_port(
         node_factory, "input_ports", Port(port_type, name, description)
     )
+
 
 def output_binary(name: str, description: str, id: str):
     """
@@ -652,7 +658,8 @@ def output_table(name: str, description: str):
         node_factory, "output_ports", Port(PortType.TABLE, name, description)
     )
 
-def output_port(name: str, description:str, port_type: PortType):
+
+def output_port(name: str, description: str, port_type: PortType):
     """
     Use this decorator to add an output port of the provided type to a node.
 

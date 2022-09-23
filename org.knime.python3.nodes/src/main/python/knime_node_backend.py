@@ -102,6 +102,7 @@ class _PythonTablePortObject:
             "org.knime.python3.nodes.ports.PythonPortObjects$PurePythonTablePortObject"
         ]
 
+
 class _PythonPortObjectSpec:
     def __init__(self, java_class_name, json_string_data):
         self._java_class_name = java_class_name
@@ -117,6 +118,7 @@ class _PythonPortObjectSpec:
         implements = [
             "org.knime.python3.nodes.ports.PythonPortObjects$PythonPortObjectSpec"
         ]
+
 
 class _PythonBinaryPortObject:
     def __init__(self, java_class_name, filestore_file, data, spec):
@@ -141,6 +143,7 @@ class _PythonBinaryPortObject:
         implements = [
             "org.knime.python3.nodes.ports.PythonPortObjects$PurePythonBinaryPortObject"
         ]
+
 
 class _FlowVariablesDict(collections.UserDict):
     def __init__(self):
@@ -173,11 +176,12 @@ def _spec_to_python(spec: _PythonPortObjectSpec, port: kn.Port):
                 bpos.id == port.id
             ), f"Expected binary input port ID {port.id} but got {bpos.id}"
             return bpos
-        else: # custom spec
+        else:  # custom spec
             spec_id = data["id"]
-            assert spec_id == port.type.id, f"Expected input port ID {port.type.id} but got {spec_id}"
+            assert (
+                spec_id == port.type.id
+            ), f"Expected input port ID {port.type.id} but got {spec_id}"
             return port.type.spec_class.from_knime_dict(data["data"])
-
 
     raise TypeError("Unsupported PortObjectSpec found in Python, got " + class_name)
 
@@ -199,11 +203,13 @@ def _spec_from_python(spec, port: kn.Port):
 
         data = spec.to_knime_dict()
         class_name = "org.knime.python3.nodes.ports.PythonBinaryBlobPortObjectSpec"
-    else: # custom spec
-        assert isinstance(spec, port.type.spec_class), f"Expected output spec of type {port.type.spec_class} but got spec of type {type(spec)}"
+    else:  # custom spec
+        assert isinstance(
+            spec, port.type.spec_class
+        ), f"Expected output spec of type {port.type.spec_class} but got spec of type {type(spec)}"
         data = {"id": port.type.id, "data": spec.to_knime_dict()}
         class_name = "org.knime.python3.nodes.ports.PythonBinaryBlobPortObjectSpec"
-    
+
     return _PythonPortObjectSpec(class_name, json.dumps(data))
 
 
@@ -224,7 +230,7 @@ def _port_object_to_python(port_object: _PythonPortObject, port: kn.Port):
         if port.type is kn.PortType.BINARY:
             with open(file, "rb") as f:
                 return f.read()
-        else: # custom port object
+        else:  # custom port object
             assert port.type.id == knime_dict["id"]
             spec = port.type.spec_class.from_knime_dict(knime_dict["data"])
             with open(file, "rb") as f:
@@ -260,10 +266,15 @@ def _port_object_from_python(obj, file_creator, port: kn.Port) -> _PythonPortObj
             ).with_traceback(tb)
 
         class_name = "org.knime.python3.nodes.ports.PythonBinaryBlobFileStorePortObject"
-        spec = _PythonPortObjectSpec("org.knime.python3.nodes.ports.PythonBinaryBlobPortObjectSpec", json.dumps({"id": port.id}))
+        spec = _PythonPortObjectSpec(
+            "org.knime.python3.nodes.ports.PythonBinaryBlobPortObjectSpec",
+            json.dumps({"id": port.id}),
+        )
         return _PythonBinaryPortObject(class_name, file_creator(), obj, spec)
-    else: # TODO combine with above
-        assert isinstance(obj, port.type.object_class), f"Expected output object of type {port.type.object_class}, got object of type {type(obj)}"
+    else:
+        assert isinstance(
+            obj, port.type.object_class
+        ), f"Expected output object of type {port.type.object_class}, got object of type {type(obj)}"
         serialized = obj.serialize()
         serialized_spec = obj.spec.to_knime_dict()
         spec_with_id = {"id": port.type.id, "data": serialized_spec}
@@ -515,6 +526,7 @@ class _PythonNodeProxy:
     class Java:
         implements = ["org.knime.python3.nodes.proxy.PythonNodeProxy"]
 
+
 class _KnimeNodeBackend(kg.EntryPoint, kn._KnimeNodeBackend):
     def __init__(self) -> None:
         super().__init__()
@@ -524,22 +536,33 @@ class _KnimeNodeBackend(kg.EntryPoint, kn._KnimeNodeBackend):
         self._port_types_by_spec_class = {}
         try:
             from knime_markdown_parser import KnimeMarkdownParser
+
             self._knime_parser = KnimeMarkdownParser()
         except ModuleNotFoundError:
             self._knime_parser = FallBackMarkdownParser()
         kn._backend = self
 
-    def register_port_type(self, name: str, object_class: Type[kn.PortObject], spec_class: Type[kn.PortObjectSpec], id: Optional[str] = None):
+    def register_port_type(
+        self,
+        name: str,
+        object_class: Type[kn.PortObject],
+        spec_class: Type[kn.PortObjectSpec],
+        id: Optional[str] = None,
+    ):
         assert self._extension_id is not None, "No extension is loaded."
         if object_class in self._port_types_by_object_class:
-            raise ValueError(f"There is already a port type with the provided object class '{object_class}' registered.")
+            raise ValueError(
+                f"There is already a port type with the provided object class '{object_class}' registered."
+            )
         if spec_class in self._port_types_by_spec_class:
-            raise ValueError(f"There is already a port type with the provided spec class '{spec_class}' registered.")
+            raise ValueError(
+                f"There is already a port type with the provided spec class '{spec_class}' registered."
+            )
         if id is None:
             id = f"{self._extension_id}.{object_class.__module__}.{object_class.__name__}"
-        
+
         port_type = kn.PortType(id, name, object_class, spec_class)
-        
+
         self._port_types_by_object_class[object_class] = port_type
         self._port_types_by_spec_class[spec_class] = port_type
         return port_type
@@ -580,7 +603,9 @@ class _KnimeNodeBackend(kg.EntryPoint, kn._KnimeNodeBackend):
             short_description = split_description[0]
             if len(split_description) > 1:
                 full_description = "\n".join(split_description[1:])
-                full_description = self._knime_parser.parse_fulldescription(full_description)
+                full_description = self._knime_parser.parse_fulldescription(
+                    full_description
+                )
             else:
                 full_description = "Missing description."
 
@@ -609,9 +634,7 @@ class _KnimeNodeBackend(kg.EntryPoint, kn._KnimeNodeBackend):
             "output_ports": output_ports,
         }
 
-    def createNodeFromExtension(
-        self, node_id: str
-    ) -> _PythonNodeProxy:
+    def createNodeFromExtension(self, node_id: str) -> _PythonNodeProxy:
         node_info = kn._nodes[node_id]
         node = node_info.node_factory()
         return _PythonNodeProxy(node)

@@ -532,7 +532,6 @@ class BinaryPortObjectSpec(PortObjectSpec):
     def id(self) -> str:
         return self._id
 
-
     def to_knime_dict(self) -> dict:
         return {"id": self._id}
 
