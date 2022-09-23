@@ -338,6 +338,27 @@ class TestDataSource:
         return False
 
 
+class DummyJavaDataSinkFactory:
+
+    def __init__(self) -> None:
+        self._sinks = []
+
+    def __enter__(self):
+        return self.create_data_sink
+
+    def __exit__(self, *args):
+        for sink in self._sinks:
+            os.remove(sink)
+
+
+    def create_data_sink(self):
+        dummy_java_sink = DummyJavaDataSink()
+        dummy_writer = DummyWriter()
+        arrow_sink = ka.ArrowDataSink(dummy_java_sink)
+        arrow_sink._writer = dummy_writer
+        self._sinks.append(dummy_java_sink._path)
+        return arrow_sink
+
 class DummyJavaDataSink:
     def __init__(self) -> None:
         import os
@@ -354,9 +375,7 @@ class DummyJavaDataSink:
         pass
 
     def setFinalSize(self, size):
-        import os
-
-        os.remove(self._path)
+        pass
 
     def write(self, data):
         pass
@@ -749,50 +768,51 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         Currently, the dict representation of timestamps on the python side is not working properly. This can be
         reproduced in the test by readding the outcommented line in the test.
         """
-        arrow_backend = kat.ArrowBackend(_create_dummy_arrow_sink)
+        with DummyJavaDataSinkFactory() as sink_creator:
+            arrow_backend = kat.ArrowBackend(sink_creator)
 
-        df = self._generate_test_data_frame(
-            columns=self._TEST_TABLE_COLUMNS, lists=False, sets=False
-        )
-        # currently, it does not work for lists, sets and dicts
-        wrong_cols = [
-            "StringCol",
-            "IntCol",
-            "LongCol",
-            "DoubleCol",
-            "BooleanCol",
-            "URICol",
-            "MissingValStringCol",
-            "LongStringColumnName",
-            "LongDoubleColumnName",
-            "Local Date",
-            "Local Time",
-            "Local Date Time",
-            "Zoned Date Time",
-            "Period",
-            "Duration",
-        ]
-        df.drop(wrong_cols, axis=1, inplace=True)  # remove all dicts
-        df.reset_index(inplace=True, drop=True)  # drop index as it messes up equality
+            df = self._generate_test_data_frame(
+                columns=self._TEST_TABLE_COLUMNS, lists=False, sets=False
+            )
+            # currently, it does not work for lists, sets and dicts
+            wrong_cols = [
+                "StringCol",
+                "IntCol",
+                "LongCol",
+                "DoubleCol",
+                "BooleanCol",
+                "URICol",
+                "MissingValStringCol",
+                "LongStringColumnName",
+                "LongDoubleColumnName",
+                "Local Date",
+                "Local Time",
+                "Local Date Time",
+                "Zoned Date Time",
+                "Period",
+                "Duration",
+            ]
+            df.drop(wrong_cols, axis=1, inplace=True)  # remove all dicts
+            df.reset_index(inplace=True, drop=True)  # drop index as it messes up equality
 
-        # self.assertTrue(isinstance(df.iloc[0,0], datetime.datetime)) # this can be out commented to evaluate
+            # self.assertTrue(isinstance(df.iloc[0,0], datetime.datetime)) # this can be out commented to evaluate
 
-        A = arrow_backend.write_table(df)
-        knime_ts_ext_str = (
-            "extension<logical={"
-            '"value_factory_class":"org.knime.core.data.v2.value.cell.DictEncodedDataCellValueFactory",'
-            '"data_type":{"cell_class":"org.knime.core.data.date.DateAndTimeCell"}}, '
-            "storage=struct<extension<logical=structDictEncoded, storage=blob>, "
-            "extension<logical=structDictEncoded, storage=string>>>"
-        )
+            A = arrow_backend.write_table(df)
+            knime_ts_ext_str = (
+                "extension<logical={"
+                '"value_factory_class":"org.knime.core.data.v2.value.cell.DictEncodedDataCellValueFactory",'
+                '"data_type":{"cell_class":"org.knime.core.data.date.DateAndTimeCell"}}, '
+                "storage=struct<extension<logical=structDictEncoded, storage=blob>, "
+                "extension<logical=structDictEncoded, storage=string>>>"
+            )
 
-        self.assertEqual("<class 'knime_arrow_table.ArrowWriteTable'>", str(type(A)))
-        self.assertEqual(
-            knime_ts_ext_str,
-            str(knat._convert_arrow_schema_to_knime(A._schema)[0].ktype),
-        )
+            self.assertEqual("<class 'knime_arrow_table.ArrowWriteTable'>", str(type(A)))
+            self.assertEqual(
+                knime_ts_ext_str,
+                str(knat._convert_arrow_schema_to_knime(A._schema)[0].ktype),
+            )
 
-        arrow_backend.close()
+            arrow_backend.close()
 
     def test_lists_with_missing_values(self):
         """
