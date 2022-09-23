@@ -58,6 +58,7 @@ import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NodeLogger;
 import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
@@ -66,6 +67,7 @@ import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
+import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
 import org.knime.python3.PythonCommand;
 import org.knime.python3.js.scripting.nodes.script.ConsoleOutputUtils.ConsoleOutputStorage;
 import org.knime.scripting.editor.ScriptingService.ConsoleText;
@@ -77,6 +79,8 @@ import org.knime.scripting.editor.ScriptingService.ConsoleText;
  */
 final class PythonScriptNodeModel extends NodeModel {
 
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonScriptNodeModel.class);
+
     private static final String SEND_LAST_OUTPUT_PREFIX =
         "------------ START - Console output of the last execution ------------\n\n";
 
@@ -86,6 +90,9 @@ final class PythonScriptNodeModel extends NodeModel {
     private final PythonScriptNodeSettings m_settings;
 
     private final PythonScriptPortsConfiguration m_ports;
+
+    private final AsynchronousCloseableTracker<IOException> m_sessionShutdownTracker =
+        new AsynchronousCloseableTracker<>(t -> LOGGER.debug("Kernel shutdown failed.", t));
 
     private ConsoleOutputStorage m_consoleOutputStorage;
 
@@ -114,12 +121,12 @@ final class PythonScriptNodeModel extends NodeModel {
             exec.setProgress(0.3, "Running script...");
             session.execute(m_settings.getScript());
             exec.setProgress(0.7, "Processing output...");
-            return session.getOutputs(exec.createSubExecutionContext(0.3));
+            final var outputs = session.getOutputs(exec.createSubExecutionContext(0.3));
+            m_sessionShutdownTracker.closeAsynchronously(session);
+            return outputs;
         } finally {
             m_consoleOutputStorage = consoleConsumer.finish();
         }
-
-        // TODO we probably need something like the kernelShutdownTracker in AbstractPythonScriptingNode
     }
 
     @Override
@@ -139,6 +146,11 @@ final class PythonScriptNodeModel extends NodeModel {
     }
 
     @Override
+    protected void onDispose() {
+        m_sessionShutdownTracker.waitForAllToClose();
+    }
+
+    @Override
     protected void reset() {
         if (m_consoleOutputStorage == null) {
             return; // Nothing to do
@@ -146,6 +158,8 @@ final class PythonScriptNodeModel extends NodeModel {
 
         m_consoleOutputStorage.close();
         m_consoleOutputStorage = null;
+
+        m_sessionShutdownTracker.waitForAllToClose();
     }
 
     void sendLastConsoleOutputs(final Consumer<ConsoleText> consumer) throws IOException {
