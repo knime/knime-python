@@ -71,9 +71,17 @@ public interface KnimeNodeBackend extends PythonEntryPoint {
     interface Callback extends LogCallback {
     }
 
-    String retrieveCategoriesAsJson(final String extensionModule);
+    /**
+     * Loads a specific extension
+     *
+     * @param extensionId id of the extension
+     * @param extensionModule module that bootstraps the extension
+     */
+    void loadExtension(String extensionId, String extensionModule);
 
-    String retrieveNodesAsJson(final String extensionModule);
+    String retrieveCategoriesAsJson();
 
-    PythonNodeProxy createNodeFromExtension(final String extensionModule, final String nodeId);
+    String retrieveNodesAsJson();
+
+    PythonNodeProxy createNodeFromExtension(final String nodeId);
 }

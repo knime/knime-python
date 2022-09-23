@@ -510,23 +510,25 @@ class _KnimeNodeBackend(kg.EntryPoint):
     def __init__(self) -> None:
         super().__init__()
         self._main_loop = MainLoop()
+        self._extension_id = None
         try:
             from knime_markdown_parser import KnimeMarkdownParser
             self._knime_parser = KnimeMarkdownParser()
         except ModuleNotFoundError:
             self._knime_parser = FallBackMarkdownParser()
 
+    def loadExtension(self, extension_id: str, extension_module: str) -> None:
+        self._extension_id = extension_id
+        importlib.import_module(extension_module)
+
     def initializeJavaCallback(self, callback):
         _push_log_callback(lambda msg, sev: callback.log(msg, sev))
 
-    def retrieveCategoriesAsJson(self, extension_module_name: str) -> str:
-        importlib.import_module(extension_module_name)
+    def retrieveCategoriesAsJson(self) -> str:
         category_dicts = [category.to_dict() for category in kn._categories]
         return json.dumps(category_dicts)
 
-    def retrieveNodesAsJson(self, extension_module_name: str) -> str:
-        # NOTE: extract
-        importlib.import_module(extension_module_name)
+    def retrieveNodesAsJson(self) -> str:
         node_dicts = [self.resolve_node_dict(n) for n in kn._nodes.values()]
         return json.dumps(node_dicts)
 
@@ -581,9 +583,8 @@ class _KnimeNodeBackend(kg.EntryPoint):
         }
 
     def createNodeFromExtension(
-        self, extension_module_name: str, node_id: str
+        self, node_id: str
     ) -> _PythonNodeProxy:
-        importlib.import_module(extension_module_name)
         node_info = kn._nodes[node_id]
         node = node_info.node_factory()
         return _PythonNodeProxy(node)

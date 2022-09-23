@@ -120,7 +120,7 @@ final class FluentPythonNodeExtension implements PyNodeExtension {
 
     @Override
     public PythonNodeProxy createNodeProxy(final KnimeNodeBackend backend, final String nodeId) {
-        return backend.createNodeFromExtension(m_extensionModule, nodeId);
+        return backend.createNodeFromExtension(nodeId);
     }
 
     @Override

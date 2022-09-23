@@ -138,11 +138,11 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
 
     private static PyNodeExtension createNodeExtension(final KnimeNodeBackend backend,
         final StaticExtensionInfo staticInfo, final PythonNodeGatewayFactory gatewayFactory) {
-        var categoriesJson = backend.retrieveCategoriesAsJson(staticInfo.m_moduleName);
-        var nodesJson = backend.retrieveNodesAsJson(staticInfo.m_moduleName);
+        var categoriesJson = backend.retrieveCategoriesAsJson();
+        var nodesJson = backend.retrieveNodesAsJson();
         return new FluentPythonNodeExtension(staticInfo.m_id, staticInfo.m_moduleName,
-            parseNodes(nodesJson, staticInfo.m_extensionPath), parseCategories(categoriesJson, staticInfo.m_extensionPath),
-            gatewayFactory, staticInfo.m_version);
+            parseNodes(nodesJson, staticInfo.m_extensionPath),
+            parseCategories(categoriesJson, staticInfo.m_extensionPath), gatewayFactory, staticInfo.m_version);
     }
 
     private static List<CategoryExtension.Builder> parseCategories(final String categoriesJson,

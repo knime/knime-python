@@ -59,9 +59,9 @@ import org.knime.python3.FreshPythonGatewayFactory;
 import org.knime.python3.Python3SourceDirectory;
 import org.knime.python3.PythonCommand;
 import org.knime.python3.PythonEntryPointUtils;
-import org.knime.python3.PythonExtension;
 import org.knime.python3.PythonGateway;
 import org.knime.python3.PythonGatewayFactory;
+import org.knime.python3.PythonGatewayFactory.EntryPointCustomizer;
 import org.knime.python3.PythonGatewayFactory.PythonGatewayDescription;
 import org.knime.python3.arrow.Python3ArrowSourceDirectory;
 import org.knime.python3.types.PythonValueFactoryModule;
@@ -82,7 +82,7 @@ public final class PythonNodeGatewayFactory {
 
     private static final PythonGatewayFactory DEBUG_FACTORY = new FreshPythonGatewayFactory();
 
-    private final PythonExtensionFromModuleName m_module;
+    private final String m_module;
 
     private final Path m_modulePath;
 
@@ -96,7 +96,7 @@ public final class PythonNodeGatewayFactory {
      * @param modulePath the absolute path to the module defining the extension
      */
     public PythonNodeGatewayFactory(final String extensionId, final String environmentName, final Path modulePath) {
-        m_module = new PythonExtensionFromModuleName(modulePath.getFileName().toString());
+        m_module = modulePath.getFileName().toString();
         m_modulePath = modulePath.getParent();
         m_extensionId = extensionId;
         m_environmentName = environmentName;
@@ -116,7 +116,7 @@ public final class PythonNodeGatewayFactory {
             .addToPythonPath(Python3ArrowSourceDirectory.getPath()) //
             .addToPythonPath(Python3ViewsSourceDirectory.getPath())//
             .addToPythonPath(m_modulePath)//
-            .withPreloaded(m_module);
+            .withCustomizer(new KnimeNodeBackendCustomizer(m_extensionId, m_module));
         PythonValueFactoryRegistry.getModules().stream().map(PythonValueFactoryModule::getParentDirectory)
             .forEach(gatewayDescriptionBuilder::addToPythonPath);
         // For debugging it is best to always start a new process, so that changes in the code are immediately reflected
@@ -124,13 +124,14 @@ public final class PythonNodeGatewayFactory {
         // The factory is not held as member, so that it is possible to toggle debug mode without a restart
         var factory = PythonExtensionPreferences.debugMode(m_extensionId) ? DEBUG_FACTORY : FACTORY;
         var gateway = factory.create(gatewayDescriptionBuilder.build());
-        PythonEntryPointUtils.registerPythonValueFactories(gateway.getEntryPoint());
+        final var backend = gateway.getEntryPoint();
+        PythonEntryPointUtils.registerPythonValueFactories(backend);
         return gateway;
     }
 
     private static PythonCommand createCommand(final String extensionId, final String environmentName) {
         return PythonExtensionPreferences.getCustomPythonCommand(extensionId)//
-                .orElseGet(() -> getPythonCommandForEnvironment(environmentName));
+            .orElseGet(() -> getPythonCommandForEnvironment(environmentName));
     }
 
     private static PythonCommand getPythonCommandForEnvironment(final String environmentName) {
@@ -138,33 +139,40 @@ public final class PythonNodeGatewayFactory {
         return new BundledPythonCommand(environment.getPath().toAbsolutePath().toString());
     }
 
-    private static final class PythonExtensionFromModuleName implements PythonExtension {
+    private static final class KnimeNodeBackendCustomizer implements EntryPointCustomizer<KnimeNodeBackend> {
 
-        private final String m_moduleName;
+        private final String m_extensionId;
 
-        public PythonExtensionFromModuleName(final String moduleName) {
-            m_moduleName = moduleName;
+        private final String m_extensionModule;
+
+        KnimeNodeBackendCustomizer(final String extensionId, final String extensionModule) {
+            m_extensionId = extensionId;
+            m_extensionModule = extensionModule;
         }
 
         @Override
-        public String getPythonModule() {
-            return m_moduleName;
+        public void customize(final KnimeNodeBackend entryPoint) {
+            entryPoint.loadExtension(m_extensionId, m_extensionModule);
         }
 
         @Override
         public int hashCode() {
-            return m_moduleName.hashCode();
+            return Objects.hash(m_extensionId, m_extensionModule);
         }
 
         @Override
         public boolean equals(final Object obj) {
             if (obj == this) {
                 return true;
-            }
-            if (!(obj instanceof PythonExtensionFromModuleName)) {
+            } else if (obj instanceof KnimeNodeBackendCustomizer) {
+                var other = (KnimeNodeBackendCustomizer)obj;
+                return m_extensionId.equals(other.m_extensionId) //
+                    && m_extensionModule.equals(other.m_extensionModule);
+            } else {
                 return false;
             }
-            return Objects.equals(((PythonExtensionFromModuleName)obj).m_moduleName, m_moduleName);
         }
+
     }
+
 }
