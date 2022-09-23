@@ -103,7 +103,7 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
             Map<String, Object> map = yaml.load(inputStream);
             final var name = (String)map.get("name");
             final var group_id = (String)map.get("group_id");
-            final var env_name = group_id.replace('.', '_') + "_" + name;
+            final var env_name = (String)map.getOrDefault("bundled_env_name", group_id.replace('.', '_') + "_" + name);
             final var version = (String)map.get("version");
             return new StaticExtensionInfo(//
                 name, //
