@@ -76,6 +76,26 @@ public interface PythonGatewayFactory {
     <E extends PythonEntryPoint> PythonGateway<E> create(final PythonGatewayDescription<E> description)
         throws IOException, InterruptedException;
 
+
+    /**
+     * Implementing classes allow to customize a PythonEntryPoint after its process has been created.
+     *
+     * Implementing classes must provide meaningful implementations for equals and hashCode.
+     *
+     * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+     * @param <E> the type of PythonEntryPoint customized by the customizer
+     */
+    public interface EntryPointCustomizer<E extends PythonEntryPoint> {
+
+        /**
+         * Customizes the entry point e.g. by calling setup methods and the like.
+         *
+         * @param entryPoint to customize
+         */
+        void customize(E entryPoint);
+    }
+
+
     /**
      * Describes a PythonGateway including the command (i.e. the Python executable), the launch script, the type of
      * entry point, the folders to add to the Python Path and the extensions (or rather modules) to preload.
@@ -83,7 +103,7 @@ public interface PythonGatewayFactory {
      * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
      * @param <E>
      */
-    public static final class PythonGatewayDescription<E extends PythonEntryPoint> {
+    final class PythonGatewayDescription<E extends PythonEntryPoint> {
 
         private final PythonCommand m_command;
 
@@ -95,12 +115,15 @@ public interface PythonGatewayFactory {
 
         private final List<PythonExtension> m_pythonExtensions;
 
+        private final List<EntryPointCustomizer<E>> m_entryPointCustomizers;
+
         private PythonGatewayDescription(final Builder<E> builder) {
             m_launcherPath = builder.m_launcherPath;
             m_command = builder.m_pythonCommand;
             m_entryPointClass = builder.m_entryPointClass;
             m_pythonPath = builder.m_pythonPath.build();
             m_pythonExtensions = List.copyOf(builder.m_pythonExtensions);
+            m_entryPointCustomizers = List.copyOf(builder.m_entryPointCustomizers);
         }
 
         Path getLauncherPath() {
@@ -123,9 +146,20 @@ public interface PythonGatewayFactory {
             return m_pythonExtensions;
         }
 
+        List<EntryPointCustomizer<E>> getCustomizers() {
+            return m_entryPointCustomizers;
+        }
+
         @Override
         public int hashCode() {
-            return Objects.hash(m_command, m_launcherPath, m_entryPointClass, m_pythonPath, m_pythonExtensions);
+            return Objects.hash(//
+                m_command, //
+                m_launcherPath, //
+                m_entryPointClass, //
+                m_pythonPath, //
+                m_pythonExtensions, //
+                m_entryPointCustomizers//
+            );
         }
 
         @Override
@@ -141,7 +175,8 @@ public interface PythonGatewayFactory {
                 && Objects.equals(other.m_launcherPath, m_launcherPath)
                 && Objects.equals(other.m_entryPointClass, m_entryPointClass)
                 && Objects.equals(other.m_pythonPath, m_pythonPath)
-                && Objects.equals(other.m_pythonExtensions, m_pythonExtensions);
+                && Objects.equals(other.m_pythonExtensions, m_pythonExtensions)
+                && Objects.equals(other.m_entryPointCustomizers, m_entryPointCustomizers);
         }
 
         /**
@@ -176,6 +211,8 @@ public interface PythonGatewayFactory {
 
             private final List<PythonExtension> m_pythonExtensions = new ArrayList<>();
 
+            private final List<EntryPointCustomizer<E>> m_entryPointCustomizers = new ArrayList<>();
+
             private Builder(final PythonCommand pythonCommand, final Path launcherPath,
                 final Class<E> entryPointClass) {
                 m_launcherPath = launcherPath;
@@ -192,6 +229,18 @@ public interface PythonGatewayFactory {
              */
             public Builder<E> withPreloaded(final PythonExtension extension) {
                 m_pythonExtensions.add(extension);
+                return this;
+            }
+
+            /**
+             * Adds the provided entry point customizer to the customizers.
+             * Customizers must
+             *
+             * @param customizer customizing the entry point for later use
+             * @return this builder
+             */
+            public Builder<E> withCustomizer(final EntryPointCustomizer<E> customizer) {
+                m_entryPointCustomizers.add(customizer);
                 return this;
             }
 

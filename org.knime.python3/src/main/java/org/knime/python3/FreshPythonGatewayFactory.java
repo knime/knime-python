@@ -50,6 +50,8 @@ package org.knime.python3;
 
 import java.io.IOException;
 
+import org.knime.core.node.NodeLogger;
+
 /**
  * Always creates a fresh {@link PythonGateway}.
  *
@@ -57,12 +59,26 @@ import java.io.IOException;
  */
 public final class FreshPythonGatewayFactory implements PythonGatewayFactory {
 
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(FreshPythonGatewayFactory.class);
+
     @Override
     public <E extends PythonEntryPoint> PythonGateway<E> create(final PythonGatewayDescription<E> description)
         throws IOException, InterruptedException {
         var launcherPath = description.getLauncherPath().toAbsolutePath().toString();
-        return DefaultPythonGateway.create(description.getCommand().createProcessBuilder(), launcherPath,
+        var gateway = DefaultPythonGateway.create(description.getCommand().createProcessBuilder(), launcherPath,
             description.getEntryPointClass(), description.getExtensions(), description.getPythonPath());
+        if (!description.getCustomizers().isEmpty()) {
+            var entryPoint = gateway.getEntryPoint();
+            try (var customizationOutputConsumer =
+                PythonGatewayUtils.redirectGatewayOutput(gateway, LOGGER::debug, LOGGER::debug, 100)) {
+                for (var customizer : description.getCustomizers()) {
+                    customizer.customize(entryPoint);
+                }
+            } catch (Exception ex) {
+                throw new IllegalStateException("Customization of entry point failed.", ex);
+            }
+        }
+        return gateway;
     }
 
 }
