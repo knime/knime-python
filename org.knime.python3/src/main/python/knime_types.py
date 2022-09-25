@@ -151,38 +151,31 @@ def register_python_value_factory(
     python_value_factory_name,
     data_spec_json,
     data_traits,
+    is_default_python_representation=True,
 ):
     module = importlib.import_module(python_module)
-    value_factory_class = getattr(module, python_value_factory_name)
-    value_factory = value_factory_class()
+    python_value_factory_class = getattr(module, python_value_factory_name)
+    python_value_factory = python_value_factory_class()
     unpacked_data_traits = json.loads(data_traits)["traits"]
     logical_type = unpacked_data_traits["logical_type"]
-    value_factory_bundle = PythonValueFactoryBundle(
-        logical_type, data_spec_json, value_factory, data_traits
-    )
-    _java_value_factory_to_bundle[logical_type] = value_factory_bundle
-    _bundles.append(value_factory_bundle)
-    python_type = value_factory.compatible_type
+    python_type = python_value_factory.compatible_type
 
-    _java_value_factory_to_python_type[logical_type] = python_type
-    _python_type_to_java_value_factory[python_type] = logical_type
+    if is_default_python_representation:
+        value_factory_bundle = PythonValueFactoryBundle(
+            logical_type, data_spec_json, python_value_factory, data_traits
+        )
+        _java_value_factory_to_bundle[logical_type] = value_factory_bundle
+        _bundles.append(value_factory_bundle)
 
+        _java_value_factory_to_python_type[logical_type] = python_type
+        _python_type_to_java_value_factory[python_type] = logical_type
+    else:
+        orig_python_type = _java_value_factory_to_python_type[logical_type]
 
-def register_python_proxy_type(
-    python_module, python_value_factory_name, java_value_factory
-):
-    module = importlib.import_module(python_module)
-    value_factory_class = getattr(module, python_value_factory_name)
-    proxy_value_factory = value_factory_class()
-    proxy_type = proxy_value_factory.compatible_type
-
-    value_factory_key = '{"value_factory_class":"' + java_value_factory + '"}'
-    orig_python_type = _java_value_factory_to_python_type[value_factory_key]
-
-    _python_proxy_type_to_value_factory[proxy_type] = (
-        proxy_value_factory,
-        orig_python_type,
-    )
+        _python_proxy_type_to_value_factory[python_type] = (
+            python_value_factory,
+            orig_python_type,
+        )
 
 
 _fallback_value_factory = FallbackPythonValueFactory()

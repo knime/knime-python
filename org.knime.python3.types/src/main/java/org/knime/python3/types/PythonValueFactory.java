@@ -67,9 +67,13 @@ public final class PythonValueFactory {
 
     private final String m_pythonValueFactoryName;
 
-    PythonValueFactory(final ValueFactory<?, ?> valueFactory, final String pythonClassName) {
+    private final boolean m_isDefaultPythonRepresentation;
+
+    PythonValueFactory(final ValueFactory<?, ?> valueFactory, final String pythonClassName,
+        final boolean isDefaultPythonRepresentation) {
         m_valueFactory = valueFactory;
         m_pythonValueFactoryName = pythonClassName;
+        m_isDefaultPythonRepresentation = isDefaultPythonRepresentation;
     }
 
     /**
@@ -96,4 +100,11 @@ public final class PythonValueFactory {
         return json.toString();
     }
 
+    /**
+     * @return true if this is the primary Python value factory for the Java {@link ValueFactory}, otherwise the Python
+     *         value factory will be available in Python as alternative, but will not be used by default.
+     */
+    public boolean isDefaultPythonRepresentation() {
+        return m_isDefaultPythonRepresentation;
+    }
 }

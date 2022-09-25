@@ -49,7 +49,6 @@
 package org.knime.python3.types;
 
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -64,12 +63,9 @@ public final class PythonValueFactoryModule implements Iterable<PythonValueFacto
 
     private final List<PythonValueFactory> m_factories;
 
-    private final List<PythonProxyType> m_proxyTypes;
-
-    PythonValueFactoryModule(final Path modulePath, final PythonValueFactory[] factories, final PythonProxyType[] proxyTypes) {
+    PythonValueFactoryModule(final Path modulePath, final PythonValueFactory[] factories) {
         m_modulePath = modulePath;
         m_factories = List.of(factories);
-        m_proxyTypes = Collections.unmodifiableList(List.of(proxyTypes));
     }
 
     @Override
@@ -85,10 +81,6 @@ public final class PythonValueFactoryModule implements Iterable<PythonValueFacto
     @Override
     public Iterator<PythonValueFactory> iterator() {
         return m_factories.iterator();
-    }
-
-    public List<PythonProxyType> getPythonProxyTypes() {
-        return m_proxyTypes;
     }
 
 }

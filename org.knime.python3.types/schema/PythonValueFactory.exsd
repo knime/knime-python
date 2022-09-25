@@ -49,11 +49,8 @@
 
    <element name="Module">
       <complexType>
-         <sequence>
-            <choice minOccurs="1" maxOccurs="unbounded">
-               <element ref="PythonValueFactory"/>
-               <element ref="PythonProxyType"/>
-            </choice>
+         <sequence minOccurs="1" maxOccurs="unbounded">
+            <element ref="PythonValueFactory"/>
          </sequence>
          <attribute name="modulePath" type="string" use="required">
             <annotation>
@@ -87,31 +84,12 @@
                </appinfo>
             </annotation>
          </attribute>
-      </complexType>
-   </element>
-
-   <element name="PythonProxyType">
-      <annotation>
-         <documentation>
-            A Python proxy type that maps to the same Java ValueFactory as some other PythonValueFactory. ProxyTypes can only used while writing, when reading a value from a table in Python it will always use the main PyhonValueFactory.
-         </documentation>
-      </annotation>
-      <complexType>
-         <attribute name="PythonClassName" type="string" use="required">
+         <attribute name="isDefaultPythonRepresentation" type="boolean">
             <annotation>
                <documentation>
-                  Name of the class that represents the PythonValueFactory
+                  Whether this type is the default representation in Python for data written using the specified Java Value Factory. Tables in Python will use this type for columns written by that Java ValueFactory.
+Defaults to TRUE. If set to false, the type can be used in Python by casting the column or when writing columns from Python.
                </documentation>
-            </annotation>
-         </attribute>
-         <attribute name="ValueFactory" type="string">
-            <annotation>
-               <documentation>
-                  
-               </documentation>
-               <appinfo>
-                  <meta.attribute kind="java" basedOn=":org.knime.core.data.v2.ValueFactory"/>
-               </appinfo>
             </annotation>
          </attribute>
       </complexType>

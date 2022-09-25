@@ -74,20 +74,28 @@ public final class PythonEntryPointUtils {
      */
     public static void registerPythonValueFactories(final PythonEntryPoint entryPoint) throws Py4JException {
         final List<PythonValueFactoryModule> modules = PythonValueFactoryRegistry.getModules();
+
+        // We iterate twice because the default representations must be registered first
         for (final var module : modules) {
             final var pythonModule = module.getModuleName();
             for (final var factory : module) {
+                if (!factory.isDefaultPythonRepresentation()) {
+                    continue;
+                }
                 entryPoint.registerPythonValueFactory(pythonModule, factory.getPythonValueFactoryName(),
-                    factory.getDataSpecRepresentation(), factory.getDataTraitsJson());
+                    factory.getDataSpecRepresentation(), factory.getDataTraitsJson(), factory.isDefaultPythonRepresentation());
             }
         }
 
         // Register proxy types after all other types because they will reference the original value factories
         for (final var module : modules) {
             final var pythonModule = module.getModuleName();
-            for (final var proxyType : module.getPythonProxyTypes()) {
-                entryPoint.registerPythonProxyType(pythonModule, proxyType.getPythonValueFactoryName(),
-                    proxyType.getJavaValueFactoryName());
+            for (final var factory : module) {
+                if (factory.isDefaultPythonRepresentation()) {
+                    continue;
+                }
+                entryPoint.registerPythonValueFactory(pythonModule, factory.getPythonValueFactoryName(),
+                    factory.getDataSpecRepresentation(), factory.getDataTraitsJson(), false);
             }
         }
     }

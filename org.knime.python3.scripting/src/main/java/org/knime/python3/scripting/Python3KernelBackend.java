@@ -121,9 +121,9 @@ import org.knime.python3.arrow.PythonArrowDataSourceFactory;
 import org.knime.python3.arrow.PythonArrowExtension;
 import org.knime.python3.arrow.SinkManager;
 import org.knime.python3.arrow.types.Python3ArrowTypesSourceDirectory;
+import org.knime.python3.scripting.Python3KernelBackendProxy.Callback;
 import org.knime.python3.types.PythonValueFactoryModule;
 import org.knime.python3.types.PythonValueFactoryRegistry;
-import org.knime.python3.scripting.Python3KernelBackendProxy.Callback;
 import org.knime.python3.utils.FlowVariableUtils;
 
 import com.google.common.base.Strings;
@@ -349,7 +349,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
         }
     }
 
-    private void addPythonValueFactoriesToPythonPath(final PythonPathBuilder builder) {
+    private static void addPythonValueFactoriesToPythonPath(final PythonPathBuilder builder) {
         final List<PythonValueFactoryModule> modules = PythonValueFactoryRegistry.getModules();
         for (final var module : modules) {
             builder.add(module.getParentDirectory());
