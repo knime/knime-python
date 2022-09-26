@@ -67,7 +67,7 @@ public final class PythonValueFactory {
 
     private final String m_pythonValueFactoryName;
 
-    private final boolean m_isDefaultPythonRepresentation;
+    private boolean m_isDefaultPythonRepresentation;
 
     PythonValueFactory(final ValueFactory<?, ?> valueFactory, final String pythonClassName,
         final boolean isDefaultPythonRepresentation) {
@@ -106,5 +106,17 @@ public final class PythonValueFactory {
      */
     public boolean isDefaultPythonRepresentation() {
         return m_isDefaultPythonRepresentation;
+    }
+
+    /**
+     * When the set of registered value factories is not sensible, we sanitize the settings and need to update
+     * the "default" setting in the {@link PythonValueFactoryRegistry}.
+     */
+    void makeDefaultPythonRepresentation(final boolean isDefault) {
+        m_isDefaultPythonRepresentation = isDefault;
+    }
+
+    String getValueFactoryClassName() {
+        return m_valueFactory.getClass().getName();
     }
 }

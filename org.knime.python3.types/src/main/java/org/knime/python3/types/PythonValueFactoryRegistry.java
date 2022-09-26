@@ -53,7 +53,9 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.FileLocator;
@@ -93,6 +95,8 @@ public final class PythonValueFactoryRegistry {
         for (IExtension extension : extPoint.getExtensions()) {
             m_modules.addAll(extractModules(extension));
         }
+
+        verifyFactories(m_modules);
     }
 
     private static List<PythonValueFactoryModule> extractModules(final IExtension extension) {
@@ -139,14 +143,62 @@ public final class PythonValueFactoryRegistry {
                     ex);
             }
         }
+
         return factories.toArray(PythonValueFactory[]::new);
+    }
+
+    /**
+     * Check that for each java value factory there is exactly one default type and not just proxy types, and adjust the
+     * "isDefault" settings if needed.
+     *
+     * @param factories The registered {@link PythonValueFactory}s
+     */
+    private static void verifyFactories(final List<PythonValueFactoryModule> modules) {
+        Set<String> javaValueFactoriesWithDefault = getDefaultValueFactories(modules);
+
+        // Check that all non-default types are backed by a default type
+        for (var module : modules) {
+            for (var f : module) {
+                if (f.isDefaultPythonRepresentation()) {
+                    continue;
+                }
+                if (!javaValueFactoriesWithDefault.contains(f.getValueFactoryClassName())) {
+                    LOGGER.coding("Found proxy PythonValueFactory (" + f.getPythonValueFactoryName() + ") for "
+                        + f.getValueFactoryClassName() + " but no default yet. Using it as default.");
+                    f.makeDefaultPythonRepresentation(true);
+                    javaValueFactoriesWithDefault.add(f.getValueFactoryClassName());
+                }
+            }
+        }
+    }
+
+    private static Set<String> getDefaultValueFactories(final List<PythonValueFactoryModule> modules) {
+        Set<String> javaValueFactoriesWithDefault = new HashSet<>();
+
+        // Check for duplicate defaults
+        for (var module : modules) {
+            for (var f : module) {
+                if (!f.isDefaultPythonRepresentation()) {
+                    continue;
+                }
+                if (javaValueFactoriesWithDefault.contains(f.getValueFactoryClassName())) {
+                    LOGGER.coding("Found multiple default PythonValueFactories for " + f.getValueFactoryClassName()
+                        + ". Using the first found Python value factory as default instead of "
+                        + f.getPythonValueFactoryName());
+                    f.makeDefaultPythonRepresentation(false);
+                } else {
+                    javaValueFactoriesWithDefault.add(f.getValueFactoryClassName());
+                }
+            }
+        }
+        return javaValueFactoriesWithDefault;
     }
 
     private static PythonValueFactory extractFactory(final IConfigurationElement factory) throws CoreException {
         final ValueFactory<?, ?> valueFactory = (ValueFactory<?, ?>)factory.createExecutableExtension("ValueFactory");
         final String pythonValueFactoryName = factory.getAttribute("PythonClassName");
         final boolean isDefault = factory.getAttribute(IS_DEFAULT_PYTHON_REPRESENTATION) == null
-            || factory.getAttribute(IS_DEFAULT_PYTHON_REPRESENTATION).toLowerCase().equals("true");
+            || factory.getAttribute(IS_DEFAULT_PYTHON_REPRESENTATION).equalsIgnoreCase("true");
         return new PythonValueFactory(valueFactory, pythonValueFactoryName, isDefault);
     }
 

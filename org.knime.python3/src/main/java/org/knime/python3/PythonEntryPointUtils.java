@@ -83,12 +83,13 @@ public final class PythonEntryPointUtils {
                     continue;
                 }
                 entryPoint.registerPythonValueFactory(pythonModule, factory.getPythonValueFactoryName(),
-                    factory.getDataSpecRepresentation(), factory.getDataTraitsJson(), factory.isDefaultPythonRepresentation());
+                    factory.getDataSpecRepresentation(), factory.getDataTraitsJson(),
+                    factory.isDefaultPythonRepresentation());
             }
         }
 
         // Register proxy types after all other types because they will reference the original value factories
-        for (final var module : modules) {
+        for (final var module : modules) { // NOSONAR: cannot merge with previous loop
             final var pythonModule = module.getModuleName();
             for (final var factory : module) {
                 if (factory.isDefaultPythonRepresentation()) {
