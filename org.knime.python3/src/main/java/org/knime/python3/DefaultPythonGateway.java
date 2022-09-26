@@ -52,6 +52,7 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.ConnectException;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
@@ -61,6 +62,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.SystemUtils;
 import org.knime.core.node.NodeLogger;
+import org.knime.python3.PythonPath.PythonPathBuilder;
 
 import py4j.ClientServer;
 import py4j.ClientServer.ClientServerBuilder;
@@ -80,6 +82,8 @@ import py4j.Py4JServerConnection;
 public final class DefaultPythonGateway<T extends PythonEntryPoint> implements PythonGateway<T> {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(DefaultPythonGateway.class);
+
+    private static final String COVERAGE_FILE = "/home/benjamin/misc/python_coverage/.coverage";
 
     /**
      * Copied from {@code PythonKernel2KernelBackend}.
@@ -164,9 +168,21 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
             final int javaPort = m_clientServer.getJavaServer().getListeningPort();
 
             final var pb = pythonProcessBuilder;
-            Collections.addAll(pb.command(), "-u", launcherPath, Integer.toString(javaPort));
+            if (COVERAGE_FILE != null) {
+                // Collect the coverage
+                // TODO --branch
+                Collections.addAll(pb.command(), "-u", "-m", "coverage", "run", "--timid", "--concurrency=thread,multiprocessing", "--data-file=" + COVERAGE_FILE, "-p",
+                    launcherPath, Integer.toString(javaPort));
 
-            pb.environment().put("PYTHONPATH", pythonPath.getPythonPath());
+                // Add the path of the launcher to the Python path.
+                // Usually this is done automatically but not if we use -m to run coverage
+                pb.environment().put("PYTHONPATH",
+                    new PythonPathBuilder(pythonPath).add(Path.of(launcherPath).getParent()).build().getPythonPath());
+            } else {
+                Collections.addAll(pb.command(), "-u", launcherPath, Integer.toString(javaPort));
+                pb.environment().put("PYTHONPATH", pythonPath.getPythonPath());
+            }
+
             m_process = pb.start();
             m_stdOutput = new UncloseableInputStream(m_process.getInputStream());
             m_stdError = new UncloseableInputStream(m_process.getErrorStream());
