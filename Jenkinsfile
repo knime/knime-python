@@ -97,9 +97,14 @@ def runPython3MultiversionWorkflowTestConfig(String pythonVersion, String baseBr
                         'knime-testing-internal',
                         'knime-xml',
                         'knime-python-legacy',
-                        'knime-conda'
+                        'knime-conda',
+                        'knime-python-nodes-testing',
+                        'knime-base-views'
                     ],
-                    ius: [ 'org.knime.features.chem.types.feature.group' ]
+                    ius: [
+                        'org.knime.features.chem.types.feature.group',
+                        'org.knime.features.core.columnar.feature.group'
+                    ]
                 ],
                 extraNodeLabel: 'python-all'
             )
