@@ -51,13 +51,11 @@ Contains the implementation of the Parameter Dialogue API for building native Py
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Dict, List, Tuple
 import knime_schema as ks
-import knime_markdown_parser as kmd
 import logging
 
 from knime_utils import parse_version, Version
 
 LOGGER = logging.getLogger("Python backend")
-MARKDOWN_PARSER = kmd.KnimeMarkdownParser()
 
 
 def _get_parameters(obj) -> Dict[str, "_BaseParameter"]:
@@ -577,9 +575,10 @@ class DoubleParameter(_NumericParameter):
         return {"format": "number"}
 
 
-class _BaseMultipleChoiceParameter(_BaseParameter):
+class _BaseMultiChoiceParameter(_BaseParameter):
     """
-    Base class for Multiple Choice-based parameter types (and StringParameter for backward compatibility).
+    Base class for Multi Choice-based parameter types (and StringParameter for backward compatibility),
+    which allow for single or multiple selection from the provided list of options.
     """
 
     def __init__(
@@ -599,7 +598,7 @@ class _BaseMultipleChoiceParameter(_BaseParameter):
             return {"format": "radio"}
 
 
-class StringParameter(_BaseMultipleChoiceParameter):
+class StringParameter(_BaseMultiChoiceParameter):
     """
     Parameter class for primitive string types.
     """
@@ -635,39 +634,34 @@ class StringParameter(_BaseMultipleChoiceParameter):
         return schema
 
 
-class EnumParameter(_BaseMultipleChoiceParameter):
+class EnumParameter(_BaseMultiChoiceParameter):
     """
     Parameter class for multiple-choice parameter types.
-    Expects a list of triples of the form (selection_value, selection_label, selection_description).
+    Expects a list of triples of strings of the form:
+    (selection_value, selection_label, selection_description).
 
     Replicates and extends the enum functionality previously implemented as part of StringParameter.
     """
-
-    # TODO: rewrite to be the default validator for EnumParameter
-    def default_validator(self, value):
-        pass
 
     def __init__(
         self,
         label=None,
         description=None,
         default_value: str = "",
-        enum: List[Tuple[str, str, str]] = [],
+        enum: List[Tuple[str, str, str]] = [
+            (
+                "",
+                "Default option",
+                "The default option for EnumParameter when additional options have not been provided.",
+            )
+        ],
         validator=None,
         since_version=None,
     ):
         self._enum = enum
         super().__init__(label, description, default_value, validator, since_version)
 
-    def _extract_schema(self, extension_version=None, specs=None):
-        schema = super()._extract_schema(specs)
-        schema["description"] = self._generate_description_with_options(
-            parse_markdown=True
-        )
-        schema["oneOf"] = [{"const": e[0], "title": e[1]} for e in self._enum]
-        return schema
-
-    def _generate_description_with_options(self, parse_markdown=True):
+    def _generate_description_with_options(self):
         """
         Collates the developer-provided option descriptions into a single Markdown string.
 
@@ -677,18 +671,20 @@ class EnumParameter(_BaseMultipleChoiceParameter):
         description = "\n**Available options:**\n\n"
         description += "\n".join(
             [
-                f"- **{enum_label}**: {enum_description}"
+                f"- {enum_label}: {enum_description}"
                 for _, enum_label, enum_description in self._enum
             ]
         )
-        if parse_markdown:
-            return MARKDOWN_PARSER.parse_fulldescription(self.__doc__ + description)
-
         return self.__doc__ + description
 
-    def _extract_description(self, parent_scope: _Scope):
-        description = self._generate_description_with_options(parse_markdown=False)
+    def _extract_schema(self, extension_version=None, specs=None):
+        schema = super()._extract_schema(specs)
+        schema["description"] = self._generate_description_with_options()
+        schema["oneOf"] = [{"const": e[0], "title": e[1]} for e in self._enum]
+        return schema
 
+    def _extract_description(self, parent_scope: _Scope):
+        description = self._generate_description_with_options()
         return {"name": self._label, "description": description}
 
 
