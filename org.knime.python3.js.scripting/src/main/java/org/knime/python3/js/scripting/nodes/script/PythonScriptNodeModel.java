@@ -115,12 +115,12 @@ final class PythonScriptNodeModel extends NodeModel {
         final var consoleConsumer = ConsoleOutputUtils.createConsoleConsumer();
         try (final var session =
             new PythonScriptingSession(pythonCommand, consoleConsumer, getWriteFileStoreHandler())) {
-            exec.setMessage("Setting up inputs...");
+            exec.setProgress(0.0, "Setting up inputs");
             session.setupIO(inObjects, m_ports.getNumOutTables(), m_ports.getNumOutImages(), m_ports.getNumOutObjects(),
                 exec.createSubProgress(0.3));
-            exec.setProgress(0.3, "Running script...");
+            exec.setProgress(0.3, "Running script");
             session.execute(m_settings.getScript());
-            exec.setProgress(0.7, "Processing output...");
+            exec.setProgress(0.7, "Processing output");
             final var outputs = session.getOutputs(exec.createSubExecutionContext(0.3));
             m_sessionShutdownTracker.closeAsynchronously(session);
             return outputs;

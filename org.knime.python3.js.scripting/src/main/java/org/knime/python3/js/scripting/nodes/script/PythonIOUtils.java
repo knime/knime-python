@@ -134,15 +134,18 @@ final class PythonIOUtils {
 
         // Pickled object to sources
         final var pickledSources = new ArrayList<PickledObjectDataSource>();
-        for (var obj : pickledPortObjects) {
-            pickledSources.add(PickledObjectDataSource.fromPortObject(obj));
+        for (int i = 0; i < pickledPortObjects.length; i++) {
+            exec.setMessage("Setting up pickled object " + i);
+            pickledSources.add(PickledObjectDataSource.fromPortObject(pickledPortObjects[i]));
             exec.checkCanceled();
             progress += pickledProgressWeight;
             exec.setProgress(progress / (double)totalProgress);
         }
 
         // Tables to sources
+        exec.setMessage("Setting up input tables");
         final PythonArrowDataSource[] tableSources = tableConverter.createSources(tablePortObjects, exec);
+        exec.checkCanceled();
         exec.setProgress(1.0);
 
         return Stream.concat(pickledSources.stream(), Arrays.stream(tableSources)).toArray(PythonDataSource[]::new);
@@ -163,11 +166,14 @@ final class PythonIOUtils {
         final PythonJsScriptingEntryPoint pythonEntryPoint, final PythonArrowTableConverter tableConverter,
         final ExecutionContext exec) throws IOException, CanceledExecutionException {
         final var sinks = new ArrayList<PythonArrowDataSink>();
+        exec.setMessage("Retrieving output tables");
         for (int i = 0; i < numOutTables; i++) {
             sinks.add(pythonEntryPoint.getOutputTable(i));
             exec.checkCanceled();
         }
-        return tableConverter.convertToTables(sinks, exec);
+        final var tables = tableConverter.convertToTables(sinks, exec);
+        exec.setProgress(1.0);
+        return tables;
     }
 
     /**
@@ -192,12 +198,13 @@ final class PythonIOUtils {
         try {
             tmpPath = PathUtils.createTempDir("python_images");
             for (int i = 0; i < numOutImages; i++) {
+                exec.setMessage("Retrieving image " + i);
                 // Write the image to a temporary file
                 final Path imgPath = tmpPath.resolve("" + i);
                 pythonEntryPoint.writeOutputImage(i, imgPath.toAbsolutePath().toString());
                 images.add(readImage(imgPath));
                 exec.checkCanceled();
-                exec.setProgress(i / (double)numOutImages);
+                exec.setProgress((i + 1) / (double)numOutImages);
             }
         } finally {
             if (tmpPath != null) {
@@ -224,6 +231,7 @@ final class PythonIOUtils {
         var fileStoreFactory = FileStoreFactory.createFileStoreFactory(exec);
         var objects = new ArrayList<PickledObjectFileStorePortObject>();
         for (int i = 0; i < numOutObjects; i++) {
+            exec.setMessage("Retrieving pickled object " + i);
             final var idx = i;
             objects.add( //
                 PickledObjectFileStorePortObject.create( //
@@ -237,7 +245,7 @@ final class PythonIOUtils {
                 ) //
             );
             exec.checkCanceled();
-            exec.setProgress(i / (double)numOutObjects);
+            exec.setProgress((i + 1) / (double)numOutObjects);
         }
         return objects.toArray(PickledObjectFileStorePortObject[]::new);
     }
