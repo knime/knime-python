@@ -1,12 +1,12 @@
+from multiprocessing.sharedctypes import Value
 import unittest
 
 import knime_node_backend as knb
 import knime_extension as knext
-import knime_schema as ks
-import sys
 import tempfile
 import json
 import os
+import test_utilities
 
 
 class AnotherPortObjectSpec(knext.PortObjectSpec):
@@ -39,49 +39,97 @@ def _binary_spec_from_java(id: str, data: dict = None):
     )
 
 
-class KnimeNodeBackendTest(unittest.TestCase):
-    def setUp(self):
-        self.backend = knb._KnimeNodeBackend()
-        import knime_node as kn
+class PortTypeRegistryTest(unittest.TestCase):
+    class TestPortObjectSpec(knext.PortObjectSpec):
+        def __init__(self, data: str) -> None:
+            self._data = data
 
-        kn._nodes.clear()
-        kn._categories.clear()
+        def to_knime_dict(self) -> dict:
+            return {"test_data": self._data}
 
-        # ensure that mock_extension is actually imported by self.backend.loadExtension
-        sys.modules.pop("mock_extension", None)
-        self.backend.loadExtension("my.test.extension", "mock_extension")
+        @classmethod
+        def from_knime_dict(
+            cls, data: dict
+        ) -> "PortTypeRegistryTest.TestPortObjectSpec":
+            return cls(data["test_data"])
+
+        @property
+        def data(self) -> str:
+            return self._data
+
+    class TestPortObject(knext.PortObject):
+        def __init__(
+            self, spec: "PortTypeRegistryTest.TestPortObjectSpec", data: str
+        ) -> None:
+            super().__init__(spec)
+            self._data = data
+
+        def serialize(self) -> bytes:
+            return self._data.encode()
+
+        @classmethod
+        def deserialize(
+            cls, spec: "PortTypeRegistryTest.TestPortObjectSpec", storage: bytes
+        ) -> "PortTypeRegistryTest.TestPortObject":
+            return cls(spec, storage.decode())
+
+        @property
+        def data(self) -> str:
+            return self._data
+
+    def setUp(self) -> None:
+        self.registry = knb._PortTypeRegistry("test.extension")
 
     def test_default_port_type_id(self):
-        from mock_extension import NodeWithTestOutputPort
-
-        node = NodeWithTestOutputPort()
-        port = node.output_ports[0]
+        # id is intentionally None to test the default id generation
+        port_type = self.registry.register_port_type(
+            "Test port type", self.TestPortObject, self.TestPortObjectSpec
+        )
         self.assertEqual(
-            "my.test.extension.mock_extension.TestPortObject", port.type.id
+            "test.extension.test_knime_node_backend.PortTypeRegistryTest.TestPortObject",
+            port_type.id,
         )
 
     def test_same_object_class_in_multiple_port_types(self):
+        self.registry.register_port_type(
+            "First", self.TestPortObject, self.TestPortObjectSpec, "foo.bar"
+        )
         with self.assertRaises(ValueError):
-            from mock_extension import TestPortObject
-
-            knext.port_type(
-                "Another port type", TestPortObject, AnotherPortObjectSpec, "foobar"
+            self.registry.register_port_type(
+                "Second", self.TestPortObject, AnotherPortObjectSpec, "bar.foo"
             )
 
-    def test_same_spec_class_in_multiple_port_types(self):
+    def test_same_spec_class_multiple_port_types(self):
+        self.registry.register_port_type(
+            "First", self.TestPortObject, self.TestPortObjectSpec, id="foo.bar"
+        )
         with self.assertRaises(ValueError):
-            from mock_extension import TestPortObjectSpec
-
-            knext.port_type(
-                "Yet another port type", AnotherPortObject, TestPortObjectSpec, "barfoo"
+            self.registry.register_port_type(
+                "Second", AnotherPortObject, self.TestPortObjectSpec, "bar.foo"
             )
+
+    def test_same_id_multiple_port_types(self):
+        self.registry.register_port_type(
+            "First", self.TestPortObject, self.TestPortObjectSpec, id="foo.bar"
+        )
+        with self.assertRaises(ValueError):
+            self.registry.register_port_type(
+                "Second", AnotherPortObject, AnotherPortObjectSpec, "foo.bar"
+            )
+
+    def get_port_type(
+        self, object_class=TestPortObject, spec_class=TestPortObjectSpec, id=None
+    ):
+        return self.registry.register_port_type(
+            "Port type", object_class, spec_class, id=id
+        )
 
     def test_custom_spec_from_python(self):
-        from mock_extension import TestPortObjectSpec, test_port_type
+        test_port_type = self.get_port_type()
 
         port = knext.Port(test_port_type, "Test port", "Test port")
-        spec = TestPortObjectSpec("foo")
-        pypos = knb._spec_from_python(spec, port)
+        spec = self.TestPortObjectSpec("foo")
+        pypos = self.registry.spec_from_python(spec, port)
         self.assertEqual(
             "org.knime.python3.nodes.ports.PythonBinaryBlobPortObjectSpec",
             pypos.getJavaClassName(),
@@ -91,32 +139,65 @@ class KnimeNodeBackendTest(unittest.TestCase):
             pypos.toJsonString(),
         )
 
-    def test_custom_spec_to_python(self):
-        from mock_extension import test_port_type
+    def test_custom_spec_from_python_wrong_spec_class(self):
+        test_port_type = self.get_port_type()
+        port = knext.Port(test_port_type, "", "")
+        spec = AnotherPortObjectSpec()
+        with self.assertRaises(AssertionError):
+            self.registry.spec_from_python(spec, port)
 
+    def test_custom_spec_from_python_unknown_spec_class(self):
+        unknown_port_type = knext.PortType(
+            "foo", "name", self.TestPortObject, self.TestPortObjectSpec
+        )
+        port = knext.Port(unknown_port_type, "", "")
+        spec = self.TestPortObjectSpec("foobar")
+        with self.assertRaises(AssertionError):
+            self.registry.spec_from_python(spec, port)
+
+    def test_custom_spec_to_python_wrong_id(self):
+        test_port_type = self.get_port_type(id="foo")
+        other_port_type = self.get_port_type(
+            AnotherPortObject, AnotherPortObjectSpec, "bar"
+        )
+        port = knext.Port(test_port_type, "Test port", "Test_port")
+        java_spec = _binary_spec_from_java(other_port_type.id, {})
+        with self.assertRaises(AssertionError):
+            self.registry.spec_to_python(java_spec, port)
+
+    def test_custom_spec_to_python_unknown_id(self):
+        # can happen if the developer doesn't register the port type via knext.port_type
+        unknown_port_type = knext.PortType(
+            "foo", "name", self.TestPortObject, self.TestPortObjectSpec
+        )
+        port = knext.Port(unknown_port_type, "", "")
+        java_spec = _binary_spec_from_java(unknown_port_type.id, {})
+        with self.assertRaises(AssertionError):
+            self.registry.spec_to_python(java_spec, port)
+
+    def test_custom_spec_to_python(self):
+        test_port_type = self.get_port_type()
         port = knext.Port(test_port_type, "Test port", "Test_port")
         java_spec = _binary_spec_from_java(test_port_type.id, {"test_data": "bar"})
-        spec = knb._spec_to_python(java_spec, port)
+        spec = self.registry.spec_to_python(java_spec, port)
         self.assertEqual("bar", spec.data)
 
+    class MockFromJavaObject:
+        def __init__(self, spec, file_path) -> None:
+            self.spec = spec
+            self.file_path = file_path
+
+        def getJavaClassName(self):
+            return "org.knime.python3.nodes.ports.PythonBinaryBlobFileStorePortObject"
+
+        def getSpec(self):
+            return self.spec
+
+        def getFilePath(self):
+            return self.file_path
+
     def test_custom_object_to_python(self):
-        from mock_extension import test_port_type
-
-        class MockFromJavaObject:
-            def __init__(self, spec, file_path) -> None:
-                self.spec = spec
-                self.file_path = file_path
-
-            def getJavaClassName(self):
-                return (
-                    "org.knime.python3.nodes.ports.PythonBinaryBlobFileStorePortObject"
-                )
-
-            def getSpec(self):
-                return self.spec
-
-            def getFilePath(self):
-                return self.file_path
+        test_port_type = self.get_port_type()
 
         # _PythonPortObjectSpec happens to have all method needed by the tested method so we use it here
         java_spec = _binary_spec_from_java(
@@ -128,16 +209,37 @@ class KnimeNodeBackendTest(unittest.TestCase):
             try:
                 file.write(b"furball")
                 file.flush()
-                java_obj = MockFromJavaObject(java_spec, file.name)
-                obj = knb._port_object_to_python(java_obj, port)
+                java_obj = self.MockFromJavaObject(java_spec, file.name)
+                obj = self.registry.port_object_to_python(java_obj, port)
                 self.assertEqual("furball", obj.data)
                 self.assertEqual("badabummm", obj.spec.data)
             finally:
                 file.close()
                 os.remove(file.name)
 
+    def test_wrong_custom_object_to_python(self):
+        java_spec = _binary_spec_from_java("foo.bar")
+        port = knext.Port(self.get_port_type(), "", "")
+        # None for file path should be fine because the test should fail before we
+        # do anything with the file
+        java_obj = self.MockFromJavaObject(java_spec, None)
+        with self.assertRaises(AssertionError):
+            self.registry.port_object_to_python(java_obj, port)
+
+    def test_unknown_custom_object_to_python(self):
+        unknown_port_type = knext.PortType(
+            "unknown", "type", AnotherPortObject, AnotherPortObjectSpec
+        )
+        java_spec = _binary_spec_from_java(unknown_port_type.id, {})
+        port = knext.Port(unknown_port_type, "", "")
+        # None for file path should be fine because the test should fail before we
+        # do anything with the file
+        java_obj = self.MockFromJavaObject(java_spec, None)
+        with self.assertRaises(AssertionError):
+            self.registry.port_object_to_python(java_obj, port)
+
     def test_custom_object_from_python(self):
-        from mock_extension import TestPortObject, TestPortObjectSpec, test_port_type
+        test_port_type = self.get_port_type()
 
         class MockFileStore:
             def __init__(self, file) -> None:
@@ -149,14 +251,16 @@ class KnimeNodeBackendTest(unittest.TestCase):
             def get_file_path(self):
                 return self.file.name
 
-        spec = TestPortObjectSpec("ice")
-        obj = TestPortObject(spec, "cream")
+        spec = self.TestPortObjectSpec("ice")
+        obj = self.TestPortObject(spec, "cream")
         port = knext.Port(test_port_type, "", "")
         # delete=False is necessary to allow the framework to open the file
         with tempfile.NamedTemporaryFile(delete=False) as file:
             try:
                 mock_filestore = MockFileStore(file)
-                out = knb._port_object_from_python(obj, lambda: mock_filestore, port)
+                out = self.registry.port_object_from_python(
+                    obj, lambda: mock_filestore, port
+                )
                 self.assertEqual("cream", file.read().decode())
                 self.assertEqual("fs_key", out.getFileStoreKey())
                 self.assertEqual(
@@ -166,6 +270,33 @@ class KnimeNodeBackendTest(unittest.TestCase):
             finally:
                 file.close()
                 os.remove(file.name)
+
+    def test_wrong_custom_object_from_python(self):
+        obj = AnotherPortObject(AnotherPortObjectSpec())
+        port = knext.Port(self.get_port_type(), "", "")
+        with self.assertRaises(AssertionError):
+            # providing None as file_creator is fine because the method should fail
+            # before doing anything with it
+            self.registry.port_object_from_python(obj, None, port)
+
+    def test_unknown_custom_object_from_python(self):
+        obj = self.TestPortObject(self.TestPortObjectSpec("ice"), "cream")
+        port = knext.Port(
+            knext.PortType(
+                "port", "type", self.TestPortObject, self.TestPortObjectSpec
+            ),
+            "",
+            "",
+        )
+        with self.assertRaises(AssertionError):
+            # providing None as file_creator is fine because the method should fail
+            # before doing anything with it
+            self.registry.port_object_from_python(obj, None, port)
+
+
+class DescriptionParsingTest(unittest.TestCase):
+    def setUp(self):
+        self.backend = test_utilities.setup_backend("mock_extension")
 
     def test_extract_description_no_docstring(self):
         from mock_extension import NodeWithoutDocstring

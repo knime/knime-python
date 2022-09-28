@@ -1,6 +1,23 @@
 import py4j.java_collections
 
 
+def setup_backend(extension_module: str, extension_id: str = "test.extension"):
+    """
+    Sets up a fresh backend and loads the provided extension.
+    """
+    import knime_node_backend
+    import sys
+    import knime_node as kn
+
+    backend = knime_node_backend._KnimeNodeBackend()
+    kn._nodes.clear()
+    kn._categories.clear()
+    # ensure that extension_module is freshly imported by backend.loadExtension
+    sys.modules.pop("mock_extension", None)
+    backend.loadExtension(extension_id, extension_module)
+    return backend
+
+
 class ListConverter(object):
     def can_convert(self, object):
         return True

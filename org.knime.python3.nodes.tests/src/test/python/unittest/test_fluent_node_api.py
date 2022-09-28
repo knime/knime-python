@@ -53,41 +53,11 @@ TEST_DESCR = "We read data from here"
 # TODO When writing more nodes to test execute, we need to also test a configure method returning None and a configure method returning a schema directly and return schema[:]
 
 
-@kn.node(
-    name="My Test Node",
-    node_type="Learner",
-    icon_path="icon.png",
-    category="/",
-    id="My Test Node",
-)
-@kn.input_table(name="Input Data", description=TEST_DESCR)
-@kn.input_table(
-    name="Second input table", description="We might also read data from there"
-)
-@kn.output_table(name="Output Data", description="Whatever the node has produced")
-@kn.output_table(name="Second output Data", description="Only a column")
-@kn.output_binary(
-    name="Some output port",
-    description="Maybe a model",
-    id=BINARY_PORT_ID,
-)
-@kn.output_view(name="Test View", description="lalala")
-class MyTestNode:
-    def configure(self, config_ctx, schema_1, schema_2):
-        return (
-            schema_1,
-            ks.Column(ks.string(), "first col of second output table"),
-            ks.BinaryPortObjectSpec(id=BINARY_PORT_ID),
-        )
-
-    def execute(self, exec_context, table_1, table_2):
-        return [table_1, b"random bytes"]
-
-
 class NodeApiTest(unittest.TestCase):
     node_id = "My Test Node"
 
     def setUp(self):
+        self.backend = util.setup_backend("mock_extension")
         self.node = kn._nodes.get(NodeApiTest.node_id, None)
         self.node_instance = self.node.node_factory()
 
@@ -111,9 +81,7 @@ class NodeApiTest(unittest.TestCase):
         self.assertEqual(kn.PortType.BINARY, self.node.output_ports[2].type)
 
     def test_configure(self):
-        self.node_instance: kn.PythonNode
-
-        node_proxy = util.knb._PythonNodeProxy(self.node_instance)
+        node_proxy = self.backend.createNodeFromExtension(NodeApiTest.node_id)
 
         json_string_data = '{"schema": {"specs": ["string", "double"], "traits": [{"traits": {"logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.value.DefaultRowKeyValueFactory\\"}"}, "type": "simple"}, {"traits": {"logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.value.DoubleValueFactory\\"}"}, "type": "simple"}]}, "columnNames": ["RowKey", "column423"], "columnMetaData": [null, null]}'
         TABLE_SPEC_JAVA_CLASS = "org.knime.core.data.DataTableSpec"
@@ -168,61 +136,11 @@ class NodeApiTest(unittest.TestCase):
         self.assertEqual(config_bin_object["id"], BINARY_PORT_ID)
 
 
-@kn.node(
-    name="My Second Node",
-    node_type="Learner",
-    icon_path="icon.png",
-    category="/",
-    id="MyTestNode",
-)
-class MyTestNode:
-    input_ports = [
-        kn.Port(
-            type=kn.PortType.TABLE,
-            name="Input Data",
-            description=TEST_DESCR,
-        ),
-        kn.Port(
-            type=kn.PortType.TABLE,
-            name="Second input table",
-            description="We might also read data from there",
-        ),
-    ]
-
-    def __init__(self) -> None:
-        super().__init__()
-
-        self.output_ports = [
-            kn.Port(
-                type=kn.PortType.TABLE,
-                name="Output Data",
-                description="Whatever the node has produced",
-            ),
-            kn.Port(
-                type=kn.PortType.BINARY,
-                name="Some output port",
-                description="Maybe a model",
-                id=BINARY_PORT_ID,
-            ),
-        ]
-
-    @property
-    def output_view(self):
-        return kn.ViewDeclaration(
-            name="ExampleView", description="White letters on white background"
-        )
-
-    def configure(self, config_ctx, schema_1, schema_2):
-        return schema_1, ks.BinaryPortTypeSpec(id=BINARY_PORT_ID)
-
-    def execute(self, exec_context, table_1, table_2):
-        return [table_1, b"random bytes"]
-
-
 class InstanceAttributePortsTest(unittest.TestCase):
     node_id = "MyTestNode"
 
     def setUp(self):
+        util.setup_backend("mock_extension")
         self.node = kn._nodes.get(InstanceAttributePortsTest.node_id, None)
 
     def test_node_registration(self):
@@ -255,40 +173,15 @@ class PortTest(unittest.TestCase):
         self.assertIsNone(t.id)
 
 
-@kn.node(
-    name="My Third Node",
-    node_type="Learner",
-    icon_path="icon.png",
-    category="/",
-    id="My Third Node",
-)
-@kn.input_table(name="Input Data", description=TEST_DESCR)
-@kn.input_table(
-    name="Second input table", description="We might also read data from there"
-)
-@kn.output_table(name="Output Data", description="Whatever the node has produced")
-@kn.output_binary(
-    name="Some output port",
-    description="Maybe a model",
-    id=BINARY_PORT_ID,
-)
-def my_node_generating_func():
-    class MyHiddenNode:
-        def configure(self, config_ctx, input):
-            return input
-
-        def execute(self, exec_ctx, input):
-            return input
-
-    return MyHiddenNode()
-
-
 class NodeFactoryApiTest(unittest.TestCase):
     node_id = "My Third Node"
 
     def setUp(self):
+        util.setup_backend("mock_extension")
         self.node = kn._nodes.get(NodeFactoryApiTest.node_id, None)
         self.node_instance = self.node.node_factory()
+        from mock_extension import my_node_generating_func
+
         self.node_instance_direct = my_node_generating_func()
 
     def test_node_registration(self):
@@ -326,50 +219,15 @@ class DoubleInputPortsTest(unittest.TestCase):
                 ]
 
 
-# test case where the init method adds a port
-@kn.node(
-    name="My Fourth Node",
-    node_type="Learner",
-    icon_path="icon.png",
-    category="/",
-    id="My Fourth Node",
-)
-@kn.output_table(name="Output Data", description="Whatever the node has produced")
-class MyPropertyOverridingNode:
-    input_ports = [
-        kn.Port(
-            type=kn.PortType.TABLE,
-            name="Overriden Input Data",
-            description=TEST_DESCR,
-        )
-    ] * 3
-
-    def __init__(self):
-        self.input_ports = self.input_ports + [
-            kn.Port(
-                type=kn.PortType.TABLE,
-                name="Fourth input table",
-                description="We might also read data from there",
-            )
-        ]
-
-        self.output_ports = self.output_ports + [
-            kn.Port(
-                type=kn.PortType.TABLE,
-                name="New output table",
-                description="Blupp",
-            )
-        ]
-
-    # no config and execute needed for this test class
-
-
 class OverriddenInputPortsTest(unittest.TestCase):
     node_id = "My Fourth Node"
 
     def setUp(self):
+        util.setup_backend("mock_extension")
         self.node = kn._nodes.get(OverriddenInputPortsTest.node_id, None)
         self.node_instance = self.node.node_factory()
+        from mock_extension import MyPropertyOverridingNode
+
         self.node_instance_direct = MyPropertyOverridingNode()
 
     def test_has_no_node_view(self):
@@ -390,23 +248,11 @@ class OverriddenInputPortsTest(unittest.TestCase):
             self.assertTrue(all(p.type == kn.PortType.TABLE for p in n.output_ports))
 
 
-# test case where no ports are defined at all
-@kn.node(
-    name="My Node Without Ports",
-    node_type="Learner",
-    icon_path="icon.png",
-    category="/",
-    id="My Node Without Ports",
-)
-class NodeWithoutPorts:
-    pass
-    # no config and execute needed for this test class
-
-
 class NodeWithoutPortsTest(unittest.TestCase):
     node_id = "My Node Without Ports"
 
     def setUp(self):
+        self.backend = util.setup_backend("mock_extension")
         self.node = kn._nodes.get(NodeWithoutPortsTest.node_id, None)
         self.node_instance = self.node.node_factory()
 
@@ -429,8 +275,8 @@ class NodeWithoutPortsTest(unittest.TestCase):
     def test_create_node_proxy(self):
         from knime_node_backend import _PythonNodeProxy
 
-        _PythonNodeProxy(self.node_instance)
-        _PythonNodeProxy(self.node)
+        _PythonNodeProxy(self.node_instance, self.backend._port_type_registry)
+        _PythonNodeProxy(self.node, self.backend._port_type_registry)
 
 
 if __name__ == "__main__":
