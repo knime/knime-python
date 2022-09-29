@@ -131,7 +131,7 @@ class Port:
         """
         Perform validation after __init__
         """
-        if self.type is PortType.BINARY and self.id is None:
+        if self.type == PortType.BINARY and self.id is None:
             raise TypeError(f"{type(self)}s of type BINARY must have a unique 'id' set")
 
 

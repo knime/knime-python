@@ -214,7 +214,7 @@ class _PortTypeRegistry:
         elif (
             class_name == "org.knime.python3.nodes.ports.PythonBinaryBlobPortObjectSpec"
         ):
-            if port.type is kn.PortType.BINARY:
+            if port.type == kn.PortType.BINARY:
                 bpos = ks.BinaryPortObjectSpec.from_knime_dict(data)
                 assert (
                     bpos.id == port.id
@@ -265,7 +265,7 @@ class _PortTypeRegistry:
         class_name = port_object.getJavaClassName()
 
         if class_name == "org.knime.core.node.BufferedDataTable":
-            assert port.type is kn.PortType.TABLE
+            assert port.type == kn.PortType.TABLE
             java_source = port_object.getDataSource()
             return kat.ArrowSourceTable(kg.data_source_mapper(java_source))
         elif (
@@ -274,7 +274,7 @@ class _PortTypeRegistry:
         ):
             file = port_object.getFilePath()
             spec = self.spec_to_python(port_object.getSpec(), port)
-            if port.type is kn.PortType.BINARY:
+            if port.type == kn.PortType.BINARY:
                 with open(file, "rb") as f:
                     return f.read()
             else:  # custom port object
@@ -286,7 +286,7 @@ class _PortTypeRegistry:
     def port_object_from_python(
         self, obj, file_creator, port: kn.Port
     ) -> _PythonPortObject:
-        if port.type is kn.PortType.TABLE:
+        if port.type == kn.PortType.TABLE:
             if isinstance(obj, kt._TabularView):
                 obj = obj.get()
             class_name = "org.knime.core.node.BufferedDataTable"
@@ -304,7 +304,7 @@ class _PortTypeRegistry:
                 )
 
             return _PythonTablePortObject(class_name, java_data_sink)
-        elif port.type is kn.PortType.BINARY:
+        elif port.type == kn.PortType.BINARY:
             if not isinstance(obj, bytes):
                 tb = None
                 raise TypeError(
