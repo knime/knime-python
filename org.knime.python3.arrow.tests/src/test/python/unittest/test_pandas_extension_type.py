@@ -1,5 +1,6 @@
 import datetime
 import os
+import tempfile
 import unittest
 from typing import Type, Union
 import extension_types  # import to register column converters
@@ -349,7 +350,7 @@ class DummyJavaDataSinkFactory:
         for sink in self._sinks:
             os.remove(sink)
 
-    def create_data_sink(self):
+    def create_data_sink(self) -> ka.ArrowDataSink:
         dummy_java_sink = DummyJavaDataSink()
         dummy_writer = DummyWriter()
         arrow_sink = ka.ArrowDataSink(dummy_java_sink)
@@ -360,9 +361,9 @@ class DummyJavaDataSinkFactory:
 
 class DummyJavaDataSink:
     def __init__(self) -> None:
-        import os
-
-        self._path = os.path.join(os.curdir, "test_data_sink")
+        # delete must be false so that the file can be opened
+        file = tempfile.NamedTemporaryFile(delete=False)
+        self._path = file.name
 
     def getAbsolutePath(self):
         return self._path
@@ -397,14 +398,6 @@ class DummyConverter:
 
     def decode(self, storage):
         return storage
-
-
-def _create_dummy_arrow_sink():
-    dummy_java_sink = DummyJavaDataSink()
-    dummy_writer = DummyWriter()
-    arrow_sink = ka.ArrowDataSink(dummy_java_sink)
-    arrow_sink._writer = dummy_writer
-    return arrow_sink
 
 
 class PyArrowExtensionTypeTest(unittest.TestCase):
@@ -704,8 +697,9 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         df.drop(dict_columns, axis=1, inplace=True)
         df.reset_index(inplace=True, drop=True)  # drop index as it messes up equality
 
-        with _create_dummy_arrow_sink() as arrow_sink:
-            t = kat.ArrowBatchWriteTable(arrow_sink)
+        with DummyJavaDataSinkFactory() as sink_creator:
+            backend = kat.ArrowBackend(sink_creator)
+            t = backend.batch_write_table()
 
             mid = int(len(df) / 2)
             df1 = df[:mid]
@@ -713,6 +707,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
             # Create batch write table, fill it with batches
             t.append(df1)
             t.append(df2)
+            backend.close()
 
     def test_send_timestamp_to_knime(self):
         """
@@ -740,26 +735,29 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
                     }
                     """,
         )
-        arrow_backend = kat.ArrowBackend(_create_dummy_arrow_sink)
+        with DummyJavaDataSinkFactory() as sink_creator:
+            arrow_backend = kat.ArrowBackend(sink_creator)
 
-        # Create table
-        rng = pd.date_range("2015-02-24", periods=5e5, freq="s")
-        df = pd.DataFrame({"Date": rng[:5], "Val": np.random.randn(len(rng[:5]))})
+            # Create table
+            rng = pd.date_range("2015-02-24", periods=5e5, freq="s")
+            df = pd.DataFrame({"Date": rng[:5], "Val": np.random.randn(len(rng[:5]))})
 
-        A = arrow_backend.write_table(df)
-        self.assertEqual("<class 'knime_arrow_table.ArrowWriteTable'>", str(type(A)))
+            A = arrow_backend.write_table(df)
+            self.assertEqual(
+                "<class 'knime_arrow_table.ArrowWriteTable'>", str(type(A))
+            )
 
-        import knime_schema as ks
+            import knime_schema as ks
 
-        self.assertEqual(
-            ks.LogicalType(
-                '{"value_factory_class":"org.knime.core.data.v2.time.LocalDateTimeValueFactory"}',
-                ks.struct(ks.int64(), ks.int64()),
-            ),
-            knat._convert_arrow_schema_to_knime(A._schema)[0].ktype,
-        )
+            self.assertEqual(
+                ks.LogicalType(
+                    '{"value_factory_class":"org.knime.core.data.v2.time.LocalDateTimeValueFactory"}',
+                    ks.struct(ks.int64(), ks.int64()),
+                ),
+                knat._convert_arrow_schema_to_knime(A._schema)[0].ktype,
+            )
 
-        arrow_backend.close()
+            arrow_backend.close()
 
     def test_timestamp_columns(self):
         """
@@ -822,8 +820,9 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         Tests if list extensiontypes can handle missing values
         @return:
         """
-        with _create_dummy_arrow_sink() as arrow_sink:
-            t = kat.ArrowBatchWriteTable(arrow_sink)
+        with DummyJavaDataSinkFactory() as sink_creator:
+            backend = kat.ArrowBackend(sink_creator)
+            t = backend.batch_write_table()
 
             # Create table
 
@@ -882,6 +881,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
             self.assertEqual(
                 "<class 'knime_arrow_table.ArrowBatchWriteTable'>", str(type(t))
             )
+            backend.close()
 
     def test_dict_encoding_extension_array(self):
         """
@@ -989,22 +989,24 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         self.assertEqual(correct_chunk_start_indices, calc)
 
     def test_categorical_types(self):
-        arrow_backend = kat.ArrowBackend(_create_dummy_arrow_sink)
+        with DummyJavaDataSinkFactory() as sink_creator:
+            arrow_backend = kat.ArrowBackend(sink_creator)
 
-        # Create table
-        df = pd.DataFrame({"A": ["a", "b", "c", "d"]})
-        df["B"] = df["A"].astype("category")
-        raw_cat = pd.Categorical(
-            ["a", "b", "c", "a"], categories=["b", "c", "d"], ordered=False
-        )
-        df["C"] = pd.Series(raw_cat)
-        A = arrow_backend.write_table(df)
-        self.assertEqual(str(A.column_names), "['<Row Key>', 'A', 'B', 'C']")
-        # check if categorical columns where converted to strings
-        self.assertEqual(
-            str(A._schema.types),
-            "[DataType(string), DataType(string), DataType(string), DataType(string)]",
-        )
+            # Create table
+            df = pd.DataFrame({"A": ["a", "b", "c", "d"]})
+            df["B"] = df["A"].astype("category")
+            raw_cat = pd.Categorical(
+                ["a", "b", "c", "a"], categories=["b", "c", "d"], ordered=False
+            )
+            df["C"] = pd.Series(raw_cat)
+            A = arrow_backend.write_table(df)
+            self.assertEqual(str(A.column_names), "['<Row Key>', 'A', 'B', 'C']")
+            # check if categorical columns where converted to strings
+            self.assertEqual(
+                str(A._schema.types),
+                "[DataType(string), DataType(string), DataType(string), DataType(string)]",
+            )
+            arrow_backend.close()
 
 
 if __name__ == "__main__":
