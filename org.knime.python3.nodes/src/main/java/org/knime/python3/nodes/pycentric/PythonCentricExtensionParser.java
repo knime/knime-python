@@ -140,7 +140,7 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
         final StaticExtensionInfo staticInfo, final PythonNodeGatewayFactory gatewayFactory) {
         var categoriesJson = backend.retrieveCategoriesAsJson();
         var nodesJson = backend.retrieveNodesAsJson();
-        return new FluentPythonNodeExtension(staticInfo.m_id, staticInfo.m_moduleName,
+        return new FluentPythonNodeExtension(staticInfo.m_id,
             parseNodes(nodesJson, staticInfo.m_extensionPath),
             parseCategories(categoriesJson, staticInfo.m_extensionPath), gatewayFactory, staticInfo.m_version);
     }
