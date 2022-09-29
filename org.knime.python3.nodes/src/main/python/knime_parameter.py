@@ -50,7 +50,7 @@ Contains the implementation of the Parameter Dialogue API for building native Py
 """
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Any, Callable, Dict, List
 import knime_schema as ks
 import logging
 
@@ -582,6 +582,12 @@ class _BaseMultiChoiceParameter(_BaseParameter):
     which allow for single or multiple selection from the provided list of options.
     """
 
+    def default_validator(self, value):
+        if not isinstance(value, str):
+            raise TypeError(
+                f"{value} is of type {type(value)}, but should be of type string."
+            )
+
     def __init__(
         self,
         label=None,
@@ -603,12 +609,6 @@ class StringParameter(_BaseMultiChoiceParameter):
     """
     Parameter class for primitive string types.
     """
-
-    def default_validator(self, value):
-        if not isinstance(value, str):
-            raise TypeError(
-                f"{value} is of type {type(value)}, but should be of type string."
-            )
 
     def __init__(
         self,
@@ -674,7 +674,7 @@ class EnumParameterOptions(Enum):
         class DefaultEnumOption(EnumParameterOptions):
             DEFAULT_OPTION = (
                 "Default",
-                "This is the default option when additional options have not been provided.",
+                "This is the default option, since additional options have not been provided.",
             )
 
         return DefaultEnumOption
@@ -692,7 +692,11 @@ class EnumParameter(_BaseMultiChoiceParameter):
     Parameter class for multiple-choice parameter types. Replicates and extends the enum functionality
     previously implemented as part of StringParameter.
 
-    A subclass of EnumParameterOptions should be provided as the enum parameter.
+    A subclass of EnumParameterOptions should be provided as the enum parameter, which should contain
+    class attributes of the form OPTION_NAME = (OPTION_LABEL, OPTION_DESCRIPTION). The corresponding
+    option attributes can be accessed via MyOptions.OPTION_NAME.name, .label, and .description respectively.
+
+    The .name attribute of each option is used as the selection constant, e.g. MyOptions.OPTION_NAME.name == "OPTION_NAME".
 
     Example:
         class CoffeeOptions(EnumParameterOptions):
@@ -717,11 +721,14 @@ class EnumParameter(_BaseMultiChoiceParameter):
         validator=None,
         since_version=None,
     ):
-        if enum is None:
+        if enum is None or len(enum.get_all_options()) == 0:
             self._enum = EnumParameterOptions._get_default_option()
             default_value = self._enum.DEFAULT_OPTION.name
         else:
             self._enum = enum
+            if default_value is None:
+                default_value = self._enum.get_all_options()[0].name
+
         super().__init__(label, description, default_value, validator, since_version)
 
     def _generate_description(self):
