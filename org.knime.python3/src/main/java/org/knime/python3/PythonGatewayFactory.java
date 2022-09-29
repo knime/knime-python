@@ -85,7 +85,7 @@ public interface PythonGatewayFactory {
      * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
      * @param <E> the type of PythonEntryPoint customized by the customizer
      */
-    public interface EntryPointCustomizer<E extends PythonEntryPoint> {
+    interface EntryPointCustomizer<E extends PythonEntryPoint> {
 
         /**
          * Customizes the entry point e.g. by calling setup methods and the like.

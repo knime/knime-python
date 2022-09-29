@@ -60,6 +60,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.stream.Stream;
 
 import org.knime.core.columnar.arrow.ArrowColumnStoreFactory;
 import org.knime.core.data.filestore.FileStore;
@@ -327,9 +328,6 @@ final class CloseablePythonNodeProxy
     @Override
     public PortObjectSpec[] configure(final PortObjectSpec[] inSpecs, final FlowVariablesProxy flowVariablesProxy,
         final WarningConsumer warningConsumer) throws InvalidSettingsException {
-        final PythonPortObjectSpec[] serializedInSpecs = Arrays.stream(inSpecs)//
-            .map(PythonPortObjectTypeRegistry::convertToPythonPortObjectSpec)//
-            .toArray(PythonPortObjectSpec[]::new);
 
         final var failure = new FailureState();
 
@@ -381,6 +379,10 @@ final class CloseablePythonNodeProxy
             }
             // TODO: add flow variables
         };
+
+        final var serializedInSpecs = Stream.of(inSpecs)//
+                .map(PythonPortObjectTypeRegistry::convertToPythonPortObjectSpec)//
+                .toArray(PythonPortObjectSpec[]::new);
 
         final var serializedOutSpecs = m_proxy.configure(serializedInSpecs, pythonConfigContext);
         failure.throwIfFailure();

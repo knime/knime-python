@@ -408,11 +408,8 @@ public final class PythonPortObjects {
         } else if (identifier.startsWith("PortType.BINARY")) {
             return PythonBinaryBlobFileStorePortObject.TYPE;
         } else {
-            // TODO verify format?
             return PythonBinaryBlobFileStorePortObject.TYPE;
         }
-
-//        throw new IllegalStateException("Found unknown PortType: " + identifier);
     }
 
     /**
