@@ -49,6 +49,7 @@ Contains the implementation of the Parameter Dialogue API for building native Py
 @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
 """
 from abc import ABC, abstractmethod
+from enum import Enum
 from typing import Any, Callable, Dict, List, Tuple
 import knime_schema as ks
 import logging
@@ -634,58 +635,106 @@ class StringParameter(_BaseMultiChoiceParameter):
         return schema
 
 
+class EnumParameterOptions(Enum):
+    """
+    A helper class for creating EnumParameter options, based on Python's Enum class.
+
+    Developers should subclass this class, and provide enumeration options as class attributes of the subclass,
+    of the form OPTION_NAME = (OPTION_LABEL, OPTION_DESCRIPTION).
+
+    Enum option objects can be accessed as attributes of the EnumParameterOptions subclass, e.g. MyEnum.OPTION_NAME.
+    Each option object has the following attributes:
+    - name: the name of the class attribute, e.g. "OPTION_NAME", which is used as the selection constant;
+    - label: the label of the option, displayed in the configuration dialogue of the node;
+    - description: the description of the option, used along with the label to generate a list of the available options
+    in the Node Description and in the configuration dialogue of the node.
+
+    Example:
+        class CoffeeOptions(EnumParameterOptions):
+            CLASSIC = ("Classic", "The classic chocolatey taste, with notes of bitterness and wood.")
+            FRUITY = ("Fruity", "A fruity taste, with notes of berries and citrus.")
+            WATERY = ("Watery", "A watery taste, with notes of water and wetness.")
+    """
+
+    def __init__(self, label, dscription):
+        self.label = label
+        self.description = dscription
+
+    @classmethod
+    def _generate_options_description(cls):
+        options_description = "\n**Available options:**\n\n"
+        for attr in dir(cls):
+            if not attr.startswith("_"):
+                options_description += f"- {cls[attr].label}: {cls[attr].description}\n"
+
+        return options_description
+
+    @classmethod
+    def _get_default_option(cls):
+        class DefaultEnumOption(EnumParameterOptions):
+            DEFAULT_OPTION = (
+                "Default",
+                "This is the default option when additional options have not been provided.",
+            )
+
+        return DefaultEnumOption
+
+    @classmethod
+    def get_all_options(cls):
+        """
+        Returns a list of all options defined in the EnumParameterOptions subclass.
+        """
+        return [getattr(cls, attr) for attr in dir(cls) if not attr.startswith("_")]
+
+
 class EnumParameter(_BaseMultiChoiceParameter):
     """
-    Parameter class for multiple-choice parameter types.
-    Expects a list of triples of strings of the form:
-    (selection_value, selection_label, selection_description).
+    Parameter class for multiple-choice parameter types. Replicates and extends the enum functionality
+    previously implemented as part of StringParameter.
 
-    Replicates and extends the enum functionality previously implemented as part of StringParameter.
+    A subclass of EnumParameterOptions should be provided as the enum parameter.
+
+    Example:
+        class CoffeeOptions(EnumParameterOptions):
+            CLASSIC = ("Classic", "The classic chocolatey taste, with notes of bitterness and wood.")
+            FRUITY = ("Fruity", "A fruity taste, with notes of berries and citrus.")
+            WATERY = ("Watery", "A watery taste, with notes of water and wetness.")
+
+        coffee_selection_param = knext.EnumParameter(
+            label="Coffee Selection",
+            description="Select the type of coffee you like to drink.",
+            default_value=CoffeeOptions.CLASSIC.name,
+            enum=CoffeeOptions,
+        )
     """
 
     def __init__(
         self,
         label=None,
         description=None,
-        default_value: str = "",
-        enum: List[Tuple[str, str, str]] = [
-            (
-                "",
-                "Default option",
-                "The default option for EnumParameter when additional options have not been provided.",
-            )
-        ],
+        default_value: str = None,
+        enum: EnumParameterOptions = None,
         validator=None,
         since_version=None,
     ):
-        self._enum = enum
+        if enum is None:
+            self._enum = EnumParameterOptions._get_default_option()
+            default_value = self._enum.DEFAULT_OPTION.name
+        else:
+            self._enum = enum
         super().__init__(label, description, default_value, validator, since_version)
 
-    def _generate_description_with_options(self):
-        """
-        Collates the developer-provided option descriptions into a single Markdown string.
-
-        The Markdown can optionally be parsed into HTML in order to be correctly displayed
-        in the configuration dialogue of the node.
-        """
-        description = "\n**Available options:**\n\n"
-        description += "\n".join(
-            [
-                f"- {enum_label}: {enum_description}"
-                for _, enum_label, enum_description in self._enum
-            ]
-        )
-        return self.__doc__ + description
+    def _generate_description(self):
+        return self.__doc__ + self._enum._generate_options_description()
 
     def _extract_schema(self, extension_version=None, specs=None):
         schema = super()._extract_schema(specs)
-        schema["description"] = self._generate_description_with_options()
-        schema["oneOf"] = [{"const": e[0], "title": e[1]} for e in self._enum]
+        schema["description"] = self._generate_description()
+        schema["oneOf"] = [{"const": e.name, "title": e.label} for e in self._enum]
         return schema
 
     def _extract_description(self, parent_scope: _Scope):
-        description = self._generate_description_with_options()
-        return {"name": self._label, "description": description}
+        return {"name": self._label, "description": self._generate_description()}
 
 
 class _BaseColumnParameter(_BaseParameter):
