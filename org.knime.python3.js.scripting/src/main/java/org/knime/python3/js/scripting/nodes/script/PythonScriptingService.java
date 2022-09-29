@@ -65,6 +65,7 @@ import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.webui.data.DataServiceContext;
 import org.knime.python3.js.scripting.nodes.script.PythonScriptingService.ExecutableOption.ExecutableOptionType;
 import org.knime.scripting.editor.ScriptingService;
+import org.knime.scripting.editor.lsp.LanguageServerProxy;
 
 /**
  * A special {@link ScriptingService} for the Python scripting node.
@@ -82,9 +83,19 @@ final class PythonScriptingService extends ScriptingService {
     /** Create a new {@link PythonScriptingService}. */
     @SuppressWarnings("resource") // TODO(AP-19357) fix this
     PythonScriptingService() {
-        super(PythonLanguageServer.instance().connect());
+        super(connectToLanguageServer());
         // TODO(AP-19357) stop the language server when the dialog is closed
-        // TODO(AP-19338) make language server configurable
+    }
+
+    private static LanguageServerProxy connectToLanguageServer() {
+        try {
+            // TODO(AP-19338) make language server configurable
+            return PythonLanguageServer.instance().connect();
+        } catch (final Exception e) {
+            // TODO(AP-19338) Handle better if the language server can't be used for any reason
+            NodeLogger.getLogger(PythonScriptingService.class).error(e);
+            return null;
+        }
     }
 
     private ExecutableOption getExecutableOption(final String id) {
