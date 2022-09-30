@@ -1,4 +1,3 @@
-from multiprocessing.sharedctypes import Value
 import unittest
 
 import knime_node_backend as knb
@@ -10,11 +9,11 @@ import test_utilities
 
 
 class AnotherPortObjectSpec(knext.PortObjectSpec):
-    def to_knime_dict(self) -> dict:
+    def serialize(self) -> dict:
         return {}
 
     @classmethod
-    def from_knime_dict(data):
+    def deserialize(data):
         return AnotherPortObjectSpec()
 
 
@@ -44,11 +43,11 @@ class PortTypeRegistryTest(unittest.TestCase):
         def __init__(self, data: str) -> None:
             self._data = data
 
-        def to_knime_dict(self) -> dict:
+        def serialize(self) -> dict:
             return {"test_data": self._data}
 
         @classmethod
-        def from_knime_dict(
+        def deserialize(
             cls, data: dict
         ) -> "PortTypeRegistryTest.TestPortObjectSpec":
             return cls(data["test_data"])

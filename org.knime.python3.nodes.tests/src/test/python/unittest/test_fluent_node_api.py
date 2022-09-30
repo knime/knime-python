@@ -103,7 +103,7 @@ class NodeApiTest(unittest.TestCase):
         )
 
         config_table_schema = json.loads(configuration[0].toJsonString())
-        schema = ks.Schema.from_knime_dict(config_table_schema)
+        schema = ks.Schema.deserialize(config_table_schema)
         self.assertIsInstance(schema, ks.Schema)
         column = schema._columns[0]
         self.assertEqual(column.ktype, ks.double())
@@ -118,7 +118,7 @@ class NodeApiTest(unittest.TestCase):
         )
 
         config_single_column = json.loads(configuration[1].toJsonString())
-        schema = ks.Schema.from_knime_dict(config_single_column)
+        schema = ks.Schema.deserialize(config_single_column)
         self.assertIsInstance(schema, ks.Schema)
         column = schema._columns[0]
         self.assertEqual(column.ktype, ks.string())

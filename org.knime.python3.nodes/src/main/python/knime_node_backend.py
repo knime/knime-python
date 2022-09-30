@@ -210,12 +210,12 @@ class _PortTypeRegistry:
         data = json.loads(spec.toJsonString())
         if class_name == "org.knime.core.data.DataTableSpec":
             assert port.type == kn.PortType.TABLE
-            return ks.Schema.from_knime_dict(data)
+            return ks.Schema.deserialize(data)
         elif (
             class_name == "org.knime.python3.nodes.ports.PythonBinaryBlobPortObjectSpec"
         ):
             if port.type == kn.PortType.BINARY:
-                bpos = ks.BinaryPortObjectSpec.from_knime_dict(data)
+                bpos = ks.BinaryPortObjectSpec.deserialize(data)
                 assert (
                     bpos.id == port.id
                 ), f"Expected binary input port ID {port.id} but got {bpos.id}"
@@ -228,7 +228,7 @@ class _PortTypeRegistry:
                 assert (
                     spec_id in self._port_types_by_id
                 ), f"There is no port type with id '{spec_id}' registered."
-                return port.type.spec_class.from_knime_dict(data["data"])
+                return port.type.spec_class.deserialize(data["data"])
 
         raise TypeError("Unsupported PortObjectSpec found in Python, got " + class_name)
 
@@ -239,7 +239,7 @@ class _PortTypeRegistry:
             if isinstance(spec, ks.Column):
                 spec = ks.Schema.from_columns(spec)
             assert isinstance(spec, ks.Schema)
-            data = spec.to_knime_dict()
+            data = spec.serialize()
             class_name = "org.knime.core.data.DataTableSpec"
         elif port.type == kn.PortType.BINARY:
             assert isinstance(spec, ks.BinaryPortObjectSpec)
@@ -247,7 +247,7 @@ class _PortTypeRegistry:
                 port.id == spec.id
             ), f"Expected binary output port ID {port.id} but got {spec.id}"
 
-            data = spec.to_knime_dict()
+            data = spec.serialize()
             class_name = "org.knime.python3.nodes.ports.PythonBinaryBlobPortObjectSpec"
         else:  # custom spec
             assert (
@@ -256,7 +256,7 @@ class _PortTypeRegistry:
             assert isinstance(
                 spec, port.type.spec_class
             ), f"Expected output spec of type {port.type.spec_class} but got spec of type {type(spec)}"
-            data = {"id": port.type.id, "data": spec.to_knime_dict()}
+            data = {"id": port.type.id, "data": spec.serialize()}
             class_name = "org.knime.python3.nodes.ports.PythonBinaryBlobPortObjectSpec"
 
         return _PythonPortObjectSpec(class_name, json.dumps(data))

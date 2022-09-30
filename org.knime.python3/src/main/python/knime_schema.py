@@ -502,12 +502,12 @@ class PortObjectSpec(ABC):
     """
 
     @abstractmethod
-    def to_knime_dict() -> dict:
+    def serialize() -> dict:
         pass
 
     @classmethod
     @abstractmethod
-    def from_knime_dict(cls, data: Dict):
+    def deserialize(cls, data: Dict):
         pass
 
 
@@ -532,11 +532,11 @@ class BinaryPortObjectSpec(PortObjectSpec):
     def id(self) -> str:
         return self._id
 
-    def to_knime_dict(self) -> dict:
+    def serialize(self) -> dict:
         return {"id": self._id}
 
     @classmethod
-    def from_knime_dict(cls, data):
+    def deserialize(cls, data):
         # spec is optional therefore we use get instead of __get_item__
         return cls(data["id"])
 
@@ -1002,7 +1002,7 @@ class Schema(_Columnar, PortObjectSpec):
     def __repr__(self) -> str:
         return str(self)
 
-    def to_knime_dict(self) -> Dict:
+    def serialize(self) -> Dict:
         """
         Convert this Schema into dict which can then be JSON encoded and sent to KNIME
         as result of a node's configure() method.
@@ -1027,7 +1027,7 @@ class Schema(_Columnar, PortObjectSpec):
         return _schema_to_knime_dict(schema_with_row_key.get())
 
     @classmethod
-    def from_knime_dict(cls, table_schema: dict) -> "Schema":
+    def deserialize(cls, table_schema: dict) -> "Schema":
         """
         Construct a Schema from a dict that was retrieved from KNIME in JSON encoded form
         as the input to a node's configure() method.

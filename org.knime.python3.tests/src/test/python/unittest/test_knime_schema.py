@@ -421,7 +421,7 @@ class SchemaTest(unittest.TestCase):
         s = k.Schema(types, names)
 
         with self.assertRaises(RuntimeError):
-            s.to_knime_dict()
+            s.serialize()
 
     def test_wrong_type_throws(self):
         types = [k.int32(), int, k.double(), k.string()]
@@ -487,7 +487,7 @@ class SchemaTest(unittest.TestCase):
             "Bools",
         ]
         s = k.Schema(types, names)
-        knime_schema = s.to_knime_dict()
+        knime_schema = s.serialize()
         traits = knime_schema["schema"]["traits"]
 
         # all data types must be wrapped in a logical type and first column must be row key
@@ -499,8 +499,8 @@ class SchemaTest(unittest.TestCase):
         )
 
         # check roundtrip leads to equality
-        out_s = k.Schema.from_knime_dict(knime_schema)
-        self.assert_schema_dict_equality(knime_schema, out_s.to_knime_dict())
+        out_s = k.Schema.deserialize(knime_schema)
+        self.assert_schema_dict_equality(knime_schema, out_s.serialize())
         self.assertEqual(s, out_s)
 
     def test_extension_type_wrapping(self):
@@ -513,7 +513,7 @@ class SchemaTest(unittest.TestCase):
         ]
         names = ["Date", "Time", "DateTime"]
         s = k.Schema(types, names)
-        knime_schema = s.to_knime_dict()
+        knime_schema = s.serialize()
         traits = knime_schema["schema"]["traits"]
 
         # all data types must be wrapped in a logical type and first column must be row key
@@ -521,8 +521,8 @@ class SchemaTest(unittest.TestCase):
         self.assertTrue(k._row_key_type == traits[0]["traits"]["logical_type"])
 
         # check roundtrip leads to equality
-        out_s = k.Schema.from_knime_dict(knime_schema)
-        self.assert_schema_dict_equality(knime_schema, out_s.to_knime_dict())
+        out_s = k.Schema.deserialize(knime_schema)
+        self.assert_schema_dict_equality(knime_schema, out_s.serialize())
         self.assertEqual(s, out_s)
 
     def test_list_wrapping(self):
@@ -535,7 +535,7 @@ class SchemaTest(unittest.TestCase):
         ]
         names = ["Dates", "Times", "DateTimes", "Structs"]
         s = k.Schema(types, names)
-        knime_schema = s.to_knime_dict()
+        knime_schema = s.serialize()
         traits = knime_schema["schema"]["traits"]
 
         # all data types must be wrapped in a logical type and first column must be row key
@@ -546,8 +546,8 @@ class SchemaTest(unittest.TestCase):
         )
 
         # check roundtrip leads to equality
-        out_s = k.Schema.from_knime_dict(knime_schema)
-        self.assert_schema_dict_equality(knime_schema, out_s.to_knime_dict())
+        out_s = k.Schema.deserialize(knime_schema)
+        self.assert_schema_dict_equality(knime_schema, out_s.serialize())
         self.assertEqual(s, out_s)
 
     def test_serialization_roundtrip(self):
@@ -565,9 +565,9 @@ class SchemaTest(unittest.TestCase):
         metadata = table_schema["columnMetaData"]
 
         # perform roundtrip
-        s = k.Schema.from_knime_dict(table_schema)
+        s = k.Schema.deserialize(table_schema)
         # print(s)
-        out_schema = s.to_knime_dict()
+        out_schema = s.serialize()
         # with open("out_schema.json", "wt") as f:
         #     json.dump(out_schema, f, indent=4)
 

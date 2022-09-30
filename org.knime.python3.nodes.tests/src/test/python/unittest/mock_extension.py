@@ -7,11 +7,11 @@ class TestPortObjectSpec(knext.PortObjectSpec):
     def __init__(self, data: str) -> None:
         self._data = data
 
-    def to_knime_dict(self) -> dict:
+    def serialize(self) -> dict:
         return {"test_data": self._data}
 
     @classmethod
-    def from_knime_dict(cls, data: dict) -> "TestPortObjectSpec":
+    def deserialize(cls, data: dict) -> "TestPortObjectSpec":
         return cls(data["test_data"])
 
     @property
