@@ -923,7 +923,7 @@ def _get_wrapped_type(dtype, is_row_key):
         return outer_ext_type
     # for dictionary decoded types
     elif isinstance(dtype, pa.DictionaryType):
-        logical_type = _arrow_to_knime_primitive_list_types[dtype.value_type]
+        logical_type = _arrow_to_knime_primitive_types[dtype.value_type]
         return LogicalTypeExtensionType(
             kt.get_converter(logical_type), dtype.value_type, logical_type
         )
