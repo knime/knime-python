@@ -189,7 +189,7 @@ public final class PythonArrowDataSourceFactory implements Closeable {
         final var schema =
             ColumnarValueSchemaUtils.create(ValueSchemaUtils.create(table.getSpec(), RowKeyType.CUSTOM, m_fsHandler));
         try (final var columnarTable = new ColumnarRowWriteTable(schema, m_storeFactory,
-            new ColumnarRowWriteTableSettings(true, false, -1, false, false, false))) {
+            new ColumnarRowWriteTableSettings(true, false, -1, false, false, false, 100, 4))) {
             try (final RowCursor inCursor = table.cursor();
                     final RowWriteCursor outCursor = columnarTable.createCursor()) {
                 while (inCursor.canForward()) {

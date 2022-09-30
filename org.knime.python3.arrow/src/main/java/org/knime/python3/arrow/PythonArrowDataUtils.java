@@ -104,7 +104,7 @@ import org.knime.python3.PythonException;
 public final class PythonArrowDataUtils {
 
     private static final ColumnarRowWriteTableSettings EMPTY_TABLE_SETTINGS =
-        new ColumnarRowWriteTableSettings(false, 0, false, false);
+        new ColumnarRowWriteTableSettings(false, 0, false, false, 100, 4);
 
     private static final ColumnarValueSchema EMPTY_SCHEMA = ColumnarValueSchemaUtils
         .create(ValueSchemaUtils.create(new DataTableSpec(), new ValueFactory<?, ?>[]{VoidRowKeyFactory.INSTANCE}));
