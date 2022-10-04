@@ -20,6 +20,7 @@ class BlackFormattingTest(unittest.TestCase):
             self.fail(
                 (
                     "Not all python files are correctly formatted. "
-                    "Run 'python -m black <path_to_knime-python>' to autoformat the files."
+                    "Run 'python -m black <path_to_knime-python>' to autoformat the files.\n"
+                    + res.stderr.decode()
                 )
             )
