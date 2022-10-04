@@ -47,9 +47,7 @@ class PortTypeRegistryTest(unittest.TestCase):
             return {"test_data": self._data}
 
         @classmethod
-        def deserialize(
-            cls, data: dict
-        ) -> "PortTypeRegistryTest.TestPortObjectSpec":
+        def deserialize(cls, data: dict) -> "PortTypeRegistryTest.TestPortObjectSpec":
             return cls(data["test_data"])
 
         @property
