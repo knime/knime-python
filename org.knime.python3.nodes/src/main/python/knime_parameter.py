@@ -662,10 +662,9 @@ class EnumParameterOptions(Enum):
 
     @classmethod
     def _generate_options_description(cls):
-        options_description = "\n**Available options:**\n\n"
-        for attr in dir(cls):
-            if not attr.startswith("_"):
-                options_description += f"- {cls[attr].label}: {cls[attr].description}\n"
+        options_description = "\n\n**Available options:**\n\n"
+        for member in cls._member_names_:
+            options_description += f"- {cls[member].label}: {cls[member].description}\n"
 
         return options_description
 
