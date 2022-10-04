@@ -267,6 +267,18 @@ def _register_extension_types():
                 """,
     )
 
+    kt.register_python_value_factory(
+        "knime.types.builtin",
+        "DenseByteVectorValueFactory",
+        '"variable_width_binary"',
+        """
+                {
+                    "type": "simple",
+                    "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.value.DenseByteVectorValueFactory\\"}" }
+                }
+                """,
+    )
+
 
 # ----------------------------------------------------------
 
@@ -740,6 +752,21 @@ class ProxyTests(unittest.TestCase):
             pyarrow_extension_type._converter.__class__, MyLocalTimeValueFactory
         )
         self.assertEqual(pyarrow_extension_type.__class__, kat.ProxyExtensionType)
+
+
+    def test_print_byte_vector(self):
+        _register_extension_types()
+
+        import knime.types.builtin as et
+
+        knime_type = k.logical(et.DenseByteVector)
+
+        import pandas as pd
+
+        df = pd.DataFrame()
+        v = "This is a byte 🖤 string".encode()
+        df["byte_vectors"] = pd.Series([v, v, v], dtype=knime_type.to_pandas())
+        print(df)
 
 
 if __name__ == "__main__":

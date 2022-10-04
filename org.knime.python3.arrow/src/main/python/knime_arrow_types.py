@@ -736,11 +736,11 @@ class KnimeExtensionArray(pa.ExtensionArray):
         series = self.storage.to_pandas()
         return series.apply(self.type.decode, convert_dtype=False)
 
-    def to_numpy(self):
+    def to_numpy(self, dtype=None):
         # TODO same as for to_pandas
         ndarray = self.storage.to_numpy(zero_copy_only=False)
         # TODO we might need different converters for different libraries
-        return np.array([self.type.decode(x) for x in ndarray])
+        return np.array([self.type.decode(x) for x in ndarray], dtype=dtype)
 
 
 class KnimeExtensionScalar:
