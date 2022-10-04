@@ -603,10 +603,6 @@ class KnimeLogHandler(logging.StreamHandler):
         if _log_callback is not None:
             msg = self.format(record)
 
-            # Ignore logs from the clientserver to prevent a deadlock
-            if record.name == "py4j.clientserver":
-                return
-
             if record.levelno >= logging.ERROR:
                 severity = "error"
             elif record.levelno >= logging.WARNING:
@@ -667,6 +663,8 @@ if __name__ == "__main__":
     py4j.clientserver.server_connection_stopped.connect(
         lambda *args, **kwargs: backend._main_loop.exit()
     )
+    # suppress py4j logs
+    logging.getLogger("py4j").setLevel(logging.ERROR)
     logging.getLogger().setLevel(logging.DEBUG)
     logging.getLogger().addHandler(KnimeLogHandler(backend))
 
