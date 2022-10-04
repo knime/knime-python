@@ -52,6 +52,7 @@ import knime_node_table as _kt
 import knime_node as _kn
 import knime_schema as _ks
 import knime_views as _kv
+import knime_parameter as _kp
 
 # re-exporting symbols so that "import knime_extension" allows the user to conduct every KAP-facing call via this interface
 
@@ -64,6 +65,8 @@ StringParameter = _kn.StringParameter
 parameter_group = _kn.parameter_group
 ColumnParameter = _kn.ColumnParameter
 MultiColumnParameter = _kn.MultiColumnParameter
+EnumParameter = _kp.EnumParameter
+EnumParameterOptions = _kp.EnumParameterOptions
 
 PortType = _kn.PortType
 Port = _kn.Port
