@@ -56,7 +56,6 @@ import knime_gateway as kg
 import knime_node as kn
 import knime_parameter as kp
 import knime_schema as ks
-import knime_markdown_parser as kmd
 
 import knime_node_arrow_table as kat
 import knime_node_table as kt
@@ -70,8 +69,6 @@ import collections
 from py4j.java_gateway import JavaClass
 from py4j.java_collections import ListConverter
 import py4j.clientserver
-
-MARKDOWN_PARSER = kmd.KnimeMarkdownParser()
 
 # TODO: register extension types
 
@@ -337,19 +334,6 @@ class _PortTypeRegistry:
             return _PythonBinaryPortObject(class_name, file_creator(), serialized, spec)
 
 
-def parse_parameter_descriptions(schema_dict):
-    """
-    Recursively parse "description" fields of the provided JSON dict from Markdown to HTML.
-
-    The parsing is done in-place, no value is returned.
-    """
-    for key in schema_dict:
-        if isinstance(schema_dict[key], dict):
-            parse_parameter_descriptions(schema_dict[key])
-        elif key == "description":
-            schema_dict[key] = MARKDOWN_PARSER.parse_fulldescription(schema_dict[key])
-
-
 class _PythonNodeProxy:
     def __init__(
         self, node: kn.PythonNode, port_type_registry: _PortTypeRegistry
@@ -360,6 +344,13 @@ class _PythonNodeProxy:
         self._node = node
         self._num_outports = len(node.output_ports)
         self._port_type_registry = port_type_registry
+
+        try:
+            from knime_markdown_parser import KnimeMarkdownParser
+
+            self._knime_parser = KnimeMarkdownParser()
+        except ModuleNotFoundError:
+            self._knime_parser = FallBackMarkdownParser()
 
     def getDialogRepresentation(
         self,
@@ -377,9 +368,23 @@ class _PythonNodeProxy:
             "ui_schema": kp.extract_ui_schema(self._node, extension_version),
         }
 
-        parse_parameter_descriptions(json_forms_dict["schema"])
+        self._parse_parameter_descriptions(json_forms_dict["schema"])
 
         return json.dumps(json_forms_dict)
+
+    def _parse_parameter_descriptions(self, schema_dict):
+        """
+        Recursively parse "description" fields of the provided JSON dict from Markdown to HTML.
+
+        Parsing is done in-place, no value is returned.
+        """
+        for key in schema_dict:
+            if isinstance(schema_dict[key], dict):
+                self._parse_parameter_descriptions(schema_dict[key])
+            elif key == "description":
+                schema_dict[key] = self._knime_parser.parse_fulldescription(
+                    schema_dict[key]
+                )
 
     def _specs_to_python(self, specs):
         return [
