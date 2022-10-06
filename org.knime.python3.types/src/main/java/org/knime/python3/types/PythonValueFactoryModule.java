@@ -61,21 +61,24 @@ public final class PythonValueFactoryModule implements Iterable<PythonValueFacto
 
     private final Path m_modulePath;
 
+    private final String m_moduleName;
+
     private final List<PythonValueFactory> m_factories;
 
-    PythonValueFactoryModule(final Path modulePath, final PythonValueFactory[] factories) {
+    PythonValueFactoryModule(final Path modulePath, final String moduleName, final PythonValueFactory[] factories) {
         m_modulePath = modulePath;
+        m_moduleName = moduleName;
         m_factories = List.of(factories);
     }
 
     @Override
     public Path getParentDirectory() {
-        return m_modulePath.getParent();
+        return m_modulePath;
     }
 
     @Override
     public String getModuleName() {
-        return m_modulePath.getFileName().toString().replace(".py", "");
+        return m_moduleName;
     }
 
     @Override

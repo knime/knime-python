@@ -48,6 +48,11 @@
    </element>
 
    <element name="Module">
+      <annotation>
+         <documentation>
+            Note that each Python module containing PythonValueFactories needs to be in its own &lt;Module&gt; element, even if the Python modules are located in the same directory on disk (i.e. have the same &quot;modulePath&quot;).
+         </documentation>
+      </annotation>
       <complexType>
          <sequence minOccurs="1" maxOccurs="unbounded">
             <element ref="PythonValueFactory"/>
@@ -55,11 +60,22 @@
          <attribute name="modulePath" type="string" use="required">
             <annotation>
                <documentation>
-                  Path to the module containing one or more PythonValueFactories.
+                  Path to be put on the Python path when importing the module containing PythonValueFactories.
+
+The path should point to a folder that contains the folder structure &quot;knime/types/ext/&quot;. Inside &quot;ext&quot; there should be the module containing the PythonValueFactories. Specify its name in the &quot;moduleName&quot; attribute.
                </documentation>
                <appinfo>
                   <meta.attribute kind="resource"/>
                </appinfo>
+            </annotation>
+         </attribute>
+         <attribute name="moduleName" type="string" use="required">
+            <annotation>
+               <documentation>
+                  Module name that should be imported to find the PythonValueFactories.
+
+This should be of the form &quot;knime.types.ext.mymodule&quot; for extension types.
+               </documentation>
             </annotation>
          </attribute>
       </complexType>

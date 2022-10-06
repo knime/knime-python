@@ -85,7 +85,9 @@ public final class PythonValueFactoryRegistry {
 
     private static final String EXT_POINT = "org.knime.python3.types.PythonValueFactory";
 
-    private static final String MODULE = "modulePath";
+    private static final String MODULE_PATH = "modulePath";
+
+    private static final String MODULE_NAME = "moduleName";
 
     private final List<PythonValueFactoryModule> m_modules = new ArrayList<>();
 
@@ -102,22 +104,26 @@ public final class PythonValueFactoryRegistry {
     private static List<PythonValueFactoryModule> extractModules(final IExtension extension) {
         final List<PythonValueFactoryModule> modules = new ArrayList<>();
         for (IConfigurationElement module : extension.getConfigurationElements()) {
-            modules.add(extractModule(module));
+            var mod = extractModule(module);
+            if (mod != null) {
+                modules.add(mod);
+            }
         }
         return modules;
     }
 
     private static PythonValueFactoryModule extractModule(final IConfigurationElement module) {
         final var modulePath = extractModulePath(module);
-        if (modulePath == null) {
+        final var moduleName = extractModuleName(module);
+        if (modulePath == null || moduleName == null) {
             return null;
         }
         final PythonValueFactory[] factories = extractFactories(module);
-        return new PythonValueFactoryModule(modulePath, factories);
+        return new PythonValueFactoryModule(modulePath, moduleName, factories);
     }
 
     private static Path extractModulePath(final IConfigurationElement module) {
-        final String modulePath = module.getAttribute(MODULE);
+        final String modulePath = module.getAttribute(MODULE_PATH);
         final String contributor = module.getContributor().getName();
         final var bundle = Platform.getBundle(contributor);
         try {
@@ -126,9 +132,13 @@ public final class PythonValueFactoryRegistry {
             final URL moduleFileUrl = FileLocator.toFileURL(moduleUrl);//NOSONAR
             return FileUtil.resolveToPath(moduleFileUrl);
         } catch (IOException | URISyntaxException ex) {
-            LOGGER.error(String.format("Can't resolve KnimeArrowExtensionType provide %s.", contributor), ex);
+            LOGGER.error(String.format("Can't resolve KnimeArrowExtensionType provided by %s.", contributor), ex);
             return null;
         }
+    }
+
+    private static String extractModuleName(final IConfigurationElement module) {
+        return module.getAttribute(MODULE_NAME);
     }
 
     private static PythonValueFactory[] extractFactories(final IConfigurationElement module) {
