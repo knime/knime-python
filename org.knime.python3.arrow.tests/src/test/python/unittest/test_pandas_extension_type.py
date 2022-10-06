@@ -3,7 +3,7 @@ import os
 import tempfile
 import unittest
 from typing import Type, Union
-import extension_types  # import to register column converters
+import knime.types.builtin as et  # import to register column converters
 
 import numpy as np
 import pandas as pd
@@ -721,7 +721,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         import knime_types as kt
 
         kt.register_python_value_factory(
-            "extension_types",
+            "knime.types.builtin",
             "LocalDateTimeValueFactory",
             '{"type": "struct", "inner_types": ["long", "long"]}',
             """

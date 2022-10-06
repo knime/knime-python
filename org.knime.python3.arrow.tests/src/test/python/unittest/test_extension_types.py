@@ -47,7 +47,7 @@
 """
 import unittest
 
-import extension_types as et
+import knime.types.builtin as et
 
 
 class TimeExtensionTypeTest(unittest.TestCase):

@@ -101,7 +101,7 @@ class GeoSpatialExtensionTypeTest(unittest.TestCase):
             )
 
             kt.register_python_value_factory(
-                "geospatial_types",
+                "knime.types.geospatial",
                 "GeoValueFactory",
                 '{"type": "struct", "inner_types": ["variable_width_binary", "string"]}',
                 """
@@ -117,7 +117,7 @@ class GeoSpatialExtensionTypeTest(unittest.TestCase):
             )
 
             # to register the arrow<->pandas column converters
-            import geospatial_types
+            import knime.types.geospatial
 
             GeoSpatialExtensionTypeTest.geospatial_types_found = True
         except ImportError:

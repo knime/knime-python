@@ -228,7 +228,7 @@ def _register_extension_types():
     import knime_types as kt
 
     kt.register_python_value_factory(
-        "extension_types",
+        "knime.types.builtin",
         "LocalTimeValueFactory",
         '"long"',
         """
@@ -240,7 +240,7 @@ def _register_extension_types():
     )
 
     kt.register_python_value_factory(
-        "extension_types",
+        "knime.types.builtin",
         "LocalDateValueFactory",
         '"long"',
         """
@@ -252,7 +252,7 @@ def _register_extension_types():
     )
 
     kt.register_python_value_factory(
-        "extension_types",
+        "knime.types.builtin",
         "LocalDateTimeValueFactory",
         '{"type": "struct", "inner_types": ["long", "long"]}',
         """
@@ -603,7 +603,7 @@ class SchemaTest(unittest.TestCase):
         """Tests the methods `to_pandas()` and `to_pyarrow()` of `knime_schema.LogicalType`.
         Should give back `knime_arrow_types.LogicalTypeExtensionType` and `knime_arrow_pandas.PandasLogicalTypeExtensionType`"""
         import pyarrow as pa
-        import extension_types as et
+        import knime.types.builtin as et
         import knime_arrow_types as kat
 
         logical_type = k.logical(dt.time)
