@@ -56,6 +56,7 @@ import knime_gateway as kg
 import knime_node as kn
 import knime_parameter as kp
 import knime_schema as ks
+import knime_markdown_parser as kmd
 
 import knime_node_arrow_table as kat
 import knime_node_table as kt
@@ -69,6 +70,8 @@ import collections
 from py4j.java_gateway import JavaClass
 from py4j.java_collections import ListConverter
 import py4j.clientserver
+
+MARKDOWN_PARSER = kmd.KnimeMarkdownParser()
 
 # TODO: register extension types
 
@@ -334,6 +337,19 @@ class _PortTypeRegistry:
             return _PythonBinaryPortObject(class_name, file_creator(), serialized, spec)
 
 
+def parse_parameter_descriptions(schema_dict):
+    """
+    Recursively parse "description" fields of the provided JSON dict from Markdown to HTML.
+
+    The parsing is done in-place, no value is returned.
+    """
+    for key in schema_dict:
+        if isinstance(schema_dict[key], dict):
+            parse_parameter_descriptions(schema_dict[key])
+        elif key == "description":
+            schema_dict[key] = MARKDOWN_PARSER.parse_fulldescription(schema_dict[key])
+
+
 class _PythonNodeProxy:
     def __init__(
         self, node: kn.PythonNode, port_type_registry: _PortTypeRegistry
@@ -360,6 +376,8 @@ class _PythonNodeProxy:
             "schema": kp.extract_schema(self._node, extension_version, inputs),
             "ui_schema": kp.extract_ui_schema(self._node, extension_version),
         }
+
+        parse_parameter_descriptions(json_forms_dict["schema"])
 
         return json.dumps(json_forms_dict)
 
