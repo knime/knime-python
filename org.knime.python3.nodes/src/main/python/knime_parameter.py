@@ -215,7 +215,6 @@ def extract_parameter_descriptions(obj) -> dict:
 
 def _extract_parameter_descriptions(obj, scope: "_Scope"):
     params = _get_parameters(obj).values()
-
     return [param._extract_description(scope) for param in params]
 
 
@@ -582,12 +581,6 @@ class _BaseMultiChoiceParameter(_BaseParameter):
     which allow for single or multiple selection from the provided list of options.
     """
 
-    def default_validator(self, value):
-        if not isinstance(value, str):
-            raise TypeError(
-                f"{value} is of type {type(value)}, but should be of type string."
-            )
-
     def __init__(
         self,
         label=None,
@@ -609,6 +602,12 @@ class StringParameter(_BaseMultiChoiceParameter):
     """
     Parameter class for primitive string types.
     """
+
+    def default_validator(self, value):
+        if not isinstance(value, str):
+            raise TypeError(
+                f"{value} is of type {type(value)}, but should be of type string."
+            )
 
     def __init__(
         self,
@@ -670,6 +669,10 @@ class EnumParameterOptions(Enum):
 
     @classmethod
     def _get_default_option(cls):
+        """
+        Return a subclass of this class containing a single default option.
+        """
+
         class DefaultEnumOption(EnumParameterOptions):
             DEFAULT_OPTION = (
                 "Default",
@@ -683,7 +686,7 @@ class EnumParameterOptions(Enum):
         """
         Returns a list of all options defined in the EnumParameterOptions subclass.
         """
-        return [getattr(cls, attr) for attr in dir(cls) if not attr.startswith("_")]
+        return cls._member_names_
 
 
 class EnumParameter(_BaseMultiChoiceParameter):
@@ -711,6 +714,12 @@ class EnumParameter(_BaseMultiChoiceParameter):
         )
     """
 
+    def default_validator(self, value):
+        if value not in self._enum.get_all_options():
+            raise ValueError(
+                f"The selection '{value}' for parameter '{self._label}' is not one of the available options: {', '.join(self._enum.get_all_options())}."
+            )
+
     def __init__(
         self,
         label=None,
@@ -720,6 +729,9 @@ class EnumParameter(_BaseMultiChoiceParameter):
         validator=None,
         since_version=None,
     ):
+        if validator is None:
+            validator = self.default_validator
+
         if enum is None or len(enum.get_all_options()) == 0:
             self._enum = EnumParameterOptions._get_default_option()
             default_value = self._enum.DEFAULT_OPTION.name
