@@ -1,10 +1,9 @@
-import type { JsonDataService } from 'knime-ui-extension-service';
-import type { FlowVariableSetting } from 'knime-ui-extension-service/src/types/FlowVariableSettings';
+import type { JsonDataService } from '@knime/ui-extension-service';
+import type { FlowVariableSetting } from '@knime/ui-extension-service/dist/index-92dc325b';
 import { ScriptingService,
     muteReactivity,
     createJsonServiceAndLoadSettings } from 'scripting-editor/src/utils/scripting-service';
 import type { NodeSettings } from 'scripting-editor/src/utils/scripting-service';
-
 export type Workspace = { names: string[]; types: string[]; values: string[] };
 
 // Types for the input port view

@@ -129,9 +129,9 @@ export default defineComponent({
         /**
          * Select another executable option. Updates the state, restarts the interactive Python session and requests
          * information about the selected executable.
-         *
-         * @param id the identifier of the selected python executable
-         * @returns
+         *Select another executable option.
+         * @param {id} id is the identifier of the selected python executable
+         * @returns {None}
          */
         pythonExecutableChanged(id: string) {
             // Update the state
