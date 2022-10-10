@@ -1,6 +1,5 @@
 import { createApp } from 'vue';
 import consola from 'consola';
-import { configureCompat } from 'vue';
 
 import App from './App.vue';
 
@@ -9,7 +8,7 @@ import App from './App.vue';
 });
 
 
-configureCompat({ RENDER_FUNCTION: false });
+// configureCompat({ RENDER_FUNCTION: false });
 
 const app = createApp(App);
 

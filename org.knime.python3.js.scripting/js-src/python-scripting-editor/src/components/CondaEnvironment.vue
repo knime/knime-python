@@ -12,7 +12,6 @@ export default defineComponent({
     components: {
         RadioButtons
     },
-    inject: ['getScriptingService'],
     props: {
         value: {
             type: String,

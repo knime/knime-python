@@ -15,17 +15,17 @@
     "lint:css": "stylelint '**/*.{css,vue}' --fix"
   },
   "dependencies": {
-    "@vue/compat": "^3.2.38",
-    "knime-ui-extension-service": "file:knime-scripting-editor/org.knime.scripting.editor/js-src/scripting-editor/knime-ui-extension-service",
+    "@vue/compiler-sfc": "^3.2.40",
+    "package.json": "^2.0.1",
     "path-browserify": "^1.0.1",
     "scripting-editor": "file:knime-scripting-editor/org.knime.scripting.editor/js-src/scripting-editor",
+    "vue": "^3.2.40",
     "webapps-common": "file:webapps-common"
   },
   "devDependencies": {
     "@knime/eslint-config": "7.0.4",
     "@types/node": "^18.7.12",
     "@vitejs/plugin-vue": "^3.0.1",
-    "@vue/compiler-sfc": "^3.1.0",
     "@vue/tsconfig": "^0.1.3",
     "eslint": "8.23.0",
     "npm-run-all": "^4.1.5",
@@ -35,7 +35,7 @@
     "vite": "^3.0.4",
     "vite-plugin-monaco-editor": "^1.1.0",
     "vite-svg-loader": "3.5.1",
-    "vue-tsc": "^0.39.5"
+    "vue-tsc": "^1.0.3"
   },
   "engines": {
     "node": "18.x"
