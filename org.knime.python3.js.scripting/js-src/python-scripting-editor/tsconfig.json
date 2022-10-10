@@ -5,6 +5,10 @@
     "src/**/*",
     "src/**/*.vue"
   ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ],
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {

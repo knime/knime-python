@@ -17,7 +17,8 @@ export default defineComponent({
                 return [];
             }
         }
-    }
+    },
+    emits: ['column-clicked']
 });
 </script>
 
