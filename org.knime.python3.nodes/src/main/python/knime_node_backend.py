@@ -168,16 +168,15 @@ def _check_attr_is_available(node, attr_name):
         raise ValueError(f"Attribute {attr_name} is missing in node {node}")
 
 
-def _attach_markdown_parser(obj):
-    """
-    Attempts to import the Markdown parser, with fallback, and attach it to the object.
-    """
+def _get_markdown_parser():
     try:
         from knime_markdown_parser import KnimeMarkdownParser
 
-        obj._knime_parser = KnimeMarkdownParser()
+        knime_parser = KnimeMarkdownParser()
     except ModuleNotFoundError:
-        obj._knime_parser = FallBackMarkdownParser()
+        knime_parser = FallBackMarkdownParser()
+
+    return knime_parser
 
 
 class _PortTypeRegistry:
@@ -356,7 +355,7 @@ class _PythonNodeProxy:
         self._node = node
         self._num_outports = len(node.output_ports)
         self._port_type_registry = port_type_registry
-        _attach_markdown_parser(self)
+        self._knime_parser = _get_markdown_parser()
 
     def getDialogRepresentation(
         self,
@@ -614,7 +613,7 @@ class _KnimeNodeBackend(kg.EntryPoint, kn._KnimeNodeBackend):
         super().__init__()
         self._main_loop = MainLoop()
         self._port_type_registry = None
-        _attach_markdown_parser(self)
+        self._knime_parser = _get_markdown_parser()
         kn._backend = self
 
     def register_port_type(
