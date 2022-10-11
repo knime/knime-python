@@ -1,5 +1,4 @@
-import type { JsonDataService } from '@knime/ui-extension-service';
-import type { FlowVariableSetting } from '@knime/ui-extension-service/dist/index-92dc325b';
+import type { JsonDataService, FlowVariableSetting } from '@knime/ui-extension-service';
 import { ScriptingService,
     muteReactivity,
     createJsonServiceAndLoadSettings } from 'scripting-editor/src/utils/scripting-service';
@@ -7,17 +6,20 @@ import type { NodeSettings } from 'scripting-editor/src/utils/scripting-service'
 export type Workspace = { names: string[]; types: string[]; values: string[] };
 
 // Types for the input port view
-export type InputPortInfo = { type: 'table' | 'object'; variableName: string };
-export interface InputTableInfo extends InputPortInfo {
+
+export type InputPortBase = { type: 'table' | 'object'; variableName: string };
+export interface InputTableInfo extends InputPortBase {
     type: 'table';
     columnNames: string[];
     columnTypes: string[];
 }
-export interface InputObjectInfo extends InputPortInfo {
+export interface InputObjectInfo extends InputPortBase {
     type: 'object';
     objectType: string;
     objectRepr: string;
 }
+
+export type InputPortInfo = InputTableInfo | InputObjectInfo
 
 // Types for the executable selection
 export type ExecutableOption = {

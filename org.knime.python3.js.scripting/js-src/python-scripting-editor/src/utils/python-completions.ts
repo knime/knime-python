@@ -1,5 +1,5 @@
 import * as monaco from 'monaco-editor';
-import { InputPortInfo, InputTableInfo, InputObjectInfo } from './python-scripting-service';
+import type { InputPortInfo, InputTableInfo, InputObjectInfo } from './python-scripting-service';
 
 const columnCompletionFor = (
     tableIdx: number,
