@@ -341,8 +341,7 @@ class DenseBitVectorValueFactory(kt.PythonValueFactory):
 
 
 class DenseByteVector(bytes):
-    def __str__(self):
-        return "{" + ",".join([str(b) for b in self]) + "}"
+    pass
 
 
 class DenseByteVectorValueFactory(kt.PythonValueFactory):
