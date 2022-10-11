@@ -158,6 +158,7 @@ public final class NodeDescriptionBuilder {
             tabDesc.setAttribute("name", tab.getName());
             var description = doc.createElement("description");
             description.appendChild(buildHelper.parseDocumentFragment(tab.getDescription()));
+            tabDesc.appendChild(description);
             for (var option : tab.m_options) {
                 tabDesc.appendChild(buildHelper.createOptionElement(option));
             }

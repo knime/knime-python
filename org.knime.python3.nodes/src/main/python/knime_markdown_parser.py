@@ -224,11 +224,18 @@ class KnimeMarkdownParser:
             for option in options
         ]
 
+    def parse_tab_description(self, desc):
+        parsed_desc = self.parse_basic(desc)
+        parsed_desc = re.sub(r"<p>", "", parsed_desc)
+        parsed_desc = re.sub(r"</p>", "", parsed_desc)
+        return parsed_desc
+
     def parse_tabs(self, tabs):
         return [
             {
                 "name": tab["name"],
-                "description": self.parse_basic(tab["description"]),
+                # "description": self.parse_basic(tab["description"]),
+                "description": self.parse_tab_description(tab["description"]),
                 "options": self.parse_options(tab["options"]),
             }
             for tab in tabs
