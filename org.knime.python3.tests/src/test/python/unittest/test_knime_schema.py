@@ -698,6 +698,9 @@ class MyTime:
     def __init__(self, nano_of_day):
         self.nano_of_day = nano_of_day
 
+    def __str__(self):
+        return f"MyTime(nano_of_day={self.nano_of_day})"
+
 
 class MyLocalTimeValueFactory(kt.PythonValueFactory):
     def __init__(self) -> None:
@@ -753,6 +756,40 @@ class ProxyTests(unittest.TestCase):
         )
         self.assertEqual(pyarrow_extension_type.__class__, kat.ProxyExtensionType)
 
+    def test_type_casting(self):
+        """
+        Tests knime_schema.logical with registered proxy types.
+        """
+        import pyarrow as pa
+        import knime_arrow_types as kat
+
+        _register_extension_types()
+
+        kt._python_proxy_type_to_value_factory[MyTime] = (
+            MyLocalTimeValueFactory(),
+            dt.time,
+        )
+
+        orig_type = k.logical(dt.time)
+        proxy_type = k.logical(MyTime)
+
+        import pandas as pd
+
+        df = pd.DataFrame()
+        t = dt.time(13, 37, 42)
+        df["times"] = pd.Series([t, t], dtype=orig_type.to_pandas())
+        df["casted-times"] = df["times"].astype(proxy_type.to_pandas())
+        self.assertEqual(49062000000000, df["casted-times"][0].nano_of_day)
+
+        df["casted-times"][1] = MyTime(df["casted-times"][1].nano_of_day + 10_000)
+        df["roundtrip"] = df["casted-times"].astype(orig_type.to_pandas())
+        self.assertEqual(df["times"][0], df["roundtrip"][0])
+
+        expected = (
+            dt.datetime.combine(dt.date.today(), df["times"][1])
+            + dt.timedelta(microseconds=10)
+        ).time()
+        self.assertEqual(expected, df["roundtrip"][1])
 
     def test_print_byte_vector(self):
         _register_extension_types()

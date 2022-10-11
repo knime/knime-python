@@ -311,7 +311,16 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
             )
 
         # we just "reinterpret" the storage data as different dtype -> uses a different converter
-        new_data_dtype = kat.ProxyExtensionType(converter, storage_type, logical_type)
+        try:
+            # casting to "proxy" logical type
+            new_data_dtype = kat.ProxyExtensionType(
+                converter, storage_type, logical_type
+            )
+        except TypeError:
+            # casting to "primary" logical type
+            new_data_dtype = kat.LogicalTypeExtensionType(
+                converter, storage_type, logical_type
+            )
 
         def astype(a):
             b = pa.ExtensionArray.from_storage(new_data_dtype, a.storage)
