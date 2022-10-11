@@ -717,7 +717,7 @@ class EnumParameter(_BaseMultiChoiceParameter):
     def default_validator(self, value):
         if value not in self._enum.get_all_options():
             raise ValueError(
-                f"The selection '{value}' for parameter '{self._label}' is not one of the available options: {', '.join(self._enum.get_all_options())}."
+                f"""The selection '{value}' for parameter '{self._label}' is not one of the available options: {"'" + "', '".join(self._enum.get_all_options()) + "'"}."""
             )
 
     def __init__(
@@ -753,6 +753,14 @@ class EnumParameter(_BaseMultiChoiceParameter):
 
     def _extract_description(self, parent_scope: _Scope):
         return {"name": self._label, "description": self._generate_description()}
+
+    def validator(self, func):
+        def combined_validator(value):
+            # we retain the default validator to ensure that value is always one of the available options
+            self.default_validator(value)
+            func(value)
+
+        self._validator = combined_validator
 
 
 class _BaseColumnParameter(_BaseParameter):
