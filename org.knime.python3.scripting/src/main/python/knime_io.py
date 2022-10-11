@@ -168,7 +168,6 @@ Use this to, for example, pass a trained model to another Python script node.
 
 """
 
-
 __all__ = [
     "flow_variables",
     "input_objects",

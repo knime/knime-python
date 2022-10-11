@@ -23,8 +23,8 @@
 		<sonar.exclusions>node_modules/**/*,dist/**/*,src/dev/**/*,.nyc_output/**/*,coverage/**/*,*.log,config/**/*,**/config.js,**/*.config.js,buildtools/**,webapps-common/**</sonar.exclusions>
 		<sonar.css.stylelint.reportPaths>target/stylelint.json</sonar.css.stylelint.reportPaths>
 		<sonar.eslint.reportPaths>target/eslint.json</sonar.eslint.reportPaths>
-		<node.version>v16.15.1</node.version>
-		<npm.version>8.11.0</npm.version>
+		<node.version>v18.10.0</node.version>
+		<npm.version>8.19.2</npm.version>
 	</properties>
 
 	<build>
@@ -48,8 +48,9 @@
 						</configuration>
 					</execution>
 
+
 					<execution>
-						<id>npm ci</id>
+						<id>npm install</id>
 						<phase>initialize</phase>
 						<goals>
 							<goal>npm</goal>
@@ -61,7 +62,7 @@
 
 					<execution>
 						<id>npm run build</id>
-						<phase>compile</phase>
+						<phase>initialize</phase>
 						<goals>
 							<goal>npm</goal>
 						</goals>
@@ -69,18 +70,16 @@
 							<arguments>run build</arguments>
 						</configuration>
 					</execution>
-
 					<execution>
-						<id>npm run audit</id>
+						<id>npm run type-check</id>
 						<phase>verify</phase>
 						<goals>
 							<goal>npm</goal>
 						</goals>
 						<configuration>
-							<arguments>run audit</arguments>
+							<arguments>run type-check</arguments>
 						</configuration>
 					</execution>
-
 					<execution>
 						<id>npm run lint</id>
 						<phase>verify</phase>
@@ -88,9 +87,10 @@
 							<goal>npm</goal>
 						</goals>
 						<configuration>
-							<arguments>run lint:ci</arguments>
+							<arguments>run lint:js</arguments>
 						</configuration>
 					</execution>
+
 				</executions>
 			</plugin>
 			<plugin>

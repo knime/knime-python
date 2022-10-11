@@ -31,7 +31,7 @@ export default defineComponent({
       {{ port.variableName }}
       <ul v-if="port.type === 'table'">
         <li
-          v-for="column in port.columnNames"
+          v-for="column in port?.columnNames"
           :key="column"
         >
           {{ column }}

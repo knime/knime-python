@@ -1,10 +1,14 @@
 {
   "extends": "@vue/tsconfig/tsconfig.web.json",
   "include": [
-    "env.d.ts",
-    "src/**/*",
-    "src/**/*.vue"
-  ],
+    "./env.d.ts",
+    "./src/custom.d.ts",
+    "./src/**/*",
+    "./src/**/*.vue",
+    "./vite.config.*",
+    "./vitest.config.*",
+    "./cypress.config.*"
+, "App.vue.ts"  ],
   "exclude": [
     "node_modules",
     "dist"
@@ -13,7 +17,9 @@
     "baseUrl": ".",
     "paths": {
       "@/*": [
-        "./src/*"
+        "./src/*",
+        "./node_modules/*",
+        "./knime-scripting-editor/*"
       ]
     },
     "lib": [
