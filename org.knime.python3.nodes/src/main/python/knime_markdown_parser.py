@@ -40,12 +40,23 @@ class _HeaderPreprocessor(Preprocessor):
             # replace with h4
             if re.search("#{4,} ", line):
                 line = re.sub("#+ ", "####", line)
-                new_lines.append(line)
             elif re.search("#{1,3} ", line):
                 line = re.sub("#+ ", "###", line)
-                new_lines.append(line)
-            else:
-                new_lines.append(line)
+            new_lines.append(line)
+        return new_lines
+
+
+class _TabHeaderPreprocessor(Preprocessor):
+    """
+    Tab descriptions don't allow headers.
+    """
+
+    def run(self, lines):
+        new_lines = []
+        for line in lines:
+            if re.search("#{1,4} ", line):
+                line = re.sub("#+ ", "", line)
+            new_lines.append(line)
         return new_lines
 
 
@@ -149,6 +160,51 @@ class _KnimePostCode(Postprocessor):
         return text
 
 
+class _LineBreakPreprocessor(Preprocessor):
+    def run(self, lines):
+        new_lines = []
+        for line in lines:
+            if len(line) == 0:
+                line = "::linebreak::"
+            new_lines.append(line)
+
+        return new_lines
+
+
+class _LineBreakPostprocessor(Postprocessor):
+    """
+    Attempt to replace empty lines with <br/>.
+    """
+
+    def run(self, text):
+        text = re.sub("::linebreak::", "<br/><br/>", text)
+
+        return text
+
+
+class _KnimePostParagraph(Postprocessor):
+    def run(self, text):
+        text = re.sub(r"<p>", "", text)
+        text = re.sub(r"</p>", "", text)
+
+        return text
+
+
+class _KnimePostHorizontalRule(Postprocessor):
+    def run(self, text):
+        text = re.sub(r"<hr .*>", "</br>", text)
+
+        return text
+
+
+class _KnimePostBlockquote(Postprocessor):
+    def run(self, text):
+        text = re.sub(r"<blockquote>", "", text)
+        text = re.sub(r"</blockquote>", "", text)
+
+        return text
+
+
 class _KnExtension(Extension):
     """
     Basic extension for Knime schema.
@@ -179,6 +235,49 @@ class _KnExtension(Extension):
         _md.postprocessors.register(_KnimePostCode(), "knime_post_code", 0)
 
 
+class _KnExtensionForTabs(Extension):
+    """
+    Markdown extension for tab descriptions.
+
+    Syntax that is not allowed in the final HTML:
+    - headers
+    - horizontal rules
+    - pre blocks
+    - blockquotes
+    - p tags
+    - tables
+    """
+
+    def extendMarkdown(self, _md) -> None:
+        # Preprocessors
+        _md.preprocessors.deregister("html_block")
+        _md.preprocessors.register(_LineBreakPreprocessor(), "line_breaks_pre", 100)
+
+        # Remove not supported extensions
+        _md.inlinePatterns.deregister("image_reference")
+        _md.inlinePatterns.deregister("image_link")
+        _md.inlinePatterns.deregister("short_image_ref")
+        _md.inlinePatterns.deregister("autolink")
+        _md.inlinePatterns.deregister("automail")
+        _md.inlinePatterns.deregister("html")
+
+        _md.inlinePatterns.register(_KnimeProcessorAsterisk(r"\*"), "i_strong", 110)
+        _md.inlinePatterns.register(_KnimeProcessorUnderscore(r"_"), "strong_i", 100)
+
+        _md.treeprocessors.register(_HTMLTreeprocessor(), "knime_code", 5)
+
+        _md.preprocessors.register(_TabHeaderPreprocessor(), "knime_pre_headers", 200)
+
+        _md.postprocessors.register(_KnimePostParagraph(), "knime_post_paragraph", 200)
+        _md.postprocessors.register(
+            _KnimePostHorizontalRule(), "knime_post_horizontal_rule", 200
+        )
+        _md.postprocessors.register(
+            _KnimePostBlockquote(), "knime_post_blockquote", 200
+        )
+        _md.postprocessors.register(_LineBreakPostprocessor(), "line_breaks_post", 200)
+
+
 class KnimeMarkdownParser:
     """ """
 
@@ -194,6 +293,14 @@ class KnimeMarkdownParser:
             output_format="xhtml",
         )
 
+        self.md_tabs = markdown.Markdown(
+            extensions=[
+                _KnExtensionForTabs(),
+                "sane_lists",
+            ],
+            output_format="xhtml",
+        )
+
     def parse_fulldescription(self, doc):
         doc = textwrap.dedent(doc)
         return self.md.convert(doc)
@@ -205,6 +312,13 @@ class KnimeMarkdownParser:
             return self.md_basic.convert(doc)
         except AssertionError:
             return "<i>No description available.</i>"
+
+    def parse_tab_description(self, doc):
+        if doc:
+            doc = textwrap.dedent(doc)
+            return self.md_tabs.convert(doc)
+        else:
+            return ""
 
     def parse_ports(self, ports):
         return [
@@ -224,17 +338,10 @@ class KnimeMarkdownParser:
             for option in options
         ]
 
-    def parse_tab_description(self, desc):
-        parsed_desc = self.parse_basic(desc)
-        parsed_desc = re.sub(r"<p>", "", parsed_desc)
-        parsed_desc = re.sub(r"</p>", "", parsed_desc)
-        return parsed_desc
-
     def parse_tabs(self, tabs):
         return [
             {
                 "name": tab["name"],
-                # "description": self.parse_basic(tab["description"]),
                 "description": self.parse_tab_description(tab["description"]),
                 "options": self.parse_options(tab["options"]),
             }
