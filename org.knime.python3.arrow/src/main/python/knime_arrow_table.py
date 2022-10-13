@@ -95,7 +95,7 @@ class ArrowBatch(kta.Batch):
                 will be interpreted as missing values.
         """
 
-        if isinstance(data, pa.RecordBatch):
+        if isinstance(data, pa.RecordBatch) or isinstance(data, pa.Table):
             self._batch = data
         else:
             import pandas as pd

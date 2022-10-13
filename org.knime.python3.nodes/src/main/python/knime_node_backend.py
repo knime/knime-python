@@ -57,8 +57,8 @@ import knime_node as kn
 import knime_parameter as kp
 import knime_schema as ks
 
-import knime_node_arrow_table as kat
-import knime_node_table as kt
+import knime._arrow._table as kat
+import knime.api.table as kt
 import importlib
 import json
 import logging

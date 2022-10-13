@@ -53,57 +53,6 @@ from abc import abstractmethod, ABC
 from typing import Iterator, List, Optional, Tuple, Type, Union
 
 
-class _FixedSizeListView:
-    """
-    A list view that allows element access but no deletion or append.
-
-    Attention: if the underlying list grows, more values will also be available in this view!
-    """
-
-    def __init__(self, data, name):
-        if not isinstance(data, list):
-            raise TypeError("Can only convert a list into a FixedSizeList")
-        self._data = data
-        self._name = name
-
-    @property
-    def _name_for_len(self):
-        if len(self._data) == 1:
-            return self._name
-        else:
-            return self._name + "s"
-
-    @property
-    def _str_is_or_are(self):
-        if len(self._data) == 1:
-            return "is"
-        else:
-            return "are"
-
-    def __getitem__(self, idx):
-        if not 0 <= idx < len(self._data):
-            raise KeyError(
-                f"Invalid port index {idx}, only {len(self._data)} {self._name_for_len} {self._str_is_or_are} available"
-            )
-        return self._data[idx]
-
-    def __setitem__(self, idx, value):
-        if not 0 <= idx < len(self._data):
-            raise KeyError(
-                f"Invalid port index {idx}, only {len(self._data)} {self._name_for_len} {self._str_is_or_are} available"
-            )
-        self._data[idx] = value
-
-    def __iter__(self):
-        return iter(self._data)
-
-    def __len__(self):
-        return len(self._data)
-
-    def __str__(self):
-        return f"{len(self._data)} {self._name_for_len}: [{', '.join([str(v) for v in self._data])}]"
-
-
 class _Backend(ABC):
     """
     The backend instanciates the appropriate types of Tables and batches.

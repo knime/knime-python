@@ -42,35 +42,35 @@
 #  when such Node is propagated with or for interoperation with KNIME.
 # ------------------------------------------------------------------------
 
-# @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+"""
+Input and output variables used to communicate with KNIME from within
+KNIME's Python Scripting nodes
 
-import warnings
+@author Carsten Haubold, KNIME GmbH, Konstanz, Germany
+@author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+"""
 import sys
 
-if "knime.scripting.io" in sys.modules:
+if "knime_io" in sys.modules:
     raise ImportError(
         "Cannot use knime_io and knime.scripting.io in the same Python script"
     )
 
-warnings.warn(
-    f"The module {__name__} is deprecated, please use 'import knime.scripting.io' instead",
-)
-
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 # Do not remove, meant to be reexported.
-from knime_table import write_table, batch_write_table, WriteTable, ReadTable, Batch
+from knime.api.table import Table, BatchOutputTable
 import knime.scripting._io_containers as _ioc
 
 # -----------------------------------------------------------------------------------------
 def _prepare_input_tables():
-    import knime_arrow_table as kat
+    import knime._arrow._table as kat
 
     for idx, data_source in enumerate(_ioc._input_tables):
-        _ioc._input_tables[idx] = kat.ArrowReadTable(data_source)
+        _ioc._input_tables[idx] = kat.ArrowSourceTable(data_source)
 
 
-# We only know during import of this module or of knime.scripting.io which of the two APIs are
+# We only know during import of this module or of knime_io which of the two APIs are
 # used in the Python script, so we can only create the respective table implementations here
 _prepare_input_tables()
 # -----------------------------------------------------------------------------------------
@@ -90,9 +90,7 @@ another Python script node's``output_object`` port. This can, for instance, be u
 Python nodes. If no input is given, the list exists but is empty.
 """
 
-input_tables: List[ReadTable] = _ioc._FixedSizeListView(
-    _ioc._input_tables, "input_table"
-)
+input_tables: List[Table] = _ioc._FixedSizeListView(_ioc._input_tables, "input_table")
 """
 The input tables of this script node. This list has a fixed size, which is determined by the number of input table 
 ports configured for this node.  Tables are available in the same order as the port connectors are displayed 
@@ -100,17 +98,17 @@ alongside the node (from top to bottom), using zero-based indexing. If no input 
 list exists but is empty.
 """
 
-output_tables: List[WriteTable] = _ioc._FixedSizeListView(
+output_tables: List[Union[Table, BatchOutputTable]] = _ioc._FixedSizeListView(
     _ioc._output_tables, "output_table"
 )
 """
 The output tables of this script node. This list has a fixed size, which is determined by the number of output table 
 ports configured for this node.  You should assign a WriteTable or BatchWriteTable to each output port of this node. 
-See the factory methods ``knime_io.write_table()`` and ``knime_io.batch_write_table()`` below.
+See the factory methods ``knime_io.write_table()`` and ``knime.scripting.io.batch_write_table()`` below.
 
 **Example**::
 
-    knime_io.output_tables[0] = knime_io.write_table(my_pandas_df)
+    knime.scripting.io.output_tables[0] = knime.scripting.io.write_table(my_pandas_df)
 
 """
 
@@ -122,14 +120,14 @@ SVG or PNG image.
 
 **Example**::
 
-    data = knime_io.input_tables[0].to_pandas()
+    data = knime.scripting.io.input_tables[0].to_pandas()
     buffer = io.BytesIO()
 
     pyplot.figure()
     pyplot.plot('x', 'y', data=data)
     pyplot.savefig(buffer, format='svg')
 
-    knime_io.output_images[0] = buffer.getvalue()
+    knime.scripting.io.output_images[0] = buffer.getvalue()
 
 """
 
@@ -145,10 +143,9 @@ Use this to, for example, pass a trained model to another Python script node.
     ...
     # train/finetune model
     ...
-    knime_io.output_objects[0] = model
+    knime.scripting.io.output_objects[0] = model
 
 """
-
 
 __all__ = [
     "flow_variables",
@@ -157,9 +154,6 @@ __all__ = [
     "output_tables",
     "output_objects",
     "output_images",
-    "write_table",
-    "batch_write_table",
-    "WriteTable",
-    "ReadTable",
-    "Batch",
+    "Table",
+    "BatchOutputTable",
 ]

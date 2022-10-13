@@ -2,6 +2,7 @@ import unittest
 import knime_table as kt
 import knime_arrow_table as kat
 import knime_arrow_types as katy
+import knime.scripting._io_containers as ioc
 import pandas as pd
 import pyarrow as pa
 import numpy as np
@@ -405,7 +406,7 @@ class SentinelReplacementTest(unittest.TestCase):
 class FixedSizeListTest(unittest.TestCase):
     def test_fixed_size_list(self):
         l = [0, 1, 2]
-        fsl = kt._FixedSizeListView(l, "test")
+        fsl = ioc._FixedSizeListView(l, "test")
 
         self.assertEqual(len(l), len(fsl))
 
@@ -420,7 +421,7 @@ class FixedSizeListTest(unittest.TestCase):
 
     def test_string_repr(self):
         l = []
-        fsl = kt._FixedSizeListView(l, "test")
+        fsl = ioc._FixedSizeListView(l, "test")
         self.assertEqual("0 tests: []", str(fsl))
 
         l.append(0)

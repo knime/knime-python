@@ -128,10 +128,9 @@ class SchemaTest(unittest.TestCase):
 
 class TableTest(unittest.TestCase):
     def setUp(self):
-        def sink_factory():
-            return None
+        import knime.api.table as ktn
 
-        knt._backend = knat._ArrowBackend(sink_factory)
+        ktn._backend = knat._ArrowBackend(lambda: DummyDataSink())
 
     def test_remove(self):
         df = pd.DataFrame()
@@ -281,6 +280,9 @@ class ArrowTableTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        import knime.api.table as ktn
+
+        ktn._backend = knat._ArrowBackend(lambda: DummyDataSink())
         cls._test_table = cls._generate_test_table()
 
     def test_table_setup(self):
@@ -428,11 +430,15 @@ class ArrowTableTest(unittest.TestCase):
 class BatchOutputTableTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        knt._backend = knat._ArrowBackend(lambda: DummyDataSink())
+        import knime.api.table as ktn
+
+        ktn._backend = knat._ArrowBackend(lambda: DummyDataSink())
 
     @classmethod
     def tearDownClass(cls):
-        knt._backend.close()
+        import knime.api.table as ktn
+
+        ktn._backend.close()
         knt._backend = None
 
     def _generate_test_batch(self, index):

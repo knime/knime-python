@@ -47,6 +47,7 @@
 @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
 """
 
+from abc import ABC, abstractmethod
 import os
 import pickle
 import py4j.clientserver
@@ -58,12 +59,275 @@ from py4j.java_collections import JavaArray, ListConverter
 from py4j.java_gateway import JavaClass
 from typing import Any, Callable, Dict, List, Optional, TextIO
 
-import knime_arrow_table as kat
-import knime_gateway as kg
-import knime_io as kio
 import knime_table as kt
+import knime_arrow_table as kat
+
+import knime.api.table as ktn
+import knime._arrow._table as katn
+
+import knime.scripting._io_containers as _ioc
+
+import knime_gateway as kg
 from knime_main_loop import MainLoop
 from autocompletion_utils import disable_autocompletion
+
+
+class ScriptingBackend(ABC):
+    @abstractmethod
+    def check_output_table(self, table_index, table):
+        pass
+
+    @abstractmethod
+    def get_output_table_sink(self, table_index: int) -> JavaClass:
+        pass
+
+    @abstractmethod
+    def set_up_arrow(self, sink_factory):
+        pass
+
+    @abstractmethod
+    def tear_down_arrow(self, is_active_backend: bool):
+        pass
+
+
+class ScriptingBackendV0(ScriptingBackend):
+    """
+    Deprecated scripting backend provided by knime_io
+    """
+
+    def check_output_table(self, table_index, table):
+        if table is None or not isinstance(table, kat._ArrowWriteTableImpl):
+            type_str = type(table) if table is not None else "None"
+            raise TypeError(
+                f"Expected a WriteTable in output_tables[{table_index}], got {type_str}. "
+                "Please use knime_io.write_table(data) or knime_io.batch_write_table() to create a WriteTable."
+            )
+
+    def get_output_table_sink(self, table_index: int) -> JavaClass:
+        # Get the java sink for this write table
+        write_table = _ioc._output_tables[table_index]
+        if (not hasattr(write_table, "_sink")) or (
+            not hasattr(write_table._sink, "_java_data_sink")
+        ):
+            raise TypeError(
+                f"Output table '{table_index}' is no valid knime_io.WriteTable."
+            )
+        return write_table._sink._java_data_sink
+
+    def set_up_arrow(self, sink_factory):
+        kt._backend = kat.ArrowBackend(sink_factory)
+
+    def tear_down_arrow(self, is_active_backend: bool):
+        kt._backend.close()
+        kt._backend = None
+
+
+class ScriptingBackendV1(ScriptingBackend):
+    """
+    Current scripting backend provided by knime.scripting.io
+    """
+
+    def check_output_table(self, table_index, table):
+        if table is None or (
+            not isinstance(table, katn.ArrowTable)
+            and not isinstance(table, ktn._TabularView)
+            and not isinstance(table, katn.ArrowBatchOutputTable)
+        ):
+            type_str = type(table) if table is not None else "None"
+            raise TypeError(
+                f"Output table '{table_index}' must be of type knime.api.Table or knime.api.BatchOutputTable, but got {type_str}"
+            )
+
+    def get_output_table_sink(self, table_index: int):
+        return _ioc._output_tables[table_index]
+
+    def set_up_arrow(self, sink_factory):
+        ktn._backend = katn._ArrowBackend(sink_factory)
+
+    def _write_all_tables(self):
+        for idx, table in enumerate(_ioc._output_tables):
+            if isinstance(table, ktn._TabularView):
+                table = table.get()
+
+            if isinstance(table, katn.ArrowTable):
+                sink = ktn._backend.create_sink()
+                table._write_to_sink(sink)
+                _ioc._output_tables[idx] = sink._java_data_sink
+            elif isinstance(table, katn.ArrowBatchOutputTable):
+                _ioc._output_tables[idx] = table._sink._java_data_sink
+            else:
+                raise TypeError(
+                    f"Output table '{idx}' must be of type knime.api.Table or knime.api.BatchOutputTable, but got {type(table)}"
+                )
+
+    def tear_down_arrow(self, is_active_backend: bool):
+        # we write all tables here and just read the sink in the get_output_table_sink method
+        if is_active_backend:
+            self._write_all_tables()
+
+        ktn._backend.close()
+        ktn._backend = None
+
+
+class ScriptingBackendCollection:
+    """
+    A collection of all available scripting backends. Performs simultaneous initialization
+    of all backends but retrieves results from only the active backend. The "active" backend
+    is determined by checking which backend was imported by the user.
+
+    As all currently available backends use the same variables for storage, some methods are not
+    delegated to a specific backend but are performed here on the general storage containers.
+    """
+
+    def __init__(self, backends: Dict[str, ScriptingBackend]):
+        self._backends = backends
+
+    @property
+    def flow_variables(self) -> Dict[str, Any]:
+        return _ioc._flow_variables
+
+    def set_flow_variables(self, flow_variables: Dict[str, Any]) -> None:
+        self.flow_variables.clear()
+        for key, value in flow_variables.items():
+            if isinstance(value, JavaArray):
+                value = [x for x in value]
+            self.flow_variables[key] = value
+
+    def set_input_table(
+        self, table_index: int, java_table_data_source: Optional[JavaClass]
+    ):
+        """
+        Here we prepare the input table by creating an ArrowDataSource. As soon as the user imports
+        either 'knime_io' or 'knime.scripting.io', the data sources will be converted to the appropriate
+        table representation.
+        """
+        if java_table_data_source is not None:
+            # NB: We don't close the source. It must be available for the lifetime of the process.
+            table_data_source = kg.data_source_mapper(java_table_data_source)
+        else:
+            table_data_source = None
+        _ioc._pad_up_to_length(_ioc._input_tables, table_index + 1)
+        _ioc._input_tables[table_index] = table_data_source
+
+    def get_output_table_sink(self, table_index: int) -> JavaClass:
+        return self.active_backend.get_output_table_sink(table_index)
+
+    @property
+    def active_backend(self) -> ScriptingBackend:
+        """
+        Only one of the backends can be imported at a time, so we can figure out which backend is active by
+        checking which backend the user imported
+        """
+        for module_name, backend in self._backends.items():
+            if module_name in sys.modules:
+                return backend
+
+        raise RuntimeError(
+            "Either the script has not been executed, or no KNIME scripting interface has been imported. "
+            + "Please import knime.scripting.io"
+        )
+
+    def get_flow_variables(self) -> JavaClass:
+        self._check_flow_variables()
+
+        LinkedHashMap = JavaClass(  # NOSONAR Java naming conventions apply.
+            "java.util.LinkedHashMap", kg.client_server._gateway_client
+        )
+        java_flow_variables = LinkedHashMap()
+        for key in self.flow_variables.keys():
+            flow_variable = self.flow_variables[key]
+            java_flow_variables[key] = flow_variable
+        return java_flow_variables
+
+    def set_num_expected_output_tables(self, num_output_tables: int) -> None:
+        _ioc._pad_up_to_length(_ioc._output_tables, num_output_tables)
+
+    def release_input_tables(self):
+        for table in _ioc._input_tables:
+            table._source.close()
+
+    def set_input_object(self, object_index: int, path: Optional[str]) -> None:
+        if path is not None:
+            with open(path, "rb") as file:
+                obj = pickle.load(file)
+        else:
+            obj = None
+        _ioc._pad_up_to_length(_ioc._input_objects, object_index + 1)
+        _ioc._input_objects[object_index] = obj
+
+    def set_num_expected_output_objects(self, num_output_objects: int) -> None:
+        _ioc._pad_up_to_length(_ioc._output_objects, num_output_objects)
+
+    def get_output_object(self, object_index: int, path: str) -> None:
+        obj = _ioc._output_objects[object_index]
+        with open(path, "wb") as file:
+            pickle.dump(obj=obj, file=file)
+
+    def get_output_object_type(self, object_index: int) -> str:
+        return type(_ioc._output_objects[object_index]).__name__
+
+    def get_output_object_string_representation(self, object_index: int) -> str:
+        object_as_string = str(_ioc._output_objects[object_index])
+        return (
+            (object_as_string[:996] + "\n...")
+            if len(object_as_string) > 1000
+            else object_as_string
+        )
+
+    def set_num_expected_output_images(self, num_output_images: int) -> None:
+        _ioc._pad_up_to_length(_ioc._output_images, num_output_images)
+
+    def get_output_image(
+        self,
+        image_index: int,
+        path: str,
+    ) -> None:
+        image = _ioc._output_images[image_index]
+        with open(path, "wb") as file:
+            file.write(image)
+
+    def check_outputs(self):
+        for i, o in enumerate(_ioc._output_tables):
+            self.active_backend.check_output_table(i, o)
+
+        for i, o in enumerate(_ioc._output_objects):
+            if o is None:
+                raise ValueError(
+                    f"Expected an object in output_objects[{i}], got {type(o)}"
+                )
+
+        for i, o in enumerate(_ioc._output_images):
+            if o is None:
+                raise ValueError(
+                    f"Expected an image in output_images[{i}], got {type(o)}"
+                )
+
+        self._check_flow_variables()
+
+    def _check_flow_variables(self):
+        LinkedHashMap = JavaClass(  # NOSONAR Java naming conventions apply.
+            "java.util.LinkedHashMap", kg.client_server._gateway_client
+        )
+        java_flow_variables = LinkedHashMap()
+        for key in self.flow_variables.keys():
+            flow_variable = self.flow_variables[key]
+            try:
+                java_flow_variables[key] = flow_variable
+            except AttributeError as ex:
+                # py4j raises attribute errors of the form "'<type>' object has no attribute '_get_object_id'" if it
+                # fails to translate Python objects to Java objects.
+                raise TypeError(
+                    f"Flow variable '{key}' of type '{type(flow_variable)}' cannot be translated to a valid KNIME flow "
+                    f"variable. Please remove the flow variable or change its type to something that can be translated."
+                )
+
+    def set_up_arrow(self, sink_factory):
+        for b in self._backends.values():
+            b.set_up_arrow(sink_factory)
+
+    def tear_down_arrow(self):
+        for b in self._backends.values():
+            b.tear_down_arrow(b == self.active_backend)
 
 
 class PythonKernel(kg.EntryPoint):
@@ -73,6 +337,12 @@ class PythonKernel(kg.EntryPoint):
         self._external_custom_path_initialized = False
         self._working_dir_initialized = False
         self._java_callback = None
+        self._backends = ScriptingBackendCollection(
+            {
+                "knime_io": ScriptingBackendV0(),
+                "knime.scripting.io": ScriptingBackendV1(),
+            }
+        )
 
     def initializeJavaCallback(self, java_callback: JavaClass) -> None:
         if self._java_callback is not None:
@@ -109,116 +379,55 @@ class PythonKernel(kg.EntryPoint):
         self._working_dir_initialized = True
 
     def setFlowVariables(self, flow_variables: Dict[str, Any]) -> None:
-        kio.flow_variables.clear()
-        for key, value in flow_variables.items():
-            if isinstance(value, JavaArray):
-                value = [x for x in value]
-            kio.flow_variables[key] = value
-
-    def _check_flow_variables(self):
-        LinkedHashMap = JavaClass(  # NOSONAR Java naming conventions apply.
-            "java.util.LinkedHashMap", kg.client_server._gateway_client
-        )
-        java_flow_variables = LinkedHashMap()
-        for key in kio.flow_variables.keys():
-            flow_variable = kio.flow_variables[key]
-            try:
-                java_flow_variables[key] = flow_variable
-            except AttributeError as ex:
-                # py4j raises attribute errors of the form "'<type>' object has no attribute '_get_object_id'" if it
-                # fails to translate Python objects to Java objects.
-                raise TypeError(
-                    f"Flow variable '{key}' of type '{type(flow_variable)}' cannot be translated to a valid KNIME flow "
-                    f"variable. Please remove the flow variable or change its type to something that can be translated."
-                )
+        self._backends.set_flow_variables(flow_variables)
 
     def getFlowVariables(self) -> JavaClass:
-        self._check_flow_variables()
-
-        LinkedHashMap = JavaClass(  # NOSONAR Java naming conventions apply.
-            "java.util.LinkedHashMap", kg.client_server._gateway_client
-        )
-        java_flow_variables = LinkedHashMap()
-        for key in kio.flow_variables.keys():
-            flow_variable = kio.flow_variables[key]
-            java_flow_variables[key] = flow_variable
-        return java_flow_variables
+        return self._backends.get_flow_variables()
 
     # TODO: at some point in the future, we should change this method such that it accepts all input tables at once
     #  instead of setting the tables one by one. The same applies to the way back to Java as well as to the
     #  corresponding methods dealing with pickled objects and images.
     def setInputTable(
         self, table_index: int, java_table_data_source: Optional[JavaClass]
-    ) -> None:
-        if java_table_data_source is not None:
-            # NB: We don't close the source. It must be available for the lifetime of the process.
-            table_data_source = kg.data_source_mapper(java_table_data_source)
-            read_table = kat.ArrowReadTable(table_data_source)
-        else:
-            read_table = None
-        kio._pad_up_to_length(kio._input_tables, table_index + 1)
-        kio._input_tables[table_index] = read_table
+    ):
+        self._backends.set_input_table(table_index, java_table_data_source)
 
     def releaseInputTables(self):
-        for table in kio.input_tables:
-            table._source.close()
+        self._backends.release_input_tables()
 
     def setNumExpectedOutputTables(self, num_output_tables: int) -> None:
-        kio._pad_up_to_length(kio._output_tables, num_output_tables)
+        self._backends.set_num_expected_output_tables(num_output_tables)
 
     def getOutputTable(
         self,
         table_index: int,
     ) -> Optional[JavaClass]:
-        # Get the java sink for this write table
-        write_table = kio.output_tables[table_index]
-        if (not hasattr(write_table, "_sink")) or (
-            not hasattr(write_table._sink, "_java_data_sink")
-        ):
-            raise RuntimeError(
-                f"Output table '{table_index}' is no valid knime_io.WriteTable."
-            )
-        return write_table._sink._java_data_sink
+        return self._backends.get_output_table_sink(table_index)
 
     def setInputObject(self, object_index: int, path: Optional[str]) -> None:
-        if path is not None:
-            with open(path, "rb") as file:
-                obj = pickle.load(file)
-        else:
-            obj = None
-        kio._pad_up_to_length(kio._input_objects, object_index + 1)
-        kio._input_objects[object_index] = obj
+        self._backends.set_input_object(object_index, path)
 
     def setNumExpectedOutputObjects(self, num_output_objects: int) -> None:
-        kio._pad_up_to_length(kio._output_objects, num_output_objects)
+        self._backends.set_num_expected_output_objects(num_output_objects)
 
     def getOutputObject(self, object_index: int, path: str) -> None:
-        obj = kio.output_objects[object_index]
-        with open(path, "wb") as file:
-            pickle.dump(obj=obj, file=file)
+        return self._backends.get_output_object(object_index, path)
 
     def getOutputObjectType(self, object_index: int) -> str:
-        return type(kio.output_objects[object_index]).__name__
+        return self._backends.get_output_object_type(object_index)
 
     def getOutputObjectStringRepresentation(self, object_index: int) -> str:
-        object_as_string = str(kio.output_objects[object_index])
-        return (
-            (object_as_string[:996] + "\n...")
-            if len(object_as_string) > 1000
-            else object_as_string
-        )
+        return self._backends.get_output_object_string_representation(object_index)
 
     def setNumExpectedOutputImages(self, num_output_images: int) -> None:
-        kio._pad_up_to_length(kio._output_images, num_output_images)
+        self._backends.set_num_expected_output_images(num_output_images)
 
     def getOutputImage(
         self,
         image_index: int,
         path: str,
     ) -> None:
-        image = kio.output_images[image_index]
-        with open(path, "wb") as file:
-            file.write(image)
+        self._backends.get_output_image(image_index, path)
 
     def getVariablesInWorkspace(self) -> List[Dict[str, str]]:
         def object_to_string(obj):
@@ -320,28 +529,6 @@ class PythonKernel(kg.EntryPoint):
     def executeOnCurrentThread(self, source_code: str) -> List[str]:
         return self._execute(source_code)
 
-    def _check_outputs(self):
-        for i, o in enumerate(kio._output_tables):
-            if o is None or not isinstance(o, kat._ArrowWriteTableImpl):
-                type_str = type(o) if o is not None else "None"
-                raise ValueError(
-                    f"Expected a WriteTable in output_tables[{i}], got {type_str}. "
-                    "Please use knime_io.write_table(data) or knime_io.batch_write_table() to create a WriteTable."
-                )
-
-        for i, o in enumerate(kio._output_objects):
-            if o is None:
-                raise ValueError(
-                    f"Expected an object in output_objects[{i}], got {type(o)}"
-                )
-
-        for i, o in enumerate(kio._output_images):
-            if o is None:
-                raise ValueError(
-                    f"Expected an image in output_images[{i}], got {type(o)}"
-                )
-        self._check_flow_variables()
-
     def _execute(self, source_code: str, check_outputs: bool = False) -> List[str]:
         def create_python_sink():
             java_sink = self._java_callback.create_sink()
@@ -350,12 +537,11 @@ class PythonKernel(kg.EntryPoint):
         with redirect_stdout(_CopyingTextIO(sys.stdout)) as stdout, redirect_stderr(
             _CopyingTextIO(sys.stderr)
         ) as stderr:
-            kt._backend = kat.ArrowBackend(create_python_sink)
+            self._backends.set_up_arrow(create_python_sink)
             exec(source_code, self._workspace)
             if check_outputs:
-                self._check_outputs()
-            kt._backend.close()
-            kt._backend = None
+                self._backends.check_outputs()
+            self._backends.tear_down_arrow()
         return ListConverter().convert(
             [stdout.get_copy(), stderr.get_copy()], kg.client_server._gateway_client
         )

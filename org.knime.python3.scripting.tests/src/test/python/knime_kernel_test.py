@@ -119,6 +119,7 @@ class PutTableIntoWorkspaceTest(unittest.TestCase):
     ):
         kernel = PythonKernel()
         kernel.setInputTable(0, java_table_data_source)
+        kio._prepare_input_tables()
         assert kio.input_tables[0] is not None
         table = kio.input_tables[0].to_pandas(sentinel=sentinel)
         assert table is not None
