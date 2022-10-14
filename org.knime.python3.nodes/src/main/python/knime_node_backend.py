@@ -387,9 +387,7 @@ class _PythonNodeProxy:
             if isinstance(schema_dict[key], dict):
                 self._parse_parameter_descriptions(schema_dict[key])
             elif key == "description":
-                schema_dict[key] = self._knime_parser.parse_fulldescription(
-                    schema_dict[key]
-                )
+                schema_dict[key] = self._knime_parser.parse_basic(schema_dict[key])
 
     def _specs_to_python(self, specs):
         return [
