@@ -49,30 +49,7 @@ Helper utilities for the KNIME Pure-Python Node Extension API.
 """
 
 from collections import namedtuple
-
-
-def parse_version(version_string):
-    """
-    Parses a string of the form "0.1.2" into a Version namedtuple, which can then be compared with other Version objects.
-    The constituent parts of the version (major, minor, patch) are only allowed to be non-negative integers.
-
-    If the provided string is None, then the Version is set to "0.0.0".
-    If the provided string is not of the correct format, then a ValueError is raised.
-    """
-    if version_string is None:
-        return Version(0, 0, 0)
-
-    if type(version_string) is Version:
-        return version_string
-
-    try:
-        major, minor, patch = [int(part) for part in version_string.split(".")]
-        assert major >= 0 and minor >= 0 and patch >= 0
-        return Version(major, minor, patch)
-    except (ValueError, AssertionError):
-        raise ValueError(
-            f"Incorrect version format: '{version_string}'. Must be of the form 'major.minor.patch', with non-negative integers for major, minor and patch."
-        )
+from typing import Optional
 
 
 class Version(namedtuple("Version", ["major", "minor", "patch"])):
@@ -86,3 +63,27 @@ class Version(namedtuple("Version", ["major", "minor", "patch"])):
 
     def __str__(self):
         return self.__repr__()
+
+    @classmethod
+    def parse_version(cls, version_string: Optional[str]) -> "Version":
+        """
+        Parses a string of the form "0.1.2" into a Version namedtuple, which can then be compared with other Version objects.
+        The constituent parts of the version (major, minor, patch) are only allowed to be non-negative integers.
+
+        If the provided string is None, then the Version is set to "0.0.0".
+        If the provided string is not of the correct format, then a ValueError is raised.
+        """
+        if version_string is None:
+            return Version(0, 0, 0)
+
+        if type(version_string) is Version:
+            return version_string
+
+        try:
+            major, minor, patch = [int(part) for part in version_string.split(".")]
+            assert major >= 0 and minor >= 0 and patch >= 0
+            return Version(major, minor, patch)
+        except (ValueError, AssertionError):
+            raise ValueError(
+                f"Incorrect version format: '{version_string}'. Must be of the form 'major.minor.patch', with non-negative integers for major, minor and patch."
+            )

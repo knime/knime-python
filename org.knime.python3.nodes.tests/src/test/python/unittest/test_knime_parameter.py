@@ -439,6 +439,32 @@ class VersionedParameterized:
     group = VersionedParameterGroup(since_version="0.2.0")
 
 
+since_version = kp.Version(0, 2, 0)
+
+
+@kp.parameter_group("", since_version=since_version)
+class VersionedDefaultsParameterGroup:
+    first = kp.IntParameter(
+        "",
+        "",
+        lambda v=since_version: -1 if v < kp.Version(0, 1, 0) else 1,
+    )
+
+
+class VersionedDefaultsParameterized:
+
+    int_param = kp.IntParameter("Int Parameter", "An integer parameter", 3)
+
+    double_param = kp.DoubleParameter(
+        "Double Parameter",
+        "",
+        lambda v=since_version: 1.5 if v >= kp.Version(0, 1, 0) else 0.5,
+        since_version=since_version,
+    )
+
+    group = VersionedDefaultsParameterGroup()
+
+
 #### Tests: ####
 class ParameterTest(unittest.TestCase):
     def setUp(self):
@@ -447,6 +473,25 @@ class ParameterTest(unittest.TestCase):
         self.parameterized_without_group = ParameterizedWithoutGroup()
 
         self.maxDiff = None
+
+    def test_inject_with_version_dependent_defaults(self):
+        obj = VersionedDefaultsParameterized()
+        params = {"model": {"int_param": 5}}
+
+        kp.inject_parameters(obj, params, "0.0.0")
+        self.assertEqual(obj.int_param, 5)
+        self.assertEqual(obj.double_param, 0.5)
+        self.assertEqual(obj.group.first, -1)
+        kp.inject_parameters(obj, params, "0.1.0", fail_on_missing=False)
+        self.assertEqual(obj.int_param, 5)
+        self.assertEqual(obj.double_param, 1.5)
+        self.assertEqual(obj.group.first, 1)
+
+    def test_init_versioned_default_on_get(self):
+        obj = VersionedDefaultsParameterized()
+        self.assertEqual(obj.int_param, 3)
+        self.assertEqual(obj.double_param, 1.5)
+        self.assertEqual(obj.group.first, 1)
 
     #### Test central functionality: ####
     def test_getting_parameters(self):
@@ -913,11 +958,14 @@ class ParameterTest(unittest.TestCase):
 
     def test_version_parsing(self):
         # test default behaviour
-        self.assertEqual(kp.parse_version(None), kp.Version(0, 0, 0))
+        self.assertEqual(kp.Version.parse_version(None), kp.Version(0, 0, 0))
 
-        self.assertEqual(kp.parse_version(kp.parse_version(None)), kp.Version(0, 0, 0))
+        self.assertEqual(
+            kp.Version.parse_version(kp.Version.parse_version(None)),
+            kp.Version(0, 0, 0),
+        )
 
-        self.assertEqual(kp.parse_version("0.1.0"), kp.Version(0, 1, 0))
+        self.assertEqual(kp.Version.parse_version("0.1.0"), kp.Version(0, 1, 0))
 
         # test that incorrect formatting raises ValueError
         for version in [
@@ -934,7 +982,7 @@ class ParameterTest(unittest.TestCase):
             "...",
         ]:
             with self.assertRaises(ValueError):
-                kp.parse_version(version)
+                kp.Version.parse_version(version)
 
         # check that comparing version works as expected
         self.assertTrue(kp.Version(0, 1, 0) > kp.Version(0, 0, 0))

@@ -50,11 +50,11 @@ Contains the implementation of the Parameter Dialogue API for building native Py
 """
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Optional, Union
 import knime_schema as ks
 import logging
 
-from knime_utils import parse_version, Version
+from knime_utils import Version
 
 LOGGER = logging.getLogger("Python backend")
 
@@ -103,7 +103,7 @@ def inject_parameters(
     This method injects the provided values into the parameter descriptors of the parameterised object,
     which can be a node or a parameter group.
     """
-    parameters_version = parse_version(parameters_version)
+    parameters_version = Version.parse_version(parameters_version)
     _inject_parameters(obj, parameters["model"], parameters_version, fail_on_missing)
 
 
@@ -122,6 +122,10 @@ def _inject_parameters(
             elif fail_on_missing:
                 # TODO: fail_on_missing is never set to True - remove it altogether?
                 raise ValueError(f"No value available for parameter '{name}'")
+        else:
+            # the parameter was introduced in a newer version but we might want to initialize
+            # the default based on the version the workflow was created with
+            param_obj._set_default_for_version(obj, parameters_version)
 
 
 def validate_parameters(obj, parameters: dict, version: str = None) -> None:
@@ -130,7 +134,7 @@ def validate_parameters(obj, parameters: dict, version: str = None) -> None:
 
     This method will raise a ValueError if a parameter violates its validator.
     """
-    version = parse_version(version)
+    version = Version.parse_version(version)
     _validate_parameters(obj, parameters["model"], version)
 
 
@@ -150,7 +154,7 @@ def validate_specs(obj, specs) -> None:
 
 
 def extract_schema(obj, extension_version: str = None, specs=None) -> dict:
-    extension_version = parse_version(extension_version)
+    extension_version = Version.parse_version(extension_version)
     return {
         "type": "object",
         "properties": {"model": _extract_schema(obj, extension_version, specs)},
@@ -169,7 +173,7 @@ def _extract_schema(obj, extension_version: Version, specs):
 
 
 def extract_ui_schema(obj, extension_version: str = None) -> dict:
-    extension_version = parse_version(extension_version)
+    extension_version = Version.parse_version(extension_version)
     elements = _extract_ui_schema_elements(obj, extension_version)
 
     return {"type": "VerticalLayout", "elements": elements}
@@ -227,8 +231,8 @@ def determine_compatability(
 
     When this function is called, the saved and current versions are already known to be different.
     """
-    saved_version = parse_version(saved_version)
-    current_version = parse_version(current_version)
+    saved_version = Version.parse_version(saved_version)
+    current_version = Version.parse_version(current_version)
     saved_parameters = saved_parameters["model"]
     _determine_compatability(obj, saved_version, current_version, saved_parameters)
 
@@ -333,17 +337,25 @@ class _BaseParameter(ABC):
 
     def __init__(
         self,
-        label,
-        description,
-        default_value,
-        validator=None,
+        label: str,
+        description: str,
+        default_value: Union[Any, Callable[[Optional[Version]], Any]],
+        validator: Optional[Callable[[Any], None]] = None,
         since_version: str = None,
     ):
+        """
+        Args:
+            label: The label to display for the parameter in the dialog
+            description: The description of the parameter that is shown in the node description and the dialog
+            default_value: Either a constant bool value or a function that given a Version provides the default value for that version. The function should return the default value for a freshly created node if called without arguments.
+            validator: Optional validation functions
+            since_version: The version at which this parameter was introduced. Can be omitted for the first version of a node
+        """
         self._label = label
         self._default_value = default_value
         self._validator = validator if validator is not None else _default_validator
         self.__doc__ = description if description is not None else ""
-        self._since_version = parse_version(since_version)
+        self._since_version = Version.parse_version(since_version)
 
     def __set_name__(self, owner, name):
         self._name = name
@@ -363,8 +375,21 @@ class _BaseParameter(ABC):
         if self._name in obj.__parameters__:
             return obj.__parameters__[self._name]
         else:
-            obj.__parameters__[self._name] = self._default_value
+            def_value = self._get_default()
+            obj.__parameters__[self._name] = def_value
+            return def_value
+
+    def _get_default(self, version: Version = None):
+        if callable(self._default_value):
+            if version is None:
+                return self._default_value()
+            else:
+                return self._default_value(version)
+        else:
             return self._default_value
+
+    def _set_default_for_version(self, obj, version: Version):
+        self.__set__(obj, self._get_default(version))
 
     def _inject(
         self, obj, value, parameters_version: Version = None, fail_on_missing=True
@@ -500,13 +525,13 @@ class IntParameter(_NumericParameter):
 
     def __init__(
         self,
-        label=None,
-        description=None,
-        default_value=0,
-        validator=None,
-        min_value=None,
-        max_value=None,
-        since_version=None,
+        label: Optional[str] = None,
+        description: Optional[str] = None,
+        default_value: Union[int, Callable[[Optional[Version]], int]] = 0,
+        validator: Optional[Callable[[int], None]] = None,
+        min_value: Optional[int] = None,
+        max_value: Optional[int] = None,
+        since_version: Optional[Union[Version, str]] = None,
     ):
         super().__init__(
             label,
@@ -542,13 +567,13 @@ class DoubleParameter(_NumericParameter):
 
     def __init__(
         self,
-        label=None,
-        description=None,
-        default_value=0.0,
-        validator=None,
-        min_value=None,
-        max_value=None,
-        since_version=None,
+        label: Optional[str] = None,
+        description: Optional[str] = None,
+        default_value: Union[float, Callable[[Optional[Version]], float]] = 0.0,
+        validator: Optional[Callable[[float], None]] = None,
+        min_value: Optional[float] = None,
+        max_value: Optional[float] = None,
+        since_version: Optional[Union[str, Version]] = None,
     ):
         super().__init__(
             label,
@@ -611,12 +636,12 @@ class StringParameter(_BaseMultiChoiceParameter):
 
     def __init__(
         self,
-        label=None,
-        description=None,
-        default_value: str = "",
-        enum: List[str] = None,
-        validator=None,
-        since_version=None,
+        label: Optional[str] = None,
+        description: Optional[str] = None,
+        default_value: Union[str, Callable[[Optional[Version]], str]] = "",
+        enum: Optional[List[str]] = None,
+        validator: Optional[Callable[[str], None]] = None,
+        since_version: Optional[Union[Version, str]] = None,
     ):
         if validator is None:
             validator = self.default_validator
@@ -722,12 +747,12 @@ class EnumParameter(_BaseMultiChoiceParameter):
 
     def __init__(
         self,
-        label=None,
-        description=None,
-        default_value: str = None,
-        enum: EnumParameterOptions = None,
-        validator=None,
-        since_version=None,
+        label: Optional[str] = None,
+        description: Optional[str] = None,
+        default_value: Union[str, Callable[[Optional[Version]], str]] = None,
+        enum: Optional[EnumParameterOptions] = None,
+        validator: Optional[Callable[[str], None]] = None,
+        since_version: Optional[Union[Version, str]] = None,
     ):
         if validator is None:
             validator = self.default_validator
@@ -782,6 +807,14 @@ class _BaseColumnParameter(_BaseParameter):
         schema_option: str,
         since_version=None,
     ):
+        """
+        Args:
+            label: Label of the parameter in the dialog
+            description: Description of the parameter in the node description and dialog
+            port_index: The input port to select columns from
+            column_filter: A function for prefiltering columns
+            since_version: The version at which this parameter was introduced. Can be omitted if the parameter is part of the first version of the node.
+        """
         super().__init__(
             label, description, default_value=None, since_version=since_version
         )
@@ -815,14 +848,24 @@ class ColumnParameter(_BaseColumnParameter):
 
     def __init__(
         self,
-        label=None,
-        description=None,
-        port_index=0,
+        label: Optional[str] = None,
+        description: Optional[str] = None,
+        port_index: int = 0,
         column_filter: Callable[[ks.Column], bool] = None,
-        include_row_key=False,
-        include_none_column=False,
-        since_version=None,
+        include_row_key: bool = False,
+        include_none_column: bool = False,
+        since_version: Optional[str] = None,
     ):
+        """
+        Args:
+            label: Label of the parameter in the dialog
+            description: Description of the parameter in the node description and dialog
+            port_index: The input port to select columns from
+            column_filter: A function for prefiltering columns
+            include_row_key: Whether to include the row keys as selectable column
+            include_none_column: Whether to allow to select no column
+            since_version: The version at which this parameter was introduced. Can be omitted if the parameter is part of the first version of the node.
+        """
         super().__init__(
             label, description, port_index, column_filter, "oneOf", since_version
         )
@@ -881,11 +924,11 @@ class MultiColumnParameter(_BaseColumnParameter):
 
     def __init__(
         self,
-        label=None,
-        description=None,
-        port_index=0,
-        column_filter: Callable[[ks.Column], bool] = None,
-        since_version=None,
+        label: Optional[str] = None,
+        description: Optional[str] = None,
+        port_index: Optional[int] = 0,
+        column_filter: Optional[Callable[[ks.Column], bool]] = None,
+        since_version: Optional[Union[str, Version]] = None,
     ):
         super().__init__(
             label, description, port_index, column_filter, "anyOf", since_version
@@ -919,11 +962,11 @@ class BoolParameter(_BaseParameter):
 
     def __init__(
         self,
-        label=None,
-        description=None,
-        default_value=False,
-        validator=None,
-        since_version=None,
+        label: Optional[str] = None,
+        description: Optional[str] = None,
+        default_value: Union[bool, Callable[[Optional[Version]], bool]] = False,
+        validator: Optional[Callable[[bool], None]] = None,
+        since_version: Optional[Union[Version, str]] = None,
     ):
         if validator is None:
             validator = self.default_validator
@@ -948,7 +991,7 @@ def _flatten(lst: list) -> list:
     return flat
 
 
-def parameter_group(label: str, since_version: str = None):
+def parameter_group(label: str, since_version: Optional[Union[Version, str]] = None):
     """
     Used for injecting descriptor protocol methods into a custom parameter group class.
     "obj" in this context is the parameterized object instance or a parameter group instance.
@@ -999,11 +1042,18 @@ def parameter_group(label: str, since_version: str = None):
     def decorate_class(custom_cls):
         orig_init = custom_cls.__init__
 
+        group_since_version = Version.parse_version(since_version)
+
         def __init__(
-            self, label=label, since_version=None, validator=None, *args, **kwargs
+            self,
+            label=label,
+            since_version=group_since_version,
+            validator=None,
+            *args,
+            **kwargs,
         ):
             self._label = label
-            self._since_version = parse_version(since_version)
+            self._since_version = Version.parse_version(since_version)
             self._validator = validator
             self.__parameters__ = {}
             self._override_internal_validator = False
@@ -1063,6 +1113,12 @@ def parameter_group(label: str, since_version: str = None):
 
         def __set__(self, obj, values):
             raise RuntimeError("Cannot set parameter group values directly.")
+
+        def _set_default_for_version(self, obj, version: Version):
+            param_holder = _get_param_holder(self, obj)
+            # Assumes that if a parameter group is new, so are its elements
+            for param_obj in _get_parameters(param_holder).values():
+                param_obj._set_default_for_version(param_holder, version)
 
         def _inject(
             self, obj, values, parameters_version: Version, fail_on_missing: bool
@@ -1137,6 +1193,7 @@ def parameter_group(label: str, since_version: str = None):
         custom_cls.__set__ = __set__
         custom_cls.__str__ = __str__
         custom_cls._get_value = _get_value
+        custom_cls._set_default_for_version = _set_default_for_version
         custom_cls._inject = _inject
         custom_cls._validate = _validate
         custom_cls._validate_specs = validate_specs

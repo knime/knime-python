@@ -68,6 +68,8 @@ MultiColumnParameter = _kn.MultiColumnParameter
 EnumParameter = _kp.EnumParameter
 EnumParameterOptions = _kp.EnumParameterOptions
 
+Version = _kp.Version
+
 PortType = _kn.PortType
 Port = _kn.Port
 PortObject = _kn.PortObject
