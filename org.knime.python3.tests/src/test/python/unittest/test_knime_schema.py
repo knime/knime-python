@@ -803,7 +803,9 @@ class ProxyTests(unittest.TestCase):
         df = pd.DataFrame()
         v = "This is a byte 🖤 string".encode()
         df["byte_vectors"] = pd.Series([v, v, v], dtype=knime_type.to_pandas())
-        print(df)
+        # Try to convert to string because that caused an exception inside Pandas
+        # when we did not implement __array__ in the KnimePandasExtensionArray
+        str(df)
 
 
 if __name__ == "__main__":
