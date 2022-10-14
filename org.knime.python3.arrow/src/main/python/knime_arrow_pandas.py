@@ -482,6 +482,10 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
 
         tmp_list = self._data.to_pylist()  # convert immutable data to mutable list
 
+        if isinstance(item, tuple) and len(item) == 1:
+            # unwrap single-tuples which can arrive here since Pandas 1.5
+            item = item[0]
+
         if isinstance(item, int):
             tmp_list[item] = value
             _set_data_from_input(tmp_list)
@@ -538,7 +542,7 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
 
         else:
             raise NotImplementedError(
-                f"Setting a value with an indexer of type {type(item)} is not (yet) possible"
+                f"Setting a value with an indexer {item} of type {type(item)} is not (yet) possible"
             )
 
     def __len__(self):
