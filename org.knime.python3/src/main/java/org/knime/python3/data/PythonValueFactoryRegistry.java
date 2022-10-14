@@ -115,7 +115,13 @@ public final class PythonValueFactoryRegistry {
         final var bundle = Platform.getBundle(contributor);
         try {
             final URL moduleUrl = FileLocator.find(bundle, new org.eclipse.core.runtime.Path(modulePath), null);//NOSONAR
-            // TODO handle null i.e. if the specified module can't be found in the bundle
+
+            if (moduleUrl == null) {
+                LOGGER.coding("Could not find module path '" + modulePath + "' in bundle '" + contributor + "'."
+                    + " Please make sure that the extension is configured correctly and that the Python files are included "
+                    + "in your build.properties");
+                return null;
+            }
             final URL moduleFileUrl = FileLocator.toFileURL(moduleUrl);//NOSONAR
             return FileUtil.resolveToPath(moduleFileUrl);
         } catch (IOException | URISyntaxException ex) {
