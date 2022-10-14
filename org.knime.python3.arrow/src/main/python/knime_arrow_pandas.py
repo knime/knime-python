@@ -702,4 +702,7 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
         return f"KnimePandasExtArray({self._converter}, {self._storage_type}, {self._logical_type})"
 
     def __array__(self, dtype=None):
-        return self._data.to_numpy(np.dtype("object") if dtype is None else dtype)
+        return np.array(
+            self._data.to_pylist(),
+            dtype=np.dtype("object") if dtype is None else dtype,
+        )
