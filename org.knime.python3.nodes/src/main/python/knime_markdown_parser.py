@@ -54,9 +54,26 @@ class _TabHeaderPreprocessor(Preprocessor):
     def run(self, lines):
         new_lines = []
         for line in lines:
-            if re.search("#{1,4} ", line):
+            if re.search("#{1,6} ", line):
                 line = re.sub("#+ ", "", line)
             new_lines.append(line)
+        return new_lines
+
+
+class _LineBreakPreprocessor(Preprocessor):
+    """
+    Mark empty lines with a hook for the postprocessor.
+
+    Tab descriptions, for example, don't allow <p> tags, which can be emulated with <br/><br/> tags.
+    """
+
+    def run(self, lines):
+        new_lines = []
+        for line in lines:
+            if len(line) == 0:
+                line = "::linebreak::"
+            new_lines.append(line)
+
         return new_lines
 
 
@@ -160,20 +177,9 @@ class _KnimePostCode(Postprocessor):
         return text
 
 
-class _LineBreakPreprocessor(Preprocessor):
-    def run(self, lines):
-        new_lines = []
-        for line in lines:
-            if len(line) == 0:
-                line = "::linebreak::"
-            new_lines.append(line)
-
-        return new_lines
-
-
 class _LineBreakPostprocessor(Postprocessor):
     """
-    Attempt to replace empty lines with <br/>.
+    Use the ::linebreak:: hook from _LineBreakPreprocessor to emulate paragraph separation.
     """
 
     def run(self, text):
@@ -205,14 +211,12 @@ class _KnimePostBlockquote(Postprocessor):
         return text
 
 
-class _KnExtension(Extension):
+class _BaseKnExtension(Extension):
     """
-    Basic extension for Knime schema.
+    Base Markdown extension class that deregisters unsupported extensions.
     """
 
     def extendMarkdown(self, _md) -> None:
-        # Preprocessors
-        _md.preprocessors.register(_HeaderPreprocessor(), "headerlines", 100)
         _md.preprocessors.deregister("html_block")
 
         # Remove not supported extensions
@@ -222,20 +226,34 @@ class _KnExtension(Extension):
         _md.inlinePatterns.deregister("autolink")
         _md.inlinePatterns.deregister("automail")
         _md.inlinePatterns.deregister("html")
-
         # _md.treeprocessors.deregister("unescape")
 
         _md.inlinePatterns.register(_KnimeProcessorAsterisk(r"\*"), "i_strong", 110)
         _md.inlinePatterns.register(_KnimeProcessorUnderscore(r"_"), "strong_i", 100)
+
+
+class _KnExtension(_BaseKnExtension):
+    """
+    Basic extension for Knime schema.
+    """
+
+    def extendMarkdown(self, _md) -> None:
+        super().extendMarkdown(_md)
+
+        # Preprocessors
+        _md.preprocessors.register(_HeaderPreprocessor(), "headerlines", 100)
 
         _md.postprocessors.register(_KnimeTable(), "knime_table", 200)
         _md.postprocessors.register(_KnimePostHeader(), "knime_post_headder", 200)
 
         _md.treeprocessors.register(_HTMLTreeprocessor(), "knime_code", 5)
         _md.postprocessors.register(_KnimePostCode(), "knime_post_code", 0)
+        _md.postprocessors.register(
+            _KnimePostBlockquote(), "knime_post_remove_blockquote", 200
+        )
 
 
-class _KnExtensionForTabs(Extension):
+class _KnExtensionForTabs(_BaseKnExtension):
     """
     Markdown extension for tab descriptions.
 
@@ -249,33 +267,31 @@ class _KnExtensionForTabs(Extension):
     """
 
     def extendMarkdown(self, _md) -> None:
+        # _md = super().extendMarkdown(_md)
+        super().extendMarkdown(_md)
+
         # Preprocessors
-        _md.preprocessors.deregister("html_block")
-        _md.preprocessors.register(_LineBreakPreprocessor(), "line_breaks_pre", 100)
+        _md.preprocessors.register(
+            _LineBreakPreprocessor(), "knime_pre_detect_line_breaks", 100
+        )
+        _md.preprocessors.register(
+            _TabHeaderPreprocessor(), "knime_pre_remove_headers", 200
+        )
 
-        # Remove not supported extensions
-        _md.inlinePatterns.deregister("image_reference")
-        _md.inlinePatterns.deregister("image_link")
-        _md.inlinePatterns.deregister("short_image_ref")
-        _md.inlinePatterns.deregister("autolink")
-        _md.inlinePatterns.deregister("automail")
-        _md.inlinePatterns.deregister("html")
-
-        _md.inlinePatterns.register(_KnimeProcessorAsterisk(r"\*"), "i_strong", 110)
-        _md.inlinePatterns.register(_KnimeProcessorUnderscore(r"_"), "strong_i", 100)
-
-        _md.treeprocessors.register(_HTMLTreeprocessor(), "knime_code", 5)
-
-        _md.preprocessors.register(_TabHeaderPreprocessor(), "knime_pre_headers", 200)
-
-        _md.postprocessors.register(_KnimePostParagraph(), "knime_post_paragraph", 200)
+        # Postprocessors
         _md.postprocessors.register(
-            _KnimePostHorizontalRule(), "knime_post_horizontal_rule", 200
+            _KnimePostParagraph(), "knime_post_remove_paragraph", 200
         )
         _md.postprocessors.register(
-            _KnimePostBlockquote(), "knime_post_blockquote", 200
+            _KnimePostHorizontalRule(), "knime_post_remove_horizontal_rule", 200
         )
-        _md.postprocessors.register(_LineBreakPostprocessor(), "line_breaks_post", 200)
+        _md.postprocessors.register(
+            _KnimePostBlockquote(), "knime_post_remove_blockquote", 200
+        )
+        _md.postprocessors.register(
+            _LineBreakPostprocessor(), "knime_post_replace_line_breaks", 200
+        )
+        _md.postprocessors.register(_KnimePostCode(), "knime_post_code", 0)
 
 
 class KnimeMarkdownParser:
@@ -314,11 +330,14 @@ class KnimeMarkdownParser:
             return "<i>No description available.</i>"
 
     def parse_tab_description(self, doc):
-        if doc:
+        if doc and doc.strip() != "":
             doc = textwrap.dedent(doc)
             return self.md_tabs.convert(doc)
         else:
-            return ""
+            # this is done in order to prevent the description area of the tab (grey background)
+            # from overfilling into the list of options in the tab (white background) in cases
+            # when doc is either not provided, or is an empty string.
+            return " "
 
     def parse_ports(self, ports):
         return [
