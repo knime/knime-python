@@ -731,6 +731,8 @@ class EnumParameter(_BaseMultiChoiceParameter):
     ):
         if validator is None:
             validator = self.default_validator
+        else:
+            validator = self.add_default_validator(validator)
 
         if enum is None or len(enum.get_all_options()) == 0:
             self._enum = EnumParameterOptions._get_default_option()
@@ -754,13 +756,16 @@ class EnumParameter(_BaseMultiChoiceParameter):
     def _extract_description(self, parent_scope: _Scope):
         return {"name": self._label, "description": self._generate_description()}
 
-    def validator(self, func):
+    def add_default_validator(self, func):
         def combined_validator(value):
             # we retain the default validator to ensure that value is always one of the available options
             self.default_validator(value)
             func(value)
 
-        self._validator = combined_validator
+        return combined_validator
+
+    def validator(self, func):
+        self._validator = self.add_default_validator(func)
 
 
 class _BaseColumnParameter(_BaseParameter):
