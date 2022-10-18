@@ -330,14 +330,11 @@ class KnimeMarkdownParser:
             return "<i>No description available.</i>"
 
     def parse_tab_description(self, doc):
-        if doc and doc.strip() != "":
+        if doc:
             doc = textwrap.dedent(doc)
             return self.md_tabs.convert(doc)
         else:
-            # this is done in order to prevent the description area of the tab (grey background)
-            # from overfilling into the list of options in the tab (white background) in cases
-            # when doc is either not provided, or is an empty string.
-            return " "
+            return ""
 
     def parse_ports(self, ports):
         return [
