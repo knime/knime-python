@@ -50,7 +50,7 @@ Contains the implementation of the Parameter Dialogue API for building native Py
 """
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, TypeVar, Union
 import knime_schema as ks
 import logging
 
@@ -327,6 +327,25 @@ def _default_validator(t):
     pass
 
 
+T = TypeVar("T")
+DefaultValueProvider = Callable[[Version], T]
+"""A DefaultValueProvider is a Callable that given a version produces the default value of its corresponding parameter for that version."""
+
+# set by knime_node_backend when an extension is loaded
+_extension_version = None
+
+
+def set_extension_version(version: str):
+    global _extension_version
+    _extension_version = Version.parse_version(version)
+
+
+def _get_extension_version() -> Version:
+    if _extension_version is None:
+        raise RuntimeError("The extension version has not been set by the backend.")
+    return _extension_version
+
+
 class _BaseParameter(ABC):
     """
     Base class for parameter descriptors.
@@ -339,7 +358,7 @@ class _BaseParameter(ABC):
         self,
         label: str,
         description: str,
-        default_value: Union[Any, Callable[[Optional[Version]], Any]],
+        default_value: Union[Any, DefaultValueProvider[Any]],
         validator: Optional[Callable[[Any], None]] = None,
         since_version: str = None,
     ):
@@ -347,8 +366,8 @@ class _BaseParameter(ABC):
         Args:
             label: The label to display for the parameter in the dialog
             description: The description of the parameter that is shown in the node description and the dialog
-            default_value: Either a constant bool value or a function that given a Version provides the default value for that version. The function should return the default value for a freshly created node if called without arguments.
-            validator: Optional validation functions
+            default_value: Either the default value for the parameter or a function that given a Version provides the default value for that version.
+            validator: Optional validation function
             since_version: The version at which this parameter was introduced. Can be omitted for the first version of a node
         """
         self._label = label
@@ -382,7 +401,7 @@ class _BaseParameter(ABC):
     def _get_default(self, version: Version = None):
         if callable(self._default_value):
             if version is None:
-                return self._default_value()
+                return self._default_value(_get_extension_version())
             else:
                 return self._default_value(version)
         else:
@@ -527,7 +546,7 @@ class IntParameter(_NumericParameter):
         self,
         label: Optional[str] = None,
         description: Optional[str] = None,
-        default_value: Union[int, Callable[[Optional[Version]], int]] = 0,
+        default_value: Union[int, DefaultValueProvider[int]] = 0,
         validator: Optional[Callable[[int], None]] = None,
         min_value: Optional[int] = None,
         max_value: Optional[int] = None,
@@ -569,7 +588,7 @@ class DoubleParameter(_NumericParameter):
         self,
         label: Optional[str] = None,
         description: Optional[str] = None,
-        default_value: Union[float, Callable[[Optional[Version]], float]] = 0.0,
+        default_value: Union[float, DefaultValueProvider[float]] = 0.0,
         validator: Optional[Callable[[float], None]] = None,
         min_value: Optional[float] = None,
         max_value: Optional[float] = None,
@@ -638,7 +657,7 @@ class StringParameter(_BaseMultiChoiceParameter):
         self,
         label: Optional[str] = None,
         description: Optional[str] = None,
-        default_value: Union[str, Callable[[Optional[Version]], str]] = "",
+        default_value: Union[str, DefaultValueProvider[str]] = "",
         enum: Optional[List[str]] = None,
         validator: Optional[Callable[[str], None]] = None,
         since_version: Optional[Union[Version, str]] = None,
@@ -749,7 +768,7 @@ class EnumParameter(_BaseMultiChoiceParameter):
         self,
         label: Optional[str] = None,
         description: Optional[str] = None,
-        default_value: Union[str, Callable[[Optional[Version]], str]] = None,
+        default_value: Union[str, DefaultValueProvider[str]] = None,
         enum: Optional[EnumParameterOptions] = None,
         validator: Optional[Callable[[str], None]] = None,
         since_version: Optional[Union[Version, str]] = None,
@@ -964,7 +983,7 @@ class BoolParameter(_BaseParameter):
         self,
         label: Optional[str] = None,
         description: Optional[str] = None,
-        default_value: Union[bool, Callable[[Optional[Version]], bool]] = False,
+        default_value: Union[bool, DefaultValueProvider[bool]] = False,
         validator: Optional[Callable[[bool], None]] = None,
         since_version: Optional[Union[Version, str]] = None,
     ):

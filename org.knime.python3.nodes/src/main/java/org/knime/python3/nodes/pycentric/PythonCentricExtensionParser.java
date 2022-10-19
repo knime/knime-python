@@ -113,17 +113,16 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
                 name, //
                 group_id, //
                 env_name, //
-                (String)map.get("extension_module"),//
+                (String)map.get("extension_module"), //
                 path, //
-                version
-            );
+                version);
         }
     }
 
     private static PyNodeExtension retrieveDynamicInformationFromPython(final StaticExtensionInfo staticInfo)
         throws IOException {
-        var gatewayFactory =
-            new PythonNodeGatewayFactory(staticInfo.m_id, staticInfo.m_environmentName, staticInfo.m_modulePath);
+        var gatewayFactory = new PythonNodeGatewayFactory(staticInfo.m_id, staticInfo.m_environmentName,
+            staticInfo.m_version, staticInfo.m_modulePath);
         try (var gateway = gatewayFactory.create();
                 var outputConsumer =
                     PythonGatewayUtils.redirectGatewayOutput(gateway, LOGGER::debug, LOGGER::debug, 1000)) {
@@ -140,8 +139,7 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
         final StaticExtensionInfo staticInfo, final PythonNodeGatewayFactory gatewayFactory) {
         var categoriesJson = backend.retrieveCategoriesAsJson();
         var nodesJson = backend.retrieveNodesAsJson();
-        return new FluentPythonNodeExtension(staticInfo.m_id,
-            parseNodes(nodesJson, staticInfo.m_extensionPath),
+        return new FluentPythonNodeExtension(staticInfo.m_id, parseNodes(nodesJson, staticInfo.m_extensionPath),
             parseCategories(categoriesJson, staticInfo.m_extensionPath), gatewayFactory, staticInfo.m_version);
     }
 

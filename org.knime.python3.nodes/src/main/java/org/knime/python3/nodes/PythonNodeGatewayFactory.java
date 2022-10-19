@@ -90,16 +90,21 @@ public final class PythonNodeGatewayFactory {
 
     private final String m_environmentName;
 
+    private final String m_extensionVersion;
+
     /**
      * @param extensionId the extension's id
      * @param environmentName the name of the environment the extension uses
+     * @param extensionVersion the version of the extension
      * @param modulePath the absolute path to the module defining the extension
      */
-    public PythonNodeGatewayFactory(final String extensionId, final String environmentName, final Path modulePath) {
+    public PythonNodeGatewayFactory(final String extensionId, final String environmentName,
+        final String extensionVersion, final Path modulePath) {
         m_module = modulePath.getFileName().toString();
         m_modulePath = modulePath.getParent();
         m_extensionId = extensionId;
         m_environmentName = environmentName;
+        m_extensionVersion = extensionVersion;
     }
 
     /**
@@ -116,7 +121,7 @@ public final class PythonNodeGatewayFactory {
             .addToPythonPath(Python3ArrowSourceDirectory.getPath()) //
             .addToPythonPath(Python3ViewsSourceDirectory.getPath())//
             .addToPythonPath(m_modulePath)//
-            .withCustomizer(new KnimeNodeBackendCustomizer(m_extensionId, m_module));
+            .withCustomizer(new KnimeNodeBackendCustomizer(m_extensionId, m_module, m_extensionVersion));
         PythonValueFactoryRegistry.getModules().stream().map(PythonValueFactoryModule::getParentDirectory)
             .forEach(gatewayDescriptionBuilder::addToPythonPath);
         // For debugging it is best to always start a new process, so that changes in the code are immediately reflected
@@ -145,14 +150,18 @@ public final class PythonNodeGatewayFactory {
 
         private final String m_extensionModule;
 
-        KnimeNodeBackendCustomizer(final String extensionId, final String extensionModule) {
+        private final String m_extensionVersion;
+
+        KnimeNodeBackendCustomizer(final String extensionId, final String extensionModule,
+            final String extensionVersion) {
             m_extensionId = extensionId;
             m_extensionModule = extensionModule;
+            m_extensionVersion = extensionVersion;
         }
 
         @Override
         public void customize(final KnimeNodeBackend entryPoint) {
-            entryPoint.loadExtension(m_extensionId, m_extensionModule);
+            entryPoint.loadExtension(m_extensionId, m_extensionModule, m_extensionVersion);
         }
 
         @Override

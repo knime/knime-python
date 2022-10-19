@@ -439,15 +439,12 @@ class VersionedParameterized:
     group = VersionedParameterGroup(since_version="0.2.0")
 
 
-since_version = kp.Version(0, 2, 0)
-
-
-@kp.parameter_group("", since_version=since_version)
+@kp.parameter_group("", since_version="0.2.0")
 class VersionedDefaultsParameterGroup:
     first = kp.IntParameter(
         "",
         "",
-        lambda v=since_version: -1 if v < kp.Version(0, 1, 0) else 1,
+        lambda v: -1 if v < kp.Version(0, 1, 0) else 1,
     )
 
 
@@ -458,8 +455,8 @@ class VersionedDefaultsParameterized:
     double_param = kp.DoubleParameter(
         "Double Parameter",
         "",
-        lambda v=since_version: 1.5 if v >= kp.Version(0, 1, 0) else 0.5,
-        since_version=since_version,
+        lambda v: 1.5 if v >= kp.Version(0, 1, 0) else 0.5,
+        since_version="0.2.0",
     )
 
     group = VersionedDefaultsParameterGroup()
@@ -488,6 +485,7 @@ class ParameterTest(unittest.TestCase):
         self.assertEqual(obj.group.first, 1)
 
     def test_init_versioned_default_on_get(self):
+        kp.set_extension_version("0.2.0")
         obj = VersionedDefaultsParameterized()
         self.assertEqual(obj.int_param, 3)
         self.assertEqual(obj.double_param, 1.5)

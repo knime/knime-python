@@ -77,7 +77,7 @@ public interface KnimeNodeBackend extends PythonEntryPoint {
      * @param extensionId id of the extension
      * @param extensionModule module that bootstraps the extension
      */
-    void loadExtension(String extensionId, String extensionModule);
+    void loadExtension(String extensionId, String extensionModule, String extensionVersion);
 
     String retrieveCategoriesAsJson();
 

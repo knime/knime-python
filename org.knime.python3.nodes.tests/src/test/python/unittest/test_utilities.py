@@ -1,7 +1,11 @@
 import py4j.java_collections
 
 
-def setup_backend(extension_module: str, extension_id: str = "test.extension"):
+def setup_backend(
+    extension_module: str,
+    extension_id: str = "test.extension",
+    extension_version: str = "0.0.0",
+):
     """
     Sets up a fresh backend and loads the provided extension.
     """
@@ -14,7 +18,7 @@ def setup_backend(extension_module: str, extension_id: str = "test.extension"):
     kn._categories.clear()
     # ensure that extension_module is freshly imported by backend.loadExtension
     sys.modules.pop("mock_extension", None)
-    backend.loadExtension(extension_id, extension_module)
+    backend.loadExtension(extension_id, extension_module, extension_version)
     return backend
 
 
