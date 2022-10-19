@@ -100,7 +100,7 @@ final class PythonExtensionPreferences {
                 .map(ExtensionConfig::debugMode)//
                 .findFirst()//
                 // cache the gateway if not told otherwise
-                .orElse(true);
+                .orElse(false);
     }
 
     private static Stream<ExtensionConfig> loadConfigs() {
