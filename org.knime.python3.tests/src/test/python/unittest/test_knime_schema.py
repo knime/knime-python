@@ -160,7 +160,7 @@ class LogicalStringTest(TypeTest, unittest.TestCase):
         )
 
     def test_value_type_fails(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(ValueError):
             t = self.create_type()
             print(t.value_type)
 
@@ -182,7 +182,9 @@ class LogicalTimeTest(TypeTest, unittest.TestCase):
 
     def test_value_type(self):
         t = self.create_type()
-        self.assertEqual(dt.date, t.value_type)
+        self.assertEqual(
+            str(dt.date.__module__) + "." + str(dt.date.__name__), t.value_type
+        )
 
 
 class UnknownLogicalTest(unittest.TestCase):
@@ -237,6 +239,7 @@ def _register_extension_types():
                     "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.time.LocalTimeValueFactory\\"}" }
                 }
                 """,
+        "datetime.time",
     )
 
     kt.register_python_value_factory(
@@ -249,6 +252,7 @@ def _register_extension_types():
                     "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.time.LocalDateValueFactory\\"}" }
                 }
                 """,
+        "datetime.date",
     )
 
     kt.register_python_value_factory(
@@ -265,6 +269,7 @@ def _register_extension_types():
                     ]
                 }
                 """,
+        "datetime.datetime",
     )
 
     kt.register_python_value_factory(
@@ -277,6 +282,7 @@ def _register_extension_types():
                     "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.value.DenseByteVectorValueFactory\\"}" }
                 }
                 """,
+        "knime.types.builtin.DenseByteVector",
     )
 
 
@@ -725,9 +731,21 @@ class ProxyTests(unittest.TestCase):
         import pyarrow as pa
         import knime_arrow_types as kat
 
-        kt._python_proxy_type_to_value_factory[MyTime] = (
-            MyLocalTimeValueFactory(),
-            dt.time,
+        _register_extension_types()
+        data_spec_json = '"long"'
+        data_traits = """
+                {
+                    "type": "simple",
+                    "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.time.LocalTimeValueFactory\\"}" }
+                }
+                """
+        kt.register_python_value_factory(
+            __name__,
+            "MyLocalTimeValueFactory",
+            data_spec_json,
+            data_traits,
+            "test_knime_schema.MyTime",
+            False,
         )
 
         EXPECTED_VALUE_FACTORY = '{"value_factory_class":"org.knime.core.data.v2.time.LocalTimeValueFactory"}'
@@ -764,8 +782,7 @@ class ProxyTests(unittest.TestCase):
         import knime_arrow_types as kat
 
         _register_extension_types()
-
-        kt._python_proxy_type_to_value_factory[MyTime] = (
+        kt._python_proxy_type_to_factory_info[MyTime] = (
             MyLocalTimeValueFactory(),
             dt.time,
         )

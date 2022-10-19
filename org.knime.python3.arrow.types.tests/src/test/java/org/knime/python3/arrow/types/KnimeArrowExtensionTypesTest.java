@@ -294,7 +294,7 @@ public class KnimeArrowExtensionTypesTest {
 			final var pythonModule = module.getModuleName();
 			for (final var factory : module) {
 				entryPoint.registerPythonValueFactory(pythonModule, factory.getPythonValueFactoryName(),
-						factory.getDataSpecRepresentation(), factory.getDataTraitsJson());
+						factory.getDataSpecRepresentation(), factory.getDataTraitsJson(), factory.getValueTypeName(), factory.isDefaultPythonRepresentation());
 			}
 		}
 	}
@@ -689,7 +689,7 @@ public class KnimeArrowExtensionTypesTest {
 	public interface KnimeArrowExtensionTypeEntryPoint extends PythonEntryPoint {
 
 		void registerPythonValueFactory(final String pythonModule, final String pythonValueFactoryName,
-				final String dataSpec, final String dataTraits);
+				final String dataSpec, final String dataTraitsfinal, final String pythonValueTypeName, final boolean isDefaultPythonRepresentation);
 
 		void assertIntListEquals(PythonArrowDataSource dataSource, int a, int b, int c, int d, int e);
 

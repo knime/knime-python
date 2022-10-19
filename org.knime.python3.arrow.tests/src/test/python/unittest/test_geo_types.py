@@ -114,6 +114,7 @@ class GeoSpatialExtensionTypeTest(unittest.TestCase):
                     ]
                 }
                 """,
+                "knime.types.geospatial.GeoValue",
             )
 
             # to register the arrow<->pandas column converters

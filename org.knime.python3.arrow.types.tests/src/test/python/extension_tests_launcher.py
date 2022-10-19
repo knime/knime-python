@@ -61,9 +61,16 @@ class EntryPoint(kg.EntryPoint):
         python_value_factory_name,
         data_spec,
         data_traits,
+        python_value_type_name,
+        is_default_python_representation,
     ):
         kt.register_python_value_factory(
-            python_module, python_value_factory_name, data_spec, data_traits
+            python_module,
+            python_value_factory_name,
+            data_spec,
+            data_traits,
+            python_value_type_name,
+            is_default_python_representation,
         )
 
     def assertFsLocationEquals(self, data_source, category, specifier, path):
@@ -111,7 +118,7 @@ class EntryPoint(kg.EntryPoint):
 
     def writeFsLocationViaPandas(self, data_sink, category, specifier, path):
         with kg.data_sink_mapper(data_sink) as sink:
-            import extension_types as et
+            import knime.types.builtin as et
 
             fs_location = et.FsLocationValue(category, specifier, path)
             df = pd.DataFrame()
@@ -121,7 +128,7 @@ class EntryPoint(kg.EntryPoint):
 
     def writeFsLocationViaPyList(self, data_sink, category, specifier, path):
         with kg.data_sink_mapper(data_sink) as sink:
-            import extension_types as et
+            import knime.types.builtin as et
 
             fs_location = et.FsLocationValue(category, specifier, path)
             sink.write(pa.table([fs_location], ["fs_location"]))

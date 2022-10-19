@@ -734,6 +734,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
                         ]
                     }
                     """,
+            "datetime.datetime",
         )
         with DummyJavaDataSinkFactory() as sink_creator:
             arrow_backend = kat.ArrowBackend(sink_creator)
