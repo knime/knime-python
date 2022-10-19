@@ -90,7 +90,7 @@ This should be of the form &quot;knime.types.ext.mymodule&quot; for extension ty
                </documentation>
             </annotation>
          </attribute>
-         <attribute name="ValueFactory" type="string">
+         <attribute name="ValueFactory" type="string" use="required">
             <annotation>
                <documentation>
                   
