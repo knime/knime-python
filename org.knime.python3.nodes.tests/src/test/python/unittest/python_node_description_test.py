@@ -285,6 +285,6 @@ class MarkdownDocstringTest(unittest.TestCase):
         break  
         hammertime
         """
-        _expected = "<p>break<br />\nhammertime</p>"
+        _expected = "<p>break\nhammertime</p>"
         _res = self.parser.parse_basic(desc)
         self.assertEqual(_res, _expected)

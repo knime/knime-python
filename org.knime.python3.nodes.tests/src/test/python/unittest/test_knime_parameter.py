@@ -892,7 +892,7 @@ class ParameterTest(unittest.TestCase):
         expected = [
             {
                 "name": "Options",
-                "description": "",
+                "description": "Additional settings.",
                 "options": [
                     {"name": "Int Parameter", "description": "An integer parameter"},
                     {"name": "Double Parameter", "description": "A double parameter"},
