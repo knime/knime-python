@@ -2,6 +2,7 @@ import markdown
 import textwrap
 import re
 import html
+import sys
 
 from markdown.inlinepatterns import (
     EmStrongItem,
@@ -46,34 +47,13 @@ class _HeaderPreprocessor(Preprocessor):
         return new_lines
 
 
-class _TabHeaderPreprocessor(Preprocessor):
-    """
-    Tab descriptions don't allow headers.
-    """
-
+class _RemoveHeadersPreprocessor(Preprocessor):
     def run(self, lines):
         new_lines = []
         for line in lines:
             if re.search("#{1,6} ", line):
                 line = re.sub("#+ ", "", line)
             new_lines.append(line)
-        return new_lines
-
-
-class _LineBreakPreprocessor(Preprocessor):
-    """
-    Mark empty lines with a hook for the postprocessor.
-
-    Tab descriptions, for example, don't allow <p> tags, which can be emulated with <br/><br/> tags.
-    """
-
-    def run(self, lines):
-        new_lines = []
-        for line in lines:
-            if len(line) == 0:
-                line = "::linebreak::"
-            new_lines.append(line)
-
         return new_lines
 
 
@@ -118,7 +98,6 @@ class _KnimeProcessorAsterisk(AsteriskProcessor):
 
 
 class _KnimeProcessorUnderscore(AsteriskProcessor):
-
     PATTERNS = [
         EmStrongItem(
             re.compile(EM_STRONG2_RE, re.DOTALL | re.UNICODE), "double", "b,i"
@@ -177,33 +156,44 @@ class _KnimePostCode(Postprocessor):
         return text
 
 
-class _LineBreakPostprocessor(Postprocessor):
-    """
-    Use the ::linebreak:: hook from _LineBreakPreprocessor to emulate paragraph separation.
-    """
+class _KnimePostPre(Postprocessor):
+    """Remove occurrences of <code> tags, and replaces the remaining <pre> tags with <tt>."""
 
     def run(self, text):
-        text = re.sub("::linebreak::", "<br/><br/>", text)
+        # regex
+        _pre_code = r"<pre>(.|\n)*?<code>(.|\n)*?<\/code>(.|\n)*?<\/pre>"
+
+        def replace_pre_code(match):
+            text = match.string[match.start() : match.end()]
+            text = text.replace("<code>", "")
+            text = text.replace("</code>", "")
+            return text
+
+        text = re.sub(_pre_code, replace_pre_code, text)
+        text = re.sub("<code>", "", text)
+        text = re.sub("</code>", "", text)
+        text = re.sub("<pre>", "<tt>", text)
+        text = re.sub("</pre>", "</tt>", text)
 
         return text
 
 
-class _KnimePostParagraph(Postprocessor):
+class _RemoveParagraphsPostprocessor(Postprocessor):
     def run(self, text):
         text = re.sub(r"<p>", "", text)
-        text = re.sub(r"</p>", "", text)
+        text = re.sub(r"</p>", "<br/>", text)
 
         return text
 
 
-class _KnimePostHorizontalRule(Postprocessor):
+class _RemoveHorizontalRulesPostprocessor(Postprocessor):
     def run(self, text):
-        text = re.sub(r"<hr .*>", "</br>", text)
+        text = re.sub(r"<hr.*>", "", text)
 
         return text
 
 
-class _KnimePostBlockquote(Postprocessor):
+class _RemoveBlockquotesPostprocessor(Postprocessor):
     def run(self, text):
         text = re.sub(r"<blockquote>", "", text)
         text = re.sub(r"</blockquote>", "", text)
@@ -213,7 +203,7 @@ class _KnimePostBlockquote(Postprocessor):
 
 class _BaseKnExtension(Extension):
     """
-    Base Markdown extension class that deregisters unsupported extensions.
+    Base Markdown extension class that registers and deregisters common components.
     """
 
     def extendMarkdown(self, _md) -> None:
@@ -231,6 +221,12 @@ class _BaseKnExtension(Extension):
         _md.inlinePatterns.register(_KnimeProcessorAsterisk(r"\*"), "i_strong", 110)
         _md.inlinePatterns.register(_KnimeProcessorUnderscore(r"_"), "strong_i", 100)
 
+        _md.postprocessors.register(
+            _RemoveBlockquotesPostprocessor(), "knime_post_remove_blockquote", 50
+        )
+
+        _md.treeprocessors.register(_HTMLTreeprocessor(), "knime_code", 0)
+
 
 class _KnExtension(_BaseKnExtension):
     """
@@ -245,12 +241,7 @@ class _KnExtension(_BaseKnExtension):
 
         _md.postprocessors.register(_KnimeTable(), "knime_table", 200)
         _md.postprocessors.register(_KnimePostHeader(), "knime_post_headder", 200)
-
-        _md.treeprocessors.register(_HTMLTreeprocessor(), "knime_code", 5)
-        _md.postprocessors.register(_KnimePostCode(), "knime_post_code", 0)
-        _md.postprocessors.register(
-            _KnimePostBlockquote(), "knime_post_remove_blockquote", 200
-        )
+        _md.postprocessors.register(_KnimePostCode(), "knime_post_code", 10)
 
 
 class _KnExtensionForTabs(_BaseKnExtension):
@@ -258,7 +249,7 @@ class _KnExtensionForTabs(_BaseKnExtension):
     Markdown extension for tab descriptions.
 
     Syntax that is not allowed in the final HTML:
-    - headers
+    - headings
     - horizontal rules
     - pre blocks
     - blockquotes
@@ -267,31 +258,23 @@ class _KnExtensionForTabs(_BaseKnExtension):
     """
 
     def extendMarkdown(self, _md) -> None:
-        # _md = super().extendMarkdown(_md)
         super().extendMarkdown(_md)
 
         # Preprocessors
         _md.preprocessors.register(
-            _LineBreakPreprocessor(), "knime_pre_detect_line_breaks", 100
-        )
-        _md.preprocessors.register(
-            _TabHeaderPreprocessor(), "knime_pre_remove_headers", 200
+            _RemoveHeadersPreprocessor(), "knime_pre_remove_headers", 100
         )
 
         # Postprocessors
         _md.postprocessors.register(
-            _KnimePostParagraph(), "knime_post_remove_paragraph", 200
+            _RemoveParagraphsPostprocessor(), "knime_post_remove_paragraph", 50
         )
         _md.postprocessors.register(
-            _KnimePostHorizontalRule(), "knime_post_remove_horizontal_rule", 200
+            _RemoveHorizontalRulesPostprocessor(),
+            "knime_post_remove_horizontal_rule",
+            60,
         )
-        _md.postprocessors.register(
-            _KnimePostBlockquote(), "knime_post_remove_blockquote", 200
-        )
-        _md.postprocessors.register(
-            _LineBreakPostprocessor(), "knime_post_replace_line_breaks", 200
-        )
-        _md.postprocessors.register(_KnimePostCode(), "knime_post_code", 0)
+        _md.postprocessors.register(_KnimePostPre(), "knime_post_pre", 10)
 
 
 class KnimeMarkdownParser:
@@ -310,28 +293,25 @@ class KnimeMarkdownParser:
         )
 
         self.md_tabs = markdown.Markdown(
-            extensions=[
-                _KnExtensionForTabs(),
-                "sane_lists",
-            ],
+            extensions=[_KnExtensionForTabs(), "sane_lists", "fenced_code"],
             output_format="xhtml",
         )
 
     def parse_fulldescription(self, doc):
-        doc = textwrap.dedent(doc)
+        doc = self._dedent(doc)
         return self.md.convert(doc)
 
     def parse_basic(self, doc):
         try:
             assert doc
-            doc = textwrap.dedent(doc)
+            doc = self._dedent(doc)
             return self.md_basic.convert(doc)
         except AssertionError:
             return "<i>No description available.</i>"
 
     def parse_tab_description(self, doc):
         if doc:
-            doc = textwrap.dedent(doc)
+            doc = self._dedent(doc)
             return self.md_tabs.convert(doc)
         else:
             return ""
@@ -363,3 +343,35 @@ class KnimeMarkdownParser:
             }
             for tab in tabs
         ]
+
+    def _dedent(self, docstring):
+        """Taken from PEP 257.
+
+        An alternative to textwrap.dedent() that dedents the docstring such that
+        it doesn't matter whether there is an empty line after the initial triple quotes.
+        This prevents wrongful indentation resulting in <pre> blocks.
+        """
+        # Convert tabs to spaces (following the normal Python rules)
+        # and split into a list of lines:
+        lines = docstring.expandtabs().splitlines()
+
+        # Determine minimum indentation (first line doesn't count):
+        indent = sys.maxsize
+        for line in lines[1:]:
+            stripped = line.lstrip()
+            if stripped:
+                indent = min(indent, len(line) - len(stripped))
+
+        # Remove indentation (first line is special):
+        trimmed = [lines[0].strip()]
+        if indent < sys.maxsize:
+            for line in lines[1:]:
+                trimmed.append(line[indent:].rstrip())
+
+        # Strip off trailing and leading blank lines:
+        while trimmed and not trimmed[-1]:
+            trimmed.pop()
+        while trimmed and not trimmed[0]:
+            trimmed.pop(0)
+
+        return "\n".join(trimmed)
