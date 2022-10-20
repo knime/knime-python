@@ -280,7 +280,9 @@ class PythonKernel(kg.EntryPoint):
                 if not disable_autocompletion(current_line):
                     try:
                         # Use jedi's 0.16.0+ API.
-                        completions = jedi.Script(source_code, path="").complete(
+                        # HACK: According to the doc path should be '' but this does not work
+                        # See https://github.com/davidhalter/jedi/issues/1888
+                        completions = jedi.Script(source_code, path=None).complete(
                             line,
                             column,
                         )
