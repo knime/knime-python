@@ -296,11 +296,18 @@ class PythonKernel(kg.EntryPoint):
                     if completion.name.startswith("_"):
                         # skip all private members
                         break
+
+                    # HACK: Workaround for https://github.com/davidhalter/jedi/issues/1890
+                    try:
+                        docstring = completion.docstring()
+                    except AttributeError:
+                        docstring = ""
+
                     suggestions.append(
                         {
                             "name": completion.name,
                             "type": completion.type,
-                            "doc": completion.docstring(),
+                            "doc": docstring,
                         }
                     )
             except Exception:  # Autocomplete is purely optional. So a broad exception clause should be fine.
