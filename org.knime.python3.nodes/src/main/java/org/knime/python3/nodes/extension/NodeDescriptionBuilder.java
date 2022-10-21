@@ -100,17 +100,20 @@ public final class NodeDescriptionBuilder {
 
     private final List<View> m_views = new ArrayList<>();
 
+    private final boolean m_isDeprecated;
+
     /**
      * Constructor for a new builder.
      *
      * @param name of the node
      * @param nodeType of the node
      */
-    public NodeDescriptionBuilder(final String name, final String nodeType) {
+    public NodeDescriptionBuilder(final String name, final String nodeType, final boolean isDeprecated) {
         m_name = name;
         // will complain if nodeType is not a valid NodeType
         NodeType.Enum.forString(nodeType);
         m_nodeType = nodeType;
+        m_isDeprecated = isDeprecated;
     }
 
     /**
@@ -131,6 +134,7 @@ public final class NodeDescriptionBuilder {
 
         node.setAttribute("icon", m_iconPath.toAbsolutePath().toString());
         node.setAttribute("type", m_nodeType);
+        node.setAttribute("deprecated", Boolean.toString(m_isDeprecated));
         var name = doc.createElement("name");
         name.setTextContent(m_name);
         node.appendChild(name);

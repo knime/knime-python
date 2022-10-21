@@ -93,4 +93,9 @@ public interface ExtensionNode {
      * @return the number of views of the node
      */
     int getNumViews();
+
+    /**
+     * @return true if the node is deprecated
+     */
+    boolean isDeprecated();
 }

@@ -409,6 +409,7 @@ class _Node:
     node_factory: Callable
     id: str
     name: str
+    is_deprecated: bool
     node_type: str
     icon_path: str
     category: str
@@ -424,6 +425,7 @@ class _Node:
         node_factory,
         id: str,
         name: str,
+        is_deprecated: bool,
         node_type: str,
         icon_path: str,
         category: str,
@@ -431,6 +433,7 @@ class _Node:
     ) -> None:
         self.id = id
         self.name = name
+        self.is_deprecated = is_deprecated
         self.node_type = node_type
         self.icon_path = icon_path
         self.category = category
@@ -466,6 +469,7 @@ class _Node:
             "id": self.id,
             "name": self.name,
             "node_type": self.node_type,
+            "is_deprecated": self.is_deprecated,
             "icon_path": self.icon_path,
             "category": self.category,
             "after": self.after,
@@ -514,6 +518,7 @@ def node(
     category: str,
     after: str = None,
     id: str = None,
+    is_deprecated: bool = False,
 ) -> Callable:
     """
     Use this decorator to annotate a PythonNode class or function that creates a PythonNode
@@ -533,6 +538,7 @@ def node(
             id=node_id,
             name=name,
             node_type=nt,
+            is_deprecated=is_deprecated,
             icon_path=icon_path,
             category=category,
             after=after,

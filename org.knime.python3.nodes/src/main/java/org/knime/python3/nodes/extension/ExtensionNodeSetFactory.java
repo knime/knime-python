@@ -202,6 +202,11 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
         }
 
         @Override
+        protected boolean isDeprecatedInternal() {
+            return m_node.isDeprecated();
+        }
+
+        @Override
         protected Optional<String> getBundleName() {
             return m_bundleName;
         }
