@@ -502,6 +502,8 @@ class NodeType(Enum):
     """A node that manipulates data."""
     VISUALIZER = "Visualizer"
     """A node that visualizes data."""
+    OTHER = "Other"
+    """A node that doesn't fit one of the other node types."""
 
 
 # TODO allow to pass in other nodes as after?
