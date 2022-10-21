@@ -157,15 +157,10 @@ public final class NodeDescriptionBuilder {
             var tabDesc = doc.createElement("tab");
             tabDesc.setAttribute("name", tab.getName());
             var description = doc.createElement("description");
+            // only add a description to the tab if it's been provided
             if (!tab.getDescription().isBlank()) {
                 description.appendChild(buildHelper.parseDocumentFragment(tab.getDescription()));
                 tabDesc.appendChild(description);
-            } else {
-                LOGGER.codingWithFormat(
-                    "Please provide a description for the settings tab '%s' of node %s.",
-                    tab.getName(),
-                    m_name
-                    );
             }
             for (var option : tab.m_options) {
                 tabDesc.appendChild(buildHelper.createOptionElement(option));

@@ -208,7 +208,7 @@ def extract_parameter_descriptions(obj) -> dict:
         if len(top_level_options) > 0:
             options_tab = {
                 "name": "Options",
-                "description": "Additional settings.",
+                "description": "",
                 "options": top_level_options,
             }
             tabs.insert(0, options_tab)

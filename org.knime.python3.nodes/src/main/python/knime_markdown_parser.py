@@ -181,7 +181,7 @@ class _KnimePostPre(Postprocessor):
 class _RemoveParagraphsPostprocessor(Postprocessor):
     def run(self, text):
         text = re.sub(r"<p>", "", text)
-        text = re.sub(r"</p>", "<br/>", text)
+        text = re.sub(r"</p>", "", text)
 
         return text
 
