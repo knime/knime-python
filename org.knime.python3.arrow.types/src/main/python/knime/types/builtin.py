@@ -363,7 +363,7 @@ def _knime_value_factory(name):
     return '{"value_factory_class":"' + name + '"}'
 
 
-@kt.register_from_pandas_column_converter
+# can be replaced by Proxy Type now
 class FromTimeStampPandasColumnConverter(kt.FromPandasColumnConverter):
     """
     Converts columns containing pandas timestamps to a py.datetime extension type

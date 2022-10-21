@@ -119,7 +119,32 @@ public final class PythonValueFactoryRegistry {
             return null;
         }
         final PythonValueFactory[] factories = extractFactories(module);
-        return new PythonValueFactoryModule(modulePath, moduleName, factories);
+        final FromPandasColumnConverter[] fromPandasColumnConverters = extractFromPandasColumnConverters(module);
+        final ToPandasColumnConverter[] toPandasColumnConverters = extractToPandasColumnConverters(module);
+        return new PythonValueFactoryModule(modulePath, moduleName, factories, fromPandasColumnConverters,
+            toPandasColumnConverters);
+    }
+
+    private static FromPandasColumnConverter[] extractFromPandasColumnConverters(final IConfigurationElement module) {
+        final List<FromPandasColumnConverter> columnConverters = new ArrayList<>();
+        for (IConfigurationElement columnConverter : module.getChildren("FromPandasColumnConverter")) {
+            final String pythonClassName = columnConverter.getAttribute("PythonClassName");
+            final String valueTypeName = columnConverter.getAttribute("ValueTypeName");
+            columnConverters.add(new FromPandasColumnConverter(pythonClassName, valueTypeName));
+        }
+
+        return columnConverters.toArray(FromPandasColumnConverter[]::new);
+    }
+
+    private static ToPandasColumnConverter[] extractToPandasColumnConverters(final IConfigurationElement module) {
+        final List<ToPandasColumnConverter> columnConverters = new ArrayList<>();
+        for (IConfigurationElement columnConverter : module.getChildren("ToPandasColumnConverter")) {
+            final String pythonClassName = columnConverter.getAttribute("PythonClassName");
+            final String valueFactory = columnConverter.getAttribute("ValueFactory");
+            columnConverters.add(new ToPandasColumnConverter(pythonClassName, valueFactory));
+        }
+
+        return columnConverters.toArray(ToPandasColumnConverter[]::new);
     }
 
     private static Path extractModulePath(final IConfigurationElement module) {

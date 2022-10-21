@@ -127,7 +127,7 @@ class PythonValueFactoryBundle:
     @property
     def value_factory(self) -> PythonValueFactory:
         if self._value_factory == None:
-            value_factory = _get_value_factory(
+            value_factory = _get_converter_or_value_factory(
                 _get_module(self._python_module), self._python_value_factory_name
             )
             self._value_factory = value_factory
@@ -154,19 +154,25 @@ def _get_module(module_name):
         raise ValueError(msg)
 
 
-def _get_value_factory(module, python_value_factory_name):
+def _get_converter_or_value_factory(module, class_name):
     try:
-        value_factory_class = getattr(module, python_value_factory_name)
+        clazz = getattr(module, class_name)
     except AttributeError:
         raise ValueError(
-            f"The module {module.__name__} does not have a value factory called '{python_value_factory_name}'."
+            f"The module {module.__name__} does not have a value factory or converter called '{class_name}'."
         )
-    if not issubclass(value_factory_class, PythonValueFactory):
+    if (
+        not issubclass(clazz, PythonValueFactory)
+        and not issubclass(clazz, ToPandasColumnConverter)
+        and not issubclass(clazz, FromPandasColumnConverter)
+    ):
+
         raise ValueError(
-            f"The value factory {python_value_factory_name} in {module.__name__} is not compatible, must be of type knime_types.PythonValueFactory"
+            f"{class_name} in {module.__name__} is not compatible, must be of type "
+            + "knime_types.PythonValueFactory or knime_types.ToPandasColumnConverter or"
+            + " knime_type.ToPandasColumnConverter"
         )
-    value_factory = value_factory_class()
-    return value_factory
+    return clazz()
 
 
 # all values are of type PythonValueFactoryBundle
@@ -200,7 +206,7 @@ def get_proxy_by_python_type(
         )
     orig_bundle = get_value_factory_bundle_for_python_type_name(orig_python_type_name)
     orig_value_factory = orig_bundle.value_factory
-    proxy_value_factory = _get_value_factory(
+    proxy_value_factory = _get_converter_or_value_factory(
         _get_module(python_module), python_value_factory_name
     )
     return (
@@ -404,47 +410,38 @@ class ToPandasColumnConverter(ABC):
                 warnings.filterwarnings("default", message=warning)
 
 
-_from_pandas_column_converters = []
-_to_pandas_column_converters = []
-
-
-def register_from_pandas_column_converter(converter_class):
-    """
-    Use this to decorate a class that can be used as column converter.
-
-    Example::
-        @knime_types.register_from_pandas_column_converter
-        class MyColumnConverter(knime_types.FromPandasColumnConverter):
-            ...
-    """
-    assert issubclass(converter_class, FromPandasColumnConverter)
-    _from_pandas_column_converters.append(converter_class())
-    return converter_class
-
-
-def register_to_pandas_column_converter(converter_class):
-    """
-    Use this to decorate a class that can be used as column converter.
-
-    Example::
-        @knime_types.register_to_pandas_column_converter
-        class MyColumnConverter(knime_types.ToPandasColumnConverter):
-            ...
-    """
-    assert issubclass(converter_class, ToPandasColumnConverter)
-    _to_pandas_column_converters.append(converter_class())
-    return converter_class
+_from_pandas_column_converters = {}
+_to_pandas_column_converters = {}
 
 
 def get_first_matching_from_pandas_col_converter(dtype):
-    for c in _from_pandas_column_converters:
-        if c.can_convert(dtype):
-            return c
-    return None
+    # find matching column converter and load if needed
+    try:
+        type_str = json.loads(dtype._logical_type)["value_factory_class"]
+    except AttributeError:  # dtype is not a kap.PandasLogicalTypeExtensionType
+        type_str = type(dtype).__module__ + "." + type(dtype).__qualname__
+    try:
+        converter = _from_pandas_column_converters[type_str]
+    except KeyError:
+        return None
+
+    mod = _get_module(converter[0])
+    return _get_converter_or_value_factory(mod, converter[1])
 
 
 def get_first_matching_to_pandas_col_converter(dtype):
-    for c in _to_pandas_column_converters:
-        if c.can_convert(dtype):
-            return c
-    return None
+    # find matching column converter and load if needed
+    import knime_arrow_types as kat
+
+    if not isinstance(dtype, kat.LogicalTypeExtensionType):
+        return None
+
+    value_factory_class_name = json.loads(dtype.logical_type)["value_factory_class"]
+
+    try:
+        converter = _to_pandas_column_converters[value_factory_class_name]
+    except KeyError:
+        return None
+
+    mod = _get_module(converter[0])
+    return _get_converter_or_value_factory(mod, converter[1])

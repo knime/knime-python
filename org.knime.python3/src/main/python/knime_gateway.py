@@ -124,6 +124,32 @@ class EntryPoint:
             is_default_python_representation,
         )
 
+    def registerToPandasColumnConverter(
+        self,
+        python_module,
+        python_class_name,
+        python_value_type_name,
+    ):
+        import knime_types
+
+        knime_types._to_pandas_column_converters[python_value_type_name] = (
+            python_module,
+            python_class_name,
+        )
+
+    def registerFromPandasColumnConverter(
+        self,
+        python_module,
+        python_class_name,
+        python_value_type_name,
+    ):
+        import knime_types
+
+        knime_types._from_pandas_column_converters[python_value_type_name] = (
+            python_module,
+            python_class_name,
+        )
+
     class Java:
         implements = ["org.knime.python3.PythonEntryPoint"]
 

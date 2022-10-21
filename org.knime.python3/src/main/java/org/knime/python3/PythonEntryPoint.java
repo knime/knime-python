@@ -114,4 +114,18 @@ public interface PythonEntryPoint {
     void registerPythonValueFactory(final String pythonModule, final String pythonValueFactoryName,
         final String dataSpec, final String dataTraits, final String pythonValueTypeName,
         final boolean isDefaultPythonRepresentation);
+
+    /**
+     * @param pythonModule The module in which the ToPandasColumnConverter is defined
+     * @param pythonClassName
+     * @param valueFactory
+     */
+    void registerToPandasColumnConverter(String pythonModule, String pythonClassName, String valueFactory);
+
+    /**
+     * @param pythonModule The module in which the FromPandasColumnConverter is defined
+     * @param pythonClassName
+     * @param valueTypeName
+     */
+    void registerFromPandasColumnConverter(String pythonModule, String pythonClassName, String valueTypeName);
 }

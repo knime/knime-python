@@ -53,6 +53,9 @@ from pandas.core.dtypes.dtypes import register_extension_dtype
 import knime_arrow_struct_dict_encoding as kasde
 import knime_arrow_types as kat
 import knime_types as kt
+import logging
+
+LOGGER = logging.getLogger(__name__)
 
 
 def pandas_df_to_arrow(data_frame: pd.DataFrame) -> pa.Table:
@@ -78,7 +81,12 @@ def pandas_df_to_arrow(data_frame: pd.DataFrame) -> pa.Table:
                 # create a shallow copy of the dataframe
                 df = data_frame.copy(deep=False)
             with col_converter.warning_manager():
-                df[col_name] = col_converter.convert_column(df, col_name)
+                try:
+                    df[col_name] = col_converter.convert_column(df, col_name)
+                except ImportError as e:
+                    LOGGER.info(
+                        f"Converter {col_converter} could not convert the column {col_name}; an import error occured: {e}."
+                    )
 
     if df is None:
         df = data_frame

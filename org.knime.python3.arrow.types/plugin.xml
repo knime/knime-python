@@ -50,6 +50,10 @@
                ValueFactory="org.knime.core.data.v2.value.DenseByteVectorValueFactory"
                ValueTypeName="knime.types.builtin.DenseByteVectorValue">
          </PythonValueFactory>
+         <FromPandasColumnConverter
+               PythonClassName="FromTimeStampPandasColumnConverter"
+               ValueTypeName="numpy.dtype[datetime64]">
+         </FromPandasColumnConverter>
       </Module>
    </extension>
 

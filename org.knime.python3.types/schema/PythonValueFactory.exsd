@@ -55,7 +55,11 @@
       </annotation>
       <complexType>
          <sequence minOccurs="1" maxOccurs="unbounded">
-            <element ref="PythonValueFactory"/>
+            <choice>
+               <element ref="PythonValueFactory"/>
+               <element ref="FromPandasColumnConverter"/>
+               <element ref="ToPandasColumnConverter"/>
+            </choice>
          </sequence>
          <attribute name="modulePath" type="string" use="required">
             <annotation>
@@ -107,11 +111,50 @@ This should be of the form &quot;knime.types.ext.mymodule&quot; for extension ty
                   naming convention is module_name.type_name
                </documentation>
             </annotation>
+         </attribute>
          <attribute name="isDefaultPythonRepresentation" type="boolean">
             <annotation>
                <documentation>
                   Whether this type is the default representation in Python for data written using the specified Java Value Factory. Tables in Python will use this type for columns written by that Java ValueFactory.
 Defaults to TRUE. If set to false, the type can be used in Python by casting the column or when writing columns from Python.
+               </documentation>
+            </annotation>
+         </attribute>
+      </complexType>
+   </element>
+
+   <element name="ToPandasColumnConverter">
+      <complexType>
+         <attribute name="ValueTypeName" type="string">
+            <annotation>
+               <documentation>
+                  If the column dtype string representation matches this value, then this column converter will be executed.
+               </documentation>
+            </annotation>
+         </attribute>
+         <attribute name="PythonClassName" type="string">
+            <annotation>
+               <documentation>
+                  The column converter class that should be loaded from the module
+               </documentation>
+            </annotation>
+         </attribute>
+      </complexType>
+   </element>
+
+   <element name="FromPandasColumnConverter">
+      <complexType>
+         <attribute name="ValueTypeName" type="string">
+            <annotation>
+               <documentation>
+                  If the column dtype string representation matches this value, then this column converter will be executed.
+               </documentation>
+            </annotation>
+         </attribute>
+         <attribute name="PythonClassName" type="string">
+            <annotation>
+               <documentation>
+                  The column converter class that should be loaded from the module
                </documentation>
             </annotation>
          </attribute>

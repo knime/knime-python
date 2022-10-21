@@ -100,6 +100,24 @@ public final class PythonEntryPointUtils {
                     false);
             }
         }
+
+        registerColumnConverters(entryPoint, modules);
+    }
+
+    private static void registerColumnConverters(final PythonEntryPoint entryPoint,
+        final List<PythonValueFactoryModule> modules) throws Py4JException {
+        for (final var module : modules) {
+            final var pythonModule = module.getModuleName();
+            for (final var toPandasColumnConverter : module.getToPandasColumnConverters()) {
+                entryPoint.registerToPandasColumnConverter(pythonModule, toPandasColumnConverter.getPythonClassName(),
+                    toPandasColumnConverter.getValueFactory());
+            }
+
+            for (final var fromPandasColumnConverter : module.getFromPandasColumnConverters()) {
+                entryPoint.registerFromPandasColumnConverter(pythonModule,
+                    fromPandasColumnConverter.getPythonClassName(), fromPandasColumnConverter.getValueTypeName());
+            }
+        }
     }
 
 }

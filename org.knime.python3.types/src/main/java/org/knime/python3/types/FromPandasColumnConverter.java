@@ -44,69 +44,43 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Aug 27, 2021 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   21 Oct 2022 (Carsten Haubold): created
  */
 package org.knime.python3.types;
 
-import java.nio.file.Path;
-import java.util.Iterator;
-import java.util.List;
-
 /**
- * Module holding one or more {@link PythonValueFactory PythonValueFactories}.
+ * Describes a column converter that can convert columns of pandas DataFrames before they are passed to Arrow. If this
+ * converter is applied is determined by checking if the {@link FromPandasColumnConverter#getValueTypeName()} matches.
  *
- * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
-public final class PythonValueFactoryModule implements Iterable<PythonValueFactory>, PythonModule {
+public class FromPandasColumnConverter {
+    private final String m_pythonClassName;
 
-    private final Path m_modulePath;
+    private final String m_valueTypeName;
 
-    private final String m_moduleName;
-
-    private final List<PythonValueFactory> m_factories;
-
-    private final List<FromPandasColumnConverter> m_fromPandasColumnConverters;
-
-    private final List<ToPandasColumnConverter> m_toPandasColumnConverters;
-
-    PythonValueFactoryModule(final Path modulePath, final String moduleName, final PythonValueFactory[] factories,
-        final FromPandasColumnConverter[] fromPandasColumnConverters,
-        final ToPandasColumnConverter[] toPandasColumnConverters) {
-        m_modulePath = modulePath;
-        m_moduleName = moduleName;
-        m_factories = List.of(factories);
-        m_fromPandasColumnConverters = List.of(fromPandasColumnConverters);
-        m_toPandasColumnConverters = List.of(toPandasColumnConverters);
-    }
-
-    @Override
-    public Path getParentDirectory() {
-        return m_modulePath;
-    }
-
-    @Override
-    public String getModuleName() {
-        return m_moduleName;
-    }
-
-    @Override
-    public Iterator<PythonValueFactory> iterator() {
-        return m_factories.iterator();
+    /**
+     * Create a {@link FromPandasColumnConverter}
+     * @param pythonClassName
+     * @param valueTypeName
+     */
+    public FromPandasColumnConverter(final String pythonClassName, final String valueTypeName) {
+        m_pythonClassName = pythonClassName;
+        m_valueTypeName = valueTypeName;
     }
 
     /**
-     * @return A list of column converters that should be applied before a pandas DataFrame is passed to KNIME
+     * @return The name of the class in Python
      */
-    public List<FromPandasColumnConverter> getFromPandasColumnConverters() {
-        return m_fromPandasColumnConverters;
+    public String getPythonClassName() {
+        return m_pythonClassName;
     }
 
     /**
-     * @return A list of column converters that should be applied before a table coming from KNIME is handed to the user
-     *         as pandas DataFrame
+     * @return A string representing the Python type name for which this column converter is active. E.g.
+     *         "numpy.dtype[datetime64]"
      */
-    public List<ToPandasColumnConverter> getToPandasColumnConverters() {
-        return m_toPandasColumnConverters;
+    public String getValueTypeName() {
+        return m_valueTypeName;
     }
 }
