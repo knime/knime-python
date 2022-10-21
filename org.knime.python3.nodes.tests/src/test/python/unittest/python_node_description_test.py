@@ -288,3 +288,29 @@ class MarkdownDocstringTest(unittest.TestCase):
         _expected = "<p>break\nhammertime</p>"
         _res = self.parser.parse_basic(desc)
         self.assertEqual(_res, _expected)
+
+    def test_dedent(self):
+        doc_first_line = """Foo
+        Bar"""
+
+        doc_second_line = """
+        Foo
+        Bar"""
+
+        self.assertEqual(
+            self.parser._dedent(doc_first_line), self.parser._dedent(doc_second_line)
+        )
+
+        doc_first_line_indent = """Foo
+            Bar
+        Baz"""
+
+        doc_second_line_indent = """
+        Foo
+            Bar
+        Baz"""
+
+        self.assertEqual(
+            self.parser._dedent(doc_first_line_indent),
+            self.parser._dedent(doc_second_line_indent),
+        )

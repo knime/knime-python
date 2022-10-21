@@ -1,5 +1,4 @@
 import markdown
-import textwrap
 import re
 import html
 import sys
