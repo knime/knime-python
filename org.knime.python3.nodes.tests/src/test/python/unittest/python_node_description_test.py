@@ -107,66 +107,66 @@ class MarkdownDocstringTest(unittest.TestCase):
 
         s = "*strong*"
         #'<p><em>strong</em></p>'
-        _expected = "<p>\n<i>strong</i></p>"
+        _expected = "<p><i>strong</i></p>"
         _s = self.parser.parse_basic(s)
         self.assertEqual(_expected, _s)
 
         s = "_strong_"
         #'<p><em>strong</em></p>'
-        _expected = "<p>\n<i>strong</i></p>"
+        _expected = "<p><i>strong</i></p>"
         _s = self.parser.parse_basic(s)
         self.assertEqual(_expected, _s)
 
         s = "__strong__"
-        _expected = "<p>\n<b>strong</b></p>"
+        _expected = "<p><b>strong</b></p>"
         _s = self.parser.parse_basic(s)
         self.assertEqual(_expected, _s)
 
         s = "*__strong__*"
         # "<p><em><b>strong</b></em></p>"
-        _expected = "<p>\n<i><b>strong</b></i></p>"
+        _expected = "<p><i>strong</i></p>"
         _s = self.parser.parse_basic(s)
         self.assertEqual(_expected, _s)
 
         s = "**_strong_**"
         #'<p><strong><i>strong</i></strong></p>'
-        _expected = "<p>\n<b><i>strong</i></b></p>"
+        _expected = "<p><b>strong</b></p>"
         _s = self.parser.parse_basic(s)
         self.assertEqual(_expected, _s)
 
         # TODO: dunno how to solve this one
         #       since nested / recursive tags fail
-        # s = "**__strong__**"
+        s = "**__strong__**"
         #'<p><strong><b>strong</b></strong></p>'
-        # _expected = '<p><strong><b>strong</b></strong></p>'
-        # _s = self.parser.parse_basic(s)
-        # self.assertEqual(_expected, _s)
+        _expected = "<p><b>strong</b></p>"
+        _s = self.parser.parse_basic(s)
+        self.assertEqual(_expected, _s)
 
         # TODO: this fails because of nested tags
-        # s = "_*simple*_"
-        # _s = self.parser.parse_basic(s)
-        # _html = "<p><i>simple</i></p>"
-        # self.assertEqual(_html, _s)
+        s = "_*simple*_"
+        _s = self.parser.parse_basic(s)
+        _expected = "<p><i>simple</i></p>"
+        self.assertEqual(_expected, _s)
 
         s = "__strong__"
-        _expected = "<p>\n<b>strong</b></p>"
+        _expected = "<p><b>strong</b></p>"
         _s = self.parser.parse_basic(s)
         self.assertEqual(_expected, _s)
 
         s = "__so strong__"
         _s = self.parser.parse_basic(s)
-        _html = "<p>\n<b>so strong</b></p>"
-        self.assertEqual(_html, _s)
+        _expected = "<p><b>so strong</b></p>"
+        self.assertEqual(_expected, _s)
 
         s = "__so strong*__"
         _s = self.parser.parse_basic(s)
-        _html = "<p>\n<b>so strong*</b></p>"
-        self.assertEqual(_html, _s)
+        _expected = "<p><b>so strong*</b></p>"
+        self.assertEqual(_expected, _s)
 
         s = "__*so* strong*__"
         _s = self.parser.parse_basic(s)
-        _html = "<p>\n<b><i>so</i> strong*</b></p>"
-        self.assertEqual(_html, _s)
+        _expected = "<p><b>so strong*</b></p>"
+        self.assertEqual(_expected, _s)
 
     def test_table(self):
         # test implemented table
@@ -220,7 +220,7 @@ class MarkdownDocstringTest(unittest.TestCase):
     def test_link(self):
         desc = "[link](https://www.example.com/my%20great%20page)"
         _expected = (
-            '<p>\n<a href="https://www.example.com/my%20great%20page">link</a></p>'
+            '<p><a href="https://www.example.com/my%20great%20page">link</a></p>'
         )
         _res = self.parser.parse_basic(desc)
 
@@ -239,7 +239,7 @@ class MarkdownDocstringTest(unittest.TestCase):
         
             Code<o>
         """
-        _expected = "<p>No Code</p>\n<pre>\nCode&lt;o&gt;\n</pre>"
+        _expected = "<p>No Code</p>\n<pre>Code&lt;o&gt;\n</pre>"
         self.assertEqual(self.parser.parse_basic(desc), textwrap.dedent(_expected))
 
     def test_pre_in_code(self):
@@ -249,7 +249,7 @@ class MarkdownDocstringTest(unittest.TestCase):
             <pre>This is test code</pre>
         """
         _expected = (
-            "<p>No Code</p>\n<pre>\n&lt;pre&gt;This is test code&lt;/pre&gt;\n</pre>"
+            "<p>No Code</p>\n<pre>&lt;pre&gt;This is test code&lt;/pre&gt;\n</pre>"
         )
         self.assertEqual(self.parser.parse_basic(desc), textwrap.dedent(_expected))
 
@@ -269,13 +269,13 @@ class MarkdownDocstringTest(unittest.TestCase):
         desc = """`Test`"""
         self.assertEqual(
             self.parser.parse_basic(desc),
-            f"<p>\n<tt>Test</tt></p>",
+            f"<p><tt>Test</tt></p>",
         )
 
         desc = """`<pre>Test</pre>`"""
         self.assertEqual(
             self.parser.parse_basic(desc),
-            f"<p>\n<tt>&lt;pre&gt;Test&lt;/pre&gt;</tt></p>",
+            f"<p><tt>&lt;pre&gt;Test&lt;/pre&gt;</tt></p>",
         )
 
         desc = """
@@ -283,7 +283,7 @@ class MarkdownDocstringTest(unittest.TestCase):
         """
         self.assertEqual(
             self.parser.parse_basic(desc),
-            f"<p>\n<tt>Test</tt></p>",
+            f"<p><tt>Test</tt></p>",
         )
 
     def test_line_break(self):
@@ -354,8 +354,7 @@ class MarkdownDocstringTest(unittest.TestCase):
 
         doc_expected = self.parser._dedent(
             """
-            <tt>
-            This is an indented line that turns into pre.
+            <tt>This is an indented line that turns into pre.
             </tt>
             This is a normal line."""
         )

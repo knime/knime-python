@@ -1,3 +1,4 @@
+from typing import Optional
 import markdown
 import re
 import html
@@ -13,6 +14,8 @@ from markdown.preprocessors import Preprocessor
 from markdown.postprocessors import Postprocessor
 from markdown.treeprocessors import Treeprocessor
 from markdown.extensions import Extension
+
+from xml.etree.ElementTree import Element
 
 from markdown.inlinepatterns import (
     EMPHASIS_RE,
@@ -73,17 +76,54 @@ class _HTMLTreeprocessor(Treeprocessor):
         return s
 
     def run(self, e):
-        def apply_to_entity(e, func):
-            if e.text is not None:
-                e.text = func(e.text)
-            elif e.tail is not None:
-                e.text = func(e.tail)
+        self._in_em = False
+        self._process(e, None, 0)
 
-        if e.tag == "code" or e.tag == "pre":
-            apply_to_entity(e, self._unescape)
+    def _process(self, element: Element, parent: Optional[Element], index: int):
+        if element.tag == "code" or element.tag == "pre":
+            self._apply_to_entity(element, self._unescape)
         else:
-            apply_to_entity(e, html.escape)
-        [self.run(x) for x in e]
+            self._apply_to_entity(element, html.escape)
+
+        is_em = self._is_em(element)
+        if is_em:
+            if self._in_em:
+                is_descendant = True
+                # remove this element from the parent
+                parent.remove(element)
+            else:
+                self._in_em = True
+                is_descendant = False
+
+        for i, x in enumerate(element):
+            self._process(x, element, i)
+
+        if is_em:
+            if is_descendant:
+                # add text and tail to the parent text
+                if element.text:
+                    parent.text = (
+                        parent.text + element.text if parent.text else element.text
+                    )
+                if element.tail:
+                    parent.text = (
+                        parent.text + element.tail if parent.text else element.tail
+                    )
+                # add children in parent at the position element was previously located at
+                for x in reversed(element):
+                    parent.insert(index, x)
+            else:
+                # this was the top-most em tag so we are no longer inside of an em tag
+                self._in_em = False
+
+    def _is_em(self, element: Element):
+        return element.tag == "b" or element.tag == "i"
+
+    def _apply_to_entity(self, element, func):
+        if element.text is not None:
+            element.text = func(element.text)
+        if element.tail is not None:
+            element.tail = func(element.tail)
 
 
 class _KnimeProcessorAsterisk(AsteriskProcessor):
