@@ -94,6 +94,13 @@ public final class Python3ScriptingPreferences {
      */
     static final PythonConfigStorage DEFAULT = new PreferenceWrappingConfigStorage(DEFAULT_SCOPE_PREFERENCES);
 
+    static {
+        // The Python3ScriptingPreferencesInitializer is only called when we access the node in the default preferences
+        // We do that once before any other method can be called to be sure that the initializer has finished and
+        // other methods can be called in parallel
+        DefaultScope.INSTANCE.getNode(PLUGIN_ID);
+    }
+
     private Python3ScriptingPreferences() {
     }
 
