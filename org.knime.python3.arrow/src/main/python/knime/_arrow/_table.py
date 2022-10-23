@@ -184,7 +184,13 @@ class ArrowTable(knt.Table):
         """
         Used at the end of execute() to return the data to KNIME
         """
-        batches = self._split_table(self._get_table())
+        data = self._get_table()
+
+        if isinstance(data, pa.RecordBatch):
+            batches = [data]
+        else:
+            batches = self._split_table(data)
+
         for b in batches:
             sink.write(b)
 
