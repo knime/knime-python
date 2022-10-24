@@ -48,9 +48,16 @@ import warnings
 import sys
 
 if "knime.scripting.io" in sys.modules:
-    raise ImportError(
-        "Cannot use knime_io and knime.scripting.io in the same Python script"
-    )
+    try:
+        import sphinx
+
+        sphinx_build = hasattr(sphinx, "application")
+    except ImportError:
+        sphinx_build = False
+    if not sphinx_build:
+        raise ImportError(
+            "Cannot use knime_io and knime.scripting.io in the same Python script"
+        )
 
 warnings.warn(
     f"The module {__name__} is deprecated, please use 'import knime.scripting.io' instead",
@@ -64,6 +71,9 @@ import knime.scripting._io_containers as _ioc
 
 # -----------------------------------------------------------------------------------------
 def _prepare_input_tables():
+    if len(_ioc._input_tables) == 0:
+        return
+
     import knime_arrow_table as kat
 
     for idx, data_source in enumerate(_ioc._input_tables):

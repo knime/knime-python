@@ -324,6 +324,9 @@ class ReadTable(_Table, _ReadData):
     """
     A KNIME ReadTable provides access to the data provided from KNIME, either in full (must fit into memory)
     or split into row-wise batches.
+
+    Warning:
+        This class is deprecated since KNIME AP 4.7, use ``knime.api.table.Table`` instead.
     """
 
     @abstractmethod
@@ -380,6 +383,9 @@ class ReadTable(_Table, _ReadData):
 class BatchWriteTable(_Table):
     """
     A table that can be filled batch by batch.
+
+    Warning:
+        This class is deprecated since KNIME AP 4.7, use ``knime.api.table.BatchOutputTable`` instead.
     """
 
     @staticmethod
@@ -430,6 +436,9 @@ class BatchWriteTable(_Table):
 class WriteTable(_Table):
     """
     A table that can be filled as a whole.
+
+    Warning:
+        This class is deprecated since KNIME AP 4.7, use ``knime.api.table.Table`` instead.
     """
 
     pass
@@ -456,6 +465,10 @@ def write_table(
             * ``"min"`` min int32 or min int64 depending on the type of the column
             * ``"max"`` max int32 or max int64 depending on the type of the column
             * a special integer value that should be interpreted as missing value
+
+    Warning:
+        This method is deprecated since KNIME AP 4.7, use ``knime.api.table.Table.from_pandas()`` or
+        ``knime.api.table.Table.from_pyarrow()`` instead.
     """
     return _backend.write_table(data, sentinel)
 
@@ -471,5 +484,7 @@ def batch_write_table() -> BatchWriteTable:
         table.append(df_2)
         knime_io.output_tables[0] = table
 
+    Warning:
+        This class is deprecated since KNIME AP 4.7, use ``knime.api.table.BatchOutputTable.create()`` instead.
     """
     return _backend.batch_write_table()
