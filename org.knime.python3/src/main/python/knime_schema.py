@@ -478,11 +478,7 @@ def logical(value_type) -> LogicalType:
         proxy_value_factory = None
 
     try:
-        java_value_factory = kt.get_value_factory_bundle_for_python_type(
-            value_type
-        ).java_value_factory
-        # decode the storage type of this value_type from the info provided with the java value factory
-        bundle = kt.get_value_factory_bundle_for_java_value_factory(java_value_factory)
+        bundle = kt.get_value_factory_bundle_for_python_type(value_type)
         specs = bundle.data_spec_json
         traits = bundle.data_traits
         logical_type = _dict_to_knime_type(specs, traits)
