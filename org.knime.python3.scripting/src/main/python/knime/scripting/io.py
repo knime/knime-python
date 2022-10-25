@@ -45,9 +45,6 @@
 """
 Input and output variables used to communicate with KNIME from within
 KNIME's Python Scripting nodes
-
-@author Carsten Haubold, KNIME GmbH, Konstanz, Germany
-@author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
 """
 import sys
 
@@ -113,12 +110,12 @@ output_tables: List[Union[Table, BatchOutputTable]] = _ioc._FixedSizeListView(
 )
 """
 The output tables of this script node. This list has a fixed size, which is determined by the number of output table 
-ports configured for this node.  You should assign a WriteTable or BatchWriteTable to each output port of this node. 
-See the factory methods ``knime_io.write_table()`` and ``knime.scripting.io.batch_write_table()`` below.
+ports configured for this node.  You should assign a ``Table`` or ``BatchOutputTable`` to each output port of this node. 
 
 **Example**::
 
-    knime.scripting.io.output_tables[0] = knime.scripting.io.write_table(my_pandas_df)
+    import knime.scripting.io as knio
+    knio.output_tables[0] = knio.Table.from_pandas(my_pandas_df)
 
 """
 
@@ -130,14 +127,16 @@ SVG or PNG image.
 
 **Example**::
 
-    data = knime.scripting.io.input_tables[0].to_pandas()
+    import knime.scripting.io as knio
+
+    data = knio.input_tables[0].to_pandas()
     buffer = io.BytesIO()
 
     pyplot.figure()
     pyplot.plot('x', 'y', data=data)
     pyplot.savefig(buffer, format='svg')
 
-    knime.scripting.io.output_images[0] = buffer.getvalue()
+    knio.output_images[0] = buffer.getvalue()
 
 """
 

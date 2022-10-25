@@ -43,7 +43,7 @@
 # ------------------------------------------------------------------------
 
 """
-Arrow backend for tables used in pure-Python nodes
+Arrow backend for tables used in pure-Python nodes and Python scripting nodes
 
 @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
 """

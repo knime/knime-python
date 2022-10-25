@@ -45,10 +45,11 @@
 """
 Defines the general table object that is used to transfer data from and to KNIME.
 
-Note that this is the knime_table version for pure-Python KNIME nodes, 
-not for the Python Scripting (Labs) node!
+Python Scripting nodes using the import 'knime.scripting.io' as well as pure-Python
+nodes will use the table API defined in this file here.
 
-@author Carsten Haubold, KNIME GmbH, Konstanz, Germany
+Note that this table API is the successor to the table defined in the deprecated module 'knime_table',
+which only remains available in Python Scripting nodes that import the deprecated module 'knime_io'.
 """
 
 from abc import abstractmethod, abstractproperty

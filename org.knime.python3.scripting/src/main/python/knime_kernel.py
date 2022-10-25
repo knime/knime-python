@@ -210,6 +210,11 @@ class ScriptingBackendCollection:
         _ioc._input_tables[table_index] = table_data_source
 
     def get_output_table_sink(self, table_index: int) -> JavaClass:
+        if self.active_backend is None:
+            raise RuntimeError(
+                "Either the script has not been executed, or no KNIME scripting interface has been imported. "
+                + "Please import knime.scripting.io"
+            )
         return self.active_backend.get_output_table_sink(table_index)
 
     @property
@@ -222,10 +227,7 @@ class ScriptingBackendCollection:
             if module_name in sys.modules:
                 return backend
 
-        raise RuntimeError(
-            "Either the script has not been executed, or no KNIME scripting interface has been imported. "
-            + "Please import knime.scripting.io"
-        )
+        return None
 
     def get_flow_variables(self) -> JavaClass:
         self._check_flow_variables()
@@ -288,6 +290,11 @@ class ScriptingBackendCollection:
 
     def check_outputs(self):
         for i, o in enumerate(_ioc._output_tables):
+            if self.active_backend is None:
+                raise RuntimeError(
+                    "Either the script has not been executed, or no KNIME scripting interface has been imported. "
+                    + "Please import knime.scripting.io"
+                )
             self.active_backend.check_output_table(i, o)
 
         for i, o in enumerate(_ioc._output_objects):
@@ -327,7 +334,10 @@ class ScriptingBackendCollection:
 
     def tear_down_arrow(self):
         for b in self._backends.values():
-            b.tear_down_arrow(b == self.active_backend)
+            is_active_backend = (
+                False if self.active_backend is None else b == self.active_backend
+            )
+            b.tear_down_arrow(is_active_backend)
 
 
 class PythonKernel(kg.EntryPoint):
