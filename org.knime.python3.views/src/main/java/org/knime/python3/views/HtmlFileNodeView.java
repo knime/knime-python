@@ -46,7 +46,7 @@
  * History
  *   May 4, 2022 (benjamin): created
  */
-package org.knime.python3.nodes.views;
+package org.knime.python3.views;
 
 import java.io.IOException;
 import java.nio.file.Files;

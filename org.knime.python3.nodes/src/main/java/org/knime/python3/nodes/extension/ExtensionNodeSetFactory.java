@@ -84,7 +84,7 @@ import org.knime.python3.nodes.DelegatingNodeModel;
 import org.knime.python3.nodes.dialog.DelegatingJsonSettingsDataService;
 import org.knime.python3.nodes.dialog.JsonFormsNodeDialog;
 import org.knime.python3.nodes.proxy.NodeProxyProvider;
-import org.knime.python3.nodes.views.HtmlFileNodeView;
+import org.knime.python3.views.HtmlFileNodeView;
 
 /**
  * A {@link NodeSetFactory} for extensions that provide nodes whose settings are JSON and whose dialogs are JSON Forms
