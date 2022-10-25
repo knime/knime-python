@@ -203,9 +203,7 @@ class _RemoveBlockquotesPostprocessor(Postprocessor):
 
 
 class _BaseKnExtension(Extension):
-    """
-    Base Markdown extension class that registers and deregisters common components.
-    """
+    """Base Markdown extension class that registers and deregisters common components."""
 
     def extendMarkdown(self, _md) -> None:
         _md.preprocessors.deregister("html_block")
@@ -230,9 +228,7 @@ class _BaseKnExtension(Extension):
 
 
 class _KnExtension(_BaseKnExtension):
-    """
-    Basic extension for Knime schema.
-    """
+    """Basic extension for Knime schema."""
 
     def extendMarkdown(self, _md) -> None:
         super().extendMarkdown(_md)
@@ -240,6 +236,26 @@ class _KnExtension(_BaseKnExtension):
         # Preprocessors
         _md.preprocessors.register(_HeadingPreprocessor(), "headings", 100)
 
+        _md.postprocessors.register(_KnimeTable(), "knime_table", 200)
+        _md.postprocessors.register(_KnimePostHeader(), "knime_post_headder", 200)
+        _md.postprocessors.register(_KnimePostCode(), "knime_post_code", 10)
+
+
+class _KnExtensionForOptions(_BaseKnExtension):
+    """Markdown extension for option (parameter/setting) descriptions.
+
+    Differs from _KnExtension by removing headings.
+    """
+
+    def extendMarkdown(self, _md) -> None:
+        super().extendMarkdown(_md)
+
+        # Preprocessors
+        _md.preprocessors.register(
+            _RemoveHeadingsPreprocessor(), "knime_pre_remove_headings", 100
+        )
+
+        # Postprocessors
         _md.postprocessors.register(_KnimeTable(), "knime_table", 200)
         _md.postprocessors.register(_KnimePostHeader(), "knime_post_headder", 200)
         _md.postprocessors.register(_KnimePostCode(), "knime_post_code", 10)
@@ -295,6 +311,11 @@ class KnimeMarkdownParser:
             output_format="xhtml",
         )
 
+        self.md_options = markdown.Markdown(
+            extensions=[_KnExtensionForOptions(), "sane_lists", "fenced_code"],
+            output_format="xhtml",
+        )
+
         self.md_tabs = markdown.Markdown(
             extensions=[_KnExtensionForTabs(), "sane_lists", "fenced_code"],
             output_format="xhtml",
@@ -310,6 +331,13 @@ class KnimeMarkdownParser:
             doc = self._dedent(doc)
             return self.md_basic.convert(doc)
         except AssertionError:
+            return "<i>No description available.</i>"
+
+    def parse_option_description(self, doc):
+        if doc:
+            doc = self._dedent(doc)
+            return self.md_options.convert(doc)
+        else:
             return "<i>No description available.</i>"
 
     def parse_tab_description(self, doc):
@@ -332,7 +360,7 @@ class KnimeMarkdownParser:
         return [
             {
                 "name": option["name"],
-                "description": self.parse_basic(option["description"]),
+                "description": self.parse_option_description(option["description"]),
             }
             for option in options
         ]

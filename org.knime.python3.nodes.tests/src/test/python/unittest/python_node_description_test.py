@@ -322,7 +322,7 @@ class MarkdownDocstringTest(unittest.TestCase):
         )
 
     ######## Test the tab description parser ########
-    def test_heading_removal(self):
+    def test_tab_heading_removal(self):
         doc_test = """
         # Heading 1
         
@@ -346,7 +346,7 @@ class MarkdownDocstringTest(unittest.TestCase):
 
         self.assertEqual(self.parser.parse_tab_description(doc_test), doc_expected)
 
-    def test_pre_tag_removal(self):
+    def test_tab_pre_tag_removal(self):
         doc_test = """
             This is an indented line that turns into pre.
             
@@ -362,7 +362,7 @@ class MarkdownDocstringTest(unittest.TestCase):
 
         self.assertEqual(self.parser.parse_tab_description(doc_test), doc_expected)
 
-    def test_p_tag_removal(self):
+    def test_tab_p_tag_removal(self):
         doc_test = """
         First paragraph.
         
@@ -379,7 +379,7 @@ class MarkdownDocstringTest(unittest.TestCase):
 
         self.assertEqual(self.parser.parse_tab_description(doc_test), doc_expected)
 
-    def test_horizontal_rule_removal(self):
+    def test_tab_horizontal_rule_removal(self):
         doc_test = """
         First line.
         
@@ -395,8 +395,46 @@ class MarkdownDocstringTest(unittest.TestCase):
 
         self.assertEqual(self.parser.parse_tab_description(doc_test), doc_expected)
 
-    def test_tab_none_handling(self):
+    def test_tab_tab_none_handling(self):
         doc_test = None
         doc_expected = ""
 
         self.assertEqual(self.parser.parse_tab_description(doc_test), doc_expected)
+
+    ######## Test the option description parser ########
+    def test_option_heading_removal(self):
+        doc_test = """
+        # Heading 1
+        
+        ## Heading 2
+        
+        ### Heading 3
+        
+        Heading 1 with lines
+        ====
+        
+        Heading 2 with lines
+        ------"""
+
+        doc_expected = self.parser._dedent(
+            """<p>Heading 1</p>
+        <p>Heading 2</p>
+        <p>Heading 3</p>
+        <p>Heading 1 with lines</p>
+        <p>Heading 2 with lines</p>"""
+        )
+
+        self.assertEqual(self.parser.parse_option_description(doc_test), doc_expected)
+
+    def test_option_none_handling(self):
+        doc_test_none = None
+        doc_test_empty = ""
+
+        doc_expected = "<i>No description available.</i>"
+
+        self.assertEqual(
+            self.parser.parse_option_description(doc_test_none), doc_expected
+        )
+        self.assertEqual(
+            self.parser.parse_option_description(doc_test_empty), doc_expected
+        )
