@@ -60,10 +60,11 @@ if "knime_io" in sys.modules:
             "Cannot use knime_io and knime.scripting.io in the same Python script"
         )
 
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Union, Optional
 
 # Do not remove, meant to be reexported.
 from knime.api.table import Table, BatchOutputTable
+from knime.views import NodeView
 import knime.scripting._io_containers as _ioc
 
 # -----------------------------------------------------------------------------------------
@@ -156,6 +157,23 @@ Use this to, for example, pass a trained model to another Python script node.
 
 """
 
+output_view: Optional[NodeView] = None
+"""
+The output view of the script node. This variable must be populated with a knime.views.NodeView when using the Python
+View node. Views can be created by calling the ``knime.views.view(obj)`` method with a viewable object. See the
+documentation of ``knime.views.view(obj)`` to understand how views are created from different kinds of objects.
+
+**Example**::
+
+    import knime.scripting.io as knio
+    import knime.views as kv
+    import plotly.express as px
+
+    fig = px.scatter(x=data_x, y=data_y)
+    knio.output_view = kv.view(fig)
+
+"""
+
 __all__ = [
     "flow_variables",
     "input_objects",
@@ -163,6 +181,7 @@ __all__ = [
     "output_tables",
     "output_objects",
     "output_images",
+    "output_view",
     "Table",
     "BatchOutputTable",
 ]
