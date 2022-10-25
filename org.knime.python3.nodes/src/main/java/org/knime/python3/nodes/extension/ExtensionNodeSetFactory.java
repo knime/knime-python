@@ -233,8 +233,7 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
 
         @Override
         protected int getNrNodeViews() {
-            // We never have Java Views (see #hasView() for the JS view)
-            return 0;
+            return m_numViews;
         }
 
         @Override
