@@ -13,6 +13,9 @@
         <node
             category-path="/labs/python"
             factory-class="org.knime.python3.scripting.nodes.script.PythonScriptNodeFactory" />
+        <node
+            category-path="/labs/python"
+            factory-class="org.knime.python3.scripting.nodes.view.PythonViewNodeFactory" />
     </extension>
     <extension
           point="org.knime.python2.sourcecodetemplates">

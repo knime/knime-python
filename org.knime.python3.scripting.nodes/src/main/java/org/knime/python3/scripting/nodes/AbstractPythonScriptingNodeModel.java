@@ -48,6 +48,10 @@
  */
 package org.knime.python3.scripting.nodes;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -57,9 +61,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 import org.knime.base.node.util.exttool.ExtToolOutputNodeModel;
+import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.InvalidSettingsException;
@@ -72,7 +78,9 @@ import org.knime.core.node.port.PortType;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.VariableType;
 import org.knime.core.node.workflow.VariableTypeRegistry;
+import org.knime.core.util.PathUtils;
 import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
+import org.knime.core.webui.node.view.NodeView;
 import org.knime.python2.PythonModuleSpec;
 import org.knime.python2.PythonVersion;
 import org.knime.python2.config.PythonCommandConfig;
@@ -120,18 +128,24 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
 
     private final OutputPort[] m_outPorts;
 
+    private final boolean m_hasView;
+
     private String m_script;
 
     private final PythonCommandConfig m_command = createCommandConfig();
+
+    private Optional<Path> m_view;
 
     private final AsynchronousCloseableTracker<PythonKernelCleanupException> m_kernelShutdownTracker =
         new AsynchronousCloseableTracker<>(t -> LOGGER.debug("Kernel shutdown failed.", t));
 
     protected AbstractPythonScriptingNodeModel(final InputPort[] inPorts, final OutputPort[] outPorts,
-        final String defaultScript) {
+        final boolean hasView, final String defaultScript) {
         super(toPortTypes(inPorts), toPortTypes(outPorts));
         m_inPorts = inPorts;
         m_outPorts = outPorts;
+        m_hasView = hasView;
+        m_view = Optional.empty();
         m_script = defaultScript;
     }
 
@@ -238,8 +252,32 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
                     : outExec;
                 outObjects[i] = outPort.execute(kernel, outPortExec);
             }
+            if (m_hasView) {
+                // TODO manage progress correctly with a sub execution context
+                exec.setMessage("Retrieving view from Python...");
+
+                // Delete the last view if it is still present
+                if (m_view.isPresent()) {
+                    PathUtils.deleteFileIfExists(m_view.get());
+                }
+                // TODO get the view from the HTML
+                m_view = Optional.of(fakeGetViewFromKernel());
+
+            }
             m_kernelShutdownTracker.closeAsynchronously(kernel);
             return outObjects;
+        }
+    }
+
+    private static Path fakeGetViewFromKernel() {
+        // TODO remove and implement it for real
+        try {
+            final var htmlPath = PathUtils.createTempFile("foo", "html");
+            final var time = System.currentTimeMillis();
+            Files.writeString(htmlPath, "<html>Hello world (" + time + ")</html>");
+            return htmlPath;
+        } catch (IOException ex) {
+            throw new IllegalStateException(ex);
         }
     }
 
@@ -252,6 +290,32 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
     protected void reset() {
         super.reset();
         m_kernelShutdownTracker.waitForAllToClose();
+        m_view = Optional.empty();
+    }
+
+    @Override
+    protected void loadInternals(final File nodeInternDir, final ExecutionMonitor exec)
+        throws IOException, CanceledExecutionException {
+        super.loadInternals(nodeInternDir, exec);
+        final var viewPath = persistedViewPath(nodeInternDir);
+        if (Files.isReadable(viewPath)) {
+            m_view = Optional.of(viewPath);
+        }
+    }
+
+    @Override
+    protected void saveInternals(final File nodeInternDir, final ExecutionMonitor exec)
+        throws IOException, CanceledExecutionException {
+        super.saveInternals(nodeInternDir, exec);
+        if (m_view.isPresent()) {
+            // Copy the view from the temporary file to the persisted internals directory
+            Files.copy(m_view.get(), persistedViewPath(nodeInternDir));
+        }
+    }
+
+    /** Path to the persisted view inside the internals directory */
+    private static Path persistedViewPath(final File nodeInternDir) {
+        return nodeInternDir.toPath().resolve("view.html");
     }
 
     protected PythonKernel getNextKernelFromQueue(final Set<PythonModuleSpec> requiredAdditionalModules,
@@ -269,6 +333,14 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
                 pushNewFlowVariable(variable);
             }
         }
+    }
+
+    /**
+     * @return the path to the HTML document for the {@link NodeView}. {@link Optional#empty()} if the node did not
+     *         return a view.
+     */
+    protected Optional<Path> getPathToHtmlView() {
+        return m_view;
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})

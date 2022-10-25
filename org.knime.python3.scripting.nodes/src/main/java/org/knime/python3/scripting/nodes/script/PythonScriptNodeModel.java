@@ -67,7 +67,7 @@ import org.knime.python3.scripting.nodes.AbstractPythonScriptingNodeModel;
 final class PythonScriptNodeModel extends AbstractPythonScriptingNodeModel {
 
     public PythonScriptNodeModel(final InputPort[] inPorts, final OutputPort[] outPorts) {
-        super(inPorts, outPorts, createDefaultScript(inPorts, outPorts));
+        super(inPorts, outPorts, false, createDefaultScript(inPorts, outPorts));
     }
 
     private static String createDefaultScript(final InputPort[] inPorts, final OutputPort[] outPorts) {

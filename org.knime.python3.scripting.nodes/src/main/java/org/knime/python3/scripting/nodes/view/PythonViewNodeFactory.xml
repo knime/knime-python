@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<knimeNode icon="python.png" type="Visualizer" xmlns="http://knime.org/node/v4.1"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://knime.org/node/v4.1 http://knime.org/node/v4.1.xsd">
+	<name>Python View (Labs)</name>
+	<shortDescription>
+		Allows executing a Python script in a local Python environment.
+	</shortDescription>
+	<fullDescription>
+		<intro>
+			<b>This node is currently part of KNIME Labs. It is not yet advised to use it in production. Please consider
+			the following prerequisites and limitations before employing it:</b>
+			<ul>
+			<li>Python 2 is not supported.</li>
+			<li>Additional packages, namely <i>py4j</i> and <i>pyarrow</i>, are required to be installed in your Python
+			3 environment in specific versions. We recommend to create a new Conda environment that contains these
+			packages via File → Preferences → KNIME → Python.</li>
+			<li><a href="https://www.knime.com/blog/improved-performance-with-new-table-backend">Columnar Backend</a>
+			should be enabled for best performance.</li>
+			<li>Extension data types such as images from <i>KNIME Image Processing</i> or molecules from <i>RDKit Nodes
+			for KNIME</i> are not supported yet.</li>
+			<li>The scripting API is under active development and may be subject to breaking changes in future releases
+			until this node has been promoted from KNIME Labs.</li>
+			</ul>
+			The node brings significant performance improvements over the nodes of the stable KNIME Python Integration
+			and enables working with larger-than-memory data. More details on how to transition to the node's new
+			scripting API can be found <a href="https://docs.knime.com/latest/python_installation_guide/">here</a>.
+			There are also example workflows that further illustrate its use
+			<a href="https://hub.knime.com/knime/spaces/Examples/latest/07_Scripting/03_Python/">here</a> as well as
+			example templates on the <i>Templates</i> tab of the node.<br/>
+			<br/>
+			The node allows executing a Python script in a local Python 3 environment. The environment has to be
+			configured under <i>File → Preferences → KNIME → Python</i> or via flow variable, as described in the
+			<a href="https://docs.knime.com/latest/python_installation_guide/">KNIME Python Integration Guide</a>.<br/>
+			Multiple input ports of various types can dynamically be added to the node and used in the
+			script. See sections <i>Ports</i> and <i>Editor</i> below for a description of all available inputs, and how
+			they can be accessed in the Python script.
+			Make sure to set the <tt>knio.output_view</tt> variable to a view created with the <tt>knime.views</tt> module.<br />
+			Furthermore, the node allows to import Jupyter notebooks as Python modules via the
+			<a href="https://docs.knime.com/latest/python_installation_guide/#_load_jupyter_notebooks_from_knime">
+			knime_jupyter</a> module that can be imported in the script.
+		</intro>
+		<tab name="Script">
+			<option name="Editor">
+				The editor allows to configure the Python script that will later be run when this node is executed.
+				In the script, use the <tt>knime.scripting.io</tt> module (imported as <tt>knio</tt> by default) to access the
+				node's input data and populate its output view as described in the <i>Ports</i> and <i>Views</i> sections below. Use the
+				<tt>knio.flow_variables</tt> dictionary to access input flow variables by name and to add new output
+				flow variables by name.<br/>
+				<br/>
+				<i>Execute script</i> and <i>Execute selected lines</i> allow to execute the script, or selected parts
+				of it, right in the dialog without having to execute the entire node. The outputs of an execution can be
+				inspected via the workspace on the right side of the editor. Please note that all executions in the
+				dialog share and reuse the same workspace. That is, outputs of previous executions are kept in the
+				workspace where they are visible to later executions. You can use <i>Reset workspace</i> to clear the
+				workspace before an execution if you want to make it independent of all previous executions. Executions
+				of the entire node, outside of the dialog, are always independent of one another.<br/>
+				<br/>
+				The editor optionally provides autocomplete (by pressing Ctrl + Space) if the Python module
+				<tt>jedi</tt> is installed in the Python environment used by the node (default if Python environment is created through KNIME).
+			</option>
+			<option name="Workspace">
+				The pane on the right side of the editor panel is the workspace and lists the currently defined
+				identifiers in the running Python instance. <i>Reset workspace</i> removes the outputs of all previous
+				script executions.
+			</option>
+			<option name="Console">
+				The console below the editor panel displays the standard output and standard error of the running Python
+				instance as well as other information.
+			</option>
+		</tab>
+		<tab name="Executable Selection">
+			<option name="Conda environment propagation (Python 3)">
+				Allows to choose whether to obtain the Python 3 executable from the KNIME Preferences or from flow
+				variable.
+				<ul>
+					<li>Use KNIME preferences: use the Python 3 executable configured under File → Preferences →
+					KNIME → Python to execute the node.</li>
+					<li>Use Conda flow variable: use the Conda environment propagated by the selected Conda flow
+					variable to execute the node. The propagated environment must be a Python 3 environment.</li>
+				</ul>
+			</option>
+		</tab>
+		<tab name="Templates">
+			<option name="Create from editor...">
+				Clicking on this button creates a new template based on the script in the editor panel of the Script
+				tab.
+			</option>
+			<option name="Remove selected">
+				Clicking on this button removes the selected template. Built-in templates cannot be removed.
+			</option>
+			<option name="Apply selected">
+				Replaces the script in the editor panel of the Script tab by the selected template.
+			</option>
+		</tab>
+		<tab name="Flow Variables">
+			<option name="script">
+				Controls the Python script executed by this node.
+			</option>
+			<option name="python3_command">
+				Controls which Python 3 executable is employed by this node. The flow variable accepts the path to a
+				Python executable, start script, or Conda environment as described in the
+				<a href="https://docs.knime.com/latest/python_installation_guide/#configure_environments_per_node">
+					KNIME Python Integration Installation Guide
+				</a>.
+			</option>
+		</tab>
+	</fullDescription>
+	<ports>
+		<dynInPort name="Pickled object" group-identifier="Input object (pickled)" insert-before="0">
+			An input object. Input objects are automatically unpickled for you. You can access them via
+			<tt>knio.input_objects</tt>. For example, the first input object can be accessed like this:
+			<tt>knio.input_objects[0]</tt>.
+		</dynInPort>
+		<dynInPort name="Table" group-identifier="Input table" insert-before="0">
+			An input table. You can access input tables via <tt>knio.input_tables</tt>. For example, the first input
+			table can be accessed like this: <tt>knio.input_tables[0]</tt>. Each table is an instance of type
+			<tt>knime_table.ReadTable</tt>. Before being able to work with the table, you have to convert it into, for
+			example, a <tt>pandas.DataFrame</tt> or a <tt>pyarrow.Table</tt>. Please refer to the
+			<a href="https://docs.knime.com/latest/python_installation_guide/">KNIME Python Integration Guide</a> to
+			learn how to do this, or take a look at one of the templates on the <i>Templates</i> tab of the node.
+		</dynInPort>
+	</ports>
+	<views>
+		<view name="Output" index="0">
+			The output view created by the Python script. Use <tt>view(obj)</tt> function from the <tt>knime.views</tt>
+			module to create a view and assign to <tt>knio.output_view</tt>.
+		</view>
+		<view name="Standard output" index="1">
+			The output sent by Python to its standard output during the execution of this node.
+		</view>
+		<view name="Error output" index="2">
+			The output sent by Python to its error output during the execution of this node.
+		</view>
+	</views>
+</knimeNode>
