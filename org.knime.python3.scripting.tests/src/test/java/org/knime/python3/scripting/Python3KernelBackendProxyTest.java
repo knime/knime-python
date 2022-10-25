@@ -95,6 +95,7 @@ import org.knime.python3.arrow.PythonArrowDataSource;
 import org.knime.python3.arrow.PythonArrowDataUtils;
 import org.knime.python3.arrow.PythonArrowExtension;
 import org.knime.python3.arrow.TestUtils;
+import org.knime.python3.views.Python3ViewsSourceDirectory;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
@@ -215,6 +216,7 @@ public class Python3KernelBackendProxyTest {
             .add(Python3SourceDirectory.getPath()) //
             .add(Python3ArrowSourceDirectory.getPath()) //
             .add(Python3ScriptingSourceDirectory.getPath()) //
+            .add(Python3ViewsSourceDirectory.getPath()) //
             .build();
         return DefaultPythonGateway.create(command.createProcessBuilder(), launcherPath, entryPointClass, extensions,
             pythonPath);

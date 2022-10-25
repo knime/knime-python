@@ -125,6 +125,7 @@ import org.knime.python3.scripting.Python3KernelBackendProxy.Callback;
 import org.knime.python3.types.PythonValueFactoryModule;
 import org.knime.python3.types.PythonValueFactoryRegistry;
 import org.knime.python3.utils.FlowVariableUtils;
+import org.knime.python3.views.Python3ViewsSourceDirectory;
 
 import com.google.common.base.Strings;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -266,6 +267,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
                 .add(Python3SourceDirectory.getPath()) //
                 .add(Python3ArrowSourceDirectory.getPath()) //
                 .add(Python3ArrowTypesSourceDirectory.getPath()) //
+                .add(Python3ViewsSourceDirectory.getPath()) //
                 .add(Python3ScriptingSourceDirectory.getPath());
 
             addPythonValueFactoriesToPythonPath(pythonPathBuilder);
