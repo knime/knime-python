@@ -269,11 +269,12 @@ class LogicalType(KnimeType):
         return self._storage_type
 
     @property
-    def value_type(self) -> Type:
+    def value_type(self) -> str:
         """
-        The type of the values as they are represented in Python.
-        This only returns a type if a PythonValueFactory has been registered
-        for this extension type.
+        String representation of the type of the values as they are represented in Python.
+
+        Raises:
+            ValueError if no PythonValueFactory has been registered for this logical type
         """
         return kt.get_value_factory_bundle_for_java_value_factory(
             self.logical_type
