@@ -75,18 +75,18 @@ def pandas_df_to_arrow(data_frame: pd.DataFrame) -> pa.Table:
     # to avoid copying when not necessary the copy is only made when we actually convert
     df = None
     for col_name, col_type in zip(data_frame.columns, data_frame.dtypes):
-        col_converter = kt.get_first_matching_from_pandas_col_converter(col_type)
-        if col_converter is not None:
-            if df is None:
-                # create a shallow copy of the dataframe
-                df = data_frame.copy(deep=False)
-            with col_converter.warning_manager():
-                try:
+        try:
+            col_converter = kt.get_first_matching_from_pandas_col_converter(col_type)
+            if col_converter is not None:
+                if df is None:
+                    # create a shallow copy of the dataframe
+                    df = data_frame.copy(deep=False)
+                with col_converter.warning_manager():
                     df[col_name] = col_converter.convert_column(df, col_name)
-                except ImportError as e:
-                    LOGGER.info(
-                        f"Converter {col_converter} could not convert the column {col_name}; an import error occured: {e}."
-                    )
+        except ImportError as e:
+            LOGGER.info(
+                f"Could not convert the column {col_name}; an import error occured: {e}."
+            )
 
     if df is None:
         df = data_frame
@@ -127,12 +127,18 @@ def arrow_data_to_pandas_df(data: Union[pa.Table, pa.RecordBatch]) -> pd.DataFra
     else:
         data_frame = data.to_pandas()
     for col_name, col_type in zip(data.schema.names, data.schema.types):
-        col_converter = kt.get_first_matching_to_pandas_col_converter(col_type)
-        if col_converter is not None:
-            with col_converter.warning_manager():
-                data_frame[col_name] = col_converter.convert_column(
-                    data_frame, col_name
-                )
+        try:
+            col_converter = kt.get_first_matching_to_pandas_col_converter(col_type)
+            if col_converter is not None:
+                with col_converter.warning_manager():
+                    data_frame[col_name] = col_converter.convert_column(
+                        data_frame, col_name
+                    )
+        except ImportError as e:
+            LOGGER.info(
+                f"Could not convert the column {col_name}; an import error occured: {e}."
+            )
+
     # The first column is interpreted as the index (row keys)
     data_frame.set_index(data_frame.columns[0], inplace=True)
 
