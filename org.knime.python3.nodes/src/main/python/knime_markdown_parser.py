@@ -11,7 +11,6 @@ from markdown.extensions import Extension
 
 from markdown.preprocessors import Preprocessor
 from markdown.postprocessors import Postprocessor
-from markdown.blockprocessors import BlockProcessor
 from markdown.treeprocessors import Treeprocessor
 from markdown.extensions import Extension
 
@@ -29,7 +28,7 @@ from markdown.inlinepatterns import (
 )
 
 
-class _HeaderPreprocessor(Preprocessor):
+class _HeadingPreprocessor(Preprocessor):
     """
     Currently in Description only h3/h4 tags are allowed.
     """
@@ -46,12 +45,15 @@ class _HeaderPreprocessor(Preprocessor):
         return new_lines
 
 
-class _RemoveHeadersPreprocessor(Preprocessor):
+class _RemoveHeadingsPreprocessor(Preprocessor):
     def run(self, lines):
         new_lines = []
         for line in lines:
             if re.search("#{1,6} ", line):
                 line = re.sub("#+ ", "", line)
+            elif re.search("^(=+|-+)$", line):
+                # skip lines containing = and - to indicate headings
+                continue
             new_lines.append(line)
         return new_lines
 
@@ -155,7 +157,7 @@ class _KnimePostCode(Postprocessor):
         return text
 
 
-class _KnimePostPre(Postprocessor):
+class _RemovePreTagsPostprocessor(Postprocessor):
     """Remove occurrences of <code> tags, and replaces the remaining <pre> tags with <tt>."""
 
     def run(self, text):
@@ -236,7 +238,7 @@ class _KnExtension(_BaseKnExtension):
         super().extendMarkdown(_md)
 
         # Preprocessors
-        _md.preprocessors.register(_HeaderPreprocessor(), "headerlines", 100)
+        _md.preprocessors.register(_HeadingPreprocessor(), "headings", 100)
 
         _md.postprocessors.register(_KnimeTable(), "knime_table", 200)
         _md.postprocessors.register(_KnimePostHeader(), "knime_post_headder", 200)
@@ -261,7 +263,7 @@ class _KnExtensionForTabs(_BaseKnExtension):
 
         # Preprocessors
         _md.preprocessors.register(
-            _RemoveHeadersPreprocessor(), "knime_pre_remove_headers", 100
+            _RemoveHeadingsPreprocessor(), "knime_pre_remove_headings", 100
         )
 
         # Postprocessors
@@ -273,7 +275,9 @@ class _KnExtensionForTabs(_BaseKnExtension):
             "knime_post_remove_horizontal_rule",
             60,
         )
-        _md.postprocessors.register(_KnimePostPre(), "knime_post_pre", 10)
+        _md.postprocessors.register(
+            _RemovePreTagsPostprocessor(), "knime_post_remove_pre_tags", 10
+        )
 
 
 class KnimeMarkdownParser:

@@ -158,7 +158,8 @@ public final class NodeDescriptionBuilder {
             tabDesc.setAttribute("name", tab.getName());
             var description = doc.createElement("description");
             // only add a description to the tab if it's been provided
-            if (!tab.getDescription().isBlank()) {
+            var desc = tab.getDescription();
+            if (desc != null && !desc.isBlank()) {
                 description.appendChild(buildHelper.parseDocumentFragment(tab.getDescription()));
                 tabDesc.appendChild(description);
             }

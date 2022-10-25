@@ -80,6 +80,12 @@ class MarkdownDocstringTest(unittest.TestCase):
         _s = self.parser.parse_basic(_s)
         self.assertEqual(_s, _expected)
 
+    def test_basic_none_handling(self):
+        doc_test = None
+        doc_expected = "<i>No description available.</i>"
+
+        self.assertEqual(self.parser.parse_basic(doc_test), doc_expected)
+
     def test_line_header(self):
         _s = """
         Head
@@ -314,3 +320,83 @@ class MarkdownDocstringTest(unittest.TestCase):
             self.parser._dedent(doc_first_line_indent),
             self.parser._dedent(doc_second_line_indent),
         )
+
+    ######## Test the tab description parser ########
+    def test_heading_removal(self):
+        doc_test = """
+        # Heading 1
+        
+        ## Heading 2
+        
+        ### Heading 3
+        
+        Heading 1 with lines
+        ====
+        
+        Heading 2 with lines
+        ------"""
+
+        doc_expected = self.parser._dedent(
+            """Heading 1
+        Heading 2
+        Heading 3
+        Heading 1 with lines
+        Heading 2 with lines"""
+        )
+
+        self.assertEqual(self.parser.parse_tab_description(doc_test), doc_expected)
+
+    def test_pre_tag_removal(self):
+        doc_test = """
+            This is an indented line that turns into pre.
+            
+        This is a normal line."""
+
+        doc_expected = self.parser._dedent(
+            """
+            <tt>
+            This is an indented line that turns into pre.
+            </tt>
+            This is a normal line."""
+        )
+
+        self.assertEqual(self.parser.parse_tab_description(doc_test), doc_expected)
+
+    def test_p_tag_removal(self):
+        doc_test = """
+        First paragraph.
+        
+        Second paragraph.
+        
+        Third paragraph."""
+
+        doc_expected = self.parser._dedent(
+            """
+            First paragraph.
+            Second paragraph.
+            Third paragraph."""
+        )
+
+        self.assertEqual(self.parser.parse_tab_description(doc_test), doc_expected)
+
+    def test_horizontal_rule_removal(self):
+        doc_test = """
+        First line.
+        
+        ---
+        
+        Second line."""
+
+        doc_expected = self.parser._dedent(
+            """
+            First line.
+            Second line."""
+        )
+
+        self.assertEqual(self.parser.parse_tab_description(doc_test), doc_expected)
+
+    def test_tab_none_handling(self):
+        doc_test = None
+        doc_expected = ""
+
+        self.assertEqual(self.parser.parse_tab_description(doc_test), doc_expected)
