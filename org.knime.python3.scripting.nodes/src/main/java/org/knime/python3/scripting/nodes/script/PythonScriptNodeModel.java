@@ -88,7 +88,7 @@ final class PythonScriptNodeModel extends AbstractPythonScriptingNodeModel {
                 defaultScript += "\n";
             }
         }
-        return "import knime_io as knio\n\n" + defaultScript;
+        return "import knime.scripting.io as knio\n\n" + defaultScript;
     }
 
     static VariableNames getVariableNames(final InputPort[] inPorts, final OutputPort[] outPorts) {
@@ -189,7 +189,7 @@ final class PythonScriptNodeModel extends AbstractPythonScriptingNodeModel {
             + "\n\n" //
             + "import numpy as np\n" //
             + "import pandas as pd\n\n" //
-            + variables.getOutputTables()[0] + " = knio.write_table(\n" //
+            + variables.getOutputTables()[0] + " = knio.Table.from_pandas(\n" //
             + "    pd.DataFrame(\n" //
             + "        np.random.randint(0, 100, size=(10, 2)), columns=['First column', 'Second column']\n" //
             + "    )\n" //
@@ -198,18 +198,18 @@ final class PythonScriptNodeModel extends AbstractPythonScriptingNodeModel {
 
     private static String getPythonScript1To1DefaultScript(final VariableNames variables) {
         return "# This example script simply outputs the node's input table.\n\n" //
-            + variables.getOutputTables()[0] + " = knio.write_table(" + variables.getInputTables()[0] + ")\n";
+            + variables.getOutputTables()[0] + " = " + variables.getInputTables()[0] + "\n";
     }
 
     private static String getPythonScript1To2DefaultScript(final VariableNames variables) {
         return "# This example script simply outputs the node's input table.\n\n" //
-            + variables.getOutputTables()[0] + " = knio.write_table(" + variables.getInputTables()[0] + ")\n"
-            + variables.getOutputTables()[1] + " = knio.write_table(" + variables.getInputTables()[0] + ")\n";
+            + variables.getOutputTables()[0] + " = " + variables.getInputTables()[0] + "\n"
+            + variables.getOutputTables()[1] + " = " + variables.getInputTables()[0] + "\n";
     }
 
     private static String getPythonScript2To1DefaultScript(final VariableNames variables) {
         return "# This example script performs an inner join on the node's input tables using pandas.\n\n" //
-            + variables.getOutputTables()[0] + " = knio.write_table(\n" //
+            + variables.getOutputTables()[0] + " = knio.Table.from_pandas(\n" //
             + "    " + variables.getInputTables()[0] + "\n" //
             + "    .to_pandas()\n" //
             + "    .join(\n" //
@@ -223,8 +223,8 @@ final class PythonScriptNodeModel extends AbstractPythonScriptingNodeModel {
 
     private static String getPythonScript2To2DefaultScript(final VariableNames variables) {
         return "# This example script simply outputs the node's input tables.\n\n" //
-            + variables.getOutputTables()[0] + " = knio.write_table(" + variables.getInputTables()[0] + ")\n"
-            + variables.getOutputTables()[1] + " = knio.write_table(" + variables.getInputTables()[1] + ")\n";
+            + variables.getOutputTables()[0] + " = " + variables.getInputTables()[0] + "\n"
+            + variables.getOutputTables()[1] + " = " + variables.getInputTables()[1] + "\n";
     }
 
     private static String getPythonViewDefaultScript(final VariableNames variables) {
@@ -300,6 +300,6 @@ final class PythonScriptNodeModel extends AbstractPythonScriptingNodeModel {
             + "# Append the predictions to the original table.\n" //
             + "output_table = input_table\n" //
             + "output_table['prediction'] = pd.Series(predictions, index=output_table.index)\n\n" //
-            + variables.getOutputTables()[0] + " = knio.write_table(output_table)\n";
+            + variables.getOutputTables()[0] + " = knio.Table.from_pandas(output_table)\n";
     }
 }
