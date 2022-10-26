@@ -124,6 +124,20 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
         return settings.getString(CFG_KEY_SCRIPT);
     }
 
+    /**
+     * Get the backend from the kernel and cast it to a {@link Python3KernelBackend}.
+     *
+     * @throws IllegalArgumentException if the kernel does not have a {@link Python3KernelBackend}
+     */
+    static Python3KernelBackend getPython3Backend(final PythonKernel kernel) {
+        final var backend = kernel.getBackend();
+        if (!(backend instanceof Python3KernelBackend)) {
+            throw new IllegalArgumentException("The Python kernel uses the wrong backend. " + "Expected: '"
+                + Python3KernelBackend.class + "', got '" + backend.getClass() + "'. This is an implementation error.");
+        }
+        return (Python3KernelBackend)backend;
+    }
+
     private final InputPort[] m_inPorts;
 
     private final OutputPort[] m_outPorts;
