@@ -813,7 +813,7 @@ class ProxyTests(unittest.TestCase):
 
         import knime.types.builtin as et
 
-        knime_type = k.logical(et.DenseByteVector)
+        knime_type = k.logical(et.DenseByteVectorValue)
 
         import pandas as pd
 
