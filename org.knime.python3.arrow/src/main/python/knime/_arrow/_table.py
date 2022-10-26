@@ -102,7 +102,16 @@ class ArrowBatchOutputTable(knt.BatchOutputTable):
         self._num_batches = 0
         self._sink = sink
 
-    def append(self, batch: "ArrowTable"):
+    def append(
+        self, batch: Union["ArrowTable", "pandas.DataFrame", pa.Table, pa.RecordBatch]
+    ):
+        if isinstance(batch, pa.Table) or isinstance(batch, pa.RecordBatch):
+            batch = knt.Table.from_pyarrow(batch)
+        elif isinstance(batch, ArrowTable):
+            pass  # no need to convert, we just don't want to have to check for pandas explicitly
+        else:
+            batch = knt.Table.from_pandas(batch)
+
         self._num_batches += 1
         self._sink.write(batch._table)
 
@@ -241,15 +250,15 @@ class ArrowSourceTable(ArrowTable):
     def num_batches(self) -> int:
         return len(self._source)
 
-    def to_batches(self) -> Iterator[knt.Table]:
+    def batches(self) -> Iterator[knt.Table]:
         """
-        Returns an generator for the batches in this table. If the generator is advanced to a batch
+        Returns a generator for the batches in this table. If the generator is advanced to a batch
         that is not available yet, it will block until the data is present.
 
         **Example**::
 
             processed_table = BatchOutputTable.create()
-            for batch in my_table.to_batches():
+            for batch in my_table.batches():
                 input_batch = batch.to_pandas()
                 # process the batch
                 processed_table.append(Table.from_pandas(input_batch))

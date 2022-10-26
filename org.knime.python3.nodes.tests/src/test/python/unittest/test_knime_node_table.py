@@ -406,9 +406,16 @@ class ArrowTableTest(unittest.TestCase):
         self.assertEqual(table.num_columns, other.num_columns)
         self.assertEqual(table.column_names, other.column_names)
 
-    def test_batches(self):
+    def test_to_batches(self):
         table = self._test_table
         batches = list(table.to_batches())
+        self.assertTrue(len(batches) > 0)
+        self.assertIsInstance(batches[0], knt.Table)
+        self.assertEqual(table.num_columns, batches[0].num_columns)
+
+    def test_batches(self):
+        table = self._test_table
+        batches = list(table.batches())
         self.assertTrue(len(batches) > 0)
         self.assertIsInstance(batches[0], knt.Table)
         self.assertEqual(table.num_columns, batches[0].num_columns)
@@ -441,20 +448,62 @@ class BatchOutputTableTest(unittest.TestCase):
         ktn._backend.close()
         knt._backend = None
 
-    def _generate_test_batch(self, index):
+    def _generate_test_pyarrow_table(self, index):
         nr = 10
-        t = pa.Table.from_pydict(
+        return pa.Table.from_pydict(
             {
                 "Key": [f"Row{r + index * nr}" for r in range(nr)],
                 "Ints": [r + index * nr for r in range(nr)],
             }
         )
-        return knt.Table.from_pyarrow(t)
+
+    def _generate_test_pyarrow_batch(self, index):
+        nr = 10
+        return pa.RecordBatch.from_pydict(
+            {
+                "Key": [f"Row{r + index * nr}" for r in range(nr)],
+                "Ints": [r + index * nr for r in range(nr)],
+            }
+        )
+
+    def _generate_test_pandas(self, index):
+        nr = 10
+        return pd.DataFrame(
+            {
+                "Key": [f"Row{r + index * nr}" for r in range(nr)],
+                "Ints": [r + index * nr for r in range(nr)],
+            }
+        )
+
+    def _generate_test_batch(self, index):
+        return knt.Table.from_pyarrow(self._generate_test_pyarrow_table(index))
 
     def test_create_append(self):
         out = knt.BatchOutputTable.create()
         for i in range(5):
             out.append(self._generate_test_batch(i))
+
+    def test_append_pandas(self):
+        out = knt.BatchOutputTable.create()
+        for i in range(5):
+            out.append(self._generate_test_pandas(i))
+
+    def test_append_pyarrow_table(self):
+        out = knt.BatchOutputTable.create()
+        for i in range(5):
+            out.append(self._generate_test_pyarrow_table(i))
+
+    def test_append_pyarrow_batch(self):
+        out = knt.BatchOutputTable.create()
+        for i in range(5):
+            out.append(self._generate_test_pyarrow_batch(i))
+
+    def test_append_mixed(self):
+        out = knt.BatchOutputTable.create()
+        out.append(self._generate_test_pyarrow_table(0))
+        out.append(self._generate_test_pandas(1))
+        out.append(self._generate_test_pyarrow_batch(2))
+        out.append(self._generate_test_batch(3))
 
     def test_create_with_generator(self):
         def batch_generator():
