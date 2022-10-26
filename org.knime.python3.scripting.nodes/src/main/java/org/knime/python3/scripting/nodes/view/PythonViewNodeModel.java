@@ -75,10 +75,16 @@ final class PythonViewNodeModel extends AbstractPythonScriptingNodeModel {
     }
 
     private static String createDefaultScript(final InputPort[] inPorts) {
-        // TODO
-        return "import knime_io as knio\n" //
-            + "import knime_views as knv\n\n" //
-            + "knio.output_view = knv.view(\"<html>Hello World</html>\")";
+        final String defaultScript;
+        if (inPorts.length == 1 && (inPorts[0] instanceof DataTableInputPort)) {
+            defaultScript = getPython1TableInputDefaultScript();
+        } else {
+            defaultScript = getGenericDefaultScript();
+        }
+
+        return "import knime.scripting.io as knio\n" //
+            + "import knime.views as kv\n\n" //
+            + defaultScript;
     }
 
     static VariableNames getVariableNames(final InputPort[] inPorts) {
@@ -103,5 +109,41 @@ final class PythonViewNodeModel extends AbstractPythonScriptingNodeModel {
             new String[0], // general inputs
             new String[]{"knio.output_view"} //
         );
+    }
+
+    private static String getPython1TableInputDefaultScript() {
+        return "# This example script plots a histogram using matplotlib and assigns it to the output view\n" //
+            + "import numpy as np\n" //
+            + "import matplotlib.pyplot as plt\n" //
+            + "\n" //
+            + "# Only use numeric columns\n" //
+            + "data = knio.input_tables[0].to_pandas().select_dtypes('number')\n" //
+            + "\n" //
+            + "# Use the values from the first column\n" //
+            + "values = np.array(data[data.columns[0]])\n" //
+            + "\n" //
+            + "# Plot the histogram\n" //
+            + "fig = plt.figure()\n" //
+            + "plt.hist(np.array(values), bins=10)\n" //
+            + "\n" //
+            + "# Assign the figure to the output_view variable\n" //
+            + "knio.output_view = kv.view(fig)  # alternative: kv.view_matplotlib()\n";
+    }
+
+    private static String getGenericDefaultScript() {
+        return "# This example uses an HTML string as the output view\n" //
+            + "\n" //
+            + "knio.output_view = kv.view(\"\"\"<!DOCTYPE html>\n" //
+            + "<html>\n" //
+            + "    <body>\n" //
+            + "        My HTML view\n" //
+            + "    </body>\n" //
+            + "</html>\n" //
+            + "\"\"\")\n" //
+            + "\n" //
+            + "# Views can also be created from other objects like bytes containing a PNG or JPEG image,\n" //
+            + "# or strings containing an SVG. Also, many objects that can be displayed in jupyter notebooks\n" //
+            + "# can be displayed as an output view automatically. See the documentation of kv.view for\n" //
+            + "# more information.";
     }
 }
