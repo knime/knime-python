@@ -49,14 +49,10 @@
 package org.knime.python3.scripting.nodes.view;
 
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 
-import org.knime.python2.generic.VariableNames;
 import org.knime.python2.ports.DataTableInputPort;
 import org.knime.python2.ports.InputPort;
 import org.knime.python2.ports.OutputPort;
-import org.knime.python2.ports.PickledObjectInputPort;
 import org.knime.python3.scripting.nodes.AbstractPythonScriptingNodeModel;
 
 /**
@@ -85,30 +81,6 @@ final class PythonViewNodeModel extends AbstractPythonScriptingNodeModel {
         return "import knime.scripting.io as knio\n" //
             + "import knime.views as kv\n\n" //
             + defaultScript;
-    }
-
-    static VariableNames getVariableNames(final InputPort[] inPorts) {
-        // TODO combine with script node
-        final List<String> inputTables = new ArrayList<>(2);
-        final List<String> inputObjects = new ArrayList<>(2);
-        for (final InputPort inPort : inPorts) {
-            final String variableName = inPort.getVariableName();
-            if (inPort instanceof DataTableInputPort) {
-                inputTables.add(variableName);
-            } else if (inPort instanceof PickledObjectInputPort) {
-                inputObjects.add(variableName);
-            }
-        }
-
-        return new VariableNames("knio.flow_variables", //
-            inputTables.toArray(String[]::new), //
-            new String[0], // output tables
-            new String[0], // output images
-            inputObjects.toArray(String[]::new), //
-            new String[0], // output objects
-            new String[0], // general inputs
-            new String[]{"knio.output_view"} //
-        );
     }
 
     private static String getPython1TableInputDefaultScript() {

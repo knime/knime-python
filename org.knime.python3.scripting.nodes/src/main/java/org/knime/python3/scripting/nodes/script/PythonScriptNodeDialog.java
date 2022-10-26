@@ -51,6 +51,7 @@ package org.knime.python3.scripting.nodes.script;
 import org.knime.python2.ports.InputPort;
 import org.knime.python2.ports.OutputPort;
 import org.knime.python3.scripting.nodes.AbstractPythonScriptingNodeDialog;
+import org.knime.python3.scripting.nodes.VariableNamesUtils;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
@@ -58,6 +59,6 @@ import org.knime.python3.scripting.nodes.AbstractPythonScriptingNodeDialog;
 final class PythonScriptNodeDialog extends AbstractPythonScriptingNodeDialog {
 
     public PythonScriptNodeDialog(final InputPort[] inPorts, final OutputPort[] outPorts) {
-        super(inPorts, false, PythonScriptNodeModel.getVariableNames(inPorts, outPorts), "python3-script");
+        super(inPorts, false, VariableNamesUtils.getVariableNames(inPorts, outPorts), "python3-script");
     }
 }

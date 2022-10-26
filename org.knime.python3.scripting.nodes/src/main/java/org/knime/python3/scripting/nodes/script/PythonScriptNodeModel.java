@@ -48,18 +48,14 @@
  */
 package org.knime.python3.scripting.nodes.script;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.knime.python2.generic.VariableNames;
-import org.knime.python2.ports.DataTableInputPort;
 import org.knime.python2.ports.DataTableOutputPort;
 import org.knime.python2.ports.ImageOutputPort;
 import org.knime.python2.ports.InputPort;
 import org.knime.python2.ports.OutputPort;
-import org.knime.python2.ports.PickledObjectInputPort;
 import org.knime.python2.ports.PickledObjectOutputPort;
 import org.knime.python3.scripting.nodes.AbstractPythonScriptingNodeModel;
+import org.knime.python3.scripting.nodes.VariableNamesUtils;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
@@ -71,7 +67,7 @@ final class PythonScriptNodeModel extends AbstractPythonScriptingNodeModel {
     }
 
     private static String createDefaultScript(final InputPort[] inPorts, final OutputPort[] outPorts) {
-        final var variables = getVariableNames(inPorts, outPorts);
+        final var variables = VariableNamesUtils.getVariableNames(inPorts, outPorts);
         String defaultScript = getOldNodesDefaultScript(inPorts, outPorts, variables);
         if (defaultScript == null) {
             // No old/known node configuration. Fall back to some generic default code that simply populates all output
@@ -89,38 +85,6 @@ final class PythonScriptNodeModel extends AbstractPythonScriptingNodeModel {
             }
         }
         return "import knime.scripting.io as knio\n\n" + defaultScript;
-    }
-
-    static VariableNames getVariableNames(final InputPort[] inPorts, final OutputPort[] outPorts) {
-        final List<String> inputTables = new ArrayList<>(2);
-        final List<String> inputObjects = new ArrayList<>(2);
-        for (final InputPort inPort : inPorts) {
-            final String variableName = inPort.getVariableName();
-            if (inPort instanceof DataTableInputPort) {
-                inputTables.add(variableName);
-            } else if (inPort instanceof PickledObjectInputPort) {
-                inputObjects.add(variableName);
-            }
-        }
-        final List<String> outputTables = new ArrayList<>(2);
-        final List<String> outputImages = new ArrayList<>(2);
-        final List<String> outputObjects = new ArrayList<>(2);
-        for (final OutputPort outPort : outPorts) {
-            final String variableName = outPort.getVariableName();
-            if (outPort instanceof DataTableOutputPort) {
-                outputTables.add(variableName);
-            } else if (outPort instanceof ImageOutputPort) {
-                outputImages.add(variableName);
-            } else if (outPort instanceof PickledObjectOutputPort) {
-                outputObjects.add(variableName);
-            }
-        }
-        return new VariableNames("knio.flow_variables", //
-            inputTables.toArray(String[]::new), //
-            outputTables.toArray(String[]::new), //
-            outputImages.toArray(String[]::new), //
-            inputObjects.toArray(String[]::new), //
-            outputObjects.toArray(String[]::new));
     }
 
     /**
