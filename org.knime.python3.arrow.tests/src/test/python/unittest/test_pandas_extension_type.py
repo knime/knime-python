@@ -736,6 +736,11 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
                     """,
             "datetime.datetime",
         )
+        kt._from_pandas_column_converters["numpy.dtype[datetime64]"] = (
+            "knime.types.builtin",
+            "FromTimeStampPandasColumnConverter",
+        )
+
         with DummyJavaDataSinkFactory() as sink_creator:
             arrow_backend = kat.ArrowBackend(sink_creator)
 
