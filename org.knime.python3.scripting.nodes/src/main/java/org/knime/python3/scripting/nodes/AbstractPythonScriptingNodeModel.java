@@ -138,6 +138,11 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
         return (Python3KernelBackend)backend;
     }
 
+    @SuppressWarnings("resource")
+    static void setExpectedOutputView(final PythonKernel kernel, final boolean expectView) {
+        getPython3Backend(kernel).setExpectedOutputView(expectView);
+    }
+
     private final InputPort[] m_inPorts;
 
     private final OutputPort[] m_outPorts;
@@ -242,6 +247,8 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
             kernel.setExpectedOutputImages(outputImageNames.toArray(String[]::new));
             kernel.setExpectedOutputObjects(outputObjectNames.toArray(String[]::new));
             final double outRelativeWeight = outWeight / m_outPorts.length;
+
+            setExpectedOutputView(kernel, m_hasView);
 
             final var scriptExecutionMonitor = exec.createSubProgress(1d - inRelativeWeight - outRelativeWeight);
             scriptExecutionMonitor.setMessage("Executing Python script...");

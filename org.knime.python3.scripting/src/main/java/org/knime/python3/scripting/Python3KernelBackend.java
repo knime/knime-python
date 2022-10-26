@@ -518,6 +518,15 @@ public final class Python3KernelBackend implements PythonKernelBackend {
     }
 
     /**
+     * Set if the kernel should expect an output view to be set after the execution.
+     *
+     * @param expectView
+     */
+    public void setExpectedOutputView(final boolean expectView) {
+        m_proxy.setExpectedOutputView(expectView);
+    }
+
+    /**
      * Write the output view HTML to the given file.
      *
      * @param file the file into which the HTML should be written

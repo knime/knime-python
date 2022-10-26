@@ -64,6 +64,7 @@ import knime_arrow_table as kat
 
 import knime.api.table as ktn
 import knime._arrow._table as katn
+import knime.views as kv
 
 import knime.scripting._io_containers as _ioc
 
@@ -197,6 +198,7 @@ class ScriptingBackendCollection:
 
     def __init__(self, backends: Dict[str, ScriptingBackend]):
         self._backends = backends
+        self._expect_view = False
 
     @property
     def flow_variables(self) -> Dict[str, Any]:
@@ -307,6 +309,9 @@ class ScriptingBackendCollection:
         with open(path, "wb") as file:
             file.write(image)
 
+    def set_expected_output_view(self, expect_view: bool):
+        self._expect_view = expect_view
+
     def get_output_view(self, view_sink):
         view_sink.display(self.get_active_backend_or_raise().get_output_view())
 
@@ -327,6 +332,13 @@ class ScriptingBackendCollection:
                 )
 
         self._check_flow_variables()
+
+        if self._expect_view:
+            v = self.get_active_backend_or_raise().get_output_view()
+            if v is None or not isinstance(v, kv.NodeView):
+                raise ValueError(
+                    f"Expected an output view in output_view, got {type(v)}"
+                )
 
     def _check_flow_variables(self):
         LinkedHashMap = JavaClass(  # NOSONAR Java naming conventions apply.
@@ -455,6 +467,9 @@ class PythonKernel(kg.EntryPoint):
         path: str,
     ) -> None:
         self._backends.get_output_image(image_index, path)
+
+    def setExpectedOutputView(self, expect_view):
+        self._backends.set_expected_output_view(expect_view)
 
     def getOutputView(self, java_view_sink):
         self._backends.get_output_view(kg.data_sink_mapper(java_view_sink))

@@ -90,16 +90,22 @@ public class AbstractPythonScriptingNodeDialog extends DataAwareNodeDialogPane {
 
     private final PythonFixedVersionExecutableSelectionPanel m_executablePanel;
 
-    public AbstractPythonScriptingNodeDialog(final InputPort[] inPorts, final VariableNames variableNames,
-        final String templateRepositoryId) {
+    public AbstractPythonScriptingNodeDialog(final InputPort[] inPorts, final boolean hasView,
+        final VariableNames variableNames, final String templateRepositoryId) {
         m_inPorts = inPorts;
-        m_executablePanel = new PythonFixedVersionExecutableSelectionPanel(this,
-            AbstractPythonScriptingNodeModel.createCommandConfig(), () -> Python3ScriptingPreferences.getEnvironmentTypePreference().getName());
+        m_executablePanel =
+            new PythonFixedVersionExecutableSelectionPanel(this, AbstractPythonScriptingNodeModel.createCommandConfig(),
+                () -> Python3ScriptingPreferences.getEnvironmentTypePreference().getName());
         m_scriptPanel = new PythonSourceCodePanel(this, PythonKernelBackendType.PYTHON3, variableNames,
             new PythonSourceCodeOptionsPanel(), m_executablePanel);
         addTab("Script", m_scriptPanel, false);
         addTab(PythonExecutableSelectionPanel.DEFAULT_TAB_NAME, m_executablePanel);
         addTab("Templates", new SourceCodeTemplatesPanel(m_scriptPanel, templateRepositoryId));
+
+        if (hasView) {
+            m_scriptPanel.registerWorkspacePreparer(
+                kernel -> AbstractPythonScriptingNodeModel.setExpectedOutputView(kernel, true));
+        }
     }
 
     @Override

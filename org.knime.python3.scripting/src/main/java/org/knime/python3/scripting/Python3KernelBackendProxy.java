@@ -186,6 +186,13 @@ public interface Python3KernelBackendProxy extends PythonEntryPoint {
     void getOutputImage(int imageIndex, String path);
 
     /**
+     * Set if the kernel should expect an output view to be set after the execution.
+     *
+     * @param expectView
+     */
+    void setExpectedOutputView(boolean expectView);
+
+    /**
      * @param sink The path to which to write the HTML file
      */
     void getOutputView(PythonNodeViewSink sink);

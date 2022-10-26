@@ -58,6 +58,6 @@ import org.knime.python3.scripting.nodes.AbstractPythonScriptingNodeDialog;
 final class PythonViewNodeDialog extends AbstractPythonScriptingNodeDialog {
 
     public PythonViewNodeDialog(final InputPort[] inPorts) {
-        super(inPorts, PythonViewNodeModel.getVariableNames(inPorts), "python3-script");
+        super(inPorts, true, PythonViewNodeModel.getVariableNames(inPorts), "python3-script");
     }
 }
