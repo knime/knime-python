@@ -249,8 +249,10 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
             final double outRelativeWeight = outWeight / m_outPorts.length;
 
             setExpectedOutputView(kernel, m_hasView);
+            final double viewRelativeWeight = m_hasView ? 0.1 : 0;
 
-            final var scriptExecutionMonitor = exec.createSubProgress(1d - inRelativeWeight - outRelativeWeight);
+            final var scriptExecutionMonitor =
+                exec.createSubProgress(1d - inRelativeWeight - outRelativeWeight - viewRelativeWeight);
             scriptExecutionMonitor.setMessage("Executing Python script...");
             final String[] output = kernel.executeAndCheckOutputs(m_script, cancelable);
             setExternalOutput(new LinkedList<>(Arrays.asList(output[0].split("\n"))));
@@ -274,14 +276,14 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
                 outObjects[i] = outPort.execute(kernel, outPortExec);
             }
             if (m_hasView) {
-                // TODO manage progress correctly with a sub execution context
-                exec.setMessage("Retrieving view from Python...");
+                var viewExec = exec.createSubExecutionContext(viewRelativeWeight);
+                viewExec.setMessage("Retrieving view from Python...");
 
                 // Delete the last view if it is still present
                 if (m_view.isPresent()) {
                     PathUtils.deleteFileIfExists(m_view.get());
                 }
-                m_view = Optional.of(getOutputView(kernel, exec));
+                m_view = Optional.of(getOutputView(kernel, viewExec));
 
             }
             m_kernelShutdownTracker.closeAsynchronously(kernel);
