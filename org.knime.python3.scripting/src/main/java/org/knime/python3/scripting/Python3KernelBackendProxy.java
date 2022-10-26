@@ -62,6 +62,7 @@ import org.knime.python2.port.PickledObjectFile;
 import org.knime.python3.PythonDataSource;
 import org.knime.python3.PythonEntryPoint;
 import org.knime.python3.arrow.PythonArrowDataSink;
+import org.knime.python3.views.PythonNodeViewSink;
 
 /**
  * Proxy interface delegating to the Python implementation of the kernel back end.
@@ -120,8 +121,8 @@ public interface Python3KernelBackendProxy extends PythonEntryPoint {
     void setInputTable(int tableIndex, PythonDataSource tableDataSource);
 
     /**
-     * Release the input tables on Python side i.e. close any open file handles, so that the underlying files can
-     * be removed from Java if necessary (otherwise Windows won't allow to delete the files).
+     * Release the input tables on Python side i.e. close any open file handles, so that the underlying files can be
+     * removed from Java if necessary (otherwise Windows won't allow to delete the files).
      */
     void releaseInputTables();
 
@@ -183,6 +184,11 @@ public interface Python3KernelBackendProxy extends PythonEntryPoint {
      * @param path The path to which to write the image.
      */
     void getOutputImage(int imageIndex, String path);
+
+    /**
+     * @param sink The path to which to write the HTML file
+     */
+    void getOutputView(PythonNodeViewSink sink);
 
     /**
      * Implements the functionality required by {@link Python3KernelBackend#listVariables()}.

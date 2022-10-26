@@ -52,6 +52,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -126,6 +127,7 @@ import org.knime.python3.types.PythonValueFactoryModule;
 import org.knime.python3.types.PythonValueFactoryRegistry;
 import org.knime.python3.utils.FlowVariableUtils;
 import org.knime.python3.views.Python3ViewsSourceDirectory;
+import org.knime.python3.views.PythonNodeViewSink;
 
 import com.google.common.base.Strings;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -415,7 +417,8 @@ public final class Python3KernelBackend implements PythonKernelBackend {
     public void putDataTable(final String name, final BufferedDataTable table, final ExecutionMonitor executionMonitor)
         throws PythonIOException, CanceledExecutionException {
         try {
-            m_executor.performCancelable(new PutDataTableTask(parseIndex(name), table), executionMonitor::checkCanceled);
+            m_executor.performCancelable(new PutDataTableTask(parseIndex(name), table),
+                executionMonitor::checkCanceled);
         } catch (ExecutionException ex) {// NOSONAR acts as a simple holder for another exception
             throw new PythonIOException(ex.getCause());
         }
@@ -512,6 +515,23 @@ public final class Python3KernelBackend implements PythonKernelBackend {
 
     private static int parseIndex(final String name) {
         return Integer.parseInt(name.split("\\[")[1].split("\\]")[0]);
+    }
+
+    /**
+     * Write the output view HTML to the given file.
+     *
+     * @param file the file into which the HTML should be written
+     * @param exec to check if the execution has been canceled
+     * @throws PythonIOException
+     * @throws CanceledExecutionException
+     */
+    public void getOutputView(final Path file, final ExecutionMonitor exec)
+        throws PythonIOException, CanceledExecutionException {
+        performCancelable(() -> {
+            final var absolutePath = file.toAbsolutePath().toString();
+            m_proxy.getOutputView(new PythonNodeViewSink(absolutePath));
+            return null;
+        }, exec);
     }
 
     @Override

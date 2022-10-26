@@ -274,8 +274,7 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
                 if (m_view.isPresent()) {
                     PathUtils.deleteFileIfExists(m_view.get());
                 }
-                // TODO get the view from the HTML
-                m_view = Optional.of(fakeGetViewFromKernel());
+                m_view = Optional.of(getOutputView(kernel, exec));
 
             }
             m_kernelShutdownTracker.closeAsynchronously(kernel);
@@ -283,16 +282,12 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
         }
     }
 
-    private static Path fakeGetViewFromKernel() {
-        // TODO remove and implement it for real
-        try {
-            final var htmlPath = PathUtils.createTempFile("foo", "html");
-            final var time = System.currentTimeMillis();
-            Files.writeString(htmlPath, "<html>Hello world (" + time + ")</html>");
-            return htmlPath;
-        } catch (IOException ex) {
-            throw new IllegalStateException(ex);
-        }
+    @SuppressWarnings("resource") // The backend is closed by the kernel
+    private static Path getOutputView(final PythonKernel kernel, final ExecutionMonitor exec)
+        throws CanceledExecutionException, IOException {
+        final var path = PathUtils.createTempFile("output_view", ".html");
+        getPython3Backend(kernel).getOutputView(path, exec);
+        return path;
     }
 
     @Override

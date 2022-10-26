@@ -89,6 +89,10 @@ class ScriptingBackend(ABC):
     def tear_down_arrow(self, flush: bool):
         pass
 
+    @abstractmethod
+    def get_output_view(self):
+        pass
+
 
 class ScriptingBackendV0(ScriptingBackend):
     """
@@ -120,6 +124,12 @@ class ScriptingBackendV0(ScriptingBackend):
     def tear_down_arrow(self, flush: bool):
         kt._backend.close()
         kt._backend = None
+
+    def get_output_view(self):
+        raise NotImplementedError(
+            "The deprecated knime_io backend does not support views. "
+            + "Please import knime.scripting.io"
+        )
 
 
 class ScriptingBackendV1(ScriptingBackend):
@@ -167,6 +177,12 @@ class ScriptingBackendV1(ScriptingBackend):
 
         ktn._backend.close()
         ktn._backend = None
+
+    def get_output_view(self):
+        # knime.scripting.io is imported anyways because this is the active backend
+        import knime.scripting.io
+
+        return knime.scripting.io.output_view
 
 
 class ScriptingBackendCollection:
@@ -290,6 +306,9 @@ class ScriptingBackendCollection:
         image = _ioc._output_images[image_index]
         with open(path, "wb") as file:
             file.write(image)
+
+    def get_output_view(self, view_sink):
+        view_sink.display(self.get_active_backend_or_raise().get_output_view())
 
     def check_outputs(self):
         for i, o in enumerate(_ioc._output_tables):
@@ -436,6 +455,9 @@ class PythonKernel(kg.EntryPoint):
         path: str,
     ) -> None:
         self._backends.get_output_image(image_index, path)
+
+    def getOutputView(self, java_view_sink):
+        self._backends.get_output_view(kg.data_sink_mapper(java_view_sink))
 
     def getVariablesInWorkspace(self) -> List[Dict[str, str]]:
         def object_to_string(obj):
