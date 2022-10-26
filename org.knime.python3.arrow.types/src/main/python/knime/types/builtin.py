@@ -308,9 +308,9 @@ class BooleanSetValueFactory(kt.PythonValueFactory):
         return {"0": value.has_true, "1": value.has_false, "2": value.has_missing}
 
 
-class DenseBitVector(str):
+class DenseBitVectorValue(str):
     """
-    Represents a DenseBitVector from KNIME as bitstring in Python
+    Represents a DenseBitVectorValue from KNIME as bitstring in Python
     """
 
     def to_bytes(self):
@@ -327,12 +327,12 @@ class DenseBitVector(str):
 
 class DenseBitVectorValueFactory(kt.PythonValueFactory):
     def __init__(self):
-        kt.PythonValueFactory.__init__(self, DenseBitVector)
+        kt.PythonValueFactory.__init__(self, DenseBitVectorValue)
 
     def decode(self, storage):
         if storage is None:
             return None
-        return DenseBitVector.from_bytes(storage)
+        return DenseBitVectorValue.from_bytes(storage)
 
     def encode(self, value):
         if value is None:
@@ -340,18 +340,18 @@ class DenseBitVectorValueFactory(kt.PythonValueFactory):
         return value.to_bytes()
 
 
-class DenseByteVector(bytes):
+class DenseByteVectorValue(bytes):
     pass
 
 
 class DenseByteVectorValueFactory(kt.PythonValueFactory):
     def __init__(self):
-        kt.PythonValueFactory.__init__(self, DenseByteVector)
+        kt.PythonValueFactory.__init__(self, DenseByteVectorValue)
 
     def decode(self, storage):
         if storage is None:
             return None
-        return DenseByteVector(storage)
+        return DenseByteVectorValue(storage)
 
     def encode(self, value):
         if value is None:
