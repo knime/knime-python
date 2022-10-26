@@ -42,7 +42,7 @@
 		<tab name="Script">
 			<option name="Editor">
 				The editor allows to configure the Python script that will later be run when this node is executed.
-				In the script, use the <tt>knime_io</tt> module (imported as <tt>knio</tt> by default) to access the
+				In the script, use the <tt>knime.scripting.io</tt> module (imported as <tt>knio</tt> by default) to access the
 				node's input data and populate its output data as described in the <i>Ports</i> section below. Use the
 				<tt>knio.flow_variables</tt> dictionary to access input flow variables by name and to add new output
 				flow variables by name.<br/>
@@ -114,7 +114,7 @@
 		<dynInPort name="Table" group-identifier="Input table" insert-before="0">
 			An input table. You can access input tables via <tt>knio.input_tables</tt>. For example, the first input
 			table can be accessed like this: <tt>knio.input_tables[0]</tt>. Each table is an instance of type
-			<tt>knime_table.ReadTable</tt>. Before being able to work with the table, you have to convert it into, for
+			<tt>knio.Table</tt>. Before being able to work with the table, you have to convert it into, for
 			example, a <tt>pandas.DataFrame</tt> or a <tt>pyarrow.Table</tt>. Please refer to the
 			<a href="https://docs.knime.com/latest/python_installation_guide/">KNIME Python Integration Guide</a> to
 			learn how to do this, or take a look at one of the templates on the <i>Templates</i> tab of the node.
@@ -122,7 +122,7 @@
 		<dynOutPort name="Table" group-identifier="Output table" insert-before="0">
 			An output table. The table has to be populated via <tt>knio.output_tables</tt> in your script. For example,
 			to populate the first output table, assign it a value like this: <tt>knio.ouput_tables[0] =
-			&lt;value&gt;</tt>. The assigned value must be an instance of type <tt>knime_table.WriteTable</tt> which can
+			&lt;value&gt;</tt>. The assigned value must be an instance of type <tt>knio.Table</tt> which can
 			be created from, for example, a <tt>pandas.DataFrame</tt> or a <tt>pyarrow.Table</tt>. Please refer to the
 			<a href="https://docs.knime.com/latest/python_installation_guide/">KNIME Python Integration Guide</a> to
 			learn how to do this, or take a look at one of the templates on the <i>Templates</i> tab of the node.
