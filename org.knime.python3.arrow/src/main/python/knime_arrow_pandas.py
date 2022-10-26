@@ -286,9 +286,10 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
             # If we slice a Pandas series based on a ProxyExtensionType, we should return
             # the appropriate type as well:
             proxy_value_factories = [
-                v[0] for v in kt._python_proxy_type_to_value_factory.values()
+                v[1] for v in kt._python_proxy_type_to_factory_info.values()
             ]
-            if converter not in proxy_value_factories:
+            converter_name = type(converter).__qualname__
+            if converter_name not in proxy_value_factories:
                 raise TypeError(
                     f"""
                     The given configuration is not a valid ProxyExtensionType, converter {converter} was not 
