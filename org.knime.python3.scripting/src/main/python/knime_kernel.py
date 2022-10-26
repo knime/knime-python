@@ -86,7 +86,7 @@ class ScriptingBackend(ABC):
         pass
 
     @abstractmethod
-    def tear_down_arrow(self, is_active_backend: bool):
+    def tear_down_arrow(self, flush: bool):
         pass
 
 
@@ -117,7 +117,7 @@ class ScriptingBackendV0(ScriptingBackend):
     def set_up_arrow(self, sink_factory):
         kt._backend = kat.ArrowBackend(sink_factory)
 
-    def tear_down_arrow(self, is_active_backend: bool):
+    def tear_down_arrow(self, flush: bool):
         kt._backend.close()
         kt._backend = None
 
@@ -160,9 +160,9 @@ class ScriptingBackendV1(ScriptingBackend):
                     f"Output table '{idx}' must be of type knime.api.Table or knime.api.BatchOutputTable, but got {type(table)}"
                 )
 
-    def tear_down_arrow(self, is_active_backend: bool):
+    def tear_down_arrow(self, flush: bool):
         # we write all tables here and just read the sink in the get_output_table_sink method
-        if is_active_backend:
+        if flush:
             self._write_all_tables()
 
         ktn._backend.close()
@@ -332,12 +332,12 @@ class ScriptingBackendCollection:
         for b in self._backends.values():
             b.set_up_arrow(sink_factory)
 
-    def tear_down_arrow(self):
+    def tear_down_arrow(self, flush: bool):
         for b in self._backends.values():
             is_active_backend = (
                 False if self.active_backend is None else b == self.active_backend
             )
-            b.tear_down_arrow(is_active_backend)
+            b.tear_down_arrow(flush and is_active_backend)
 
 
 class PythonKernel(kg.EntryPoint):
@@ -551,7 +551,11 @@ class PythonKernel(kg.EntryPoint):
             exec(source_code, self._workspace)
             if check_outputs:
                 self._backends.check_outputs()
-            self._backends.tear_down_arrow()
+
+            # We only need to flush the tables to disk if we also expect the outputs to be
+            # filled, meaning we run the whole script.
+            flush = check_outputs
+            self._backends.tear_down_arrow(flush)
         return ListConverter().convert(
             [stdout.get_copy(), stderr.get_copy()], kg.client_server._gateway_client
         )
