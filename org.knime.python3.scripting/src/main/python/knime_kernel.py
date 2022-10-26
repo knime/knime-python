@@ -210,12 +210,7 @@ class ScriptingBackendCollection:
         _ioc._input_tables[table_index] = table_data_source
 
     def get_output_table_sink(self, table_index: int) -> JavaClass:
-        if self.active_backend is None:
-            raise RuntimeError(
-                "Either the script has not been executed, or no KNIME scripting interface has been imported. "
-                + "Please import knime.scripting.io"
-            )
-        return self.active_backend.get_output_table_sink(table_index)
+        return self.get_active_backend_or_raise().get_output_table_sink(table_index)
 
     @property
     def active_backend(self) -> ScriptingBackend:
@@ -228,6 +223,14 @@ class ScriptingBackendCollection:
                 return backend
 
         return None
+
+    def get_active_backend_or_raise(self) -> ScriptingBackend:
+        if self.active_backend is None:
+            raise RuntimeError(
+                "Either the script has not been executed, or no KNIME scripting interface has been imported. "
+                + "Please import knime.scripting.io"
+            )
+        return self.active_backend
 
     def get_flow_variables(self) -> JavaClass:
         self._check_flow_variables()
@@ -290,12 +293,7 @@ class ScriptingBackendCollection:
 
     def check_outputs(self):
         for i, o in enumerate(_ioc._output_tables):
-            if self.active_backend is None:
-                raise RuntimeError(
-                    "Either the script has not been executed, or no KNIME scripting interface has been imported. "
-                    + "Please import knime.scripting.io"
-                )
-            self.active_backend.check_output_table(i, o)
+            self.get_active_backend_or_raise().check_output_table(i, o)
 
         for i, o in enumerate(_ioc._output_objects):
             if o is None:
