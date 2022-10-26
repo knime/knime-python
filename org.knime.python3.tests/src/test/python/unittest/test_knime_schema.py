@@ -282,7 +282,7 @@ def _register_extension_types():
                     "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.value.DenseByteVectorValueFactory\\"}" }
                 }
                 """,
-        "knime.types.builtin.DenseByteVector",
+        "knime.types.builtin.DenseByteVectorValue",
     )
 
 
