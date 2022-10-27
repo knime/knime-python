@@ -775,8 +775,6 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
                 inplace=True, drop=True
             )  # drop index as it messes up equality
 
-            # self.assertTrue(isinstance(df.iloc[0,0], datetime.datetime)) # this can be out commented to evaluate
-
             arrow_table = arrow_backend.write_table(df)
             knime_ts_ext_str = (
                 "extension<logical={"
@@ -789,11 +787,10 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
             self.assertEqual(
                 "<class 'knime_arrow_table.ArrowWriteTable'>", str(type(arrow_table))
             )
-            print(arrow_table._schema.to_string(show_schema_metadata=False))
-            # self.assertEqual(
-            #     knime_ts_ext_str,
-            #     str(knat._convert_arrow_schema_to_knime(arrow_table._schema)[0].ktype),
-            # )
+            self.assertEqual(
+                knime_ts_ext_str,
+                str(knat._convert_arrow_schema_to_knime(arrow_table._schema)[0].ktype),
+            )
 
     def test_lists_with_missing_values(self):
         """

@@ -1081,7 +1081,7 @@ def _wrap_primitive_array(
         )
     elif _is_knime_datetime_type(array.type) or isinstance(
         array.type, pa.TimestampType
-    ): # if we have a pa.datetime object we convert it to knime tpe
+    ):  # if we have a pa.datetime object we convert it to knime tpe
         arr_list = array.to_pylist()  # convert to datetime objects
         encoded = list(
             map(wrapped_type._converter.encode, arr_list)

@@ -51,6 +51,7 @@ import pyarrow as pa
 from pandas.core.dtypes.dtypes import register_extension_dtype
 
 import knime_arrow_struct_dict_encoding as kasde
+import knime_arrow_types
 import knime_arrow_types as kat
 import knime_types as kt
 import logging
@@ -105,7 +106,6 @@ def pandas_df_to_arrow(data_frame: pd.DataFrame) -> pa.Table:
 
     # Convert all column names to string or PyArrow might complain
     df.columns = [str(c) for c in df.columns]
-
     return pa.Table.from_pandas(df)
 
 
@@ -432,9 +432,12 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
                 elif isinstance(self._data, pa.StructArray):
                     # else we just access the struct
                     storage = self._data
+                elif isinstance(self._data, kat.KnimeExtensionArray):
+                    storage = self._data.storage
                 else:
                     raise TypeError(
-                        "Data can't be of type pa.StructType and not a Chunked or Struct Array"
+                        f"Data can't be of type pa.StructType and not a Chunked, Extension or Struct Array, "
+                        f"but is of type {type(self._data)}"
                     )
                 # we recursively unpack the struct arrays and finally return the decoded value
                 value = self._get_int_item_from_struct_arr(storage, item)
