@@ -27,7 +27,7 @@ access the two tables via ``knime.scripting.io.input_tables[0]`` and ``knime.scr
 via ``knime.scripting.io.input_objects[0]``.
 
 .. automodule:: knime.scripting.io
-   :members: input_tables, input_objects, output_tables, output_objects, output_images, flow_variables
+   :members: input_tables, input_objects, output_tables, output_objects, output_images, output_view, flow_variables
    :noindex:
 
 
@@ -238,6 +238,16 @@ These are helper functions to create KNIME compatible datatypes. For instance, i
    :noindex:
 
 .. autofunction:: knime_schema.logical
+   :noindex:
+
+Views API
+------------------------------------
+
+This section lists the API of the module ``knime.views`` that can be used to create node views in Python nodes
+or in the KNIME Python View node. In most cases you want to use the method ``knime.views.view(obj)``.
+
+.. automodule:: knime.views
+   :members: KNIME_UI_EXT_SERVICE_JS, KNIME_UI_EXT_SERVICE_JS_DEV, NodeView, view, view_html, view_svg, view_png, view_jpeg, view_matplotlib, view_seaborn
    :noindex:
 
 Deprecated Python Script API

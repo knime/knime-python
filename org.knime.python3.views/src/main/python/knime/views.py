@@ -42,10 +42,6 @@
 #  when such Node is propagated with or for interoperation with KNIME.
 # ------------------------------------------------------------------------
 
-"""
-@author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
-"""
-
 import os
 import io
 import base64
@@ -103,15 +99,19 @@ KNIME_UI_EXT_SERVICE_JS = _read_js_file("knime-ui-extension-service.min.js")
 """
 The JS source of the knime-ui-extension-service. This can be used to create a
 SelectionService and propagate selections between a static HTML view and KNIME AP.
-KNIME_UI_EXT_SERVICE_JS_DEV contains a non-minified version of the same code.
+``KNIME_UI_EXT_SERVICE_JS_DEV`` contains a non-minified version of the same code.
+
+:meta hide-value:
 """
 
 KNIME_UI_EXT_SERVICE_JS_DEV = _read_js_file("knime-ui-extension-service.dev.js")
 """
 The JS source of the knime-ui-extension-service. This can be used to create a
 SelectionService and propagate selections between a static HTML view and KNIME AP.
-Use the minified version KNIME_UI_EXT_SERVICE_JS to reduce the size of the final html
+Use the minified version ``KNIME_UI_EXT_SERVICE_JS`` to reduce the size of the final html
 file.
+
+:meta hide-value:
 """
 
 

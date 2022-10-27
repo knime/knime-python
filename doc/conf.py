@@ -61,6 +61,14 @@ sys.path.insert(
     ),
 )
 
+# for knime/views.py
+sys.path.insert(
+    0,
+    os.path.abspath(
+        os.path.join("..", "org.knime.python3.views", "src", "main", "python")
+    ),
+)
+
 # -- Project information -----------------------------------------------------
 
 project = "KNIME Python Script (Labs) API"
