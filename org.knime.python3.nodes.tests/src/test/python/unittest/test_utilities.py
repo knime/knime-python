@@ -1,4 +1,5 @@
 import py4j.java_collections
+from unittest.mock import MagicMock
 
 
 def setup_backend(
@@ -38,6 +39,12 @@ class ClientServerMock:
     @property
     def gateway_property(self):
         None  # NOSONAR: Mock
+
+    @property
+    def jvm(self):
+        mock = MagicMock()
+        mock.org = MagicMock()
+        return mock
 
 
 def _get_flow_variables(self):
