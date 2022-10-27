@@ -49,6 +49,8 @@
 package org.knime.python3;
 
 import java.util.List;
+import java.time.ZoneId;
+import java.util.ArrayList;
 
 import org.knime.python3.types.PythonValueFactoryModule;
 import org.knime.python3.types.PythonValueFactoryRegistry;
@@ -118,6 +120,17 @@ public final class PythonEntryPointUtils {
                     fromPandasColumnConverter.getPythonClassName(), fromPandasColumnConverter.getValueTypeName());
             }
         }
+    }
+    /**
+
+     * Serves as python API
+     * @return List of Strings of all supported TimeZone Strings in Java
+     */
+
+    public static List<String> getSupportedTimeZones(){
+        List<String> zone_Id_list = new ArrayList<>(ZoneId.getAvailableZoneIds());
+        return zone_Id_list;
+
     }
 
 }

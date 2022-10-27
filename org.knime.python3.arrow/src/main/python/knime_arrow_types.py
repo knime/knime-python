@@ -813,6 +813,10 @@ def _knime_primitive_type(name):
     return '{"value_factory_class":"org.knime.core.data.v2.value.' + name + '"}'
 
 
+def _knime_datetime_type(name):
+    return '{"value_factory_class":"org.knime.core.data.v2.time.' + name + '"}'
+
+
 _arrow_to_knime_primitive_types = {
     pa.int32(): _knime_primitive_type("IntValueFactory"),
     pa.int64(): _knime_primitive_type("LongValueFactory"),
@@ -829,6 +833,45 @@ _arrow_to_knime_primitive_list_types = {
     pa.bool_(): _knime_primitive_type("BooleanListValueFactory"),
     pa.float64(): _knime_primitive_type("DoubleListValueFactory"),
 }
+
+# mapper from pa datetime types to KNIME value factories
+_arrow_to_knime_datetime_types = {
+    pa.time32("s"): _knime_datetime_type("LocalTimeValueFactory"),
+    pa.time32("ms"): _knime_datetime_type("LocalTimeValueFactory"),
+    pa.time64("us"): _knime_datetime_type("LocalTimeValueFactory"),
+    pa.time64("ns"): _knime_datetime_type("LocalTimeValueFactory"),
+    pa.date32(): _knime_datetime_type("LocalDateValueFactory"),
+    pa.date64(): _knime_datetime_type("LocalDateValueFactory"),
+}
+_times = ["s", "ms", "us", "ns"]
+_arrow_to_knime_datetime_types.update(
+    {
+        pa.timestamp(unit): _knime_datetime_type("LocalDateTimeValueFactory")
+        for unit in _times
+    }
+)
+_arrow_to_knime_datetime_types.update(
+    {pa.duration(unit): _knime_datetime_type("DurationValueFactory") for unit in _times}
+)
+
+_knime_datetime_logical_to_storage = {
+    _knime_datetime_type("LocalTimeValueFactory"): pa.int64(),
+    _knime_datetime_type("LocalDateValueFactory"): pa.int64(),
+    _knime_datetime_type("LocalDateTimeValueFactory"): pa.struct(
+        [("0", pa.int64()), ("1", pa.int64())]
+    ),
+    _knime_datetime_type("DurationValueFactory"): pa.struct(
+        [("0", pa.int64()), ("1", pa.int32())]
+    ),
+    _knime_datetime_type("ZonedDateTimeValueFactory2"): pa.struct(
+        [("0", pa.int64()), ("1", pa.int64()), ("2", pa.int32()), ("3", pa.string())]
+    ),
+}
+
+
+def _is_knime_datetime_type(dtype):
+    return dtype in _arrow_to_knime_datetime_types
+
 
 _arrow_to_knime_list_type = _knime_primitive_type("ListValueFactory")
 _row_key_type = _knime_primitive_type("DefaultRowKeyValueFactory")
@@ -905,6 +948,18 @@ def _get_wrapped_type(dtype, is_row_key):
         return LogicalTypeExtensionType(
             kt.get_converter(logical_type), dtype, logical_type
         )
+    elif not isinstance(dtype, pa.ExtensionType) and (
+        dtype in _arrow_to_knime_datetime_types or isinstance(dtype, pa.TimestampType)
+    ):
+        # timezones have to be found with isinstance, otherwise the timezone would have to be included
+        if isinstance(dtype, pa.TimestampType) and dtype.tz is not None:
+            logical_type = _knime_datetime_type("ZonedDateTimeValueFactory2")
+        else:
+            logical_type = _arrow_to_knime_datetime_types[dtype]
+        storage_type = _knime_datetime_logical_to_storage[logical_type]
+        converter = kt.get_converter(logical_type)
+        return LogicalTypeExtensionType(converter, storage_type, logical_type)
+
     elif (
         not isinstance(dtype, pa.ExtensionType)
         and is_list_type(dtype)
@@ -983,7 +1038,6 @@ def _wrap_primitive_array(
 
     """
     wrapped_type = _get_wrapped_type(array.type, is_row_key)
-
     if wrapped_type is None:
         if not is_value_factory_type(array.type):
             raise ValueError(
@@ -1025,6 +1079,18 @@ def _wrap_primitive_array(
                 wrapped_type, a.dictionary_decode()
             ),
         )
+    elif _is_knime_datetime_type(array.type) or isinstance(
+        array.type, pa.TimestampType
+    ): # if we have a pa.datetime object we convert it to knime tpe
+        arr_list = array.to_pylist()  # convert to datetime objects
+        encoded = list(
+            map(wrapped_type._converter.encode, arr_list)
+        )  # encode datetime objects as knime storage
+        storage_array = pa.array(encoded, type=wrapped_type.storage_type)
+        ext_arr = _apply_to_array(
+            storage_array, lambda a: pa.ExtensionArray.from_storage(wrapped_type, a)
+        )
+        return ext_arr
     else:
         return _apply_to_array(
             array, lambda a: pa.ExtensionArray.from_storage(wrapped_type, a)

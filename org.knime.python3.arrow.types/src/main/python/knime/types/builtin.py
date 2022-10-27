@@ -47,6 +47,8 @@ PythonValueFactory implementations for types defined in KNIME.
 @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
 """
 import datetime as dt
+import warnings
+
 from dateutil import tz
 import knime_types as kt
 
@@ -62,11 +64,26 @@ def _before_or_after(value):
         return "after"
 
 
+def _utc_conversion_warning(tzname):
+    import logging
+    import warnings
+
+    logging.captureWarnings(True)
+    warnings.warn(
+        f"The timezone {tzname} is not supported in KNIME, it is converted to a UTC Timezone."
+        f"No time is lost, but information spatial information could be missing."
+        f"E.G. British Summertime is converted to UTC+1. The information of the "
+        f"daylight saving time is no preserved. ",
+        stacklevel=5,
+    )
+
+
 class ZonedDateTimeValueFactory2(
     kt.PythonValueFactory
 ):  # The 2 is used to match the name on Java side
     def __init__(self):
         kt.PythonValueFactory.__init__(self, dt.datetime)
+        self._java_timezones = None
         self._local_dt_factory = LocalDateTimeValueFactory()
 
     def decode(self, storage):
@@ -81,11 +98,58 @@ class ZonedDateTimeValueFactory2(
     def encode(self, value):
         if value is None:
             return None
-        local_dt_dict = self._local_dt_factory.encode(value)
         tz_info = value.tzinfo
-        tz_offset = tz_info.utcoffset(value).seconds
-        tz_name = tz_info.tzname(value)
-        local_dt_dict["2"] = tz_offset
+        # get time zone name for tzfile object, pytz object and tzinfo object
+        if isinstance(tz_info, tz.tzfile):  # this is if pandas converts to an object
+            tz_name = "/".join(
+                tz_info._filename.split("/")[-2:]
+            )  # extract the actual timezone name from tz file
+            tz_name = tz_name.replace(" ", "_")  # java cannot handle spaces
+        # in case it's a pytz object, it has a zone attribute which is recognized in java
+        # pytz is used by pandas
+        elif hasattr(tz_info, "zone"):
+            tz_name = tz_info.zone
+        else:
+            tz_name = tz_info.tzname(value)
+        if not self._java_timezones:
+            from knime_arrow import gateway
+
+            try:
+                self._java_timezones = (
+                    gateway().jvm.org.knime.python3.PythonEntryPointUtils.getSupportedTimeZones()
+                )
+            except RuntimeError:
+                warnings.warn(
+                    "Could not load Java Timezones. This can happen in UNIT Tests"
+                )
+
+        # Java does not support the timezone eg BST. We convert it to UTC
+        if self._java_timezones and tz_name not in self._java_timezones:
+            _utc_conversion_warning(tz_name)
+            utc_value = value.astimezone(tz.UTC)
+            local_dt_dict = self._local_dt_factory.encode(utc_value)
+            tz_offset = tz_info.utcoffset(value)
+            tz_offset_hours = int(tz_offset.seconds / 60 / 60)  # convert to hours
+            # python handles overflow by setting day to -1 , which this is not represented in the hours
+            if tz_offset.days < 0:
+                tz_offset_hours -= 24  # subtract one day, java supports negative values
+                offset_string = str(tz_offset_hours)
+            else:
+                offset_string = "+" + str(tz_offset_hours)
+            local_dt_dict[
+                "2"
+            ] = 0  # we handle the complete offset with the offset (ZoneID) String
+            local_dt_dict["3"] = offset_string
+            return local_dt_dict
+
+        local_dt_dict = self._local_dt_factory.encode(value)
+        tz_offset = tz_info.utcoffset(value)
+        # python handles overflow by setting day to -1 , which this is not represented in the seconds
+        if tz_offset.days < 0:
+            tz_offset_seconds = tz_offset.seconds - (24 * 60 * 60)  # subtract one day
+        else:
+            tz_offset_seconds = tz_offset.seconds
+        local_dt_dict["2"] = tz_offset_seconds
         local_dt_dict["3"] = tz_name
         return local_dt_dict
 
@@ -361,34 +425,3 @@ class DenseByteVectorValueFactory(kt.PythonValueFactory):
 
 def _knime_value_factory(name):
     return '{"value_factory_class":"' + name + '"}'
-
-
-# can be replaced by Proxy Type now
-class FromTimeStampPandasColumnConverter(kt.FromPandasColumnConverter):
-    """
-    Converts columns containing pandas timestamps to a py.datetime extension type
-    """
-
-    def can_convert(self, dtype) -> bool:
-        return hasattr(dtype, "name") and dtype.name == "datetime64[ns]"
-
-    def convert_column(
-        self, data_frame: "pandas.dataframe", column_name: str
-    ) -> "pandas.Series":
-        from pyarrow import int64, struct
-        from knime_arrow_pandas import PandasLogicalTypeExtensionType
-        from pandas import Series
-
-        column = data_frame[column_name]
-        # todo: fasten up with a mapping eg: column.map(lambda x: x.to_pydatetime(), na_action='ignore')
-        logical_type_str = "org.knime.core.data.v2.time.LocalDateTimeValueFactory"
-        dtype = PandasLogicalTypeExtensionType(
-            storage_type=struct([("0", int64()), ("1", int64())]),
-            logical_type=_knime_value_factory(logical_type_str),
-            converter=LocalDateTimeValueFactory(),
-        )
-        return Series(
-            [x.to_pydatetime() for x in column.tolist()],
-            dtype=dtype,
-            index=column.index,
-        )

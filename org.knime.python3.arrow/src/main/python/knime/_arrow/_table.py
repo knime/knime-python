@@ -326,5 +326,16 @@ def _convert_arrow_type_to_knime(dtype: pa.DataType) -> ks.KnimeType:
         return ks.StructType(
             [_convert_arrow_type_to_knime(field.type) for field in dtype]
         )
+    elif not isinstance(dtype, pa.ExtensionType) and (
+        dtype in katy._arrow_to_knime_datetime_types
+        or isinstance(dtype, pa.TimestampType)
+    ):
+        # timezones have to be found with isinstance, otherwise the timezone would have to be included in the name
+        if isinstance(dtype, pa.TimestampType) and dtype.tz is not None:
+            logical_type = katy._knime_datetime_type("ZonedDateTimeValueFactory2")
+        else:
+            logical_type = katy._arrow_to_knime_datetime_types[dtype]
+        storage_type = katy._knime_datetime_logical_to_storage[logical_type]
+        return ks.LogicalType(logical_type, storage_type=storage_type)
     else:
         raise TypeError(f"Cannot convert PyArrow type {dtype} to KNIME type")

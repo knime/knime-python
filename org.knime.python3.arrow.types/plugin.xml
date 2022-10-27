@@ -11,29 +11,31 @@
                ValueTypeName="knime.types.builtin.FSLocationValue">
          </PythonValueFactory>
          <PythonValueFactory
+               PythonClassName="LocalDateTimeValueFactory"
+               ValueFactory="org.knime.core.data.v2.time.LocalDateTimeValueFactory"
+               ValueTypeName="datetime.datetime">
+         </PythonValueFactory>
+
+         <PythonValueFactory
                PythonClassName="ZonedDateTimeValueFactory2"
                ValueFactory="org.knime.core.data.v2.time.ZonedDateTimeValueFactory2"
-               ValueTypeName="knime.types.builtin.ZonedDateTimeValue">
+               ValueTypeName="datetime.datetime">
          </PythonValueFactory>
+
          <PythonValueFactory
                PythonClassName="DurationValueFactory"
                ValueFactory="org.knime.core.data.v2.time.DurationValueFactory"
-               ValueTypeName="knime.types.builtin.DurationValue">
-         </PythonValueFactory>
-         <PythonValueFactory
-               PythonClassName="LocalDateTimeValueFactory"
-               ValueFactory="org.knime.core.data.v2.time.LocalDateTimeValueFactory"
-               ValueTypeName="knime.types.builtin.LocalDateTimeValue">
+               ValueTypeName="datetime.timedelta">
          </PythonValueFactory>
          <PythonValueFactory
                PythonClassName="LocalTimeValueFactory"
                ValueFactory="org.knime.core.data.v2.time.LocalTimeValueFactory"
-               ValueTypeName="knime.types.builtin.LocalTimeValue">
+               ValueTypeName="datetime.time">
          </PythonValueFactory>
          <PythonValueFactory
                PythonClassName="LocalDateValueFactory"
                ValueFactory="org.knime.core.data.v2.time.LocalDateValueFactory"
-               ValueTypeName="knime.types.builtin.LocalDateValue">
+               ValueTypeName="datetime.date">
          </PythonValueFactory>
          <PythonValueFactory
                PythonClassName="BooleanSetValueFactory"
@@ -50,10 +52,6 @@
                ValueFactory="org.knime.core.data.v2.value.DenseByteVectorValueFactory"
                ValueTypeName="knime.types.builtin.DenseByteVectorValue">
          </PythonValueFactory>
-         <FromPandasColumnConverter
-               PythonClassName="FromTimeStampPandasColumnConverter"
-               ValueTypeName="numpy.dtype[datetime64]">
-         </FromPandasColumnConverter>
       </Module>
    </extension>
 
