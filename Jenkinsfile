@@ -77,7 +77,6 @@ def runPython3MultiversionWorkflowTestConfig(String pythonVersion, String baseBr
     withEnv([ "KNIME_WORKFLOWTEST_PYTHON_VERSION=${pythonVersion}" ]) {
         stage("Workflowtests with Python: ${pythonVersion}") {
             workflowTests.runTests(
-                testflowsDir: "Testflows (${baseBranch})/knime-python/python3.multiversion",
                 dependencies: [
                     repositories: [
                         'knime-chemistry',
