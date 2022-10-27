@@ -62,6 +62,6 @@ final class PythonViewNodeDialog extends AbstractPythonScriptingNodeDialog {
     public PythonViewNodeDialog(final InputPort[] inPorts) {
         super(inPorts, true,
             VariableNamesUtils.getVariableNames(inPorts, new OutputPort[0], null, new String[]{"knio.output_view"}),
-            "python3-script");
+            "python3-view");
     }
 }
