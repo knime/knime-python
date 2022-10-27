@@ -81,35 +81,38 @@ _JPEG_HTML_BODY = """
 """
 
 
-def _js_path(name):
-    return os.path.normpath(
-        os.path.join(__file__, "..", "..", "..", "..", "js-src", name)
-    )
+def _read_js_file(name):
+    try:
+        with open(
+            os.path.normpath(os.path.join(__file__, "..", name)),
+            "r",
+        ) as f:
+            return f.read()
+    except Exception:
+        import warnings
+
+        warnings.warn(
+            f"Could not read {name} JavaScript. "
+            + "Selections will not be propagated to and from Python views. "
+            + "This warning can be ignored when running Python code outside of KNIME AP."
+        )
 
 
 # Open the knime-ui-extension-service.min.js file to include it in the HTML if needed
-try:
-    with open(
-        _js_path(
-            os.path.join(
-                "knime-ui-extension-service",
-                "dist",
-                "knime-ui-extension-service.min.js",  # Production Mode
-                # "knime-ui-extension-service.dev.js",  # Dev Mode
-                # TODO should we have a global dev mode vs production mode?
-            )
-        ),
-        "r",
-    ) as f:
-        KNIME_UI_EXT_SERVICE_JS = f.read()
-except Exception as e:
-    import warnings
+KNIME_UI_EXT_SERVICE_JS = _read_js_file("knime-ui-extension-service.min.js")
+"""
+The JS source of the knime-ui-extension-service. This can be used to create a
+SelectionService and propagate selections between a static HTML view and KNIME AP.
+KNIME_UI_EXT_SERVICE_JS_DEV contains a non-minified version of the same code.
+"""
 
-    warnings.warn(str(e))
-    warnings.warn(
-        "Could not read knime-ui-extension-service JavaScript. "
-        + "Selections will not be propagated to and from Python views."
-    )
+KNIME_UI_EXT_SERVICE_JS_DEV = _read_js_file("knime-ui-extension-service.dev.js")
+"""
+The JS source of the knime-ui-extension-service. This can be used to create a
+SelectionService and propagate selections between a static HTML view and KNIME AP.
+Use the minified version KNIME_UI_EXT_SERVICE_JS to reduce the size of the final html
+file.
+"""
 
 
 class NodeView:

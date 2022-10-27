@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.knime</groupId>
+		<artifactId>knime-python</artifactId>
+		<version>${revision}${changelist}</version>
+		<relativePath>../pom.xml</relativePath>
+	</parent>
+	<artifactId>org.knime.python3.views</artifactId>
+	<packaging>${packaging.default}</packaging>
+
+	<properties>
+		<revision>4.7.0</revision>
+	</properties>
+
+    <build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<version>3.1.0</version>
+				<executions>
+					<execution>
+						<id>download knime-ui-extension-service</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<target>
+                                <property name="knime.ui.extension.service.version" value="0.3.0"/>
+                                <property name="knime.ui.extension.service.checksum" value="bd71689f28d8224489330e70ed128dac182875c0"/>
+								<ant antfile="${project.basedir}/build.xml">
+									<target name="build"/>
+								</ant>
+							</target>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+</project>

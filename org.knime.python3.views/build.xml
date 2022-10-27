@@ -1,0 +1,43 @@
+<project name="download knime-ui-extension-service" default="build">
+    <description>
+    Download knime-ui-extension-service JS build from npm.
+  </description>
+
+    <target name="build">
+        <!-- Download the package from npm -->
+        <get
+            src="https://registry.npmjs.org/@knime/ui-extension-service/-/ui-extension-service-${knime.ui.extension.service.version}.tgz"
+            dest="ui-extension-service-${knime.ui.extension.service.version}.tgz" />
+
+        <!-- Verify the file checksum -->
+        <checksum
+            file="ui-extension-service-${knime.ui.extension.service.version}.tgz"
+            algorithm="SHA-1"
+            property="sha1" />
+        <fail
+            message="Checksum check failed. Expected ${knime.ui.extension.service.checksum}, got ${sha1}.">
+            <condition>
+                <not>
+                    <equals
+                        arg1="${sha1}"
+                        arg2="${knime.ui.extension.service.checksum}" />
+                </not>
+            </condition>
+        </fail>
+
+        <!-- Extract the two important files -->
+        <untar
+            src="ui-extension-service-${knime.ui.extension.service.version}.tgz"
+            dest="src/main/python/knime/"
+            compression="gzip">
+            <patternset>
+                <include name="package/dist/knime-ui-extension-service.min.js" />
+                <include name="package/dist/knime-ui-extension-service.dev.js" />
+            </patternset>
+            <mapper type="flatten" />
+        </untar>
+
+        <!-- Delete the package -->
+        <delete file="ui-extension-service-${knime.ui.extension.service.version}.tgz" />
+    </target>
+</project>
