@@ -110,6 +110,12 @@ class ArrowBatchOutputTable(knt.BatchOutputTable):
         elif isinstance(batch, ArrowTable):
             pass  # no need to convert, we just don't want to have to check for pandas explicitly
         else:
+            import pandas as pd
+
+            if not isinstance(batch, pd.DataFrame):
+                raise TypeError(
+                    f"Can only append batches of type knime.api.Table, pyarrow.Table, pyarrow.RecordBatch, pandas.DataFrame but got {type(batch)}"
+                )
             batch = knt.Table.from_pandas(batch)
 
         self._num_batches += 1

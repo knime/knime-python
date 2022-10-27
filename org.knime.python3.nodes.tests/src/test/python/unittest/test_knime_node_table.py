@@ -498,6 +498,11 @@ class BatchOutputTableTest(unittest.TestCase):
         for i in range(5):
             out.append(self._generate_test_pyarrow_batch(i))
 
+    def test_append_wrong_type(self):
+        out = knt.BatchOutputTable.create()
+        with self.assertRaises(TypeError):
+            out.append([1, 2, 3, 4])
+
     def test_append_mixed(self):
         out = knt.BatchOutputTable.create()
         out.append(self._generate_test_pyarrow_table(0))

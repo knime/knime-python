@@ -554,8 +554,7 @@ class PythonKernel(kg.EntryPoint):
 
             # We only need to flush the tables to disk if we also expect the outputs to be
             # filled, meaning we run the whole script.
-            flush = check_outputs
-            self._backends.tear_down_arrow(flush)
+            self._backends.tear_down_arrow(flush=check_outputs)
         return ListConverter().convert(
             [stdout.get_copy(), stderr.get_copy()], kg.client_server._gateway_client
         )
