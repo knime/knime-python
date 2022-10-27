@@ -5,7 +5,7 @@ def BN = (BRANCH_NAME == 'master' || BRANCH_NAME.startsWith('releases/')) ? BRAN
 static final String[] PYTHON_VERSIONS = ['36', '37', '38', '39']
 
 @groovy.transform.Field
-static final String DEFAULT_PYTHON_VERSION = '36'
+static final String DEFAULT_PYTHON_VERSION = '39'
 
 library "knime-pipeline@$BN"
 
