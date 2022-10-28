@@ -116,6 +116,25 @@ def _register_extension_types():
     )
     kt.register_python_value_factory(
         ext_types,
+        "ZonedDateTimeValueFactory2",
+        '{"type": "struct", "inner_types": ["long", "long", "int", "string"]}',
+        """
+                    {
+                        "type": "struct",
+                        "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.time.ZonedDateTimeValueFactory2\\"}" },
+                        "inner": [
+                            {"type": "simple", "traits": {}},
+                            {"type": "simple", "traits": {}},
+                            {"type": "simple", "traits": {}},
+                            {"type": "simple", "traits": {}}
+                        ]
+                    }
+                    """,
+        "pandas._libs.tslibs.timestamps.Timestamp",
+        is_default_python_representation=False,
+    )
+    kt.register_python_value_factory(
+        ext_types,
         "DurationValueFactory",
         '{"type": "struct", "inner_types": ["long", "long"]}',
         """
@@ -317,8 +336,8 @@ class TimeExtensionTypeTest(unittest.TestCase):
             "<Row Key>: string\n"
             "0: duration[ns]\n"
             "1: timestamp[ns]\n"
-            "2: date32[day]\n"
-            "3: time64[us]"
+            "2: extension<knime.logical_type<LogicalTypeExtensionType>>\n"
+            "3: extension<knime.logical_type<LogicalTypeExtensionType>>"
         )
         self.assertEqual(
             schema, arrow_table._schema.to_string(show_schema_metadata=False)
@@ -335,11 +354,9 @@ class TimeExtensionTypeTest(unittest.TestCase):
 
         zonenames = list(get_zonefile_instance().zones)  # 595 elements
         pytz_tz = sorted(pytz.all_timezones)  # 594 elements
-        import knime_schema as ks
 
-        dtype = ks.logical(datetime).to_pandas()
         datetime_tz_series = pd.Series(
-            [datetime.now(tz=tz.gettz(timezone)) for timezone in zonenames], dtype=dtype
+            [datetime.now(tz=tz.gettz(timezone)) for timezone in zonenames]
         )
 
         df = datetime_tz_series.to_frame()
@@ -354,19 +371,18 @@ class TimeExtensionTypeTest(unittest.TestCase):
             schema, arrow_table._schema.to_string(show_schema_metadata=False)
         )
 
-        # these do not work yet as they are interpreted as object, therefore the tz for all is similar for all entries
-        # in the pa.Table.from_pandas() method all object types are interpreted as the first occurring dtype
-        # but as the dtype includes the timezone all entries are changed to this timezone
         tz_timestamp_series = pd.Series(
-            [pd.Timestamp(1513393355, unit="s", tz=timezone) for timezone in pytz_tz]
+            [pd.Timestamp(1513393355, unit="s", tz=timezone) for timezone in pytz_tz],
         )
-        df = tz_timestamp_series.to_frame()  # transposed works, not transposed does not
+        df = tz_timestamp_series.to_frame()
+        empty_series = pd.Series([pd.NA] * len(df.columns), index=df.columns)
+        df = df.append(empty_series, ignore_index=True)
         arrow_table = arrow_backend.write_table(df)
         schema = (
             "<Row Key>: string\n"
             "0: extension<knime.logical_type<LogicalTypeExtensionType>>"
         )
-        # self.assertEqual(schema, arrow_table._schema.to_string(show_schema_metadata=False))
+        self.assertEqual(schema, arrow_table._schema.to_string(show_schema_metadata=False))
 
     def test_pd_timestamp_and_no_timestamp(self):
         import pandas as pd
@@ -387,3 +403,6 @@ class TimeExtensionTypeTest(unittest.TestCase):
         # in the pa.Table.from_pandas() method all object types are interpreted as the first occurring dtype
         # but as the dtype includes the timezone all entries are changed to this timezone
         # self.assertEqual(schema, arrow_table._schema.to_string(show_schema_metadata=False))
+        self.assertEqual(
+            schema, arrow_table._schema.to_string(show_schema_metadata=False)
+        )

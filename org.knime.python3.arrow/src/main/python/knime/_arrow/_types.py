@@ -502,14 +502,6 @@ class ProxyExtensionType(LogicalTypeExtensionType):
         self._converter = converter
         self._logical_type = java_value_factory
 
-        if type(converter) == type(kt.get_converter(java_value_factory)):
-            raise TypeError(
-                """
-                ProxyExtensionTypes should only be created if their converter differs from the
-                original value factory. This is an implementation error.
-                """
-            )
-
         pa.ExtensionType.__init__(self, storage_type, "knime.proxy_type")
 
     def __arrow_ext_serialize__(self):

@@ -41,6 +41,7 @@
 #  may freely choose the license terms applicable to such Node, including
 #  when such Node is propagated with or for interoperation with KNIME.
 # ------------------------------------------------------------------------
+import warnings
 from typing import Type, Union
 import bisect
 
@@ -53,6 +54,7 @@ from pandas.core.dtypes.dtypes import register_extension_dtype
 import knime._arrow._dictencoding as kasde
 import knime._arrow._types as kat
 import knime.api.types as kt
+import knime.api.schema as ks
 import logging
 
 LOGGER = logging.getLogger(__name__)
@@ -94,6 +96,9 @@ def pandas_df_to_arrow(data_frame: pd.DataFrame) -> pa.Table:
     if type(df) != pd.DataFrame:
         df = pd.DataFrame(df)
 
+    schema = extract_knime_schema_from_df(df)
+    df = convert_df_to_ktypes_from_schema(df, schema)
+
     # Convert the index to a str series and prepend to the data_frame:
     # extract and drop index from DF
     row_keys = df.index.to_series().astype(str)
@@ -105,7 +110,67 @@ def pandas_df_to_arrow(data_frame: pd.DataFrame) -> pa.Table:
 
     # Convert all column names to string or PyArrow might complain
     df.columns = [str(c) for c in df.columns]
+
     return pa.Table.from_pandas(df)
+
+
+def convert_df_to_ktypes_from_schema(df, schema: dict):
+    """Converts a df to a schema containing PandasLogicalTypeExtensionTypes
+
+        This method can be used to convert columns in a dataframe to KNIME types. It iterates over the schema keys to
+        convert the columns from different types e.g. object to PandasLogicalTypeExtensionType. If that conversion fails
+        it keeps the column type as it is and throws a warning.
+
+    :param df: dataframe to convert
+    :param schema: schema dictionary {col: dtype, …}, where col is a column label and dtype is a numpy.dtype,
+                   Python type or PandasLogicalTypeExtensionType to cast one or more of the DataFrame’s columns
+                   to column-specific types.
+    :return: the converted dataframe
+    """
+    for col_name in schema.keys():
+        dtype = schema[col_name]
+        if isinstance(dtype, PandasLogicalTypeExtensionType):
+            # replace all pd.NA or np.NaN Values with the correct na_value and save it as logical type
+            try:
+                df[col_name] = (
+                    df[col_name]
+                    .where(pd.notnull(df[col_name]), dtype.na_value)
+                    .astype(dtype)
+                )
+            except TypeError:
+                warnings.warn(
+                    f"Automatic type detection assumed type '{dtype}' in column '{col_name}'"
+                    f" but conversion failed. Please assign a type to the Pandas series using"
+                    f" knime.schema.logical(correct_dtype).to_pandas()"
+                )
+
+    return df
+
+
+def extract_knime_schema_from_df(df):
+    """
+    This method extracts a knime.schema from a dataframe. It finds the correct logical type for 'object' columns.
+    :return: converted df
+    """
+    schema = {}
+    # extract schema
+    for col_name, col_type in zip(df.columns, df.dtypes):
+        if isinstance(col_type, object):
+            cleaned = df[col_name].dropna()
+            if (
+                len(cleaned) == 0
+            ):  # if the column only contains empty elements we keep object type
+                schema[col_name] = col_type
+                continue
+            dtype = type(cleaned[0])
+            try:
+                logical = ks.logical(dtype).to_pandas()
+                schema[col_name] = logical
+            except TypeError:  # if we do not have the type we continue
+                schema[col_name] = col_type
+        else:
+            schema[col_name] = col_type
+    return schema
 
 
 def arrow_data_to_pandas_df(data: Union[pa.Table, pa.RecordBatch]) -> pd.DataFrame:

@@ -10,16 +10,27 @@
                ValueFactory="org.knime.filehandling.core.data.location.FSLocationValueFactory"
                ValueTypeName="knime.types.builtin.FSLocationValue">
          </PythonValueFactory>
+
          <PythonValueFactory
                PythonClassName="LocalDateTimeValueFactory"
                ValueFactory="org.knime.core.data.v2.time.LocalDateTimeValueFactory"
+               ValueTypeName="datetime.datetime">
+         </PythonValueFactory>
+         <!-- Careful: The order matters when using the same ValueTypeName multiple times,
+           the second overwrites the first. We have two PythonValFacs mapping on the same type, as we cannot separate
+           datetimes with a timezones from datetimes without one. Thus, we map all datetimes on the ZonedDateTime for
+           Python -> KNIME. But for KNIME -> Python we still need the LocalDateTimeMapper. -->
+         <PythonValueFactory
+               PythonClassName="ZonedDateTimeValueFactory2"
+               ValueFactory="org.knime.core.data.v2.time.ZonedDateTimeValueFactory2"
                ValueTypeName="datetime.datetime">
          </PythonValueFactory>
 
          <PythonValueFactory
                PythonClassName="ZonedDateTimeValueFactory2"
                ValueFactory="org.knime.core.data.v2.time.ZonedDateTimeValueFactory2"
-               ValueTypeName="datetime.datetime">
+               ValueTypeName="pandas._libs.tslibs.timestamps.Timestamp"
+               is_default_python_representation="false">
          </PythonValueFactory>
 
          <PythonValueFactory
