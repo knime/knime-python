@@ -951,13 +951,7 @@ def _get_wrapped_type(dtype, is_row_key):
     elif not isinstance(dtype, pa.ExtensionType) and (
         dtype in _arrow_to_knime_datetime_types or isinstance(dtype, pa.TimestampType)
     ):
-        # timezones have to be found with isinstance, otherwise the timezone would have to be included
-        if isinstance(dtype, pa.TimestampType) and dtype.tz is not None:
-            logical_type = _knime_datetime_type("ZonedDateTimeValueFactory2")
-        else:
-            logical_type = _arrow_to_knime_datetime_types[dtype]
-        storage_type = _knime_datetime_logical_to_storage[logical_type]
-        converter = kt.get_converter(logical_type)
+        logical_type, storage_type, converter = parse_datetime_type(dtype)
         return LogicalTypeExtensionType(converter, storage_type, logical_type)
 
     elif (
@@ -986,6 +980,17 @@ def _get_wrapped_type(dtype, is_row_key):
         )
     else:
         return None
+
+
+def parse_datetime_type(dtype):
+    # timezones have to be found with isinstance, otherwise the timezone would have to be included in the name
+    if isinstance(dtype, pa.TimestampType) and dtype.tz is not None:
+        logical_type = _knime_datetime_type("ZonedDateTimeValueFactory2")
+    else:
+        logical_type = _arrow_to_knime_datetime_types[dtype]
+    storage_type = _knime_datetime_logical_to_storage[logical_type]
+    converter = kt.get_converter(logical_type)
+    return logical_type, storage_type, converter
 
 
 def _get_offsets_with_nulls(a: Union[pa.ListArray, pa.LargeListArray]):
@@ -1081,11 +1086,11 @@ def _wrap_primitive_array(
         )
     elif _is_knime_datetime_type(array.type) or isinstance(
         array.type, pa.TimestampType
-    ):  # if we have a pa.datetime object we convert it to knime tpe
+    ):  # if we have a pa.datetime object we convert it to knime type
         arr_list = array.to_pylist()  # convert to datetime objects
-        encoded = list(
-            map(wrapped_type._converter.encode, arr_list)
-        )  # encode datetime objects as knime storage
+        encoded = [
+            wrapped_type._converter.encode(v) for v in arr_list
+        ]  # encode datetime objects as knime storage
         storage_array = pa.array(encoded, type=wrapped_type.storage_type)
         ext_arr = _apply_to_array(
             storage_array, lambda a: pa.ExtensionArray.from_storage(wrapped_type, a)

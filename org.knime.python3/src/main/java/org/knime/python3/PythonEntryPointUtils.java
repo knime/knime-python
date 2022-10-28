@@ -128,8 +128,7 @@ public final class PythonEntryPointUtils {
      */
 
     public static List<String> getSupportedTimeZones(){
-        List<String> zone_Id_list = new ArrayList<>(ZoneId.getAvailableZoneIds());
-        return zone_Id_list;
+        return new ArrayList<>(ZoneId.getAvailableZoneIds());
 
     }
 

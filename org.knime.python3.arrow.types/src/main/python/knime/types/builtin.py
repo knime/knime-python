@@ -76,6 +76,7 @@ def _utc_conversion_warning(tzname):
         f"daylight saving time is no preserved. ",
         stacklevel=5,
     )
+    logging.captureWarnings(False)
 
 
 class ZonedDateTimeValueFactory2(
@@ -99,7 +100,22 @@ class ZonedDateTimeValueFactory2(
         if value is None:
             return None
         tz_info = value.tzinfo
-        # get time zone name for tzfile object, pytz object and tzinfo object
+        # get time zone name for tzfile object, pytz object or tzinfo object
+        tz_name = self.extract_tz_name(tz_info, value)
+        if not self._java_timezones:
+            self.get_java_timezones()
+
+        # Java does not support the timezone eg BST. We convert it to UTC
+        if self._java_timezones and tz_name not in self._java_timezones:
+            return self.convert_tz_to_utc(tz_info, tz_name, value)
+
+        local_dt_dict = self._local_dt_factory.encode(value)
+        tz_offset_seconds = self.get_offset_seconds(tz_info, value)
+        local_dt_dict["2"] = tz_offset_seconds
+        local_dt_dict["3"] = tz_name
+        return local_dt_dict
+
+    def extract_tz_name(self, tz_info, value):
         if isinstance(tz_info, tz.tzfile):  # this is if pandas converts to an object
             tz_name = "/".join(
                 tz_info._filename.split("/")[-2:]
@@ -111,47 +127,50 @@ class ZonedDateTimeValueFactory2(
             tz_name = tz_info.zone
         else:
             tz_name = tz_info.tzname(value)
-        if not self._java_timezones:
-            from knime_arrow import gateway
+        return tz_name
 
-            try:
-                self._java_timezones = (
-                    gateway().jvm.org.knime.python3.PythonEntryPointUtils.getSupportedTimeZones()
-                )
-            except RuntimeError:
-                warnings.warn(
-                    "Could not load Java Timezones. This can happen in UNIT Tests"
-                )
-
-        # Java does not support the timezone eg BST. We convert it to UTC
-        if self._java_timezones and tz_name not in self._java_timezones:
-            _utc_conversion_warning(tz_name)
-            utc_value = value.astimezone(tz.UTC)
-            local_dt_dict = self._local_dt_factory.encode(utc_value)
-            tz_offset = tz_info.utcoffset(value)
-            tz_offset_hours = int(tz_offset.seconds / 60 / 60)  # convert to hours
-            # python handles overflow by setting day to -1 , which this is not represented in the hours
-            if tz_offset.days < 0:
-                tz_offset_hours -= 24  # subtract one day, java supports negative values
-                offset_string = str(tz_offset_hours)
-            else:
-                offset_string = "+" + str(tz_offset_hours)
-            local_dt_dict[
-                "2"
-            ] = 0  # we handle the complete offset with the offset (ZoneID) String
-            local_dt_dict["3"] = offset_string
-            return local_dt_dict
-
-        local_dt_dict = self._local_dt_factory.encode(value)
+    def get_offset_seconds(self, tz_info, value):
         tz_offset = tz_info.utcoffset(value)
         # python handles overflow by setting day to -1 , which this is not represented in the seconds
         if tz_offset.days < 0:
             tz_offset_seconds = tz_offset.seconds - (24 * 60 * 60)  # subtract one day
         else:
             tz_offset_seconds = tz_offset.seconds
-        local_dt_dict["2"] = tz_offset_seconds
-        local_dt_dict["3"] = tz_name
+        return tz_offset_seconds
+
+    def convert_tz_to_utc(self, tz_info, tz_name, value):
+        """
+        If we do not have a Java representation for the timezone, it is converted to UTC. Thereby possibly losing
+        spatial or daylight saving time information.
+        """
+        _utc_conversion_warning(tz_name)
+        utc_value = value.astimezone(tz.UTC)
+        local_dt_dict = self._local_dt_factory.encode(utc_value)
+        tz_offset = tz_info.utcoffset(value)
+        tz_offset_hours = int(tz_offset.seconds / 60 / 60)  # convert to hours
+        # python handles overflow by setting day to -1 , which this is not represented in the hours
+        if tz_offset.days < 0:
+            tz_offset_hours -= 24  # subtract one day, java supports negative values
+            offset_string = str(tz_offset_hours)
+        else:
+            offset_string = "+" + str(tz_offset_hours)
+        local_dt_dict[
+            "2"
+        ] = 0  # we handle the complete offset with the offset (ZoneID) String
+        local_dt_dict["3"] = offset_string
         return local_dt_dict
+
+    def get_java_timezones(self):
+        from knime_arrow import gateway
+
+        try:
+            self._java_timezones = (
+                gateway().jvm.org.knime.python3.PythonEntryPointUtils.getSupportedTimeZones()
+            )
+        except RuntimeError:
+            warnings.warn(
+                "Could not load Java Timezones. This can happen in UNIT Tests"
+            )
 
     def can_convert(self, value):
         if isinstance(value, dt.datetime):

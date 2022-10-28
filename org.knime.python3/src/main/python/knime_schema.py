@@ -331,11 +331,6 @@ class LogicalType(KnimeType):
             )
         data_spec = bundle.data_spec_json
         pa_storage_type = kat.data_spec_to_arrow(data_spec)
-        converter = (
-            self._proxy_type_converter
-            if self._proxy_type_converter
-            else bundle.value_factory
-        )
 
         if self._proxy_type_converter:
             return kat.ProxyExtensionType(
