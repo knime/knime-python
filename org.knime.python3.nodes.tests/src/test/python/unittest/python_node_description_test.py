@@ -134,15 +134,12 @@ class MarkdownDocstringTest(unittest.TestCase):
         _s = self.parser.parse_basic(s)
         self.assertEqual(_expected, _s)
 
-        # TODO: dunno how to solve this one
-        #       since nested / recursive tags fail
         s = "**__strong__**"
         #'<p><strong><b>strong</b></strong></p>'
         _expected = "<p><b>strong</b></p>"
         _s = self.parser.parse_basic(s)
         self.assertEqual(_expected, _s)
 
-        # TODO: this fails because of nested tags
         s = "_*simple*_"
         _s = self.parser.parse_basic(s)
         _expected = "<p><i>simple</i></p>"
