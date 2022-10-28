@@ -165,6 +165,16 @@ class MarkdownDocstringTest(unittest.TestCase):
         _expected = "<p><b>so strong*</b></p>"
         self.assertEqual(_expected, _s)
 
+        s = "**strong with `code` inside**"
+        _s = self.parser.parse_basic(s)
+        _expected = "<p><b>strong with code inside</b></p>"
+        self.assertEqual(_expected, _s)
+
+        s = "**__super `strong code`__ still strong**"
+        _s = self.parser.parse_basic(s)
+        _expected = "<p><b>super strong code still strong</b></p>"
+        self.assertEqual(_expected, _s)
+
     def test_table(self):
         # test implemented table
         s = """
