@@ -75,55 +75,50 @@ class _HTMLTreeprocessor(Treeprocessor):
             s = s.replace("&#x27;", "'")
         return s
 
-    def run(self, e):
-        self._in_em = False
-        self._process(e, None, 0)
+    @staticmethod
+    def _process_em(element: Element):
+        def _merge_text(first: Optional[str], second: Optional[str]):
+            if first:
+                return first + second if second else first
+            return second
 
-    def _process(self, element: Element, parent: Optional[Element], index: int):
-        if element.tag == "code" or element.tag == "pre":
-            self._apply_to_entity(element, self._unescape)
-        else:
-            self._apply_to_entity(element, html.escape)
+        def _get_text_from_children(element: Element) -> str:
+            v = None
+            for x in element:
+                v = _merge_text(v, x.text)
+                v = _merge_text(v, _get_text_from_children(x))
+                v = _merge_text(v, x.tail)
+            return v
 
-        is_em = self._is_em(element)
-        if is_em:
-            if self._in_em:
-                is_descendant = True
-                # remove this element from the parent
-                parent.remove(element)
-            else:
-                self._in_em = True
-                is_descendant = False
+        # Get the text of all children and merge it
+        element.text = _merge_text(element.text, _get_text_from_children(element))
 
-        for i, x in enumerate(element):
-            self._process(x, element, i)
+        # Remove all children
+        for x in element:
+            element.remove(x)
 
-        if is_em:
-            if is_descendant:
-                # add text and tail to the parent text
-                if element.text:
-                    parent.text = (
-                        parent.text + element.text if parent.text else element.text
-                    )
-                if element.tail:
-                    parent.text = (
-                        parent.text + element.tail if parent.text else element.tail
-                    )
-                # add children in parent at the position element was previously located at
-                for x in reversed(element):
-                    parent.insert(index, x)
-            else:
-                # this was the top-most em tag so we are no longer inside of an em tag
-                self._in_em = False
-
-    def _is_em(self, element: Element):
+    @staticmethod
+    def _is_em(element: Element):
         return element.tag == "b" or element.tag == "i"
 
-    def _apply_to_entity(self, element, func):
+    @staticmethod
+    def _apply_to_entity(element, func):
         if element.text is not None:
             element.text = func(element.text)
         if element.tail is not None:
             element.tail = func(element.tail)
+
+    def run(self, e):
+        if e.tag == "code" or e.tag == "pre":
+            _HTMLTreeprocessor._apply_to_entity(e, _HTMLTreeprocessor._unescape)
+        else:
+            _HTMLTreeprocessor._apply_to_entity(e, html.escape)
+
+        if _HTMLTreeprocessor._is_em(e):
+            _HTMLTreeprocessor._process_em(e)
+        else:
+            for x in e:
+                self.run(x)
 
 
 class _KnimeProcessorAsterisk(AsteriskProcessor):
