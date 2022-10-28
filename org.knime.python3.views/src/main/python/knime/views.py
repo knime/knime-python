@@ -197,7 +197,7 @@ def view(obj) -> NodeView:
     try:
         return view_ipy_repr(obj)
     except ValueError:
-        raise ValueError(f"No view could be created for {obj}")
+        raise ValueError(f"no view could be created for {obj}")
 
 
 def view_ipy_repr(obj) -> NodeView:

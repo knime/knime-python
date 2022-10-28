@@ -123,6 +123,30 @@ class KnimeViewsTest(unittest.TestCase):
             # Using an object that has _repr_jpeg_
             check_view(kv.view(ViewableClass(jpeg=jpeg)))
 
+    def test_fail_on_non_supported_input(self):
+        # string that is not HTML or SVG
+        with self.assertRaises(ValueError) as cm:
+            kv.view("foo bar")
+        self.assertEqual(str(cm.exception), "no view could be created for foo bar")
+
+        # bytes that is not PNG or JPEG
+        with self.assertRaises(ValueError) as cm:
+            kv.view(b"foo bar")
+        self.assertEqual(str(cm.exception), "no view could be created for b'foo bar'")
+
+        # obj without any _repr_*_ method in view_ipy_repr
+        non_viewable_obj = ViewableClass()
+        with self.assertRaises(ValueError) as cm:
+            kv.view_ipy_repr(non_viewable_obj)
+        self.assertEqual(
+            str(cm.exception), "no _repr_*_ function is implemented by obj"
+        )
+
+    def test_repr_with_metadata(self):
+        html_viewable = ViewableClass(html=(self.htmls[0], "some metadata"))
+        html_view = kv.view(html_viewable)
+        self.assertEqual(html_view.html, self.htmls[0])
+
     def test_repr_choice(self):
         # HTML before everything else
         html_viewable = ViewableClass(
@@ -206,6 +230,23 @@ class KnimeViewsTest(unittest.TestCase):
         # Stateful approach
         plt.plot(data_x, data_y)
         check_view(kv.view_matplotlib(format="svg"))
+
+    def test_matplotlib_fail_unsupported_format(self):
+        import matplotlib.pyplot as plt
+        import seaborn as sns
+
+        data_x = list(range(10))
+        data_y = [i + 2 for i in range(10)]
+
+        # Stateful approach
+        plt.plot(data_x, data_y)
+
+        with self.assertRaises(ValueError) as cm:
+            kv.view_matplotlib(format="my_crazy_format")
+        self.assertEqual(
+            str(cm.exception),
+            'unsupported format for matplotlib view: my_crazy_format. Use "png" or "svg".',
+        )
 
 
 if __name__ == "__main__":
