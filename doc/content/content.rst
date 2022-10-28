@@ -225,6 +225,9 @@ These are helper functions to create KNIME compatible datatypes. For instance, i
 .. autofunction:: knime_schema.bool_
    :noindex:
 
+.. autofunction:: knime_schema.string
+   :noindex:
+
 .. autofunction:: knime_schema.blob
    :noindex:
 
