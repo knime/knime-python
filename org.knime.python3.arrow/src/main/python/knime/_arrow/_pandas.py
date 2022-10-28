@@ -52,7 +52,7 @@ import pyarrow as pa
 from pandas.core.dtypes.dtypes import register_extension_dtype
 
 import knime._arrow._dictencoding as kasde
-import knime._arrow._types as kat
+import knime._arrow._types as katy
 import knime.api.types as kt
 import knime.api.schema as ks
 import logging
@@ -132,9 +132,11 @@ def convert_df_to_ktypes_from_schema(df, schema: dict):
         if isinstance(dtype, PandasLogicalTypeExtensionType):
             # replace all pd.NA or np.NaN Values with the correct na_value and save it as logical type
             try:
+                # column need to be cast as object so that the NA, NaN and NaT are not automatically converted back
                 df[col_name] = (
                     df[col_name]
-                    .where(pd.notnull(df[col_name]), dtype.na_value)
+                    .astype(object)
+                    .where(pd.notnull(df[col_name]), None)
                     .astype(dtype)
                 )
             except TypeError:
@@ -163,14 +165,40 @@ def extract_knime_schema_from_df(df):
                 schema[col_name] = col_type
                 continue
             dtype = type(cleaned[0])
-            try:
-                logical = ks.logical(dtype).to_pandas()
-                schema[col_name] = logical
-            except TypeError:  # if we do not have the type we continue
-                schema[col_name] = col_type
-        else:
-            schema[col_name] = col_type
+            if _check_if_local_dt(cleaned, dtype):
+                # as we map all pandas ts and dt objects on the ZonedDT ValFac
+                # we have to manually determine if it is a local dt object
+                col_type = _create_local_dt_type()
+            else:
+                try:
+                    col_type = ks.logical(dtype).to_pandas()
+                except TypeError:  # if we do not have the type we continue
+                    pass
+        schema[col_name] = col_type
     return schema
+
+
+def _create_local_dt_type():
+    logical = katy._knime_datetime_type("LocalDateTimeValueFactory")
+    logical = katy.LogicalTypeExtensionType(
+        converter=kt.get_converter(logical),
+        storage_type=katy._knime_datetime_logical_to_storage[logical],
+        java_value_factory=logical,
+    ).to_pandas_dtype()
+    return logical
+
+
+def _check_if_local_dt(cleaned, dtype):
+    if not (
+        str(dtype) == "<class 'pandas._libs.tslibs.timestamps.Timestamp'>"
+        or str(dtype) == "<class 'datetime.datetime'>"
+    ):
+        return False
+    # parse timezone
+    for elem in cleaned:
+        if hasattr(elem, "tzinfo") and elem.tzinfo is not None:
+            return False
+    return True
 
 
 def arrow_data_to_pandas_df(data: Union[pa.Table, pa.RecordBatch]) -> pd.DataFrame:
@@ -306,7 +334,7 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
             raise ValueError("Cannot create KnimePandasExtensionArray from empty data")
             # easy case
         if isinstance(scalars, pa.Array) or isinstance(scalars, pa.ChunkedArray):
-            if isinstance(scalars.type, kat.LogicalTypeExtensionType):
+            if isinstance(scalars.type, katy.LogicalTypeExtensionType):
                 return KnimePandasExtensionArray(
                     scalars.type.storage_type,
                     scalars.type.logical_type,
@@ -314,7 +342,7 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
                     scalars,
                 )
             elif isinstance(
-                scalars.type, kat.StructDictEncodedLogicalTypeExtensionType
+                scalars.type, katy.StructDictEncodedLogicalTypeExtensionType
             ):
                 return KnimePandasExtensionArray(
                     scalars.type.struct_dict_encoded_type,
@@ -345,7 +373,9 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
                 "Can only create KnimePandasExtensionArray from a sequence if the storage type is given."
             )
 
-        arrow_type = kat.LogicalTypeExtensionType(converter, storage_type, logical_type)
+        arrow_type = katy.LogicalTypeExtensionType(
+            converter, storage_type, logical_type
+        )
         if converter and type(converter) != type(kt.get_converter(logical_type)):
             # If we slice a Pandas series based on a ProxyExtensionType, we should return
             # the appropriate type as well:
@@ -361,7 +391,7 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
                     """
                 )
 
-            arrow_type = kat.ProxyExtensionType(converter, storage_type, logical_type)
+            arrow_type = katy.ProxyExtensionType(converter, storage_type, logical_type)
 
         a = pa.array(scalars, type=storage_type)
         extension_array = pa.ExtensionArray.from_storage(arrow_type, a)
@@ -392,12 +422,12 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
         # we just "reinterpret" the storage data as different dtype -> uses a different converter
         try:
             # casting to "proxy" logical type
-            new_data_dtype = kat.ProxyExtensionType(
+            new_data_dtype = katy.ProxyExtensionType(
                 converter, storage_type, logical_type
             )
         except TypeError:
             # casting to "primary" logical type
-            new_data_dtype = kat.LogicalTypeExtensionType(
+            new_data_dtype = katy.LogicalTypeExtensionType(
                 converter, storage_type, logical_type
             )
 
@@ -446,7 +476,7 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
                 )
             else:
                 storage_scalar_list.append(field[item])
-        storage_scalar_type = kat._struct_type_from_values(*storage_scalar_list)
+        storage_scalar_type = katy._struct_type_from_values(*storage_scalar_list)
         storage_scalar = pa.scalar(
             tuple(i.as_py() for i in storage_scalar_list), type=storage_scalar_type
         )
@@ -496,7 +526,7 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
                 elif isinstance(self._data, pa.StructArray):
                     # else we just access the struct
                     storage = self._data
-                elif isinstance(self._data, kat.KnimeExtensionArray):
+                elif isinstance(self._data, katy.KnimeExtensionArray):
                     storage = self._data.storage
                 else:
                     raise TypeError(
@@ -516,8 +546,24 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
         elif isinstance(item, list):
             return self.take(item)
         elif isinstance(item, np.ndarray):
-            # masked array
-            raise NotImplementedError("Cannot index using masked array from numpy yet.")
+            shape = item.shape
+            if len(shape) != 1:
+                raise IndexError(
+                    f"Only one dimensional np.arrays can be used as indexer, but the given array has shape"
+                    f"'{shape}'"
+                )
+            if item.dtype is np.dtype(np.bool_):
+                # the indexer is a mask array
+                if item.shape[0] != len(self):
+                    raise IndexError(
+                        f"The len of the masked array '{item.shape[0]}' is not equal to the length "
+                        f"of the data '{len(self)}'"
+                    )
+                index_list = np.where(item)[0].tolist()
+            else:
+                # the indexer is an integer access array
+                index_list = item.tolist()
+            return self.take(index_list)
 
     def __setitem__(self, item, value):
         """
@@ -702,7 +748,7 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
         numpy.take
         api.extensions.take
         """
-        storage = kat._to_storage_array(
+        storage = katy._to_storage_array(
             self._data
         )  # decodes the data puts it in storage array
 
@@ -727,7 +773,7 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
 
         else:
             taken = storage.take(indices)
-        wrapped = kat._to_extension_array(taken, self._data.type)
+        wrapped = katy._to_extension_array(taken, self._data.type)
 
         return self._from_sequence(
             wrapped,

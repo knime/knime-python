@@ -47,6 +47,7 @@
 """
 import unittest
 
+import knime_types as kt
 import knime.types.builtin as et
 import testing_utility
 
@@ -149,6 +150,23 @@ def _register_extension_types():
                     """,
         "datetime.timedelta",
     )
+    kt.register_python_value_factory(
+        ext_types,
+        "DurationValueFactory",
+        '{"type": "struct", "inner_types": ["long", "long"]}',
+        """
+                    {
+                        "type": "struct",
+                        "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.time.DurationValueFactory\\"}" },
+                        "inner": [
+                            {"type": "simple", "traits": {}},
+                            {"type": "simple", "traits": {}}
+                        ]
+                    }
+                    """,
+        "pandas._libs.tslibs.timedeltas.Timedelta",
+        is_default_python_representation=False,
+    )
 
 
 class TimeExtensionTypeTest(unittest.TestCase):
@@ -234,9 +252,25 @@ class TimeExtensionTypeTest(unittest.TestCase):
             "d64": pa.date64(),  # pandas
             "dur": pa.duration("ns"),  # pandas
             "tz_ts": pa.timestamp("ms", tz="America/New_York"),
-            "half_tz_ts": pa.timestamp("s", tz="+07:30"),
-            "half_tz_ts2": pa.timestamp("s", tz="-07:30"),
         }
+        schema = (
+            "RowKey: string\n"
+            "t32: time32[ms]\n"
+            "t64: time64[ns]\n"
+            "d32: date32[day]\n"
+            "d64: date64[ms]\n"
+            "dur: duration[ns]\n"
+            "tz_ts: timestamp[ms, tz=America/New_York]"
+        )
+        # in pa versions lower than 9 timezones are parsed differently such that half tz's like tz=+07:30 do not work
+        if int(pa.__version__.split(".")[0]) >= 9:
+            types["half_tz_ts"] = pa.timestamp("s", tz="+07:30")
+            types["half_tz_ts2"] = pa.timestamp("s", tz="-07:30")
+            schema += (
+                "\nhalf_tz_ts: timestamp[s, tz=+07:30]\n"
+                "half_tz_ts2: timestamp[s, tz=-07:30]"
+            )
+
         arrays = [pa.array([f"Row{i}" for i in range(n)])]
         for type_name in types.keys():
             dtype = types[type_name]
@@ -245,17 +279,6 @@ class TimeExtensionTypeTest(unittest.TestCase):
         names = ["RowKey"] + list(types.keys())
         table = pa.table(arrays, names=names)
         arrow_table = arrow_backend.write_table(table)  # send to KNIME
-        schema = (
-            "RowKey: string\n"
-            "t32: time32[ms]\n"
-            "t64: time64[ns]\n"
-            "d32: date32[day]\n"
-            "d64: date64[ms]\n"
-            "dur: duration[ns]\n"
-            "tz_ts: timestamp[ms, tz=America/New_York]\n"
-            "half_tz_ts: timestamp[s, tz=+07:30]\n"
-            "half_tz_ts2: timestamp[s, tz=-07:30]"
-        )
         self.assertEqual(str(arrow_table._schema), schema)
 
     def test_passing_pandas_time_types_to_knime(self):
@@ -285,16 +308,13 @@ class TimeExtensionTypeTest(unittest.TestCase):
         arrow_table = arrow_backend.write_table(df)
         schema = (
             "<Row Key>: string\n"
-            "tz_timestamp: timestamp[, tz=America/New_York]\n"
-            "timestamp: timestamp[]\n"
-            "timedelta: duration[]"
+            "tz_timestamp: extension<knime.logical_type<LogicalTypeExtensionType>>\n"
+            "timestamp: extension<knime.logical_type<LogicalTypeExtensionType>>\n"
+            "timedelta: extension<knime.logical_type<LogicalTypeExtensionType>>"
         )
         # for pa 7 and 9 there is apparently different precision
         self.assertEqual(
-            schema,
-            arrow_table._schema.to_string(show_schema_metadata=False)
-            .replace("us", "")
-            .replace("ns", ""),
+            schema, arrow_table._schema.to_string(show_schema_metadata=False)
         )
 
     def test_passing_datetime_time_types_to_knime(self):
@@ -334,8 +354,8 @@ class TimeExtensionTypeTest(unittest.TestCase):
         arrow_table = arrow_backend.write_table(df)
         schema = (
             "<Row Key>: string\n"
-            "0: duration[ns]\n"
-            "1: timestamp[ns]\n"
+            "0: extension<knime.logical_type<LogicalTypeExtensionType>>\n"
+            "1: extension<knime.logical_type<LogicalTypeExtensionType>>\n"
             "2: extension<knime.logical_type<LogicalTypeExtensionType>>\n"
             "3: extension<knime.logical_type<LogicalTypeExtensionType>>"
         )
@@ -382,27 +402,6 @@ class TimeExtensionTypeTest(unittest.TestCase):
             "<Row Key>: string\n"
             "0: extension<knime.logical_type<LogicalTypeExtensionType>>"
         )
-        self.assertEqual(schema, arrow_table._schema.to_string(show_schema_metadata=False))
-
-    def test_pd_timestamp_and_no_timestamp(self):
-        import pandas as pd
-
-        a = pd.Timestamp(year=2017, month=1, day=1, hour=12)
-        b = pd.Timestamp(1513393355, unit="s", tz="US/Pacific")
-
-        df = pd.DataFrame({"non-tz-first": [a, b], "tz-first": [b, a]})
-
-        arrow_backend, node_backend = testing_utility._generate_backends()
-        arrow_table = arrow_backend.write_table(df)
-        schema = (
-            "<Row Key>: string\n"
-            "non-tz-first: extension<knime.logical_type<LogicalTypeExtensionType>>\n"
-            "tz-first: extension<knime.logical_type<LogicalTypeExtensionType>>"
-        )
-        # these do not work yet as they are interpreted as object, therefore the tz for all is similar for all entries
-        # in the pa.Table.from_pandas() method all object types are interpreted as the first occurring dtype
-        # but as the dtype includes the timezone all entries are changed to this timezone
-        # self.assertEqual(schema, arrow_table._schema.to_string(show_schema_metadata=False))
         self.assertEqual(
             schema, arrow_table._schema.to_string(show_schema_metadata=False)
         )

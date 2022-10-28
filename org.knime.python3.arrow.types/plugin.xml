@@ -38,6 +38,14 @@
                ValueFactory="org.knime.core.data.v2.time.DurationValueFactory"
                ValueTypeName="datetime.timedelta">
          </PythonValueFactory>
+
+         <PythonValueFactory
+               PythonClassName="DurationValueFactory"
+               ValueFactory="org.knime.core.data.v2.time.DurationValueFactory"
+               ValueTypeName="pandas._libs.tslibs.timedeltas.Timedelta"
+               is_default_python_representation="false">
+         </PythonValueFactory>
+
          <PythonValueFactory
                PythonClassName="LocalTimeValueFactory"
                ValueFactory="org.knime.core.data.v2.time.LocalTimeValueFactory"
@@ -63,6 +71,14 @@
                ValueFactory="org.knime.core.data.v2.value.DenseByteVectorValueFactory"
                ValueTypeName="knime.types.builtin.DenseByteVectorValue">
          </PythonValueFactory>
+         <FromPandasColumnConverter
+               PythonClassName="FromDTPandasColumnConverter"
+               ValueTypeName="pandas._libs.tslibs.timestamps.Timestamp">
+         </FromPandasColumnConverter>
+         <FromPandasColumnConverter
+               PythonClassName="FromDTPandasColumnConverter"
+               ValueTypeName="pandas.core.dtypes.dtypes.DatetimeTZDtype">
+         </FromPandasColumnConverter>
       </Module>
    </extension>
 

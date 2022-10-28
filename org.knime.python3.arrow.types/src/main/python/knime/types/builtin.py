@@ -50,7 +50,10 @@ import datetime as dt
 import warnings
 
 from dateutil import tz
+
+import knime.api.schema as ks
 import knime.api.types as kt
+import knime._arrow._pandas as kap
 
 _start_of_epoch = dt.datetime(1970, 1, 1)
 _microsecond_delta = dt.timedelta(microseconds=1)
@@ -70,10 +73,10 @@ def _utc_conversion_warning(tzname):
 
     logging.captureWarnings(True)
     warnings.warn(
-        f"The timezone {tzname} is not supported in KNIME, it is converted to a UTC Timezone."
-        f"No time is lost, but information spatial information could be missing."
+        f"The timezone {tzname} is not supported in KNIME, it is converted to a UTC Timezone. "
+        f"No time is lost, but spatial information could be missing. "
         f"E.G. British Summertime is converted to UTC+1. The information of the "
-        f"daylight saving time is no preserved. ",
+        f"daylight saving time is not preserved. ",
         stacklevel=5,
     )
     logging.captureWarnings(False)
@@ -102,9 +105,9 @@ class ZonedDateTimeValueFactory2(
         tz_info = value.tzinfo
         if tz_info is None:  # if we do not have a timezone object in a tz column
             raise TypeError(
-                f"When trying to convert the element '{value}' to a ZonedDateTime no timezone was detected."
-                f"Maybe its a LocalTimeZone? If you're using pandas, please assign a type to the Pandas"
-                f" series using knime.schema.logical(correct_dtype).to_pandas()"
+                f"When trying to convert the element '{value}' to a ZonedDateTime no timezone was detected. "
+                f"Maybe it is a LocalTimeZone? If you're using pandas, please assign a type to the Pandas "
+                f"series using knime.schema.logical(correct_dtype).to_pandas()"
             )
         # get time zone name for tzfile object, pytz object or tzinfo object
         tz_name = self.extract_tz_name(tz_info, value)
@@ -141,7 +144,7 @@ class ZonedDateTimeValueFactory2(
 
     def get_offset_seconds(self, tz_info, value):
         tz_offset = tz_info.utcoffset(value)
-        # python handles overflow by setting day to -1 , which this is not represented in the seconds
+        # python handles overflow by setting day to -1 , which is not represented in the seconds
         if tz_offset.days < 0:
             tz_offset_seconds = tz_offset.seconds - (24 * 60 * 60)  # subtract one day
         else:
@@ -348,7 +351,7 @@ class LocalTimeValueFactory(kt.PythonValueFactory):
             return None
         if hasattr(time, "tzinfo") and time.tzinfo is not None:
             warnings.warn(
-                f"KNIME does not support time objetcs with timezones. Therefore the timezone information "
+                f"KNIME does not support time objects with timezones. Therefore the timezone information "
                 f"'{time.tzinfo}' is lost. Please consider using a datetime object with a timezone."
             )
         time_on_first_day = dt.datetime.min.replace(
@@ -477,3 +480,26 @@ class DenseByteVectorValueFactory(kt.PythonValueFactory):
 
 def _knime_value_factory(name):
     return '{"value_factory_class":"' + name + '"}'
+
+
+class FromDTPandasColumnConverter(kt.FromPandasColumnConverter):
+    def can_convert(self, dtype) -> bool:
+        return False
+
+    def convert_column(
+        self, data_frame: "pandas.dataframe", column_name: str
+    ) -> "pandas.Series":
+        import datetime
+
+        column = data_frame[column_name]
+        local_dt = True
+        for elem in column:  # we iterate to see if we have a local or zoned dt
+            if elem.tzinfo is not None:
+                local_dt = False
+                break
+        if local_dt:
+            dtype = kap._create_local_dt_type()
+            return column.astype(dtype)
+        # we have a zoned datetime and can parse as usual
+        dtype = ks.logical(datetime.datetime).to_pandas()
+        return column.astype(dtype)
