@@ -95,9 +95,9 @@ public final class PythonViewNodeFactory extends ConfigurableNodeFactory<PythonV
     @Override
     public NodeView<PythonViewNodeModel> createNodeView(final int viewIndex, final PythonViewNodeModel nodeModel) {
         if (viewIndex == 0) {
-            throw new IllegalStateException(
-                "The view with the index 0 is a JS view and needs to be accessed via NodeViewFactory#createNodeView. "
-                    + "This is an implementation error.");
+            // NB: The dummy view will only be opened by workflow tests
+            // The user cannot open the view because it is not shown in the context menu
+            return new DummyNodeView(nodeModel);
         } else if (viewIndex == 1) {
             return new ExtToolStdoutNodeView<>(nodeModel);
         } else if (viewIndex == 2) {
@@ -140,5 +140,29 @@ public final class PythonViewNodeFactory extends ConfigurableNodeFactory<PythonV
     @Override
     public org.knime.core.webui.node.view.NodeView createNodeView(final PythonViewNodeModel nodeModel) {
         return new HtmlFileNodeView(nodeModel::getPathToHtml);
+    }
+
+    /** A dummy node view that does nothing and that will only be opened by workflow tests. */
+    private static final class DummyNodeView extends NodeView<PythonViewNodeModel> {
+
+        protected DummyNodeView(final PythonViewNodeModel nodeModel) {
+            super(nodeModel);
+        }
+
+        @Override
+        protected void onClose() {
+            // Dummy
+        }
+
+        @Override
+        protected void onOpen() {
+            // Dummy
+
+        }
+
+        @Override
+        protected void modelChanged() {
+            // Dummy
+        }
     }
 }
