@@ -266,5 +266,17 @@ public interface Python3KernelBackendProxy extends PythonEntryPoint {
          * @return The local absolute path to the current workflow on disk
          */
         String get_workflow_dir(); // NOSONAR
+
+        /**
+         * @param fileStoreKey The string representation of a file store key
+         * @return the absolute path of the file on disk
+         */
+        String file_store_key_to_absolute_path(String fileStoreKey); // NOSONAR
+
+        /**
+         * @return A tuple of two strings: the absolute path of the file on disk and the file store key
+         * @throws IOException if the file store could not be created
+         */
+        String[] create_file_store() throws IOException; // NOSONAR
     }
 }

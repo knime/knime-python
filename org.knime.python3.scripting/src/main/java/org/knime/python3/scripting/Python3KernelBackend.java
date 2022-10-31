@@ -60,6 +60,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -71,6 +72,9 @@ import java.util.function.Supplier;
 import org.apache.commons.lang3.StringUtils;
 import org.knime.core.columnar.arrow.ArrowColumnStoreFactory;
 import org.knime.core.data.IDataRepository;
+import org.knime.core.data.filestore.FileStore;
+import org.knime.core.data.filestore.FileStoreKey;
+import org.knime.core.data.filestore.FileStoreUtil;
 import org.knime.core.data.filestore.internal.IFileStoreHandler;
 import org.knime.core.data.filestore.internal.IWriteFileStoreHandler;
 import org.knime.core.data.filestore.internal.NotInWorkflowDataRepository;
@@ -224,6 +228,11 @@ public final class Python3KernelBackend implements PythonKernelBackend {
     private final SinkManager m_sinkManager = new SinkManager(this::getDataRepository, ARROW_STORE_FACTORY);
 
     /**
+     * Will be populated the first time it is accessed
+     */
+    private IWriteFileStoreHandler m_writeFileStoreHandler = null;
+
+    /**
      * Creates a new Python kernel back end by starting a Python process and connecting to it.
      * <P>
      * Important: call the {@link #close()} method when this back end is no longer needed to shut down the underlying
@@ -331,6 +340,20 @@ public final class Python3KernelBackend implements PythonKernelBackend {
                     return m_nodeContextManager.getNodeContext().getWorkflowManager().getContextV2().getExecutorInfo()
                         .getLocalWorkflowPath().toFile().getAbsolutePath();
                 }
+
+                @Override
+                public String file_store_key_to_absolute_path(final String fileStoreKey) {
+                    return getFileStoreHandler().getFileStore(FileStoreKey.fromString(fileStoreKey)).getFile()
+                        .getAbsolutePath();
+                }
+
+                @Override
+                public String[] create_file_store() throws IOException {
+                    final var fileStore = createFileStore();
+                    return new String[]{fileStore.getFile().getAbsolutePath(),
+                        FileStoreUtil.getFileStoreKey(fileStore).toString()};
+                }
+
             };
             m_proxy.initializeJavaCallback(callback);
 
@@ -668,8 +691,13 @@ public final class Python3KernelBackend implements PythonKernelBackend {
     }
 
     private IFileStoreHandler getFileStoreHandler() {
-        return ((NativeNodeContainer)m_nodeContextManager.getNodeContext().getNodeContainer()).getNode()
+        var fsHandler = ((NativeNodeContainer)m_nodeContextManager.getNodeContext().getNodeContainer()).getNode()
             .getFileStoreHandler();
+        if (fsHandler != null) {
+            return fsHandler;
+        } else {
+            return m_writeFileStoreHandler;
+        }
     }
 
     private static <T> T beautifyPythonTraceback(final Supplier<T> task) throws PythonIOException {
@@ -783,6 +811,9 @@ public final class Python3KernelBackend implements PythonKernelBackend {
                 }
             }
         }
+        if (m_writeFileStoreHandler == null) {
+            m_writeFileStoreHandler = fsHandler;
+        }
         return fsHandler;
     }
 
@@ -792,6 +823,18 @@ public final class Python3KernelBackend implements PythonKernelBackend {
             return fsHandler.getDataRepository();
         } else {
             return NotInWorkflowDataRepository.newInstance();
+        }
+    }
+
+    private FileStore createFileStore() throws IOException {
+        final var uuid = UUID.randomUUID().toString();
+        final var fsHandler = getWriteFileStoreHandler();
+        if (fsHandler instanceof NotInWorkflowWriteFileStoreHandler) {
+            // If we have a NotInWorkflowWriteFileStoreHandler then we are only creating a temporary copy of the
+            // table (e.g. for the Python Script Dialog) and don't need nested loop information anyways.
+            return fsHandler.createFileStore(uuid, null, -1);
+        } else {
+            return fsHandler.createFileStore(uuid);
         }
     }
 }

@@ -607,6 +607,7 @@ class _PythonNodeProxy:
                 return kg.data_sink_mapper(java_sink)
 
             kt._backend = kat._ArrowBackend(create_python_sink)
+            kt._backend.file_store_handler = self._java_callback
 
             # execute
             exec_context = kn.ExecutionContext(

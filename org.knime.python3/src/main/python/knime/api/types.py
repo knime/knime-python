@@ -54,6 +54,7 @@ import importlib
 import json
 from typing import List, Tuple, Type
 import logging
+from io import BytesIO
 
 LOGGER = logging.getLogger(__name__)
 
@@ -82,6 +83,112 @@ class PythonValueFactory:
 
     def needs_conversion(self):
         return True
+
+
+class FileStoreHandler:
+    """
+    Interface for a file store handler that must be provided from the Java side
+    """
+
+    def file_store_key_to_absolute_path(file_store_key: str) -> str:
+        """
+        Returns the absolute path of the file addressed by the file_store_key
+        """
+        pass
+
+    def create_file_store() -> Tuple[str, str]:
+        """
+        Returns a tuple (absolute_file_name, file_store_key)
+        """
+        pass
+
+
+class FileStoreSerializablePythonValueFactory(PythonValueFactory):
+    def __init__(self, compatible_type):
+        """
+        Create a FileStoreSerializablePythonValueFactory that can perform special encoding/
+        decoding for the values represented by this ValueFactory and allows storing
+        the content in separate files (file stores) which are linked from the table
+        rather than storing the full content in the table.
+
+        Subclasses should implement serialize() and deserialize() and can customize
+        should_be_stored_in_filestore() to determine whether or not a value needs
+        to be stored externally.
+
+        Args:
+            compatible_type:
+                The class of the value, for which this factory is created.
+        """
+        PythonValueFactory.__init__(self, compatible_type)
+
+    @abstractmethod
+    def deserialize(self, input: "io.BytesIO"):
+        """
+        Deserialize a value from the given BytesIO which can be in memory bytes or
+        stored on disk.
+
+        Return:
+            The deserialized value
+        """
+        pass
+
+    @abstractmethod
+    def serialize(self, value, output: "io.BytesIO"):
+        """
+        Serialize the value into the given output BytesIO stream. Must be readable
+        in the same way by the corresponding deserialize() method.
+
+        Do NOT close the output, this will be done externally.
+        """
+        pass
+
+    def should_be_stored_in_filestore(self, value):
+        return True
+
+    def decode(self, storage):
+        if storage is None:
+            return None
+
+        file_store_key = storage["0"]
+        if file_store_key is None or len(file_store_key) == 0:
+            import io
+
+            bytes_io = io.BytesIO(storage["1"])
+        else:
+            from knime.api.table import _backend
+
+            file_store_handler = _backend.file_store_handler
+            file_name = file_store_handler.file_store_key_to_absolute_path(
+                file_store_key
+            )
+            bytes_io = open(file_name, "rb")
+        value = self.deserialize(bytes_io)
+        bytes_io.close()
+        return value
+
+    def encode(self, value):
+        if value is None:
+            return None
+
+        file_store_key = None
+        data = None
+
+        if self.should_be_stored_in_filestore(value):
+            from knime.api.table import _backend
+
+            file_store_handler = _backend.file_store_handler
+            file_name, file_store_key = file_store_handler.create_file_store()
+            with open(file_name, "wb") as f:
+                self.serialize(value, f)
+        else:
+            import io
+
+            bytes_io = io.BytesIO()
+            self.serialize(value, bytes_io)
+            data = bytes_io.getvalue()
+            bytes_io.close()
+
+        return {"0": file_store_key, "1": data}
 
 
 class FallbackPythonValueFactory(PythonValueFactory):
