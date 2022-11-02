@@ -215,6 +215,8 @@ class TimeExtensionTypeTest(unittest.TestCase):
             "d64": pa.date64(),  # pandas
             "dur": pa.duration("ns"),  # pandas
             "tz_ts": pa.timestamp("ms", tz="America/New_York"),
+            "half_tz_ts": pa.timestamp("s", tz="+07:30"),
+            "half_tz_ts2": pa.timestamp("s", tz="-07:30"),
         }
         arrays = [pa.array([f"Row{i}" for i in range(n)])]
         for type_name in types.keys():
@@ -231,7 +233,9 @@ class TimeExtensionTypeTest(unittest.TestCase):
             "d32: date32[day]\n"
             "d64: date64[ms]\n"
             "dur: duration[ns]\n"
-            "tz_ts: timestamp[ms, tz=America/New_York]"
+            "tz_ts: timestamp[ms, tz=America/New_York]\n"
+            "half_tz_ts: timestamp[s, tz=+07:30]\n"
+            "half_tz_ts2: timestamp[s, tz=-07:30]"
         )
         self.assertEqual(str(arrow_table._schema), schema)
 
@@ -276,7 +280,7 @@ class TimeExtensionTypeTest(unittest.TestCase):
 
     def test_passing_datetime_time_types_to_knime(self):
         """These are interpreted as objects in pandas"""
-        from datetime import time, timedelta, datetime, date
+        from datetime import time, timedelta, datetime, date, timezone
         import pandas as pd
 
         arrow_backend, node_backend = testing_utility._generate_backends()
@@ -362,4 +366,24 @@ class TimeExtensionTypeTest(unittest.TestCase):
             "<Row Key>: string\n"
             "0: extension<knime.logical_type<LogicalTypeExtensionType>>"
         )
+        # self.assertEqual(schema, arrow_table._schema.to_string(show_schema_metadata=False))
+
+    def test_pd_timestamp_and_no_timestamp(self):
+        import pandas as pd
+
+        a = pd.Timestamp(year=2017, month=1, day=1, hour=12)
+        b = pd.Timestamp(1513393355, unit="s", tz="US/Pacific")
+
+        df = pd.DataFrame({"non-tz-first": [a, b], "tz-first": [b, a]})
+
+        arrow_backend, node_backend = testing_utility._generate_backends()
+        arrow_table = arrow_backend.write_table(df)
+        schema = (
+            "<Row Key>: string\n"
+            "non-tz-first: extension<knime.logical_type<LogicalTypeExtensionType>>\n"
+            "tz-first: extension<knime.logical_type<LogicalTypeExtensionType>>"
+        )
+        # these do not work yet as they are interpreted as object, therefore the tz for all is similar for all entries
+        # in the pa.Table.from_pandas() method all object types are interpreted as the first occurring dtype
+        # but as the dtype includes the timezone all entries are changed to this timezone
         # self.assertEqual(schema, arrow_table._schema.to_string(show_schema_metadata=False))

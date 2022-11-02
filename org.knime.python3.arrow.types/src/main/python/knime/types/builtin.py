@@ -100,13 +100,23 @@ class ZonedDateTimeValueFactory2(
         if value is None:
             return None
         tz_info = value.tzinfo
+        if tz_info is None:  # if we do not have a timezone object in a tz column
+            raise TypeError(
+                f"When trying to convert the element '{value}' to a ZonedDateTime no timezone was detected."
+                f"Maybe its a LocalTimeZone? If you're using pandas, please assign a type to the Pandas"
+                f" series using knime.schema.logical(correct_dtype).to_pandas()"
+            )
         # get time zone name for tzfile object, pytz object or tzinfo object
         tz_name = self.extract_tz_name(tz_info, value)
         if not self._java_timezones:
             self.get_java_timezones()
 
         # Java does not support the timezone eg BST. We convert it to UTC
-        if self._java_timezones and tz_name not in self._java_timezones:
+        if (
+            self._java_timezones
+            and tz_name not in self._java_timezones
+            or tz_name is None
+        ):
             return self.convert_tz_to_utc(tz_info, tz_name, value)
 
         local_dt_dict = self._local_dt_factory.encode(value)
@@ -147,18 +157,37 @@ class ZonedDateTimeValueFactory2(
         utc_value = value.astimezone(tz.UTC)
         local_dt_dict = self._local_dt_factory.encode(utc_value)
         tz_offset = tz_info.utcoffset(value)
-        tz_offset_hours = int(tz_offset.seconds / 60 / 60)  # convert to hours
-        # python handles overflow by setting day to -1 , which this is not represented in the hours
-        if tz_offset.days < 0:
-            tz_offset_hours -= 24  # subtract one day, java supports negative values
-            offset_string = str(tz_offset_hours)
-        else:
-            offset_string = "+" + str(tz_offset_hours)
+        offset_string = self.parse_utc_offset(tz_offset)
+
         local_dt_dict[
             "2"
         ] = 0  # we handle the complete offset with the offset (ZoneID) String
         local_dt_dict["3"] = offset_string
         return local_dt_dict
+
+    def parse_utc_offset(self, tz_offset):
+        """
+        :param tz_offset: offset to be parsed as string
+        :return: offset string of an UTC offset in the form of +07:30 or -07:30
+        """
+        tz_offset_hours = int(tz_offset.seconds / 60 / 60)  # convert to hours
+        tz_offset_mins = int((tz_offset.seconds / 60) % 60)
+        # python handles overflow by setting day to -1 , which this is not represented in the hours
+        if tz_offset.days < 0:
+            tz_offset_hours -= 24  # subtract one day, java supports negative values
+            if (
+                tz_offset_mins > 0
+            ):  # if we have minutes in a negative timezone eg: "-07:30" we have to add one more hour
+                tz_offset_hours += 1
+        offset_string = str(abs(tz_offset_hours))
+        if tz_offset_mins > 0:  # add minutes for half timezones
+            offset_string += ":" + str(tz_offset_mins)
+        if abs(tz_offset_hours) < 10:  # we do need a trailing zero
+            offset_string = "0" + offset_string
+
+        sign = "-" if tz_offset_hours < 0 else "+"
+        offset_string = sign + offset_string
+        return offset_string
 
     def get_java_timezones(self):
         from knime._arrow._backend import gateway
@@ -317,7 +346,11 @@ class LocalTimeValueFactory(kt.PythonValueFactory):
     def encode(self, time):
         if time is None:
             return None
-
+        if hasattr(time, "tzinfo") and time.tzinfo is not None:
+            warnings.warn(
+                f"KNIME does not support time objetcs with timezones. Therefore the timezone information "
+                f"'{time.tzinfo}' is lost. Please consider using a datetime object with a timezone."
+            )
         time_on_first_day = dt.datetime.min.replace(
             hour=time.hour,
             minute=time.minute,
