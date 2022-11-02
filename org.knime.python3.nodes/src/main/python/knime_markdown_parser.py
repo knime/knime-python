@@ -176,7 +176,7 @@ class _KnimePostHeader(Postprocessor):
 
 class _KnimePostCode(Postprocessor):
     def run(self, text):
-        # regex
+        """Remove <code> tags nested inside <pre> tags, then replace the remaining <code> tags with <tt>."""
         _pre_code = r"<pre>(.|\n)*?<code>(.|\n)*?<\/code>(.|\n)*?<\/pre>"
 
         def replace_pre_code(match):
@@ -193,21 +193,9 @@ class _KnimePostCode(Postprocessor):
 
 
 class _RemovePreTagsPostprocessor(Postprocessor):
-    """Remove occurrences of <code> tags, and replaces the remaining <pre> tags with <tt>."""
+    """Replace <pre> tags with <tt>."""
 
     def run(self, text):
-        # regex
-        _pre_code = r"<pre>(.|\n)*?<code>(.|\n)*?<\/code>(.|\n)*?<\/pre>"
-
-        def replace_pre_code(match):
-            text = match.string[match.start() : match.end()]
-            text = text.replace("<code>", "")
-            text = text.replace("</code>", "")
-            return text
-
-        text = re.sub(_pre_code, replace_pre_code, text)
-        text = re.sub("<code>", "", text)
-        text = re.sub("</code>", "", text)
         text = re.sub("<pre>", "<tt>", text)
         text = re.sub("</pre>", "</tt>", text)
 
@@ -258,6 +246,7 @@ class _BaseKnExtension(Extension):
         _md.postprocessors.register(
             _RemoveBlockquotesPostprocessor(), "knime_post_remove_blockquote", 50
         )
+        _md.postprocessors.register(_KnimePostCode(), "knime_post_code", 10)
 
         _md.treeprocessors.register(_HTMLTreeprocessor(), "knime_code", 0)
 
@@ -273,11 +262,11 @@ class _KnExtension(_BaseKnExtension):
 
         _md.postprocessors.register(_KnimeTable(), "knime_table", 200)
         _md.postprocessors.register(_KnimePostHeader(), "knime_post_headder", 200)
-        _md.postprocessors.register(_KnimePostCode(), "knime_post_code", 10)
 
 
 class _KnExtensionForOptions(_BaseKnExtension):
-    """Markdown extension for option (parameter/setting) descriptions.
+    """
+    Markdown extension for option (parameter/setting) descriptions.
 
     Differs from _KnExtension by removing headings.
     """
@@ -293,12 +282,11 @@ class _KnExtensionForOptions(_BaseKnExtension):
         # Postprocessors
         _md.postprocessors.register(_KnimeTable(), "knime_table", 200)
         _md.postprocessors.register(_KnimePostHeader(), "knime_post_headder", 200)
-        _md.postprocessors.register(_KnimePostCode(), "knime_post_code", 10)
 
 
 class _KnExtensionForTabs(_BaseKnExtension):
     """
-    Markdown extension for tab descriptions.
+    Markdown extension for tab descriptions (top-level parameter groups).
 
     Syntax that is not allowed in the final HTML:
     - headings
