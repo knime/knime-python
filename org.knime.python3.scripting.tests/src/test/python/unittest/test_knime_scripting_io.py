@@ -49,7 +49,7 @@ class ApiDeprecationTest(unittest.TestCase):
             del sys.modules["knime.scripting.io"]
 
     def test_old_api_warns_about_deprecation(self):
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(DeprecationWarning):
             import knime_io
 
         del sys.modules["knime_io"]
@@ -58,11 +58,11 @@ class ApiDeprecationTest(unittest.TestCase):
         import knime.scripting.io
 
         with self.assertRaises(ImportError):
-            with self.assertWarns(UserWarning):
+            with self.assertWarns(DeprecationWarning):
                 import knime_io
 
     def test_cannot_import_scripting_io_after_knio(self):
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(DeprecationWarning):
             import knime_io
 
         with self.assertRaises(ImportError):

@@ -59,8 +59,10 @@ if "knime.scripting.io" in sys.modules:
             "Cannot use knime_io and knime.scripting.io in the same Python script"
         )
 
+
 warnings.warn(
     f"The module {__name__} is deprecated, please use 'import knime.scripting.io' instead",
+    DeprecationWarning,
 )
 
 from typing import Any, Dict, List

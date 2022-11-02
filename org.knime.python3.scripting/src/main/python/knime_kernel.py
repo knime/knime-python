@@ -684,6 +684,7 @@ if __name__ == "__main__":
         pass
 
     try:
+        warnings.filterwarnings("default", category=DeprecationWarning)
         kernel = PythonKernel()
         kg.connect_to_knime(kernel)
         py4j.clientserver.server_connection_stopped.connect(
