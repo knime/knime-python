@@ -57,6 +57,8 @@ import pyarrow.types as pat
 import numpy as np
 import logging
 
+LOGGER = logging.getLogger(__name__)
+
 if pa.__version__.split(".")[0] == "8":
     # due to a pyarrow bug the as_py method from an ExtensionScalar is used, which does not decode our Extension
     # Scalar (in pa >= 8). Therefore, the builtin method has to be overwritten using forbidden fruit curse magic.
@@ -822,6 +824,7 @@ _arrow_to_knime_primitive_types = {
     pa.int64(): _knime_primitive_type("LongValueFactory"),
     pa.string(): _knime_primitive_type("StringValueFactory"),
     pa.bool_(): _knime_primitive_type("BooleanValueFactory"),
+    pa.float32(): _knime_primitive_type("DoubleValueFactory"),
     pa.float64(): _knime_primitive_type("DoubleValueFactory"),
     pa.null(): _knime_primitive_type("VoidValueFactory"),
 }
@@ -831,6 +834,7 @@ _arrow_to_knime_primitive_list_types = {
     pa.int64(): _knime_primitive_type("LongListValueFactory"),
     pa.string(): _knime_primitive_type("StringListValueFactory"),
     pa.bool_(): _knime_primitive_type("BooleanListValueFactory"),
+    pa.float32(): _knime_primitive_type("DoubleListValueFactory"),
     pa.float64(): _knime_primitive_type("DoubleListValueFactory"),
 }
 
@@ -1096,10 +1100,32 @@ def _wrap_primitive_array(
             storage_array, lambda a: pa.ExtensionArray.from_storage(wrapped_type, a)
         )
         return ext_arr
-    else:
-        return _apply_to_array(
-            array, lambda a: pa.ExtensionArray.from_storage(wrapped_type, a)
+    elif (
+        pa.types.is_float32(array.type)
+        or is_list_type(array.type)
+        and pa.types.is_float32(array.type.value_type)
+    ):
+        array, wrapped_type = convert_f32_to_f64(array, wrapped_type)
+
+    return _apply_to_array(
+        array, lambda a: pa.ExtensionArray.from_storage(wrapped_type, a)
+    )
+
+
+def convert_f32_to_f64(array, wrapped_type):
+    LOGGER.info(f"Convert float32 to double precision")
+    if is_list_type(array.type):
+        array = array.cast(pa.list_(pa.float64()))  # cast to  list of float 64
+        wrapped_type = LogicalTypeExtensionType(
+            wrapped_type._converter, pa.list_(pa.float64()), wrapped_type._logical_type
         )
+    else:
+        array = array.cast(pa.float64())  # cast to float 64
+        # update wrapped type
+        wrapped_type = LogicalTypeExtensionType(
+            wrapped_type._converter, pa.float64(), wrapped_type._logical_type
+        )
+    return array, wrapped_type
 
 
 def _check_is_rowkey(array: pa.Array):
