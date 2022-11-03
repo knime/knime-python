@@ -48,6 +48,8 @@
  */
 package org.knime.python3.scripting.nodes.view;
 
+import static org.knime.python3.scripting.nodes.PortsConfigurationUtils.createInputPorts;
+
 import java.util.Optional;
 
 import org.knime.base.node.util.exttool.ExtToolStderrNodeView;
@@ -57,13 +59,9 @@ import org.knime.core.node.ConfigurableNodeFactory;
 import org.knime.core.node.NodeDialogPane;
 import org.knime.core.node.NodeView;
 import org.knime.core.node.context.NodeCreationConfiguration;
-import org.knime.core.node.context.ports.PortsConfiguration;
 import org.knime.core.node.port.PortType;
 import org.knime.core.webui.node.view.NodeViewFactory;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
-import org.knime.python2.ports.DataTableInputPort;
-import org.knime.python2.ports.InputPort;
-import org.knime.python2.ports.PickledObjectInputPort;
 import org.knime.python3.views.HtmlFileNodeView;
 
 /**
@@ -84,7 +82,7 @@ public final class PythonViewNodeFactory extends ConfigurableNodeFactory<PythonV
 
     @Override
     protected PythonViewNodeModel createNodeModel(final NodeCreationConfiguration creationConfig) {
-        return new PythonViewNodeModel(createPorts(creationConfig.getPortConfig().get())); // NOSONAR
+        return new PythonViewNodeModel(createInputPorts(creationConfig.getPortConfig().get())); // NOSONAR
     }
 
     @Override
@@ -114,27 +112,7 @@ public final class PythonViewNodeFactory extends ConfigurableNodeFactory<PythonV
 
     @Override
     protected NodeDialogPane createNodeDialogPane(final NodeCreationConfiguration creationConfig) {
-        return new PythonViewNodeDialog(createPorts(creationConfig.getPortConfig().get())); // NOSONAR
-    }
-
-    private static InputPort[] createPorts(final PortsConfiguration config) {
-        final PortType[] inTypes = config.getInputPorts();
-        int inTableIndex = 0;
-        int inObjectIndex = 0;
-        final var inPorts = new InputPort[inTypes.length];
-        for (int i = 0; i < inTypes.length; i++) {
-            final PortType inType = inTypes[i];
-            final InputPort inPort;
-            if (BufferedDataTable.TYPE.equals(inType)) {
-                inPort = new DataTableInputPort("knio.input_tables[" + inTableIndex++ + "]");
-            } else if (PickledObjectFileStorePortObject.TYPE.equals(inType)) {
-                inPort = new PickledObjectInputPort("knio.input_objects[" + inObjectIndex++ + "]");
-            } else {
-                throw new IllegalStateException("Unsupported input type: " + inType.getName());
-            }
-            inPorts[i] = inPort;
-        }
-        return inPorts;
+        return new PythonViewNodeDialog(createInputPorts(creationConfig.getPortConfig().get())); // NOSONAR
     }
 
     @Override
