@@ -236,37 +236,56 @@ def view_ipy_repr(obj) -> NodeView:
     Raises:
         ValueError: If no view could be created for the given object
     """
-    for type, view_method in [
-        ("html", view_html),
-        ("svg", view_svg),
-        ("png", view_png),
-        ("jpeg", view_jpeg),
-    ]:
-        try:
-            formatter = getattr(obj, f"_repr_{type}_")
-        except AttributeError:
-            # This repr is not implemented: Try the next one
-            continue
 
-        data = formatter()
-
-        # Split data from metadata if necessary
+    def rm_md(data):
+        """Split data from metadata if necessary"""
         if isinstance(data, tuple) and len(data) == 2:
-            data, md = data
+            return data[0]
+        else:
+            return data
 
-        # Create the view
-        return view_method(data)
+    def hasrepr(type):
+        """Check if the object has a representation of the given type"""
+        return hasattr(obj, f"_repr_{type}_")
+
+    def find_render_fn():
+        """Find the best render function for the object"""
+        if hasrepr("svg"):
+            return obj._repr_svg_, view_svg
+        if hasrepr("png"):
+            return obj._repr_png_, view_png
+        if hasrepr("jpeg"):
+            return obj._repr_jpeg_, view_jpeg
+        return None, None
+
+    # Object has an HTML representation
+    if hasrepr("html"):
+        html = rm_md(obj._repr_html_())
+        render_fn, _ = find_render_fn()
+        return view_html(html, render_fn=render_fn)
+
+    # Try other representations
+    render_fn, view_fn = find_render_fn()
+    if render_fn is not None:
+        return view_fn(rm_md(render_fn()))
 
     raise ValueError("no _repr_*_ function is implemented by obj")
 
 
-def view_html(html: str) -> NodeView:
+def view_html(
+    html: str,
+    svg_or_png: Optional[Union[str, bytes]] = None,
+    render_fn: Optional[Callable[[], Union[str, bytes]]] = None,
+) -> NodeView:
     """Create a NodeView that displays the given HTML document.
 
     Args:
         html: A string containing the HTML document.
+        svg_or_png: A rendered representation of the HTML page. Either a string
+            containing an SVG or a bytes object containing an PNG image
+        render_fn: A callable that returns an SVG or PNG representation of the page
     """
-    return NodeView(html)
+    return NodeView(html, svg_or_png=svg_or_png, render_fn=render_fn)
 
 
 def view_svg(svg: str) -> NodeView:
@@ -275,7 +294,7 @@ def view_svg(svg: str) -> NodeView:
     Args:
         svg: A string containing the SVG.
     """
-    return view_html(_SVG_HTML_BODY.format(svg=svg))
+    return NodeView(_SVG_HTML_BODY.format(svg=svg), svg_or_png=svg)
 
 
 def view_png(png: bytes) -> NodeView:
@@ -285,7 +304,7 @@ def view_png(png: bytes) -> NodeView:
         png: The bytes of the PNG image
     """
     b64 = base64.b64encode(png).decode("ascii")
-    return view_html(_PNG_HTML_BODY.format(png_b64=b64))
+    return NodeView(_PNG_HTML_BODY.format(png_b64=b64), svg_or_png=png)
 
 
 def view_jpeg(jpeg: bytes) -> NodeView:
@@ -295,7 +314,7 @@ def view_jpeg(jpeg: bytes) -> NodeView:
         jpeg: The bytes of the JPEG image
     """
     b64 = base64.b64encode(jpeg).decode("ascii")
-    return view_html(_JPEG_HTML_BODY.format(jpeg_b64=b64))
+    return NodeView(_JPEG_HTML_BODY.format(jpeg_b64=b64), svg_or_png=jpeg)
 
 
 # NodeViewSink

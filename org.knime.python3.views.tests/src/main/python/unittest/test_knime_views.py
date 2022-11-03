@@ -1,4 +1,5 @@
 import os
+import base64
 
 import unittest
 import knime.api.views as kv
@@ -64,6 +65,8 @@ class KnimeViewsTest(unittest.TestCase):
         def check_view(html_view, html):
             self.assertIsInstance(html_view, kv.NodeView)
             self.assertEqual(html_view.html, html)
+            with self.assertRaises(NotImplementedError):
+                html_view.render()
 
         for html in self.htmls:
             # Using kv.view
@@ -80,6 +83,7 @@ class KnimeViewsTest(unittest.TestCase):
             self.assertIsInstance(svg_view, kv.NodeView)
             self.assertTrue(svg in svg_view.html)
             self.assertTrue(is_html(svg_view.html))
+            self.assertEqual(svg_view.render(), svg)
 
         for svg in self.svgs:
             # Using kv.view
@@ -96,6 +100,7 @@ class KnimeViewsTest(unittest.TestCase):
             self.assertIsInstance(png_view, kv.NodeView)
             self.assertTrue('<img src="data:image/png;base64' in png_view.html)
             self.assertTrue(is_html(png_view.html))
+            self.assertEqual(png_view.render(), png)
 
         for png in self.pngs:
             # Using kv.view
@@ -112,6 +117,7 @@ class KnimeViewsTest(unittest.TestCase):
             self.assertIsInstance(jpeg_view, kv.NodeView)
             self.assertTrue('<img src="data:image/jpeg;base64' in jpeg_view.html)
             self.assertTrue(is_html(jpeg_view.html))
+            self.assertEqual(jpeg_view.render(), jpeg)
 
         for jpeg in self.jpegs:
             # Using kv.view
@@ -154,6 +160,7 @@ class KnimeViewsTest(unittest.TestCase):
         )
         html_view = kv.view(html_viewable)
         self.assertEqual(html_view.html, self.htmls[0])
+        self.assertEquals(html_view.render(), self.svgs[0])
 
         # SVG next
         svg_viewable = ViewableClass(
@@ -161,22 +168,52 @@ class KnimeViewsTest(unittest.TestCase):
         )
         svg_view = kv.view(svg_viewable)
         self.assertTrue(self.svgs[0] in svg_view.html)
+        self.assertEquals(svg_view.render(), self.svgs[0])
 
         # PNG next
         png_viewable = ViewableClass(png=self.pngs[0], jpeg=self.jpegs[0])
         png_view = kv.view(png_viewable)
         self.assertTrue('<img src="data:image/png;base64' in png_view.html)
+        self.assertEquals(png_view.render(), self.pngs[0])
 
         # JPEG next
         jpeg_viewable = ViewableClass(jpeg=self.jpegs[0])
         jpeg_view = kv.view(jpeg_viewable)
         self.assertTrue('<img src="data:image/jpeg;base64' in jpeg_view.html)
+        self.assertEquals(jpeg_view.render(), self.jpegs[0])
+
+    def test_repr_html_render(self):
+        # HTML + SVG
+        html_svg_viewable = ViewableClass(
+            html=self.htmls[0], svg=self.svgs[0], png=self.pngs[0], jpeg=self.jpegs[0]
+        )
+        self.assertEqual(kv.view(html_svg_viewable).render(), self.svgs[0])
+
+        # HTML + PNG
+        html_png_viewable = ViewableClass(
+            html=self.htmls[0], png=self.pngs[0], jpeg=self.jpegs[0]
+        )
+        self.assertEqual(kv.view(html_png_viewable).render(), self.pngs[0])
+
+        # HTML + JPEG
+        html_jpeg_viewable = ViewableClass(html=self.htmls[0], jpeg=self.jpegs[0])
+        self.assertEqual(kv.view(html_jpeg_viewable).render(), self.jpegs[0])
+
+        # HTML only -> not renderable
+        html_only_viewable = ViewableClass(html=self.htmls[0])
+        html_view = kv.view(html_only_viewable)
+        with self.assertRaises(NotImplementedError):
+            html_view.render()
 
     def test_matplotlib_view(self):
         def check_view(matplotlib_view):
             self.assertIsInstance(matplotlib_view, kv.NodeView)
             self.assertTrue(is_html(matplotlib_view.html))
             self.assertTrue('<img src="data:image/png;base64' in matplotlib_view.html)
+            render_repr = matplotlib_view.render()
+            self.assertTrue(
+                base64.b64encode(render_repr).decode("ascii") in matplotlib_view.html
+            )
 
         import matplotlib.pyplot as plt
         import seaborn as sns
@@ -220,6 +257,8 @@ class KnimeViewsTest(unittest.TestCase):
             self.assertTrue(
                 'xmlns="http://www.w3.org/2000/svg"' in matplotlib_view.html
             )
+            render_repr = matplotlib_view.render()
+            self.assertTrue(render_repr in matplotlib_view.html)
 
         import matplotlib.pyplot as plt
         import seaborn as sns
