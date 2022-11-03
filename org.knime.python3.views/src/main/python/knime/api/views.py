@@ -45,7 +45,7 @@
 import os
 import io
 import base64
-from typing import Any, Union
+from typing import Any, Union, Optional, Callable
 
 import knime_gateway as kg
 
@@ -122,8 +122,28 @@ class NodeView:
     view, view_html, view_svg, view_png, and view_jpeg.
     """
 
-    def __init__(self, html: str) -> None:
+    def __init__(
+        self,
+        html: str,
+        svg_or_png: Optional[Union[str, bytes]] = None,
+        render_fn: Optional[Callable[[], Union[str, bytes]]] = None,
+    ) -> None:
         self.html = html
+        self._svg_or_png = svg_or_png
+        self._render_fn = render_fn
+
+    def render(self) -> Union[str, bytes]:
+        # We alread have a rendered representation
+        if self._svg_or_png is not None:
+            return self._svg_or_png
+
+        # We need to call the render function to get a representation
+        if self._render_fn is not None:
+            self._svg_or_png = self._render_fn()
+            return self._svg_or_png
+
+        # We cannot get a rendered representation
+        raise NotImplementedError("cannot generate an SVG or PNG image from the view")
 
 
 # Functions for creating NodeViews

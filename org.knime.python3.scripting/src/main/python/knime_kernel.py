@@ -327,9 +327,14 @@ class ScriptingBackendCollection:
 
         for i, o in enumerate(_ioc._output_images):
             if o is None:
-                raise ValueError(
-                    f"Expected an image in output_images[{i}], got {type(o)}"
-                )
+                if i == 0 and self._expect_view:
+                    # If we have an output view we will just try to render the view to the
+                    # first output image
+                    _ioc._output_images[0] = self._render_view()
+                else:
+                    raise ValueError(
+                        f"Expected an image in output_images[{i}], got {type(o)}"
+                    )
 
         self._check_flow_variables()
 
@@ -338,6 +343,21 @@ class ScriptingBackendCollection:
             if v is None or not isinstance(v, kv.NodeView):
                 raise ValueError(
                     f"Expected an output view in output_view, got {type(v)}"
+                )
+
+    def _render_view(self):
+        v = self.get_active_backend_or_raise().get_output_view()
+        # NB: if the view is None this will be handled later
+        if v is not None:
+            try:
+                rendered = v.render()
+                if isinstance(rendered, str):
+                    rendered = rendered.encode()
+                return rendered
+            except NotImplementedError:
+                raise ValueError(
+                    "Cannot generate an SVG or PNG image from the view. "
+                    "Please assign a value to output_images[0]."
                 )
 
     def _check_flow_variables(self):
