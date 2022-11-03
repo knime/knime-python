@@ -160,7 +160,7 @@ class KnimeViewsTest(unittest.TestCase):
         )
         html_view = kv.view(html_viewable)
         self.assertEqual(html_view.html, self.htmls[0])
-        self.assertEquals(html_view.render(), self.svgs[0])
+        self.assertEqual(html_view.render(), self.svgs[0])
 
         # SVG next
         svg_viewable = ViewableClass(
@@ -168,19 +168,19 @@ class KnimeViewsTest(unittest.TestCase):
         )
         svg_view = kv.view(svg_viewable)
         self.assertTrue(self.svgs[0] in svg_view.html)
-        self.assertEquals(svg_view.render(), self.svgs[0])
+        self.assertEqual(svg_view.render(), self.svgs[0])
 
         # PNG next
         png_viewable = ViewableClass(png=self.pngs[0], jpeg=self.jpegs[0])
         png_view = kv.view(png_viewable)
         self.assertTrue('<img src="data:image/png;base64' in png_view.html)
-        self.assertEquals(png_view.render(), self.pngs[0])
+        self.assertEqual(png_view.render(), self.pngs[0])
 
         # JPEG next
         jpeg_viewable = ViewableClass(jpeg=self.jpegs[0])
         jpeg_view = kv.view(jpeg_viewable)
         self.assertTrue('<img src="data:image/jpeg;base64' in jpeg_view.html)
-        self.assertEquals(jpeg_view.render(), self.jpegs[0])
+        self.assertEqual(jpeg_view.render(), self.jpegs[0])
 
     def test_repr_html_render(self):
         # HTML + SVG

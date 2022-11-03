@@ -111,7 +111,7 @@
 		<dynInPort name="Table" group-identifier="Input table" insert-before="0">
 			An input table. You can access input tables via <tt>knio.input_tables</tt>. For example, the first input
 			table can be accessed like this: <tt>knio.input_tables[0]</tt>. Each table is an instance of type
-			<tt>knime_table.ReadTable</tt>. Before being able to work with the table, you have to convert it into, for
+			<tt>knime.api.table.Table</tt>. Before being able to work with the table, you have to convert it into, for
 			example, a <tt>pandas.DataFrame</tt> or a <tt>pyarrow.Table</tt>. Please refer to the
 			<a href="https://docs.knime.com/latest/python_installation_guide/">KNIME Python Integration Guide</a> to
 			learn how to do this, or take a look at one of the templates on the <i>Templates</i> tab of the node.

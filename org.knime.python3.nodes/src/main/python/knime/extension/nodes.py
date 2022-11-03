@@ -51,9 +51,9 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, asdict
 from enum import Enum
 from typing import Any, Dict, List, Optional, Callable, Type
-import knime_parameter as kp
-import knime_node_table as kt
-from knime_schema import PortObjectSpec
+import knime.extension.parameter as kp
+import knime.api.table as kt
+from knime.api.schema import PortObjectSpec
 
 
 class PortObject(ABC):

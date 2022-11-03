@@ -48,7 +48,7 @@ import base64
 import logging
 from typing import Any, Union, Optional, Callable
 
-import knime_gateway as kg
+import knime._backend._gateway as kg
 
 LOGGER = logging.getLogger("knime.api.views")
 

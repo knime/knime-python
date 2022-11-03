@@ -6,9 +6,9 @@ import pandas as pd
 import pyarrow as pa
 import numpy as np
 
-import knime_arrow as ka
-import knime_arrow_table as kat
-import knime_arrow_types as katy
+import knime._arrow._backend as ka
+import knime.scripting._deprecated._arrow_table as kat
+import knime._arrow._types as katy
 import knime_schema as ks
 
 
@@ -406,7 +406,7 @@ class Table(Tabular):
 
     @staticmethod
     def from_pandas(data: pa.Table, sentinel: Optional[Union[str, int]] = None):
-        import knime_arrow_pandas as kap
+        import knime._arrow._pandas as kap
         import pandas as pd
 
         if not isinstance(data, pd.DataFrame):
@@ -445,7 +445,7 @@ class ArrowTable(Table):
         self,
         sentinel: Optional[Union[str, int]] = None,
     ) -> "pandas.DataFrame":
-        import knime_arrow_pandas as kap
+        import knime._arrow._pandas as kap
 
         return kap.arrow_data_to_pandas_df(self.to_pyarrow(sentinel))
 

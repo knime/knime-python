@@ -51,8 +51,8 @@ import unittest
 import json
 import datetime as dt
 
-import knime_schema as k
-import knime_types as kt
+import knime.api.schema as k
+import knime.api.types as kt
 
 
 class TypeTest(ABC):
@@ -227,7 +227,7 @@ class KnimeTypeInDict(unittest.TestCase):
 
 
 def _register_extension_types():
-    import knime_types as kt
+    import knime.api.types as kt
 
     kt.register_python_value_factory(
         "knime.types.builtin",
@@ -619,10 +619,10 @@ class SchemaTest(unittest.TestCase):
 
     def test_pyarrow_and_pandas_extension_types(self):
         """Tests the methods `to_pandas()` and `to_pyarrow()` of `knime_schema.LogicalType`.
-        Should give back `knime_arrow_types.LogicalTypeExtensionType` and `knime_arrow_pandas.PandasLogicalTypeExtensionType`"""
+        Should give back `knime._arrow._types.LogicalTypeExtensionType` and `knime._arrow._pandas.PandasLogicalTypeExtensionType`"""
         import pyarrow as pa
         import knime.types.builtin as et
-        import knime_arrow_types as kat
+        import knime._arrow._types as kat
 
         logical_type = k.logical(dt.time)
         pandas_dtype = logical_type.to_pandas()
@@ -644,9 +644,9 @@ class SchemaTest(unittest.TestCase):
         self.assertEqual(pyarrow_extension_type.__class__, kat.LogicalTypeExtensionType)
 
     def test_data_spec_to_arrow(self):
-        """Tests the method knime_arrow_types._data_spec_to_arrow with two nested scenarios
+        """Tests the method knime._arrow._types._data_spec_to_arrow with two nested scenarios
         to see (amongst others) that lists can contain other lists or structs."""
-        import knime_arrow_types as kat
+        import knime._arrow._types as kat
         import pyarrow as pa
 
         data_spec = {
@@ -729,7 +729,7 @@ class ProxyTests(unittest.TestCase):
         Tests knime_schema.logical with registered proxy types.
         """
         import pyarrow as pa
-        import knime_arrow_types as kat
+        import knime._arrow._types as kat
 
         _register_extension_types()
         data_spec_json = '"long"'
@@ -779,7 +779,7 @@ class ProxyTests(unittest.TestCase):
         Tests knime_schema.logical with registered proxy types.
         """
         import pyarrow as pa
-        import knime_arrow_types as kat
+        import knime._arrow._types as kat
 
         _register_extension_types()
         kt._python_proxy_type_to_factory_info[MyTime] = (

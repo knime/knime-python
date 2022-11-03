@@ -43,88 +43,15 @@
 # ------------------------------------------------------------------------
 
 """
-Provides a unified user interface for the development of KNIME extensions in Python.
-It simplifies import of KNIME-related Python files such that only knime_extension needs to imported. 
+Old-style import for the KNIME Python extension interface.
 
-@author Steffen Fissler, KNIME GmbH, Konstanz, Germany
+This only includes the contents of knime.extension, by which it has been
+replaced.
 """
-import knime_node_table as _kt
-import knime_node as _kn
-import knime_schema as _ks
-import knime_views as _kv
-import knime_parameter as _kp
+from knime.extension import *  # NOSONAR: intended; this file is only a placeholder
+import warnings
 
-# re-exporting symbols so that "import knime_extension" allows the user to conduct every KAP-facing call via this interface
-
-## knime_node
-# (the first bunch comes from knime_parameter)
-IntParameter = _kn.IntParameter
-DoubleParameter = _kn.DoubleParameter
-BoolParameter = _kn.BoolParameter
-StringParameter = _kn.StringParameter
-parameter_group = _kn.parameter_group
-ColumnParameter = _kn.ColumnParameter
-MultiColumnParameter = _kn.MultiColumnParameter
-EnumParameter = _kp.EnumParameter
-EnumParameterOptions = _kp.EnumParameterOptions
-
-Version = _kp.Version
-
-PortType = _kn.PortType
-Port = _kn.Port
-PortObject = _kn.PortObject
-ViewDeclaration = _kn.ViewDeclaration
-ConfigurationContext = _kn.ConfigurationContext
-ExecutionContext = _kn.ExecutionContext
-PythonNode = _kn.PythonNode
-category = _kn.category
-NodeType = _kn.NodeType
-node = _kn.node
-port_type = _kn.port_type
-InvalidParametersError = _kn.InvalidParametersError
-input_binary = _kn.input_binary
-input_table = _kn.input_table
-input_port = _kn.input_port
-output_binary = _kn.output_binary
-output_table = _kn.output_table
-output_port = _kn.output_port
-output_view = _kn.output_view
-
-
-## knime_node_table
-Table = _kt.Table
-BatchOutputTable = _kt.BatchOutputTable
-
-## knime_schema
-KnimeType = _ks.KnimeType
-PrimitiveTypeId = _ks.PrimitiveTypeId
-DictEncodingKeyType = _ks.DictEncodingKeyType
-PrimitiveType = _ks.PrimitiveType
-ListType = _ks.ListType
-StructType = _ks.StructType
-LogicalType = _ks.LogicalType
-int32 = _ks.int32
-int64 = _ks.int64
-double = _ks.double
-bool_ = _ks.bool_
-string = _ks.string
-blob = _ks.blob
-list_ = _ks.list_
-struct = _ks.struct
-logical = _ks.logical
-supported_value_types = _ks.LogicalType.supported_value_types
-PortObjectSpec = _ks.PortObjectSpec
-BinaryPortObjectSpec = _ks.BinaryPortObjectSpec
-Column = _ks.Column
-Schema = _ks.Schema
-
-## knime_views
-view = _kv.view
-view_ipy_repr = _kv.view_ipy_repr
-view_html = _kv.view_html
-view_svg = _kv.view_svg
-view_png = _kv.view_png
-view_jpeg = _kv.view_jpeg
-NodeViewSink = _kv.NodeViewSink
-view_matplotlib = _kv.view_matplotlib
-view_seaborn = _kv.view_seaborn
+warnings.warn(
+    f"The module {__name__} is deprecated, please use 'import knime.extension' instead",
+    DeprecationWarning,
+)

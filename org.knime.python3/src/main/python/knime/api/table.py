@@ -48,7 +48,7 @@ Defines the general table object that is used to transfer data from and to KNIME
 Python Scripting nodes using the import 'knime.scripting.io' as well as pure-Python
 nodes will use the table API defined in this file here.
 
-Note that this table API is the successor to the table defined in the deprecated module 'knime_table',
+Note that this table API is the successor to the table defined in the deprecated module 'knime.scripting._deprecated._table',
 which only remains available in Python Scripting nodes that import the deprecated module 'knime_io'.
 """
 
@@ -57,7 +57,7 @@ from abc import abstractmethod, abstractproperty
 from typing import Iterator, List, Optional, Tuple, Union
 import logging
 
-import knime_schema as ks
+import knime.api.schema as ks
 
 LOGGER = logging.getLogger(__name__)
 
@@ -256,8 +256,8 @@ _backend = None
 class Table(_Tabular):
     """This class serves as public API to create KNIME tables either from pandas or pyarrow.
     These tables can than be sent back to KNIME.
-    This class has to be instantiated by calling either :func:`~knime_node.Table.from_pyarrow()` or
-    :func:`~knime_node.Table.from_pandas()`"""
+    This class has to be instantiated by calling either :func:`~knime.api.Table.from_pyarrow()` or
+    :func:`~knime.api.Table.from_pandas()`"""
 
     def __init__(self):
         raise RuntimeError(

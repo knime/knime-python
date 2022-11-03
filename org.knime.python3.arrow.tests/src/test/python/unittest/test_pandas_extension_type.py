@@ -58,13 +58,13 @@ import pandas.api.extensions as pdext
 import pyarrow as pa
 from pandas.core.dtypes.dtypes import register_extension_dtype
 
-import knime_arrow as ka
-import knime_arrow as knar
-import knime_arrow_pandas as kap
-import knime_arrow_types as katy
-import knime_arrow_table as kat
+import knime._arrow._backend as ka
+import knime._arrow._backend as knar
+import knime._arrow._pandas as kap
+import knime._arrow._types as katy
+import knime.scripting._deprecated._arrow_table as kat
 import knime_node_arrow_table as knat
-import knime_arrow_struct_dict_encoding as kasde
+import knime._arrow._dictencoding as kasde
 import knime_types as kt
 from testing_utility import (
     DummyJavaDataSink,
@@ -493,7 +493,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
             ):
                 pass
 
-            import knime_arrow_types as katy
+            import knime._arrow._types as katy
 
             df = pd.DataFrame(
                 {
@@ -533,7 +533,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         This is the PyArrow 5 conformal way of doing so, see the method above for PyArrow 6.
         In PyArrow 7 the problem should be gone.
         """
-        import knime_arrow_types as katy
+        import knime._arrow._types as katy
 
         df = pd.DataFrame(
             {
@@ -697,7 +697,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
 
         """
         # Setup
-        import knime_types as kt
+        import knime.api.types as kt
 
         kt.register_python_value_factory(
             "knime.types.builtin",
@@ -725,10 +725,11 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
 
             A = arrow_backend.write_table(df)
             self.assertEqual(
-                "<class 'knime_arrow_table.ArrowWriteTable'>", str(type(A))
+                "<class 'knime.scripting._deprecated._arrow_table.ArrowWriteTable'>",
+                str(type(A)),
             )
 
-            import knime_schema as ks
+            import knime.api.schema as ks
 
             self.assertEqual(
                 str(
@@ -785,7 +786,8 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
             )
 
             self.assertEqual(
-                "<class 'knime_arrow_table.ArrowWriteTable'>", str(type(arrow_table))
+                "<class 'knime.scripting._deprecated._arrow_table.ArrowWriteTable'>",
+                str(type(arrow_table)),
             )
             self.assertEqual(
                 knime_ts_ext_str,
@@ -856,7 +858,8 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
             t.append(df2, sentinel="min")
 
             self.assertEqual(
-                "<class 'knime_arrow_table.ArrowBatchWriteTable'>", str(type(t))
+                "<class 'knime.scripting._deprecated._arrow_table.ArrowBatchWriteTable'>",
+                str(type(t)),
             )
             backend.close()
 

@@ -51,11 +51,11 @@ import numpy as np
 import pyarrow as pa
 import pandas as pd  # just to load this at startup and don't count the time
 
-import knime_arrow as ka
-import knime_arrow_table as kat
-import knime_arrow_struct_dict_encoding as kas
-import knime_gateway as kg
-import knime_main_loop
+import knime._arrow._backend as ka
+import knime.scripting._deprecated._arrow_table as kat
+import knime._arrow._dictencoding as kas
+import knime._backend._gateway as kg
+import knime._backend._mainloop as _mainloop
 
 FLOAT_COMPARISON_EPSILON = 1e-5
 DOUBLE_COMPARISON_EPSILON = 1e-12
@@ -527,8 +527,8 @@ class EntryPoint(kg.EntryPoint):
     # -------------------------------------------------------------------------
 
     def testKnimeTable(self, data_source, sink_creator, num_rows, num_columns, mode):
-        import knime_table as kta
-        import knime_arrow_table as kata
+        import knime.scripting._deprecated._table as kta
+        import knime.scripting._deprecated._arrow_table as kata
 
         def create_python_sink():
             java_sink = sink_creator.createSink()
@@ -620,4 +620,4 @@ class EntryPoint(kg.EntryPoint):
 
 
 kg.connect_to_knime(EntryPoint())
-knime_main_loop.MainLoop().enter()
+_mainloop.MainLoop().enter()

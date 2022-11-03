@@ -43,7 +43,7 @@
 # ------------------------------------------------------------------------
 
 """
-Helper utilities for the KNIME Pure-Python Node Extension API.
+Version helper utilities for the KNIME Pure-Python Node Extension API.
 
 @author Ivan Prigarin, KNIME GmbH, Konstanz, Germany
 """

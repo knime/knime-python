@@ -70,10 +70,10 @@ class ApiDeprecationTest(unittest.TestCase):
 
 
 class KnimeKernelTest(unittest.TestCase):
-    def try_import_knime_kernel(self):
-        import knime_kernel
+    def test_import_knime_kernel(self):
+        import _kernel
 
-        del sys.modules["knime_kernel"]
+        del sys.modules["_kernel"]
 
 
 if __name__ == "__main__":

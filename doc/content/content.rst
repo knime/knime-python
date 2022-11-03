@@ -91,21 +91,21 @@ For a more detailed description see the `Pure Python Node Extensions Guide <http
 Nodes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. autoclass:: knime_node.PythonNode
+.. autoclass:: knime.extension.nodes.PythonNode
    :members:
    :noindex:
    :inherited-members:
 
 A node has a type:
 
-.. autoclass:: knime_node.NodeType
+.. autoclass:: knime.extension.nodes.NodeType
    :members:
    :noindex:
    :inherited-members:
 
 A node's configure method receives a configuration context that lets you interact with KNIME
 
-.. autoclass:: knime_node.ConfigurationContext
+.. autoclass:: knime.extension.nodes.ConfigurationContext
    :members:
    :noindex:
    :inherited-members:
@@ -113,7 +113,7 @@ A node's configure method receives a configuration context that lets you interac
 A node's execute method receives an execution context that lets you interact with KNIME and 
 e.g. check whether the user has cancelled the execution of your Python node.
 
-.. autoclass:: knime_node.ExecutionContext
+.. autoclass:: knime.extension.nodes.ExecutionContext
    :members:
    :noindex:
    :inherited-members:
@@ -122,22 +122,22 @@ Decorators
 ++++++++++++++++++++++++++++++
 These decorators can be used to easily configure your Python node.
 
-.. autofunction:: knime_node.node
+.. autofunction:: knime.extension.nodes.node
    :noindex:
 
-.. autofunction:: knime_node.input_binary
+.. autofunction:: knime.extension.nodes.input_binary
    :noindex:
 
-.. autofunction:: knime_node.input_table
+.. autofunction:: knime.extension.nodes.input_table
    :noindex:
 
-.. autofunction:: knime_node.output_binary
+.. autofunction:: knime.extension.nodes.output_binary
    :noindex:
 
-.. autofunction:: knime_node.output_table
+.. autofunction:: knime.extension.nodes.output_table
    :noindex:
 
-.. autofunction:: knime_node.output_view
+.. autofunction:: knime.extension.nodes.output_view
    :noindex:
 
 Parameters
@@ -216,14 +216,14 @@ Tables
 ``Table`` and ``Schema`` are the two classes that are used to communicate tabular data (Table) during execute,
 or the table structure (Schema) in configure between Python and KNIME.
 
-.. autoclass:: knime_node.Table
+.. autoclass:: knime.extension.nodes.Table
    :members:
    :noindex:
    :inherited-members:
    :special-members: __getitem__
 
 
-.. autoclass:: knime_node.BatchOutputTable
+.. autoclass:: knime.extension.nodes.BatchOutputTable
    :members:
    :noindex:
    :inherited-members:
@@ -314,24 +314,24 @@ Use these methods to fill the ``knime_io.output_tables``.
 
 Classes
 ^^^^^^^^^^^^^^^^^^
-.. autoclass:: knime_table.Batch
+.. autoclass:: knime.scripting._deprecated._table.Batch
    :members:
    :noindex:
    :inherited-members:
    :special-members: __getitem__
 
-.. autoclass:: knime_table.ReadTable
+.. autoclass:: knime.scripting._deprecated._table.ReadTable
    :members:
    :noindex:
    :inherited-members:
    :special-members: __getitem__, __len__
 
-.. autoclass:: knime_table.WriteTable
+.. autoclass:: knime.scripting._deprecated._table.WriteTable
    :members:
    :noindex:
    :inherited-members:
 
-.. autoclass:: knime_table.BatchWriteTable
+.. autoclass:: knime.scripting._deprecated._table.BatchWriteTable
    :members:
    :noindex:
    :inherited-members:

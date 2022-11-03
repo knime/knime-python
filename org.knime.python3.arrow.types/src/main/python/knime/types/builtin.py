@@ -50,7 +50,7 @@ import datetime as dt
 import warnings
 
 from dateutil import tz
-import knime_types as kt
+import knime.api.types as kt
 
 _start_of_epoch = dt.datetime(1970, 1, 1)
 _microsecond_delta = dt.timedelta(microseconds=1)
@@ -161,7 +161,7 @@ class ZonedDateTimeValueFactory2(
         return local_dt_dict
 
     def get_java_timezones(self):
-        from knime_arrow import gateway
+        from knime._arrow._backend import gateway
 
         try:
             self._java_timezones = (

@@ -50,9 +50,9 @@ import pandas.api.extensions as pdext
 import pyarrow as pa
 from pandas.core.dtypes.dtypes import register_extension_dtype
 
-import knime_arrow_struct_dict_encoding as kasde
-import knime_arrow_types as kat
-import knime_types as kt
+import knime._arrow._dictencoding as kasde
+import knime._arrow._types as kat
+import knime.api.types as kt
 import logging
 
 LOGGER = logging.getLogger(__name__)

@@ -51,10 +51,10 @@ Contains the implementation of the Parameter Dialogue API for building native Py
 from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, TypeVar, Union
-import knime_schema as ks
+import knime.api.schema as ks
 import logging
 
-from knime_utils import Version
+from knime.extension.version import Version
 
 LOGGER = logging.getLogger("Python backend")
 
@@ -331,7 +331,7 @@ T = TypeVar("T")
 DefaultValueProvider = Callable[[Version], T]
 """A DefaultValueProvider is a Callable that given a version produces the default value of its corresponding parameter for that version."""
 
-# set by knime_node_backend when an extension is loaded
+# set by knime.extension_backend when an extension is loaded
 _extension_version = None
 
 

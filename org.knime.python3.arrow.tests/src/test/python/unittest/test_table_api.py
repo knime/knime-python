@@ -1,7 +1,7 @@
 import unittest
-import knime_table as kt
-import knime_arrow_table as kat
-import knime_arrow_types as katy
+import knime.scripting._deprecated._table as kt
+import knime.scripting._deprecated._arrow_table as kat
+import knime._arrow._types as katy
 import knime.scripting._io_containers as ioc
 import pandas as pd
 import pyarrow as pa

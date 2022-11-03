@@ -1,9 +1,9 @@
 from typing import List, Tuple
-import knime_gateway as kg
-import knime_node as kn
-import knime_node_backend as knb
-import knime_table as kt
-import knime_schema as ks
+import knime._backend._gateway as kg
+import knime.extension.nodes as kn
+import _backend as knb
+import knime.scripting._deprecated._table as kt
+import knime.api.schema as ks
 from packaging.version import Version
 
 

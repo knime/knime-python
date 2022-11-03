@@ -47,14 +47,14 @@
 """
 
 import pyarrow as pa
-import knime_gateway as kg
+import knime._backend._gateway as kg
 import itertools
 
 # TODO should this happen here or on java side?
-import knime_arrow_types as kat
-import knime_arrow_struct_dict_encoding as kas
+import knime._arrow._types as kat
+import knime._arrow._dictencoding as kas
 from typing import Optional, Union
-from knime_arrow_utils import normalize_index
+from knime._arrow._utils import normalize_index
 
 ARROW_CHUNK_SIZE_KEY = "KNIME:basic:chunkSize"
 ARROW_FACTORY_VERSIONS_KEY = "KNIME:basic:factoryVersions"
@@ -67,7 +67,7 @@ DEFAULT_VERSION = 0  # placeholder for all other primitive types. TODO: needs to
 def gateway():
     if kg.client_server is None:
         raise RuntimeError(
-            "A connection to KNIME must be established before using a knime_arrow source or sink."
+            "A connection to KNIME must be established before using a knime._arrow._backend source or sink."
         )
     return kg.client_server
 
@@ -276,11 +276,11 @@ class ArrowDataSource:
     # API to get higher level access
 
     def to_pandas(self) -> "pandas.DataFrame":
-        import knime_arrow_pandas
+        import knime._arrow._pandas as _pandas
 
         # TODO use arrow's built-in conversion whenever possible
         arrow_table = self.to_arrow_table()
-        return knime_arrow_pandas.arrow_data_to_pandas_df(arrow_table)
+        return _pandas.arrow_data_to_pandas_df(arrow_table)
 
     def to_arrow_table(self, num_rows: Optional[int] = None) -> pa.Table:
         # TODO: num_rows could also be generalized by making the entire data source sliceable (at least in terms of

@@ -4,7 +4,7 @@ import html
 
 try:
     import markdown
-    from knime_markdown_parser import KnimeMarkdownParser
+    from knime.extension._markdown import KnimeMarkdownParser
 except ModuleNotFoundError:
     raise unittest.SkipTest(
         "To enable tests for node description markdown parser you need to install markdown."

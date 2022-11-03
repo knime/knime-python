@@ -50,14 +50,15 @@ Provides the implementation of the KNIME Table using the Apache Arrow backend
 
 from types import LambdaType
 from typing import Iterator, List, Optional, Union
-import knime_table as kta
-import knime_arrow as ka
-import knime_arrow_types as kat
+
+import knime.scripting._deprecated._table as kta
+import knime._arrow._backend as ka
+import knime._arrow._types as kat
 import pyarrow as pa
 
 
 def _pretty_print_schema(schema) -> str:
-    from knime_arrow_types import _pretty_type_string
+    from knime._arrow._types import _pretty_type_string
 
     if len(schema) < 4:
         line_break = ""
@@ -101,7 +102,7 @@ class ArrowBatch(kta.Batch):
             import pandas as pd
 
             if isinstance(data, pd.DataFrame):
-                import knime_arrow_pandas as kap
+                import knime._arrow._pandas as kap
 
                 self._batch = kap.pandas_df_to_arrow(data)
             else:
@@ -118,7 +119,7 @@ class ArrowBatch(kta.Batch):
         rows: Optional[slice] = None,
         columns: Optional[Union[List[int], slice, List[str]]] = None,
     ) -> "pandas.DataFrame":
-        import knime_arrow_pandas as kap
+        import knime._arrow._pandas as kap
 
         return kap.arrow_data_to_pandas_df(self.to_pyarrow(sentinel, rows, columns))
 
@@ -169,7 +170,7 @@ class ArrowReadTable(kta.ReadTable):
         rows: Optional[slice] = None,
         columns: Optional[Union[List[int], slice, List[str]]] = None,
     ) -> "pandas.DataFrame":
-        import knime_arrow_pandas as kap
+        import knime._arrow._pandas as kap
 
         return kap.arrow_data_to_pandas_df(self.to_pyarrow(sentinel, rows, columns))
 
@@ -247,7 +248,7 @@ class _ArrowWriteTableImpl(kta.WriteTable):
         sentinel: Optional[Union[str, int]] = None,
     ):
         if not isinstance(data, pa.Table):
-            import knime_arrow_pandas as kap
+            import knime._arrow._pandas as kap
             import pandas as pd
 
             if not isinstance(data, pd.DataFrame):

@@ -59,13 +59,9 @@ import org.knime.python3.types.PythonModule;
  */
 public enum PythonNodesModule implements PythonModule {
         /**
-         * The knime_node module.
-         */
-        KNIME_NODE("knime_node"),
-        /**
          * The knime_node_backend module
          */
-        KNIME_NODE_BACKEND("knime_node_backend");
+        KNIME_NODE_BACKEND("_backend");
 
     private final String m_moduleName;
 

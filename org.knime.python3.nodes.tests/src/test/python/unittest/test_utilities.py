@@ -10,11 +10,11 @@ def setup_backend(
     """
     Sets up a fresh backend and loads the provided extension.
     """
-    import knime_node_backend
+    import _backend
     import sys
-    import knime_node as kn
+    import knime.extension.nodes as kn
 
-    backend = knime_node_backend._KnimeNodeBackend()
+    backend = _backend._KnimeNodeBackend()
     kn._nodes.clear()
     kn._categories.clear()
     # ensure that extension_module is freshly imported by backend.loadExtension
@@ -56,7 +56,7 @@ def _set_flow_variables(self, flow_variables):
 
 
 py4j.java_collections.ListConverter = ListConverter
-import knime_node_backend as knb
+import _backend as knb
 
 knb._PythonNodeProxy._get_flow_variables = _get_flow_variables
 knb._PythonNodeProxy._set_flow_variables = _set_flow_variables

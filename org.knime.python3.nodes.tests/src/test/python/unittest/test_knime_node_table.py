@@ -3,6 +3,7 @@ import pyarrow as pa
 import pandas as pd
 
 import knime_schema as ks
+from knime.api.schema import _ColumnSlicingOperation
 import knime_node_table as knt
 import knime_node_arrow_table as knat
 
@@ -20,7 +21,7 @@ class SchemaTest(unittest.TestCase):
         self.assertEqual(4, s.num_columns)
         self.assertIsInstance(sv, ks._ColumnarView)
         self.assertNotIsInstance(sv, knt._TabularView)
-        self.assertIsInstance(sv.operation, ks._ColumnSlicingOperation)
+        self.assertIsInstance(sv.operation, _ColumnSlicingOperation)
         self.assertIsInstance(sv.delegate, ks.Schema)
         # the following line delegates the call to -> apply operation -> call column_names on result
         self.assertEqual(["Ints", "Longs"], sv.column_names)
@@ -65,7 +66,7 @@ class SchemaTest(unittest.TestCase):
         # Check Type
         self.assertIsInstance(_s, ks._ColumnarView)
         self.assertIsInstance(s, ks.Schema)
-        self.assertIsInstance(_s.operation, ks._ColumnSlicingOperation)
+        self.assertIsInstance(_s.operation, _ColumnSlicingOperation)
         self.assertIsInstance(_s.delegate, ks.Schema)
 
         # Check Errors
@@ -142,7 +143,7 @@ class TableTest(unittest.TestCase):
         # Check Type
         self.assertIsInstance(_t, ks._ColumnarView)
         self.assertIsInstance(t, knt.Table)
-        self.assertIsInstance(_t.operation, ks._ColumnSlicingOperation)
+        self.assertIsInstance(_t.operation, _ColumnSlicingOperation)
         self.assertIsInstance(_t.delegate, knt.Table)
 
         # Check Errors
@@ -180,7 +181,7 @@ class TableTest(unittest.TestCase):
         tv = t[:1]  # Row Key and first column
         self.assertIsInstance(tv, ks._ColumnarView)
         self.assertIsInstance(tv, knt._TabularView)
-        self.assertIsInstance(tv.operation, ks._ColumnSlicingOperation)
+        self.assertIsInstance(tv.operation, _ColumnSlicingOperation)
         self.assertIsInstance(tv.delegate, knat.ArrowTable)
         self.assertEqual(t.num_rows, tv.num_rows)
         self.assertEqual(t.num_columns - 1, tv.num_columns)
@@ -273,7 +274,7 @@ class ArrowTableTest(unittest.TestCase):
         ]
 
         test_data_source = TestDataSource(knime_generated_table_path, column_names)
-        import knime_arrow as ka
+        import knime._arrow._backend as ka
 
         ads = ka.ArrowDataSource(test_data_source)
         return knat.ArrowSourceTable(ads)

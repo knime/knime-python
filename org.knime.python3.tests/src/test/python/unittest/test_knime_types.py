@@ -46,8 +46,8 @@
 @author Steffen Fissler, KNIME GmbH, Konstanz, Germany
 """
 import unittest
-import knime_schema as ks
-import knime_types as kt
+import knime.api.schema as ks
+import knime.api.types as kt
 import logging
 import sys
 

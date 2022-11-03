@@ -40,12 +40,12 @@ class ModuleMock(Mock):
         return self.path
 
 
-# for knime_table.py, knime_schema.py
+# for knime.scripting._deprecated._table.py, knime.api.schema.py
 sys.path.insert(
     0, os.path.abspath(os.path.join("..", "org.knime.python3", "src", "main", "python"))
 )
 
-# for knime_node.py
+# for knime.extension.nodes.py
 sys.path.insert(
     0,
     os.path.abspath(

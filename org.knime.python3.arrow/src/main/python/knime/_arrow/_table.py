@@ -52,10 +52,10 @@ from typing import Iterator, List, Optional, Union
 import pyarrow as pa
 import logging
 
-import knime_arrow
-import knime_arrow_types as katy
-import knime_arrow_struct_dict_encoding as kas
-import knime_schema as ks
+import knime._arrow._backend as _backend
+import knime._arrow._types as katy
+import knime._arrow._dictencoding as kas
+import knime.api.schema as ks
 import knime.api.table as knt
 
 LOGGER = logging.getLogger(__name__)
@@ -73,7 +73,7 @@ class _ArrowBackend(knt._Backend):
         return ArrowTable(data)
 
     def create_table_from_pandas(self, data, sentinel):
-        import knime_arrow_pandas as kap
+        import knime._arrow._pandas as kap
         import pandas as pd
 
         if not isinstance(data, pd.DataFrame):
@@ -134,7 +134,7 @@ class ArrowTable(knt.Table):
         self,
         sentinel: Optional[Union[str, int]] = None,
     ) -> "pandas.DataFrame":
-        import knime_arrow_pandas as kap
+        import knime._arrow._pandas as kap
 
         return kap.arrow_data_to_pandas_df(self.to_pyarrow(sentinel))
 
@@ -150,12 +150,12 @@ class ArrowTable(knt.Table):
         return self._table
 
     def _select_rows(self, selection) -> "ArrowTable":
-        import knime_arrow_table as kat
+        import knime.scripting._deprecated._arrow_table as kat
 
         return ArrowTable(kat._select_rows(self._get_table(), selection))
 
     def _select_columns(self, selection) -> "ArrowTable":
-        import knime_arrow_table as kat
+        import knime.scripting._deprecated._arrow_table as kat
 
         return ArrowTable(
             kat._select_columns(self._get_table(), selection, auto_include_row_key=True)
@@ -225,7 +225,7 @@ class ArrowTable(knt.Table):
 
 
 class ArrowSourceTable(ArrowTable):
-    def __init__(self, source: "knime_arrow.ArrowDataSource"):
+    def __init__(self, source: "_backend.ArrowDataSource"):
         self._source = source
 
     def _get_table(self):

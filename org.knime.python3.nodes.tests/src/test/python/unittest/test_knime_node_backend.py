@@ -1,6 +1,6 @@
 import unittest
 
-import knime_node_backend as knb
+import _backend as knb
 import knime_extension as knext
 import tempfile
 import json

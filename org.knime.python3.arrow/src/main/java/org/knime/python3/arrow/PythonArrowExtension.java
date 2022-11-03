@@ -67,6 +67,6 @@ public final class PythonArrowExtension implements PythonExtension {
 
     @Override
     public String getPythonModule() {
-        return "knime_arrow";
+        return "knime._arrow._backend";
     }
 }

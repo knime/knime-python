@@ -52,9 +52,9 @@ import pandas as pd
 from typing import Optional, Union
 from io import BytesIO
 
-import knime_gateway as kg
+import knime._backend._gateway as kg
 import knime_io as kio
-from knime_kernel import PythonKernel
+from _kernel import PythonKernel
 from knime_testing import PythonTestResult
 
 

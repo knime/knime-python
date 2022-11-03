@@ -1,5 +1,5 @@
 import unittest
-import knime_parameter as kp
+import knime.extension.parameter as kp
 
 
 def generate_values_dict(

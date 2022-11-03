@@ -50,12 +50,12 @@ Backend for KNIME nodes written in Python. Handles the communication with Java.
 
 from typing import List, Optional, Type
 
-from knime_main_loop import MainLoop
+from knime._backend._mainloop import MainLoop
 
-import knime_gateway as kg
-import knime_node as kn
-import knime_parameter as kp
-import knime_schema as ks
+import knime._backend._gateway as kg
+import knime.extension.nodes as kn
+import knime.extension.parameter as kp
+import knime.api.schema as ks
 
 import knime._arrow._table as kat
 import knime.api.table as kt
@@ -170,7 +170,7 @@ def _check_attr_is_available(node, attr_name):
 
 def _get_markdown_parser():
     try:
-        from knime_markdown_parser import KnimeMarkdownParser
+        from knime.extension._markdown import KnimeMarkdownParser
 
         knime_parser = KnimeMarkdownParser()
     except ModuleNotFoundError:

@@ -44,7 +44,7 @@
 
 import test_utilities as util
 import unittest
-import knime_node as kn
+import knime.extension.nodes as kn
 import knime_schema as ks
 import json
 
@@ -273,7 +273,7 @@ class NodeWithoutPortsTest(unittest.TestCase):
         self.assertEqual(0, len(self.node_instance.output_ports))
 
     def test_create_node_proxy(self):
-        from knime_node_backend import _PythonNodeProxy
+        from _backend import _PythonNodeProxy
 
         _PythonNodeProxy(self.node_instance, self.backend._port_type_registry)
         _PythonNodeProxy(self.node, self.backend._port_type_registry)

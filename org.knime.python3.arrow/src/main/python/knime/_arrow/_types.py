@@ -50,8 +50,8 @@ Arrow implementation of the knime_types.
 
 from typing import Union
 
-import knime_types as kt
-import knime_arrow_struct_dict_encoding as kasde
+import knime.api.types as kt
+import knime._arrow._dictencoding as kasde
 import pyarrow as pa
 import pyarrow.types as pat
 import numpy as np
@@ -482,7 +482,7 @@ class LogicalTypeExtensionType(pa.ExtensionType):
         return 0
 
     def to_pandas_dtype(self):
-        from knime_arrow_pandas import PandasLogicalTypeExtensionType
+        from knime._arrow._pandas import PandasLogicalTypeExtensionType
 
         return PandasLogicalTypeExtensionType(
             self.storage_type, self._logical_type, self._converter
@@ -604,7 +604,7 @@ class StructDictEncodedLogicalTypeExtensionType(pa.ExtensionType):
         return StructDictEncodedLogicalTypeExtensionScalar
 
     def to_pandas_dtype(self):
-        from knime_arrow_pandas import PandasLogicalTypeExtensionType
+        from knime._arrow._pandas import PandasLogicalTypeExtensionType
 
         return PandasLogicalTypeExtensionType(
             self.struct_dict_encoded_type,
@@ -784,7 +784,7 @@ class KnimeExtensionScalar:
             return self.storage_scalar.cast(target_type)
 
     def __repr__(self):
-        return f"knime_arrow_types.KnimeExtensionScalar: {self.as_py()!r}"
+        return f"knime._arrow._types.KnimeExtensionScalar: {self.as_py()!r}"
 
     def __str__(self):
         return str(self.as_py())

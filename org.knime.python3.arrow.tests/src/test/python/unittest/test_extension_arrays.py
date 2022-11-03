@@ -53,8 +53,8 @@ import string
 import numpy as np
 import pyarrow as pa
 
-import knime_arrow as ka
-import knime_arrow_struct_dict_encoding as kasde
+import knime._arrow._backend as ka
+import knime._arrow._dictencoding as kasde
 
 
 def _random_string_array(

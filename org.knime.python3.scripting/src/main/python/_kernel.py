@@ -60,17 +60,17 @@ from py4j.java_gateway import JavaClass
 from typing import Any, Callable, Dict, List, Optional, TextIO
 import logging
 
-import knime_table as kt
-import knime_arrow_table as kat
+import knime.scripting._deprecated._table as kt
+import knime.scripting._deprecated._arrow_table as kat
 
 import knime.api.table as ktn
-import knime.api.views as kv
 import knime._arrow._table as katn
+import knime.api.views as kv
 
 import knime.scripting._io_containers as _ioc
 
-import knime_gateway as kg
-from knime_main_loop import MainLoop
+import knime._backend._gateway as kg
+from knime._backend._mainloop import MainLoop
 from autocompletion_utils import disable_autocompletion
 
 

@@ -53,13 +53,13 @@ import pandas as pd
 import pyarrow as pa
 import numpy as np
 
-import knime_arrow as ka
-import knime_arrow_table as kat
+import knime._arrow._backend as ka
+import knime.scripting._deprecated._arrow_table as kat
 import knime_node_arrow_table as knat
 
-import knime_arrow_pandas as kap
-import knime_arrow_types as katy
-import knime_arrow as knar
+import knime._arrow._pandas as kap
+import knime._arrow._types as katy
+import knime._arrow._backend as knar
 import knime_types as kt
 
 from testing_utility import DummyJavaDataSink, DummyWriter, TestDataSource

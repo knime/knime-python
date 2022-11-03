@@ -47,7 +47,7 @@
 """
 
 
-import knime_types as kt
+import knime.api.types as kt
 
 
 class StringBasedValueFactory(kt.PythonValueFactory):

@@ -1,4 +1,4 @@
-import knime_gateway as kg
+import knime._backend._gateway as kg
 
 for _ in range(1000):
     print("something")

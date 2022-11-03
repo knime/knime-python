@@ -1,6 +1,6 @@
 import knime_extension as knext
 
-"""Test extension for testing knime_node_backend"""
+"""Test extension for testing knime.extension._backend"""
 
 
 class TestPortObjectSpec(knext.PortObjectSpec):

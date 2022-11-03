@@ -52,7 +52,7 @@ from typing import Any, Callable
 import pyarrow as pa
 import numpy as np
 import pyarrow.compute as pc
-from knime_arrow_utils import normalize_index
+from knime._arrow._utils import normalize_index
 
 
 ###############################################################################

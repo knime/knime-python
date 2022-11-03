@@ -113,9 +113,9 @@ class EntryPoint:
         python_value_type_name,
         is_default_python_representation,
     ):
-        import knime_types
+        import knime.api.types as types
 
-        knime_types.register_python_value_factory(
+        types.register_python_value_factory(
             python_module,
             python_value_factory_name,
             data_spec,
@@ -130,9 +130,9 @@ class EntryPoint:
         python_class_name,
         python_value_type_name,
     ):
-        import knime_types
+        import knime.api.types as types
 
-        knime_types._to_pandas_column_converters[python_value_type_name] = (
+        types._to_pandas_column_converters[python_value_type_name] = (
             python_module,
             python_class_name,
         )
@@ -143,9 +143,9 @@ class EntryPoint:
         python_class_name,
         python_value_type_name,
     ):
-        import knime_types
+        import knime.api.types as types
 
-        knime_types._from_pandas_column_converters[python_value_type_name] = (
+        types._from_pandas_column_converters[python_value_type_name] = (
             python_module,
             python_class_name,
         )

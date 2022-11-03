@@ -45,9 +45,9 @@
 """
 @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
 """
-import knime_arrow_types as kat
-import knime_arrow_pandas as kap
-import knime_gateway as kg
+import knime._arrow._types as kat
+import knime._arrow._pandas as kap
+import knime._backend._gateway as kg
 import knime_types as kt
 import pandas as pd
 import pyarrow as pa
