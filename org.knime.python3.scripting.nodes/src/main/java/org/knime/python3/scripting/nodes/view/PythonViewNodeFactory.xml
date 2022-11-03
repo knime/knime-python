@@ -121,6 +121,13 @@
 			<a href="https://docs.knime.com/latest/python_installation_guide/">KNIME Python Integration Guide</a> to
 			learn how to do this, or take a look at one of the templates on the <i>Templates</i> tab of the node.
 		</dynInPort>
+		<dynOutPort name="Image" group-identifier="Output image" insert-before="0">
+			An output image. The image can be populated via <tt>knio.output_images[0]</tt> in your script. To
+			populate the output image, assign it a value like this <tt>knio.output_images[0] = &lt;value&gt;</tt>.
+			The assigned value must be either a string describing an SVG image or a byte array encoding a PNG image.
+			If no value is assinged to <tt>knio.output_images[0]</tt> the node will try to generate an SVG or PNG
+			image from <tt>knio.output_view</tt>.
+		</dynOutPort>
 	</ports>
 	<views>
 		<view name="Output" index="0">

@@ -61,8 +61,8 @@ import org.knime.python3.scripting.nodes.AbstractPythonScriptingNodeModel;
  */
 final class PythonViewNodeModel extends AbstractPythonScriptingNodeModel {
 
-    public PythonViewNodeModel(final InputPort[] inPorts) {
-        super(inPorts, new OutputPort[0], true, createDefaultScript(inPorts));
+    public PythonViewNodeModel(final InputPort[] inPorts, final OutputPort[] outPorts) {
+        super(inPorts, outPorts, true, createDefaultScript(inPorts));
     }
 
     Path getPathToHtml() {

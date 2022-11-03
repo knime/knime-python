@@ -59,9 +59,13 @@ import org.knime.core.node.ConfigurableNodeFactory;
 import org.knime.core.node.NodeDialogPane;
 import org.knime.core.node.NodeView;
 import org.knime.core.node.context.NodeCreationConfiguration;
+import org.knime.core.node.context.ports.PortsConfiguration;
 import org.knime.core.node.port.PortType;
+import org.knime.core.node.port.image.ImagePortObject;
 import org.knime.core.webui.node.view.NodeViewFactory;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
+import org.knime.python2.ports.ImageOutputPort;
+import org.knime.python2.ports.OutputPort;
 import org.knime.python3.views.HtmlFileNodeView;
 
 /**
@@ -77,12 +81,14 @@ public final class PythonViewNodeFactory extends ConfigurableNodeFactory<PythonV
         b.addExtendableInputPortGroup("Input object (pickled)", PickledObjectFileStorePortObject.TYPE);
         b.addExtendableInputPortGroupWithDefault("Input table", new PortType[0], new PortType[]{BufferedDataTable.TYPE},
             BufferedDataTable.TYPE);
+        b.addOptionalOutputPortGroup("Output image", ImagePortObject.TYPE);
         return Optional.of(b);
     }
 
     @Override
     protected PythonViewNodeModel createNodeModel(final NodeCreationConfiguration creationConfig) {
-        return new PythonViewNodeModel(createInputPorts(creationConfig.getPortConfig().get())); // NOSONAR
+        final var config = creationConfig.getPortConfig().get(); // NOSONAR
+        return new PythonViewNodeModel(createInputPorts(config), createOutputPorts(config));
     }
 
     @Override
@@ -112,12 +118,34 @@ public final class PythonViewNodeFactory extends ConfigurableNodeFactory<PythonV
 
     @Override
     protected NodeDialogPane createNodeDialogPane(final NodeCreationConfiguration creationConfig) {
-        return new PythonViewNodeDialog(createInputPorts(creationConfig.getPortConfig().get())); // NOSONAR
+        final var config = creationConfig.getPortConfig().get(); // NOSONAR
+        return new PythonViewNodeDialog(createInputPorts(config), createOutputPorts(config));
     }
 
     @Override
     public org.knime.core.webui.node.view.NodeView createNodeView(final PythonViewNodeModel nodeModel) {
         return new HtmlFileNodeView(nodeModel::getPathToHtml);
+    }
+
+    /** Create either an empty list or a list with one image output port */
+    private static OutputPort[] createOutputPorts(final PortsConfiguration config) {
+        final PortType[] outputPorts = config.getOutputPorts();
+
+        // No output port
+        if (outputPorts.length == 0) {
+            return new OutputPort[0];
+        }
+
+        // Check the configured output: This should never fail because we only allow 1 image output
+        if (outputPorts.length > 1) {
+            throw new IllegalStateException("Too many output ports: " + outputPorts.length);
+        } else if (!ImagePortObject.TYPE.equals(outputPorts[0])) {
+            throw new IllegalStateException("Unsupported output type: " + outputPorts[0].getName());
+        }
+
+        // One image output port
+        return new OutputPort[]{new ImageOutputPort("knio.output_images[0]")};
+
     }
 
     /** A dummy node view that does nothing and that will only be opened by workflow tests. */

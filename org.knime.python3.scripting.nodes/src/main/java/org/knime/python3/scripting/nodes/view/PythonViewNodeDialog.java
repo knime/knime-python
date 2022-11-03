@@ -59,9 +59,9 @@ import org.knime.python3.scripting.nodes.VariableNamesUtils;
  */
 final class PythonViewNodeDialog extends AbstractPythonScriptingNodeDialog {
 
-    public PythonViewNodeDialog(final InputPort[] inPorts) {
+    public PythonViewNodeDialog(final InputPort[] inPorts, final OutputPort[] outPorts) {
         super(inPorts, true,
-            VariableNamesUtils.getVariableNames(inPorts, new OutputPort[0], null, new String[]{"knio.output_view"}),
+            VariableNamesUtils.getVariableNames(inPorts, outPorts, null, new String[]{"knio.output_view"}),
             "python3-view");
     }
 }
