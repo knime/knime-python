@@ -649,8 +649,11 @@ public final class Python3KernelBackend implements PythonKernelBackend {
         final var errorMessage = "Executing the Python script failed: " + beautifiedTraceback;
         // Discard the original exception if the trace back is formatted as expected (i.e. the error really
         // originated in user code and not in kernel code). This keeps logging more concise.
+
         if (beautifiedTraceback != pythonTraceback) { // NOSONAR We're interested in reference equality.
-            return new PythonIOException(errorMessage);
+            var frames = beautifiedTraceback.split("\n");
+            var shortMessage = frames[frames.length - 1];
+            return new PythonIOException(errorMessage, shortMessage, beautifiedTraceback, null);
         } else {
             return new PythonIOException(errorMessage, ex);
         }
