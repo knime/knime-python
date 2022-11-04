@@ -66,6 +66,6 @@ public final class PythonViewsExtension implements PythonExtension {
 
     @Override
     public String getPythonModule() {
-        return "knime_views";
+        return "knime.api.views";
     }
 }

@@ -42,4 +42,4 @@
 #  when such Node is propagated with or for interoperation with KNIME.
 # ------------------------------------------------------------------------
 
-from knime.views import *
+from knime.api.views import *

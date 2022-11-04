@@ -64,7 +64,19 @@ from typing import Any, Dict, List, Union, Optional
 
 # Do not remove, meant to be reexported.
 from knime.api.table import Table, BatchOutputTable
-from knime.views import NodeView
+from knime.api.views import (
+    NodeView,
+    view,
+    view_html,
+    view_svg,
+    view_png,
+    view_jpeg,
+    view_ipy_repr,
+    view_matplotlib,
+    view_seaborn,
+    KNIME_UI_EXT_SERVICE_JS,
+    KNIME_UI_EXT_SERVICE_JS_DEV,
+)
 import knime.scripting._io_containers as _ioc
 
 # -----------------------------------------------------------------------------------------

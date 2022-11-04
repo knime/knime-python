@@ -63,8 +63,8 @@ import knime_table as kt
 import knime_arrow_table as kat
 
 import knime.api.table as ktn
+import knime.api.views as kv
 import knime._arrow._table as katn
-import knime.views as kv
 
 import knime.scripting._io_containers as _ioc
 

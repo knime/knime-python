@@ -28,7 +28,7 @@
         <!-- Extract the two important files -->
         <untar
             src="ui-extension-service-${knime.ui.extension.service.version}.tgz"
-            dest="src/main/python/knime/"
+            dest="src/main/python/knime/api/"
             compression="gzip">
             <patternset>
                 <include name="package/dist/knime-ui-extension-service.min.js" />

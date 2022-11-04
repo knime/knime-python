@@ -1,7 +1,7 @@
 import os
 
 import unittest
-import knime.views as kv
+import knime.api.views as kv
 
 
 class ViewableClass:
