@@ -47,6 +47,38 @@ Classes
    :inherited-members:
 
 
+Views
+^^^^^^^^^^^^^^^^^^
+
+.. autofunction:: knime.scripting.io.view
+   :noindex:
+
+.. autofunction:: knime.scripting.io.view_matplotlib
+   :noindex:
+
+.. autofunction:: knime.scripting.io.view_seaborn
+   :noindex:
+
+.. autofunction:: knime.scripting.io.view_html
+   :noindex:
+
+.. autofunction:: knime.scripting.io.view_svg
+   :noindex:
+
+.. autofunction:: knime.scripting.io.view_png
+   :noindex:
+
+.. autofunction:: knime.scripting.io.view_jpeg
+   :noindex:
+
+.. autofunction:: knime.scripting.io.view_ipy_repr
+   :noindex:
+
+.. autoclass:: knime.scripting.io.NodeView
+   :members:
+   :noindex:
+
+
 Python Extension Development (Labs)
 -------------------------------------
 
@@ -240,15 +272,6 @@ These are helper functions to create KNIME compatible datatypes. For instance, i
 .. autofunction:: knime_schema.logical
    :noindex:
 
-Views API
-------------------------------------
-
-This section lists the API of the module ``knime.views`` that can be used to create node views in Python nodes
-or in the KNIME Python View node. In most cases you want to use the method ``knime.views.view(obj)``.
-
-.. automodule:: knime.views
-   :members: KNIME_UI_EXT_SERVICE_JS, KNIME_UI_EXT_SERVICE_JS_DEV, NodeView, view, view_html, view_svg, view_png, view_jpeg, view_matplotlib, view_seaborn
-   :noindex:
 
 Deprecated Python Script API
 ----------------------------

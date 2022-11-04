@@ -171,18 +171,17 @@ Use this to, for example, pass a trained model to another Python script node.
 
 output_view: Optional[NodeView] = None
 """
-The output view of the script node. This variable must be populated with a knime.views.NodeView when using the Python
-View node. Views can be created by calling the ``knime.views.view(obj)`` method with a viewable object. See the
-documentation of ``knime.views.view(obj)`` to understand how views are created from different kinds of objects.
+The output view of the script node. This variable must be populated with a ``NodeView`` when using the Python
+View node. Views can be created by calling the ``view(obj)`` method with a viewable object. See the
+documentation of ``view(obj)`` to understand how views are created from different kinds of objects.
 
 **Example**::
 
     import knime.scripting.io as knio
-    import knime.views as kv
     import plotly.express as px
 
     fig = px.scatter(x=data_x, y=data_y)
-    knio.output_view = kv.view(fig)
+    knio.output_view = knio.view(fig)
 
 """
 
