@@ -135,8 +135,7 @@ ports configured for this node.  You should assign a ``Table`` or ``BatchOutputT
 output_images: List = _ioc._FixedSizeListView(_ioc._output_images, "output_image")
 """
 The output images of this script node. This list has a fixed size, which is determined by the number of output images
-configured for this node. The value passed to the output port should be an array of bytes encoding an 
-SVG or PNG image.
+configured for this node. The value passed to the output port should be a bytes-like object encoding an SVG or PNG image.
 
 **Example**::
 

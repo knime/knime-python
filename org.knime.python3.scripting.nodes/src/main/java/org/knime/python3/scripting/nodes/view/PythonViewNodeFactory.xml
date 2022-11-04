@@ -124,7 +124,7 @@
 		<dynOutPort name="Image" group-identifier="Output image" insert-before="0">
 			An output image. The image can be populated via <tt>knio.output_images[0]</tt> in your script. To
 			populate the output image, assign it a value like this <tt>knio.output_images[0] = &lt;value&gt;</tt>.
-			The assigned value must be either a string describing an SVG image or a byte array encoding a PNG image.
+			The assigned value must be a bytes-like object encoding a PNG or SVG image.
 			If no value is assinged to <tt>knio.output_images[0]</tt> the node will try to generate an SVG or PNG
 			image from <tt>knio.output_view</tt>.
 		</dynOutPort>
