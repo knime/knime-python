@@ -63,6 +63,7 @@ if "knime.scripting.io" in sys.modules:
 warnings.warn(
     f"The module {__name__} is deprecated, please use 'import knime.scripting.io' instead",
     DeprecationWarning,
+    stacklevel=2,
 )
 
 from typing import Any, Dict, List
