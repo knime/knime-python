@@ -35,7 +35,8 @@
 			Multiple input ports of various types can dynamically be added to the node and used in the
 			script. See sections <i>Ports</i> and <i>Editor</i> below for a description of all available inputs, and how
 			they can be accessed in the Python script.
-			Make sure to set the <tt>knio.output_view</tt> variable to a view created with the <tt>knime.views</tt> module.<br />
+			Make sure to set the <tt>knio.output_view</tt> variable to a view created with any of the <tt>knio.view</tt>
+			functions.<br />
 			Furthermore, the node allows to import Jupyter notebooks as Python modules via the
 			<a href="https://docs.knime.com/latest/python_installation_guide/#_load_jupyter_notebooks_from_knime">
 			knime_jupyter</a> module that can be imported in the script.
@@ -123,8 +124,8 @@
 	</ports>
 	<views>
 		<view name="Output" index="0">
-			The output view created by the Python script. Use <tt>view(obj)</tt> function from the <tt>knime.views</tt>
-			module to create a view and assign to <tt>knio.output_view</tt>.
+			The output view created by the Python script. Use <tt>knio.view(obj)</tt> function to create a view and
+			assign to <tt>knio.output_view</tt>.
 		</view>
 		<view name="Standard output" index="1">
 			The output sent by Python to its standard output during the execution of this node.

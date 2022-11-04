@@ -78,8 +78,7 @@ final class PythonViewNodeModel extends AbstractPythonScriptingNodeModel {
             defaultScript = getGenericDefaultScript();
         }
 
-        return "import knime.scripting.io as knio\n" //
-            + "import knime.views as kv\n\n" //
+        return "import knime.scripting.io as knio\n\n" //
             + defaultScript;
     }
 
@@ -99,13 +98,13 @@ final class PythonViewNodeModel extends AbstractPythonScriptingNodeModel {
             + "plt.hist(np.array(values), bins=10)\n" //
             + "\n" //
             + "# Assign the figure to the output_view variable\n" //
-            + "knio.output_view = kv.view(fig)  # alternative: kv.view_matplotlib()\n";
+            + "knio.output_view = knio.view(fig)  # alternative: knio.view_matplotlib()\n";
     }
 
     private static String getGenericDefaultScript() {
         return "# This example uses an HTML string as the output view\n" //
             + "\n" //
-            + "knio.output_view = kv.view(\"\"\"<!DOCTYPE html>\n" //
+            + "knio.output_view = knio.view(\"\"\"<!DOCTYPE html>\n" //
             + "<html>\n" //
             + "    <body>\n" //
             + "        My HTML view\n" //
@@ -115,7 +114,7 @@ final class PythonViewNodeModel extends AbstractPythonScriptingNodeModel {
             + "\n" //
             + "# Views can also be created from other objects like bytes containing a PNG or JPEG image,\n" //
             + "# or strings containing an SVG. Also, many objects that can be displayed in jupyter notebooks\n" //
-            + "# can be displayed as an output view automatically. See the documentation of kv.view for\n" //
+            + "# can be displayed as an output view automatically. See the documentation of knio.view for\n" //
             + "# more information.";
     }
 }
