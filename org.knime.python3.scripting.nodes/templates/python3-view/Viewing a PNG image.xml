@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config xmlns="http://www.knime.org/2008/09/XMLConfig" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.knime.org/2008/09/XMLConfig http://www.knime.org/XMLConfig_2008_09.xsd" key="Viewing a PNG image__18425173710152402648.xml">
+    <entry key="category" type="xstring" value="Basics"/>
+    <entry key="title" type="xstring" value="Viewing a PNG image"/>
+    <entry key="description" type="xstring" value="Shows how to set a downloaded PNG image as the node view."/>
+    <entry key="sourcecode" type="xstring" value="import knime.scripting.io as knio%%00010import requests%%00010%%00010# Download an PNG image%%00010url = &quot;https://upload.wikimedia.org/wikipedia/commons/a/a0/KNIMELogoTM.png&quot;%%00010headers = {'User-Agent': 'KNIME_AP_view_example/0.0 (https://knime.com)'}%%00010response = requests.get(url, headers=headers)%%00010if response.ok:%%00010    image = response.content%%00010else:%%00010    raise RuntimeError(f&quot;Downloading the image failed: '{response.reason}'&quot;)%%00010%%00010# Set the image as the output view%%00010# knio.view will detect that the bytes object is a PNG image automatically%%00010knio.output_view = knio.view(image)  # alternative: knio.view_png(image)%%00010"/>
+</config>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config xmlns="http://www.knime.org/2008/09/XMLConfig" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.knime.org/2008/09/XMLConfig http://www.knime.org/XMLConfig_2008_09.xsd" key="Viewing a matplotlib plot__9537827355041038926.xml">
+    <entry key="category" type="xstring" value="Basics"/>
+    <entry key="title" type="xstring" value="Viewing a matplotlib plot"/>
+    <entry key="description" type="xstring" value="Shows how to set a matplotlib plot as the node view."/>
+    <entry key="sourcecode" type="xstring" value="import knime.scripting.io as knio%%00010import numpy as np%%00010import matplotlib.pyplot as plt%%00010%%00010# Only use numeric columns%%00010data = knio.input_tables[0].to_pandas().select_dtypes('number')%%00010%%00010# Use the values from the first column%%00010values = np.array(data[data.columns[0]])%%00010%%00010# Plot the histogram%%00010fig = plt.figure()%%00010plt.hist(np.array(values), bins=10)%%00010%%00010# Assign the figure to the output_view variable%%00010knio.output_view = knio.view(fig)  # alternative: knio.view_matplotlib()%%00010"/>
+</config>
