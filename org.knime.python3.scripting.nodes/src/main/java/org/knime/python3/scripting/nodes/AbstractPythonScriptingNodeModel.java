@@ -288,6 +288,13 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
             }
             m_kernelShutdownTracker.closeAsynchronously(kernel);
             return outObjects;
+        } catch (PythonIOException ex) {
+            var shortMsg = ex.getShortMessage();
+            if (shortMsg.isPresent()) {
+                throw new PythonIOException(shortMsg.get(), ex);
+            } else {
+                throw ex;
+            }
         }
     }
 
