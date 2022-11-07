@@ -63,8 +63,8 @@ import org.knime.python2.prefs.PythonPreferences;
 public final class Python3ScriptingPreferencesInitializer extends AbstractPreferenceInitializer {
 
     /**
-     * We first introduced the Python Script (Labs) nodes in 4.5 such that they (re)used the Python preference page, and
-     * are now adding a dedicated preference page in 4.6. Thus we initialize the Python Scripting (Labs) preference page
+     * We first introduced the Python Script nodes in 4.5 such that they (re)used the Python (legacy) preference page,
+     * and are now adding a dedicated preference page in 4.6. Thus we initialize the Python Scripting preference page
      * with the current settings of the {@link PythonPreferences} because we do not want to alter the settings that were
      * already configured in the Python preference page.
      */
@@ -81,7 +81,7 @@ public final class Python3ScriptingPreferencesInitializer extends AbstractPrefer
             && isPlaceholderCondaEnvSelected()) {
             // We use bundled as default if conda was currently active but no Python environment has been selected yet.
             // This should make bundled the default option for users who have not configured a Python environment to use.
-            // The Python (Labs) preference page does this as well, but for that the page needs to be opened first.
+            // The Python preference page does this as well, but for that the page needs to be opened first.
             new PythonEnvironmentTypeConfig(PythonEnvironmentType.BUNDLED).saveConfigTo(defaultPreferences);
         } else {
             defaultPythonEnvTypeConfig.saveConfigTo(defaultPreferences);

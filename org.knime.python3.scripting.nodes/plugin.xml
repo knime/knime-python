@@ -29,7 +29,7 @@
              category="org.knime.workbench.ui.preferences"
              class="org.knime.python3.scripting.nodes.prefs.Python3ScriptingPreferencePage"
              id="org.knime.python3.scripting.nodes.prefs.PythonPreferencePage"
-             name="Python (Labs)">
+             name="Python">
        </page>
     </extension>
     <extension

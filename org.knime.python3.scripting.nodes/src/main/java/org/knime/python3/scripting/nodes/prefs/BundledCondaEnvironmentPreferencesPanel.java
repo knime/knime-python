@@ -80,11 +80,11 @@ public final class BundledCondaEnvironmentPreferencesPanel
 
         final String bundledEnvDescription =
             "KNIME Analytics Platform provides its own Python environment that can be used\n"
-                + "by the Python Script (Labs) nodes. If you select this option, then all Python Script (Labs) nodes\n"
+                + "by the Python Script nodes. If you select this option, then all Python Script nodes\n"
                 + "that are configured to use the settings from the preference page will make use of this bundled Python environment.\n"
                 + "\n\n"
                 + "This bundled Python environment can not be extended, if you need additional packages for your scripts,\n"
-                + "use the \"Conda\" option above to change the environment for all Python Script (Labs) nodes or\n"
+                + "use the \"Conda\" option above to change the environment for all Python Script nodes or\n"
                 + "use the Conda Environment Propagation Node to set a conda environment for selected nodes\n";
 
         final Label environmentSelectionLabel = new Label(panel, SWT.NONE);

@@ -123,9 +123,9 @@ public final class BundledCondaEnvironmentConfig extends AbstractPythonEnvironme
     public PythonCommand getPythonCommand() {
         final var condaEnv = CondaEnvironmentRegistry.getEnvironment(m_bundledCondaEnvironment.getStringValue());
         if (condaEnv == null) {
-            final var errorMsg = "You have selected the 'Bundled' option in KNIME Python (Labs) preferences, "
+            final var errorMsg = "You have selected the 'Bundled' option in KNIME Python preferences, "
                 + "but there is no bundled Python environment available. "
-                + "Please update your settings in the KNIME Python (Labs) preference page.";
+                + "Please update your settings in the KNIME Python preference page.";
             LOGGER.error(errorMsg);
             throw new IllegalStateException(errorMsg);
         }
