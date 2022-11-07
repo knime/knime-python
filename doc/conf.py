@@ -95,7 +95,7 @@ templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 # mock import that sphinx recognizes them
-MOCK_MODULES = ["numpy", "pandas", "pyarrow"]
+MOCK_MODULES = ["numpy", "pandas", "pyarrow", "py4j.clientserver"]
 
 sys.modules.update((mod_name, ModuleMock()) for mod_name in MOCK_MODULES)
 
