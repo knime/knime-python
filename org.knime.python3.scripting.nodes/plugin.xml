@@ -3,18 +3,18 @@
 <plugin>
     <extension point="org.knime.workbench.repository.categories">
         <category
-            description="Python scripting nodes (Labs)"
+            description="Python scripting nodes"
             icon="icons/python.png"
             level-id="python"
-            name="Python (Labs)"
-            path="/labs" />
+            name="Python"
+            path="/scripting" />
     </extension>
     <extension point="org.knime.workbench.repository.nodes">
         <node
-            category-path="/labs/python"
+            category-path="/scripting/python"
             factory-class="org.knime.python3.scripting.nodes.script.PythonScriptNodeFactory" />
         <node
-            category-path="/labs/python"
+            category-path="/scripting/python"
             factory-class="org.knime.python3.scripting.nodes.view.PythonViewNodeFactory" />
     </extension>
     <extension
