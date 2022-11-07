@@ -292,7 +292,7 @@ These properties can be used to retrieve data from or pass data back to KNIME An
 The length of the input and output lists depends on the number of input and output ports of the node.
 
 **Example:**
-If you have a Python Script (Labs) node configured with two input tables and one input object, you can
+If you have a Python Script node configured with two input tables and one input object, you can
 access the two tables via ``knime_io.input_tables[0]`` and ``knime_io.input_tables[1]``, and the input object
 via ``knime_io.input_objects[0]``.
 

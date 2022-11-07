@@ -71,7 +71,7 @@ sys.path.insert(
 
 # -- Project information -----------------------------------------------------
 
-project = "KNIME Python Script (Labs) API"
+project = "KNIME Python API"
 copyright = "2021, KNIME GmbH"
 author = "Carsten Haubold, Adrian Nembach, Marcel Wiedenmann, Benjamin Wilhelm"
 
