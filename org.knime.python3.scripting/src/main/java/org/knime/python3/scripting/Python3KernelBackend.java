@@ -89,6 +89,7 @@ import org.knime.core.util.ThreadUtils;
 import org.knime.core.util.Version;
 import org.knime.core.util.asynclose.AsynchronousCloseable;
 import org.knime.python2.PythonCommand;
+import org.knime.python2.PythonFrameSummary;
 import org.knime.python2.PythonModuleSpec;
 import org.knime.python2.PythonVersion;
 import org.knime.python2.generic.ImageContainer;
@@ -650,12 +651,12 @@ public final class Python3KernelBackend implements PythonKernelBackend {
         // Discard the original exception if the trace back is formatted as expected (i.e. the error really
         // originated in user code and not in kernel code). This keeps logging more concise.
 
+        var frames = beautifiedTraceback.split("\n");
+        var shortMessage = frames[frames.length - 1];
         if (beautifiedTraceback != pythonTraceback) { // NOSONAR We're interested in reference equality.
-            var frames = beautifiedTraceback.split("\n");
-            var shortMessage = frames[frames.length - 1];
-            return new PythonIOException(errorMessage, shortMessage, beautifiedTraceback, null);
+            return new PythonIOException(errorMessage, shortMessage, beautifiedTraceback, (PythonFrameSummary[])null);
         } else {
-            return new PythonIOException(errorMessage, ex);
+            return new PythonIOException(errorMessage, shortMessage, beautifiedTraceback, ex);
         }
     }
 
