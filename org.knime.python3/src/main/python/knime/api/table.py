@@ -89,8 +89,8 @@ class _Tabular(ks._Columnar):
         Creates a view of this Table by slicing rows and columns. The slicing syntax is similar to that of numpy arrays,
         but columns can also be addressed as index lists or via a list of column names.
 
-        The syntax is `[column_slice, row_slice]`. Note that this is the exact opposite order than in the Python Script
-        (Labs) node's ReadTable.
+        The syntax is `[column_slice, row_slice]`. Note that this is the exact opposite order than in the deprecated scripting
+        API's ReadTable.
 
         Args:
             column_slice:
