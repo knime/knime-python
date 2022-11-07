@@ -2,44 +2,39 @@
 <knimeNode icon="python.png" type="Visualizer" xmlns="http://knime.org/node/v4.1"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://knime.org/node/v4.1 http://knime.org/node/v4.1.xsd">
-	<name>Python View (Labs)</name>
+	<name>Python View</name>
 	<shortDescription>
 		Allows executing a Python script in a local Python environment.
 	</shortDescription>
 	<fullDescription>
 		<intro>
-			<b>This node is currently part of KNIME Labs. It is not yet advised to use it in production. Please consider
-			the following prerequisites and limitations before employing it:</b>
-			<ul>
-			<li>Python 2 is not supported.</li>
-			<li>Additional packages, namely <i>py4j</i> and <i>pyarrow</i>, are required to be installed in your Python
-			3 environment in specific versions. We recommend to create a new Conda environment that contains these
-			packages via File → Preferences → KNIME → Python.</li>
-			<li><a href="https://www.knime.com/blog/improved-performance-with-new-table-backend">Columnar Backend</a>
-			should be enabled for best performance.</li>
-			<li>Extension data types such as images from <i>KNIME Image Processing</i> or molecules from <i>RDKit Nodes
-			for KNIME</i> are not supported yet.</li>
-			<li>The scripting API is under active development and may be subject to breaking changes in future releases
-			until this node has been promoted from KNIME Labs.</li>
-			</ul>
-			The node brings significant performance improvements over the nodes of the stable KNIME Python Integration
-			and enables working with larger-than-memory data. More details on how to transition to the node's new
-			scripting API can be found <a href="https://docs.knime.com/latest/python_installation_guide/">here</a>.
-			There are also example workflows that further illustrate its use
-			<a href="https://hub.knime.com/knime/spaces/Examples/latest/07_Scripting/03_Python/">here</a> as well as
-			example templates on the <i>Templates</i> tab of the node.<br/>
-			<br/>
 			The node allows executing a Python script in a local Python 3 environment. The environment has to be
 			configured under <i>File → Preferences → KNIME → Python</i> or via flow variable, as described in the
-			<a href="https://docs.knime.com/latest/python_installation_guide/">KNIME Python Integration Guide</a>.<br/>
+			<a href="https://docs.knime.com/latest/python_installation_guide/">KNIME Python Integration Guide</a>.
 			Multiple input ports of various types can dynamically be added to the node and used in the
 			script. See sections <i>Ports</i> and <i>Editor</i> below for a description of all available inputs, and how
 			they can be accessed in the Python script.
 			Make sure to set the <tt>knio.output_view</tt> variable to a view created with any of the <tt>knio.view</tt>
-			functions.<br />
+			functions.
 			Furthermore, the node allows to import Jupyter notebooks as Python modules via the
 			<a href="https://docs.knime.com/latest/python_installation_guide/#_load_jupyter_notebooks_from_knime">
 			knime_jupyter</a> module that can be imported in the script.
+
+			<p>The node brings significant performance improvements over the nodes of the legacy KNIME Python Integration
+			and enables working with larger-than-memory data. More details on how to transition to the node's new
+			scripting API can be found <a href="https://docs.knime.com/latest/python_installation_guide/">here</a>.
+			There are also example workflows that further illustrate its use
+			<a href="https://hub.knime.com/knime/spaces/Examples/latest/07_Scripting/03_Python/">here</a> as well as
+			example templates on the <i>Templates</i> tab of the node.</p>
+
+			<p><b>Please consider the following prerequisites before using this node:</b>
+			<ul>
+			<li>The packages <i>py4j</i> and <i>pyarrow</i>, are required to be installed in your Python
+			3 environment in specific versions. We recommend to create a new Conda environment that contains these
+			packages via File → Preferences → KNIME → Python.</li>
+			<li><a href="https://www.knime.com/blog/improved-performance-with-new-table-backend">Columnar Backend</a>
+			should be enabled for best performance.</li>
+			</ul></p>
 		</intro>
 		<tab name="Script">
 			<option name="Editor">
