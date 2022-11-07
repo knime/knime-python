@@ -63,7 +63,7 @@ import org.knime.python2.prefs.PreferenceWrappingConfigStorage;
 import org.knime.python2.prefs.PythonPreferences;
 
 /**
- * Convenience front-end of the preference-based configuration of the Python (Labs) integration.
+ * Convenience front-end of the preference-based configuration of the Python integration.
  *
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany

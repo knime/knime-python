@@ -119,7 +119,7 @@ public final class Python3ScriptingPreferencePage extends AbstractPythonPreferen
     };
 
     /**
-     * Constructs the main preference page of the KNIME Python (Labs) integration.
+     * Constructs the main preference page of the KNIME Python integration.
      */
     public Python3ScriptingPreferencePage() {
         super(Python3ScriptingPreferences.CURRENT, Python3ScriptingPreferences.DEFAULT);

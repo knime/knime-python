@@ -1,16 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <feature
       id="org.knime.features.python3.scripting"
-      label="KNIME Python Integration (Labs)"
+      label="KNIME Python Integration"
       version="4.7.0.qualifier"
       provider-name="KNIME AG, Zurich, Switzerland">
 
    <description>
-      This experimental integration contains a node that allows the execution of Python 3 scripts in KNIME. It brings
-significant performance improvements over the stable KNIME Python Integration and enables working with
-larger-than-memory data. It is, however, not yet advised to use the integration in production. This extension provides
-a Python installation with a small set of selected Python packages. Alternatively, the node can use a local Python
-installation.
+      This integration contains nodes that allow the execution of Python 3 scripts in KNIME. It brings significant performance improvements over the legacy KNIME Python Integration and enables working with larger-than-memory data. This extension provides a Python installation with a small set of selected Python packages. Alternatively, the nodes can use a local Python installation.
    </description>
 
    <copyright>
