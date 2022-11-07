@@ -50,11 +50,11 @@ package org.knime.python3.nodes.dialog;
 
 import java.util.Optional;
 
-import org.knime.base.views.node.defaultdialog.DefaultNodeDialog;
 import org.knime.core.webui.data.DataService;
 import org.knime.core.webui.node.dialog.NodeDialog;
 import org.knime.core.webui.node.dialog.SettingsType;
 import org.knime.core.webui.node.dialog.TextNodeSettingsService;
+import org.knime.core.webui.node.dialog.impl.DefaultNodeDialog;
 import org.knime.core.webui.page.Page;
 
 /**
