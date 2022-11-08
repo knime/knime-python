@@ -74,6 +74,7 @@ from knime.api.views import (
     view_ipy_repr,
     view_matplotlib,
     view_seaborn,
+    view_plotly,
     KNIME_UI_EXT_SERVICE_JS,
     KNIME_UI_EXT_SERVICE_JS_DEV,
 )

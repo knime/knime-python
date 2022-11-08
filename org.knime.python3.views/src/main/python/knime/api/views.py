@@ -45,9 +45,12 @@
 import os
 import io
 import base64
+import logging
 from typing import Any, Union, Optional, Callable
 
 import knime_gateway as kg
+
+LOGGER = logging.getLogger("knime.api.views")
 
 _SVG_HTML_BODY = """
 <!DOCTYPE html>
@@ -163,6 +166,7 @@ def view(obj) -> NodeView:
     - PNG: The obj must be of type bytes and contain a PNG image file
     - JPEG: The obj must be of type bytes and contain a JPEG image file
     - Matplotlib: The obj must be a matplotlib.figure.Figure
+    - Plotly: The obj must be a plotly.graph_objects.Figure
 
     Args:
         obj: The object which should be displayed
@@ -201,11 +205,11 @@ def view(obj) -> NodeView:
     except (ImportError, TypeError):
         pass
 
-    # TODO AP-18343: Plotly
-    # try:
-    #     return view_plotly(obj)
-    # except ValueError:
-    #     pass
+    # Plotly
+    try:
+        return view_plotly(obj)
+    except (ImportError, TypeError):
+        pass
 
     # TODO AP-18344: Bokeh
 
@@ -420,32 +424,59 @@ def view_seaborn() -> NodeView:
 # PLOTLY
 ##########################################################################
 
-# TODO AP-18343: Python Views: Special handling for Plotly plots
+PLOTLY_POST_JS = KNIME_UI_EXT_SERVICE_JS + _read_js_file("plotly-post-script.js")
 
-# TODO PLOTLY_POST_SCRIPT
-# The "plotly_selected" event gets fired if the user clicks once on the plot.
-# This does not change the selection but "data" is undefined and therefore
-# this event is not distinguishable from double-clicking and deselecting everything.
 
-# TODO PLOTLY_POST_SCRIPT
-# The new ScatterPlot emits every event twice. Therefore "ADD" is called twice and
-# we do unnecessary restyle calls. Should we detect if nothing changes or should
-# other plots not emit selection events twice?
+def view_plotly(fig) -> NodeView:
+    """Create a view showing the given plotly figure.
 
-# TODO PLOTLY_POST_SCRIPT - Implement on selection for "REMOVE" mode
+    The figure is displayed by exporting it as an HTML document.
 
-# TODO PLOTLY_POST_SCRIPT - Check if the js works for other plots than Scatter
+    To be able to synchronize the selection between the view and other KNIME views the
+    customdata of the figure traces must be set to the row keys.
 
-# with open(_js_path("plotlyPostScript.js"), "r") as f:
-#     PLOTLY_POST_JS = KNIME_UI_EXT_SERVICE_JS + f.read()
+    **Example**::
 
-# def view_plotly(fig) -> NodeView:
-#     try:
-#         import plotly.graph_objects
-#     except ImportError:
-#         raise ValueError("plotly is not available")
+        fig = px.scatter(df, x="my_x_col", y="my_y_col", color="my_label_col",
+                         custom_data=[df.index])
+        node_view = view_plotly(fig)
 
-#     if not isinstance(fig, plotly.graph_objects.Figure):
-#         raise ValueError("the given figure is not a plotly figure")
+    Args:
+        fig: A plotly.graph_objects.Figure object which should be displayed.
 
-#     return view_html(fig.to_html(post_script=PLOTLY_POST_JS))
+    Raises:
+        ImportError: If plotly is not available.
+        TypeError: If the figure is not a plotly figure.
+    """
+    import plotly.graph_objects
+
+    if not isinstance(fig, plotly.graph_objects.Figure):
+        raise TypeError("the given figure is not a plotly figure")
+
+    if any(["customdata" in trace for trace in fig.data]):
+        # There is customdata set -> We can set our JS for selection
+        html = fig.to_html(post_script=PLOTLY_POST_JS)
+    else:
+        # There is no customdata -> Inform the user and do not use our JS for selection
+        LOGGER.info(
+            "No custom data set in the figure data. "
+            "Selection will not be synced with other views. "
+            "Set custom_data to the row keys to enable selection syncing."
+        )
+        html = fig.to_html()
+
+    def render_image():
+        try:
+            return fig.to_image("png")
+        except ValueError as e:
+            # NB: The error message if no engine is available is not nice -> Give our own message
+            if "pip install -U kaleido" in e.args[0]:
+                raise ValueError(
+                    "plotly figure could not be rendered to an image. "
+                    "Install 'kaleido' in your Python environment."
+                )
+
+            # Re-raise the exception so the user knows what's wrong
+            raise e
+
+    return view_html(html, render_fn=render_image)

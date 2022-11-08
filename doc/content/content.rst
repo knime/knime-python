@@ -59,6 +59,9 @@ Views
 .. autofunction:: knime.scripting.io.view_seaborn
    :noindex:
 
+.. autofunction:: knime.scripting.io.view_plotly
+   :noindex:
+
 .. autofunction:: knime.scripting.io.view_html
    :noindex:
 
