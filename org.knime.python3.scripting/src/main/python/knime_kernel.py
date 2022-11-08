@@ -58,6 +58,7 @@ from io import StringIO
 from py4j.java_collections import JavaArray, ListConverter
 from py4j.java_gateway import JavaClass
 from typing import Any, Callable, Dict, List, Optional, TextIO
+import logging
 
 import knime_table as kt
 import knime_arrow_table as kat
@@ -705,6 +706,11 @@ if __name__ == "__main__":
 
     try:
         warnings.filterwarnings("default", category=DeprecationWarning)
+
+        logging.basicConfig()
+        logging.getLogger("py4j").setLevel(logging.ERROR)  # suppress py4j logs
+        logging.getLogger().setLevel(logging.INFO)
+
         kernel = PythonKernel()
         kg.connect_to_knime(kernel)
         py4j.clientserver.server_connection_stopped.connect(
