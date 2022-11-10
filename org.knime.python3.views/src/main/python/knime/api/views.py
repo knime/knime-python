@@ -95,6 +95,7 @@ def _read_js_file(name):
             + "Selections will not be propagated to and from Python views. "
             + "This warning can be ignored when running Python code outside of KNIME AP."
         )
+        return ""
 
 
 # Open the knime-ui-extension-service.min.js file to include it in the HTML if needed
@@ -455,6 +456,12 @@ def view_plotly(fig) -> NodeView:
 
     if any(["customdata" in trace for trace in fig.data]):
         # There is customdata set -> We can set our JS for selection
+        if KNIME_UI_EXT_SERVICE_JS == "":
+            LOGGER.warning(
+                f"Could not read knime-ui-extension-service.min.js JavaScript. "
+                + "Selections will not be propagated to and from Python views. "
+                + "This warning can be ignored when running Python code outside of KNIME AP."
+            )
         html = fig.to_html(post_script=PLOTLY_POST_JS)
     else:
         # There is no customdata -> Inform the user and do not use our JS for selection
