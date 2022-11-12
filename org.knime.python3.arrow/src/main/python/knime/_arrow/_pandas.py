@@ -129,15 +129,15 @@ def convert_df_to_ktypes_from_schema(df, schema: dict):
     """
     for col_name in schema.keys():
         dtype = schema[col_name]
-        if isinstance(dtype, PandasLogicalTypeExtensionType):
+        column = df[col_name]
+        if isinstance(dtype, PandasLogicalTypeExtensionType) and not isinstance(
+            column.dtype, PandasLogicalTypeExtensionType
+        ):
             # replace all pd.NA or np.NaN Values with the correct na_value and save it as logical type
             try:
                 # column need to be cast as object so that the NA, NaN and NaT are not automatically converted back
                 df[col_name] = (
-                    df[col_name]
-                    .astype(object)
-                    .where(pd.notnull(df[col_name]), None)
-                    .astype(dtype)
+                    column.astype(object).where(pd.notnull(column), None).astype(dtype)
                 )
             except TypeError:
                 warnings.warn(
@@ -158,22 +158,23 @@ def extract_knime_schema_from_df(df):
     # extract schema
     for col_name, col_type in zip(df.columns, df.dtypes):
         if isinstance(col_type, object):
-            cleaned = df[col_name].dropna()
-            if (
-                len(cleaned) == 0
-            ):  # if the column only contains empty elements we keep object type
-                schema[col_name] = col_type
-                continue
-            dtype = type(cleaned[0])
-            if _check_if_local_dt(cleaned, dtype):
-                # as we map all pandas ts and dt objects on the ZonedDT ValFac
-                # we have to manually determine if it is a local dt object
-                col_type = _create_local_dt_type()
-            else:
-                try:
+            try:
+                cleaned = df[col_name].dropna()
+                if (
+                    cleaned.size == 0
+                ):  # if the column only contains empty elements we keep object type
+                    schema[col_name] = col_type
+                    continue
+                dtype = type(cleaned.iloc[0])
+                if _check_if_local_dt(cleaned, dtype):
+                    # as we map all pandas ts and dt objects on the ZonedDT ValFac
+                    # we have to manually determine if it is a local dt object
+                    col_type = _create_local_dt_type()
+                else:
                     col_type = ks.logical(dtype).to_pandas()
-                except TypeError:  # if we do not have the type we continue
-                    pass
+            except TypeError:  # if we do not have the type we continue
+                pass
+
         schema[col_name] = col_type
     return schema
 
@@ -509,16 +510,7 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
                 # if the storage is a struct type, the unpacking only works for top layer
                 # thus, we have to manually access the chunks
                 if isinstance(self._data, pa.ChunkedArray):
-                    if self._chunk_start_list is None:
-                        self._chunk_start_list = self._get_all_chunk_start_indices(
-                            self._data
-                        )
-                    # use a right bisection to locate the closest chunk index
-                    chunk_idx = bisect.bisect_right(self._chunk_start_list, item) - 1
-                    item = (
-                        item - self._chunk_start_list[chunk_idx]
-                    )  # get the index inside the chunk
-                    chunk = self._data.chunk(chunk_idx)  # get the correct chunk
+                    chunk, item = self.get_the_correct_chunk(item)
                     # if we would use the StructDictEncodedLogicalTypeExtensionType this access is necessary
                     if isinstance(self._storage_type, kasde.StructDictEncodedType):
                         return chunk[item]
@@ -535,10 +527,20 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
                     )
                 # we recursively unpack the struct arrays and finally return the decoded value
                 value = self._get_int_item_from_struct_arr(storage, item)
-                decoded = self._converter.decode(value.as_py())
-                return decoded
-
-            return self._data[item].as_py()
+                return self._converter.decode(value.as_py())
+            elif isinstance(self._storage_type, pa.ListType):  # list of extension types
+                if isinstance(self._data, pa.ChunkedArray):
+                    chunk, item = self.get_the_correct_chunk(item)
+                    # if we would use the StructDictEncodedLogicalTypeExtensionType this access is necessary
+                    if isinstance(self._storage_type, kasde.StructDictEncodedType):
+                        return chunk[item]
+                    storage = chunk.storage.values
+                else:  # we just take from the list
+                    storage = self._data.values
+                value = storage[item]
+                return self._converter.decode(value.as_py())
+            else:
+                return self._data[item].as_py()
         elif isinstance(item, slice):
             (start, stop, step) = item.indices(len(self._data))
             indices = list(range(start, stop, step))
@@ -564,6 +566,17 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
                 # the indexer is an integer access array
                 index_list = item.tolist()
             return self.take(index_list)
+
+    def get_the_correct_chunk(self, item):
+        if self._chunk_start_list is None:
+            self._chunk_start_list = self._get_all_chunk_start_indices(self._data)
+        # use a right bisection to locate the closest chunk index
+        chunk_idx = bisect.bisect_right(self._chunk_start_list, item) - 1
+        item = (
+            item - self._chunk_start_list[chunk_idx]
+        )  # get the index inside the chunk
+        chunk = self._data.chunk(chunk_idx)  # get the correct chunk
+        return chunk, item
 
     def __setitem__(self, item, value):
         """
@@ -748,10 +761,18 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
         numpy.take
         api.extensions.take
         """
+        if (isinstance(indices, list) and indices == [None] * len(indices)) or (
+            isinstance(indices, np.ndarray) and (indices == None).all()
+        ):
+            return self._from_sequence(
+                [None] * len(indices),
+                storage_type=self._storage_type,
+                logical_type=self._logical_type,
+                converter=self._converter,
+            )
         storage = katy._to_storage_array(
             self._data
         )  # decodes the data puts it in storage array
-
         if allow_fill and fill_value is None:  # ensures the right fill value
             fill_value = self.dtype.na_value
 
