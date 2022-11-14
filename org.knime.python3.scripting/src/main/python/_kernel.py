@@ -708,7 +708,7 @@ if __name__ == "__main__":
         warnings.filterwarnings("default", category=DeprecationWarning)
 
         logging.basicConfig()
-        logging.getLogger("py4j").setLevel(logging.ERROR)  # suppress py4j logs
+        logging.getLogger("py4j").setLevel(logging.FATAL)  # suppress py4j logs
         logging.getLogger().setLevel(logging.INFO)
 
         kernel = PythonKernel()
