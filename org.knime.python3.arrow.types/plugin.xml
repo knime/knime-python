@@ -79,6 +79,11 @@
                PythonClassName="FromDTPandasColumnConverter"
                ValueTypeName="pandas.core.dtypes.dtypes.DatetimeTZDtype">
          </FromPandasColumnConverter>
+         <PythonValueFactory
+               PythonClassName="XmlValueFactory"
+               ValueFactory="org.knime.core.data.xml.XMLValueFactory"
+               ValueTypeName="xml.etree.ElementTree.ElementTree">
+         </PythonValueFactory>
       </Module>
    </extension>
 

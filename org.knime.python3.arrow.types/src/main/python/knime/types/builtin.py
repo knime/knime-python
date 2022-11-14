@@ -44,8 +44,11 @@
 
 """
 PythonValueFactory implementations for types defined in KNIME.
-@author Adrian Nembach, KNIME GmbH, Konstanz, Germany
 """
+# @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+# @author Jonas Klotz, KNIME GmbH, Berlin, Germany
+# @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
+
 import datetime as dt
 import warnings
 
@@ -478,6 +481,39 @@ class DenseByteVectorValueFactory(kt.PythonValueFactory):
         if value is None:
             return None
         return value
+
+
+class XmlValueFactory(kt.FileStoreSerializablePythonValueFactory):
+    def __init__(self):
+        import xml.etree.ElementTree
+
+        kt.FileStoreSerializablePythonValueFactory.__init__(
+            self, xml.etree.ElementTree.ElementTree
+        )
+
+    def deserialize(self, input: "io.BytesIO") -> "xml.etree.ElementTree.ElementTree":
+        import xml.etree.ElementTree as ET
+        from io import BytesIO
+
+        length = int.from_bytes(input.read(8), byteorder="little")
+        # It would be nicer not to read the content first and then create another BytesIO from it
+        # but if we hand ET.parse a stream it will always try to rewind it to its beginning.
+        payload = input.read(length)
+        return ET.parse(BytesIO(payload))
+
+    def serialize(
+        self, value: "xml.etree.ElementTree.ElementTree", output: "io.BytesIO"
+    ):
+        import io
+
+        with io.BytesIO() as b:
+            value.write(b)
+            length = b.tell()
+            output.write(length.to_bytes(length=8, byteorder="little"))
+            output.write(b.getbuffer())
+
+    def should_be_stored_in_filestore(self, value: "xml.etree.ElementTree.ElementTree"):
+        return True
 
 
 def _knime_value_factory(name):
