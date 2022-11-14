@@ -834,7 +834,14 @@ public final class Python3KernelBackend implements PythonKernelBackend {
             // table (e.g. for the Python Script Dialog) and don't need nested loop information anyways.
             return fsHandler.createFileStore(uuid, null, -1);
         } else {
-            return fsHandler.createFileStore(uuid);
+            try {
+                return fsHandler.createFileStore(uuid);
+            } catch (IllegalStateException ex) {
+                LOGGER.debug("FileStore seemed to be readonly, creating FileStore without loop information. "
+                    + "This can happen in the Python Script dialog if the node was saved and the dialog is opened afterwards.",
+                    ex);
+                return fsHandler.createFileStore(uuid, null, -1);
+            }
         }
     }
 }
