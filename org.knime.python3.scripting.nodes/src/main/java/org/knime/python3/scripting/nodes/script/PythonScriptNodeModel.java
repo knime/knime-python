@@ -48,6 +48,9 @@
  */
 package org.knime.python3.scripting.nodes.script;
 
+import java.net.URISyntaxException;
+import java.net.URL;
+
 import org.knime.python2.generic.VariableNames;
 import org.knime.python2.ports.DataTableOutputPort;
 import org.knime.python2.ports.ImageOutputPort;
@@ -55,6 +58,7 @@ import org.knime.python2.ports.InputPort;
 import org.knime.python2.ports.OutputPort;
 import org.knime.python2.ports.PickledObjectOutputPort;
 import org.knime.python3.scripting.nodes.AbstractPythonScriptingNodeModel;
+import org.knime.python3.scripting.nodes.PortsConfigurationUtils;
 import org.knime.python3.scripting.nodes.VariableNamesUtils;
 
 /**
@@ -64,6 +68,37 @@ final class PythonScriptNodeModel extends AbstractPythonScriptingNodeModel {
 
     public PythonScriptNodeModel(final InputPort[] inPorts, final OutputPort[] outPorts) {
         super(inPorts, outPorts, false, createDefaultScript(inPorts, outPorts));
+    }
+
+    PythonScriptNodeModel(final InputPort[] inPorts, final OutputPort[] outPorts, final String defaultScript) {
+        super(inPorts, outPorts, false, defaultScript);
+
+    }
+
+    static PythonScriptNodeModel createDnDNodeModel(final URL url) {
+        var inPorts = new InputPort[0];
+        var outPorts = new OutputPort[]{PortsConfigurationUtils.createPickledObjectOutputPort(0)};
+        var variableNames = VariableNamesUtils.getVariableNames(inPorts, outPorts);
+        var defaultScript =
+            "import knime.scripting.io as knio\n\n" + getPythonObjectReaderDefaultScript(variableNames, getPath(url));
+        return new PythonScriptNodeModel(inPorts, outPorts, defaultScript);
+    }
+
+    private static String getPath(final URL url) {
+        try {
+            var uri = url.toURI();
+            if ((!uri.getScheme().equals("knime")) || (!uri.getHost().equals("LOCAL"))) {
+                throw new IllegalArgumentException("Only pickle files in the local workspace are supported.");
+            }
+            var path = uri.getPath();
+            if (path.startsWith("/")) {
+                return path.substring(1);
+            } else {
+                return path;
+            }
+        } catch (final URISyntaxException e) {
+            throw new IllegalArgumentException(e.getMessage(), e);
+        }
     }
 
     private static String createDefaultScript(final InputPort[] inPorts, final OutputPort[] outPorts) {

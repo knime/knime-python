@@ -38,4 +38,9 @@
              class="org.knime.python3.scripting.nodes.prefs.Python3ScriptingPreferencesInitializer">
        </initializer>
     </extension>
+    <extension point="org.knime.workbench.repository.registeredFileExtensions">
+        <FileExtensionMapping NodeFactory="org.knime.python3.scripting.nodes.script.PythonScriptNodeFactory">
+            <FileExtension extension=".pkl"/>
+        </FileExtensionMapping>
+    </extension>
 </plugin>

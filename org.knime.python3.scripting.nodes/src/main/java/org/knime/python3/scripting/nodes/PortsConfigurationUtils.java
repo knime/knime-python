@@ -117,12 +117,22 @@ public final class PortsConfigurationUtils {
             } else if (ImagePortObject.TYPE.equals(outType)) {
                 outPort = new ImageOutputPort("knio.output_images[" + outImageSuffix++ + "]");
             } else if (PickledObjectFileStorePortObject.TYPE.equals(outType)) {
-                outPort = new PickledObjectOutputPort("knio.output_objects[" + outObjectSuffix++ + "]");
+                outPort = createPickledObjectOutputPort(outObjectSuffix++);
             } else {
                 throw new IllegalStateException("Unsupported output type: " + outType.getName());
             }
             outPorts[i] = outPort;
         }
         return outPorts;
+    }
+
+    /**
+     * Creates the OutputPort for pickled objects.
+     *
+     * @param outObjectSuffix the index of the output object
+     * @return an OutputPort for pickled objects.
+     */
+    public static OutputPort createPickledObjectOutputPort(final int outObjectSuffix) {
+        return new PickledObjectOutputPort("knio.output_objects[" + outObjectSuffix + "]");
     }
 }

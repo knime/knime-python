@@ -63,6 +63,9 @@ import org.knime.core.node.context.NodeCreationConfiguration;
 import org.knime.core.node.port.PortType;
 import org.knime.core.node.port.image.ImagePortObject;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
+import org.knime.python2.ports.InputPort;
+import org.knime.python2.ports.OutputPort;
+import org.knime.python3.scripting.nodes.PortsConfigurationUtils;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
@@ -85,6 +88,10 @@ public final class PythonScriptNodeFactory extends ConfigurableNodeFactory<Pytho
     @Override
     protected PythonScriptNodeModel createNodeModel(final NodeCreationConfiguration creationConfig) {
         final var config = creationConfig.getPortConfig().get(); // NOSONAR
+        var urlConfig = creationConfig.getURLConfig();
+        if (urlConfig.isPresent()) {
+            return PythonScriptNodeModel.createDnDNodeModel(urlConfig.get().getUrl());
+        }
         return new PythonScriptNodeModel(createInputPorts(config), createOutputPorts(config));
     }
 
@@ -112,6 +119,11 @@ public final class PythonScriptNodeFactory extends ConfigurableNodeFactory<Pytho
     @Override
     protected NodeDialogPane createNodeDialogPane(final NodeCreationConfiguration creationConfig) {
         final var config = creationConfig.getPortConfig().get(); // NOSONAR
+        var urlConfig = creationConfig.getURLConfig();
+        if (urlConfig.isPresent()) {
+            return new PythonScriptNodeDialog(new InputPort[0],
+                new OutputPort[]{PortsConfigurationUtils.createPickledObjectOutputPort(0)});
+        }
         return new PythonScriptNodeDialog(createInputPorts(config), createOutputPorts(config));
     }
 }
