@@ -671,14 +671,14 @@ public final class Python3KernelBackend implements PythonKernelBackend {
     }
 
     private void closeInternal() {
-        PythonUtils.Misc.invokeSafely(LOGGER::debug, Python3KernelBackendProxy::releaseInputTables, m_proxy);
-        if (m_sourceFactory != null) {
-            PythonUtils.Misc.closeSafely(LOGGER::debug, m_sourceFactory);
-        }
         PythonUtils.Misc.closeSafely(LOGGER::debug, m_outputListeners);
         PythonUtils.Misc.invokeSafely(LOGGER::debug, ExecutorService::shutdownNow, m_executorService);
         m_proxy = null;
         PythonUtils.Misc.closeSafely(LOGGER::debug, m_gateway);
+        // close sources and sinks after the Python process is shutdown in order to avoid IOExceptions on Windows
+        if (m_sourceFactory != null) {
+            PythonUtils.Misc.closeSafely(LOGGER::debug, m_sourceFactory);
+        }
         PythonUtils.Misc.closeSafely(LOGGER::debug, m_sinkManager);
         synchronized (m_temporaryFsHandlers) {
             PythonUtils.Misc.invokeSafely(LOGGER::debug, IFileStoreHandler::clearAndDispose, m_temporaryFsHandlers);

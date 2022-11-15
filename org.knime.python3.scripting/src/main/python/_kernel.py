@@ -266,18 +266,6 @@ class ScriptingBackendCollection:
     def set_num_expected_output_tables(self, num_output_tables: int) -> None:
         _ioc._pad_up_to_length(_ioc._output_tables, num_output_tables)
 
-    def release_input_tables(self):
-        from knime._arrow._backend import ArrowDataSource
-
-        for table in _ioc._input_tables:
-            # If neither of the backends (knime_io or knime.scripting.io) have been imported, the list of input
-            # tables still contains ArrowDataSources. Only during import they are wrapped in the appropriate
-            # Table instance ("new" or "old" style scripting API).
-            if isinstance(table, ArrowDataSource):
-                table.close()
-            else:
-                table._source.close()
-
     def set_input_object(self, object_index: int, path: Optional[str]) -> None:
         if path is not None:
             with open(path, "rb") as file:
@@ -459,9 +447,6 @@ class PythonKernel(kg.EntryPoint):
         self, table_index: int, java_table_data_source: Optional[JavaClass]
     ):
         self._backends.set_input_table(table_index, java_table_data_source)
-
-    def releaseInputTables(self):
-        self._backends.release_input_tables()
 
     def setNumExpectedOutputTables(self, num_output_tables: int) -> None:
         self._backends.set_num_expected_output_tables(num_output_tables)

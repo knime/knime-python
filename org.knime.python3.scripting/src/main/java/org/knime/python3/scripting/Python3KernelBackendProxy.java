@@ -120,12 +120,6 @@ public interface Python3KernelBackendProxy extends PythonEntryPoint {
      */
     void setInputTable(int tableIndex, PythonDataSource tableDataSource);
 
-    /**
-     * Release the input tables on Python side i.e. close any open file handles, so that the underlying files can be
-     * removed from Java if necessary (otherwise Windows won't allow to delete the files).
-     */
-    void releaseInputTables();
-
     void setNumExpectedOutputTables(int numOutputTables);
 
     /**
