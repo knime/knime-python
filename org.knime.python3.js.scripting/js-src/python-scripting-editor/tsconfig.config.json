@@ -10,6 +10,5 @@
     "types": [
       "node"
     ],
-    "noImplicitThis": false, //https://github.com/vuejs/vetur/issues/2373
   }
 }

@@ -8,15 +8,7 @@ import monacoEditorPlugin from 'vite-plugin-monaco-editor';
 // https://vitejs.dev/config/
 export default defineConfig({
     plugins: [
-        vue({
-            template: {
-                compilerOptions: {
-                    compatConfig: {
-                        MODE: 2
-                    }
-                }
-            }
-        }),
+        vue(),
         svgLoader(),
         monacoEditorPlugin({
             languageWorkers: ['editorWorkerService'] // TODO check
@@ -24,11 +16,13 @@ export default defineConfig({
     ],
     resolve: {
         alias: {
-            // vue: '@vue/compat',
             '@': fileURLToPath(new URL('./src', import.meta.url)),
             '@@': fileURLToPath(new URL('.', import.meta.url)),
             path: 'path-browserify'
-        }
+        },
+        dedupe: [
+            'vue'
+        ]
     },
     envPrefix: 'KNIME_',
     base: './'

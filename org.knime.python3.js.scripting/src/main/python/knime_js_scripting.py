@@ -54,13 +54,21 @@ from typing import Any, Dict, List, TextIO, Callable
 
 import py4j.clientserver
 
-import knime_arrow_table as kat
-import knime_arrow as ka
-import knime_gateway as kg
-import knime_io as kio
-import knime_table as kt
-from knime_main_loop import MainLoop
+import logging
 
+LOGGER = logging.getLogger(__name__)
+
+import knime._arrow._backend as ka
+import knime.scripting._deprecated._arrow_table as kat
+
+import knime._backend._gateway as kg
+import knime.scripting._deprecated._table as kt
+
+import knime._backend._mainloop as _mainloop
+
+import knime_io as kio
+
+# from _kernel import PythonKernel #from _kernel
 # TODO(AP-19333) organize imports
 # TODO(AP-19333) logging (see knime_node_backend)
 # TODO(AP-19333) immediately check the output when it is assined
@@ -79,7 +87,7 @@ def read_pickled_obj(java_data_source):
 class ScriptingEntryPoint(kg.EntryPoint):
     def __init__(self):
         super().__init__()
-        self._main_loop = MainLoop()
+        self._main_loop = _mainloop.MainLoop()
         sys.stdout.reconfigure(encoding="utf-8")
         sys.stderr.reconfigure(encoding="utf-8")
 
@@ -101,30 +109,32 @@ class ScriptingEntryPoint(kg.EntryPoint):
         def create_python_sink():
             java_sink = java_callback.create_sink()
             return kg.data_sink_mapper(java_sink)
+            # return kat.ArrowBackend(java_callback.create_sink())
 
         sources = [kg.data_source_mapper(d) for d in data_sources]
 
         # Set the input_tables in knime_io
         # Note: We only support arrow tables
         table_sources = [s for s in sources if isinstance(s, ka.ArrowDataSource)]
-        kio._pad_up_to_length(kio._input_tables, len(table_sources))
+        kio._ioc._pad_up_to_length(kio._ioc._input_tables, len(table_sources))
         for idx, s in enumerate(table_sources):
             # TODO(AP-19333) we need to close the input tables?
-            kio._input_tables[idx] = kat.ArrowReadTable(s)
+            kio._ioc._input_tables[idx] = kat.ArrowReadTable(s)
 
         # Set the input_objects in knime_io (every other source)
         objects = [s for s in sources if not isinstance(s, ka.ArrowDataSource)]
-        kio._pad_up_to_length(kio._input_objects, len(objects))
+        kio._ioc._pad_up_to_length(kio._ioc._input_objects, len(objects))
         for idx, obj in enumerate(objects):
-            kio._input_objects[idx] = obj
+            kio._ioc._input_objects[idx] = obj
 
         # Prepare the output_* lists in knime_io
-        kio._pad_up_to_length(kio._output_tables, num_out_tables)
-        kio._pad_up_to_length(kio._output_images, num_out_images)
-        kio._pad_up_to_length(kio._output_objects, num_out_objects)
+        kio._ioc._pad_up_to_length(kio._ioc._output_tables, num_out_tables)
+        kio._ioc._pad_up_to_length(kio._ioc._output_images, num_out_images)
+        kio._ioc._pad_up_to_length(kio._ioc._output_objects, num_out_objects)
 
         # Set the table backend such that new tables can be
         # created in the script
+        # !!!!
         kt._backend = kat.ArrowBackend(create_python_sink)
 
     def execute(self, script):
@@ -146,22 +156,22 @@ class ScriptingEntryPoint(kg.EntryPoint):
         kt._backend = None
 
     def getOutputTable(self, idx: int):
-        return kio.output_tables[idx]._sink._java_data_sink
+        return kio._ioc._output_tables[idx]._sink._java_data_sink
 
     def writeOutputImage(self, idx: int, path: str):
         with open(path, "wb") as file:
-            file.write(kio.output_images[idx])
+            file.write(kio._ioc._output_images[idx])
 
     def writeOutputObject(self, idx: int, path: str) -> None:
-        obj = kio.output_objects[idx]
+        obj = kio._ioc._output_objects[idx]
         with open(path, "wb") as file:
             pickle.dump(obj=obj, file=file)
 
     def getOutputObjectType(self, idx: int) -> str:
-        return type(kio.output_objects[idx]).__name__
+        return type(kio._ioc._output_objects[idx]).__name__
 
     def getOutputObjectStringRepr(self, idx: int) -> str:
-        object_as_string = str(kio.output_objects[idx])
+        object_as_string = str(kio._ioc._output_objects[idx])
         return (
             (object_as_string[:996] + "\n...")
             if len(object_as_string) > 1000

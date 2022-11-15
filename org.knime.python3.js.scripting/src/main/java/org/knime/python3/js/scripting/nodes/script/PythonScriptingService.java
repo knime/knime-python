@@ -146,11 +146,13 @@ final class PythonScriptingService extends ScriptingService {
         /**
          * Notify that a new dialog has been opened. Must be called before calling any other method of the RPC server.
          */
-        public void openedDialog() {
+        public void initExecutableOptions() {
             // Set the executable options with the currently available flow variables
             m_executableOptions =
                 ExecutableSelectionUtils.getExecutableOptions(getWorkflowControl().getFlowObjectStack());
+        }
 
+        public void sendLastConsoleOutput() {
             // Send the console output of the last execution to the dialog
             try {
                 ((PythonScriptNodeModel)getWorkflowControl().getNodeModel())
