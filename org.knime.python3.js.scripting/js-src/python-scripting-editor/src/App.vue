@@ -109,7 +109,7 @@ export default defineComponent({
         this.loading = false;
 
         // Notify the backend that the dialog is ready
-        this.scriptingService.dialogOpened();
+        await this.scriptingService.initExecutableOptions();
 
         // Set the python executable to the currently selected option -> will start the interactive session
         this.pythonExecutableChanged(this.scriptingService.getExecutableSelection());

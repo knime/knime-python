@@ -65,30 +65,35 @@ export default defineComponent({
       :value="value"
       alignment="vertical"
       :possible-values="executablePossibleSelections"
-      @input="$emit('input', $event)"
+      @input="$emit('input', $event.target.value)"
     />
     <div
       v-if="executableInfo"
       class="executable-info"
     >
       <span v-if="executableInfo.pythonVersion"> Python Version: {{ executableInfo.pythonVersion }} </span>
-      <table>
-        <tr>
-          <th>Name</th>
-          <th>Version</th>
-          <th>Build</th>
-          <th>Channel</th>
-        </tr>
-        <tr
-          v-for="item in executableInfo.packages"
-          :key="item.name"
-        >
-          <td>{{ item.name }}</td>
-          <td>{{ item.version }}</td>
-          <td>{{ item.build }}</td>
-          <td>{{ item.channel }}</td>
-        </tr>
-      </table>
+      <figure>
+        <figcaption>
+          "Table to choose your CondaEnvironment"
+        </figcaption>
+        <table>
+          <tr>
+            <th>Name</th>
+            <th>Version</th>
+            <th>Build</th>
+            <th>Channel</th>
+          </tr>
+          <tr
+            v-for="item in executableInfo.packages"
+            :key="item.name"
+          >
+            <td>{{ item.name }}</td>
+            <td>{{ item.version }}</td>
+            <td>{{ item.build }}</td>
+            <td>{{ item.channel }}</td>
+          </tr>
+        </table>
+      </figure>
     </div>
     <div v-else>
       <!-- TODO(AP-19349) loading animation while we are getting the executable info -->

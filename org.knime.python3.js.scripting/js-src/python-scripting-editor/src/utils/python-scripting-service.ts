@@ -42,6 +42,15 @@ export class PythonScriptingService extends ScriptingService<PythonNodeSettings>
     dialogOpened(): Promise<void> {
         return this.sendToService('openedDialog');
     }
+    
+    initExecutableOptions(): Promise<void> {
+        //
+        return this.sendToService('initExecutableOptions');
+    }
+
+    sendLastConsoleOutput(): Promise<void> {
+        return this.sendToService('sendLastConsoleOutput');
+    }
 
     startInteractive(executableSelection: string): Promise<void> {
         return this.sendToService('startInteractive', [executableSelection]);

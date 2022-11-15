@@ -8,8 +8,6 @@ import App from './App.vue';
 });
 
 
-// configureCompat({ RENDER_FUNCTION: false });
-
 const app = createApp(App);
 
 app.mount('#app');
