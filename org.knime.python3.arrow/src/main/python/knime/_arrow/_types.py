@@ -439,7 +439,7 @@ class LogicalTypeExtensionType(pa.ExtensionType):
 
     def __arrow_ext_class__(self):
         """
-        Specify which exension array class to use when creating pyarrow arrays of this type
+        Specify which extension array class to use when creating pyarrow arrays of this type
         """
         return KnimeExtensionArray
 
@@ -725,7 +725,8 @@ class KnimeExtensionArray(pa.ExtensionArray):
             yield KnimeExtensionScalar(self.type, self.storage[idx])
 
     def to_pylist(self):
-        return [self.type.decode(x) for x in self.storage.to_pylist()]
+        # the pyarrow intern to pylist function cannot be used for dictionary decoded values
+        return [self[i].as_py() for i in range(len(self))]
 
     def to_pandas(self):
         # TODO use super method and pass through arguments (i.e. essentially decorate the super implementation)

@@ -367,7 +367,7 @@ class LocalTimeValueFactory(kt.PythonValueFactory):
         return type(value) == dt.time
 
 
-class FsLocationValue:
+class FSLocationValue:
     def __init__(self, fs_category, fs_specifier, path):
         self.fs_category = fs_category
         self.fs_specifier = fs_specifier
@@ -380,17 +380,20 @@ class FsLocationValue:
             "path": self.path,
         }
 
+    def __repr__(self):
+        return str(self.to_dict())
 
-class FsLocationValueFactory(kt.PythonValueFactory):
+
+class FSLocationValueFactory(kt.PythonValueFactory):
     def __init__(self):
-        kt.PythonValueFactory.__init__(self, FsLocationValue)
+        kt.PythonValueFactory.__init__(self, FSLocationValue)
 
     def decode(self, storage):
         if storage is None:
             return None
         # TODO we could change the keys of storage to integers (or use a list) which would be more compliant with
         #  the behavior in java
-        return FsLocationValue(storage["0"], storage["1"], storage["2"])
+        return FSLocationValue(storage["0"], storage["1"], storage["2"])
 
     def encode(self, value):
         if value is None:

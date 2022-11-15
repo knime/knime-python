@@ -353,31 +353,39 @@ def create_storage_for_struct_dict_encoded_array(
                 f"The type ({value_type}) does not match the type of the array ({array.type})."
             )
         value_type = array.type  # NOSONAR: "type" is the default naming in pyarrow
+        # In case we only have Missing values to encode, we can skip
+        if array.null_count == len(array):
+            entries_array = (
+                array  # as all entries are null, we cannot use null to encode
+            )
+            keys = [0] * len(array)  # all keys just map on the first element
+            mask = [True] * len(array)
+        else:
 
-        # Loop and encode
-        entry_indices = []
-        for idx, v in enumerate(array):
-            if not v.is_valid:
-                keys.append(None)
-                entry_indices.append(None)
-                mask.append(True)
-            elif v in entry_to_key:
-                # Already in this batch
-                key = entry_to_key[v]
+            # Loop and encode
+            entry_indices = []
+            for idx, v in enumerate(array):
+                if not v.is_valid:
+                    keys.append(None)
+                    entry_indices.append(None)
+                    mask.append(True)
+                elif v in entry_to_key:
+                    # Already in this batch
+                    key = entry_to_key[v]
 
-                keys.append(key)
-                entry_indices.append(None)
-                mask.append(False)
-            else:
-                # Not yet in this batch
-                key = key_generator(v)
-                entry_to_key[v] = key
+                    keys.append(key)
+                    entry_indices.append(None)
+                    mask.append(False)
+                else:
+                    # Not yet in this batch
+                    key = key_generator(v)
+                    entry_to_key[v] = key
 
-                keys.append(key)
-                entry_indices.append(idx)
-                mask.append(False)
+                    keys.append(key)
+                    entry_indices.append(idx)
+                    mask.append(False)
 
-        entries_array = array.take(entry_indices)
+            entries_array = array.take(entry_indices)
 
     # Use simple implementation for other types of arrays
     else:

@@ -47,14 +47,12 @@
 """
 import unittest
 
-import knime_types as kt
+import knime.api.types as kt
 import knime.types.builtin as et
 import testing_utility
 
 
 def _register_extension_types():
-    import knime_types as kt
-
     ext_types = "knime.types.builtin"
     kt.register_python_value_factory(
         ext_types,
@@ -137,7 +135,7 @@ def _register_extension_types():
     kt.register_python_value_factory(
         ext_types,
         "DurationValueFactory",
-        '{"type": "struct", "inner_types": ["long", "long"]}',
+        '{"type": "struct", "inner_types": ["long", "int"]}',
         """
                     {
                         "type": "struct",
@@ -153,7 +151,7 @@ def _register_extension_types():
     kt.register_python_value_factory(
         ext_types,
         "DurationValueFactory",
-        '{"type": "struct", "inner_types": ["long", "long"]}',
+        '{"type": "struct", "inner_types": ["long", "int"]}',
         """
                     {
                         "type": "struct",
@@ -166,6 +164,23 @@ def _register_extension_types():
                     """,
         "pandas._libs.tslibs.timedeltas.Timedelta",
         is_default_python_representation=False,
+    )
+    kt.register_python_value_factory(
+        ext_types,
+        "FSLocationValueFactory",
+        '{"type": "struct", "inner_types": ["string", "string", "string"]}',
+        """
+                    {
+                        "type": "struct",
+                        "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.filehandling.core.data.location.FSLocationValueFactory\\"}" },
+                        "inner": [
+                            {"type": "simple", "traits": {}},
+                            {"type": "simple", "traits": {}},
+                            {"type": "simple", "traits": {}}
+                        ]
+                    }
+                    """,
+        "knime.types.builtin.FSLocationValue",
     )
 
 
@@ -404,4 +419,18 @@ class TimeExtensionTypeTest(unittest.TestCase):
         )
         self.assertEqual(
             schema, arrow_table._schema.to_string(show_schema_metadata=False)
+        )
+
+    def test_fslocation(self):
+        arrow_backend, node_backend = testing_utility._generate_backends()
+
+        df = testing_utility._generate_test_data_frame(
+            "dict_enc_fs_location.zip", columns=["fslocation"]
+        )
+        string = ""
+        for i in range(10):
+            string += f"""{{'fs_category': 'LOCAL', 'fs_specifier': None, 'path': '/home/jonasklotz/Documents/test/{i}.txt'}}\n"""
+        self.assertEqual(
+            str(df.to_string(header=False, index=False, index_names=False)) + "\n",
+            string,
         )

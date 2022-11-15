@@ -851,7 +851,8 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
         return f"KnimePandasExtArray({self._converter}, {self._storage_type}, {self._logical_type})"
 
     def __array__(self, dtype=None):
+        # we cannot use the pyarrow to_pylist method as this it to use the scalar representation for dictionary decoding
         return np.array(
-            self._data.to_pylist(),
+            [self[i] for i in range(len(self))],
             dtype=np.dtype("object") if dtype is None else dtype,
         )
