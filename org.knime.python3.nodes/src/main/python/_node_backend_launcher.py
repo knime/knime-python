@@ -470,7 +470,7 @@ class _PythonNodeProxy:
             java_exec_context, self._get_flow_variables()
         )
         try:
-            # TODO: maybe we want to run execute on the main thread? use knime_main_loop
+            # TODO: maybe we want to run execute on the main thread? use knime._backend._mainloop
             outputs = self._node.execute(exec_context, *inputs)
 
             # Return null if the execution was canceled
@@ -527,7 +527,7 @@ class _PythonNodeProxy:
         )
         try:
             kp.validate_specs(self._node, inputs)
-            # TODO: maybe we want to run execute on the main thread? use knime_main_loop
+            # TODO: maybe we want to run execute on the main thread? use knime._backend._mainloop
             outputs = self._node.configure(config_context, *inputs)
         except Exception as ex:
             self._set_failure(ex, 1)

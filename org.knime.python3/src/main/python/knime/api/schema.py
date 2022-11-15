@@ -239,7 +239,7 @@ class LogicalType(KnimeType):
 
     Some LogicalTypes, such as date and time formats, are also implemented on the Python
     side. For these, the value_type property represents the Python type, and these
-    logical types can be created using the helper method knime_schema.logical(value_type) below.
+    logical types can be created using the helper method knime.api.schema.logical(value_type) below.
 
     To allow multiple Python types to map to the same KNIME logical type, a
     proxy_type_converter can be provided. The proxy type converter is also a PythonValueFactory
@@ -457,13 +457,13 @@ def logical(value_type) -> LogicalType:
 
     Args:
         value_type:
-            The type of the values inside this column. A knime_types.PythonValueFactory
+            The type of the values inside this column. A knime.api.types.PythonValueFactory
             must be registered for this type.
 
     Raise:
         TypeError:
             if no PythonValueFactory has been registered for this value type
-            with `knime_types.register_python_value_factory`
+            with `knime.api.types.register_python_value_factory`
     """
     try:
         proxy_type = value_type

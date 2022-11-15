@@ -1,7 +1,7 @@
 from typing import List, Tuple
 import knime._backend._gateway as kg
 import knime.extension.nodes as kn
-import _backend as knb
+import _node_backend_launcher as knb
 import knime.scripting._deprecated._table as kt
 import knime.api.schema as ks
 from packaging.version import Version

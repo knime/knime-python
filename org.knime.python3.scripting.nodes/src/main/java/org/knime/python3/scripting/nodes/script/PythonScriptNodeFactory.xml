@@ -16,7 +16,7 @@
 			outputs, and how they can be accessed in the Python script.
 			Furthermore, the node allows to import Jupyter notebooks as Python modules via the
 			<a href="https://docs.knime.com/latest/python_installation_guide/#_load_jupyter_notebooks_from_knime">
-			knime_jupyter</a> module that can be imported in the script.
+			knime.scripting.jupyter</a> module that can be imported in the script.
 
 			<p>The node brings significant performance improvements over the nodes of the legacy KNIME Python Integration
 			and enables working with larger-than-memory data. More details on how to transition to the node's new

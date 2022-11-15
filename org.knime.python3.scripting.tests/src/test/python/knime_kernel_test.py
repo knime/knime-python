@@ -54,7 +54,7 @@ from io import BytesIO
 
 import knime._backend._gateway as kg
 import knime_io as kio
-from _kernel import PythonKernel
+from _kernel_launcher import PythonKernel
 from knime_testing import PythonTestResult
 
 

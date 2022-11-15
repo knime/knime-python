@@ -43,7 +43,7 @@
 # ------------------------------------------------------------------------
 
 """
-Arrow implementation of the knime_types.
+Arrow implementation of the knime.api.types.
 
 @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
 """

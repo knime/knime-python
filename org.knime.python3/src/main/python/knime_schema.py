@@ -54,6 +54,7 @@ import warnings
 warnings.warn(
     f"The module {__name__} is deprecated, please use 'import knime.api.schema' instead",
     DeprecationWarning,
+    stacklevel=2,
 )
 
 from knime.api.schema import _ColumnarView

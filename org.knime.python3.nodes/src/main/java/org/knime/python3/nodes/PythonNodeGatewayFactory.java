@@ -76,7 +76,7 @@ import org.knime.python3.views.Python3ViewsSourceDirectory;
 public final class PythonNodeGatewayFactory {
 
     private static final Path LAUNCHER = PythonNodesSourceDirectory.getPath()//
-        .resolve("_backend.py");
+        .resolve("_node_backend_launcher.py");
 
     private static final PythonGatewayFactory FACTORY = Activator.GATEWAY_FACTORY;
 

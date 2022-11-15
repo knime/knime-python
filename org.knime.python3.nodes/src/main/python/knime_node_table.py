@@ -48,7 +48,14 @@ Old-style import for the modern KNIME Python table interface.
 This only includes the contents of knime.api.table, by which it has been
 replaced.
 """
-from knime.api.table import *
+from knime.api.table import *  # NOSONAR: intended; this file is only a placeholder
+import warnings
+
+warnings.warn(
+    f"The module {__name__} is deprecated, please use 'import knime.api.table' instead",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 # Explicitly also forward-include the private members because they are omitted
 # in a "from foo import *" import.

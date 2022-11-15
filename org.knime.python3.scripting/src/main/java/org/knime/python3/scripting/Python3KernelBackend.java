@@ -264,7 +264,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
             // process just for testing. Instead, make testing part of launching the process.
             PythonKernel.testInstallation(command, REQUIRED_MODULES);
 
-            final String launcherPath = Python3ScriptingSourceDirectory.getPath().resolve("_kernel.py").toString();
+            final String launcherPath = Python3ScriptingSourceDirectory.getPath().resolve("_kernel_launcher.py").toString();
             final List<PythonExtension> extensions = Collections.singletonList(PythonArrowExtension.INSTANCE);
             final var pythonPathBuilder = new PythonPathBuilder(extensionPythonPath) //
                 .add(Python3SourceDirectory.getPath()) //

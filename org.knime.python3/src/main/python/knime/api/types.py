@@ -169,8 +169,8 @@ def _get_converter_or_value_factory(module, class_name):
 
         raise ValueError(
             f"{class_name} in {module.__name__} is not compatible, must be of type "
-            + "knime_types.PythonValueFactory or knime_types.ToPandasColumnConverter or"
-            + " knime_type.ToPandasColumnConverter"
+            + "knime.api.types.PythonValueFactory or knime.api.types.ToPandasColumnConverter or"
+            + " knime.api.types.ToPandasColumnConverter"
         )
     return clazz()
 

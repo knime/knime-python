@@ -255,7 +255,7 @@ class PythonNode(ABC):
     **Example**::
 
             import logging
-            import knime_extension as knext
+            import knime.extension as knext
 
             LOGGER = logging.getLogger(__name__)
 

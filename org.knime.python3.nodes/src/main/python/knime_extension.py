@@ -54,4 +54,5 @@ import warnings
 warnings.warn(
     f"The module {__name__} is deprecated, please use 'import knime.extension' instead",
     DeprecationWarning,
+    stacklevel=2,
 )

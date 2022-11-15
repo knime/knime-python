@@ -41,5 +41,19 @@
 #  may freely choose the license terms applicable to such Node, including
 #  when such Node is propagated with or for interoperation with KNIME.
 # ------------------------------------------------------------------------
+"""
+Old-style import for the modern KNIME Python views interface.
 
+This only includes the contents of knime.api.views, by which it has been
+replaced.
+"""
 from knime.api.views import *
+
+
+import warnings
+
+warnings.warn(
+    f"The module {__name__} is deprecated, please use 'import knime.api.views' instead",
+    DeprecationWarning,
+    stacklevel=2,
+)

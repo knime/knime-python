@@ -147,41 +147,41 @@ used in the nodes execution by accessing ``self.param_name``. These parameters c
 the following parameter types. For a more detailed description see
 `Defining the node's configuration dialog <https://docs.knime.com/latest/pure_python_node_extensions_guide/index.html#_defining_the_nodes_configuration_dialog>`_.
 
-.. autoclass:: knime_parameter.IntParameter
+.. autoclass:: knime.extension.parameter.IntParameter
    :members:
    :noindex:
    :inherited-members:
    :exclude-members: validator
 
-.. autoclass:: knime_parameter.DoubleParameter
-   :members:
-   :noindex:
-   :inherited-members:
-   :exclude-members: validator
-
-
-.. autoclass:: knime_parameter.BoolParameter
+.. autoclass:: knime.extension.parameter.DoubleParameter
    :members:
    :noindex:
    :inherited-members:
    :exclude-members: validator
 
 
-.. autoclass:: knime_parameter.StringParameter
+.. autoclass:: knime.extension.parameter.BoolParameter
    :members:
    :noindex:
    :inherited-members:
    :exclude-members: validator
 
 
-.. autoclass:: knime_parameter.ColumnParameter
+.. autoclass:: knime.extension.parameter.StringParameter
    :members:
    :noindex:
    :inherited-members:
    :exclude-members: validator
 
 
-.. autoclass:: knime_parameter.MultiColumnParameter
+.. autoclass:: knime.extension.parameter.ColumnParameter
+   :members:
+   :noindex:
+   :inherited-members:
+   :exclude-members: validator
+
+
+.. autoclass:: knime.extension.parameter.MultiColumnParameter
    :members:
    :noindex:
    :inherited-members:
@@ -194,7 +194,7 @@ they also support custom validation via a property-like decorator notation. For 
 the parameter value matches a certain criteria (see example below). The validator should be placed below the definition of
 the corresponding parameter.
 
-.. autoclass:: knime_parameter.IntParameter
+.. autoclass:: knime.extension.parameter.IntParameter
    :members:
    :noindex:
    :inherited-members:
@@ -206,7 +206,7 @@ configuration dialog. Another benefit of defining parameter groups is the abilit
 As opposed to only being able to validate a single value when attaching a validator to a parameter, group validators
 have access to the values of all parameters contained in the group, allowing for more complex validation routines.
 
-.. autofunction:: knime_parameter.parameter_group
+.. autofunction:: knime.extension.parameter.parameter_group
    :noindex:
 
 
@@ -230,14 +230,14 @@ or the table structure (Schema) in configure between Python and KNIME.
    :special-members: __getitem__
 
 
-.. autoclass:: knime_schema.Schema
+.. autoclass:: knime.api.schema.Schema
    :members:
    :noindex:
    :inherited-members:
    :special-members: __getitem__
 
 
-.. autoclass:: knime_schema.Column
+.. autoclass:: knime.api.schema.Column
    :members:
    :noindex:
    :inherited-members:
@@ -248,31 +248,31 @@ Data Types
 These are helper functions to create KNIME compatible datatypes. For instance, if a new column is created.
 
 
-.. autofunction:: knime_schema.int32
+.. autofunction:: knime.api.schema.int32
    :noindex:
 
-.. autofunction:: knime_schema.int64
+.. autofunction:: knime.api.schema.int64
    :noindex:
 
-.. autofunction:: knime_schema.double
+.. autofunction:: knime.api.schema.double
    :noindex:
 
-.. autofunction:: knime_schema.bool_
+.. autofunction:: knime.api.schema.bool_
    :noindex:
 
-.. autofunction:: knime_schema.string
+.. autofunction:: knime.api.schema.string
    :noindex:
 
-.. autofunction:: knime_schema.blob
+.. autofunction:: knime.api.schema.blob
    :noindex:
 
-.. autofunction:: knime_schema.list_
+.. autofunction:: knime.api.schema.list_
    :noindex:
 
-.. autofunction:: knime_schema.struct
+.. autofunction:: knime.api.schema.struct
    :noindex:
 
-.. autofunction:: knime_schema.logical
+.. autofunction:: knime.api.schema.logical
    :noindex:
 
 

@@ -158,7 +158,7 @@ def connect_to_knime(entry_point: EntryPoint):
     """Connect to the KNIME instance that started this Python process.
 
     This function expects the Python process to have been created by the `PythonGateway`
-    Java class. After this function returns `knime_gateway.client_server` will be populated
+    Java class. After this function returns `knime._backend._gateway.client_server` will be populated
     and can be used to communicate with the JVM.
 
     Args:
@@ -244,7 +244,7 @@ def data_source_mapper(java_data_source):
     """Map a Java object which provides data to an Python object which gives access to the data
     using a Pythonic API.
 
-    The mapper for a type of data must be decorated with the decorator `@knime_gateway.data_source(identifier)`.
+    The mapper for a type of data must be decorated with the decorator `@knime._backend._gateway.data_source(identifier)`.
 
     Args:
         java_data_source: The Java object providing data. The object must implement the method `getIdentifier`
@@ -262,7 +262,7 @@ def data_source_mapper(java_data_source):
             f"No mapper registerd for identifier {identifier}. "
             "Are you missing a KNIME Extension? "
             "If this is your own extension make sure to register a mapper by "
-            "decorating a function with `@knime_gateway.data_source(identifier)`."
+            "decorating a function with `@knime._backend._gateway.data_source(identifier)`."
         )
     return DATA_SOURCES[identifier](java_data_source)
 
@@ -270,7 +270,7 @@ def data_source_mapper(java_data_source):
 def data_sink_mapper(java_data_sink):
     """Map a Java object which collects data to an Python object with a Pythonic API.
 
-    The mapper for a type of data must be decorated with the decorator `@knime_gateway.data_sink(identifier)`.
+    The mapper for a type of data must be decorated with the decorator `@knime._backend._gateway.data_sink(identifier)`.
 
     Args:
         java_data_sink: The Java object collecting data. The object must implement the method `getIdentifier`
@@ -288,7 +288,7 @@ def data_sink_mapper(java_data_sink):
             f"No mapper registerd for identifier {identifier}. "
             "Are you missing a KNIME Extension? "
             "If this is your own extension make sure to register a mapper by "
-            "decorating a function with `@knime_gateway.data_sink(identifier)`."
+            "decorating a function with `@knime._backend._gateway.data_sink(identifier)`."
         )
     return DATA_SINKS[identifier](java_data_sink)
 

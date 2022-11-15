@@ -83,7 +83,7 @@ public class PythonNodeProxyTest {
     @Before
     public void setup() throws IOException, InterruptedException {
         m_gateway = PythonNodeTestUtils.openPythonGateway(PythonNodeProxyTestEntryPoint.class, LAUNCHER,
-            PythonNodesModule.KNIME_NODE_BACKEND);
+            PythonNodesModule.NODE_BACKEND_LAUNCHER);
         m_proxy = m_gateway.getEntryPoint().getProxy();
     }
 

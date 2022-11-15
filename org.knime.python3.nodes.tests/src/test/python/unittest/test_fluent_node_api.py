@@ -273,7 +273,7 @@ class NodeWithoutPortsTest(unittest.TestCase):
         self.assertEqual(0, len(self.node_instance.output_ports))
 
     def test_create_node_proxy(self):
-        from _backend import _PythonNodeProxy
+        from _node_backend_launcher import _PythonNodeProxy
 
         _PythonNodeProxy(self.node_instance, self.backend._port_type_registry)
         _PythonNodeProxy(self.node, self.backend._port_type_registry)

@@ -43,16 +43,16 @@
 # ------------------------------------------------------------------------
 
 """
-Old-style import for the modern KNIME Python jupyter interface.
+Old-style import for the KNIME Python node interface.
 
-This only includes the contents of knime.scripting.jupyter, by which it has been
+This only includes the contents of knime.extension.nodes, by which it has been
 replaced.
 """
-from knime.scripting.jupyter import *  # NOSONAR: intended; this file is only a placeholder
+from knime.extension.nodes import *  # NOSONAR: intended; this file is only a placeholder
 import warnings
 
 warnings.warn(
-    f"The module {__name__} is deprecated, please use 'import knime.scripting.jupyter' instead",
+    f"The module {__name__} is deprecated, please use 'import knime.extension.nodes' instead",
     DeprecationWarning,
     stacklevel=2,
 )
