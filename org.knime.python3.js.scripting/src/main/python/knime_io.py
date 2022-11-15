@@ -47,7 +47,7 @@
 import warnings
 import sys
 
-if "knime.scripting.io" in sys.modules:
+if "knime.scripting.js.io" in sys.modules:
     try:
         import sphinx
 
@@ -69,7 +69,13 @@ warnings.warn(
 from typing import Any, Dict, List
 
 # Do not remove, meant to be reexported.
-from knime_table import write_table, batch_write_table, WriteTable, ReadTable, Batch
+from knime.scripting._deprecated._table import (
+    write_table,
+    batch_write_table,
+    WriteTable,
+    ReadTable,
+    Batch,
+)
 import knime.scripting._io_containers as _ioc
 
 # -----------------------------------------------------------------------------------------
@@ -77,7 +83,7 @@ def _prepare_input_tables():
     if len(_ioc._input_tables) == 0:
         return
 
-    import knime_arrow_table as kat
+    import knime.scripting._deprecated._arrow_table as kat
 
     for idx, data_source in enumerate(_ioc._input_tables):
         _ioc._input_tables[idx] = kat.ArrowReadTable(data_source)
@@ -161,9 +167,6 @@ Use this to, for example, pass a trained model to another Python script node.
     knime_io.output_objects[0] = model
 
 """
-def _pad_up_to_length(lst: list, length: int) -> None:
-    lst += [None] * (length - len(lst))
-
 
 __all__ = [
     "flow_variables",

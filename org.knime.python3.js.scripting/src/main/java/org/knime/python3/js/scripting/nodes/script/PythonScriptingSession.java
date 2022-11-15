@@ -125,7 +125,7 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
         m_gateway = createGateway(pythonCommand);
         m_entryPoint = m_gateway.getEntryPoint();
         m_tableConverter = new PythonArrowTableConverter(EXECUTOR_SERVICE, ARROW_STORE_FACTORY, fileStoreHandler);
-        m_outputRedirector = PythonGatewayUtils.redirectGatewayOutput(m_gateway, LOGGER::info, LOGGER::info, 100);
+        m_outputRedirector = PythonGatewayUtils.redirectGatewayOutput(m_gateway, LOGGER::info, LOGGER::info);
     }
 
     void setupIO(final PortObject[] inData, final int numOutTables, final int numOutImages, final int numOutObjects,

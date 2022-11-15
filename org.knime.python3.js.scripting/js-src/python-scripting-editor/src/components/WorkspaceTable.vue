@@ -30,22 +30,27 @@ export default defineComponent({
 </script>
 
 <template>
-  <table class="workspace-table">
-    <tr>
-      <th>Name</th>
-      <th>Type</th>
-      <th>Value</th>
-    </tr>
-    <tr
-      v-for="item in workspaceTable"
-      :key="item.name"
-      @click="$emit('clicked', item.name)"
-    >
-      <td>{{ item.name }}</td>
-      <td>{{ item.type }}</td>
-      <td>{{ item.value }}</td>
-    </tr>
-  </table>
+  <figure>
+    <figcaption>
+      "Workspace Table"
+    </figcaption>
+    <table class="workspace-table">
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Value</th>
+      </tr>
+      <tr
+        v-for="item in workspaceTable"
+        :key="item.name"
+        @click="$emit('clicked', item.name)"
+      >
+        <td>{{ item.name }}</td>
+        <td>{{ item.type }}</td>
+        <td>{{ item.value }}</td>
+      </tr>
+    </table>
+  </figure>
 </template>
 
 <style scoped>
