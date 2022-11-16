@@ -50,9 +50,11 @@ package org.knime.python3.scripting.nodes.prefs;
 
 import org.eclipse.core.runtime.preferences.DefaultScope;
 import org.eclipse.core.runtime.preferences.InstanceScope;
+import org.knime.conda.CondaEnvironmentIdentifier;
 import org.knime.conda.prefs.CondaPreferences;
 import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonVersion;
+import org.knime.python2.config.CondaEnvironmentsConfig;
 import org.knime.python2.config.PythonConfigStorage;
 import org.knime.python2.config.PythonEnvironmentConfig;
 import org.knime.python2.config.PythonEnvironmentType;
@@ -160,5 +162,17 @@ public final class Python3ScriptingPreferences {
      */
     public static String getCondaInstallationPath() {
         return CondaPreferences.getCondaInstallationDirectory();
+    }
+
+    static boolean isPlaceholderCondaEnvSelected() {
+        var condaConfig = new CondaEnvironmentsConfig();
+        condaConfig.loadConfigFrom(CURRENT);
+        return isPlaceholderCondaEnvSelected(condaConfig);
+    }
+
+    static boolean isPlaceholderCondaEnvSelected(final CondaEnvironmentsConfig condaConfig) {
+        final var placeholderPath = CondaEnvironmentIdentifier.PLACEHOLDER_CONDA_ENV.getDirectoryPath();
+        final var selectedPath = condaConfig.getPython3Config().getEnvironmentDirectory().getStringValue();
+        return placeholderPath.equals(selectedPath);
     }
 }

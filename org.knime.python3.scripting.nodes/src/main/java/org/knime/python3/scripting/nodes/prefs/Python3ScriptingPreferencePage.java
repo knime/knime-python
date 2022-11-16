@@ -222,7 +222,7 @@ public final class Python3ScriptingPreferencePage extends AbstractPythonPreferen
             m_environmentTypeConfig.getEnvironmentType().setStringValue(PythonEnvironmentType.CONDA.getId());
         } else if (PythonEnvironmentType.CONDA == pythonEnvType //
             && m_bundledCondaEnvironmentConfig.isAvailable() //
-            && Python3ScriptingPreferencesInitializer.isPlaceholderCondaEnvSelected()) {
+            && Python3ScriptingPreferences.isPlaceholderCondaEnvSelected()) {
             showCondaToBundledWarning = true;
             m_environmentTypeConfig.getEnvironmentType().setStringValue(PythonEnvironmentType.BUNDLED.getId());
         }

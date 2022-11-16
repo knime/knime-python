@@ -46,7 +46,6 @@
 package org.knime.python3.scripting.nodes.prefs;
 
 import org.eclipse.core.runtime.preferences.AbstractPreferenceInitializer;
-import org.knime.conda.CondaEnvironmentIdentifier;
 import org.knime.python2.config.CondaEnvironmentsConfig;
 import org.knime.python2.config.ManualEnvironmentsConfig;
 import org.knime.python2.config.PythonConfigStorage;
@@ -102,10 +101,7 @@ public final class Python3ScriptingPreferencesInitializer extends AbstractPrefer
         return (ManualEnvironmentsConfig)PythonPreferences.getPythonEnvironmentsConfig(PythonEnvironmentType.MANUAL);
     }
 
-    static boolean isPlaceholderCondaEnvSelected() {
-        final var placeholderPath = CondaEnvironmentIdentifier.PLACEHOLDER_CONDA_ENV.getDirectoryPath();
-        final var selectedPath =
-            getDefaultCondaEnvironmentsConfig().getPython3Config().getEnvironmentDirectory().getStringValue();
-        return placeholderPath.equals(selectedPath);
+    private static boolean isPlaceholderCondaEnvSelected() {
+        return Python3ScriptingPreferences.isPlaceholderCondaEnvSelected(getDefaultCondaEnvironmentsConfig());
     }
 }
