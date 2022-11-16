@@ -267,8 +267,16 @@ class ScriptingBackendCollection:
         _ioc._pad_up_to_length(_ioc._output_tables, num_output_tables)
 
     def release_input_tables(self):
+        from knime._arrow._backend import ArrowDataSource
+
         for table in _ioc._input_tables:
-            table._source.close()
+            # If neither of the backends (knime_io or knime.scripting.io) have been imported, the list of input
+            # tables still contains ArrowDataSources. Only during import they are wrapped in the appropriate
+            # Table instance ("new" or "old" style scripting API).
+            if isinstance(table, ArrowDataSource):
+                table.close()
+            else:
+                table._source.close()
 
     def set_input_object(self, object_index: int, path: Optional[str]) -> None:
         if path is not None:
