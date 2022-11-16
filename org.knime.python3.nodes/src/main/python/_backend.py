@@ -750,6 +750,9 @@ class FallBackMarkdownParser:
     def parse_options(self, options):
         return options
 
+    def parse_option_description(self, option_description):
+        return option_description
+
     def parse_tabs(self, tabs):
         return tabs
 
