@@ -175,7 +175,8 @@ def _get_markdown_parser():
         knime_parser = KnimeMarkdownParser()
     except ModuleNotFoundError:
         logging.warning(
-            "The 'markdown' Python package is missing from the environment. Node description elements using Markdown syntax will not be parsed."
+            " The 'markdown' Python package is missing from the environment: "
+            + "node descriptions will display Markdown source in plain text instead of being rich-text-formatted."
         )
         knime_parser = FallBackMarkdownParser()
 
