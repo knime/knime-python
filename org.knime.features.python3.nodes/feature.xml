@@ -727,6 +727,10 @@ license terms applicable to such Node, including when such Node is
 propagated with or for interoperation with KNIME.
    </license>
 
+   <requires>
+      <import feature="org.knime.features.core.columnar" version="4.7.0" match="greaterOrEqual"/>
+   </requires>
+
    <plugin
          id="org.knime.ext.py4j"
          download-size="0"
