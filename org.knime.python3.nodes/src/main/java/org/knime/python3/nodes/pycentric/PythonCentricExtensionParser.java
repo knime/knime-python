@@ -300,6 +300,13 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
             m_environmentName = environmentName;
             m_extensionPath = extensionPath;
             m_version = version;
+
+            if (m_version == null || m_version.isBlank()) {
+                m_version = "0.0.0";
+                LOGGER.warnWithFormat(
+                    "Missing extension version in knime.yml for extension '%s'; setting version to '0.0.0'", name);
+            }
+
             var relativeModulePath = Path.of(extensionModule);
             if (relativeModulePath.getParent() == null) {
                 // the extension module is top level in the extension folder next to the knime.yml
