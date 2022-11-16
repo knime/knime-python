@@ -13,7 +13,7 @@ def baseBranch = (BN == KNIMEConstants.NEXT_RELEASE_BRANCH ? "master" : BN.repla
 
 properties([
     pipelineTriggers([
-        upstream('knime-filehandling/' + env.BRANCH_NAME.replaceAll('/', '%2F'))
+        upstream("knime-conda-channels/${BRANCH_NAME.replaceAll('/', '%2F')}")
     ]),
     parameters(workflowTests.getConfigurationsAsParameters() + getPythonParameters()),
     buildDiscarder(logRotator(numToKeepStr: '5')),
