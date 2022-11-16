@@ -88,6 +88,10 @@ Python Extension Development (Labs)
 These classes can be used by developers to implement their own Python nodes for KNIME. 
 For a more detailed description see the `Pure Python Node Extensions Guide <https://docs.knime.com/latest/pure_python_node_extensions_guide/index.html#introduction>`_
 
+.. note::
+   Before KNIME AP 4.7, the module used to access KNIME functionality was called ``knime_extension``. This module has been renamed 
+   to ``knime.extension``.
+
 Nodes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
