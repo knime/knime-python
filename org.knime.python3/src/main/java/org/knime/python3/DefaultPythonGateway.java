@@ -328,7 +328,19 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
         }
         if (m_process != null) {
             m_process.destroy();
-            m_process.destroyForcibly();
+            try {
+                int terminationTimeout = getConnectionTimeoutInMillis();
+                // Process#destroyForcibly() does not guarantee that the process is terminated upon its return
+                // therefore we need to Process#waitFor()
+                if (!m_process.destroyForcibly().waitFor(terminationTimeout, TimeUnit.MILLISECONDS)) {
+                    throw new IllegalStateException(
+                        "The Python process was not terminated within " + terminationTimeout + " milliseconds.");
+                }
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("Interrupted while waiting for the termination of the Python process.",
+                    ex);
+            }
         }
     }
 
