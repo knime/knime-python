@@ -605,21 +605,26 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
         """
 
         def _set_data_from_input(inp: Union[list, np.ndarray]):
-            # todo check if data contains lists > recursive mapping
-            our_ext_type = self._data.type
+            """Set the backbone data array with new values.
+
+            Parameters
+            ----------
+            inp : input list which is used as new data.
+            Returns
+            -------
+            None
+            """
+            ext_type = self._data.type
             try:
-                tmp = list(map(our_ext_type.encode, inp))
+                # encode the python value to the correct storage type
+                encoded_pylist = list(map(ext_type.encode, inp))
             except TypeError:
                 raise TypeError(
-                    "Encoding of the new value is not possible, maybe its not the right dtype?"
+                    f"Encoding of the new value is not possible, the array has the type '{ext_type}',"
+                    f" maybe its not the right dtype?"
                 )
-
-            an_arr = pa.array(tmp, type=our_ext_type.storage_type)
-
-            an_arr = _apply_to_array(
-                an_arr, lambda a: pa.ExtensionArray.from_storage(our_ext_type, a)
-            )
-            self._data = an_arr
+            arr = pa.array(encoded_pylist)
+            self._data = katy._to_extension_array(arr, ext_type)
 
         tmp_list = self._data.to_pylist()  # convert immutable data to mutable list
 

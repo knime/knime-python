@@ -148,7 +148,9 @@ def _get_arrow_storage_to_ext_fn(dtype):
     ):  # if datatype is a dict encoded pa.struct type
         # this is the base case: we found the dict encoded data and return the dict encoding function
         key_gen = kasde.DictKeyGenerator()
-        return lambda a: kasde.struct_dict_encode(a, key_gen, key_type=dtype.key_type)
+        return lambda a: kasde.struct_dict_encode(
+            a, key_gen, key_type=dtype.key_type, value_type=dtype.value_type
+        )
 
     elif is_value_factory_type(dtype):  # if datatype is a LogicalTypeExtensionType
         # finds nested encoding function

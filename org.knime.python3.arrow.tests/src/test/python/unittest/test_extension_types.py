@@ -434,3 +434,10 @@ class TimeExtensionTypeTest(unittest.TestCase):
             str(df.to_string(header=False, index=False, index_names=False)) + "\n",
             string,
         )
+        path = df["fslocation"].iloc[0]
+        path.path = "C:Users"
+        df["fslocation"].iloc[0] = path
+        self.assertEqual(
+            str(df["fslocation"].iloc[0]),
+            "{'fs_category': 'LOCAL', 'fs_specifier': None, 'path': 'C:Users'}",
+        )

@@ -347,20 +347,19 @@ def create_storage_for_struct_dict_encoded_array(
     # Use specialized implementation for pyarrow arrays:
     # This saves only the indices of the values and uses pc.take
     if isinstance(array, pa.Array):
-        # Check that the type fits or is not given
-        if value_type is not None and value_type != array.type:
-            raise ValueError(
-                f"The type ({value_type}) does not match the type of the array ({array.type})."
-            )
-        value_type = array.type  # NOSONAR: "type" is the default naming in pyarrow
-        # In case we only have Missing values to encode, we can skip
+        # In case we only have missing values to encode, we manually create the encoded storage
         if array.null_count == len(array):
-            entries_array = (
-                array  # as all entries are null, we cannot use null to encode
-            )
+            # create an explicitly typed nulls array, as we need to preserve the value type
+            entries_array = pa.nulls(len(array), type=value_type)
             keys = [0] * len(array)  # all keys just map on the first element
-            mask = [True] * len(array)
+            mask = [True] * len(array)  # all entries are null
         else:
+            # type checking is only important when the array is not Empty anyways
+            # Check that the type fits or is not given
+            if value_type is not None and value_type != array.type:
+                raise ValueError(
+                    f"The type ({value_type}) does not match the type of the array ({array.type})."
+                )
 
             # Loop and encode
             entry_indices = []
@@ -414,7 +413,6 @@ def create_storage_for_struct_dict_encoded_array(
 
         if value_type is None:
             entries_array = pa.array(entries)
-            value_type = entries_array.type
         else:
             entries_array = pa.array(entries, type=value_type)
 
