@@ -104,7 +104,7 @@ class ScriptingBackendV0(ScriptingBackend):
     def check_output_table(self, table_index, table):
         if table is None or not isinstance(table, kat._ArrowWriteTableImpl):
             type_str = type(table) if table is not None else "None"
-            raise TypeError(
+            raise KnimeUserError(
                 f"Expected a WriteTable in output_tables[{table_index}], got {type_str}. "
                 "Please use knime_io.write_table(data) or knime_io.batch_write_table() to create a WriteTable."
             )
@@ -128,7 +128,7 @@ class ScriptingBackendV0(ScriptingBackend):
         kt._backend = None
 
     def get_output_view(self):
-        raise NotImplementedError(
+        raise KnimeUserError(
             "The deprecated knime_io backend does not support views. "
             + "Please import knime.scripting.io"
         )
@@ -146,7 +146,7 @@ class ScriptingBackendV1(ScriptingBackend):
             and not isinstance(table, katn.ArrowBatchOutputTable)
         ):
             type_str = type(table) if table is not None else "None"
-            raise TypeError(
+            raise KnimeUserError(
                 f"Output table '{table_index}' must be of type knime.api.Table or knime.api.BatchOutputTable, but got {type_str}"
             )
 
@@ -168,7 +168,7 @@ class ScriptingBackendV1(ScriptingBackend):
             elif isinstance(table, katn.ArrowBatchOutputTable):
                 _ioc._output_tables[idx] = table._sink._java_data_sink
             else:
-                raise TypeError(
+                raise KnimeUserError(
                     f"Output table '{idx}' must be of type knime.api.Table or knime.api.BatchOutputTable, but got {type(table)}"
                 )
 
@@ -245,7 +245,7 @@ class ScriptingBackendCollection:
 
     def get_active_backend_or_raise(self) -> ScriptingBackend:
         if self.active_backend is None:
-            raise RuntimeError(
+            raise KnimeUserError(
                 "Either the script has not been executed, or no KNIME scripting interface has been imported. "
                 + "Please import knime.scripting.io"
             )
@@ -318,7 +318,7 @@ class ScriptingBackendCollection:
 
         for i, o in enumerate(_ioc._output_objects):
             if o is None:
-                raise ValueError(
+                raise KnimeUserError(
                     f"Expected an object in output_objects[{i}], got {type(o)}"
                 )
 
@@ -329,7 +329,7 @@ class ScriptingBackendCollection:
                     # first output image
                     _ioc._output_images[0] = self._render_view()
                 else:
-                    raise ValueError(
+                    raise KnimeUserError(
                         f"Expected an image in output_images[{i}], got {type(o)}"
                     )
 
@@ -338,7 +338,7 @@ class ScriptingBackendCollection:
         if self._expect_view:
             v = self.get_active_backend_or_raise().get_output_view()
             if v is None or not isinstance(v, kv.NodeView):
-                raise ValueError(
+                raise KnimeUserError(
                     f"Expected an output view in output_view, got {type(v)}"
                 )
 
@@ -352,7 +352,7 @@ class ScriptingBackendCollection:
                     rendered = rendered.encode()
                 return rendered
             except NotImplementedError:
-                raise ValueError(
+                raise KnimeUserError(
                     "Cannot generate an SVG or PNG image from the view. "
                     "Please assign a value to output_images[0]."
                 )
@@ -369,7 +369,7 @@ class ScriptingBackendCollection:
             except AttributeError as ex:
                 # py4j raises attribute errors of the form "'<type>' object has no attribute '_get_object_id'" if it
                 # fails to translate Python objects to Java objects.
-                raise TypeError(
+                raise KnimeUserError(
                     f"Flow variable '{key}' of type '{type(flow_variable)}' cannot be translated to a valid KNIME flow "
                     f"variable. Please remove the flow variable or change its type to something that can be translated."
                 )
@@ -610,6 +610,12 @@ class PythonKernel(kg.EntryPoint):
 
     class Java:
         implements = ["org.knime.python3.scripting.Python3KernelBackendProxy"]
+
+
+class KnimeUserError(Exception):
+    """An error that indicates that there is an error in the user script."""
+
+    pass
 
 
 class _CopyingTextIO:

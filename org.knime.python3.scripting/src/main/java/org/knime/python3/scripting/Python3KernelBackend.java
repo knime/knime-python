@@ -653,7 +653,13 @@ public final class Python3KernelBackend implements PythonKernelBackend {
 
         var frames = beautifiedTraceback.split("\n");
         var shortMessage = frames[frames.length - 1];
-        if (beautifiedTraceback != pythonTraceback) { // NOSONAR We're interested in reference equality.
+        if (shortMessage.startsWith("KnimeUserError")) {
+            // This is a special error from our framework
+            // We swallow the traceback because it is not helpful to the user but the message is helpful on its own
+            // but we log it to the DEBUG log just to be sure
+            LOGGER.debug("Got KnimeUserError while executing Python code. See the log for a traceback.", ex);
+            return new PythonIOException(shortMessage);
+        } else if (beautifiedTraceback != pythonTraceback) { // NOSONAR We're interested in reference equality.
             return new PythonIOException(errorMessage, shortMessage, beautifiedTraceback, (PythonFrameSummary[])null);
         } else {
             return new PythonIOException(errorMessage, shortMessage, beautifiedTraceback, ex);
