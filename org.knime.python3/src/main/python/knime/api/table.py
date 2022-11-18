@@ -52,7 +52,7 @@ Note that this table API is the successor to the table defined in the deprecated
 which only remains available in Python Scripting nodes that import the deprecated module 'knime_io'.
 """
 
-from abc import abstractmethod, abstractproperty
+from abc import abstractmethod
 
 from typing import Iterator, List, Optional, Tuple, Union
 import logging
@@ -70,7 +70,8 @@ class _Tabular(ks._Columnar):
     Common interface for Table and _TableView
     """
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def num_rows(self):
         pass
 
@@ -156,7 +157,8 @@ class _Tabular(ks._Columnar):
         """Implement row slicing here"""
         pass
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def schema(self) -> ks.Schema:
         """
         The schema of this table, containing column names, types, and potentially metadata
@@ -428,8 +430,9 @@ class BatchOutputTable:
         """
         raise RuntimeError("Not implemented")
 
-    @abstractproperty
-    def num_batches() -> int:
+    @property
+    @abstractmethod
+    def num_batches(self) -> int:
         """
         The number of batches written to this output table
         """
