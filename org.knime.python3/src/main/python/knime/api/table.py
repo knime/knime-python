@@ -246,11 +246,11 @@ class _Backend:
         raise RuntimeError("Not implemented")
 
     @abstractmethod
-    def close(self):
+    def close(self) -> None:
         raise RuntimeError("Not implemented")
 
 
-_backend = None
+_backend: _Backend = None
 
 
 class Table(_Tabular):
@@ -415,8 +415,9 @@ class BatchOutputTable:
 
     @abstractmethod
     def append(
-        batch: Union[Table, "pandas.DataFrame", "pyarrow.Table", "pyarrow.RecordBatch"]
-    ):
+        self,
+        batch: Union[Table, "pandas.DataFrame", "pyarrow.Table", "pyarrow.RecordBatch"],
+    ) -> None:
         """
         Append a batch to this output table. The first batch defines the structure of the table,
         and all subsequent batches must have the same number of columns, column names and column types.
