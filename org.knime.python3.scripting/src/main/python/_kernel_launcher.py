@@ -336,6 +336,15 @@ class ScriptingBackendCollection:
                     raise KnimeUserError(
                         f"Expected an image in output_images[{i}], got None. Did you assign the output image?"
                     )
+            else:
+                try:
+                    import io
+
+                    io.BytesIO(o)
+                except TypeError:
+                    raise KnimeUserError(
+                        f"The image in output_images[{i}] (of type {type(o)}) can't be written into a file."
+                    )
 
         self._check_flow_variables()
 
