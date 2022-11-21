@@ -484,7 +484,10 @@ def logical(value_type) -> LogicalType:
         return logical_type
     except Exception as e:
         raise TypeError(
-            f"Could not find registered KNIME extension type for Python logical type {value_type}",
+            f"""
+            Could not find registered KNIME extension type for Python logical type {value_type}. 
+            Call knime.api.schema.LogicalType.supported_value_types() to get a list of supported types and use one of these.
+            """,
             e,
         )
 
@@ -550,7 +553,7 @@ class Column:
     name: str
     metadata: str
 
-    def __init__(self, ktype: KnimeType, name: str, metadata=None):
+    def __init__(self, ktype: Union[KnimeType, Type], name: str, metadata=None):
         """
         Construct a Column from type, name and optional metadata.
 
@@ -563,7 +566,13 @@ class Column:
             ValueError: if the name is empty
         """
         if not isinstance(ktype, KnimeType):
-            raise TypeError(f"Column type must be a KnimeType, but got {type(ktype)}")
+            try:
+                ktype = logical(ktype)
+            except TypeError as e:
+                raise TypeError(
+                    f"Could not create column with type {ktype}, please use a supported column type",
+                    e,
+                )
         if not isinstance(name, str):
             raise TypeError(f"Column name must be of type string, but got {type(name)}")
         if name.strip() == "":
@@ -872,9 +881,25 @@ class Schema(_Columnar, PortObjectSpec):
         if not isinstance(ktypes, Sequence) or not all(
             isinstance(t, KnimeType) or issubclass(t, KnimeType) for t in ktypes
         ):
-            raise TypeError(
-                f"Schema expected types to be a sequence of KNIME types but got {type(ktypes)}: {ktypes}"
-            )
+            try:
+                for t in ktypes:
+                    try:
+                        logical(t)
+                    except:
+                        raise TypeError(
+                            f"""
+                            Schema expected types to be a sequence of KNIME types or types known to KNIME,
+                            but got {type(ktypes)}: {ktypes}.
+                            Type {t} is not known to KNIME.
+                            """
+                        )
+            except:  # ktypes not iterable
+                raise TypeError(
+                    f"""
+                    Schema expected types to be a sequence of KNIME types or types known to KNIME,
+                    but got {type(ktypes)}: {ktypes}.
+                    """
+                )
 
         if (not isinstance(names, list) and not isinstance(names, tuple)) or not all(
             isinstance(n, str) for n in names

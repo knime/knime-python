@@ -454,6 +454,35 @@ class SchemaTest(unittest.TestCase):
         with self.assertRaises(TypeError):
             c = k.Column(k.int32(), 12)
 
+    def test_column_creation_from_extension_type(self):
+        # note: extension types are NOT passed through k.logical() here!
+        types = [dt.date, dt.time, dt.datetime]
+        names = ["Date", "Time", "DateTime"]
+
+        columns = [k.Column(t, n) for t, n in zip(types, names)]
+
+        for i, t in enumerate(types):
+            self.assertEqual(k.logical(t), columns[i].ktype)
+
+        s1 = k.Schema.from_columns(columns)
+        s2 = k.Schema(types, names)
+
+        self.assertEqual(s1, s2)
+
+    def test_column_creation_from_unkown_type_fails(self):
+        # note: extension types are NOT passed through k.logical() here!
+        class UnknownType(str):
+            pass
+
+        with self.assertRaises(TypeError):
+            k.logical(UnknownType)
+
+        with self.assertRaises(TypeError):
+            k.Column(UnknownType, "Unknown Type Column")
+
+        with self.assertRaises(TypeError):
+            k.Schema([UnknownType], ["Unknown Type Column"])
+
     def test_to_str(self):
         types = [
             k.int32(),
