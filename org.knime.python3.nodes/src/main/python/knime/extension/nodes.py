@@ -139,6 +139,7 @@ class Port:
 class ViewDeclaration:
     name: str
     description: str
+    static_resources: Optional[str]
 
 
 # re-exporting symbols so that "import knime_node" will include the most needed features
@@ -681,13 +682,25 @@ def output_port(name: str, description: str, port_type: PortType):
     )
 
 
-def output_view(name: str, description: str):
+def output_view(name: str, description: str, static_resources: Optional[str] = None):
     """
     Use this decorator to specify that this node produces a view
+
+    Args:
+        name: The name of the view
+        description: Description of the view
+        static_resources: The path to a folder of resources that will be available to
+            the HTML page. The path given here must be relative to the root of the
+            extension.  The resources can be accessed by the same relative file path
+            (e.g. "{static_resources}/{filename}").
     """
 
     def add_view(node_factory):
-        setattr(node_factory, "output_view", ViewDeclaration(name, description))
+        setattr(
+            node_factory,
+            "output_view",
+            ViewDeclaration(name, description, static_resources),
+        )
         return node_factory
 
     return add_view

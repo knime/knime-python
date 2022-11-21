@@ -195,9 +195,8 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
             m_extensionVersion = extension.getVersion();
             var proxyProvider = extension.createProxyProvider(nodeId);
             m_proxyProvider = proxyProvider;
-            m_dialogSettingsService = new DelegatingJsonSettingsDataService(
-                m_proxyProvider::getNodeDialogProxy,
-                m_extensionVersion);
+            m_dialogSettingsService =
+                new DelegatingJsonSettingsDataService(m_proxyProvider::getNodeDialogProxy, m_extensionVersion);
             super.loadAdditionalFactorySettings(config);
         }
 
@@ -269,8 +268,10 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
             if (!hasNodeView()) {
                 throw new IllegalStateException("The node has no view.");
             }
-            return new HtmlFileNodeView(() -> nodeModel.getPathToHtmlView()
-                .orElseThrow(() -> new IllegalStateException("View is not present. This is a coding error.")));
+            return new HtmlFileNodeView(
+                () -> nodeModel.getPathToHtmlView()
+                    .orElseThrow(() -> new IllegalStateException("View is not present. This is a coding error.")),
+                m_node.getViewResources()[0]);
         }
     }
 }

@@ -52,6 +52,7 @@ import org.knime.core.node.NodeDescription;
 import org.knime.core.node.port.PortType;
 import org.knime.python3.nodes.extension.ExtensionNode;
 import org.knime.python3.nodes.ports.PythonPortObjects;
+import org.knime.python3.views.ViewResources;
 
 /**
  * Represents a PythonNode.
@@ -76,6 +77,8 @@ public final class PythonNode implements ExtensionNode {
 
     private final boolean m_isDeprecated;
 
+    private final ViewResources[] m_viewResources;
+
     /**
      * Constructor.
      *
@@ -95,8 +98,9 @@ public final class PythonNode implements ExtensionNode {
         final NodeDescription description, //
         final String[] inputPortTypes, //
         final String[] outputPortTypes, //
-        final int numViews,
-        final boolean isDeprecated) {
+        final int numViews, //
+        final boolean isDeprecated, //
+        final ViewResources[] viewResources) {
         m_id = id;
         m_categoryPath = categoryPath;
         m_afterId = afterId;
@@ -105,6 +109,7 @@ public final class PythonNode implements ExtensionNode {
         m_outputPortTypes = PythonPortObjects.getPortTypesForIdentifiers(outputPortTypes);
         m_numViews = numViews;
         m_isDeprecated = isDeprecated;
+        m_viewResources = viewResources;
     }
 
     /**
@@ -167,5 +172,10 @@ public final class PythonNode implements ExtensionNode {
     @Override
     public boolean isDeprecated() {
         return m_isDeprecated;
+    }
+
+    @Override
+    public ViewResources[] getViewResources() {
+        return m_viewResources;
     }
 }

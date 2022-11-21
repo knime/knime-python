@@ -44,65 +44,27 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Feb 28, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   Nov 22, 2022 (benjamin): created
  */
-package org.knime.python3.nodes.extension;
+package org.knime.python3.views;
 
-import org.knime.core.node.NodeDescription;
-import org.knime.core.node.port.PortType;
-import org.knime.python3.views.ViewResources;
+import org.knime.core.webui.page.PageBuilder;
 
 /**
- * Represents a node that is provided by a KNIME extension.
+ * Resources for a view that can be added to the {@link PageBuilder} when creating a page.
  *
- * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+ * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
-public interface ExtensionNode {
+public interface ViewResources {
+
+    /** A {@link ViewResources} implementation that does not add any resources to the page builder. */
+    ViewResources EMPTY_RESOURCES = pb -> {
+    };
 
     /**
-     * @return id identifying the node within the extension
-     */
-    String getId();
-
-    /**
-     * Defines where the node is located in the node repository
+     * Add all resources to the given {@link PageBuilder}.
      *
-     * @return path in the node repository
+     * @param pageBuilder the {@link PageBuilder}
      */
-    String getCategoryPath();
-
-    /**
-     * @return id of the node after which this node should be inserted in the node repository
-     */
-    String getAfterId();
-
-    /**
-     * @return the description of the node as it is displayed in the KNIME AP
-     */
-    NodeDescription getNodeDescription();
-
-    /**
-     * @return the input port types
-     */
-    PortType[] getInputPortTypes();
-
-    /**
-     * @return the output port types
-     */
-    PortType[] getOutputPortTypes();
-
-    /**
-     * @return the number of views of the node
-     */
-    int getNumViews();
-
-    /**
-     * @return true if the node is deprecated
-     */
-    boolean isDeprecated();
-
-    /**
-     * @return the paths to the resources for each view
-     */
-    ViewResources[] getViewResources();
+    void addToPageBuilder(PageBuilder pageBuilder);
 }

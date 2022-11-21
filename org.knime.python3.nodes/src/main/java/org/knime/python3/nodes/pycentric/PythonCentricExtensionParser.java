@@ -51,6 +51,7 @@ package org.knime.python3.nodes.pycentric;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -68,6 +69,8 @@ import org.knime.python3.nodes.PythonNode;
 import org.knime.python3.nodes.PythonNodeGatewayFactory;
 import org.knime.python3.nodes.extension.NodeDescriptionBuilder;
 import org.knime.python3.nodes.extension.NodeDescriptionBuilder.Tab;
+import org.knime.python3.views.FolderViewResources;
+import org.knime.python3.views.ViewResources;
 import org.yaml.snakeyaml.Yaml;
 
 import com.google.gson.Gson;
@@ -190,13 +193,13 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
 
         private JsonDescribed[] output_ports;
 
-        private JsonDescribed[] views;
+        private JsonView[] views;
 
         PythonNode toPythonNode(final Path modulePath) {
             var descriptionBuilder = createDescriptionBuilder();
             descriptionBuilder.withIcon(modulePath.resolve(icon_path));
             return new PythonNode(id, category, after, descriptionBuilder.build(), input_port_types, output_port_types,
-                views.length, is_deprecated);
+                views.length, is_deprecated, getViewResources(modulePath));
         }
 
         private NodeDescriptionBuilder createDescriptionBuilder() {
@@ -209,6 +212,14 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
             consumeIfPresent(output_ports, p -> p.enter(builder::withOutputPort));
             consumeIfPresent(views, v -> v.enter(builder::withView));
             return builder;
+        }
+
+        private ViewResources[] getViewResources(final Path modulePath) {
+            return Arrays.stream(views) //
+                .map(v -> v.static_resources != null
+                    ? new FolderViewResources(modulePath.resolve(v.static_resources), v.static_resources, true)
+                    : ViewResources.EMPTY_RESOURCES) //
+                .toArray(ViewResources[]::new);
         }
 
         private static <T> void consumeIfPresent(final T[] array, final Consumer<T> elementConsumer) {
@@ -242,6 +253,11 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
             }
             return builder.build();
         }
+    }
+
+    @SuppressWarnings("java:S116") // the fields are named this way for JSON deserialization
+    private static class JsonView extends JsonDescribed {
+        private String static_resources;
     }
 
     @SuppressWarnings("java:S116") // the fields are named this way for JSON deserialization

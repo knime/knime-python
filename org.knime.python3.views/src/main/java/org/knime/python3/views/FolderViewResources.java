@@ -44,65 +44,58 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Feb 28, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   Nov 22, 2022 (benjamin): created
  */
-package org.knime.python3.nodes.extension;
+package org.knime.python3.views;
 
-import org.knime.core.node.NodeDescription;
-import org.knime.core.node.port.PortType;
-import org.knime.python3.views.ViewResources;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import org.knime.core.node.NodeLogger;
+import org.knime.core.webui.page.PageBuilder;
 
 /**
- * Represents a node that is provided by a KNIME extension.
+ * A folder of resources for a view.
  *
- * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+ * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
-public interface ExtensionNode {
+public final class FolderViewResources implements ViewResources {
+
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(FolderViewResources.class);
+
+    private final Path m_path;
+
+    private final String m_relativePathPrefix;
+
+    private boolean m_areStatic;
 
     /**
-     * @return id identifying the node within the extension
+     * @param path the absolute path to the resources
+     * @param relativePathPrefix the relative path under which the resources will be accessable
+     * @param areStatic if the resources are considered as static and won't change
      */
-    String getId();
+    public FolderViewResources(final Path path, final String relativePathPrefix, final boolean areStatic) {
+        m_path = path;
+        m_relativePathPrefix = relativePathPrefix;
+        m_areStatic = areStatic;
+    }
 
-    /**
-     * Defines where the node is located in the node repository
-     *
-     * @return path in the node repository
-     */
-    String getCategoryPath();
+    @Override
+    public void addToPageBuilder(final PageBuilder pageBuilder) {
+        pageBuilder.addResources(this::openResource, m_relativePathPrefix, m_areStatic);
+    }
 
-    /**
-     * @return id of the node after which this node should be inserted in the node repository
-     */
-    String getAfterId();
-
-    /**
-     * @return the description of the node as it is displayed in the KNIME AP
-     */
-    NodeDescription getNodeDescription();
-
-    /**
-     * @return the input port types
-     */
-    PortType[] getInputPortTypes();
-
-    /**
-     * @return the output port types
-     */
-    PortType[] getOutputPortTypes();
-
-    /**
-     * @return the number of views of the node
-     */
-    int getNumViews();
-
-    /**
-     * @return true if the node is deprecated
-     */
-    boolean isDeprecated();
-
-    /**
-     * @return the paths to the resources for each view
-     */
-    ViewResources[] getViewResources();
+    private InputStream openResource(final String name) {
+        final var path = m_path.resolve(name);
+        try {
+            return Files.newInputStream(path);
+        } catch (final IOException ex) {
+            LOGGER.warn(
+                String.format("Could not load resource with name '%s' from path '%s': %s", name, path, ex.getMessage()),
+                ex);
+            return null;
+        }
+    }
 }

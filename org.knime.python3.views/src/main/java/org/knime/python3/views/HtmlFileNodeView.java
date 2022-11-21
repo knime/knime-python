@@ -49,6 +49,7 @@
 package org.knime.python3.views;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
@@ -71,6 +72,8 @@ public final class HtmlFileNodeView implements NodeView {
 
     private final Supplier<Path> m_htmlSupplier;
 
+    private final ViewResources m_resources;
+
     /**
      * Create a view that shows the HTML document that is saved at the given location.
      *
@@ -78,7 +81,19 @@ public final class HtmlFileNodeView implements NodeView {
      *            must exist and must be readable.
      */
     public HtmlFileNodeView(final Supplier<Path> htmlSupplier) {
+        this(htmlSupplier, ViewResources.EMPTY_RESOURCES);
+    }
+
+    /**
+     * Create a view that shows the HTML document that is saved at the given location.
+     *
+     * @param htmlSupplier A supplier that provides the path to the HTML file that should be shown currently. The file
+     *            must exist and must be readable.
+     * @param resources resources that are available to the page.
+     */
+    public HtmlFileNodeView(final Supplier<Path> htmlSupplier, final ViewResources resources) {
         m_htmlSupplier = htmlSupplier;
+        m_resources = resources;
     }
 
     @Override
@@ -98,15 +113,20 @@ public final class HtmlFileNodeView implements NodeView {
 
     @Override
     public Page getPage() {
-        return Page.builder(() -> {
-            try {
-                return Files.newInputStream(m_htmlSupplier.get());
-            } catch (final IOException e) {
-                // We require the file to exist and be readable
-                // If this is not the case we ended up in an illegal state
-                throw new IllegalStateException("Failed to open view file.", e);
-            }
-        }, "index.html").build();
+        var pb = Page.builder(this::openPage, "index.html");
+        m_resources.addToPageBuilder(pb);
+        return pb.build();
+    }
+
+    /** Open the HTML page */
+    private InputStream openPage() {
+        try {
+            return Files.newInputStream(m_htmlSupplier.get());
+        } catch (final IOException e) {
+            // We require the file to exist and be readable
+            // If this is not the case we ended up in an illegal state
+            throw new IllegalStateException("Failed to open view file.", e);
+        }
     }
 
     @Override
