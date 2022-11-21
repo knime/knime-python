@@ -145,7 +145,11 @@ class ScriptingBackendV1(ScriptingBackend):
             and not isinstance(table, ktn._TabularView)
             and not isinstance(table, katn.ArrowBatchOutputTable)
         ):
-            type_str = type(table) if table is not None else "None"
+            type_str = (
+                type(table)
+                if table is not None
+                else "None. Did you assign the output table?"
+            )
             raise KnimeUserError(
                 f"Output table '{table_index}' must be of type knime.api.Table or knime.api.BatchOutputTable, but got {type_str}"
             )
@@ -319,7 +323,7 @@ class ScriptingBackendCollection:
         for i, o in enumerate(_ioc._output_objects):
             if o is None:
                 raise KnimeUserError(
-                    f"Expected an object in output_objects[{i}], got {type(o)}"
+                    f"Expected an object in output_objects[{i}], got None. Did you assign the output object?"
                 )
 
         for i, o in enumerate(_ioc._output_images):
@@ -330,14 +334,18 @@ class ScriptingBackendCollection:
                     _ioc._output_images[0] = self._render_view()
                 else:
                     raise KnimeUserError(
-                        f"Expected an image in output_images[{i}], got {type(o)}"
+                        f"Expected an image in output_images[{i}], got None. Did you assign the output image?"
                     )
 
         self._check_flow_variables()
 
         if self._expect_view:
             v = self.get_active_backend_or_raise().get_output_view()
-            if v is None or not isinstance(v, kv.NodeView):
+            if v is None:
+                raise KnimeUserError(
+                    "Expected an output view in output_view, got None. Did you assign an output view?"
+                )
+            elif not isinstance(v, kv.NodeView):
                 raise KnimeUserError(
                     f"Expected an output view in output_view, got {type(v)}"
                 )
