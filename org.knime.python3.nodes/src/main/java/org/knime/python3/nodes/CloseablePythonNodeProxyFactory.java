@@ -86,7 +86,9 @@ final class CloseablePythonNodeProxyFactory {
         };
         backend.initializeJavaCallback(callback);
         var nodeProxy = m_extension.createProxy(backend, m_nodeId);
-        var closer = new AutoCloser(gateway, outputRetrieverHandle);
+        // close the gateway after the retriever because the retriever might otherwise
+        // get stuck reading the output of the already dead process
+        var closer = new AutoCloser(outputRetrieverHandle, gateway);
         return new CloseablePythonNodeProxy(nodeProxy, closer, m_extension.getNode(m_nodeId));
     }
 
