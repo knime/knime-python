@@ -672,7 +672,7 @@ class _KnimeNodeBackend(kg.EntryPoint, kn._KnimeNodeBackend):
             short_description = split_description[0]
             if len(split_description) > 1:
                 full_description = "\n".join(split_description[1:])
-                full_description = self._knime_parser.parse_fulldescription(
+                full_description = self._knime_parser.parse_full_description(
                     full_description
                 )
             else:
@@ -742,7 +742,7 @@ class FallBackMarkdownParser:
     def __init__(self):
         pass
 
-    def parse_fulldescription(self, s):
+    def parse_full_description(self, s):
         return s
 
     def parse_basic(self, s):

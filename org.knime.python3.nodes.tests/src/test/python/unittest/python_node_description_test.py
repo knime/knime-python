@@ -209,7 +209,7 @@ class MarkdownDocstringTest(unittest.TestCase):
         </tr>
         </table>
         """
-        _res = self.parser.parse_fulldescription(s)
+        _res = self.parser.parse_full_description(s)
         self.assertEqual(
             re.sub(r"\s", "", _res.strip()),
             re.sub(r"\s", "", textwrap.dedent(_expected).strip()),
@@ -220,7 +220,7 @@ class MarkdownDocstringTest(unittest.TestCase):
 
         ---
         """
-        _res = self.parser.parse_fulldescription(desc)
+        _res = self.parser.parse_full_description(desc)
         _expected = "<hr />"
         self.assertEqual(_expected, _res)
 
@@ -396,6 +396,7 @@ class MarkdownDocstringTest(unittest.TestCase):
         doc_expected = self.parser._dedent(
             """
             First line.
+
             Second line."""
         )
 
@@ -444,3 +445,112 @@ class MarkdownDocstringTest(unittest.TestCase):
         self.assertEqual(
             self.parser.parse_option_description(doc_test_empty), doc_expected
         )
+
+    ######## Test the port description parser ########
+    def test_port_heading_removal(self):
+        doc_test = """
+        # Heading 1
+
+        ## Heading 2
+
+        ### Heading 3
+
+        Heading with two equals
+        ==
+
+        Heading with two dashes
+        --
+
+        Heading with three equals
+        ===
+
+        Heading with three dashes
+        ---
+
+        =
+
+        ==
+
+        ===
+
+        -
+
+        --
+
+        Horizontal rule below:
+
+        ---
+
+        Horizontal rule above.
+
+        Horizontal rule below:
+
+        ***
+
+        Horizontal rule above.
+
+        Horizontal rule below:
+
+        ___
+
+        Horizontal rule above.
+
+        Horizontal rule below:
+
+        ******
+
+        Horizontal rule above.
+
+        Horizontal rule below:
+
+        ______
+
+        Horizontal rule above.
+
+        *
+
+        **
+
+        _
+
+        __
+
+        End of test."""
+
+        doc_expected = self.parser._dedent(
+            """
+        <p>Heading 1</p>
+        <p>Heading 2</p>
+        <p>Heading 3</p>
+        <p>Heading with two equals</p>
+        <p>Heading with two dashes</p>
+        <p>Heading with three equals</p>
+        <p>Heading with three dashes</p>
+        <p>=</p>
+        <p>==</p>
+        <p>===</p>
+        <p>-</p>
+        <p>--</p>
+        <p>Horizontal rule below:</p>
+        <hr />
+        <p>Horizontal rule above.</p>
+        <p>Horizontal rule below:</p>
+        <hr />
+        <p>Horizontal rule above.</p>
+        <p>Horizontal rule below:</p>
+        <hr />
+        <p>Horizontal rule above.</p>
+        <p>Horizontal rule below:</p>
+        <hr />
+        <p>Horizontal rule above.</p>
+        <p>Horizontal rule below:</p>
+        <hr />
+        <p>Horizontal rule above.</p>
+        <p>*</p>
+        <p>**</p>
+        <p>_</p>
+        <p>__</p>
+        <p>End of test.</p>"""
+        )
+
+        self.assertEqual(self.parser.parse_port_description(doc_test), doc_expected)

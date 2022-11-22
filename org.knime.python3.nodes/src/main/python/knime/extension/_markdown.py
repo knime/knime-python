@@ -49,15 +49,25 @@ class _HeadingPreprocessor(Preprocessor):
 
 
 class _RemoveHeadingsPreprocessor(Preprocessor):
+    """
+    In Markdown, dashes can indicate either a heading if the previous line is
+    non-empty (--+), or a horizontal rule otherwise (---+). We need to remove
+    the former and keep the latter.
+    """
+
     def run(self, lines):
         new_lines = []
-        for line in lines:
+        previous_line = ""
+        for i, line in enumerate(lines):
+            if i > 0:
+                previous_line = lines[i - 1]
+
             if re.search("#{1,6} ", line):
                 line = re.sub("#+ ", "", line)
-            elif re.search("^(=+|-+)$", line):
-                # skip lines containing = and - to indicate headings
+            elif previous_line != "" and re.search("^(==+|--+)$", line):
                 continue
             new_lines.append(line)
+
         return new_lines
 
 
@@ -280,6 +290,11 @@ class _KnExtensionForOptions(_BaseKnExtension):
         )
 
         # Postprocessors
+        _md.postprocessors.register(
+            _RemoveHorizontalRulesPostprocessor(),
+            "knime_post_remove_horizontal_rule",
+            60,
+        )
         _md.postprocessors.register(_KnimeTable(), "knime_table", 200)
         _md.postprocessors.register(_KnimePostHeader(), "knime_post_headder", 200)
 
@@ -319,6 +334,24 @@ class _KnExtensionForTabs(_BaseKnExtension):
         )
 
 
+class _KnExtensionForPorts(_BaseKnExtension):
+    """
+    Markdown extension for port descriptions.
+    """
+
+    def extendMarkdown(self, _md) -> None:
+        super().extendMarkdown(_md)
+
+        # Preprocessors
+        _md.preprocessors.register(
+            _RemoveHeadingsPreprocessor(), "knime_pre_remove_headings", 100
+        )
+
+        # Postprocessors
+        _md.postprocessors.register(_KnimeTable(), "knime_table", 200)
+        _md.postprocessors.register(_KnimePostHeader(), "knime_post_headder", 200)
+
+
 class KnimeMarkdownParser:
     """ """
 
@@ -344,7 +377,12 @@ class KnimeMarkdownParser:
             output_format="xhtml",
         )
 
-    def parse_fulldescription(self, doc):
+        self.md_ports = markdown.Markdown(
+            extensions=[_KnExtensionForPorts(), "sane_lists", "fenced_code"],
+            output_format="xhtml",
+        )
+
+    def parse_full_description(self, doc):
         doc = self._dedent(doc)
         return self.md.convert(doc)
 
@@ -363,6 +401,13 @@ class KnimeMarkdownParser:
         else:
             return "<i>No description available.</i>"
 
+    def parse_port_description(self, doc):
+        if doc:
+            doc = self._dedent(doc)
+            return self.md_ports.convert(doc)
+        else:
+            return "<i>No description available.</i>"
+
     def parse_tab_description(self, doc):
         if doc:
             doc = self._dedent(doc)
@@ -374,7 +419,7 @@ class KnimeMarkdownParser:
         return [
             {
                 "name": port.name,
-                "description": self.parse_basic(port.description),
+                "description": self.parse_port_description(port.description),
             }
             for port in ports
         ]
