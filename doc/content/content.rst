@@ -95,21 +95,21 @@ For a more detailed description see the `Pure Python Node Extensions Guide <http
 Nodes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. autoclass:: knime.extension.nodes.PythonNode
+.. autoclass:: knime.extension.PythonNode
    :members:
    :noindex:
    :inherited-members:
 
 A node has a type:
 
-.. autoclass:: knime.extension.nodes.NodeType
+.. autoclass:: knime.extension.NodeType
    :members:
    :noindex:
    :inherited-members:
 
 A node's configure method receives a configuration context that lets you interact with KNIME
 
-.. autoclass:: knime.extension.nodes.ConfigurationContext
+.. autoclass:: knime.extension.ConfigurationContext
    :members:
    :noindex:
    :inherited-members:
@@ -117,7 +117,7 @@ A node's configure method receives a configuration context that lets you interac
 A node's execute method receives an execution context that lets you interact with KNIME and 
 e.g. check whether the user has cancelled the execution of your Python node.
 
-.. autoclass:: knime.extension.nodes.ExecutionContext
+.. autoclass:: knime.extension.ExecutionContext
    :members:
    :noindex:
    :inherited-members:
@@ -126,22 +126,22 @@ Decorators
 ++++++++++++++++++++++++++++++
 These decorators can be used to easily configure your Python node.
 
-.. autofunction:: knime.extension.nodes.node
+.. autofunction:: knime.extension.node
    :noindex:
 
-.. autofunction:: knime.extension.nodes.input_binary
+.. autofunction:: knime.extension.input_binary
    :noindex:
 
-.. autofunction:: knime.extension.nodes.input_table
+.. autofunction:: knime.extension.input_table
    :noindex:
 
-.. autofunction:: knime.extension.nodes.output_binary
+.. autofunction:: knime.extension.output_binary
    :noindex:
 
-.. autofunction:: knime.extension.nodes.output_table
+.. autofunction:: knime.extension.output_table
    :noindex:
 
-.. autofunction:: knime.extension.nodes.output_view
+.. autofunction:: knime.extension.output_view
    :noindex:
 
 Parameters
@@ -151,41 +151,41 @@ used in the nodes execution by accessing ``self.param_name``. These parameters c
 the following parameter types. For a more detailed description see
 `Defining the node's configuration dialog <https://docs.knime.com/latest/pure_python_node_extensions_guide/index.html#_defining_the_nodes_configuration_dialog>`_.
 
-.. autoclass:: knime.extension.parameter.IntParameter
+.. autoclass:: knime.extension.IntParameter
    :members:
    :noindex:
    :inherited-members:
    :exclude-members: validator
 
-.. autoclass:: knime.extension.parameter.DoubleParameter
-   :members:
-   :noindex:
-   :inherited-members:
-   :exclude-members: validator
-
-
-.. autoclass:: knime.extension.parameter.BoolParameter
+.. autoclass:: knime.extension.DoubleParameter
    :members:
    :noindex:
    :inherited-members:
    :exclude-members: validator
 
 
-.. autoclass:: knime.extension.parameter.StringParameter
+.. autoclass:: knime.extension.BoolParameter
    :members:
    :noindex:
    :inherited-members:
    :exclude-members: validator
 
 
-.. autoclass:: knime.extension.parameter.ColumnParameter
+.. autoclass:: knime.extension.StringParameter
    :members:
    :noindex:
    :inherited-members:
    :exclude-members: validator
 
 
-.. autoclass:: knime.extension.parameter.MultiColumnParameter
+.. autoclass:: knime.extension.ColumnParameter
+   :members:
+   :noindex:
+   :inherited-members:
+   :exclude-members: validator
+
+
+.. autoclass:: knime.extension.MultiColumnParameter
    :members:
    :noindex:
    :inherited-members:
@@ -198,7 +198,7 @@ they also support custom validation via a property-like decorator notation. For 
 the parameter value matches a certain criteria (see example below). The validator should be placed below the definition of
 the corresponding parameter.
 
-.. autoclass:: knime.extension.parameter.IntParameter
+.. autoclass:: knime.extension.IntParameter
    :members:
    :noindex:
    :inherited-members:
@@ -210,7 +210,7 @@ configuration dialog. Another benefit of defining parameter groups is the abilit
 As opposed to only being able to validate a single value when attaching a validator to a parameter, group validators
 have access to the values of all parameters contained in the group, allowing for more complex validation routines.
 
-.. autofunction:: knime.extension.parameter.parameter_group
+.. autofunction:: knime.extension.parameter_group
    :noindex:
 
 
@@ -220,28 +220,28 @@ Tables
 ``Table`` and ``Schema`` are the two classes that are used to communicate tabular data (Table) during execute,
 or the table structure (Schema) in configure between Python and KNIME.
 
-.. autoclass:: knime.extension.nodes.Table
+.. autoclass:: knime.extension.Table
    :members:
    :noindex:
    :inherited-members:
    :special-members: __getitem__
 
 
-.. autoclass:: knime.extension.nodes.BatchOutputTable
+.. autoclass:: knime.extension.BatchOutputTable
    :members:
    :noindex:
    :inherited-members:
    :special-members: __getitem__
 
 
-.. autoclass:: knime.api.schema.Schema
+.. autoclass:: knime.extension.Schema
    :members:
    :noindex:
    :inherited-members:
    :special-members: __getitem__
 
 
-.. autoclass:: knime.api.schema.Column
+.. autoclass:: knime.extension.Column
    :members:
    :noindex:
    :inherited-members:
@@ -252,31 +252,31 @@ Data Types
 These are helper functions to create KNIME compatible datatypes. For instance, if a new column is created.
 
 
-.. autofunction:: knime.api.schema.int32
+.. autofunction:: knime.extension.int32
    :noindex:
 
-.. autofunction:: knime.api.schema.int64
+.. autofunction:: knime.extension.int64
    :noindex:
 
-.. autofunction:: knime.api.schema.double
+.. autofunction:: knime.extension.double
    :noindex:
 
-.. autofunction:: knime.api.schema.bool_
+.. autofunction:: knime.extension.bool_
    :noindex:
 
-.. autofunction:: knime.api.schema.string
+.. autofunction:: knime.extension.string
    :noindex:
 
-.. autofunction:: knime.api.schema.blob
+.. autofunction:: knime.extension.blob
    :noindex:
 
-.. autofunction:: knime.api.schema.list_
+.. autofunction:: knime.extension.list_
    :noindex:
 
-.. autofunction:: knime.api.schema.struct
+.. autofunction:: knime.extension.struct
    :noindex:
 
-.. autofunction:: knime.api.schema.logical
+.. autofunction:: knime.extension.logical
    :noindex:
 
 
