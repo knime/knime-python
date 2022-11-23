@@ -66,13 +66,34 @@ class _ArrowBackend(knt._Backend):
         self._sink_factory = sink_factory
         self._sinks = []
 
-    def create_table_from_pyarrow(self, data, sentinel):
+    def create_table_from_pyarrow(self, data, sentinel, row_keys="auto"):
+        # Handle row keys
+        if row_keys == "auto":
+            rk_field = data.schema[0]
+            if rk_field.name == "<Row Key>" and pa.types.is_string(rk_field.type):
+                # Keep the row key column
+                pass
+            elif rk_field.name == "<Row Key>" and pa.types.is_integer(rk_field.type):
+                # Convert to string with the format f"Row{n}"
+                data = _replace_with_formatted_row_keys(data)
+            else:
+                # No row key column that can be used -> generate new keys
+                data = _add_generated_row_keys(data)
+        elif row_keys == "generate":
+            data = _add_generated_row_keys(data)
+        elif row_keys == "keep":
+            # Nothing to do
+            pass
+        else:
+            raise ValueError('row_keys must be one of ["auto", "generate", "keep"]')
+
         if sentinel is not None:
             data = katy.sentinel_to_missing_value(data, sentinel)
         data = katy.wrap_primitive_arrays(data)
+
         return ArrowTable(data)
 
-    def create_table_from_pandas(self, data, sentinel):
+    def create_table_from_pandas(self, data, sentinel, row_keys="auto"):
         import knime._arrow._pandas as kap
         import pandas as pd
 
@@ -80,8 +101,16 @@ class _ArrowBackend(knt._Backend):
             raise ValueError(
                 f"Table.from_pandas expects a pandas.DataFrame, but got {type(data)}"
             )
-        data = kap.pandas_df_to_arrow(data)
-        return self.create_table_from_pyarrow(data, sentinel)
+        if row_keys in ["auto", "keep"]:
+            pandas_row_keys = row_keys
+            arrow_row_keys = "keep"
+        elif row_keys == "generate":
+            pandas_row_keys = "none"
+            arrow_row_keys = "generate"
+        else:
+            raise ValueError('row_keys must be one of ["auto", "keep", "generate"]')
+        data = kap.pandas_df_to_arrow(data, row_keys=pandas_row_keys)
+        return self.create_table_from_pyarrow(data, sentinel, row_keys=arrow_row_keys)
 
     def create_batch_output_table(self):
         return ArrowBatchOutputTable(self.create_sink())
@@ -334,3 +363,29 @@ def _convert_arrow_type_to_knime(dtype: pa.DataType) -> ks.KnimeType:
         return ks.LogicalType(logical_type, storage_type=storage_type)
     else:
         raise TypeError(f"Cannot convert PyArrow type {dtype} to KNIME type")
+
+
+def _add_formatted_row_keys(
+    columns: List[pa.Array], schema: pa.Schema, row_keys
+) -> pa.Table:
+    row_keys = pa.array(map("Row{}".format, row_keys))
+    return pa.table(
+        [row_keys, *columns],
+        schema=schema.insert(0, pa.field("<Row Key>", pa.string())),
+    )
+
+
+def _add_generated_row_keys(data: Union[pa.Table, pa.RecordBatch], start_idx=0):
+    return _add_formatted_row_keys(
+        data.columns,
+        data.schema,
+        range(start_idx, start_idx + len(data)),
+    )
+
+
+def _replace_with_formatted_row_keys(data: Union[pa.Table, pa.RecordBatch]) -> pa.Table:
+    return _add_formatted_row_keys(
+        data.columns[1:],
+        data.schema.remove(0),
+        data.columns[0],
+    )

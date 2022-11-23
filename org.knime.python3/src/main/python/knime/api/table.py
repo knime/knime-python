@@ -234,11 +234,11 @@ class _RowSlicingOperation(_TabularOperation):
 # ------------------------------------------------------------------
 class _Backend:
     @abstractmethod
-    def create_table_from_pyarrow(self, data, sentinel):
+    def create_table_from_pyarrow(self, data, sentinel, row_keys: str = "auto"):
         raise RuntimeError("Not implemented")
 
     @abstractmethod
-    def create_table_from_pandas(self, data, sentinel):
+    def create_table_from_pandas(self, data, sentinel, row_keys: str = "auto"):
         raise RuntimeError("Not implemented")
 
     @abstractmethod
@@ -265,7 +265,11 @@ class Table(_Tabular):
         )
 
     @staticmethod
-    def from_pyarrow(data: "pyarrow.Table", sentinel: Optional[Union[str, int]] = None):
+    def from_pyarrow(
+        data: "pyarrow.Table",
+        sentinel: Optional[Union[str, int]] = None,
+        row_keys: str = "auto",
+    ):
         """
         Factory method to create a Table given a pyarrow.Table.
         The first column of the pyarrow.Table must contain unique row identifiers of type 'string'.
@@ -283,12 +287,30 @@ class Table(_Tabular):
                 * ``"min"`` min int32 or min int64 depending on the type of the column
                 * ``"max"`` max int32 or max int64 depending on the type of the column
                 * a special integer value that should be interpreted as missing value
+            row_keys:
+                Defines what row keys should be used. Must be one of the following
+                values:
+
+                * ``"keep"``: Use the first column of the table as row keys. The first
+                  column must be of type string.
+                * ``"generate"``: Generate new row kews of the format ``f"Row{i}"``
+                  where ``i`` is the position of the row (from ``0`` to ``length-1``).
+                * ``"auto"``: Use the first column of the table if it has the name
+                  "<Row Key>" and is of type string or integer.
+
+                  * If the "<Row Key>" column is of type string, use it directly
+                  * If the "<Row Key>" column is of an integer type use ``f"Row{n}``
+                    where ``n`` is the value of the integer column.
+                  * Generate new row keys (``"generate"``) if the first column has
+                    another type or name.
         """
-        return _backend.create_table_from_pyarrow(data, sentinel)
+        return _backend.create_table_from_pyarrow(data, sentinel, row_keys=row_keys)
 
     @staticmethod
     def from_pandas(
-        data: "pandas.DataFrame", sentinel: Optional[Union[str, int]] = None
+        data: "pandas.DataFrame",
+        sentinel: Optional[Union[str, int]] = None,
+        row_keys: str = "auto",
     ):
         """
         Factory method to create a Table given a pandas.DataFrame.
@@ -307,8 +329,19 @@ class Table(_Tabular):
                 * ``"min"`` min int32 or min int64 depending on the type of the column
                 * ``"max"`` max int32 or max int64 depending on the type of the column
                 * a special integer value that should be interpreted as missing value
+            row_keys:
+                Defines what row keys should be used. Must be one of the following
+                values:
+
+                * ``"keep"``: Keep the ``DataFrame.index`` as the row keys. Convert the
+                  index to strings if necessary.
+                * ``"generate"``: Generate new row kews of the format ``f"Row{i}"``
+                  where ``i`` is the position of the row (from ``0`` to ``length-1``).
+                * ``"auto"``: If the ``DataFrame.index`` is of type int or unsigned int,
+                  use ``f"Row{n}"`` where ``n`` is the index of the row. Else, use
+                  "keep".
         """
-        return _backend.create_table_from_pandas(data, sentinel)
+        return _backend.create_table_from_pandas(data, sentinel, row_keys=row_keys)
 
     def to_batches(self) -> Iterator["Table"]:
         """

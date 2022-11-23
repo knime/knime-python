@@ -60,7 +60,7 @@ import logging
 LOGGER = logging.getLogger(__name__)
 
 
-def pandas_df_to_arrow(data_frame: pd.DataFrame) -> pa.Table:
+def pandas_df_to_arrow(data_frame: pd.DataFrame, row_keys: str = "auto") -> pa.Table:
     if data_frame.shape == (
         0,
         0,
@@ -99,14 +99,26 @@ def pandas_df_to_arrow(data_frame: pd.DataFrame) -> pa.Table:
     schema = extract_knime_schema_from_df(df)
     df = convert_df_to_ktypes_from_schema(df, schema)
 
-    # Convert the index to a str series and prepend to the data_frame:
-    # extract and drop index from DF
-    row_keys = df.index.to_series().astype(str)
-    row_keys.name = "<Row Key>"  # TODO what is the right string?
-    df = pd.concat(
-        [row_keys.reset_index(drop=True), df.reset_index(drop=True)],
-        axis=1,
-    )
+    # Convert the index to a string series based on the row_keys argument
+    if row_keys in ["auto", "keep"]:
+        row_keys_series = df.index.to_series()
+        if row_keys == "auto" and row_keys_series.dtype.kind in "iu":  # int or uint
+            # Add "Row" prefix
+            row_keys_series = row_keys_series.apply(lambda i: f"Row{i}")
+        else:
+            # Just make sure that the row keys are strings
+            row_keys_series = row_keys_series.astype(str)
+
+        # Prepend the index to the data_frame:
+        row_keys_series.name = "<Row Key>"
+        df = pd.concat(
+            [row_keys_series.reset_index(drop=True), df.reset_index(drop=True)],
+            axis=1,
+        )
+    elif row_keys == "none":
+        df = df.reset_index(drop=True)
+    else:
+        raise ValueError('row_keys must be one of ["auto", "keep", "none"]')
 
     # Convert all column names to string or PyArrow might complain
     df.columns = [str(c) for c in df.columns]
