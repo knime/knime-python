@@ -59,7 +59,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-final class StoppableInputStream extends InputStream {
+// read(byte[],int,int) is not overwritten because we would have to check availability before each read anyway
+// and therefore the implementation would be the same as the one in InputStream
+final class StoppableInputStream extends InputStream {//NOSONAR
 
     private final CountDownLatch m_stopper = new CountDownLatch(1);
 
