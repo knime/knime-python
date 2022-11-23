@@ -66,11 +66,11 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 public final class PythonGatewayUtils {
 
     private static final ExecutorService OUTPUT_RETRIEVER_EXECUTOR =
-        Executors.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat("python-output-redirector").build());
+        Executors.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat("python-output-redirector-%d").build());
 
     /**
-     * Redirects the standard output and standard error of a PythonGateway to the provided consumers.
-     * The redirections happens asynchronously and is stopped once the returned AutoCloseable is closed.
+     * Redirects the standard output and standard error of a PythonGateway to the provided consumers. The redirections
+     * happens asynchronously and is stopped once the returned AutoCloseable is closed.
      *
      * @param gateway whose output to redirect
      * @param stdOutConsumer consumer for the standard output. Must not block!
@@ -83,10 +83,10 @@ public final class PythonGatewayUtils {
     @SuppressWarnings("resource")
     public static AutoCloseable redirectGatewayOutput(final PythonGateway<?> gateway,
         final Consumer<String> stdOutConsumer, final Consumer<String> stdErrConsumer, final long closeTimeoutInMs) {
-        var stdOutRetriever = new AsyncLineRedirector(PythonGatewayUtils::submit,
-            gateway.getStandardOutputStream(), stdOutConsumer, closeTimeoutInMs);
-        var stdErrRetriever = new AsyncLineRedirector(PythonGatewayUtils::submit,
-            gateway.getStandardErrorStream(), stdErrConsumer, closeTimeoutInMs);
+        var stdOutRetriever = new AsyncLineRedirector(PythonGatewayUtils::submit, gateway.getStandardOutputStream(),
+            stdOutConsumer, closeTimeoutInMs);
+        var stdErrRetriever = new AsyncLineRedirector(PythonGatewayUtils::submit, gateway.getStandardErrorStream(),
+            stdErrConsumer, closeTimeoutInMs);
         return new AutoCloser(stdOutRetriever, stdErrRetriever);
     }
 
