@@ -104,7 +104,7 @@ class ArrowBatch(kta.Batch):
             if isinstance(data, pd.DataFrame):
                 import knime._arrow._pandas as kap
 
-                self._batch = kap.pandas_df_to_arrow(data)
+                self._batch = kap.pandas_df_to_arrow(data, row_keys="keep")
             else:
                 raise ValueError("Can only create a Batch with data")
 
@@ -255,7 +255,7 @@ class _ArrowWriteTableImpl(kta.WriteTable):
                 raise ValueError(
                     "Can only fill WriteTable from pandas.DataFrame or pyarrow.Table"
                 )
-            data = kap.pandas_df_to_arrow(data)
+            data = kap.pandas_df_to_arrow(data, row_keys="keep")
 
         batches = self._split_table(data)
         self._num_batches += len(batches)
