@@ -94,7 +94,7 @@ public class AsyncLineRedirectorTest {
                 var writer = new PrintWriter(outputStream); //
         ) {
             try (var consumer =
-                new AsyncLineRedirector(EXECUTOR::submit, inputStream, l -> output.append(l).append("\n"), 1000)) {
+                new AsyncLineRedirector(EXECUTOR::submit, inputStream, l -> output.append(l).append("\n"))) {
                 inputWriter.accept(writer);
                 writer.flush();
             }

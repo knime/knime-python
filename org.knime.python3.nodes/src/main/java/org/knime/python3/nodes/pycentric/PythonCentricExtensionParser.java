@@ -125,7 +125,7 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
             staticInfo.m_version, staticInfo.m_modulePath);
         try (var gateway = gatewayFactory.create();
                 var outputConsumer =
-                    PythonGatewayUtils.redirectGatewayOutput(gateway, LOGGER::debug, LOGGER::debug, 1000)) {
+                    PythonGatewayUtils.redirectGatewayOutput(gateway, LOGGER::debug, LOGGER::debug)) {
             return createNodeExtension(gateway.getEntryPoint(), staticInfo, gatewayFactory);
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();

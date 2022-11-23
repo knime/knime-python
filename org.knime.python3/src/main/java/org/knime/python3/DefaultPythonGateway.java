@@ -173,7 +173,7 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
             // NOSONAR: PythonGatewayUtils only uses the #getOutputStream and #getErrorStream methods that are already
             // fully functional at this point in time.
             try (var startupOutputConsumer = PythonGatewayUtils.redirectGatewayOutput(this, // NOSONAR
-                startupStdout.andThen(LOGGER::debug), startupStderr.andThen(LOGGER::debug), 1000)) {
+                startupStdout.andThen(LOGGER::debug), startupStderr.andThen(LOGGER::debug))) {
 
                 @SuppressWarnings("unchecked")
                 final var casted = (T)m_clientServer.getPythonServerEntryPoint(new Class[]{entryPointClass});

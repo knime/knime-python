@@ -143,7 +143,7 @@ public class DefaultPythonGatewayTest {
         try (var gateway = createGateway(PrintingEntryPoint.class, "printing_launcher.py")) {
             gateway.getEntryPoint().print("foo");
             try (var stream = gateway.getStandardOutputStream();
-                    var redirector = new AsyncLineRedirector(executor::submit, stream, sb::append, 100)) {
+                    var redirector = new AsyncLineRedirector(executor::submit, stream, sb::append)) {
                 gateway.getEntryPoint().print("bar");
                 gateway.getEntryPoint().print("la");
             }

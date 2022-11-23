@@ -75,7 +75,7 @@ final class CloseablePythonNodeProxyFactory {
     @SuppressWarnings("resource") // the closer is closed when the returned object is closed
     CloseablePythonNodeProxy createProxy(final PythonGateway<KnimeNodeBackend> gateway) {
         final var backend = gateway.getEntryPoint();
-        var outputRetrieverHandle = PythonGatewayUtils.redirectGatewayOutput(gateway, LOGGER::info, LOGGER::debug, 100);
+        var outputRetrieverHandle = PythonGatewayUtils.redirectGatewayOutput(gateway, LOGGER::info, LOGGER::debug);
         final var callback = new KnimeNodeBackend.Callback() {
             private LogCallback m_logCallback = new DefaultLogCallback(LOGGER);
 

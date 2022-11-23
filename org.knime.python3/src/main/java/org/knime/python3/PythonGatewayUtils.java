@@ -75,18 +75,17 @@ public final class PythonGatewayUtils {
      * @param gateway whose output to redirect
      * @param stdOutConsumer consumer for the standard output. Must not block!
      * @param stdErrConsumer consumer for the standard error. Must not block!
-     * @param closeTimeoutInMs time to wait for when closing the redirector
      * @return an AutoCloseable that when closed stops the redirection after it reads all available data
      */
     // the streams of the gateway are not closeable (they are closed by the Python process when it is shut down)
     // the redirectors are closed by the returned AutoCloseable
     @SuppressWarnings("resource")
     public static AutoCloseable redirectGatewayOutput(final PythonGateway<?> gateway,
-        final Consumer<String> stdOutConsumer, final Consumer<String> stdErrConsumer, final long closeTimeoutInMs) {
+        final Consumer<String> stdOutConsumer, final Consumer<String> stdErrConsumer) {
         var stdOutRetriever = new AsyncLineRedirector(PythonGatewayUtils::submit, gateway.getStandardOutputStream(),
-            stdOutConsumer, closeTimeoutInMs);
+            stdOutConsumer);
         var stdErrRetriever = new AsyncLineRedirector(PythonGatewayUtils::submit, gateway.getStandardErrorStream(),
-            stdErrConsumer, closeTimeoutInMs);
+            stdErrConsumer);
         return new AutoCloser(stdOutRetriever, stdErrRetriever);
     }
 

@@ -70,7 +70,7 @@ public final class FreshPythonGatewayFactory implements PythonGatewayFactory {
         if (!description.getCustomizers().isEmpty()) {
             var entryPoint = gateway.getEntryPoint();
             try (var customizationOutputConsumer =
-                PythonGatewayUtils.redirectGatewayOutput(gateway, LOGGER::debug, LOGGER::debug, 100)) {
+                PythonGatewayUtils.redirectGatewayOutput(gateway, LOGGER::debug, LOGGER::debug)) {
                 for (var customizer : description.getCustomizers()) {
                     customizer.customize(entryPoint);
                 }
