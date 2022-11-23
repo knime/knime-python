@@ -107,13 +107,14 @@ final class StoppableInputStream extends InputStream {
 
     /**
      * Sends the stop signal and immediately returns.<br>
-     * This means that any blocked {@link #read()} will return EOF.<br>
+     * This means that any blocked {@link #read()} will return EOF and new {@link #read()} calls will no longer wait
+     * i.e. they will return EOF if {@link #available()} returns 0.
      * Note that this method does not guarantee that the consumer of this stream will have processed all data. Ensuring
      * that requires external synchronization.
      */
     void stop() {
-        m_stopper.countDown();
         m_isRunning.set(false);
+        m_stopper.countDown();
     }
 
     /**
