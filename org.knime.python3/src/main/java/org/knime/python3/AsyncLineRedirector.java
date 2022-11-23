@@ -55,23 +55,20 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.knime.core.node.NodeLogger;
 
 /**
- * Asynchronously reads lines from an InputStream and writes it to a Consumer provided in the constructor.
- * Closing an instance will read all currently available values from the InputStream and then stop.
+ * Asynchronously reads lines from an InputStream and writes it to a Consumer provided in the constructor. Closing an
+ * instance will read all currently available values from the InputStream and then stop.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
 final class AsyncLineRedirector implements Closeable {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(AsyncLineRedirector.class);
-
-    private final Future<?> m_future;
 
     private final Consumer<String> m_lineConsumer;
 
@@ -83,13 +80,14 @@ final class AsyncLineRedirector implements Closeable {
 
     private final long m_closeTimeoutInMs;
 
-    AsyncLineRedirector(final Function<Runnable, Future<?>> executor, final InputStream stream, final Consumer<String> lineConsumer, final long closeTimeoutInMs) {
+    AsyncLineRedirector(final Function<Runnable, Future<?>> executor, final InputStream stream,
+        final Consumer<String> lineConsumer, final long closeTimeoutInMs) {
         m_lineConsumer = lineConsumer;
         m_stoppableStream = new StoppableInputStream(stream, 100);
         // we use the system default because that's also what the process uses
         m_lineReader = new BufferedReader(new InputStreamReader(m_stoppableStream)); // NOSONAR
         m_closeTimeoutInMs = closeTimeoutInMs;
-        m_future = executor.apply(this::readLines);
+        executor.apply(this::readLines);
     }
 
     private void readLines() {
@@ -107,17 +105,19 @@ final class AsyncLineRedirector implements Closeable {
 
     @Override
     public void close() throws IOException {
-        m_stoppableStream.stop();
         try {
-            if (!m_closeLatch.await(m_closeTimeoutInMs, TimeUnit.MILLISECONDS)) {
-                LOGGER.debugWithFormat("The thread was not stopped within %s ms.", m_closeTimeoutInMs);
+            m_stoppableStream.stop();
+            try {
+                // wait for readLines() to complete
+                m_closeLatch.await();
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+                LOGGER.error("Interrupted while waiting for thread to stop.");
             }
-        } catch (InterruptedException ex) {
-            Thread.currentThread().interrupt();
-            LOGGER.error("Interrupted while waiting for thread to stop.");
+        } finally {
+            // make sure that all resources are closed no matter what
+            m_lineReader.close();
         }
-        m_future.cancel(true);
-        m_lineReader.close();
     }
 
 }
