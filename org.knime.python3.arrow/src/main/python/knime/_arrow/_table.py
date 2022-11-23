@@ -61,59 +61,69 @@ import knime.api.table as knt
 LOGGER = logging.getLogger(__name__)
 
 
+def _create_table_from_pyarrow(data, sentinel, row_keys="auto", first_row_key=0):
+    # Handle row keys
+    if row_keys == "auto":
+        rk_field = data.schema[0]
+        if rk_field.name == "<Row Key>" and pa.types.is_string(rk_field.type):
+            # Keep the row key column
+            pass
+        elif rk_field.name == "<Row Key>" and pa.types.is_integer(rk_field.type):
+            # Convert to string with the format f"Row{n}"
+            data = _replace_with_formatted_row_keys(data)
+        else:
+            # No row key column that can be used -> generate new keys
+            data = _add_generated_row_keys(data, first_row_key)
+    elif row_keys == "generate":
+        data = _add_generated_row_keys(data, first_row_key)
+    elif row_keys == "keep":
+        # Nothing to do
+        pass
+    else:
+        raise ValueError('row_keys must be one of ["auto", "generate", "keep"]')
+
+    if sentinel is not None:
+        data = katy.sentinel_to_missing_value(data, sentinel)
+    data = katy.wrap_primitive_arrays(data)
+
+    return ArrowTable(data)
+
+
+def _create_table_from_pandas(data, sentinel, row_keys="auto", first_row_key=0):
+    import knime._arrow._pandas as kap
+    import pandas as pd
+
+    if not isinstance(data, pd.DataFrame):
+        raise ValueError(
+            f"Table.from_pandas expects a pandas.DataFrame, but got {type(data)}"
+        )
+    if row_keys in ["auto", "keep"]:
+        pandas_row_keys = row_keys
+        arrow_row_keys = "keep"
+    elif row_keys == "generate":
+        pandas_row_keys = "none"
+        arrow_row_keys = "generate"
+    else:
+        raise ValueError('row_keys must be one of ["auto", "keep", "generate"]')
+    data = kap.pandas_df_to_arrow(data, row_keys=pandas_row_keys)
+    return _create_table_from_pyarrow(
+        data, sentinel, row_keys=arrow_row_keys, first_row_key=first_row_key
+    )
+
+
 class _ArrowBackend(knt._Backend):
     def __init__(self, sink_factory):
         self._sink_factory = sink_factory
         self._sinks = []
 
     def create_table_from_pyarrow(self, data, sentinel, row_keys="auto"):
-        # Handle row keys
-        if row_keys == "auto":
-            rk_field = data.schema[0]
-            if rk_field.name == "<Row Key>" and pa.types.is_string(rk_field.type):
-                # Keep the row key column
-                pass
-            elif rk_field.name == "<Row Key>" and pa.types.is_integer(rk_field.type):
-                # Convert to string with the format f"Row{n}"
-                data = _replace_with_formatted_row_keys(data)
-            else:
-                # No row key column that can be used -> generate new keys
-                data = _add_generated_row_keys(data)
-        elif row_keys == "generate":
-            data = _add_generated_row_keys(data)
-        elif row_keys == "keep":
-            # Nothing to do
-            pass
-        else:
-            raise ValueError('row_keys must be one of ["auto", "generate", "keep"]')
-
-        if sentinel is not None:
-            data = katy.sentinel_to_missing_value(data, sentinel)
-        data = katy.wrap_primitive_arrays(data)
-
-        return ArrowTable(data)
+        return _create_table_from_pyarrow(data, sentinel, row_keys)
 
     def create_table_from_pandas(self, data, sentinel, row_keys="auto"):
-        import knime._arrow._pandas as kap
-        import pandas as pd
+        return _create_table_from_pandas(data, sentinel, row_keys)
 
-        if not isinstance(data, pd.DataFrame):
-            raise ValueError(
-                f"Table.from_pandas expects a pandas.DataFrame, but got {type(data)}"
-            )
-        if row_keys in ["auto", "keep"]:
-            pandas_row_keys = row_keys
-            arrow_row_keys = "keep"
-        elif row_keys == "generate":
-            pandas_row_keys = "none"
-            arrow_row_keys = "generate"
-        else:
-            raise ValueError('row_keys must be one of ["auto", "keep", "generate"]')
-        data = kap.pandas_df_to_arrow(data, row_keys=pandas_row_keys)
-        return self.create_table_from_pyarrow(data, sentinel, row_keys=arrow_row_keys)
-
-    def create_batch_output_table(self):
-        return ArrowBatchOutputTable(self.create_sink())
+    def create_batch_output_table(self, row_keys="generate"):
+        return ArrowBatchOutputTable(self.create_sink(), row_keys=row_keys)
 
     def create_sink(self):
         sink = self._sink_factory()
@@ -127,17 +137,37 @@ class _ArrowBackend(knt._Backend):
 
 
 class ArrowBatchOutputTable(knt.BatchOutputTable):
-    def __init__(self, sink):
+    def __init__(self, sink, row_keys="generate"):
         self._num_batches = 0
         self._sink = sink
+
+        if row_keys not in ["generate", "keep"]:
+            raise ValueError('row_keys must be one of ["generate", "keep"]')
+        self._row_keys = row_keys
+        self._num_rows = 0
 
     def append(
         self, batch: Union["ArrowTable", "pandas.DataFrame", pa.Table, pa.RecordBatch]
     ):
         if isinstance(batch, pa.Table) or isinstance(batch, pa.RecordBatch):
-            batch = knt.Table.from_pyarrow(batch)
+            batch = _create_table_from_pyarrow(
+                batch,
+                sentinel=None,
+                row_keys=self._row_keys,
+                first_row_key=self._num_rows,
+            )
         elif isinstance(batch, ArrowTable):
-            pass  # no need to convert, we just don't want to have to check for pandas explicitly
+            if self._row_keys == "generate":
+                # Remove the row keys from the table and generate new ones
+                batch = _create_table_from_pyarrow(
+                    pa.table(
+                        batch._table.columns[1:], schema=batch._table.schema.remove(0)
+                    ),
+                    sentinel=None,
+                    row_keys="generate",
+                    first_row_key=self._num_rows,
+                )
+            # else: no need to convert
         else:
             import pandas as pd
 
@@ -145,8 +175,14 @@ class ArrowBatchOutputTable(knt.BatchOutputTable):
                 raise TypeError(
                     f"Can only append batches of type knime.api.Table, pyarrow.Table, pyarrow.RecordBatch, pandas.DataFrame but got {type(batch)}"
                 )
-            batch = knt.Table.from_pandas(batch)
+            batch = _create_table_from_pandas(
+                batch,
+                sentinel=None,
+                row_keys=self._row_keys,
+                first_row_key=self._num_rows,
+            )
 
+        self._num_rows += batch.num_rows
         self._num_batches += 1
         self._sink.write(batch._table)
 

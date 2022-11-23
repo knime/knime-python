@@ -242,7 +242,7 @@ class _Backend:
         raise RuntimeError("Not implemented")
 
     @abstractmethod
-    def create_batch_output_table(self):
+    def create_batch_output_table(self, row_keys: str = "generate"):
         raise RuntimeError("Not implemented")
 
     @abstractmethod
@@ -385,18 +385,31 @@ class BatchOutputTable:
         )
 
     @staticmethod
-    def create():
+    def create(row_keys: str = "generate"):
         """
         Create an empty BatchOutputTable
+
+        Args:
+            row_keys:
+                Defines what row keys should be used. Must be one of the following
+                values:
+
+                * ``"generate"``: Generate new row kews of the format ``f"Row{i}"``
+                * ``"keep"``:
+
+                  * For appending DataFrames: Keep the ``DataFrame.index`` as the row
+                    keys. Convert the index to strings if necessary.
+                  * For appending Arrow tables or record batches: Use the first column
+                    of the table as row keys. The first column must be of type string.
         """
-        return _backend.create_batch_output_table()
+        return _backend.create_batch_output_table(row_keys=row_keys)
 
     @staticmethod
-    def from_batches(generator):
+    def from_batches(generator, row_keys: str = "generate"):
         """
         Create output table where each batch is provided by a generator
         """
-        out = _backend.create_batch_output_table()
+        out = _backend.create_batch_output_table(row_keys=row_keys)
         for b in generator:
             out.append(b)
         return out
