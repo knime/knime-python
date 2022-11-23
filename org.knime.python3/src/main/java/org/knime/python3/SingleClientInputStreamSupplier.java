@@ -44,84 +44,72 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Jun 3, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   Nov 23, 2022 ("Adrian Nembach, KNIME GmbH, Konstanz, Germany"): created
  */
 package org.knime.python3;
 
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
 /**
- * An {@link InputStream} that can be stopped while the underlying stream is not at the end of file yet.
+ * Ensures that at any given point there is at most one client using an InputStream supplied by {@link #get()}.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-// read(byte[],int,int) is not overwritten because we would have to check availability before each read anyway
-// and therefore the implementation would be the same as the one in InputStream
-final class StoppableInputStream extends InputStream {//NOSONAR
+@SuppressWarnings("javadoc")
+final class SingleClientInputStreamSupplier implements Supplier<InputStream> {
 
-    private final CountDownLatch m_stopper = new CountDownLatch(1);
+    private final Semaphore m_clients = new Semaphore(1);
 
-    private final AtomicBoolean m_isRunning = new AtomicBoolean(true);
+    private final Supplier<InputStream> m_streamSupplier;
 
-    private final InputStream m_in;
 
-    private final long m_waitTimeInMs;
-
-    protected StoppableInputStream(final InputStream in, final long waitTimeInMs) {
-        m_in = in;
-        m_waitTimeInMs = waitTimeInMs;
-    }
-
-    @Override
-    public int read() throws IOException {
-        boolean inputAvailable;
-        while ((inputAvailable = isInputAvailable()) || m_isRunning.get()) {
-            if (inputAvailable) {
-                return m_in.read();
-            } else {
-                waitForStop();
-            }
-        }
-        return -1;
-    }
-
-    private boolean isInputAvailable() throws IOException {
-        return m_in.available() > 0;
-    }
-
-    private void waitForStop() {
-        try {
-            m_stopper.await(m_waitTimeInMs, TimeUnit.MILLISECONDS);//NOSONAR
-        } catch (InterruptedException ex) {
-            stop();
-            Thread.currentThread().interrupt();
-        }
-    }
-
-    @Override
-    public int available() throws IOException {
-        return m_in.available();
+    SingleClientInputStreamSupplier(final Supplier<InputStream> streamSupplier) {
+        m_streamSupplier = streamSupplier;
     }
 
     /**
-     * Sends the stop signal and immediately returns.<br>
-     * This means that any blocked {@link #read()} will return EOF and new {@link #read()} calls will no longer wait
-     * i.e. they will return EOF if {@link #available()} returns 0.
-     * Note that this method does not guarantee that the consumer of this stream will have processed all data. Ensuring
-     * that requires external synchronization.
+     * Blocks until any InputStream returned by a previous call is closed.
+     *
+     * @return the InputStream
      */
-    void stop() {
-        m_isRunning.set(false);
-        m_stopper.countDown();
+    @Override
+    @SuppressWarnings("resource") // the created stream is managed and closed by the ManagedInputStream
+    public InputStream get() {
+        try {
+            m_clients.acquire();
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while waiting for stream", ex);
+        }
+        return new ManagedInputStream(m_streamSupplier.get());
     }
 
-    @Override
-    public void close() throws IOException {
-        m_in.close();
+    // The sonar rule doesn't make sense because FilterInputStream provides a sufficient implementation
+    // of read(byte[], int, int)
+    private final class ManagedInputStream extends FilterInputStream {//NOSONAR
+        private final AtomicBoolean m_closed = new AtomicBoolean(false);
+
+        protected ManagedInputStream(final InputStream delegate) {
+            super(delegate);
+        }
+
+        @Override
+        public void close() throws IOException {
+            if (m_closed.getAndSet(true)) {
+                return;
+            }
+            try {
+                super.close();
+            } finally {
+                m_clients.release();
+            }
+        }
+
     }
 
 }

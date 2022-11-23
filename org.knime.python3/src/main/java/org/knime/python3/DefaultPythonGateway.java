@@ -116,6 +116,11 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
 
     private final InputStream m_stdError;
 
+    private final SingleClientInputStreamSupplier m_stdOutputManager;
+
+    private final SingleClientInputStreamSupplier m_stdErrorManager;
+
+
     /**
      * Creates a {@link PythonGateway} to a new Python process.
      *
@@ -169,7 +174,13 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
             pb.environment().put("PYTHONPATH", pythonPath.getPythonPath());
             m_process = pb.start();
             m_stdOutput = new UncloseableInputStream(m_process.getInputStream());
+            // TODO buffer the error stream
             m_stdError = new UncloseableInputStream(m_process.getErrorStream());
+
+            m_stdOutputManager = new SingleClientInputStreamSupplier(() -> m_stdOutput);
+
+            m_stdErrorManager = new SingleClientInputStreamSupplier(() -> m_stdError);
+
             // NOSONAR: PythonGatewayUtils only uses the #getOutputStream and #getErrorStream methods that are already
             // fully functional at this point in time.
             try (var startupOutputConsumer = PythonGatewayUtils.redirectGatewayOutput(this, // NOSONAR
@@ -272,7 +283,7 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
      */
     @Override
     public InputStream getStandardOutputStream() {
-        return m_stdOutput;
+        return m_stdOutputManager.get();
     }
 
     /**
@@ -281,7 +292,7 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
      */
     @Override
     public InputStream getStandardErrorStream() {
-        return m_stdError;
+        return m_stdErrorManager.get();
     }
 
     /**

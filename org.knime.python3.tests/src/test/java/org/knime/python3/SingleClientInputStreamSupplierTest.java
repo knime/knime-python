@@ -44,9 +44,11 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Jun 3, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   Nov 23, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
 package org.knime.python3;
+
+import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -54,74 +56,61 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.junit.Test;
+
 /**
- * An {@link InputStream} that can be stopped while the underlying stream is not at the end of file yet.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-// read(byte[],int,int) is not overwritten because we would have to check availability before each read anyway
-// and therefore the implementation would be the same as the one in InputStream
-final class StoppableInputStream extends InputStream {//NOSONAR
-
-    private final CountDownLatch m_stopper = new CountDownLatch(1);
-
-    private final AtomicBoolean m_isRunning = new AtomicBoolean(true);
-
-    private final InputStream m_in;
-
-    private final long m_waitTimeInMs;
-
-    protected StoppableInputStream(final InputStream in, final long waitTimeInMs) {
-        m_in = in;
-        m_waitTimeInMs = waitTimeInMs;
-    }
-
-    @Override
-    public int read() throws IOException {
-        boolean inputAvailable;
-        while ((inputAvailable = isInputAvailable()) || m_isRunning.get()) {
-            if (inputAvailable) {
-                return m_in.read();
-            } else {
-                waitForStop();
-            }
-        }
-        return -1;
-    }
-
-    private boolean isInputAvailable() throws IOException {
-        return m_in.available() > 0;
-    }
-
-    private void waitForStop() {
-        try {
-            m_stopper.await(m_waitTimeInMs, TimeUnit.MILLISECONDS);//NOSONAR
-        } catch (InterruptedException ex) {
-            stop();
-            Thread.currentThread().interrupt();
-        }
-    }
-
-    @Override
-    public int available() throws IOException {
-        return m_in.available();
-    }
+public class SingleClientInputStreamSupplierTest {
 
     /**
-     * Sends the stop signal and immediately returns.<br>
-     * This means that any blocked {@link #read()} will return EOF and new {@link #read()} calls will no longer wait
-     * i.e. they will return EOF if {@link #available()} returns 0.
-     * Note that this method does not guarantee that the consumer of this stream will have processed all data. Ensuring
-     * that requires external synchronization.
+     * @throws InterruptedException never happens
      */
-    void stop() {
-        m_isRunning.set(false);
-        m_stopper.countDown();
+    @Test
+    public void testGetBlocksUntilPreviousClientClosesStream() throws InterruptedException {
+        var supplier = new SingleClientInputStreamSupplier(TestInputStream::new);
+        var closeFirstClient = new CountDownLatch(1);
+
+        new Thread(() -> {
+            try (var firstClient = supplier.get()) {
+                closeFirstClient.await();
+            } catch (IOException | InterruptedException e) {
+                // never happens
+            }
+        }).start();
+
+        var secondClientSupplied = new CountDownLatch(1);
+        new Thread(() -> {
+            try (var secondClient = supplier.get()) {
+                secondClientSupplied.countDown();
+            } catch (IOException e) {
+                // never happens
+            }
+        }).start();
+
+        if (secondClientSupplied.await(100, TimeUnit.MILLISECONDS)) {
+            fail("The second client should only be supplied if the first client is closed.");
+        }
+        closeFirstClient.countDown();
+        if (!secondClientSupplied.await(100, TimeUnit.MILLISECONDS)) {
+            fail("The second client should be supplied once the second client is closed.");
+        }
     }
 
-    @Override
-    public void close() throws IOException {
-        m_in.close();
+    private static final class TestInputStream extends InputStream {
+        private final AtomicBoolean m_close = new AtomicBoolean(false);
+
+        @Override
+        public int read() throws IOException {
+            return m_close.get() ? -1 : 1;
+        }
+
+        @Override
+        public void close() throws IOException {
+            m_close.set(true);
+        }
+
     }
 
 }
