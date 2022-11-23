@@ -139,7 +139,7 @@ class Port:
 class ViewDeclaration:
     name: str
     description: str
-    static_resources: Optional[str]
+    static_resources: Optional[str] = None
 
 
 # re-exporting symbols so that "import knime_node" will include the most needed features
