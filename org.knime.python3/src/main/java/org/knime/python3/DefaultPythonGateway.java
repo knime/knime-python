@@ -48,6 +48,7 @@
  */
 package org.knime.python3;
 
+import java.io.BufferedInputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -174,8 +175,7 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
             pb.environment().put("PYTHONPATH", pythonPath.getPythonPath());
             m_process = pb.start();
             m_stdOutput = new UncloseableInputStream(m_process.getInputStream());
-            // TODO buffer the error stream
-            m_stdError = new UncloseableInputStream(m_process.getErrorStream());
+            m_stdError = new UncloseableInputStream(new BufferedInputStream(m_process.getErrorStream()));
 
             m_stdOutputManager = new SingleClientInputStreamSupplier(() -> m_stdOutput);
 
