@@ -65,6 +65,9 @@ public final class FreshPythonGatewayFactory implements PythonGatewayFactory {
     public <E extends PythonEntryPoint> PythonGateway<E> create(final PythonGatewayDescription<E> description)
         throws IOException, InterruptedException {
         var launcherPath = description.getLauncherPath().toAbsolutePath().toString();
+        if (description.getCommand() instanceof CondaPythonCommand || description.getCommand() instanceof BundledPythonCommand) {
+            PythonKernelCreationGate.INSTANCE.awaitPythonKernelCreationAllowedInterruptibly(); // TODO: make this a try-with-resources block and forbid closing while inside?
+        }
         var gateway = DefaultPythonGateway.create(description.getCommand().createProcessBuilder(), launcherPath,
             description.getEntryPointClass(), description.getExtensions(), description.getPythonPath());
         if (!description.getCustomizers().isEmpty()) {
@@ -80,5 +83,4 @@ public final class FreshPythonGatewayFactory implements PythonGatewayFactory {
         }
         return gateway;
     }
-
 }

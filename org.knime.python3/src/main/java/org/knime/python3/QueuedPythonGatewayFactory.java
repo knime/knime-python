@@ -72,6 +72,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import org.knime.core.node.NodeLogger;
+import org.knime.python3.PythonKernelCreationGate.PythonKernelCreationGateListener;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
@@ -113,6 +114,7 @@ public final class QueuedPythonGatewayFactory implements PythonGatewayFactory {
                 reconfigureQueue(DEFAULT_MAX_NUMBER_OF_IDLING_GATEWAYS, DEFAULT_EXPIRATION_DURATION_IN_MINUTES);
             }
         }
+        PythonKernelCreationGate.INSTANCE.awaitPythonKernelCreationAllowedInterruptibly(); // TODO: make this a try-with-resources block and forbid closing while inside?
         return m_queue.getNextGateway(description);
     }
 
@@ -204,6 +206,18 @@ public final class QueuedPythonGatewayFactory implements PythonGatewayFactory {
             m_gatewayClosers = createThreadPoolExecutor("python-gateway-closer", true);
             m_gatewayEvictor.scheduleAtFixedRate(this::evictExpiredGateways, 0l,
                 EVICTION_CHECK_INTERVAL_IN_MILLISECONDS, TimeUnit.MILLISECONDS);
+
+            PythonKernelCreationGate.INSTANCE.registerListener(new PythonKernelCreationGateListener() {
+                @Override
+                public void onPythonKernelCreationGateOpen() {
+                    // Nothing to do here. Queue is blocked anyways in QueuedPythonGatewayQueue.create() while gate is closed.
+                }
+
+                @Override
+                public void onPythonKernelCreationGateClose() {
+                    clearQueuedGateways(null);
+                }
+            });
         }
 
         private ExecutorService createThreadPoolExecutor(final String threadNamePrefix,
