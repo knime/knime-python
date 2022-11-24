@@ -302,18 +302,178 @@ class ArrowTableTest(unittest.TestCase):
         self.assertIsInstance(batches[0], kt.Table)
         self.assertEqual(table.num_columns, batches[0].num_columns)
 
-    def test_missing_row_key(self):
-        table = self._test_table
-        data = table.to_pyarrow()
-        data_no_row_key = data.select([4, 5, 6])
-        self.assertRaises(TypeError, lambda: kt.Table.from_pyarrow(data_no_row_key))
-
     def test_schema(self):
         table = self._test_table
         schema = table.schema
         self.assertEqual(table.num_columns, schema.num_columns)
         self.assertEqual(schema.column_names[0], "StringCol")
         self.assertEqual(schema[3].ktype, ks.int32())
+
+    def test_row_keys_from_pandas(self):
+        df_len = 5
+
+        def create_df(index):
+            return pd.DataFrame(
+                {
+                    "col1": ["a", "b", "c", "d", "e"],
+                    "col2": [1, 2, 3, 4, 5],
+                },
+                index=index,
+            )
+
+        def get_row_keys(table):
+            return table.to_pyarrow()[0].to_pylist()
+
+        # ========== row_keys = "keep"
+
+        # Simple range index
+        table = kt.Table.from_pandas(create_df(pd.RangeIndex(df_len)), row_keys="keep")
+        self.assertListEqual(get_row_keys(table), [f"{i}" for i in range(df_len)])
+
+        # Strings
+        index = ["a", "b", "foo", "g", "e"]
+        table = kt.Table.from_pandas(create_df(pd.Index(index)), row_keys="keep")
+        self.assertListEqual(get_row_keys(table), index)
+
+        # Floats
+        index = [2.0, 7.1, 1000.1, 0.0001, 3.14]
+        table = kt.Table.from_pandas(create_df(pd.Index(index)), row_keys="keep")
+        self.assertListEqual(get_row_keys(table), [str(i) for i in index])
+
+        # ========== row_keys = "generate"
+
+        generated_keys = [f"Row{i}" for i in range(df_len)]
+
+        # Simple range index
+        table = kt.Table.from_pandas(
+            create_df(pd.RangeIndex(df_len)), row_keys="generate"
+        )
+        self.assertListEqual(get_row_keys(table), generated_keys)
+
+        # Strings
+        index = ["a", "b", "foo", "g", "e"]
+        table = kt.Table.from_pandas(create_df(pd.Index(index)), row_keys="generate")
+        self.assertListEqual(get_row_keys(table), generated_keys)
+
+        # Floats
+        index = [2.0, 7.1, 1000.1, 0.0001, 3.14]
+        table = kt.Table.from_pandas(create_df(pd.Index(index)), row_keys="generate")
+        self.assertListEqual(get_row_keys(table), generated_keys)
+
+        # ========== row_keys = "auto"
+
+        generated_keys = [f"Row{i}" for i in range(df_len)]
+
+        # Simple range index
+        table = kt.Table.from_pandas(create_df(pd.RangeIndex(df_len)), row_keys="auto")
+        self.assertListEqual(get_row_keys(table), generated_keys)
+
+        # Strings
+        index = ["a", "b", "foo", "g", "e"]
+        table = kt.Table.from_pandas(create_df(pd.Index(index)), row_keys="auto")
+        self.assertListEqual(get_row_keys(table), index)
+
+        # Floats
+        index = [2.0, 7.1, 1000.1, 0.0001, 3.14]
+        table = kt.Table.from_pandas(create_df(pd.Index(index)), row_keys="auto")
+        self.assertListEqual(get_row_keys(table), [str(i) for i in index])
+
+        # Integers
+        index = [5, 2, 1, 4, 7]
+        table = kt.Table.from_pandas(create_df(pd.Index(index)), row_keys="auto")
+        self.assertListEqual(get_row_keys(table), [f"Row{i}" for i in index])
+
+        # Range starting at 10
+        index = pd.RangeIndex(10, 10 + df_len)
+        table = kt.Table.from_pandas(create_df(index), row_keys="auto")
+        self.assertListEqual(
+            get_row_keys(table), [f"Row{i}" for i in range(10, 10 + df_len)]
+        )
+
+        # ========== row_keys = "unsupported"
+        with self.assertRaises(ValueError):
+            kt.Table.from_pandas(create_df(None), row_keys="unsupported")
+
+    def test_row_keys_from_pyarrow(self):
+        table_len = 5
+
+        def create_table(row_key_col=None):
+            columns = [
+                pa.array(["a", "b", "c", "d", "e"]),
+                pa.array([1, 2, 3, 4, 5]),
+            ]
+            names = ["col1", "col2"]
+            if not row_key_col is None:
+                columns = [row_key_col, *columns]
+                names = ["<Row Key>", *names]
+
+            return pa.table(columns, names=names)
+
+        def get_row_keys(table):
+            return table.to_pyarrow()[0].to_pylist()
+
+        # ========== row_keys = "keep"
+
+        # Correct string col for row keys
+        row_keys = ["a", "b", "foo", "g", "e"]
+        table = kt.Table.from_pyarrow(create_table(pa.array(row_keys)), row_keys="keep")
+        self.assertListEqual(get_row_keys(table), row_keys)
+        self.assertEqual(table.num_columns, 2)
+
+        # Use first string column as row keys
+        table = kt.Table.from_pyarrow(create_table(), row_keys="keep")
+        self.assertListEqual(get_row_keys(table), create_table()[0].to_pylist())
+        self.assertEqual(table.num_columns, 1)
+
+        # Column named "<Row Key>" but with a wrong type
+        row_keys = [4, 1, 3, 2, 8]
+        with self.assertRaises(TypeError):
+            kt.Table.from_pyarrow(create_table(pa.array(row_keys)), row_keys="keep")
+
+        # ========== row_keys = "generate"
+
+        # Simple: Create new row keys
+        table = kt.Table.from_pyarrow(create_table(), row_keys="generate")
+        self.assertListEqual(get_row_keys(table), [f"Row{i}" for i in range(table_len)])
+        self.assertEqual(table.num_columns, 2)
+
+        # Row key column present but generate another one
+        row_keys = ["a", "b", "foo", "g", "e"]
+        table = kt.Table.from_pyarrow(
+            create_table(pa.array(row_keys)), row_keys="generate"
+        )
+        self.assertListEqual(get_row_keys(table), [f"Row{i}" for i in range(table_len)])
+        self.assertEqual(table.num_columns, 3)
+
+        # ========== row_keys = "auto"
+
+        # First column is string but not "<Row Key>"
+        table = kt.Table.from_pyarrow(create_table(), row_keys="auto")
+        self.assertListEqual(get_row_keys(table), [f"Row{i}" for i in range(table_len)])
+        self.assertEqual(table.num_columns, 2)
+
+        # First column is string and "<Row Key>"
+        row_keys = ["a", "b", "foo", "g", "e"]
+        table = kt.Table.from_pyarrow(create_table(pa.array(row_keys)), row_keys="auto")
+        self.assertListEqual(get_row_keys(table), row_keys)
+        self.assertEqual(table.num_columns, 2)
+
+        # First column is integer and "<Row Key>"
+        row_keys = [4, 1, 3, 2, 8]
+        table = kt.Table.from_pyarrow(create_table(pa.array(row_keys)), row_keys="auto")
+        self.assertListEqual(get_row_keys(table), [f"Row{i}" for i in row_keys])
+        self.assertEqual(table.num_columns, 2)
+
+        # First column cannot converted to row keys but is named "<Row Key>"
+        # TODO is this what we want? Keep the column and generate a new row key column?
+        row_keys = [2.0, 7.1, 1000.1, 0.0001, 3.14]
+        table = kt.Table.from_pyarrow(create_table(pa.array(row_keys)), row_keys="auto")
+        self.assertListEqual(get_row_keys(table), [f"Row{i}" for i in range(table_len)])
+        self.assertEqual(table.num_columns, 3)
+
+        # ========== row_keys = "unsupported"
+        with self.assertRaises(ValueError):
+            kt.Table.from_pyarrow(create_table(), row_keys="unsupported")
 
 
 class BatchOutputTableTest(unittest.TestCase):
