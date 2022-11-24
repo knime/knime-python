@@ -582,6 +582,8 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
     def get_the_correct_chunk(self, item):
         if self._chunk_start_list is None:
             self._chunk_start_list = self._get_all_chunk_start_indices(self._data)
+        if item < 0:  # if we have a negative index access
+            item = len(self) + item
         # use a right bisection to locate the closest chunk index
         chunk_idx = bisect.bisect_right(self._chunk_start_list, item) - 1
         item = (

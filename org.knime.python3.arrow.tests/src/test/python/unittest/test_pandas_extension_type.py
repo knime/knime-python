@@ -45,9 +45,7 @@
 @author Jonas Klotz, KNIME GmbH, Berlin, Germany
 """
 
-import datetime
 import os
-import tempfile
 import unittest
 from typing import Type, Union
 import knime.types.builtin as et  # import to register column converters
@@ -58,14 +56,13 @@ import pandas.api.extensions as pdext
 import pyarrow as pa
 from pandas.core.dtypes.dtypes import register_extension_dtype
 
-import knime._arrow._backend as ka
 import knime._arrow._backend as knar
 import knime._arrow._pandas as kap
 import knime._arrow._types as katy
 import knime.scripting._deprecated._arrow_table as kat
 import knime_node_arrow_table as knat
 import knime._arrow._dictencoding as kasde
-import knime_types as kt
+
 from testing_utility import (
     DummyJavaDataSink,
     DummyWriter,

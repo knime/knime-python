@@ -60,9 +60,83 @@ import knime_node_arrow_table as knat
 import knime._arrow._pandas as kap
 import knime._arrow._types as katy
 import knime._arrow._backend as knar
-import knime_types as kt
+import knime.api.types as kt
 
-from testing_utility import DummyJavaDataSink, DummyWriter, TestDataSource
+from testing_utility import (
+    DummyJavaDataSink,
+    DummyWriter,
+    TestDataSource,
+    _generate_backends,
+    _generate_test_data_frame,
+    _generate_test_table,
+)
+
+
+def _register_geospatial_value_factories():
+    kt.register_python_value_factory(
+        "knime.types.geospatial",
+        "GeoValueFactory",
+        '{"type": "struct", "inner_types": ["variable_width_binary", "string"]}',
+        """
+        {
+            "type": "struct", 
+            "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.geospatial.core.data.cell.GeoCell$ValueFactory\\"}" }, 
+            "inner_types": [
+                {"type": "simple", "traits": {}},
+                {"type": "simple", "traits": {}}
+            ]
+        }
+        """,
+        "knime.types.geospatial.GeoValue",
+    )
+    kt.register_python_value_factory(
+        "knime.types.geospatial",
+        "GeoValueFactory",
+        '{"type": "struct", "inner_types": ["variable_width_binary", "string"]}',
+        """
+        {
+            "type": "struct", 
+            "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.geospatial.core.data.cell.GeoPointCell$ValueFactory\\"}" }, 
+            "inner_types": [
+                {"type": "simple", "traits": {}},
+                {"type": "simple", "traits": {}}
+            ]
+        }
+        """,
+        "shapely.geometry.point.Point",
+    )
+
+
+def _register_geospatial_col_converters():
+    import knime.api.types as katy
+
+    python_module = "knime.types.geospatial"
+    # to pandas
+    python_class_name = "ToGeoPandasColumnConverter"
+    python_value_type_names = [
+        "org.knime.geospatial.core.data.cell.GeoCell$ValueFactory",
+        "org.knime.geospatial.core.data.cell.GeoPointCell$ValueFactory",
+        "org.knime.geospatial.core.data.cell.GeoLineCell$ValueFactory",
+        "org.knime.geospatial.core.data.cell.GeoPolygonCell$ValueFactory",
+        "org.knime.geospatial.core.data.cell.GeoMultiPointCell$ValueFactory",
+        "org.knime.geospatial.core.data.cell.GeoMultiLineCell$ValueFactory",
+        "org.knime.geospatial.core.data.cell.GeoMultiPolygonCell$ValueFactory",
+        "org.knime.geospatial.core.data.cell.GeoCollectionCell$ValueFactory",
+    ]
+    for python_value_type_name in python_value_type_names:
+        katy._to_pandas_column_converters[python_value_type_name] = (
+            python_module,
+            python_class_name,
+        )
+
+    # From Pandas
+    python_class_name = "FromGeoPandasColumnConverter"
+    python_value_type_name = "geopandas.array.GeometryDtype"
+
+    katy._from_pandas_column_converters[python_value_type_name] = (
+        python_module,
+        python_class_name,
+    )
 
 
 class GeoSpatialExtensionTypeTest(unittest.TestCase):
@@ -102,22 +176,8 @@ class GeoSpatialExtensionTypeTest(unittest.TestCase):
                 )
             )
 
-            kt.register_python_value_factory(
-                "knime.types.geospatial",
-                "GeoValueFactory",
-                '{"type": "struct", "inner_types": ["variable_width_binary", "string"]}',
-                """
-                {
-                    "type": "struct", 
-                    "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.geospatial.core.data.cell.GeoPointCell$ValueFactory\\"}" }, 
-                    "inner_types": [
-                        {"type": "simple", "traits": {}},
-                        {"type": "simple", "traits": {}}
-                    ]
-                }
-                """,
-                "knime.types.geospatial.GeoValue",
-            )
+            _register_geospatial_value_factories()
+            _register_geospatial_col_converters()
 
             # to register the arrow<->pandas column converters
             import knime.types.geospatial
@@ -130,63 +190,16 @@ class GeoSpatialExtensionTypeTest(unittest.TestCase):
             )
             pass
 
-    def _generate_test_table(self, path="geospatial_table_3.zip"):
-        # returns a table with: RowKey, WKT (string) and GeoPoint columns
-        knime_generated_table_path = path
-        test_data_source = TestDataSource(knime_generated_table_path)
-        pa_data_source = knar.ArrowDataSource(test_data_source)
-        arrow = pa_data_source.to_arrow_table()
-        arrow = katy.unwrap_primitive_arrays(arrow)
-
-        return arrow
-
-    def _generate_backends(self):
-        dummy_java_sink = DummyJavaDataSink()
-        dummy_writer = DummyWriter()
-        arrow_sink = ka.ArrowDataSink(dummy_java_sink)
-        arrow_sink._writer = dummy_writer
-
-        arrow_backend = kat.ArrowBackend(DummyJavaDataSink)
-        node_arrow_backend = knat._ArrowBackend(DummyJavaDataSink)
-        return arrow_backend, node_arrow_backend
-
     def _to_pandas(self, arrow):
         return kap.arrow_data_to_pandas_df(arrow)
-
-    def _generate_test_data_frame(
-        self,
-        file_name="generatedTestData.zip",
-        lists=True,
-        sets=True,
-        columns=None,
-    ) -> pd.DataFrame:
-        """
-        Creates a Dataframe from a KNIME table on disk
-        @param path: path for the KNIME Table
-        @param lists: allow lists in output table (extension lists have difficulties)
-        @param sets: allow sets in output table (extension sets have difficulties)
-        @return: pandas dataframe containing data from KNIME GenerateTestTable node
-        """
-        knime_generated_table_path = os.path.normpath(
-            os.path.join(__file__, "..", file_name)
-        )
-        test_data_source = TestDataSource(knime_generated_table_path)
-        pa_data_source = knar.ArrowDataSource(test_data_source)
-        arrow = pa_data_source.to_arrow_table()
-        arrow = katy.unwrap_primitive_arrays(arrow)
-
-        df = kap.arrow_data_to_pandas_df(arrow)
-        if columns is not None:
-            df.columns = columns
-
-        return df
 
     def test_load_table(self):
         if not GeoSpatialExtensionTypeTest.geospatial_types_found:
             return
 
-        t = self._generate_test_table()
-        self.assertEqual(["<RowID>", "column1", "geometry"], t.schema.names)
+
+        t = _generate_test_table("geospatial_table_3.zip")
+        self.assertEqual(["<Row ID>", "column1", "geometry"], t.schema.names)
         self.assertEqual([pa.string(), pa.string()], t.schema.types[0:2])
         self.assertIsInstance(t.schema.types[2], pa.ExtensionType)
 
@@ -194,7 +207,7 @@ class GeoSpatialExtensionTypeTest(unittest.TestCase):
         if not GeoSpatialExtensionTypeTest.geospatial_types_found:
             return
 
-        t = self._generate_test_table()
+        t = _generate_test_table("geospatial_table_3.zip")
         df = self._to_pandas(t)
         from shapely.geometry import Point
         import geopandas
@@ -231,9 +244,9 @@ class GeoSpatialExtensionTypeTest(unittest.TestCase):
         from shapely.geometry import Point
         import geopandas as gpd
 
-        arrow_backend, node_arrow_backend = self._generate_backends()
+        arrow_backend, node_arrow_backend = _generate_backends()
         # load test table
-        t = self._generate_test_table(path="geospatial_table_3.zip")
+        t = _generate_test_table(path="geospatial_table_3.zip")
         df = self._to_pandas(t)
         df.columns = ["column1", "geometry"]
 
@@ -275,14 +288,12 @@ class GeoSpatialExtensionTypeTest(unittest.TestCase):
             return
         import geopandas as gpd
 
-        arrow_backend, node_arrow_backend = self._generate_backends()
+        arrow_backend, node_arrow_backend = _generate_backends()
 
         # load test table
-        t = self._generate_test_table(path="geospatial_table_3.zip")
-        df = self._to_pandas(t)
-
-        df.columns = ["column1", "geometry"]
-
+        df = _generate_test_data_frame(
+            file_name="geospatial_table_3.zip", columns=["column1", "geometry"]
+        )
         gdf = gpd.GeoDataFrame(df)
 
         # test for new backend
@@ -290,33 +301,17 @@ class GeoSpatialExtensionTypeTest(unittest.TestCase):
         node_table = node_arrow_backend.create_table_from_pandas(
             gdf_copy, sentinel="min"
         )
-        pd.testing.assert_frame_equal(gdf, gdf_copy)
-
+        self.assertTrue(gdf.equals(gdf_copy))
         # test for old backend
         gdf_copy = gdf.copy(deep=True)
         table = arrow_backend.write_table(gdf_copy)
-        pd.testing.assert_frame_equal(gdf, gdf_copy)
+        self.assertTrue(gdf.equals(gdf_copy))
 
     def test_dict_decoding_geospatials(self):
         if not GeoSpatialExtensionTypeTest.geospatial_types_found:
             return
-        kt.register_python_value_factory(
-            "geospatial_types",
-            "GeoValueFactory",
-            '{"type": "struct", "inner_types": ["variable_width_binary", "string"]}',
-            """
-            {
-                "type": "struct", 
-                "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.geospatial.core.data.cell.GeoCell$ValueFactory\\"}" }, 
-                "inner_types": [
-                    {"type": "simple", "traits": {}},
-                    {"type": "simple", "traits": {}}
-                ]
-            }
-            """,
-        )
 
-        df = self._generate_test_data_frame(
+        df = _generate_test_data_frame(
             "5kDictEncodedChunkedGeospatials.zip", columns=["Name", "geometry"]
         )
         import geopandas as gpd
@@ -333,6 +328,33 @@ class GeoSpatialExtensionTypeTest(unittest.TestCase):
         self.assertEqual(str(sliced[0]), "POINT (50 10)")
         self.assertEqual(str(sliced[3]), "LINESTRING (30 10, 10 30, 40 40)")
         self.assertEqual(str(sliced[5]), "POINT (30 10)")
+
+    def test_missing_values(self):
+        if not GeoSpatialExtensionTypeTest.geospatial_types_found:
+            return
+        import geopandas as gpd
+
+        arrow_backend, node_arrow_backend = _generate_backends()
+
+        # load test table
+        df = _generate_test_data_frame(
+            file_name="geospatial_table_3.zip", columns=["column1", "geometry"]
+        )
+        gdf = gpd.GeoDataFrame(df)
+        crs = gdf.crs
+        gdf.loc[len(gdf)] = ["Point(10 10)", np.nan]
+        gdf.loc[len(gdf)] = ["Point(10 10)", pd.NA]
+        gdf = gdf.reset_index(drop=True)
+
+        arrow_table = arrow_backend.write_table(gdf)
+        schema = (
+            "<Row Key>: string\n"
+            "column1: string\n"
+            "geometry: extension<knime.logical_type<LogicalTypeExtensionType>>"
+        )
+        self.assertEqual(
+            schema, arrow_table._schema.to_string(show_schema_metadata=False)
+        )
 
 
 if __name__ == "__main__":
