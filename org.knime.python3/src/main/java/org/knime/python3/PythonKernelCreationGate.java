@@ -54,9 +54,11 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import org.eclipse.equinox.internal.p2.engine.BeginOperationEvent;
-import org.eclipse.equinox.internal.p2.engine.CommitOperationEvent;
+import org.eclipse.equinox.internal.p2.engine.PhaseEvent;
+import org.eclipse.equinox.internal.p2.engine.RollbackOperationEvent;
 import org.eclipse.equinox.internal.provisional.p2.core.eventbus.ProvisioningListener;
+import org.eclipse.equinox.p2.engine.PhaseSetFactory;
+import org.knime.core.node.NodeLogger;
 
 /**
  * Gate that controls Python kernel creation. Allows to block kernel creation and to kill all Python processes if needed
@@ -65,6 +67,7 @@ import org.eclipse.equinox.internal.provisional.p2.core.eventbus.ProvisioningLis
  */
 @SuppressWarnings("restriction")
 public class PythonKernelCreationGate implements ProvisioningListener {
+
     /**
      * Interface for listeners to the {@link PythonKernelCreationGate} opening and closing
      */
@@ -73,6 +76,7 @@ public class PythonKernelCreationGate implements ProvisioningListener {
          * Called as soon as creating kernels becomes possible
          */
         void onPythonKernelCreationGateOpen();
+
         /**
          * Called as soon as creating kernels becomes blocked
          */
@@ -85,8 +89,7 @@ public class PythonKernelCreationGate implements ProvisioningListener {
     public static final PythonKernelCreationGate INSTANCE = new PythonKernelCreationGate();
 
     public void blockPythonCreation() {
-        if (m_blockCount.getAndIncrement() == 0)
-        {
+        if (m_blockCount.getAndIncrement() == 0) {
             m_kernelLock.writeLock().lock();
 
             synchronized (m_listeners) {
@@ -136,14 +139,28 @@ public class PythonKernelCreationGate implements ProvisioningListener {
      */
     @Override
     public void notify(final EventObject o) {
-        if (o instanceof BeginOperationEvent) {
-            // lock
+        if (o instanceof PhaseEvent && ((PhaseEvent)o).getPhaseId().equals(PhaseSetFactory.PHASE_INSTALL)
+            && ((PhaseEvent)o).getType() == PhaseEvent.TYPE_START) {
+            // lock if we enter the "install" phase
+            LOGGER.info("Blocking Python process startup during installation");
             INSTANCE.blockPythonCreation();
-        } else if (o instanceof CommitOperationEvent) {
-            // unlock
+        } else if (o instanceof PhaseEvent && ((PhaseEvent)o).getPhaseId().equals(PhaseSetFactory.PHASE_CONFIGURE)
+            && ((PhaseEvent)o).getType() == PhaseEvent.TYPE_START) {
+            // "configure" is the normal phase after install, so we can unlock Python processes again
+            LOGGER.info("Allowing Python process startup again after installation");
             INSTANCE.allowPythonCreation();
+        } else if (o instanceof RollbackOperationEvent) {
+            // According to org.eclipse.equinox.internal.p2.engine.Engine.perform() -> L92,
+            // a RollbackOperationEvent will be fired if an operation failed, and this event is only fired in that case,
+            // so we unlock if we are currently locked.
+            if (!INSTANCE.isPythonKernelCreationAllowed()) {
+                LOGGER.info("Allowing Python process startup again after installation failed");
+                INSTANCE.allowPythonCreation();
+            }
         }
     }
+
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonKernelCreationGate.class);
 
     private ReentrantReadWriteLock m_kernelLock = new ReentrantReadWriteLock();
 

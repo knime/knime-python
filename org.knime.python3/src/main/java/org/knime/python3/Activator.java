@@ -48,12 +48,19 @@
  */
 package org.knime.python3;
 
+import java.util.function.Consumer;
+
+import org.eclipse.equinox.internal.provisional.p2.core.eventbus.IProvisioningEventBus;
+import org.eclipse.equinox.p2.core.IProvisioningAgent;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.ServiceReference;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
+@SuppressWarnings("restriction") // because we are using internal Eclipse API to be notified for ongoing installations
 public final class Activator implements BundleActivator {
 
     /**
@@ -63,11 +70,38 @@ public final class Activator implements BundleActivator {
 
     @Override
     public void start(final BundleContext context) throws Exception {
-        // Nothing to do, this activator is just used for its stop method.
+        registerProvisioningEventBusListener();
     }
 
     @Override
     public void stop(final BundleContext bundleContext) throws Exception {
+        deregisterProvisioningEventBusListener();
         GATEWAY_FACTORY.close();
+    }
+
+    private void applyToProvisioningEventBus(final Consumer<IProvisioningEventBus> consumer) {
+        BundleContext context = FrameworkUtil.getBundle(getClass()).getBundleContext();
+        ServiceReference<IProvisioningAgent> ref = context.getServiceReference(IProvisioningAgent.class);
+        if (ref != null) {
+            IProvisioningAgent agent = context.getService(ref);
+            try {
+                IProvisioningEventBus eventBus =
+                    (IProvisioningEventBus)agent.getService(IProvisioningEventBus.SERVICE_NAME);
+                if (eventBus != null) {
+                    // is null if started from the SDK
+                    consumer.accept(eventBus);
+                }
+            } finally {
+                context.ungetService(ref);
+            }
+        }
+    }
+
+    private void registerProvisioningEventBusListener() {
+        applyToProvisioningEventBus(eventBus -> eventBus.addListener(PythonKernelCreationGate.INSTANCE));
+    }
+
+    private void deregisterProvisioningEventBusListener() {
+        applyToProvisioningEventBus(eventBus -> eventBus.removeListener(PythonKernelCreationGate.INSTANCE));
     }
 }
