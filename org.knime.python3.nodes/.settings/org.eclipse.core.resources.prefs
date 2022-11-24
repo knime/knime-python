@@ -13,7 +13,6 @@ encoding//py/Serializer.py=utf-8
 encoding//py/TypeExtensionManager.py=utf-8
 encoding//py/debug_util.py=utf-8
 encoding//py/jaydebeapi.py=utf-8
-encoding//py/knime_jupyter.py=utf-8
 encoding//py/messaging/AbstractTaskHandler.py=utf-8
 encoding//py/messaging/Message.py=utf-8
 encoding//py/messaging/MessageDistributor.py=utf-8

@@ -48,7 +48,7 @@
 import os
 import sys
 
-# path to knime_gateway
+# path to knime._backend._gateway
 sys.path.append(
     os.path.normpath(
         os.path.join(
@@ -66,7 +66,7 @@ sys.path.append(
     )
 )
 
-# path to knime_views
+# path to knime.api.views
 sys.path.append(
     os.path.normpath(
         os.path.join(

@@ -410,7 +410,7 @@ class PythonKernel(kg.EntryPoint):
     @property
     def java_callback(self):
         """
-        Provides access to functionality on the Java side. Used by e.g. knime_jupyter to resolve KNIME URLs.
+        Provides access to functionality on the Java side. Used by e.g. knime.scripting.jupyter to resolve KNIME URLs.
         :return: The callback on the Java side of Java type
         org.knime.python3.scripting.Python3KernelBackendProxy.Callback.
         """
