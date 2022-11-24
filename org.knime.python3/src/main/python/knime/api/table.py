@@ -408,6 +408,9 @@ class BatchOutputTable:
     def from_batches(generator, row_keys: str = "generate"):
         """
         Create output table where each batch is provided by a generator
+
+        Args:
+            row_keys: See ``BatchOutputTable.create``.
         """
         out = _backend.create_batch_output_table(row_keys=row_keys)
         for b in generator:
@@ -422,10 +425,9 @@ class BatchOutputTable:
         Append a batch to this output table. The first batch defines the structure of the table,
         and all subsequent batches must have the same number of columns, column names and column types.
 
-        Note: If you mix pandas and pyarrow here, you have to provide row keys
-              for pyarrow Tables and RecordBatches in the very first column and give it the name "<Row Key>",
-              because that is the name that is given to the row key column generated automatically from
-              the index of the pandas DataFrame.
+        Note:
+          Keep in mind that the row keys will be handled according to the "row_keys"
+          mode chosen in ``BatchOutputTable.create``.
         """
         raise RuntimeError("Not implemented")
 

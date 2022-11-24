@@ -92,6 +92,9 @@ class TestDataSource:
 
 
 class DummyDataSink:
+    def __init__(self):
+        self.last_data = None
+
     def __enter__(self):
         return self
 
@@ -100,7 +103,7 @@ class DummyDataSink:
         return False
 
     def write(self, data):
-        pass
+        self.last_data = data
 
     def close(self):
         pass
@@ -494,7 +497,7 @@ class BatchOutputTableTest(unittest.TestCase):
         nr = 10
         return pa.Table.from_pydict(
             {
-                "Key": [f"Row{r + index * nr}" for r in range(nr)],
+                "Key": [f"MyRow{r + index * nr}" for r in range(nr)],
                 "Ints": [r + index * nr for r in range(nr)],
             }
         )
@@ -503,7 +506,7 @@ class BatchOutputTableTest(unittest.TestCase):
         nr = 10
         return pa.RecordBatch.from_pydict(
             {
-                "Key": [f"Row{r + index * nr}" for r in range(nr)],
+                "Key": [f"MyRow{r + index * nr}" for r in range(nr)],
                 "Ints": [r + index * nr for r in range(nr)],
             }
         )
@@ -512,13 +515,15 @@ class BatchOutputTableTest(unittest.TestCase):
         nr = 10
         return pd.DataFrame(
             {
-                "Key": [f"Row{r + index * nr}" for r in range(nr)],
+                "Key": [f"MyRow{r + index * nr}" for r in range(nr)],
                 "Ints": [r + index * nr for r in range(nr)],
             }
         )
 
-    def _generate_test_batch(self, index):
-        return kt.Table.from_pyarrow(self._generate_test_pyarrow_table(index))
+    def _generate_test_batch(self, index, row_keys="auto"):
+        return kt.Table.from_pyarrow(
+            self._generate_test_pyarrow_table(index), row_keys=row_keys
+        )
 
     def test_create_append(self):
         out = kt.BatchOutputTable.create()
@@ -558,6 +563,56 @@ class BatchOutputTableTest(unittest.TestCase):
                 yield self._generate_test_batch(i)
 
         out = kt.BatchOutputTable.from_batches(batch_generator())
+
+    def test_row_keys(self):
+        def assert_last_batch(batch_table, row_keys, num_cols):
+            written_batch = batch_table._sink.last_data
+            self.assertListEqual(written_batch[0].to_pylist(), row_keys)
+            # NB: batch.num_columns also counts the row key column
+            self.assertEqual(written_batch.num_columns - 1, num_cols)
+
+        # ========== row_keys = "generate"
+        generated_row_keys = [f"Row{i}" for i in range(40)]
+
+        batch_table = kt.BatchOutputTable.create(row_keys="generate")
+        batch_table.append(self._generate_test_pyarrow_batch(0))
+        assert_last_batch(batch_table, generated_row_keys[:10], 2)
+        batch_table.append(self._generate_test_pyarrow_table(1))
+        assert_last_batch(batch_table, generated_row_keys[10:20], 2)
+        batch_table.append(self._generate_test_pandas(2))
+        assert_last_batch(batch_table, generated_row_keys[20:30], 2)
+        batch_table.append(self._generate_test_batch(3))
+        assert_last_batch(batch_table, generated_row_keys[30:], 2)
+
+        # ========== row_keys = "keep"
+        kept_row_keys = [f"MyRow{i}" for i in range(40)]
+
+        # Row keys available for each batch
+        batch_table = kt.BatchOutputTable.create(row_keys="keep")
+        batch_table.append(self._generate_test_pyarrow_batch(0))
+        assert_last_batch(batch_table, kept_row_keys[:10], 1)
+        batch_table.append(self._generate_test_pyarrow_table(1))
+        assert_last_batch(batch_table, kept_row_keys[10:20], 1)
+        batch_table.append(self._generate_test_pandas(2).set_index("Key"))
+        assert_last_batch(batch_table, kept_row_keys[20:30], 1)
+        batch_table.append(self._generate_test_batch(3, row_keys="keep"))
+        assert_last_batch(batch_table, kept_row_keys[30:], 1)
+
+        # No row keys available
+        batch_table = kt.BatchOutputTable.create(row_keys="keep")
+        with self.assertRaises(TypeError):
+            batch_table.append(
+                pa.RecordBatch.from_pydict(
+                    {
+                        "Ints": [i for i in range(10)],
+                        "Doubles": [i * 0.1 for i in range(10)],
+                    }
+                )
+            )
+
+        # ========== row_keys = "auto"
+        with self.assertRaises(ValueError):
+            kt.BatchOutputTable.create(row_keys="auto")
 
 
 if __name__ == "__main__":
