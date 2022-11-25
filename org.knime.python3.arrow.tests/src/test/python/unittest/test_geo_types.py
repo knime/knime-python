@@ -60,7 +60,7 @@ import knime_node_arrow_table as knat
 import knime._arrow._pandas as kap
 import knime._arrow._types as katy
 import knime._arrow._backend as knar
-import knime.api.types as kt
+import knime_types as kt
 
 from testing_utility import (
     DummyJavaDataSink,
@@ -73,15 +73,18 @@ from testing_utility import (
 
 
 def _register_geospatial_value_factories():
+    geo_module = "knime.types.geospatial"
+    geo_valfac = "GeoValueFactory"
+
     kt.register_python_value_factory(
-        "knime.types.geospatial",
-        "GeoValueFactory",
+        geo_module,
+        geo_valfac,
         '{"type": "struct", "inner_types": ["variable_width_binary", "string"]}',
         """
         {
             "type": "struct", 
             "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.geospatial.core.data.cell.GeoCell$ValueFactory\\"}" }, 
-            "inner_types": [
+            "inner": [
                 {"type": "simple", "traits": {}},
                 {"type": "simple", "traits": {}}
             ]
@@ -90,14 +93,14 @@ def _register_geospatial_value_factories():
         "knime.types.geospatial.GeoValue",
     )
     kt.register_python_value_factory(
-        "knime.types.geospatial",
-        "GeoValueFactory",
+        geo_module,
+        geo_valfac,
         '{"type": "struct", "inner_types": ["variable_width_binary", "string"]}',
         """
         {
             "type": "struct", 
             "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.geospatial.core.data.cell.GeoPointCell$ValueFactory\\"}" }, 
-            "inner_types": [
+            "inner": [
                 {"type": "simple", "traits": {}},
                 {"type": "simple", "traits": {}}
             ]
@@ -131,12 +134,12 @@ def _register_geospatial_col_converters():
 
     # From Pandas
     python_class_name = "FromGeoPandasColumnConverter"
-    python_value_type_name = "geopandas.array.GeometryDtype"
-
-    katy._from_pandas_column_converters[python_value_type_name] = (
-        python_module,
-        python_class_name,
-    )
+    python_value_type_names.append("geopandas.array.GeometryDtype")
+    for python_value_type_name in python_value_type_names:
+        katy._from_pandas_column_converters[python_value_type_name] = (
+            python_module,
+            python_class_name,
+        )
 
 
 class GeoSpatialExtensionTypeTest(unittest.TestCase):
@@ -196,7 +199,6 @@ class GeoSpatialExtensionTypeTest(unittest.TestCase):
     def test_load_table(self):
         if not GeoSpatialExtensionTypeTest.geospatial_types_found:
             return
-
 
         t = _generate_test_table("geospatial_table_3.zip")
         self.assertEqual(["<Row ID>", "column1", "geometry"], t.schema.names)
@@ -348,7 +350,7 @@ class GeoSpatialExtensionTypeTest(unittest.TestCase):
 
         arrow_table = arrow_backend.write_table(gdf)
         schema = (
-            "<Row Key>: string\n"
+            "<RowID>: string\n"
             "column1: string\n"
             "geometry: extension<knime.logical_type<LogicalTypeExtensionType>>"
         )

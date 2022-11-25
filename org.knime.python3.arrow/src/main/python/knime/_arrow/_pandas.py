@@ -71,33 +71,14 @@ def pandas_df_to_arrow(data_frame: pd.DataFrame, row_ids: str = "auto") -> pa.Ta
         raise TypeError(
             f"Input must be subclass of a Pandas Dataframe, but is {type(data_frame)}"
         )
+    # extract the schema of the df to convert object type columns to logical types
+    schema = extract_knime_schema_from_df(data_frame)
+    # convert the df via registered column converters and by parsing the objects
+    df = convert_df_to_ktypes_from_schema(data_frame, schema)
 
-    # if we change the columns we have to make a shallow copy of the df
-    # otherwise changes would be reflected in the original dataframe
-    # to avoid copying when not necessary the copy is only made when we actually convert
-    df = None
-    for col_name, col_type in zip(data_frame.columns, data_frame.dtypes):
-        try:
-            col_converter = kt.get_first_matching_from_pandas_col_converter(col_type)
-            if col_converter is not None:
-                if df is None:
-                    # create a shallow copy of the dataframe
-                    df = data_frame.copy(deep=False)
-                with col_converter.warning_manager():
-                    df[col_name] = col_converter.convert_column(df, col_name)
-        except ImportError as e:
-            LOGGER.info(
-                f"Could not convert the column {col_name}; an import error occured: {e}."
-            )
-
-    if df is None:
-        df = data_frame
-    # change to dataframe, for instance if GeoDataFrame
+    # change to dataframe, for instance if it was a GeoDataFrame
     if type(df) != pd.DataFrame:
         df = pd.DataFrame(df)
-
-    schema = extract_knime_schema_from_df(df)
-    df = convert_df_to_ktypes_from_schema(df, schema)
 
     # Convert the index to a string series based on the row_ids argument
     if row_ids in ["auto", "keep"]:
@@ -126,45 +107,18 @@ def pandas_df_to_arrow(data_frame: pd.DataFrame, row_ids: str = "auto") -> pa.Ta
     return pa.Table.from_pandas(df)
 
 
-def convert_df_to_ktypes_from_schema(df, schema: dict):
-    """Converts a df to a schema containing PandasLogicalTypeExtensionTypes
+def extract_knime_schema_from_df(df: pd.DataFrame):
+    """This method extracts a knime.schema from a dataframe.
 
-        This method can be used to convert columns in a dataframe to KNIME types. It iterates over the schema keys to
-        convert the columns from different types e.g. object to PandasLogicalTypeExtensionType. If that conversion fails
-        it keeps the column type as it is and throws a warning.
-
-    :param df: dataframe to convert
-    :param schema: schema dictionary {col: dtype, …}, where col is a column label and dtype is a numpy.dtype,
-                   Python type or PandasLogicalTypeExtensionType to cast one or more of the DataFrame’s columns
-                   to column-specific types.
-    :return: the converted dataframe
-    """
-    for col_name in schema.keys():
-        dtype = schema[col_name]
-        column = df[col_name]
-        if isinstance(dtype, PandasLogicalTypeExtensionType) and not isinstance(
-            column.dtype, PandasLogicalTypeExtensionType
-        ):
-            # replace all pd.NA or np.NaN Values with the correct na_value and save it as logical type
-            try:
-                # column need to be cast as object so that the NA, NaN and NaT are not automatically converted back
-                df[col_name] = (
-                    column.astype(object).where(pd.notnull(column), None).astype(dtype)
-                )
-            except TypeError:
-                warnings.warn(
-                    f"Automatic type detection assumed type '{dtype}' in column '{col_name}'"
-                    f" but conversion failed. Please assign a type to the Pandas series using"
-                    f" knime.schema.logical(correct_dtype).to_pandas()"
-                )
-
-    return df
+    It finds the correct logical type for 'object' columns by using the first type of the first non-empty element in
+    that column
 
 
-def extract_knime_schema_from_df(df):
-    """
-    This method extracts a knime.schema from a dataframe. It finds the correct logical type for 'object' columns.
-    :return: converted df
+    Args:
+        df: dataframe to parse
+
+    Returns: Schema dictionary of the correct types
+
     """
     schema = {}
     # extract schema
@@ -191,7 +145,74 @@ def extract_knime_schema_from_df(df):
     return schema
 
 
+def convert_df_to_ktypes_from_schema(df, schema: dict):
+    """Converts a df with a schema containing the correct PandasLogicalTypeExtensionTypes.
+
+        This method can be used to convert columns in a dataframe to KNIME types. It iterates over the schema keys to
+        convert the columns from different types e.g. object to PandasLogicalTypeExtensionType. Furthermore, it tries to
+        convert with the registered column converters. If the conversion fails, the column type remains as it is and
+        the function throws a warning.
+
+    Args:
+        df: dataframe to convert
+        schema: schema dictionary {col: dtype, …}, where col is a column label and dtype is a numpy.dtype,
+                Python type or PandasLogicalTypeExtensionType to cast one or more of the DataFrame’s columns
+                to column-specific types.
+
+    Returns:the converted dataframe
+
+    """
+    # if we change the columns we have to make a shallow copy of the df
+    # otherwise changes would be reflected in the original dataframe
+    # to avoid copying when not necessary the copy is only made when we actually convert
+    is_converted = False
+    for col_name in schema.keys():
+        dtype = schema[col_name]
+        column = df[col_name]
+        col_converter = kt.get_first_matching_from_pandas_col_converter(dtype)
+        try:
+            # convert via column converter
+            if col_converter is not None:
+                if not is_converted:
+                    # create a shallow copy of the dataframe
+                    df = df.copy(deep=False)
+                    is_converted = True
+                with col_converter.warning_manager():
+                    df[col_name] = col_converter.convert_column(df, col_name)
+
+            # we have an object type, convert our logical type
+            elif isinstance(dtype, PandasLogicalTypeExtensionType) and not isinstance(
+                column.dtype, PandasLogicalTypeExtensionType
+            ):
+                if not is_converted:
+                    # create a shallow copy of the dataframe
+                    df = df.copy(deep=False)
+                    is_converted = True
+                # replace all pd.NA or np.NaN Values with the correct na_value and save it as logical type
+                # column need to be cast as object so that the NA, NaN and NaT are not automatically converted back
+                df[col_name] = (
+                    column.astype(object).where(pd.notnull(column), None).astype(dtype)
+                )
+        except ImportError as e:
+            warnings.warn(
+                f"Could not convert the column {col_name}; an import error occured: {e}."
+            )
+        except TypeError:
+            warnings.warn(
+                f"Automatic type detection assumed type '{dtype}' in column '{col_name}'"
+                f" but conversion failed. Please assign a type to the Pandas series using"
+                f" knime.schema.logical(correct_dtype).to_pandas()"
+            )
+
+    return df
+
+
 def _create_local_dt_type():
+    """
+
+    Returns:manually created Logical Type for a Local dt
+
+    """
     logical = katy._knime_datetime_type("LocalDateTimeValueFactory")
     logical = katy.LogicalTypeExtensionType(
         converter=kt.get_converter(logical),
@@ -201,14 +222,23 @@ def _create_local_dt_type():
     return logical
 
 
-def _check_if_local_dt(cleaned, dtype):
+def _check_if_local_dt(column: pd.Series, dtype):
+    """Checks if the column contains a dt parse-able type
+
+    Args:
+        column: column to check
+        dtype: type of the first element in the column
+
+    Returns:true if the column contains a dt parse-able type
+
+    """
     if not (
         str(dtype) == "<class 'pandas._libs.tslibs.timestamps.Timestamp'>"
         or str(dtype) == "<class 'datetime.datetime'>"
     ):
         return False
     # parse timezone
-    for elem in cleaned:
+    for elem in column:
         if hasattr(elem, "tzinfo") and elem.tzinfo is not None:
             return False
     return True

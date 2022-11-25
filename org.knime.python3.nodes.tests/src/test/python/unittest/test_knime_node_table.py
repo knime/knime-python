@@ -2,12 +2,8 @@ import unittest
 
 import knime.api.schema as ks
 from knime.api.schema import _ColumnSlicingOperation
-<<<<<<< HEAD
-import knime_node_table as knt
-=======
-import knime.api.table as knt
-import knime_node_arrow_table as knat
->>>>>>> AP-19592: Handle Missing Geospatial Values
+import knime_node_table as knt  # old import to test the forwarding import
+
 
 # ------------------------------------------------------------------
 # Tests for Schema and Table

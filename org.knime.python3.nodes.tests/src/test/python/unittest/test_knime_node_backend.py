@@ -1,7 +1,7 @@
 import unittest
 
 import _node_backend_launcher as knb
-import knime.extension as knext
+import knime_extension as knext  # old import to test the forwarding import
 import tempfile
 import json
 import os
