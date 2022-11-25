@@ -57,6 +57,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.knime.core.node.NodeLogger;
 import org.knime.python3.PythonGateway;
+import org.knime.python3.PythonKernelCreationGate;
+import org.knime.python3.PythonKernelCreationGate.PythonKernelCreationGateListener;
 import org.knime.python3.nodes.PurePythonNodeSetFactory.ResolvedPythonExtension;
 import org.knime.python3.nodes.proxy.CloseableNodeFactoryProxy;
 import org.knime.python3.nodes.proxy.NodeDialogProxy;
@@ -96,7 +98,6 @@ final class CachedNodeProxyProvider extends PurePythonExtensionNodeProxyProvider
         createCache();
 
     private static boolean gatewayCacheClosed = false;
-
 
     CachedNodeProxyProvider(final ResolvedPythonExtension extension, final String nodeId) {
         super(extension, nodeId);
@@ -150,6 +151,20 @@ final class CachedNodeProxyProvider extends PurePythonExtensionNodeProxyProvider
             .build(loader);
 
         EXEC_SERVICE.schedule(cache::cleanUp, 1, TimeUnit.MINUTES);
+
+        PythonKernelCreationGate.INSTANCE.registerListener(new PythonKernelCreationGateListener() {
+            @Override
+            public void onPythonKernelCreationGateOpen() {
+                // Nothing to do here. Kernel creation is blocked anyways in createPythonNodeFromCache() while gate is closed.
+            }
+
+            @Override
+            public void onPythonKernelCreationGateClose() {
+                synchronized (GATEWAY_CACHE) {
+                    GATEWAY_CACHE.invalidateAll();
+                }
+            }
+        });
         return cache;
     }
 
@@ -189,6 +204,11 @@ final class CachedNodeProxyProvider extends PurePythonExtensionNodeProxyProvider
     private CloseablePythonNodeProxy createPythonNodeFromCache() {
         try {
             CachedObject<PythonGateway<KnimeNodeBackend>> cachedGateway;
+            try {
+                PythonKernelCreationGate.INSTANCE.awaitPythonKernelCreationAllowedInterruptibly();
+            } catch (InterruptedException ex) {
+                throw new IllegalStateException("Interrupted while waiting until Python processes may be started", ex);
+            }
             synchronized (GATEWAY_CACHE) {
                 if (gatewayCacheClosed) {
                     throw new IllegalStateException("Gateway cache has been closed.");
