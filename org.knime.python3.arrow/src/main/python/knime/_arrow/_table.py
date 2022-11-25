@@ -61,33 +61,33 @@ import knime.api.table as knt
 LOGGER = logging.getLogger(__name__)
 
 
-def _create_table_from_pyarrow(data, sentinel, row_keys="auto", first_row_key=0):
-    # Handle row keys
-    if row_keys == "auto":
+def _create_table_from_pyarrow(data, sentinel, row_ids="auto", first_row_id=0):
+    # Handle RowID
+    if row_ids == "auto":
         rk_field = data.schema[0]
-        if rk_field.name == "<Row Key>" and pa.types.is_string(rk_field.type):
-            # Keep the row key column
+        if rk_field.name == "<RowID>" and pa.types.is_string(rk_field.type):
+            # Keep the RowID column
             pass
-        elif rk_field.name == "<Row Key>" and pa.types.is_integer(rk_field.type):
+        elif rk_field.name == "<RowID>" and pa.types.is_integer(rk_field.type):
             # Convert to string with the format f"Row{n}"
-            data = _replace_with_formatted_row_keys(data)
+            data = _replace_with_formatted_row_ids(data)
         else:
-            if rk_field.name == "<Row Key>":
-                # There is a column named <Row Key> but we can't use it as row keys
+            if rk_field.name == "<RowID>":
+                # There is a column named <RowID> but we can't use it
                 LOGGER.warning(
-                    'The first column is named "<Row Key>" but has the type '
-                    f'"{rk_field.type}" which cannot be used for row keys. '
-                    "Keeping the column and generating new row keys."
+                    'The first column is named "<RowID>" but has the type '
+                    f'"{rk_field.type}" which cannot be used as RowID. '
+                    "Keeping the column and generating new RowIDs."
                 )
-            # No row key column that can be used -> generate new keys
-            data = _add_generated_row_keys(data, first_row_key)
-    elif row_keys == "generate":
-        data = _add_generated_row_keys(data, first_row_key)
-    elif row_keys == "keep":
+            # No RowID column that can be used -> generate new IDs
+            data = _add_generated_row_ids(data, first_row_id)
+    elif row_ids == "generate":
+        data = _add_generated_row_ids(data, first_row_id)
+    elif row_ids == "keep":
         # Nothing to do
         pass
     else:
-        raise ValueError('row_keys must be one of ["auto", "generate", "keep"]')
+        raise ValueError('row_ids must be one of ["auto", "generate", "keep"]')
 
     if sentinel is not None:
         data = katy.sentinel_to_missing_value(data, sentinel)
@@ -96,7 +96,7 @@ def _create_table_from_pyarrow(data, sentinel, row_keys="auto", first_row_key=0)
     return ArrowTable(data)
 
 
-def _create_table_from_pandas(data, sentinel, row_keys="auto", first_row_key=0):
+def _create_table_from_pandas(data, sentinel, row_ids="auto", first_row_id=0):
     import knime._arrow._pandas as kap
     import pandas as pd
 
@@ -104,23 +104,23 @@ def _create_table_from_pandas(data, sentinel, row_keys="auto", first_row_key=0):
         raise ValueError(
             f"Table.from_pandas expects a pandas.DataFrame, but got {type(data)}"
         )
-    if row_keys in ["auto", "keep"]:
-        # The "<Row Key>" column is added by the kap.pandas_df_to_arrow function from
+    if row_ids in ["auto", "keep"]:
+        # The "<RowID>" column is added by the kap.pandas_df_to_arrow function from
         # the DataFrame index
-        pandas_row_keys = row_keys
-        # We use the "<Row Key>" when calling _create_table_from_pyarrow
-        arrow_row_keys = "keep"
-    elif row_keys == "generate":
-        # The kap.pandas_df_to_arrow should not create a "<Row Key>" column from the
+        pandas_row_ids = row_ids
+        # We use the "<RowID>" when calling _create_table_from_pyarrow
+        arrow_row_ids = "keep"
+    elif row_ids == "generate":
+        # The kap.pandas_df_to_arrow should not create a "<RowID>" column from the
         # DataFrame index
-        pandas_row_keys = "none"
-        # We generate new row keys when calling _create_table_from_pyarrow
-        arrow_row_keys = "generate"
+        pandas_row_ids = "none"
+        # We generate new RowIDs when calling _create_table_from_pyarrow
+        arrow_row_ids = "generate"
     else:
-        raise ValueError('row_keys must be one of ["auto", "keep", "generate"]')
-    data = kap.pandas_df_to_arrow(data, row_keys=pandas_row_keys)
+        raise ValueError('row_ids must be one of ["auto", "keep", "generate"]')
+    data = kap.pandas_df_to_arrow(data, row_ids=pandas_row_ids)
     return _create_table_from_pyarrow(
-        data, sentinel, row_keys=arrow_row_keys, first_row_key=first_row_key
+        data, sentinel, row_ids=arrow_row_ids, first_row_id=first_row_id
     )
 
 
@@ -129,14 +129,14 @@ class _ArrowBackend(knt._Backend):
         self._sink_factory = sink_factory
         self._sinks = []
 
-    def create_table_from_pyarrow(self, data, sentinel, row_keys="auto"):
-        return _create_table_from_pyarrow(data, sentinel, row_keys)
+    def create_table_from_pyarrow(self, data, sentinel, row_ids="auto"):
+        return _create_table_from_pyarrow(data, sentinel, row_ids)
 
-    def create_table_from_pandas(self, data, sentinel, row_keys="auto"):
-        return _create_table_from_pandas(data, sentinel, row_keys)
+    def create_table_from_pandas(self, data, sentinel, row_ids="auto"):
+        return _create_table_from_pandas(data, sentinel, row_ids)
 
-    def create_batch_output_table(self, row_keys="generate"):
-        return ArrowBatchOutputTable(self.create_sink(), row_keys=row_keys)
+    def create_batch_output_table(self, row_ids="generate"):
+        return ArrowBatchOutputTable(self.create_sink(), row_ids=row_ids)
 
     def create_sink(self):
         sink = self._sink_factory()
@@ -150,13 +150,13 @@ class _ArrowBackend(knt._Backend):
 
 
 class ArrowBatchOutputTable(knt.BatchOutputTable):
-    def __init__(self, sink, row_keys="generate"):
+    def __init__(self, sink, row_ids="generate"):
         self._num_batches = 0
         self._sink = sink
 
-        if row_keys not in ["generate", "keep"]:
-            raise ValueError('row_keys must be one of ["generate", "keep"]')
-        self._row_keys = row_keys
+        if row_ids not in ["generate", "keep"]:
+            raise ValueError('row_ids must be one of ["generate", "keep"]')
+        self._row_ids = row_ids
         self._num_rows = 0
 
     def append(
@@ -166,19 +166,19 @@ class ArrowBatchOutputTable(knt.BatchOutputTable):
             batch = _create_table_from_pyarrow(
                 batch,
                 sentinel=None,
-                row_keys=self._row_keys,
-                first_row_key=self._num_rows,
+                row_ids=self._row_ids,
+                first_row_id=self._num_rows,
             )
         elif isinstance(batch, ArrowTable):
-            if self._row_keys == "generate":
-                # Remove the row keys from the table and generate new ones
+            if self._row_ids == "generate":
+                # Remove the RowIDs from the table and generate new ones
                 batch = _create_table_from_pyarrow(
                     pa.table(
                         batch._table.columns[1:], schema=batch._table.schema.remove(0)
                     ),
                     sentinel=None,
-                    row_keys="generate",
-                    first_row_key=self._num_rows,
+                    row_ids="generate",
+                    first_row_id=self._num_rows,
                 )
             # else: no need to convert
         else:
@@ -191,8 +191,8 @@ class ArrowBatchOutputTable(knt.BatchOutputTable):
             batch = _create_table_from_pandas(
                 batch,
                 sentinel=None,
-                row_keys=self._row_keys,
-                first_row_key=self._num_rows,
+                row_ids=self._row_ids,
+                first_row_id=self._num_rows,
             )
 
         self._num_rows += batch.num_rows
@@ -240,7 +240,7 @@ class ArrowTable(knt.Table):
         )
 
     def _append(self, other: "ArrowTable") -> "ArrowTable":
-        # FIXME exclude row key from second table - AP-19077
+        # FIXME exclude RowID from second table - AP-19077
         # a = self._get_table()
         # b = other._get_table()
         # appended = pa.Table.from_arrays(
@@ -258,12 +258,12 @@ class ArrowTable(knt.Table):
 
     @property
     def num_columns(self) -> int:
-        # NOTE: We don't count the row key column
+        # NOTE: We don't count the RowID column
         return len(self._table.schema) - 1
 
     @property
     def column_names(self) -> List[str]:
-        # NOTE: We don't include the row key column
+        # NOTE: We don't include the RowID column
         return self._table.schema.names[1:]
 
     @property
@@ -315,12 +315,12 @@ class ArrowSourceTable(ArrowTable):
 
     @property
     def num_columns(self) -> int:
-        # NOTE: We don't count the row key column
+        # NOTE: We don't count the RowID column
         return len(self._source.schema) - 1
 
     @property
     def column_names(self) -> List[str]:
-        # NOTE: We don't include the row key column
+        # NOTE: We don't include the RowID column
         return self._source.schema.names[1:]
 
     @property
@@ -414,26 +414,26 @@ def _convert_arrow_type_to_knime(dtype: pa.DataType) -> ks.KnimeType:
         raise TypeError(f"Cannot convert PyArrow type {dtype} to KNIME type")
 
 
-def _add_formatted_row_keys(
-    columns: List[pa.Array], schema: pa.Schema, row_keys
+def _add_formatted_row_ids(
+    columns: List[pa.Array], schema: pa.Schema, row_ids
 ) -> pa.Table:
-    row_keys = pa.array(map("Row{}".format, row_keys))
+    row_ids = pa.array(map("Row{}".format, row_ids))
     return pa.table(
-        [row_keys, *columns],
-        schema=schema.insert(0, pa.field("<Row Key>", pa.string())),
+        [row_ids, *columns],
+        schema=schema.insert(0, pa.field("<RowID>", pa.string())),
     )
 
 
-def _add_generated_row_keys(data: Union[pa.Table, pa.RecordBatch], start_idx=0):
-    return _add_formatted_row_keys(
+def _add_generated_row_ids(data: Union[pa.Table, pa.RecordBatch], start_idx=0):
+    return _add_formatted_row_ids(
         data.columns,
         data.schema,
         range(start_idx, start_idx + len(data)),
     )
 
 
-def _replace_with_formatted_row_keys(data: Union[pa.Table, pa.RecordBatch]) -> pa.Table:
-    return _add_formatted_row_keys(
+def _replace_with_formatted_row_ids(data: Union[pa.Table, pa.RecordBatch]) -> pa.Table:
+    return _add_formatted_row_ids(
         data.columns[1:],
         data.schema.remove(0),
         data.columns[0],

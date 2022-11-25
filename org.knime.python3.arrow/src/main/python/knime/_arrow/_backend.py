@@ -224,7 +224,7 @@ class ArrowDataSource:
         if java_data_source.hasColumnNames():
             schema_without_names = self._reader.schema
             names = [name for name in java_data_source.getColumnNames()]
-            names = ["<Row Key>"] + names
+            names = ["<RowID>"] + names
             self._column_names = names
             fields_with_name = [
                 field.with_name(name)

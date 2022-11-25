@@ -60,7 +60,7 @@ import logging
 LOGGER = logging.getLogger(__name__)
 
 
-def pandas_df_to_arrow(data_frame: pd.DataFrame, row_keys: str = "auto") -> pa.Table:
+def pandas_df_to_arrow(data_frame: pd.DataFrame, row_ids: str = "auto") -> pa.Table:
     if data_frame.shape == (
         0,
         0,
@@ -99,26 +99,26 @@ def pandas_df_to_arrow(data_frame: pd.DataFrame, row_keys: str = "auto") -> pa.T
     schema = extract_knime_schema_from_df(df)
     df = convert_df_to_ktypes_from_schema(df, schema)
 
-    # Convert the index to a string series based on the row_keys argument
-    if row_keys in ["auto", "keep"]:
-        row_keys_series = df.index.to_series()
-        if row_keys == "auto" and row_keys_series.dtype.kind in "iu":  # int or uint
+    # Convert the index to a string series based on the row_ids argument
+    if row_ids in ["auto", "keep"]:
+        row_ids_series = df.index.to_series()
+        if row_ids == "auto" and row_ids_series.dtype.kind in "iu":  # int or uint
             # Add "Row" prefix
-            row_keys_series = row_keys_series.apply(lambda i: f"Row{i}")
+            row_ids_series = row_ids_series.apply(lambda i: f"Row{i}")
         else:
-            # Just make sure that the row keys are strings
-            row_keys_series = row_keys_series.astype(str)
+            # Just make sure that the RowID column are strings
+            row_ids_series = row_ids_series.astype(str)
 
         # Prepend the index to the data_frame:
-        row_keys_series.name = "<Row Key>"
+        row_ids_series.name = "<RowID>"
         df = pd.concat(
-            [row_keys_series.reset_index(drop=True), df.reset_index(drop=True)],
+            [row_ids_series.reset_index(drop=True), df.reset_index(drop=True)],
             axis=1,
         )
-    elif row_keys == "none":
+    elif row_ids == "none":
         df = df.reset_index(drop=True)
     else:
-        raise ValueError('row_keys must be one of ["auto", "keep", "none"]')
+        raise ValueError('row_ids must be one of ["auto", "keep", "none"]')
 
     # Convert all column names to string or PyArrow might complain
     df.columns = [str(c) for c in df.columns]
@@ -244,7 +244,7 @@ def arrow_data_to_pandas_df(data: Union[pa.Table, pa.RecordBatch]) -> pd.DataFra
                 f"Could not convert the column {col_name}; an import error occured: {e}."
             )
 
-    # The first column is interpreted as the index (row keys)
+    # The first column is interpreted as the index (RowID)
     data_frame.set_index(data_frame.columns[0], inplace=True)
 
     return data_frame

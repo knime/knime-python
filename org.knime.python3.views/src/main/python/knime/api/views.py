@@ -440,7 +440,7 @@ def view_plotly(fig) -> NodeView:
     The figure is displayed by exporting it as an HTML document.
 
     To be able to synchronize the selection between the view and other KNIME views the
-    customdata of the figure traces must be set to the row keys.
+    customdata of the figure traces must be set to the RowID.
 
     **Example**::
 
@@ -474,7 +474,7 @@ def view_plotly(fig) -> NodeView:
         LOGGER.info(
             "No custom data set in the figure data. "
             "Selection will not be synced with other views. "
-            "Set custom_data to the row keys to enable selection syncing."
+            "Set custom_data to the RowID to enable selection syncing."
         )
         html = fig.to_html()
 

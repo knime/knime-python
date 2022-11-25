@@ -322,7 +322,7 @@ class TimeExtensionTypeTest(unittest.TestCase):
         df = df.append(empty_series, ignore_index=True)
         arrow_table = arrow_backend.write_table(df)
         schema = (
-            "<Row Key>: string\n"
+            "<RowID>: string\n"
             "tz_timestamp: extension<knime.logical_type<LogicalTypeExtensionType>>\n"
             "timestamp: extension<knime.logical_type<LogicalTypeExtensionType>>\n"
             "timedelta: extension<knime.logical_type<LogicalTypeExtensionType>>"
@@ -342,7 +342,7 @@ class TimeExtensionTypeTest(unittest.TestCase):
         df = testing_utility._generate_test_data_frame("dates.zip", columns=["date"])
         arrow_table = arrow_backend.write_table(df)
         schema = (
-            "<Row Key>: string\n"
+            "<RowID>: string\n"
             "date: extension<knime.logical_type<LogicalTypeExtensionType>>"
         )
         self.assertEqual(
@@ -368,7 +368,7 @@ class TimeExtensionTypeTest(unittest.TestCase):
 
         arrow_table = arrow_backend.write_table(df)
         schema = (
-            "<Row Key>: string\n"
+            "<RowID>: string\n"
             "0: extension<knime.logical_type<LogicalTypeExtensionType>>\n"
             "1: extension<knime.logical_type<LogicalTypeExtensionType>>\n"
             "2: extension<knime.logical_type<LogicalTypeExtensionType>>\n"
@@ -398,7 +398,7 @@ class TimeExtensionTypeTest(unittest.TestCase):
 
         arrow_table = arrow_backend.write_table(df)
         schema = (
-            "<Row Key>: string\n"
+            "<RowID>: string\n"
             "0: extension<knime.logical_type<LogicalTypeExtensionType>>"
         )
         print(arrow_table._schema.to_string(show_schema_metadata=False))
@@ -414,7 +414,7 @@ class TimeExtensionTypeTest(unittest.TestCase):
         df = df.append(empty_series, ignore_index=True)
         arrow_table = arrow_backend.write_table(df)
         schema = (
-            "<Row Key>: string\n"
+            "<RowID>: string\n"
             "0: extension<knime.logical_type<LogicalTypeExtensionType>>"
         )
         self.assertEqual(

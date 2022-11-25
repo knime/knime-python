@@ -59,7 +59,7 @@ class TableTest(unittest.TestCase):
         df[0] = [1, 2, 3, 4]
         df[1] = [5.0, 6.0, 7.0, 8.0]
         t = kt.Table.from_pandas(df)
-        tv = t[:1]  # Row Key and first column
+        tv = t[:1]  # Row ID and first column
         self.assertIsInstance(tv, ks._ColumnarView)
         self.assertIsInstance(tv, kt._TabularView)
         self.assertIsInstance(tv.operation, _ColumnSlicingOperation)
@@ -261,7 +261,7 @@ class ArrowTableTest(unittest.TestCase):
         )
 
         data = sliced.to_pyarrow()
-        self.assertEqual(data.schema.names[0], "<Row Key>")
+        self.assertEqual(data.schema.names[0], "<RowID>")
         self.assertListEqual(
             [table.column_names[i] for i in indices],
             [data.schema.names[i + 1] for i in range(len(indices))],
@@ -312,7 +312,7 @@ class ArrowTableTest(unittest.TestCase):
         self.assertEqual(schema.column_names[0], "StringCol")
         self.assertEqual(schema[3].ktype, ks.int32())
 
-    def test_row_keys_from_pandas(self):
+    def test_row_ids_from_pandas(self):
         df_len = 5
 
         def create_df(index):
@@ -324,80 +324,80 @@ class ArrowTableTest(unittest.TestCase):
                 index=index,
             )
 
-        def get_row_keys(table):
+        def get_row_ids(table):
             return table.to_pyarrow()[0].to_pylist()
 
-        # ========== row_keys = "keep"
+        # ========== row_ids = "keep"
 
         # Simple range index
-        table = kt.Table.from_pandas(create_df(pd.RangeIndex(df_len)), row_keys="keep")
-        self.assertListEqual(get_row_keys(table), [f"{i}" for i in range(df_len)])
+        table = kt.Table.from_pandas(create_df(pd.RangeIndex(df_len)), row_ids="keep")
+        self.assertListEqual(get_row_ids(table), [f"{i}" for i in range(df_len)])
 
         # Strings
         index = ["a", "b", "foo", "g", "e"]
-        table = kt.Table.from_pandas(create_df(pd.Index(index)), row_keys="keep")
-        self.assertListEqual(get_row_keys(table), index)
+        table = kt.Table.from_pandas(create_df(pd.Index(index)), row_ids="keep")
+        self.assertListEqual(get_row_ids(table), index)
 
         # Floats
         index = [2.0, 7.1, 1000.1, 0.0001, 3.14]
-        table = kt.Table.from_pandas(create_df(pd.Index(index)), row_keys="keep")
-        self.assertListEqual(get_row_keys(table), [str(i) for i in index])
+        table = kt.Table.from_pandas(create_df(pd.Index(index)), row_ids="keep")
+        self.assertListEqual(get_row_ids(table), [str(i) for i in index])
 
-        # ========== row_keys = "generate"
+        # ========== row_ids = "generate"
 
         generated_keys = [f"Row{i}" for i in range(df_len)]
 
         # Simple range index
         table = kt.Table.from_pandas(
-            create_df(pd.RangeIndex(df_len)), row_keys="generate"
+            create_df(pd.RangeIndex(df_len)), row_ids="generate"
         )
-        self.assertListEqual(get_row_keys(table), generated_keys)
+        self.assertListEqual(get_row_ids(table), generated_keys)
 
         # Strings
         index = ["a", "b", "foo", "g", "e"]
-        table = kt.Table.from_pandas(create_df(pd.Index(index)), row_keys="generate")
-        self.assertListEqual(get_row_keys(table), generated_keys)
+        table = kt.Table.from_pandas(create_df(pd.Index(index)), row_ids="generate")
+        self.assertListEqual(get_row_ids(table), generated_keys)
 
         # Floats
         index = [2.0, 7.1, 1000.1, 0.0001, 3.14]
-        table = kt.Table.from_pandas(create_df(pd.Index(index)), row_keys="generate")
-        self.assertListEqual(get_row_keys(table), generated_keys)
+        table = kt.Table.from_pandas(create_df(pd.Index(index)), row_ids="generate")
+        self.assertListEqual(get_row_ids(table), generated_keys)
 
-        # ========== row_keys = "auto"
+        # ========== row_ids = "auto"
 
         generated_keys = [f"Row{i}" for i in range(df_len)]
 
         # Simple range index
-        table = kt.Table.from_pandas(create_df(pd.RangeIndex(df_len)), row_keys="auto")
-        self.assertListEqual(get_row_keys(table), generated_keys)
+        table = kt.Table.from_pandas(create_df(pd.RangeIndex(df_len)), row_ids="auto")
+        self.assertListEqual(get_row_ids(table), generated_keys)
 
         # Strings
         index = ["a", "b", "foo", "g", "e"]
-        table = kt.Table.from_pandas(create_df(pd.Index(index)), row_keys="auto")
-        self.assertListEqual(get_row_keys(table), index)
+        table = kt.Table.from_pandas(create_df(pd.Index(index)), row_ids="auto")
+        self.assertListEqual(get_row_ids(table), index)
 
         # Floats
         index = [2.0, 7.1, 1000.1, 0.0001, 3.14]
-        table = kt.Table.from_pandas(create_df(pd.Index(index)), row_keys="auto")
-        self.assertListEqual(get_row_keys(table), [str(i) for i in index])
+        table = kt.Table.from_pandas(create_df(pd.Index(index)), row_ids="auto")
+        self.assertListEqual(get_row_ids(table), [str(i) for i in index])
 
         # Integers
         index = [5, 2, 1, 4, 7]
-        table = kt.Table.from_pandas(create_df(pd.Index(index)), row_keys="auto")
-        self.assertListEqual(get_row_keys(table), [f"Row{i}" for i in index])
+        table = kt.Table.from_pandas(create_df(pd.Index(index)), row_ids="auto")
+        self.assertListEqual(get_row_ids(table), [f"Row{i}" for i in index])
 
         # Range starting at 10
         index = pd.RangeIndex(10, 10 + df_len)
-        table = kt.Table.from_pandas(create_df(index), row_keys="auto")
+        table = kt.Table.from_pandas(create_df(index), row_ids="auto")
         self.assertListEqual(
-            get_row_keys(table), [f"Row{i}" for i in range(10, 10 + df_len)]
+            get_row_ids(table), [f"Row{i}" for i in range(10, 10 + df_len)]
         )
 
-        # ========== row_keys = "unsupported"
+        # ========== row_ids = "unsupported"
         with self.assertRaises(ValueError):
-            kt.Table.from_pandas(create_df(None), row_keys="unsupported")
+            kt.Table.from_pandas(create_df(None), row_ids="unsupported")
 
-    def test_row_keys_from_pyarrow(self):
+    def test_row_ids_from_pyarrow(self):
         table_len = 5
 
         def create_table(row_key_col=None):
@@ -408,74 +408,74 @@ class ArrowTableTest(unittest.TestCase):
             names = ["col1", "col2"]
             if not row_key_col is None:
                 columns = [row_key_col, *columns]
-                names = ["<Row Key>", *names]
+                names = ["<RowID>", *names]
 
             return pa.table(columns, names=names)
 
-        def get_row_keys(table):
+        def get_row_ids(table):
             return table.to_pyarrow()[0].to_pylist()
 
-        # ========== row_keys = "keep"
+        # ========== row_ids = "keep"
 
-        # Correct string col for row keys
-        row_keys = ["a", "b", "foo", "g", "e"]
-        table = kt.Table.from_pyarrow(create_table(pa.array(row_keys)), row_keys="keep")
-        self.assertListEqual(get_row_keys(table), row_keys)
+        # Correct string col for RowID
+        row_ids = ["a", "b", "foo", "g", "e"]
+        table = kt.Table.from_pyarrow(create_table(pa.array(row_ids)), row_ids="keep")
+        self.assertListEqual(get_row_ids(table), row_ids)
         self.assertEqual(table.num_columns, 2)
 
-        # Use first string column as row keys
-        table = kt.Table.from_pyarrow(create_table(), row_keys="keep")
-        self.assertListEqual(get_row_keys(table), create_table()[0].to_pylist())
+        # Use first string column as RowID
+        table = kt.Table.from_pyarrow(create_table(), row_ids="keep")
+        self.assertListEqual(get_row_ids(table), create_table()[0].to_pylist())
         self.assertEqual(table.num_columns, 1)
 
-        # Column named "<Row Key>" but with a wrong type
-        row_keys = [4, 1, 3, 2, 8]
+        # Column named "<RowID>" but with a wrong type
+        row_ids = [4, 1, 3, 2, 8]
         with self.assertRaises(TypeError):
-            kt.Table.from_pyarrow(create_table(pa.array(row_keys)), row_keys="keep")
+            kt.Table.from_pyarrow(create_table(pa.array(row_ids)), row_ids="keep")
 
-        # ========== row_keys = "generate"
+        # ========== row_ids = "generate"
 
-        # Simple: Create new row keys
-        table = kt.Table.from_pyarrow(create_table(), row_keys="generate")
-        self.assertListEqual(get_row_keys(table), [f"Row{i}" for i in range(table_len)])
+        # Simple: Create new RowIDs
+        table = kt.Table.from_pyarrow(create_table(), row_ids="generate")
+        self.assertListEqual(get_row_ids(table), [f"Row{i}" for i in range(table_len)])
         self.assertEqual(table.num_columns, 2)
 
-        # Row key column present but generate another one
-        row_keys = ["a", "b", "foo", "g", "e"]
+        # RowID column present but generate another one
+        row_ids = ["a", "b", "foo", "g", "e"]
         table = kt.Table.from_pyarrow(
-            create_table(pa.array(row_keys)), row_keys="generate"
+            create_table(pa.array(row_ids)), row_ids="generate"
         )
-        self.assertListEqual(get_row_keys(table), [f"Row{i}" for i in range(table_len)])
+        self.assertListEqual(get_row_ids(table), [f"Row{i}" for i in range(table_len)])
         self.assertEqual(table.num_columns, 3)
 
-        # ========== row_keys = "auto"
+        # ========== row_ids = "auto"
 
-        # First column is string but not "<Row Key>"
-        table = kt.Table.from_pyarrow(create_table(), row_keys="auto")
-        self.assertListEqual(get_row_keys(table), [f"Row{i}" for i in range(table_len)])
+        # First column is string but not "<RowID>"
+        table = kt.Table.from_pyarrow(create_table(), row_ids="auto")
+        self.assertListEqual(get_row_ids(table), [f"Row{i}" for i in range(table_len)])
         self.assertEqual(table.num_columns, 2)
 
-        # First column is string and "<Row Key>"
-        row_keys = ["a", "b", "foo", "g", "e"]
-        table = kt.Table.from_pyarrow(create_table(pa.array(row_keys)), row_keys="auto")
-        self.assertListEqual(get_row_keys(table), row_keys)
+        # First column is string and "<RowID>"
+        row_ids = ["a", "b", "foo", "g", "e"]
+        table = kt.Table.from_pyarrow(create_table(pa.array(row_ids)), row_ids="auto")
+        self.assertListEqual(get_row_ids(table), row_ids)
         self.assertEqual(table.num_columns, 2)
 
-        # First column is integer and "<Row Key>"
-        row_keys = [4, 1, 3, 2, 8]
-        table = kt.Table.from_pyarrow(create_table(pa.array(row_keys)), row_keys="auto")
-        self.assertListEqual(get_row_keys(table), [f"Row{i}" for i in row_keys])
+        # First column is integer and "<RowID>"
+        row_ids = [4, 1, 3, 2, 8]
+        table = kt.Table.from_pyarrow(create_table(pa.array(row_ids)), row_ids="auto")
+        self.assertListEqual(get_row_ids(table), [f"Row{i}" for i in row_ids])
         self.assertEqual(table.num_columns, 2)
 
-        # First column cannot converted to row keys but is named "<Row Key>"
-        row_keys = [2.0, 7.1, 1000.1, 0.0001, 3.14]
-        table = kt.Table.from_pyarrow(create_table(pa.array(row_keys)), row_keys="auto")
-        self.assertListEqual(get_row_keys(table), [f"Row{i}" for i in range(table_len)])
+        # First column cannot converted to RowID but is named "<RowID>"
+        row_ids = [2.0, 7.1, 1000.1, 0.0001, 3.14]
+        table = kt.Table.from_pyarrow(create_table(pa.array(row_ids)), row_ids="auto")
+        self.assertListEqual(get_row_ids(table), [f"Row{i}" for i in range(table_len)])
         self.assertEqual(table.num_columns, 3)
 
-        # ========== row_keys = "unsupported"
+        # ========== row_ids = "unsupported"
         with self.assertRaises(ValueError):
-            kt.Table.from_pyarrow(create_table(), row_keys="unsupported")
+            kt.Table.from_pyarrow(create_table(), row_ids="unsupported")
 
 
 class BatchOutputTableTest(unittest.TestCase):
@@ -519,9 +519,9 @@ class BatchOutputTableTest(unittest.TestCase):
             }
         )
 
-    def _generate_test_batch(self, index, row_keys="auto"):
+    def _generate_test_batch(self, index, row_ids="auto"):
         return kt.Table.from_pyarrow(
-            self._generate_test_pyarrow_table(index), row_keys=row_keys
+            self._generate_test_pyarrow_table(index), row_ids=row_ids
         )
 
     def test_create_append(self):
@@ -563,42 +563,42 @@ class BatchOutputTableTest(unittest.TestCase):
 
         out = kt.BatchOutputTable.from_batches(batch_generator())
 
-    def test_row_keys(self):
-        def assert_last_batch(batch_table, row_keys, num_cols):
+    def test_row_ids(self):
+        def assert_last_batch(batch_table, row_ids, num_cols):
             written_batch = batch_table._sink.last_data
-            self.assertListEqual(written_batch[0].to_pylist(), row_keys)
-            # NB: batch.num_columns also counts the row key column
+            self.assertListEqual(written_batch[0].to_pylist(), row_ids)
+            # NB: batch.num_columns also counts the RowID column
             self.assertEqual(written_batch.num_columns - 1, num_cols)
 
-        # ========== row_keys = "generate"
-        generated_row_keys = [f"Row{i}" for i in range(40)]
+        # ========== row_ids = "generate"
+        generated_row_ids = [f"Row{i}" for i in range(40)]
 
-        batch_table = kt.BatchOutputTable.create(row_keys="generate")
+        batch_table = kt.BatchOutputTable.create(row_ids="generate")
         batch_table.append(self._generate_test_pyarrow_batch(0))
-        assert_last_batch(batch_table, generated_row_keys[:10], 2)
+        assert_last_batch(batch_table, generated_row_ids[:10], 2)
         batch_table.append(self._generate_test_pyarrow_table(1))
-        assert_last_batch(batch_table, generated_row_keys[10:20], 2)
+        assert_last_batch(batch_table, generated_row_ids[10:20], 2)
         batch_table.append(self._generate_test_pandas(2))
-        assert_last_batch(batch_table, generated_row_keys[20:30], 2)
+        assert_last_batch(batch_table, generated_row_ids[20:30], 2)
         batch_table.append(self._generate_test_batch(3))
-        assert_last_batch(batch_table, generated_row_keys[30:], 2)
+        assert_last_batch(batch_table, generated_row_ids[30:], 2)
 
-        # ========== row_keys = "keep"
-        kept_row_keys = [f"MyRow{i}" for i in range(40)]
+        # ========== row_ids = "keep"
+        kept_row_ids = [f"MyRow{i}" for i in range(40)]
 
-        # Row keys available for each batch
-        batch_table = kt.BatchOutputTable.create(row_keys="keep")
+        # RowID available for each batch
+        batch_table = kt.BatchOutputTable.create(row_ids="keep")
         batch_table.append(self._generate_test_pyarrow_batch(0))
-        assert_last_batch(batch_table, kept_row_keys[:10], 1)
+        assert_last_batch(batch_table, kept_row_ids[:10], 1)
         batch_table.append(self._generate_test_pyarrow_table(1))
-        assert_last_batch(batch_table, kept_row_keys[10:20], 1)
+        assert_last_batch(batch_table, kept_row_ids[10:20], 1)
         batch_table.append(self._generate_test_pandas(2).set_index("Key"))
-        assert_last_batch(batch_table, kept_row_keys[20:30], 1)
-        batch_table.append(self._generate_test_batch(3, row_keys="keep"))
-        assert_last_batch(batch_table, kept_row_keys[30:], 1)
+        assert_last_batch(batch_table, kept_row_ids[20:30], 1)
+        batch_table.append(self._generate_test_batch(3, row_ids="keep"))
+        assert_last_batch(batch_table, kept_row_ids[30:], 1)
 
-        # No row keys available
-        batch_table = kt.BatchOutputTable.create(row_keys="keep")
+        # No RowID available
+        batch_table = kt.BatchOutputTable.create(row_ids="keep")
         with self.assertRaises(TypeError):
             batch_table.append(
                 pa.RecordBatch.from_pydict(
@@ -609,9 +609,9 @@ class BatchOutputTableTest(unittest.TestCase):
                 )
             )
 
-        # ========== row_keys = "auto"
+        # ========== row_ids = "auto"
         with self.assertRaises(ValueError):
-            kt.BatchOutputTable.create(row_keys="auto")
+            kt.BatchOutputTable.create(row_ids="auto")
 
 
 if __name__ == "__main__":

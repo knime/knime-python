@@ -234,15 +234,15 @@ class _RowSlicingOperation(_TabularOperation):
 # ------------------------------------------------------------------
 class _Backend:
     @abstractmethod
-    def create_table_from_pyarrow(self, data, sentinel, row_keys: str = "auto"):
+    def create_table_from_pyarrow(self, data, sentinel, row_ids: str = "auto"):
         raise RuntimeError("Not implemented")
 
     @abstractmethod
-    def create_table_from_pandas(self, data, sentinel, row_keys: str = "auto"):
+    def create_table_from_pandas(self, data, sentinel, row_ids: str = "auto"):
         raise RuntimeError("Not implemented")
 
     @abstractmethod
-    def create_batch_output_table(self, row_keys: str = "generate"):
+    def create_batch_output_table(self, row_ids: str = "generate"):
         raise RuntimeError("Not implemented")
 
     @abstractmethod
@@ -268,11 +268,10 @@ class Table(_Tabular):
     def from_pyarrow(
         data: "pyarrow.Table",
         sentinel: Optional[Union[str, int]] = None,
-        row_keys: str = "auto",
+        row_ids: str = "auto",
     ):
         """
         Factory method to create a Table given a pyarrow.Table.
-        The first column of the pyarrow.Table must contain unique row identifiers of type 'string'.
 
         **Example**::
 
@@ -287,30 +286,29 @@ class Table(_Tabular):
                 * ``"min"`` min int32 or min int64 depending on the type of the column
                 * ``"max"`` max int32 or max int64 depending on the type of the column
                 * a special integer value that should be interpreted as missing value
-            row_keys:
-                Defines what row keys should be used. Must be one of the following
-                values:
+            row_ids:
+                Defines what RowID should be used. Must be one of the following values:
 
-                * ``"keep"``: Use the first column of the table as row keys. The first
+                * ``"keep"``: Use the first column of the table as RowID. The first
                   column must be of type string.
-                * ``"generate"``: Generate new row kews of the format ``f"Row{i}"``
+                * ``"generate"``: Generate new RowIDs of the format ``f"Row{i}"``
                   where ``i`` is the position of the row (from ``0`` to ``length-1``).
                 * ``"auto"``: Use the first column of the table if it has the name
-                  "<Row Key>" and is of type string or integer.
+                  "<RowID>" and is of type string or integer.
 
-                  * If the "<Row Key>" column is of type string, use it directly
-                  * If the "<Row Key>" column is of an integer type use ``f"Row{n}``
+                  * If the "<RowID>" column is of type string, use it directly
+                  * If the "<RowID>" column is of an integer type use ``f"Row{n}``
                     where ``n`` is the value of the integer column.
-                  * Generate new row keys (``"generate"``) if the first column has
+                  * Generate new RowIDs (``"generate"``) if the first column has
                     another type or name.
         """
-        return _backend.create_table_from_pyarrow(data, sentinel, row_keys=row_keys)
+        return _backend.create_table_from_pyarrow(data, sentinel, row_ids=row_ids)
 
     @staticmethod
     def from_pandas(
         data: "pandas.DataFrame",
         sentinel: Optional[Union[str, int]] = None,
-        row_keys: str = "auto",
+        row_ids: str = "auto",
     ):
         """
         Factory method to create a Table given a pandas.DataFrame.
@@ -329,19 +327,18 @@ class Table(_Tabular):
                 * ``"min"`` min int32 or min int64 depending on the type of the column
                 * ``"max"`` max int32 or max int64 depending on the type of the column
                 * a special integer value that should be interpreted as missing value
-            row_keys:
-                Defines what row keys should be used. Must be one of the following
-                values:
+            row_ids:
+                Defines what RowID should be used. Must be one of the following values:
 
-                * ``"keep"``: Keep the ``DataFrame.index`` as the row keys. Convert the
+                * ``"keep"``: Keep the ``DataFrame.index`` as the RowID. Convert the
                   index to strings if necessary.
-                * ``"generate"``: Generate new row kews of the format ``f"Row{i}"``
+                * ``"generate"``: Generate new RowIDs of the format ``f"Row{i}"``
                   where ``i`` is the position of the row (from ``0`` to ``length-1``).
                 * ``"auto"``: If the ``DataFrame.index`` is of type int or unsigned int,
                   use ``f"Row{n}"`` where ``n`` is the index of the row. Else, use
                   "keep".
         """
-        return _backend.create_table_from_pandas(data, sentinel, row_keys=row_keys)
+        return _backend.create_table_from_pandas(data, sentinel, row_ids=row_ids)
 
     def to_batches(self) -> Iterator["Table"]:
         """
@@ -385,34 +382,33 @@ class BatchOutputTable:
         )
 
     @staticmethod
-    def create(row_keys: str = "generate"):
+    def create(row_ids: str = "generate"):
         """
         Create an empty BatchOutputTable
 
         Args:
-            row_keys:
-                Defines what row keys should be used. Must be one of the following
-                values:
+            row_ids:
+                Defines what RowID should be used. Must be one of the following values:
 
-                * ``"generate"``: Generate new row kews of the format ``f"Row{i}"``
+                * ``"generate"``: Generate new RowIDs of the format ``f"Row{i}"``
                 * ``"keep"``:
 
-                  * For appending DataFrames: Keep the ``DataFrame.index`` as the row
-                    keys. Convert the index to strings if necessary.
+                  * For appending DataFrames: Keep the ``DataFrame.index`` as the RowID.
+                    Convert the index to strings if necessary.
                   * For appending Arrow tables or record batches: Use the first column
-                    of the table as row keys. The first column must be of type string.
+                    of the table as RowID. The first column must be of type string.
         """
-        return _backend.create_batch_output_table(row_keys=row_keys)
+        return _backend.create_batch_output_table(row_ids=row_ids)
 
     @staticmethod
-    def from_batches(generator, row_keys: str = "generate"):
+    def from_batches(generator, row_ids: str = "generate"):
         """
         Create output table where each batch is provided by a generator
 
         Args:
-            row_keys: See ``BatchOutputTable.create``.
+            row_ids: See ``BatchOutputTable.create``.
         """
-        out = _backend.create_batch_output_table(row_keys=row_keys)
+        out = _backend.create_batch_output_table(row_ids=row_ids)
         for b in generator:
             out.append(b)
         return out
@@ -426,7 +422,7 @@ class BatchOutputTable:
         and all subsequent batches must have the same number of columns, column names and column types.
 
         Note:
-          Keep in mind that the row keys will be handled according to the "row_keys"
+          Keep in mind that the RowID will be handled according to the "row_ids"
           mode chosen in ``BatchOutputTable.create``.
         """
         raise RuntimeError("Not implemented")

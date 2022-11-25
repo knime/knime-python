@@ -24,7 +24,7 @@ class BatchTest(unittest.TestCase):
     def test_pandas_rowkey_coversion(self):
         # create batch from pyarrow
         d = {
-            "<Row Key>": ["r0", "r1", "r2", "r3"],
+            "<RowID>": ["r0", "r1", "r2", "r3"],
             "0": [1, 2, 3, 4],
             "1": [1.0, 2.0, 3.0, 4.0],
         }

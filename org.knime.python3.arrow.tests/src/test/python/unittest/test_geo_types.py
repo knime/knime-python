@@ -186,7 +186,7 @@ class GeoSpatialExtensionTypeTest(unittest.TestCase):
             return
 
         t = self._generate_test_table()
-        self.assertEqual(["<Row ID>", "column1", "geometry"], t.schema.names)
+        self.assertEqual(["<RowID>", "column1", "geometry"], t.schema.names)
         self.assertEqual([pa.string(), pa.string()], t.schema.types[0:2])
         self.assertIsInstance(t.schema.types[2], pa.ExtensionType)
 

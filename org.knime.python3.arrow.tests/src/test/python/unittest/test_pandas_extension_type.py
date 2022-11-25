@@ -980,7 +980,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
             )
             df["C"] = pd.Series(raw_cat)
             A = arrow_backend.write_table(df)
-            self.assertEqual(str(A.column_names), "['<Row Key>', 'A', 'B', 'C']")
+            self.assertEqual(str(A.column_names), "['<RowID>', 'A', 'B', 'C']")
             # check if categorical columns where converted to strings
             self.assertEqual(
                 str(A._schema.types),
