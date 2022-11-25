@@ -172,6 +172,9 @@ final class DomainCalculator extends AbstractAsyncBatchProcessor {
      */
     public final TableDomainAndMetadata getTableDomainAndMetadata() throws InterruptedException {
         waitForTermination();
+        if (m_domainCalculators == null) {
+            lazyInit();
+        }
         return new TableDomainAndMetadata() {
 
             @Override
