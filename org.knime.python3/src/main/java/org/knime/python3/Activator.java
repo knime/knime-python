@@ -71,11 +71,13 @@ public final class Activator implements BundleActivator {
     @Override
     public void start(final BundleContext context) throws Exception {
         registerProvisioningEventBusListener();
+        PythonKernelCreationGate.INSTANCE.registerListener(PythonGatewayTracker.INSTANCE);
     }
 
     @Override
     public void stop(final BundleContext bundleContext) throws Exception {
         deregisterProvisioningEventBusListener();
+        PythonKernelCreationGate.INSTANCE.deregisterListener(PythonGatewayTracker.INSTANCE);
         GATEWAY_FACTORY.close();
     }
 

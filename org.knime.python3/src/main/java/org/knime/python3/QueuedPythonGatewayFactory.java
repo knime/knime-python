@@ -106,6 +106,7 @@ public final class QueuedPythonGatewayFactory implements PythonGatewayFactory {
 
     private AbstractPythonGatewayQueue m_queue;
 
+    @SuppressWarnings("resource") // Tracked gateway will be closed
     @Override
     public <E extends PythonEntryPoint> PythonGateway<E> create(final PythonGatewayDescription<E> description)
         throws IOException, InterruptedException {
@@ -114,8 +115,8 @@ public final class QueuedPythonGatewayFactory implements PythonGatewayFactory {
                 reconfigureQueue(DEFAULT_MAX_NUMBER_OF_IDLING_GATEWAYS, DEFAULT_EXPIRATION_DURATION_IN_MINUTES);
             }
         }
-        PythonKernelCreationGate.INSTANCE.awaitPythonKernelCreationAllowedInterruptibly(); // TODO: make this a try-with-resources block and forbid closing while inside?
-        return m_queue.getNextGateway(description);
+        PythonKernelCreationGate.INSTANCE.awaitPythonKernelCreationAllowedInterruptibly();
+        return PythonGatewayTracker.INSTANCE.createTrackedGateway(m_queue.getNextGateway(description));
     }
 
     /**

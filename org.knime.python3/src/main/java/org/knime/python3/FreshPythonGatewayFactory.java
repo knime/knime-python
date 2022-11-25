@@ -62,6 +62,7 @@ public final class FreshPythonGatewayFactory implements PythonGatewayFactory {
     private static final NodeLogger LOGGER = NodeLogger.getLogger(FreshPythonGatewayFactory.class);
 
     @Override
+    @SuppressWarnings("resource")
     public <E extends PythonEntryPoint> PythonGateway<E> create(final PythonGatewayDescription<E> description)
         throws IOException, InterruptedException {
         var launcherPath = description.getLauncherPath().toAbsolutePath().toString();
@@ -81,6 +82,6 @@ public final class FreshPythonGatewayFactory implements PythonGatewayFactory {
                 throw new IllegalStateException("Customization of entry point failed.", ex);
             }
         }
-        return gateway;
+        return PythonGatewayTracker.INSTANCE.createTrackedGateway(gateway);
     }
 }
