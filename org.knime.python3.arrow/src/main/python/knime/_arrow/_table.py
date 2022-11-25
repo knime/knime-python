@@ -72,6 +72,13 @@ def _create_table_from_pyarrow(data, sentinel, row_keys="auto", first_row_key=0)
             # Convert to string with the format f"Row{n}"
             data = _replace_with_formatted_row_keys(data)
         else:
+            if rk_field.name == "<Row Key>":
+                # There is a column named <Row Key> but we can't use it as row keys
+                LOGGER.warning(
+                    'The first column is named "<Row Key>" but has the type '
+                    f'"{rk_field.type}" which cannot be used for row keys. '
+                    "Keeping the column and generating new row keys."
+                )
             # No row key column that can be used -> generate new keys
             data = _add_generated_row_keys(data, first_row_key)
     elif row_keys == "generate":

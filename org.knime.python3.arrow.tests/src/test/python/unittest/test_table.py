@@ -468,7 +468,6 @@ class ArrowTableTest(unittest.TestCase):
         self.assertEqual(table.num_columns, 2)
 
         # First column cannot converted to row keys but is named "<Row Key>"
-        # TODO is this what we want? Keep the column and generate a new row key column?
         row_keys = [2.0, 7.1, 1000.1, 0.0001, 3.14]
         table = kt.Table.from_pyarrow(create_table(pa.array(row_keys)), row_keys="auto")
         self.assertListEqual(get_row_keys(table), [f"Row{i}" for i in range(table_len)])
