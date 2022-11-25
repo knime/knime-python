@@ -105,10 +105,16 @@ def _create_table_from_pandas(data, sentinel, row_keys="auto", first_row_key=0):
             f"Table.from_pandas expects a pandas.DataFrame, but got {type(data)}"
         )
     if row_keys in ["auto", "keep"]:
+        # The "<Row Key>" column is added by the kap.pandas_df_to_arrow function from
+        # the DataFrame index
         pandas_row_keys = row_keys
+        # We use the "<Row Key>" when calling _create_table_from_pyarrow
         arrow_row_keys = "keep"
     elif row_keys == "generate":
+        # The kap.pandas_df_to_arrow should not create a "<Row Key>" column from the
+        # DataFrame index
         pandas_row_keys = "none"
+        # We generate new row keys when calling _create_table_from_pyarrow
         arrow_row_keys = "generate"
     else:
         raise ValueError('row_keys must be one of ["auto", "keep", "generate"]')
