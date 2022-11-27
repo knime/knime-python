@@ -88,6 +88,8 @@ import org.knime.core.util.FileUtil;
 import org.knime.core.util.ThreadUtils;
 import org.knime.core.util.Version;
 import org.knime.core.util.asynclose.AsynchronousCloseable;
+import org.knime.python2.CondaPythonCommand;
+import org.knime.python2.ManualPythonCommand;
 import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonFrameSummary;
 import org.knime.python2.PythonModuleSpec;
@@ -112,6 +114,8 @@ import org.knime.python3.Python3SourceDirectory;
 import org.knime.python3.PythonEntryPointUtils;
 import org.knime.python3.PythonExtension;
 import org.knime.python3.PythonGateway;
+import org.knime.python3.PythonGatewayTracker;
+import org.knime.python3.PythonKernelCreationGate;
 import org.knime.python3.PythonPath;
 import org.knime.python3.PythonPath.PythonPathBuilder;
 import org.knime.python3.arrow.CancelableExecutor;
@@ -276,8 +280,21 @@ public final class Python3KernelBackend implements PythonKernelBackend {
             addPythonValueFactoriesToPythonPath(pythonPathBuilder);
             final PythonPath pythonPath = pythonPathBuilder.build();
 
-            m_gateway = DefaultPythonGateway.create(command.createProcessBuilder(), launcherPath,
+            // If we are using the bundled environment, the gateway must be closed during feature de-/installation
+            // so we block here until we can create a new kernel and track the Gateway below.
+            if (isBundledPythonCommand(command)) {
+                PythonKernelCreationGate.INSTANCE.awaitPythonKernelCreationAllowedInterruptibly();
+            }
+
+            final var untrackedGateway = DefaultPythonGateway.create(command.createProcessBuilder(), launcherPath,
                 Python3KernelBackendProxy.class, extensions, pythonPath);
+
+            if (isBundledPythonCommand(command)) {
+                m_gateway = PythonGatewayTracker.INSTANCE.createTrackedGateway(untrackedGateway);
+            } else {
+                m_gateway = untrackedGateway;
+            }
+
 
             @SuppressWarnings("resource") // Will be closed along with gateway.
             final InputStream stdoutStream = m_gateway.getStandardOutputStream();
@@ -315,6 +332,12 @@ public final class Python3KernelBackend implements PythonKernelBackend {
                 throw new IOException(th);
             }
         }
+    }
+
+    private static boolean isBundledPythonCommand(final PythonCommand command) {
+        // These are the only two other types of PythonCommands. The BundledCommand adapter is private
+        // and in the org.knime.python3.scripting.nodes package, so we cannot explicitly check for it here.
+        return !(command instanceof ManualPythonCommand || command instanceof CondaPythonCommand);
     }
 
     @Override

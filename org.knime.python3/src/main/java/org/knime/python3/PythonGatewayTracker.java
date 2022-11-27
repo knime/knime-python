@@ -66,7 +66,7 @@ import com.google.common.cache.CacheBuilder;
  *
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
-final class PythonGatewayTracker implements Closeable, PythonKernelCreationGateListener {
+public final class PythonGatewayTracker implements Closeable, PythonKernelCreationGateListener {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonGatewayTracker.class);
 
