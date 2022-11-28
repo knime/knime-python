@@ -162,7 +162,10 @@ def view(obj) -> NodeView:
     _repr_png_, or _repr_jpeg_ are used.
 
     Special view implementations:
-    - HTML: The obj must be of type str and start with "<!DOCTYPE html>".
+
+    - HTML: The obj must be of type str and start with "<!DOCTYPE html>". The document
+      must be self-contained and must not reference external resources. Links to
+      external resources will be opened in an external browser.
     - SVG: The obj must be of type str and contain a valid SVG
     - PNG: The obj must be of type bytes and contain a PNG image file
     - JPEG: The obj must be of type bytes and contain a JPEG image file
@@ -283,6 +286,9 @@ def view_html(
     render_fn: Optional[Callable[[], Union[str, bytes]]] = None,
 ) -> NodeView:
     """Create a NodeView that displays the given HTML document.
+
+    The document must be self-contained and must not reference external resources. Links
+    to external resources will be opened in an external browser.
 
     Args:
         html: A string containing the HTML document.
