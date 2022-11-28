@@ -61,7 +61,13 @@ import org.eclipse.equinox.p2.engine.PhaseSetFactory;
 import org.knime.core.node.NodeLogger;
 
 /**
- * Gate that controls Python kernel creation. Allows to block kernel creation and to kill all Python processes if needed
+ * Gate that controls Python kernel creation. Allows to block kernel creation and to kill all Python processes if
+ * needed.
+ *
+ * The keeps a count of how often it was closed, state changes only occur if it is opened often enough to bring this
+ * count down to zero.
+ *
+ * Registered listeners will be notified if the overall state of the gate changes between opened and closed.
  *
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
@@ -88,6 +94,24 @@ public class PythonKernelCreationGate implements ProvisioningListener {
      */
     public static final PythonKernelCreationGate INSTANCE = new PythonKernelCreationGate();
 
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonKernelCreationGate.class);
+
+    private ReentrantReadWriteLock m_kernelLock = new ReentrantReadWriteLock();
+
+    private AtomicInteger m_blockCount = new AtomicInteger(0);
+
+    private final List<PythonKernelCreationGateListener> m_listeners = new ArrayList<>();
+
+    private PythonKernelCreationGate() {
+        // hidden constructor
+    }
+
+    /**
+     * Close the gate, block creation of Python kernels. If the gate was already closed before, it stays closed but now
+     * has to be opened once more to be open again.
+     *
+     * If the state changes from open to closed, listeners will be notified of this event.
+     */
     public void blockPythonCreation() {
         if (m_blockCount.getAndIncrement() == 0) {
             m_kernelLock.writeLock().lock();
@@ -98,6 +122,12 @@ public class PythonKernelCreationGate implements ProvisioningListener {
         }
     }
 
+    /**
+     * Open the gate = allow creation of Python kernels. If the gate was closed multiple times, opening it once could
+     * mean that it is still closed. Only if it was opened as often as it was closed the gate will really open.
+     *
+     * If the state changes from closed to open, listeners will be notified of this event.
+     */
     public void allowPythonCreation() {
         if (m_blockCount.getAndDecrement() == 1) {
             m_kernelLock.writeLock().unlock();
@@ -108,26 +138,44 @@ public class PythonKernelCreationGate implements ProvisioningListener {
         }
     }
 
+    /**
+     * @return true if the gate is open.
+     */
     public boolean isPythonKernelCreationAllowed() {
         return !m_kernelLock.isWriteLocked();
     }
 
+    /**
+     * Wait for Python Kernel creation to be allowed again, allowing for interruptions.
+     * @throws InterruptedException
+     */
     public void awaitPythonKernelCreationAllowedInterruptibly() throws InterruptedException {
         m_kernelLock.readLock().lockInterruptibly();
         m_kernelLock.readLock().unlock();
     }
 
+    /**
+     * Wait for Python Kernel creation to be allowed again.
+     */
     public void awaitPythonKernelCreationAllowed() {
         m_kernelLock.readLock().lock();
         m_kernelLock.readLock().unlock();
     }
 
+    /**
+     * Register a listener that is notified whenever the gate opens and closes
+     * @param listener
+     */
     public void registerListener(final PythonKernelCreationGateListener listener) {
         synchronized (m_listeners) {
             m_listeners.add(listener);
         }
     }
 
+    /**
+     * Remove a listener that was notified whenever the gate opens and closes
+     * @param listener
+     */
     public void deregisterListener(final PythonKernelCreationGateListener listener) {
         synchronized (m_listeners) {
             m_listeners.remove(listener);
@@ -159,13 +207,5 @@ public class PythonKernelCreationGate implements ProvisioningListener {
             }
         }
     }
-
-    private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonKernelCreationGate.class);
-
-    private ReentrantReadWriteLock m_kernelLock = new ReentrantReadWriteLock();
-
-    private AtomicInteger m_blockCount = new AtomicInteger(0);
-
-    private final List<PythonKernelCreationGateListener> m_listeners = new ArrayList<>();
 
 }

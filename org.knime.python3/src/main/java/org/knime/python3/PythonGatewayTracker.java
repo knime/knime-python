@@ -68,24 +68,17 @@ import com.google.common.cache.CacheBuilder;
  */
 public final class PythonGatewayTracker implements Closeable, PythonKernelCreationGateListener {
 
-    private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonGatewayTracker.class);
-
+    /**
+     * The public instance of the GatewayTracker. There can be only one!
+     */
     public static final PythonGatewayTracker INSTANCE = new PythonGatewayTracker();
 
-    @Override
-    public void close() throws IOException {
-        if (m_openGateways.isEmpty()) {
-            return;
-        }
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonGatewayTracker.class);
 
-        LOGGER.error("Found running Python processes. Aborting them to allow installation process. "
-            + "If this leads to failures in node execution, please restart those nodes once the installation has finished");
+    private final Set<TrackedPythonGateway<?>> m_openGateways;
 
-        for (var gateway : m_openGateways) {
-            // not using gateway.close() because that would modify m_openGateways during iteration
-            gateway.m_delegate.close();
-        }
-        m_openGateways.clear();
+    private PythonGatewayTracker() {
+        m_openGateways = gatewaySet();
     }
 
     /**
@@ -109,14 +102,24 @@ public final class PythonGatewayTracker implements Closeable, PythonKernelCreati
         try {
             close();
         } catch (IOException ex) {
-            // no way we can log this AFAIK?
+            LOGGER.warn("Error when forcefully terminating Python process", ex);
         }
     }
 
-    private final Set<TrackedPythonGateway<?>> m_openGateways;
+    @Override
+    public void close() throws IOException {
+        if (m_openGateways.isEmpty()) {
+            return;
+        }
 
-    private PythonGatewayTracker() {
-        m_openGateways = gatewaySet();
+        LOGGER.error("Found running Python processes. Aborting them to allow installation process. "
+            + "If this leads to failures in node execution, please restart those nodes once the installation has finished");
+
+        for (var gateway : m_openGateways) {
+            // not using gateway.close() because that would modify m_openGateways during iteration
+            gateway.m_delegate.close();
+        }
+        m_openGateways.clear();
     }
 
     private static class TrackedPythonGateway<EP extends PythonEntryPoint> implements PythonGateway<EP> {
