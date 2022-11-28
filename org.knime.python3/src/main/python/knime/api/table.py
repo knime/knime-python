@@ -242,7 +242,7 @@ class _Backend:
         raise RuntimeError("Not implemented")
 
     @abstractmethod
-    def create_batch_output_table(self, row_ids: str = "generate"):
+    def create_batch_output_table(self, row_ids: str = "keep"):
         raise RuntimeError("Not implemented")
 
     @abstractmethod
@@ -382,7 +382,7 @@ class BatchOutputTable:
         )
 
     @staticmethod
-    def create(row_ids: str = "generate"):
+    def create(row_ids: str = "keep"):
         """
         Create an empty BatchOutputTable
 
@@ -390,13 +390,13 @@ class BatchOutputTable:
             row_ids:
                 Defines what RowID should be used. Must be one of the following values:
 
-                * ``"generate"``: Generate new RowIDs of the format ``f"Row{i}"``
                 * ``"keep"``:
 
                   * For appending DataFrames: Keep the ``DataFrame.index`` as the RowID.
                     Convert the index to strings if necessary.
                   * For appending Arrow tables or record batches: Use the first column
                     of the table as RowID. The first column must be of type string.
+                * ``"generate"``: Generate new RowIDs of the format ``f"Row{i}"``
         """
         return _backend.create_batch_output_table(row_ids=row_ids)
 

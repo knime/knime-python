@@ -135,7 +135,7 @@ class _ArrowBackend(knt._Backend):
     def create_table_from_pandas(self, data, sentinel, row_ids="auto"):
         return _create_table_from_pandas(data, sentinel, row_ids)
 
-    def create_batch_output_table(self, row_ids="generate"):
+    def create_batch_output_table(self, row_ids="keep"):
         return ArrowBatchOutputTable(self.create_sink(), row_ids=row_ids)
 
     def create_sink(self):
@@ -150,12 +150,12 @@ class _ArrowBackend(knt._Backend):
 
 
 class ArrowBatchOutputTable(knt.BatchOutputTable):
-    def __init__(self, sink, row_ids="generate"):
+    def __init__(self, sink, row_ids="keep"):
         self._num_batches = 0
         self._sink = sink
 
-        if row_ids not in ["generate", "keep"]:
-            raise ValueError('row_ids must be one of ["generate", "keep"]')
+        if row_ids not in ["keep", "generate"]:
+            raise ValueError('row_ids must be one of ["keep", "generate"]')
         self._row_ids = row_ids
         self._num_rows = 0
 
