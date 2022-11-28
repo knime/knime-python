@@ -168,21 +168,6 @@ def _check_attr_is_available(node, attr_name):
         raise ValueError(f"Attribute {attr_name} is missing in node {node}")
 
 
-def _get_markdown_parser():
-    try:
-        from knime.extension._markdown import KnimeMarkdownParser
-
-        knime_parser = KnimeMarkdownParser()
-    except ModuleNotFoundError:
-        logging.warning(
-            " The 'markdown' Python package is missing from the environment: "
-            + "node descriptions will display Markdown source in plain text instead of being rich-text-formatted."
-        )
-        knime_parser = FallBackMarkdownParser()
-
-    return knime_parser
-
-
 class _PortTypeRegistry:
     def __init__(self, extension_id: str) -> None:
         self._extension_id = extension_id
@@ -351,7 +336,7 @@ class _PortTypeRegistry:
 
 class _PythonNodeProxy:
     def __init__(
-        self, node: kn.PythonNode, port_type_registry: _PortTypeRegistry
+        self, node: kn.PythonNode, port_type_registry: _PortTypeRegistry, knime_parser
     ) -> None:
         _check_attr_is_available(node, "input_ports")
         _check_attr_is_available(node, "output_ports")
@@ -359,7 +344,7 @@ class _PythonNodeProxy:
         self._node = node
         self._num_outports = len(node.output_ports)
         self._port_type_registry = port_type_registry
-        self._knime_parser = _get_markdown_parser()
+        self._knime_parser = knime_parser
 
     def getDialogRepresentation(
         self,
@@ -617,7 +602,6 @@ class _KnimeNodeBackend(kg.EntryPoint, kn._KnimeNodeBackend):
         super().__init__()
         self._main_loop = MainLoop()
         self._port_type_registry = None
-        self._knime_parser = _get_markdown_parser()
         kn._backend = self
 
     def register_port_type(
@@ -706,7 +690,25 @@ class _KnimeNodeBackend(kg.EntryPoint, kn._KnimeNodeBackend):
     def createNodeFromExtension(self, node_id: str) -> _PythonNodeProxy:
         node_info = kn._nodes[node_id]
         node = node_info.node_factory()
-        return _PythonNodeProxy(node, self._port_type_registry)
+        return _PythonNodeProxy(node, self._port_type_registry, self._knime_parser)
+
+    @property
+    def _knime_parser(self):
+        # Initialize the _knime_parser once we need it. In __init__ the log callback is
+        # not ready and the warning would get lost
+        if not hasattr(self, "_knime_parser_instance"):
+            try:
+                from knime.extension._markdown import KnimeMarkdownParser
+
+                self._knime_parser_instance = KnimeMarkdownParser()
+            except ModuleNotFoundError:
+                logging.warning(
+                    " The 'markdown' Python package is missing from the environment: "
+                    + "node descriptions will display Markdown source in plain text instead of being rich-text-formatted."
+                )
+                self._knime_parser_instance = FallBackMarkdownParser()
+
+        return self._knime_parser_instance
 
     class Java:
         implements = ["org.knime.python3.nodes.KnimeNodeBackend"]
