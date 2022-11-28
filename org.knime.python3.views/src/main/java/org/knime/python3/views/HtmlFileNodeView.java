@@ -56,6 +56,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NodeLogger;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.webui.data.ApplyDataService;
 import org.knime.core.webui.data.DataService;
@@ -69,6 +70,8 @@ import org.knime.core.webui.page.Page;
  * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
  */
 public final class HtmlFileNodeView implements NodeView {
+
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(HtmlFileNodeView.class);
 
     private final Supplier<Path> m_htmlSupplier;
 
@@ -123,6 +126,11 @@ public final class HtmlFileNodeView implements NodeView {
         try {
             return Files.newInputStream(m_htmlSupplier.get());
         } catch (final IOException e) {
+            // FIXME: UIEXT-635
+            // Do not catch the IOException but propagate it to the framework. Currently, this is not possible, and
+            // the IllegalStateException is not logged. Therefore, we log the error ourselves.
+            LOGGER.error("Failed to open view file.", e);
+
             // We require the file to exist and be readable
             // If this is not the case we ended up in an illegal state
             throw new IllegalStateException("Failed to open view file.", e);
