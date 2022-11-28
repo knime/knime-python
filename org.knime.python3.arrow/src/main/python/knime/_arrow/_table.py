@@ -279,19 +279,24 @@ class ArrowTable(knt.Table):
         """
         data = self._get_table()
 
+        if len(data) == 0:
+            # write at least the schema
+            sink.write(data)
+            return
+
         if isinstance(data, pa.RecordBatch):
             batches = [data]
         else:
             batches = self._split_table(data)
 
-        for b in batches:
-            sink.write(b)
+        for batch in batches:
+            sink.write(batch)
 
     _MAX_NUM_BYTES_PER_BATCH = (
         1 << 26
     )  # same target batch size as in org.knime.core.columnar.cursor.ColumnarWriteCursor
 
-    def _split_table(self, data: pa.Table):
+    def _split_table(self, data: pa.Table) -> List[pa.RecordBatch]:
         """
         Split a table into batches of KNIMEs desired batch size.
         """
