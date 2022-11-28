@@ -161,6 +161,7 @@ public final class PythonNodeGatewayFactory {
 
         @Override
         public void customize(final KnimeNodeBackend entryPoint) {
+            PythonEntryPointUtils.registerPythonValueFactories(entryPoint);
             entryPoint.loadExtension(m_extensionId, m_extensionModule, m_extensionVersion);
         }
 

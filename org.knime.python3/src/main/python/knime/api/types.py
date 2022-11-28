@@ -175,9 +175,6 @@ def _get_converter_or_value_factory(module, class_name):
     return clazz()
 
 
-# all values are of type PythonValueFactoryBundle
-_bundles = []
-
 _java_value_factory_to_bundle = {}
 
 _python_type_to_bundle = {}
@@ -216,7 +213,7 @@ def get_proxy_by_python_type(
 
 
 def get_python_type_list():
-    return [bundle.python_type for bundle in _bundles]
+    return _python_type_to_bundle.keys()
 
 
 def register_python_value_factory(
@@ -259,7 +256,6 @@ def register_python_value_factory(
             python_value_factory_name,
             python_value_type_name,
         )
-        _bundles.append(value_factory_bundle)
         _java_value_factory_to_bundle[logical_type] = value_factory_bundle
         _python_type_to_bundle[python_value_type_name] = value_factory_bundle
 
