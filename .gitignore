@@ -16,3 +16,6 @@
 **/htmlcov/
 **/.idea
 **/.vscode
+
+# new build output
+**/.polyglot.build.properties
