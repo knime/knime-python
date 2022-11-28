@@ -51,6 +51,7 @@ package org.knime.python3;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -132,8 +133,8 @@ public class PythonKernelCreationGateTest {
     }
 
     @Test(timeout = 100)
-    public void testAwaitReturnsImmediately() {
-        GATE.awaitPythonKernelCreationAllowed();
+    public void testAwaitReturnsImmediately() throws InterruptedException {
+        GATE.awaitPythonKernelCreationAllowedInterruptibly();
     }
 
     @Test(timeout = 100)
@@ -143,7 +144,11 @@ public class PythonKernelCreationGateTest {
 
         final var exec = Executors.newSingleThreadExecutor();
         exec.submit(() -> {
-            GATE.awaitPythonKernelCreationAllowed();
+            try {
+                GATE.awaitPythonKernelCreationAllowedInterruptibly();
+            } catch (InterruptedException e) {
+                fail("Test got interrupted");
+            }
             assertEquals(0L, latch.getCount());
         });
 

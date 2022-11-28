@@ -155,14 +155,6 @@ public class PythonKernelCreationGate implements ProvisioningListener {
     }
 
     /**
-     * Wait for Python Kernel creation to be allowed again.
-     */
-    public void awaitPythonKernelCreationAllowed() {
-        m_kernelLock.readLock().lock();
-        m_kernelLock.readLock().unlock();
-    }
-
-    /**
      * Register a listener that is notified whenever the gate opens and closes
      * @param listener
      */
