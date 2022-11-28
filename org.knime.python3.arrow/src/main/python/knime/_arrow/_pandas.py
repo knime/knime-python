@@ -125,25 +125,28 @@ def extract_knime_schema_from_df(df: pd.DataFrame):
     # extract schema
     for col_name, col_type in zip(df.columns, df.dtypes):
         if isinstance(col_type, object):
-            try:
-                cleaned = df[col_name].dropna()
-                if (
-                    cleaned.size == 0
-                ):  # if the column only contains empty elements we keep object type
-                    schema[col_name] = col_type
-                    continue
-                dtype = type(cleaned.iloc[0])
-                if _check_if_local_dt(cleaned, dtype):
-                    # as we map all pandas ts and dt objects on the ZonedDT ValFac
-                    # we have to manually determine if it is a local dt object
-                    col_type = _create_local_dt_type()
-                else:
-                    col_type = ks.logical(dtype).to_pandas()
-            except TypeError:  # if we do not have the type we continue
-                pass
-
+            col_type = _resolve_object_type(df[col_name])
         schema[col_name] = col_type
     return schema
+
+def _resolve_object_type(col: pd.Series):
+    try:
+        if col.size == 0:
+            return col.dtype
+        cleaned = col.dropna()
+        if (
+            cleaned.size == 0
+        ):  # if the column only contains empty elements we keep object type
+            return col.dtype
+        dtype = type(cleaned.iloc[0])
+        if _check_if_local_dt(cleaned, dtype):
+            # as we map all pandas ts and dt objects on the ZonedDT ValFac
+            # we have to manually determine if it is a local dt object
+            return _create_local_dt_type()
+        else:
+            return ks.logical(dtype).to_pandas()
+    except TypeError:  # if we do not have the type we continue
+        return col.dtype
 
 
 def convert_df_to_ktypes_from_schema(df, schema: dict):
