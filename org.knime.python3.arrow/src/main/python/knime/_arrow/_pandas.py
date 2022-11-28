@@ -83,14 +83,7 @@ def pandas_df_to_arrow(data_frame: pd.DataFrame, row_ids: str = "auto") -> pa.Ta
 
     # Convert the index to a string series based on the row_ids argument
     if row_ids in ["auto", "keep"]:
-        row_ids_series = df.index.to_series()
-        if row_ids == "auto" and row_ids_series.dtype.kind in "iu":  # int or uint
-            # Add "Row" prefix
-            row_ids_series = row_ids_series.apply(lambda i: f"Row{i}")
-        else:
-            # Just make sure that the RowID column are strings
-            row_ids_series = row_ids_series.astype(str)
-
+        row_ids_series = _create_row_ids_for_auto_keep(df, row_ids)
         # Prepend the index to the data_frame:
         row_ids_series.name = "<RowID>"
         df = pd.concat(
@@ -107,6 +100,17 @@ def pandas_df_to_arrow(data_frame: pd.DataFrame, row_ids: str = "auto") -> pa.Ta
 
     return pa.Table.from_pandas(df)
 
+def _create_row_ids_for_auto_keep(df: pd.DataFrame, row_ids: str):
+    if df.shape[0] == 0:
+        # astype does not work for empty Series, so we have to create the string Series explicitly
+        return pd.Series([], dtype="string")
+    row_ids_series = df.index.to_series()
+    if row_ids == "auto" and row_ids_series.dtype.kind in "iu":  # int or uint
+        # Add "Row" prefix
+        return row_ids_series.apply(lambda i: f"Row{i}")
+    else:
+        # Just make sure that the RowID column are strings
+        return row_ids_series.astype(str)
 
 def extract_knime_schema_from_df(df: pd.DataFrame):
     """This method extracts a knime.schema from a dataframe.
@@ -128,6 +132,7 @@ def extract_knime_schema_from_df(df: pd.DataFrame):
             col_type = _resolve_object_type(df[col_name])
         schema[col_name] = col_type
     return schema
+
 
 def _resolve_object_type(col: pd.Series):
     try:
