@@ -93,12 +93,12 @@ public final class PythonGatewayTracker implements Closeable, PythonGatewayCreat
     }
 
     @Override
-    public void onPythonKernelCreationGateOpen() {
+    public void onPythonGatewayCreationGateOpen() {
         // Nothing to do
     }
 
     @Override
-    public void onPythonKernelCreationGateClose() {
+    public void onPythonGatewayCreationGateClose() {
         try {
             close();
         } catch (IOException ex) {

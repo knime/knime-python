@@ -283,7 +283,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
             // If we are using the bundled environment, the gateway must be closed during feature de-/installation
             // so we block here until we can create a new kernel and track the Gateway below.
             if (isBundledPythonCommand(command)) {
-                PythonGatewayCreationGate.INSTANCE.awaitPythonKernelCreationAllowedInterruptibly();
+                PythonGatewayCreationGate.INSTANCE.awaitPythonGatewayCreationAllowedInterruptibly();
             }
 
             final var untrackedGateway = DefaultPythonGateway.create(command.createProcessBuilder(), launcherPath,

@@ -70,36 +70,36 @@ public class PythonGatewayCreationGateTest {
 
     @Test
     public void testBlock() {
-        assertTrue(GATE.isPythonKernelCreationAllowed());
+        assertTrue(GATE.isPythonGatewayCreationAllowed());
         GATE.blockPythonCreation();
-        assertFalse(GATE.isPythonKernelCreationAllowed());
+        assertFalse(GATE.isPythonGatewayCreationAllowed());
         GATE.allowPythonCreation();
-        assertTrue(GATE.isPythonKernelCreationAllowed());
+        assertTrue(GATE.isPythonGatewayCreationAllowed());
     }
 
     @Test
     public void testBlockUnblockBlock() {
-        assertTrue(GATE.isPythonKernelCreationAllowed());
+        assertTrue(GATE.isPythonGatewayCreationAllowed());
         GATE.blockPythonCreation();
-        assertFalse(GATE.isPythonKernelCreationAllowed());
+        assertFalse(GATE.isPythonGatewayCreationAllowed());
         GATE.allowPythonCreation();
-        assertTrue(GATE.isPythonKernelCreationAllowed());
+        assertTrue(GATE.isPythonGatewayCreationAllowed());
         GATE.blockPythonCreation();
-        assertFalse(GATE.isPythonKernelCreationAllowed());
+        assertFalse(GATE.isPythonGatewayCreationAllowed());
         GATE.allowPythonCreation();
-        assertTrue(GATE.isPythonKernelCreationAllowed());
+        assertTrue(GATE.isPythonGatewayCreationAllowed());
     }
 
     @Test
     public void testBlockTwice() {
-        assertTrue(GATE.isPythonKernelCreationAllowed());
+        assertTrue(GATE.isPythonGatewayCreationAllowed());
         GATE.blockPythonCreation();
         GATE.blockPythonCreation();
-        assertFalse(GATE.isPythonKernelCreationAllowed());
+        assertFalse(GATE.isPythonGatewayCreationAllowed());
         GATE.allowPythonCreation();
-        assertFalse(GATE.isPythonKernelCreationAllowed());
+        assertFalse(GATE.isPythonGatewayCreationAllowed());
         GATE.allowPythonCreation();
-        assertTrue(GATE.isPythonKernelCreationAllowed());
+        assertTrue(GATE.isPythonGatewayCreationAllowed());
     }
 
     @Test
@@ -107,14 +107,14 @@ public class PythonGatewayCreationGateTest {
         var counter = new AtomicInteger(0);
         var listener = new PythonGatewayCreationGate.PythonGatewayCreationGateListener() {
             @Override
-            public void onPythonKernelCreationGateOpen() {
-                assertTrue(GATE.isPythonKernelCreationAllowed());
+            public void onPythonGatewayCreationGateOpen() {
+                assertTrue(GATE.isPythonGatewayCreationAllowed());
                 assertTrue(counter.get() % 2 == 0); // opened at 2 and 4
             }
 
             @Override
-            public void onPythonKernelCreationGateClose() {
-                assertFalse(GATE.isPythonKernelCreationAllowed());
+            public void onPythonGatewayCreationGateClose() {
+                assertFalse(GATE.isPythonGatewayCreationAllowed());
                 assertTrue(counter.get() % 2 == 1); // blocked at 1 and 3
                 assertTrue(counter.get() > 0);
             }
@@ -134,7 +134,7 @@ public class PythonGatewayCreationGateTest {
 
     @Test(timeout = 100)
     public void testAwaitReturnsImmediately() throws InterruptedException {
-        GATE.awaitPythonKernelCreationAllowedInterruptibly();
+        GATE.awaitPythonGatewayCreationAllowedInterruptibly();
     }
 
     @Test(timeout = 100)
@@ -145,7 +145,7 @@ public class PythonGatewayCreationGateTest {
         final var exec = Executors.newSingleThreadExecutor();
         exec.submit(() -> {
             try {
-                GATE.awaitPythonKernelCreationAllowedInterruptibly();
+                GATE.awaitPythonGatewayCreationAllowedInterruptibly();
             } catch (InterruptedException e) {
                 fail("Test got interrupted");
             }

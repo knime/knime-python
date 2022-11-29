@@ -114,7 +114,7 @@ public final class QueuedPythonGatewayFactory implements PythonGatewayFactory {
                 reconfigureQueue(DEFAULT_MAX_NUMBER_OF_IDLING_GATEWAYS, DEFAULT_EXPIRATION_DURATION_IN_MINUTES);
             }
         }
-        PythonGatewayCreationGate.INSTANCE.awaitPythonKernelCreationAllowedInterruptibly();
+        PythonGatewayCreationGate.INSTANCE.awaitPythonGatewayCreationAllowedInterruptibly();
         return m_queue.getNextGateway(description);
     }
 
@@ -212,12 +212,12 @@ public final class QueuedPythonGatewayFactory implements PythonGatewayFactory {
 
             PythonGatewayCreationGate.INSTANCE.registerListener(new PythonGatewayCreationGateListener() {
                 @Override
-                public void onPythonKernelCreationGateOpen() {
+                public void onPythonGatewayCreationGateOpen() {
                     // Nothing to do here. Queue is blocked anyways in QueuedPythonGatewayQueue.create() while gate is closed.
                 }
 
                 @Override
-                public void onPythonKernelCreationGateClose() {
+                public void onPythonGatewayCreationGateClose() {
                     clearQueuedGateways(null);
                 }
             });

@@ -79,14 +79,14 @@ public final class PythonGatewayCreationGate implements ProvisioningListener {
      */
     public interface PythonGatewayCreationGateListener {
         /**
-         * Called as soon as creating kernels becomes possible
+         * Called as soon as creating gateways becomes possible
          */
-        void onPythonKernelCreationGateOpen();
+        void onPythonGatewayCreationGateOpen();
 
         /**
-         * Called as soon as creating kernels becomes blocked
+         * Called as soon as creating gateways becomes blocked
          */
-        void onPythonKernelCreationGateClose();
+        void onPythonGatewayCreationGateClose();
     }
 
     /**
@@ -96,7 +96,7 @@ public final class PythonGatewayCreationGate implements ProvisioningListener {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonGatewayCreationGate.class);
 
-    private ReentrantReadWriteLock m_kernelLock = new ReentrantReadWriteLock();
+    private ReentrantReadWriteLock m_gatewayLock = new ReentrantReadWriteLock();
 
     private AtomicInteger m_blockCount = new AtomicInteger(0);
 
@@ -107,33 +107,33 @@ public final class PythonGatewayCreationGate implements ProvisioningListener {
     }
 
     /**
-     * Close the gate, block creation of Python kernels. If the gate was already closed before, it stays closed but now
+     * Close the gate, block creation of Python gateways. If the gate was already closed before, it stays closed but now
      * has to be opened once more to be open again.
      *
      * If the state changes from open to closed, listeners will be notified of this event.
      */
     void blockPythonCreation() {
         if (m_blockCount.getAndIncrement() == 0) {
-            m_kernelLock.writeLock().lock();
+            m_gatewayLock.writeLock().lock();
 
             synchronized (m_listeners) {
-                m_listeners.forEach(PythonGatewayCreationGateListener::onPythonKernelCreationGateClose);
+                m_listeners.forEach(PythonGatewayCreationGateListener::onPythonGatewayCreationGateClose);
             }
         }
     }
 
     /**
-     * Open the gate = allow creation of Python kernels. If the gate was closed multiple times, opening it once could
+     * Open the gate = allow creation of Python gateways. If the gate was closed multiple times, opening it once could
      * mean that it is still closed. Only if it was opened as often as it was closed the gate will really open.
      *
      * If the state changes from closed to open, listeners will be notified of this event.
      */
     void allowPythonCreation() {
         if (m_blockCount.getAndDecrement() == 1) {
-            m_kernelLock.writeLock().unlock();
+            m_gatewayLock.writeLock().unlock();
 
             synchronized (m_listeners) {
-                m_listeners.forEach(PythonGatewayCreationGateListener::onPythonKernelCreationGateOpen);
+                m_listeners.forEach(PythonGatewayCreationGateListener::onPythonGatewayCreationGateOpen);
             }
         }
     }
@@ -141,17 +141,17 @@ public final class PythonGatewayCreationGate implements ProvisioningListener {
     /**
      * @return true if the gate is open.
      */
-    public boolean isPythonKernelCreationAllowed() {
-        return !m_kernelLock.isWriteLocked();
+    public boolean isPythonGatewayCreationAllowed() {
+        return !m_gatewayLock.isWriteLocked();
     }
 
     /**
-     * Wait for Python Kernel creation to be allowed again, allowing for interruptions.
+     * Wait for Python gateway creation to be allowed again, allowing for interruptions.
      * @throws InterruptedException
      */
-    public void awaitPythonKernelCreationAllowedInterruptibly() throws InterruptedException {
-        m_kernelLock.readLock().lockInterruptibly();
-        m_kernelLock.readLock().unlock();
+    public void awaitPythonGatewayCreationAllowedInterruptibly() throws InterruptedException {
+        m_gatewayLock.readLock().lockInterruptibly();
+        m_gatewayLock.readLock().unlock();
     }
 
     /**
@@ -189,7 +189,7 @@ public final class PythonGatewayCreationGate implements ProvisioningListener {
             // "configure" is the normal phase after install, so we can unlock Python processes again
             LOGGER.info("Allowing Python process startup again after installation");
             INSTANCE.allowPythonCreation();
-        } else if (o instanceof RollbackOperationEvent && !INSTANCE.isPythonKernelCreationAllowed()) {
+        } else if (o instanceof RollbackOperationEvent && !INSTANCE.isPythonGatewayCreationAllowed()) {
             // According to org.eclipse.equinox.internal.p2.engine.Engine.perform() -> L92,
             // a RollbackOperationEvent will be fired if an operation failed, and this event is only fired in that case,
             // so we unlock if we are currently locked.

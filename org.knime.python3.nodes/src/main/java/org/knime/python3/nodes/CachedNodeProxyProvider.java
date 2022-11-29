@@ -154,12 +154,12 @@ final class CachedNodeProxyProvider extends PurePythonExtensionNodeProxyProvider
 
         PythonGatewayCreationGate.INSTANCE.registerListener(new PythonGatewayCreationGateListener() {
             @Override
-            public void onPythonKernelCreationGateOpen() {
+            public void onPythonGatewayCreationGateOpen() {
                 // Nothing to do here. Kernel creation is blocked anyways in createPythonNodeFromCache() while gate is closed.
             }
 
             @Override
-            public void onPythonKernelCreationGateClose() {
+            public void onPythonGatewayCreationGateClose() {
                 synchronized (GATEWAY_CACHE) {
                     GATEWAY_CACHE.invalidateAll();
                 }
@@ -205,7 +205,7 @@ final class CachedNodeProxyProvider extends PurePythonExtensionNodeProxyProvider
         try {
             CachedObject<PythonGateway<KnimeNodeBackend>> cachedGateway;
             try {
-                PythonGatewayCreationGate.INSTANCE.awaitPythonKernelCreationAllowedInterruptibly();
+                PythonGatewayCreationGate.INSTANCE.awaitPythonGatewayCreationAllowedInterruptibly();
             } catch (InterruptedException ex) {
                 throw new IllegalStateException("Interrupted while waiting until Python processes may be started", ex);
             }

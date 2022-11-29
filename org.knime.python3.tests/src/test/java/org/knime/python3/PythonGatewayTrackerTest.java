@@ -190,7 +190,7 @@ public class PythonGatewayTrackerTest {
     public void testTrackerClosesOnGateClose() throws IOException {
         final var gateway = new DummyPythonGateway();
         TRACKER.createTrackedGateway(gateway);
-        TRACKER.onPythonKernelCreationGateClose();
+        TRACKER.onPythonGatewayCreationGateClose();
         assertTrue(gateway.isClosed());
     }
 }
