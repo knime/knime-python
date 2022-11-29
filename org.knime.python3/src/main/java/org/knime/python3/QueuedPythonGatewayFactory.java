@@ -151,10 +151,7 @@ public final class QueuedPythonGatewayFactory implements PythonGatewayFactory {
     /**
      * Removes all {@link PythonGateway Python gateways} employing the given command from the queue.
      *
-     * If the command is null, all queued gateways will be cleared.
-     *
-     * @param command The Python command whose corresponding gateways to remove from the queue, or null to remove all
-     *            gateways from the queue.
+     * @param command The Python command whose corresponding gateways to remove from the queue
      */
     public synchronized void clearQueuedGateways(final PythonCommand command) {
         if (m_queue != null) {
@@ -213,12 +210,17 @@ public final class QueuedPythonGatewayFactory implements PythonGatewayFactory {
             PythonGatewayCreationGate.INSTANCE.registerListener(new PythonGatewayCreationGateListener() {
                 @Override
                 public void onPythonGatewayCreationGateOpen() {
-                    // Nothing to do here. Queue is blocked anyways in QueuedPythonGatewayQueue.create() while gate is closed.
+                    // Nothing to do here.
+                    // Queue is blocked anyways in QueuedPythonGatewayQueue.create() while gate is closed.
                 }
 
                 @Override
                 public void onPythonGatewayCreationGateClose() {
-                    clearQueuedGateways(null);
+                    evictGateways(//
+                        m_gateways.values().stream()//
+                            .flatMap(Collection::stream)//
+                            .collect(Collectors.toList())//
+                    );
                 }
             });
         }
@@ -317,7 +319,7 @@ public final class QueuedPythonGatewayFactory implements PythonGatewayFactory {
         public synchronized void clearQueuedGateways(final PythonCommand command) {
             final List<GatewayHolder> gatewaysToEvict = new ArrayList<>();
             for (final var entry : m_gateways.entrySet()) {
-                if (command == null || entry.getKey().getCommand().equals(command)) {
+                if (entry.getKey().getCommand().equals(command)) {
                     gatewaysToEvict.addAll(entry.getValue());
                 }
             }
@@ -494,8 +496,7 @@ public final class QueuedPythonGatewayFactory implements PythonGatewayFactory {
             getNextGateway(PythonGatewayDescription<E> description) throws IOException, InterruptedException;
 
         /**
-         * Clears all queued gateways that were created with the specified {@link PythonCommand}. If the command is
-         * null, all queued gateways will be cleared.
+         * Clears all queued gateways that were created with the specified {@link PythonCommand}.
          *
          * @param command The {@link PythonCommand}
          */
