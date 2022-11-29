@@ -149,7 +149,7 @@ public class PythonGatewayTrackerTest {
     public void testTrackerCloses() throws IOException {
         final var gateway = new DummyPythonGateway();
         TRACKER.createTrackedGateway(gateway);
-        TRACKER.close();
+        TRACKER.clear();
         assertTrue(gateway.isClosed());
     }
 
@@ -162,7 +162,7 @@ public class PythonGatewayTrackerTest {
         assertFalse(gateway1.isClosed());
         assertFalse(gateway2.isClosed());
 
-        TRACKER.close();
+        TRACKER.clear();
         assertTrue(gateway1.isClosed());
         assertFalse(gateway2.isClosed());
 
@@ -170,7 +170,7 @@ public class PythonGatewayTrackerTest {
         assertTrue(gateway1.isClosed());
         assertFalse(gateway2.isClosed());
 
-        TRACKER.close();
+        TRACKER.clear();
         assertTrue(gateway1.isClosed());
         assertTrue(gateway2.isClosed());
     }
@@ -180,7 +180,7 @@ public class PythonGatewayTrackerTest {
     public void testCloseGatewayAfterTrackerClose() throws IOException {
         final var gateway = new DummyPythonGateway();
         final var trackedGateway = TRACKER.createTrackedGateway(gateway);
-        TRACKER.close();
+        TRACKER.clear();
         trackedGateway.close();
         assertTrue(gateway.isClosed());
     }

@@ -48,9 +48,9 @@
  */
 package org.knime.python3;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
@@ -66,7 +66,7 @@ import com.google.common.cache.CacheBuilder;
  *
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
-public final class PythonGatewayTracker implements Closeable, PythonGatewayCreationGateListener {
+public final class PythonGatewayTracker implements PythonGatewayCreationGateListener {
 
     /**
      * The public instance of the GatewayTracker. There can be only one!
@@ -100,41 +100,57 @@ public final class PythonGatewayTracker implements Closeable, PythonGatewayCreat
     @Override
     public void onPythonGatewayCreationGateClose() {
         try {
-            close();
+            clear();
         } catch (IOException ex) {
             LOGGER.warn("Error when forcefully terminating Python process", ex);
         }
     }
 
-    @Override
-    public void close() throws IOException {
+    void clear() throws IOException {
         if (m_openGateways.isEmpty()) {
             return;
         }
 
         LOGGER.error("Found running Python processes. Aborting them to allow installation process. "
-            + "If this leads to failures in node execution, please restart those nodes once the installation has finished");
+            + "If this leads to failures in node execution, "
+            + "please restart those nodes once the installation has finished");
 
+        var exceptions = new ArrayList<Exception>();
         for (var gateway : m_openGateways) {
             // not using gateway.close() because that would modify m_openGateways during iteration
-            gateway.m_delegate.close();
+            try {
+                gateway.m_delegate.close();
+            } catch (Exception ex) {
+                exceptions.add(ex);
+            }
         }
         m_openGateways.clear();
+        if (!exceptions.isEmpty()) {
+            if (exceptions.size() == 1) {
+                throw new IOException("Aborting Python process failed.", exceptions.get(0));
+            } else {
+                for (var exception : exceptions) {
+                    LOGGER.error("Aborting Python process failed.", exception);
+                }
+                throw new IOException(
+                    "There were multiple exceptions while aborting Python processes. See the log for details.");
+            }
+        }
     }
 
-    private static class TrackedPythonGateway<EP extends PythonEntryPoint> implements PythonGateway<EP> {
-        private final PythonGateway<EP> m_delegate;
+    private static final class TrackedPythonGateway<E extends PythonEntryPoint> implements PythonGateway<E> {
+        private final PythonGateway<E> m_delegate;
 
         private final PythonGatewayTracker m_tracker;
 
-        public TrackedPythonGateway(final PythonGateway<EP> delegate, final PythonGatewayTracker tracker) {
+        public TrackedPythonGateway(final PythonGateway<E> delegate, final PythonGatewayTracker tracker) {
             m_delegate = delegate;
             m_tracker = tracker;
-            m_tracker.add(this);
+            m_tracker.add(this); //NOSONAR object construction is finished at this point
         }
 
         @Override
-        public EP getEntryPoint() {
+        public E getEntryPoint() {
             return m_delegate.getEntryPoint();
         }
 
@@ -150,8 +166,11 @@ public final class PythonGatewayTracker implements Closeable, PythonGatewayCreat
 
         @Override
         public void close() throws IOException {
-            m_delegate.close();
-            m_tracker.remove(this);
+            try {
+                m_delegate.close();
+            } finally {
+                m_tracker.remove(this);
+            }
         }
     }
 
