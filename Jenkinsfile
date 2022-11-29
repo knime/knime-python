@@ -2,7 +2,7 @@
 def BN = (BRANCH_NAME == 'master' || BRANCH_NAME.startsWith('releases/')) ? BRANCH_NAME : 'releases/2022-12'
 
 @groovy.transform.Field
-static final String[] PYTHON_VERSIONS = ['37', '38', '39']
+static final String[] PYTHON_VERSIONS = ['36', '37', '38', '39']
 
 @groovy.transform.Field
 static final String DEFAULT_PYTHON_VERSION = '39'
