@@ -12,12 +12,12 @@
 			configured under <i>File → Preferences → KNIME → Python</i> or via flow variable, as described in the
 			<a href="https://docs.knime.com/latest/python_installation_guide/">KNIME Python Integration Guide</a>.
 			Multiple input ports of various types can dynamically be added to the node and used in the
-			script. See sections <i>Ports</i> and <i>Editor</i> below for a description of all available inputs, and how
+			script. See sections <i>Ports</i> and <i>Options → Script → Editor</i> below for a description of all available inputs, and how
 			they can be accessed in the Python script.
 			Make sure to set the <tt>knio.output_view</tt> variable to a view created with any of the <tt>knio.view</tt>
 			functions.
 			Furthermore, the node allows to import Jupyter notebooks as Python modules via the
-			<a href="https://docs.knime.com/latest/python_installation_guide/#_load_jupyter_notebooks_from_knime">
+			<a href="https://docs.knime.com/latest/python_installation_guide/#jupyter-notebooks">
 			knime.scripting.jupyter</a> module that can be imported in the script.
 			See the <a href="https://knime-python.readthedocs.io/en/stable/content/content.html#python-script-api">
 			API Documentation</a> for a detailed description of the full API.
@@ -26,7 +26,6 @@
 			and enables working with larger-than-memory data. More details on how to transition to the node's new
 			scripting API can be found <a href="https://docs.knime.com/latest/python_installation_guide/">here</a>.
 			There are also example workflows that further illustrate its use
-			<a href="https://hub.knime.com/knime/spaces/Examples/latest/07_Scripting/03_Python/">here</a> and
 			<a href="https://kni.me/s/1_0f6fdjqeLPCfPY">here</a> as well as
 			example templates on the <i>Templates</i> tab of the node.</p>
 
@@ -99,7 +98,7 @@
 			<option name="python3_command">
 				Controls which Python 3 executable is employed by this node. The flow variable accepts the path to a
 				Python executable, start script, or Conda environment as described in the
-				<a href="https://docs.knime.com/latest/python_installation_guide/#configure_environments_per_node">
+				<a href="https://docs.knime.com/latest/python_installation_guide/#manual_configuration_environments_per_node">
 					KNIME Python Integration Installation Guide
 				</a>.
 			</option>
