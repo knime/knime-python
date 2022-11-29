@@ -19,12 +19,15 @@
 			Furthermore, the node allows to import Jupyter notebooks as Python modules via the
 			<a href="https://docs.knime.com/latest/python_installation_guide/#_load_jupyter_notebooks_from_knime">
 			knime.scripting.jupyter</a> module that can be imported in the script.
+			See the <a href="https://knime-python.readthedocs.io/en/stable/content/content.html#python-script-api">
+			API Documentation</a> for a detailed description of the full API.
 
 			<p>The node brings significant performance improvements over the nodes of the legacy KNIME Python Integration
 			and enables working with larger-than-memory data. More details on how to transition to the node's new
 			scripting API can be found <a href="https://docs.knime.com/latest/python_installation_guide/">here</a>.
 			There are also example workflows that further illustrate its use
-			<a href="https://hub.knime.com/knime/spaces/Examples/latest/07_Scripting/03_Python/">here</a> as well as
+			<a href="https://hub.knime.com/knime/spaces/Examples/latest/07_Scripting/03_Python/">here</a> and
+			<a href="https://kni.me/s/1_0f6fdjqeLPCfPY">here</a> as well as
 			example templates on the <i>Templates</i> tab of the node.</p>
 
 			<p><b>Please consider the following prerequisites before using this node:</b>
@@ -101,6 +104,8 @@
 				</a>.
 			</option>
 		</tab>
+		<link href="https://knime-python.readthedocs.io/en/stable/content/content.html#python-script-api">API Documentation</link>
+		<link href="https://kni.me/s/1_0f6fdjqeLPCfPY">Examples in the "Python Script Space" on the KNIME Hub</link>
 	</fullDescription>
 	<ports>
 		<dynInPort name="Pickled object" group-identifier="Input object (pickled)" insert-before="0">
