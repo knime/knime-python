@@ -115,7 +115,7 @@ import org.knime.python3.PythonEntryPointUtils;
 import org.knime.python3.PythonExtension;
 import org.knime.python3.PythonGateway;
 import org.knime.python3.PythonGatewayTracker;
-import org.knime.python3.PythonKernelCreationGate;
+import org.knime.python3.PythonGatewayCreationGate;
 import org.knime.python3.PythonPath;
 import org.knime.python3.PythonPath.PythonPathBuilder;
 import org.knime.python3.arrow.CancelableExecutor;
@@ -283,7 +283,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
             // If we are using the bundled environment, the gateway must be closed during feature de-/installation
             // so we block here until we can create a new kernel and track the Gateway below.
             if (isBundledPythonCommand(command)) {
-                PythonKernelCreationGate.INSTANCE.awaitPythonKernelCreationAllowedInterruptibly();
+                PythonGatewayCreationGate.INSTANCE.awaitPythonKernelCreationAllowedInterruptibly();
             }
 
             final var untrackedGateway = DefaultPythonGateway.create(command.createProcessBuilder(), launcherPath,

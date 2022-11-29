@@ -72,7 +72,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import org.knime.core.node.NodeLogger;
-import org.knime.python3.PythonKernelCreationGate.PythonKernelCreationGateListener;
+import org.knime.python3.PythonGatewayCreationGate.PythonGatewayCreationGateListener;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
@@ -106,7 +106,6 @@ public final class QueuedPythonGatewayFactory implements PythonGatewayFactory {
 
     private AbstractPythonGatewayQueue m_queue;
 
-    @SuppressWarnings("resource") // Tracked gateway will be closed
     @Override
     public <E extends PythonEntryPoint> PythonGateway<E> create(final PythonGatewayDescription<E> description)
         throws IOException, InterruptedException {
@@ -115,8 +114,8 @@ public final class QueuedPythonGatewayFactory implements PythonGatewayFactory {
                 reconfigureQueue(DEFAULT_MAX_NUMBER_OF_IDLING_GATEWAYS, DEFAULT_EXPIRATION_DURATION_IN_MINUTES);
             }
         }
-        PythonKernelCreationGate.INSTANCE.awaitPythonKernelCreationAllowedInterruptibly();
-        return PythonGatewayTracker.INSTANCE.createTrackedGateway(m_queue.getNextGateway(description));
+        PythonGatewayCreationGate.INSTANCE.awaitPythonKernelCreationAllowedInterruptibly();
+        return m_queue.getNextGateway(description);
     }
 
     /**
@@ -152,7 +151,10 @@ public final class QueuedPythonGatewayFactory implements PythonGatewayFactory {
     /**
      * Removes all {@link PythonGateway Python gateways} employing the given command from the queue.
      *
-     * @param command The Python command whose corresponding gateways to remove from the queue.
+     * If the command is null, all queued gateways will be cleared.
+     *
+     * @param command The Python command whose corresponding gateways to remove from the queue, or null to remove all
+     *            gateways from the queue.
      */
     public synchronized void clearQueuedGateways(final PythonCommand command) {
         if (m_queue != null) {
@@ -208,7 +210,7 @@ public final class QueuedPythonGatewayFactory implements PythonGatewayFactory {
             m_gatewayEvictor.scheduleAtFixedRate(this::evictExpiredGateways, 0l,
                 EVICTION_CHECK_INTERVAL_IN_MILLISECONDS, TimeUnit.MILLISECONDS);
 
-            PythonKernelCreationGate.INSTANCE.registerListener(new PythonKernelCreationGateListener() {
+            PythonGatewayCreationGate.INSTANCE.registerListener(new PythonGatewayCreationGateListener() {
                 @Override
                 public void onPythonKernelCreationGateOpen() {
                     // Nothing to do here. Queue is blocked anyways in QueuedPythonGatewayQueue.create() while gate is closed.
@@ -315,7 +317,7 @@ public final class QueuedPythonGatewayFactory implements PythonGatewayFactory {
         public synchronized void clearQueuedGateways(final PythonCommand command) {
             final List<GatewayHolder> gatewaysToEvict = new ArrayList<>();
             for (final var entry : m_gateways.entrySet()) {
-                if (entry.getKey().getCommand().equals(command)) {
+                if (command == null || entry.getKey().getCommand().equals(command)) {
                     gatewaysToEvict.addAll(entry.getValue());
                 }
             }
@@ -491,6 +493,12 @@ public final class QueuedPythonGatewayFactory implements PythonGatewayFactory {
         public abstract <E extends PythonEntryPoint> PythonGateway<E>
             getNextGateway(PythonGatewayDescription<E> description) throws IOException, InterruptedException;
 
+        /**
+         * Clears all queued gateways that were created with the specified {@link PythonCommand}. If the command is
+         * null, all queued gateways will be cleared.
+         *
+         * @param command The {@link PythonCommand}
+         */
         public abstract void clearQueuedGateways(PythonCommand command);
 
         @Override

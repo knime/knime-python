@@ -57,8 +57,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.knime.core.node.NodeLogger;
 import org.knime.python3.PythonGateway;
-import org.knime.python3.PythonKernelCreationGate;
-import org.knime.python3.PythonKernelCreationGate.PythonKernelCreationGateListener;
+import org.knime.python3.PythonGatewayCreationGate;
+import org.knime.python3.PythonGatewayCreationGate.PythonGatewayCreationGateListener;
 import org.knime.python3.nodes.PurePythonNodeSetFactory.ResolvedPythonExtension;
 import org.knime.python3.nodes.proxy.CloseableNodeFactoryProxy;
 import org.knime.python3.nodes.proxy.NodeDialogProxy;
@@ -152,7 +152,7 @@ final class CachedNodeProxyProvider extends PurePythonExtensionNodeProxyProvider
 
         EXEC_SERVICE.schedule(cache::cleanUp, 1, TimeUnit.MINUTES);
 
-        PythonKernelCreationGate.INSTANCE.registerListener(new PythonKernelCreationGateListener() {
+        PythonGatewayCreationGate.INSTANCE.registerListener(new PythonGatewayCreationGateListener() {
             @Override
             public void onPythonKernelCreationGateOpen() {
                 // Nothing to do here. Kernel creation is blocked anyways in createPythonNodeFromCache() while gate is closed.
@@ -205,7 +205,7 @@ final class CachedNodeProxyProvider extends PurePythonExtensionNodeProxyProvider
         try {
             CachedObject<PythonGateway<KnimeNodeBackend>> cachedGateway;
             try {
-                PythonKernelCreationGate.INSTANCE.awaitPythonKernelCreationAllowedInterruptibly();
+                PythonGatewayCreationGate.INSTANCE.awaitPythonKernelCreationAllowedInterruptibly();
             } catch (InterruptedException ex) {
                 throw new IllegalStateException("Interrupted while waiting until Python processes may be started", ex);
             }

@@ -61,7 +61,7 @@ import org.eclipse.equinox.p2.engine.PhaseSetFactory;
 import org.knime.core.node.NodeLogger;
 
 /**
- * Gate that controls Python kernel creation. Allows to block kernel creation and to kill all Python processes if
+ * Gate that controls Python gateway creation. Allows to block gateway creation and to kill all Python processes if
  * needed.
  *
  * The keeps a count of how often it was closed, state changes only occur if it is opened often enough to bring this
@@ -72,12 +72,12 @@ import org.knime.core.node.NodeLogger;
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
 @SuppressWarnings("restriction")
-public class PythonKernelCreationGate implements ProvisioningListener {
+public final class PythonGatewayCreationGate implements ProvisioningListener {
 
     /**
-     * Interface for listeners to the {@link PythonKernelCreationGate} opening and closing
+     * Interface for listeners to the {@link PythonGatewayCreationGate} opening and closing
      */
-    public static interface PythonKernelCreationGateListener {
+    public interface PythonGatewayCreationGateListener {
         /**
          * Called as soon as creating kernels becomes possible
          */
@@ -92,17 +92,17 @@ public class PythonKernelCreationGate implements ProvisioningListener {
     /**
      * The singleton instance of the Gate
      */
-    public static final PythonKernelCreationGate INSTANCE = new PythonKernelCreationGate();
+    public static final PythonGatewayCreationGate INSTANCE = new PythonGatewayCreationGate();
 
-    private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonKernelCreationGate.class);
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonGatewayCreationGate.class);
 
     private ReentrantReadWriteLock m_kernelLock = new ReentrantReadWriteLock();
 
     private AtomicInteger m_blockCount = new AtomicInteger(0);
 
-    private final List<PythonKernelCreationGateListener> m_listeners = new ArrayList<>();
+    private final List<PythonGatewayCreationGateListener> m_listeners = new ArrayList<>();
 
-    private PythonKernelCreationGate() {
+    private PythonGatewayCreationGate() {
         // hidden constructor
     }
 
@@ -112,12 +112,12 @@ public class PythonKernelCreationGate implements ProvisioningListener {
      *
      * If the state changes from open to closed, listeners will be notified of this event.
      */
-    public void blockPythonCreation() {
+    void blockPythonCreation() {
         if (m_blockCount.getAndIncrement() == 0) {
             m_kernelLock.writeLock().lock();
 
             synchronized (m_listeners) {
-                m_listeners.forEach(PythonKernelCreationGateListener::onPythonKernelCreationGateClose);
+                m_listeners.forEach(PythonGatewayCreationGateListener::onPythonKernelCreationGateClose);
             }
         }
     }
@@ -128,12 +128,12 @@ public class PythonKernelCreationGate implements ProvisioningListener {
      *
      * If the state changes from closed to open, listeners will be notified of this event.
      */
-    public void allowPythonCreation() {
+    void allowPythonCreation() {
         if (m_blockCount.getAndDecrement() == 1) {
             m_kernelLock.writeLock().unlock();
 
             synchronized (m_listeners) {
-                m_listeners.forEach(PythonKernelCreationGateListener::onPythonKernelCreationGateOpen);
+                m_listeners.forEach(PythonGatewayCreationGateListener::onPythonKernelCreationGateOpen);
             }
         }
     }
@@ -158,7 +158,7 @@ public class PythonKernelCreationGate implements ProvisioningListener {
      * Register a listener that is notified whenever the gate opens and closes
      * @param listener
      */
-    public void registerListener(final PythonKernelCreationGateListener listener) {
+    public void registerListener(final PythonGatewayCreationGateListener listener) {
         synchronized (m_listeners) {
             m_listeners.add(listener);
         }
@@ -168,7 +168,7 @@ public class PythonKernelCreationGate implements ProvisioningListener {
      * Remove a listener that was notified whenever the gate opens and closes
      * @param listener
      */
-    public void deregisterListener(final PythonKernelCreationGateListener listener) {
+    public void deregisterListener(final PythonGatewayCreationGateListener listener) {
         synchronized (m_listeners) {
             m_listeners.remove(listener);
         }
@@ -189,14 +189,12 @@ public class PythonKernelCreationGate implements ProvisioningListener {
             // "configure" is the normal phase after install, so we can unlock Python processes again
             LOGGER.info("Allowing Python process startup again after installation");
             INSTANCE.allowPythonCreation();
-        } else if (o instanceof RollbackOperationEvent) {
+        } else if (o instanceof RollbackOperationEvent && !INSTANCE.isPythonKernelCreationAllowed()) {
             // According to org.eclipse.equinox.internal.p2.engine.Engine.perform() -> L92,
             // a RollbackOperationEvent will be fired if an operation failed, and this event is only fired in that case,
             // so we unlock if we are currently locked.
-            if (!INSTANCE.isPythonKernelCreationAllowed()) {
-                LOGGER.info("Allowing Python process startup again after installation failed");
-                INSTANCE.allowPythonCreation();
-            }
+            LOGGER.info("Allowing Python process startup again after installation failed");
+            INSTANCE.allowPythonCreation();
         }
     }
 

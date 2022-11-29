@@ -56,7 +56,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.knime.core.node.NodeLogger;
-import org.knime.python3.PythonKernelCreationGate.PythonKernelCreationGateListener;
+import org.knime.python3.PythonGatewayCreationGate.PythonGatewayCreationGateListener;
 
 import com.google.common.cache.CacheBuilder;
 
@@ -66,7 +66,7 @@ import com.google.common.cache.CacheBuilder;
  *
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
-public final class PythonGatewayTracker implements Closeable, PythonKernelCreationGateListener {
+public final class PythonGatewayTracker implements Closeable, PythonGatewayCreationGateListener {
 
     /**
      * The public instance of the GatewayTracker. There can be only one!

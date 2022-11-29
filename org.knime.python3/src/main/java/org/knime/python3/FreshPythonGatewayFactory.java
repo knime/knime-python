@@ -67,7 +67,7 @@ public final class FreshPythonGatewayFactory implements PythonGatewayFactory {
         throws IOException, InterruptedException {
         var launcherPath = description.getLauncherPath().toAbsolutePath().toString();
         if (description.getCommand() instanceof CondaPythonCommand || description.getCommand() instanceof BundledPythonCommand) {
-            PythonKernelCreationGate.INSTANCE.awaitPythonKernelCreationAllowedInterruptibly();
+            PythonGatewayCreationGate.INSTANCE.awaitPythonKernelCreationAllowedInterruptibly();
         }
         var gateway = DefaultPythonGateway.create(description.getCommand().createProcessBuilder(), launcherPath,
             description.getEntryPointClass(), description.getExtensions(), description.getPythonPath());

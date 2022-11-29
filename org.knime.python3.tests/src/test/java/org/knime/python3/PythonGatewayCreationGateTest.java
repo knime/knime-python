@@ -64,9 +64,9 @@ import org.junit.Test;
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
 @SuppressWarnings("javadoc")
-public class PythonKernelCreationGateTest {
+public class PythonGatewayCreationGateTest {
 
-    private static PythonKernelCreationGate GATE = PythonKernelCreationGate.INSTANCE;
+    private static PythonGatewayCreationGate GATE = PythonGatewayCreationGate.INSTANCE;
 
     @Test
     public void testBlock() {
@@ -105,7 +105,7 @@ public class PythonKernelCreationGateTest {
     @Test
     public void testListener() {
         var counter = new AtomicInteger(0);
-        var listener = new PythonKernelCreationGate.PythonKernelCreationGateListener() {
+        var listener = new PythonGatewayCreationGate.PythonGatewayCreationGateListener() {
             @Override
             public void onPythonKernelCreationGateOpen() {
                 assertTrue(GATE.isPythonKernelCreationAllowed());

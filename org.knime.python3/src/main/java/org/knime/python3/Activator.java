@@ -71,13 +71,13 @@ public final class Activator implements BundleActivator {
     @Override
     public void start(final BundleContext context) throws Exception {
         registerProvisioningEventBusListener();
-        PythonKernelCreationGate.INSTANCE.registerListener(PythonGatewayTracker.INSTANCE);
+        PythonGatewayCreationGate.INSTANCE.registerListener(PythonGatewayTracker.INSTANCE);
     }
 
     @Override
     public void stop(final BundleContext bundleContext) throws Exception {
         deregisterProvisioningEventBusListener();
-        PythonKernelCreationGate.INSTANCE.deregisterListener(PythonGatewayTracker.INSTANCE);
+        PythonGatewayCreationGate.INSTANCE.deregisterListener(PythonGatewayTracker.INSTANCE);
         GATEWAY_FACTORY.close();
     }
 
@@ -100,10 +100,10 @@ public final class Activator implements BundleActivator {
     }
 
     private void registerProvisioningEventBusListener() {
-        applyToProvisioningEventBus(eventBus -> eventBus.addListener(PythonKernelCreationGate.INSTANCE));
+        applyToProvisioningEventBus(eventBus -> eventBus.addListener(PythonGatewayCreationGate.INSTANCE));
     }
 
     private void deregisterProvisioningEventBusListener() {
-        applyToProvisioningEventBus(eventBus -> eventBus.removeListener(PythonKernelCreationGate.INSTANCE));
+        applyToProvisioningEventBus(eventBus -> eventBus.removeListener(PythonGatewayCreationGate.INSTANCE));
     }
 }
