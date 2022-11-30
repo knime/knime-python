@@ -52,9 +52,9 @@ Type system and schema definition for KNIME tables.
 # Types
 # --------------------------------------------------------------------
 from abc import ABC, abstractmethod
-from typing import Dict, Iterator, List, Sequence, Type, Union
+from typing import Dict, Iterator, List, Optional, Sequence, Type, Union
+from collections.abc import Iterable
 import logging
-import copy
 from enum import Enum, unique
 
 import knime.api.types as kt
@@ -162,7 +162,7 @@ class PrimitiveType(KnimeType, metaclass=_PrimitiveTypeSingletonsMetaclass):
         self._key_type = key_type
 
     @property
-    def dict_encoding_key_type(self):
+    def dict_encoding_key_type(self) -> Optional[DictEncodingKeyType]:
         return self._key_type
 
     def __str__(self) -> str:
@@ -172,7 +172,7 @@ class PrimitiveType(KnimeType, metaclass=_PrimitiveTypeSingletonsMetaclass):
             return self._type_id.value
 
     @property
-    def plain_type(self):
+    def plain_type(self) -> "PrimitiveType":
         """
         Returns a PrimitiveType with disabled dict encoding
         """
@@ -180,7 +180,7 @@ class PrimitiveType(KnimeType, metaclass=_PrimitiveTypeSingletonsMetaclass):
 
 
 class ListType(KnimeType):
-    def __init__(self, inner_type):
+    def __init__(self, inner_type: KnimeType):
         if not isinstance(inner_type, KnimeType):
             raise TypeError(
                 f"Cannot create list type with inner type {inner_type}, must be a KnimeType"
@@ -188,7 +188,7 @@ class ListType(KnimeType):
         self._inner_type = inner_type
 
     @property
-    def inner_type(self):
+    def inner_type(self) -> KnimeType:
         return self._inner_type
 
     def __eq__(self, other: object) -> bool:
@@ -204,7 +204,7 @@ class ListType(KnimeType):
 
 
 class StructType(KnimeType):
-    def __init__(self, inner_types):
+    def __init__(self, inner_types: Iterable[KnimeType]):
         for t in inner_types:
             if not isinstance(t, KnimeType):
                 raise TypeError(
@@ -214,7 +214,7 @@ class StructType(KnimeType):
         self._inner_types = inner_types
 
     @property
-    def inner_types(self):
+    def inner_types(self) -> Iterable[KnimeType]:
         return self._inner_types
 
     def __eq__(self, other: object) -> bool:
