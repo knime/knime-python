@@ -450,7 +450,8 @@ class StructDictArrayTest(AbstractArrayTest, unittest.TestCase):
         storage = dict_encoded.storage
         self.assertIsInstance(storage, pa.StructArray)
         self.assertEqual(
-            kasde.knime_struct_type(pa.uint64(), pa.string()), storage.type
+            knime._arrow._types.knime_struct_type(pa.uint64(), pa.string()),
+            storage.type,
         )
 
         # Check that the keys are as expected
@@ -470,7 +471,8 @@ class StructDictArrayTest(AbstractArrayTest, unittest.TestCase):
         storage = dict_encoded.storage
         self.assertIsInstance(storage, pa.StructArray)
         self.assertEqual(
-            kasde.knime_struct_type(pa.uint64(), pa.string()), storage.type
+            knime._arrow._types.knime_struct_type(pa.uint64(), pa.string()),
+            storage.type,
         )
 
         # Check null values

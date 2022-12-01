@@ -529,7 +529,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
 
     def test_complicated_setitem_in_pandas(self):
         # loads a table with all knime extension types
-
+        _register_extension_types()
         df = _generate_test_data_frame(
             file_name="generatedTestData.zip",
             columns=self._TEST_TABLE_COLUMNS,
@@ -548,9 +548,9 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         ]
         df.drop(dict_columns, axis=1, inplace=True)  # remove all dicts
         df.reset_index(inplace=True, drop=True)  # drop index as it messes up equality
-
+        original_df = df.copy(deep=True)
         df.loc[1, lambda dfu: [df.columns[0]]] = df.loc[2, lambda dfu: [df.columns[0]]]
-
+        df = original_df  # reset to original df
         # test single item setting with int index for all columns
         for col_key in df.columns:
             col_index = df.columns.get_loc(col_key)
@@ -558,7 +558,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
             df.loc[1, col_key] = df.loc[2, col_key]
 
         self.assertTrue(df.iloc[1].equals(df.iloc[2]), msg="The rows are not equal")
-
+        df = original_df  # reset to original df
         # test slice setting
         for col_key in df.columns:
             col_index = df.columns.get_loc(col_key)
@@ -566,7 +566,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
             df.loc[:3, col_key] = df.loc[3:6, col_key]
 
         self.assertTrue(df.iloc[0].equals(df.iloc[2]), msg="The rows are not equal")
-
+        df = original_df  # reset to original df
         # test slice broadcasting
         for col_key in df.columns:
             col_index = df.columns.get_loc(col_key)
@@ -574,7 +574,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
             df.loc[:6, col_key] = df.loc[6, col_key]
 
         self.assertTrue(df.iloc[0].equals(df.iloc[6]), msg="The rows are not equal")
-
+        df = original_df  # reset to original df
         # test a weird case of loc list setting, where the left values are overwritten with N/A value
         for col_key in df.columns:
             col_index = df.columns.get_loc(col_key)
@@ -591,9 +591,9 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
             df.iloc[[1, 2], col_index] = df.iloc[[5, 6], col_index]
 
         self.assertTrue(df.iloc[1].equals(df.iloc[6]), msg="The rows are not equal")
+        df = original_df  # reset to original df
 
         index_arr = np.arange(7)
-
         # test a weird case of loc np-arr setting, where the left values are overwritten with N/A value
         for col_key in df.columns:
             df.loc[index_arr, col_key] = df.loc[(index_arr + 7), col_key]
@@ -612,14 +612,74 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
             df.iloc[index_arr, col_index] = df.iloc[
                 (index_arr + 7), col_index
             ]  # this works
-
         self.assertTrue(df.iloc[2].equals(df.iloc[9]), msg="The rows are not equal")
-
+        df = original_df  # reset to original df
         # test appending with concat
         # this column seems not to work as pandas overwrites NA values with NaN values, when concatenating
         # this heavily depends on the pandas version
         df = df.drop(columns=["MissingValStringCol"])
         df = pd.concat([df, df.iloc[2].to_frame().T])
+        self.assertTrue(df.iloc[2].equals(df.iloc[-1]))
+
+    def test_complicated_setitem_in_pandas_with_lists_and_sets(self):
+        """Test complicated setitem in pandas with lists and sets.
+        As lists cannot be set properly with iloc, we use at and loc.
+        """
+
+        # loads a table with all knime extension types
+        _register_extension_types()
+
+        df = self._generate_test_data_frame(
+            columns=self._TEST_TABLE_COLUMNS, lists=False, sets=True
+        )
+        print(df.columns)
+
+        df.reset_index(inplace=True, drop=True)  # drop index as it messes up equality
+        original_df = df.copy(deep=True)
+
+        # test single item setting with int index for all columns
+        for col_key in df.columns:
+            col_index = df.columns.get_loc(col_key)
+            item = df.iloc[1, col_index]
+            df.at[3, col_key] = item
+            # self.assertEqual(item, df.iloc[3, col_index])
+        self.assertTrue(df.iloc[1].equals(df.iloc[3]), msg="The rows are not equal")
+        df = original_df  # reset to original df
+
+        # test slice setting
+        for col_key in df.columns:
+            col_index = df.columns.get_loc(col_key)
+            iloc_val = df.iloc[3:6, col_index]
+            df.iloc[:3, col_index] = iloc_val
+
+        row0 = df.iloc[0]
+        row3 = df.iloc[3]
+        # self.assertEquals(row0.all(), row3.all(), msg="The rows are not equal")
+        self.assertTrue(df.iloc[0].equals(df.iloc[3]), msg="The rows are not equal")
+        df = original_df  # reset to original df
+
+        for col_key in df.columns:
+            col_index = df.columns.get_loc(col_key)
+            value = df.iloc[[5, 6], col_index]
+            df.iloc[[1, 2], col_index] = value
+        self.assertTrue(df.iloc[1].equals(df.iloc[5]), msg="The rows are not equal")
+        df = original_df  # reset to original df
+
+        index_arr = np.arange(7)
+        # test np arr setting
+        for col_key in df.columns:
+            col_index = df.columns.get_loc(col_key)
+            value = df.iloc[(index_arr + 7), col_index]
+            df.iloc[index_arr, col_index] = value
+        self.assertTrue(df.iloc[2].equals(df.iloc[9]), msg="The rows are not equal")
+        df = original_df  # reset to original df
+
+        # test appending with concat
+        # this column seems not to work as pandas overwrites NA values with NaN values, when concatenating
+        # this heavily depends on the pandas version
+        df = df.drop(columns=["MissingValStringCol"])
+        new_df = df.iloc[2].to_frame().T
+        df = pd.concat([df, new_df])
         self.assertTrue(df.iloc[2].equals(df.iloc[-1]))
 
     def test_append_sets_lists_2(self):
@@ -883,11 +943,12 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
     def test_struct_dict_encoded_logical_type_extension_type(self):
         # tests the usage of StructDictEncodedLogicalTypeExtensionType for dict decoded strings
         # the type is not used yet anywhere else but in this test
+
         df = _generate_test_data_frame("DictEncString.zip", columns=["Name"])
-        self.assertEqual(df["Name"][0].as_py(), "LINESTRING (30 10, 10 30, 40 40)")
-        self.assertEqual(df["Name"][4].as_py(), "POINT (30 10)")
-        self.assertEqual(df["Name"][5].as_py(), "LINESTRING (40 20, 10 30, 35 40)")
-        self.assertEqual(df["Name"][6].as_py(), "LINESTRING (30 10, 10 30, 40 40)")
+        self.assertEqual(df["Name"][0], "LINESTRING (30 10, 10 30, 40 40)")
+        self.assertEqual(df["Name"][4], "POINT (30 10)")
+        self.assertEqual(df["Name"][5], "LINESTRING (40 20, 10 30, 35 40)")
+        self.assertEqual(df["Name"][6], "LINESTRING (30 10, 10 30, 40 40)")
 
     def test_chunk_calculation(self):
         def _get_chunked_array_for_start_indices(chunk_start_indices):

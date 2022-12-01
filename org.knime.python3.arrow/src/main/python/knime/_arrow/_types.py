@@ -49,6 +49,7 @@ Arrow implementation of the knime.api.types.
 """
 
 from typing import Union, List
+import bisect
 
 import knime.api.types as kt
 import knime._arrow._dictencoding as kasde
@@ -195,7 +196,9 @@ def _create_list_array(offsets, values):
         return pa.ListArray.from_arrays(offsets, values)
 
 
-def _to_storage_array(array: pa.Array) -> pa.Array:
+def _to_storage_array(
+    array: Union[pa.Array, list], dtype: pa.DataType = None
+) -> pa.Array:
     """
     Calls the :func:`_get_array_to_storage_fn`.
 
@@ -204,11 +207,25 @@ def _to_storage_array(array: pa.Array) -> pa.Array:
     Returns:
         Storage array
     """
-    compatibility_fn = _get_array_to_storage_fn(array.type)
-    if compatibility_fn is None:
-        return array
+    if isinstance(array, pa.Array) or isinstance(array, pa.ChunkedArray):
+        compatibility_fn = _get_array_to_storage_fn(array.type)
+        if compatibility_fn is None:
+            return array
+        else:
+            return _apply_to_array(array, compatibility_fn)
+    elif isinstance(array, list):
+        if dtype is None:
+            raise ValueError(
+                "Dtype must be set when creating a storage array from a list."
+            )
+        storage_type = get_storage_type(
+            dtype
+        )  # this is necessary to find the correct storage type for nested types
+        return _to_storage_array(
+            pa.array(array, type=storage_type), dtype=dtype
+        )  # todo check if we need to use the compatibility fn
     else:
-        return _apply_to_array(array, compatibility_fn)
+        raise TypeError("Can only convert pa.Array or list to storage array.")
 
 
 def _get_array_to_storage_fn(dtype: pa.DataType):
@@ -282,6 +299,14 @@ def _get_array_to_storage_fn(dtype: pa.DataType):
 
 
 def contains_knime_extension_type(dtype: pa.DataType):
+    """
+    Checks if the given datatype contains a LogicalTypeExtensionType or a StructDictEncodedLogicalTypeExtensionType
+    Args:
+        dtype:
+
+    Returns:
+
+    """
     if (
         is_value_factory_type(dtype)
         or kasde.is_struct_dict_encoded(dtype)
@@ -294,6 +319,57 @@ def contains_knime_extension_type(dtype: pa.DataType):
         return any(contains_knime_extension_type(inner.type) for inner in dtype)
     else:
         return False
+
+
+def contains_dict_encoded_type(dtype: pa.DataType):
+    """
+    Checks if the given datatype contains a StructDictEncodedLogicalTypeExtensionType
+    Args:
+        dtype:
+
+    Returns:
+
+    """
+    if is_dict_encoded_value_factory_type(dtype) or kasde.is_struct_dict_encoded(dtype):
+        return True
+    elif is_value_factory_type(dtype):
+        return contains_dict_encoded_type(dtype.storage_type)
+    elif is_list_type(dtype):
+        return contains_dict_encoded_type(dtype.value_type)
+    elif pat.is_struct(dtype):
+        return any(contains_dict_encoded_type(inner.type) for inner in dtype)
+    else:
+        return False
+
+
+def get_storage_type(dtype: pa.DataType):
+    """
+    Find storage type, that does not contain ExtensionTypes, such that we can initialize the storage array.
+    For instance in some cases there are StructDictEncodedTypes in nested datatypes, these cannot be instantiated by
+    pyarrow, thus we have to find the underlying storage_type.
+    Args:
+        dtype: pa.type, ( in our case an extensiontype) where we want to locate the storage type
+
+    Returns: storage type
+
+    """
+    if is_value_factory_type(dtype):
+        return get_storage_type(dtype.storage_type)
+    elif kasde.is_struct_dict_encoded(dtype) or is_dict_encoded_value_factory_type(
+        dtype
+    ):
+        return get_storage_type(dtype.value_type)
+    elif is_list_type(dtype):
+        # toto
+        return pa.list_(
+            pa.field(name="$data$", type=get_storage_type(dtype.value_type))
+            # todo differentiate between lists and large lists
+        )
+    elif pat.is_struct(dtype):
+        struct = [get_storage_type(dtype[i].type) for i in range(dtype.num_fields)]
+        return knime_struct_type(*struct)
+    else:
+        return dtype
 
 
 def needs_conversion(dtype: pa.DataType):
@@ -460,6 +536,8 @@ class LogicalTypeExtensionType(pa.ExtensionType):
             _ext_type = self
 
             def as_py(self):
+                if self.value is None:
+                    return None
                 return self._ext_type.decode(self.value.as_py())
 
         return LogicalTypeExtensionScalar
@@ -900,39 +978,119 @@ def _struct_type_from_values(*args):
 
 
 class KnimeExtensionArray(pa.ExtensionArray):
-    def _get_int_item_from_struct_arr(self, storage: pa.StructArray, item: int):
-        """This Method unpacks nested struct arrays and takes the value at index: item
+    _chunk_start_list = None
 
-        it recursively goes into all sub struct arrays and collects the value at item.
-        :param storage: Struct array, which needs to be unpacked
+    @staticmethod
+    def _get_all_chunk_start_indices(chunked_arr: pa.ChunkedArray) -> list:
+        """iterate over chunks to find their start indices
+
+        :param chunked_arr: chunked array from which we calculate the chunk indices
+        :return: list containing the end indices for each chunk
+        """
+        if not isinstance(chunked_arr, pa.ChunkedArray):
+            raise TypeError(
+                f"The input array must be of type pa.ChunkedArray not type {type(chunked_arr)}"
+            )
+        chunk_start = 0
+        chunk_start_list = []
+
+        for chunk in chunked_arr.chunks:
+            chunk_start_list.append(chunk_start)
+            chunk_start += len(chunk)  # chunks end at len - 1
+        return chunk_start_list
+
+    def get_the_correct_chunk(self, item):
+        if self._chunk_start_list is None:
+            self._chunk_start_list = self._get_all_chunk_start_indices(self._data)
+        if item < 0:  # if we have a negative index access
+            item = len(self) + item
+        # use a right bisection to locate the closest chunk index
+        chunk_idx = bisect.bisect_right(self._chunk_start_list, item) - 1
+        item = (
+            item - self._chunk_start_list[chunk_idx]
+        )  # get the index inside the chunk
+        chunk = self._data.chunk(chunk_idx)  # get the correct chunk
+        return chunk, item
+
+    def _get_int_item_from_nested_storage(self, storage: pa.Array, item: int):
+        """This Method unpacks nested storage arrays and takes the value at index: item
+
+        it recursively goes into all sub arrays and collects the value at item.
+        :param storage: Storage array, which needs to be unpacked
         :param item: index to be searched
         :return: Storage Scalar for the value at item
         """
-        storage_scalar_list = []
-        for field in storage.flatten():  # we unpack each sub-array
-            # if we have a nested struct array and not the final dict encoded array we recursively access its fields
-            if isinstance(field, pa.StructArray) and not isinstance(
-                field.type, kasde.StructDictEncodedType
-            ):
-                storage_scalar_list.append(
-                    self._get_int_item_from_struct_arr(field, item)
-                )
+        dict_decoded = contains_dict_encoded_type(storage.type)
+        # if we have a chunked array we need to calculate the correct chunk and the correct index in the chunk
+        if isinstance(storage, pa.ChunkedArray):
+            chunk, item = self.get_the_correct_chunk(item)
+            return self._get_int_item_from_nested_storage(chunk, item)
+        # if we have a nested struct array we need to access each field and unpack it
+        elif isinstance(storage, pa.StructArray):
+            storage_scalar_list = []
+            for field in storage.flatten():
+                # if we have a nested struct array and not the final dict encoded array we recursively access its fields
+                if isinstance(field, pa.StructArray) and not isinstance(
+                    field.type, kasde.StructDictEncodedType
+                ):
+                    storage_scalar_list.append(
+                        self._get_int_item_from_nested_storage(field, item)
+                    )
+                else:
+                    storage_scalar_list.append(field[item])
+            storage_scalar_type = _struct_type_from_values(*storage_scalar_list)
+            storage_scalar = pa.scalar(
+                tuple(i.as_py() for i in storage_scalar_list), type=storage_scalar_type
+            )
+            return storage_scalar
+        # if we have a nested list array we need to access each element and unpack it
+        elif isinstance(storage, pa.ListArray):
+            if not dict_decoded:
+                return storage[item]
             else:
-                storage_scalar_list.append(field[item])
-        storage_scalar_type = _struct_type_from_values(*storage_scalar_list)
-        storage_scalar = pa.scalar(
-            tuple(i.as_py() for i in storage_scalar_list), type=storage_scalar_type
-        )
-        return storage_scalar
+                # calculate list offsets in value list
+                start, end = (
+                    storage.offsets[item].as_py(),
+                    storage.offsets[item + 1].as_py(),
+                )  # todo check if item + 1 is still in boundary
+                value_list = [
+                    self._get_int_item_from_nested_storage(storage.values, i).as_py()
+                    for i in range(start, end)
+                ]
+                if len(value_list) == 0:
+                    return None
+                storage_type = get_storage_type(storage.type)
+                list_scalar = pa.scalar(value_list, type=storage_type)
+                # todo: converter decode????
+                return list_scalar
+        elif isinstance(storage, KnimeExtensionArray):
+            # if the array is not dict encoded we can just access the value at item
+            if not dict_decoded:
+                return storage[item]
+            elif isinstance(storage.type, kasde.StructDictEncodedType):
+                return storage[item]  # we can also unpack by accessing
+            else:
+                # we have to unpack until we find the dict encoded array
+                return self._get_int_item_from_nested_storage(storage.storage, item)
+        else:
+            return storage[item]
 
     def __getitem__(self, idx):
-        if isinstance(self.storage, pa.StructArray):
-            storage_scalar = self._get_int_item_from_struct_arr(self.storage, idx)
+
+        if self.is_null()[idx].as_py():
+            storage_type = get_storage_type(self.type)
+            storage_scalar = pa.scalar(None, type=storage_type)
+            return KnimeExtensionScalar(self.type, storage_scalar)
+        if isinstance(self.storage, pa.StructArray) or isinstance(
+            self.storage, pa.ListArray
+        ):
+            storage_scalar = self._get_int_item_from_nested_storage(self.storage, idx)
         else:
             storage_scalar = self.storage[idx]
         # TODO return Scalar once there is a customizable ExtensionScalar in pyarrow
         #  to be consistent with other pa.Arrays
-        return KnimeExtensionScalar(self.type, storage_scalar)
+        knext_scalar = KnimeExtensionScalar(self.type, storage_scalar)
+        return knext_scalar
 
     def __iter__(self):
         """Return a generator that iterates over extension scalars"""
@@ -1012,6 +1170,8 @@ class KnimeExtensionScalar:
         return unpickle_knime_extension_scalar, (self.ext_type, self.storage_scalar)
 
     def as_py(self):
+        if self.storage_scalar is None:
+            return None
         return self.ext_type.decode(self.storage_scalar.as_py())
 
 

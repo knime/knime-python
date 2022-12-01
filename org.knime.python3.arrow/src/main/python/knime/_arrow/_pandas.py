@@ -568,6 +568,74 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
         )
         return storage_scalar
 
+    def _get_int_item_from_nested_storage(self, storage: pa.Array, item: int):
+        """This Method unpacks nested storage arrays and takes the value at index: item
+
+        it recursively goes into all sub arrays and collects the value at item.
+        :param storage: Storage array, which needs to be unpacked
+        :param item: index to be searched
+        :return: Storage Scalar for the value at item
+        """
+        dict_decoded = katy.contains_dict_encoded_type(storage.type)
+        # if we have a chunked array we need to calculate the correct chunk and the correct index in the chunk
+        if isinstance(storage, pa.ChunkedArray):
+            chunk, item = self.get_the_correct_chunk(item)
+            return self._get_int_item_from_nested_storage(chunk, item)
+        # if we have a nested struct array we need to access each field and unpack it
+        elif isinstance(storage, pa.StructArray):
+            storage_scalar_list = []
+            for field in storage.flatten():
+                # if we have a nested struct array and not the final dict encoded array we recursively access its fields
+                if isinstance(field, pa.StructArray) and not isinstance(
+                    field.type, kasde.StructDictEncodedType
+                ):
+                    storage_scalar_list.append(
+                        self._get_int_item_from_nested_storage(field, item)
+                    )
+                else:
+                    storage_scalar_list.append(field[item])
+            storage_scalar_type = katy._struct_type_from_values(*storage_scalar_list)
+            storage_scalar = pa.scalar(
+                tuple(i.as_py() for i in storage_scalar_list), type=storage_scalar_type
+            )
+            return storage_scalar
+        # if we have a nested list array we need to access each element and unpack it
+        elif isinstance(storage, pa.ListArray):
+            if not dict_decoded:
+                return storage[item]
+            else:
+                # calculate list offsets in value list
+                if item + 1 >= len(storage.offsets):
+                    raise IndexError(
+                        f"Index {item} out of bounds for length {len(storage)}"
+                    )
+
+                start, end = (
+                    storage.offsets[item].as_py(),
+                    storage.offsets[item + 1].as_py(),
+                )
+                value_list = [
+                    self._get_int_item_from_nested_storage(storage.values, i).as_py()
+                    for i in range(start, end)
+                ]
+                if len(value_list) == 0:
+                    return None
+                storage_type = katy.get_storage_type(storage.type)
+                list_scalar = pa.scalar(value_list, type=storage_type)
+                # todo: converter decode????
+                return list_scalar
+        elif isinstance(storage, katy.KnimeExtensionArray):
+            # if the array is not dict encoded we can just access the value at item
+            if not dict_decoded:
+                return storage[item]
+            elif isinstance(storage.type, kasde.StructDictEncodedType):
+                return storage[item]  #  we can also unpack by accessing
+            else:
+                # we have to unpack until we find the dict encoded array
+                return self._get_int_item_from_nested_storage(storage.storage, item)
+        else:
+            return storage[item]
+
     @staticmethod
     def _get_all_chunk_start_indices(chunked_arr: pa.ChunkedArray) -> list:
         """iterate over chunks to find their start indices
@@ -589,41 +657,18 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
 
     def __getitem__(self, item):
         if isinstance(item, int):
-            if isinstance(self._storage_type, pa.StructType) or isinstance(
-                self._storage_type, kasde.StructDictEncodedType
+            if (
+                isinstance(self._storage_type, pa.StructType)
+                or isinstance(self._storage_type, kasde.StructDictEncodedType)
+                or isinstance(self._storage_type, pa.ListType)
             ):
-                # if the storage is a struct type, the unpacking only works for top layer
-                # thus, we have to manually access the chunks
-                if isinstance(self._data, pa.ChunkedArray):
-                    chunk, item = self.get_the_correct_chunk(item)
-                    # if we would use the StructDictEncodedLogicalTypeExtensionType this access is necessary
-                    if isinstance(self._storage_type, kasde.StructDictEncodedType):
-                        return chunk[item]
-                    storage = chunk.storage
-                elif isinstance(self._data, pa.StructArray):
-                    # else we just access the struct
-                    storage = self._data
-                elif isinstance(self._data, katy.KnimeExtensionArray):
-                    storage = self._data.storage
-                else:
-                    raise TypeError(
-                        f"Data can't be of type pa.StructType and not a Chunked, Extension or Struct Array, "
-                        f"but is of type {type(self._data)}"
-                    )
-                # we recursively unpack the struct arrays and finally return the decoded value
-                value = self._get_int_item_from_struct_arr(storage, item)
-                return self._converter.decode(value.as_py())
-            elif isinstance(self._storage_type, pa.ListType):  # list of extension types
-                if isinstance(self._data, pa.ChunkedArray):
-                    chunk, item = self.get_the_correct_chunk(item)
-                    # if we would use the StructDictEncodedLogicalTypeExtensionType this access is necessary
-                    if isinstance(self._storage_type, kasde.StructDictEncodedType):
-                        return chunk[item]
-                    storage = chunk.storage.values
-                else:  # we just take from the list
-                    storage = self._data.values
-                value = storage[item]
-                return self._converter.decode(value.as_py())
+                # what is this?
+                out = self._get_int_item_from_nested_storage(self._data, item)
+                if isinstance(out, katy.KnimeExtensionScalar):
+                    return out.as_py()  #  output is decoded automatically
+                if out is None:
+                    return None
+                return self._converter.decode(out.as_py())
             else:
                 return self._data[item].as_py()
         elif isinstance(item, slice):
@@ -665,6 +710,102 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
         chunk = self._data.chunk(chunk_idx)  # get the correct chunk
         return chunk, item
 
+    def _set_data_from_input(self, inp: Union[list, np.ndarray]):
+        """Set the backbone data array with new values.
+
+        Parameters
+        ----------
+        inp : input list which is used as new data.
+        Returns
+        -------
+        None
+        """
+        ext_type = self._data.type
+        try:
+            # encode the python value to the correct storage type
+            encoded_pylist = list(map(ext_type.encode, inp))
+        except TypeError:
+            raise TypeError(
+                f"Encoding of the new value is not possible, the array has the type '{ext_type}',"
+                f" maybe its not the right dtype?"
+            )
+        if katy.contains_knime_extension_type(ext_type):
+            storage_type = katy.get_storage_type(ext_type)
+            arr = pa.array(encoded_pylist, type=storage_type)
+        else:
+            arr = pa.array(encoded_pylist, type=ext_type.storage_type)
+
+        self._data = katy._to_extension_array(arr, ext_type)
+
+    def _set_from_slice(self, item, tmp_list, value):
+        """
+        Set a value from a slice.
+        Args:
+            item:  slice object
+            tmp_list:   mutable list
+            value:  value to be set
+
+        Returns:
+            None
+        """
+        (start, stop, step) = item.indices(len(self._data))
+        if hasattr(value, "__len__") and 1 < len(value) != len(
+            range(start, stop, step)
+        ):
+            raise ValueError(
+                "Must have equal len keys and value when setting with an iterable"
+            )
+        val_i = 0  # index for the value
+        for i in range(start, stop, step):  # todo: improve speed with np.array
+            if isinstance(value, pd.Series):  # no broadcasting necessary
+                # todo: index
+                try:
+                    tmp_list[i] = value.iloc[val_i]
+                except IndexError:
+                    raise ValueError(
+                        "Must have equal len keys and value when setting with an iterable"
+                    )
+                val_i += 1
+            elif isinstance(
+                value, KnimePandasExtensionArray
+            ):  # value is an extension array
+                try:
+                    v = value[val_i]
+                    tmp_list[i] = v
+                except IndexError:
+                    raise ValueError(
+                        "Must have equal len keys and value when setting with an iterable"
+                    )
+                val_i += 1
+            else:  # value needs to be broadcasted
+                tmp_list[i] = value
+        self._set_data_from_input(tmp_list)
+
+    def _set_item_from_np_ndarray(self, item, tmp_list, value):
+        """
+        Set a value from a numpy array.
+        Args:
+            item:   numpy array
+            tmp_list:  mutable list
+            value:  value to be set
+
+        Returns:
+            None
+        """
+        if not isinstance(value, list):
+            # cast value to list, such that we can set lists of lists
+            if hasattr(value, "to_pylist"):
+                value = value.to_pylist()
+            elif hasattr(value, "to_list"):
+                value = value.to_list()
+            else:
+                value = list(value)
+        # masked array
+        # panda converts all set queries with lists as indices to np.ndarrays
+        tmp_arr = np.asarray(tmp_list)
+        tmp_arr[item] = value
+        self._set_data_from_input(tmp_arr)
+
     def __setitem__(self, item, value):
         """
         Set one or more values inplace.
@@ -690,32 +831,6 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
         -------
         None
         """
-
-        def _set_data_from_input(inp: Union[list, np.ndarray]):
-            """Set the backbone data array with new values.
-
-            Parameters
-            ----------
-            inp : input list which is used as new data.
-            Returns
-            -------
-            None
-            """
-            ext_type = self._data.type
-            try:
-                # encode the python value to the correct storage type
-                encoded_pylist = list(map(ext_type.encode, inp))
-            except TypeError:
-                raise TypeError(
-                    f"Encoding of the new value is not possible, the array has the type '{ext_type}',"
-                    f" maybe its not the right dtype?"
-                )
-
-            storage_type = katy.get_storage_type(ext_type)
-            arr = pa.array(encoded_pylist, type=storage_type)
-
-            self._data = katy._to_extension_array(arr, ext_type)
-
         tmp_list = self._data.to_pylist()  # convert immutable data to mutable list
 
         if isinstance(item, tuple) and len(item) == 1:
@@ -724,57 +839,17 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
 
         if isinstance(item, int):
             tmp_list[item] = value
-            _set_data_from_input(tmp_list)
+            self._set_data_from_input(tmp_list)
 
         elif isinstance(item, slice):
-
-            (start, stop, step) = item.indices(len(self._data))
-
-            if hasattr(value, "__len__") and 1 < len(value) != len(
-                range(start, stop, step)
-            ):
-                raise ValueError(
-                    "Must have equal len keys and value when setting with an iterable"
-                )
-
-            val_i = 0  # index for the value
-            for i in range(start, stop, step):  # todo: improve speed with np.array
-                if isinstance(value, pd.Series):  # no broadcasting necessary
-                    try:
-                        tmp_list[i] = value.iloc[val_i]
-                    except IndexError:
-                        raise ValueError(
-                            "Must have equal len keys and value when setting with an iterable"
-                        )
-                    val_i += 1
-                elif isinstance(
-                    value, KnimePandasExtensionArray
-                ):  # value is an extension array
-                    try:
-                        tmp_list[i] = value[val_i]
-                    except IndexError:
-                        raise ValueError(
-                            "Must have equal len keys and value when setting with an iterable"
-                        )
-                    val_i += 1
-                else:  # value needs to be broadcasted
-                    tmp_list[i] = value
-
-            _set_data_from_input(tmp_list)
+            self._set_from_slice(item, tmp_list, value)
 
         elif isinstance(item, list):
-            tmp_arr = np.asarray(tmp_list)
-            tmp_indices = np.asarray(item)
-            tmp_values = np.asarray(value)
-            tmp_arr[tmp_indices] = tmp_values
-            _set_data_from_input(tmp_arr)
+            np_arr_indices = np.asarray(item)  # convert indexer to numpy array
+            self._set_item_from_np_ndarray(np_arr_indices, tmp_list, value)
 
         elif isinstance(item, np.ndarray):
-            # masked array
-            # panda converts all set queries with lists as indices to np.ndarrays
-            tmp_arr = np.asarray(tmp_list)
-            tmp_arr[item] = value
-            _set_data_from_input(tmp_arr)
+            self._set_item_from_np_ndarray(item, tmp_list, value)
 
         else:
             raise NotImplementedError(
