@@ -365,7 +365,17 @@ class LogicalType(KnimeType):
             value_type = dt.time
 
             List of available value types:
-            {kt.get_python_type_list()}"""
+            {kt.get_python_type_list()}
+            
+            Besides that, the following primitive value types are available:
+            knime.api.schema.int32()
+            knime.api.schema.int64()
+            knime.api.schema.double()
+            knime.api.schema.bool_()
+            knime.api.schema.string()
+            knime.api.schema.blob()
+            knime.api.schema.list_(inner_type)
+            knime.api.schema.struct(*inner_types)"""
 
 
 # --------------------------------------------------------------------
@@ -558,11 +568,11 @@ class Column:
         Construct a Column from type, name and optional metadata.
 
         Args:
-            ktype: The knime type of the column
+            ktype: The KNIME type of the column or a type which can be converted via knime.api.schema.logical(ktype) to a KNIME type
             name: The name of the column. May not be empty.
 
         Raises:
-            TypeError: if the type is no KNIME type
+            TypeError: if the type is no KNIME type or cannot be converted to a KNIME type
             ValueError: if the name is empty
         """
         if not isinstance(ktype, KnimeType):
