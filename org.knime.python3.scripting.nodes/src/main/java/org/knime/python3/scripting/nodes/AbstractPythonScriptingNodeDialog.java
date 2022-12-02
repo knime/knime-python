@@ -49,21 +49,37 @@
 package org.knime.python3.scripting.nodes;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import javax.swing.JButton;
+
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.ShellAdapter;
+import org.eclipse.swt.events.ShellEvent;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Menu;
+import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.PlatformUI;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.BufferedDataTable;
+import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.DataAwareNodeDialogPane;
+import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NodeLogger;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.NotConfigurableException;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.workflow.FlowVariable;
+import org.knime.core.util.PathUtils;
 import org.knime.python2.config.PythonExecutableSelectionPanel;
 import org.knime.python2.config.PythonFixedVersionExecutableSelectionPanel;
 import org.knime.python2.config.PythonSourceCodeConfig;
@@ -71,6 +87,7 @@ import org.knime.python2.config.PythonSourceCodeOptionsPanel;
 import org.knime.python2.config.PythonSourceCodePanel;
 import org.knime.python2.generic.VariableNames;
 import org.knime.python2.generic.templates.SourceCodeTemplatesPanel;
+import org.knime.python2.kernel.PythonIOException;
 import org.knime.python2.kernel.PythonKernelBackendRegistry.PythonKernelBackendType;
 import org.knime.python2.port.PickledObjectFile;
 import org.knime.python2.ports.DataTableInputPort;
@@ -79,10 +96,14 @@ import org.knime.python2.ports.PickledObjectInputPort;
 import org.knime.python3.scripting.Python3KernelBackend;
 import org.knime.python3.scripting.nodes.prefs.Python3ScriptingPreferences;
 
+import com.equo.chromium.swt.Browser;
+
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
 public class AbstractPythonScriptingNodeDialog extends DataAwareNodeDialogPane {
+
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(AbstractPythonScriptingNodeDialog.class);
 
     private final InputPort[] m_inPorts;
 
@@ -98,13 +119,20 @@ public class AbstractPythonScriptingNodeDialog extends DataAwareNodeDialogPane {
                 () -> Python3ScriptingPreferences.getEnvironmentTypePreference().getName());
         m_scriptPanel = new PythonSourceCodePanel(this, PythonKernelBackendType.PYTHON3, variableNames,
             new PythonSourceCodeOptionsPanel(), m_executablePanel);
+
         addTab("Script", m_scriptPanel, false);
         addTab(PythonExecutableSelectionPanel.DEFAULT_TAB_NAME, m_executablePanel);
         addTab("Templates", new SourceCodeTemplatesPanel(m_scriptPanel, templateRepositoryId));
 
         if (hasView) {
+            // Tell the kernel that an output view is expected
             m_scriptPanel.registerWorkspacePreparer(
                 kernel -> AbstractPythonScriptingNodeModel.setExpectedOutputView(kernel, true));
+
+            // Add the "Preview View" button
+            var openViewButton = new JButton("Preview View");
+            openViewButton.addActionListener(a -> openView());
+            m_scriptPanel.addWorkspaceButton(openViewButton);
         }
     }
 
@@ -205,4 +233,90 @@ public class AbstractPythonScriptingNodeDialog extends DataAwareNodeDialogPane {
     public void onClose() {
         m_scriptPanel.close();
     }
+
+    @SuppressWarnings("resource") // The kernel and the kernel manager are handled by the scripting editor
+    private void openView() {
+        final Path html;
+        try {
+            html = PathUtils.createTempFile("", ".html");
+        } catch (IOException ex) {
+            var message =
+                "The preview could not be opened because creating a temporary file to save the view into failed:\n"
+                    + ex.getMessage();
+            m_scriptPanel.errorToConsole(message);
+            LOGGER.error(message, ex);
+            return;
+        }
+        var kernelManager = m_scriptPanel.getKernelManager();
+        if (kernelManager == null) {
+            var message = "The preview could not be opened. No view exists because the kernel is not running.";
+            m_scriptPanel.errorToConsole(message);
+            LOGGER.error(message);
+            return;
+        }
+        try {
+            AbstractPythonScriptingNodeModel.getPython3Backend(kernelManager.getKernel()).getOutputView(html,
+                new ExecutionMonitor());
+        } catch (PythonIOException ex) {
+            var message = "The preview could not be opened:\n" + ex.getShortMessage().orElse(ex.getMessage());
+            m_scriptPanel.errorToConsole(message);
+            LOGGER.error(message, ex);
+            return;
+        } catch (CanceledExecutionException ex) {
+            // Cannot happen: The temporary execution monitor cannot be canceled
+            var message = "The preview could not be opened:\n" + ex.getMessage();
+            m_scriptPanel.errorToConsole(message);
+            LOGGER.error(message, ex);
+            return;
+        }
+
+        Display.getDefault().syncExec(() -> openBrowser(html));
+    }
+
+    /**
+     * Opens the given path in a new browser window for previewing a node view. The file is deleted when the view is
+     * closed.
+     */
+    private static void openBrowser(final Path html) {
+        var shell = new Shell(Display.getDefault(), SWT.SHELL_TRIM);
+        shell.setText("Preview View");
+
+        // Set the layout for only the browser
+        var layout = new GridLayout();
+        layout.numColumns = 1;
+        shell.setLayout(layout);
+
+        // Open the browser
+        var browser = new Browser(shell, SWT.NONE);
+        browser.setLayoutData(new GridData(GridData.FILL, GridData.FILL, true, true));
+        browser.setMenu(new Menu(browser.getShell()));
+
+        var mainWindowBounds = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell().getBounds();
+        shell.setSize(1024, 768);
+        shell.setLocation( //
+            mainWindowBounds.x + (mainWindowBounds.width - shell.getSize().x) / 2, //
+            mainWindowBounds.y + (mainWindowBounds.height - shell.getSize().y) / 2 //
+        );
+
+        shell.addDisposeListener(e -> {
+            shell.dispose();
+            browser.dispose();
+        });
+
+        shell.open();
+
+        shell.addShellListener(new ShellAdapter() {
+            @Override
+            public void shellClosed(final ShellEvent e) {
+                try {
+                    PathUtils.deleteFileIfExists(html);
+                } catch (final IOException ex) {
+                    LOGGER.warn("Deleting the temporary view preview failed: " + ex.getMessage(), ex);
+                }
+            }
+        });
+
+        browser.setUrl(html.toUri().toString());
+    }
+
 }
