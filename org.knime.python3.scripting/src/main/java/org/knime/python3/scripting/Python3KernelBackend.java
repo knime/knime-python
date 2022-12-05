@@ -114,8 +114,8 @@ import org.knime.python3.Python3SourceDirectory;
 import org.knime.python3.PythonEntryPointUtils;
 import org.knime.python3.PythonExtension;
 import org.knime.python3.PythonGateway;
-import org.knime.python3.PythonGatewayTracker;
 import org.knime.python3.PythonGatewayCreationGate;
+import org.knime.python3.PythonGatewayTracker;
 import org.knime.python3.PythonPath;
 import org.knime.python3.PythonPath.PythonPathBuilder;
 import org.knime.python3.arrow.CancelableExecutor;
@@ -270,12 +270,13 @@ public final class Python3KernelBackend implements PythonKernelBackend {
 
             final String launcherPath = Python3ScriptingSourceDirectory.getPath().resolve("_kernel_launcher.py").toString();
             final List<PythonExtension> extensions = Collections.singletonList(PythonArrowExtension.INSTANCE);
+            // NB: We do not need the directory of the org.knime.python3.scripting Python code because the launcher
+            // is in this directory. Therefore, the directory is added to the PYTHONPATH automatically
             final var pythonPathBuilder = new PythonPathBuilder(extensionPythonPath) //
                 .add(Python3SourceDirectory.getPath()) //
                 .add(Python3ArrowSourceDirectory.getPath()) //
                 .add(Python3ArrowTypesSourceDirectory.getPath()) //
-                .add(Python3ViewsSourceDirectory.getPath()) //
-                .add(Python3ScriptingSourceDirectory.getPath());
+                .add(Python3ViewsSourceDirectory.getPath()); //
 
             addPythonValueFactoriesToPythonPath(pythonPathBuilder);
             final PythonPath pythonPath = pythonPathBuilder.build();
