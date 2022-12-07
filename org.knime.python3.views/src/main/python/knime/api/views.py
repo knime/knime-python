@@ -461,7 +461,10 @@ def view_plotly(fig) -> NodeView:
     if not isinstance(fig, plotly.graph_objects.Figure):
         raise TypeError("the given figure is not a plotly figure")
 
-    if any(["customdata" in trace for trace in fig.data]):
+    def has_customdata(trace):
+        return "customdata" in trace and trace["customdata"] is not None
+
+    if any([has_customdata(trace) for trace in fig.data]):
         # There is customdata set -> We can set our JS for selection
         if KNIME_UI_EXT_SERVICE_JS == "":
             LOGGER.warning(
