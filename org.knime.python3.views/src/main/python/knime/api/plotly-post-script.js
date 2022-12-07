@@ -6,22 +6,6 @@ const selectionService = new KnimeUIExtensionService.SelectionService(
 const plotlyPlot = document.getElementById("{plot_id}");
 let selected = new Set();
 
-///////////////////////////////////////
-///////////////////////////////////////
-// TODO WRITE DOWN THE LIMITATIONS SOMEWHERE
-///////////////////////////////////////
-///////////////////////////////////////
-
-/*
- * TODO BUG
- * 1. Select some points in a plotly plot
- * 2. Select some points in another plot
- *    -> The plotly selection updates
- * 3. Do a "shift" selection on the plotly plot
- *    -> The selection from step 1 becomes visible again and the
- *       selection from step 2 is deleted
- */
-
 /////////////////////////////////////////////////////////////////////
 // KNIME Selection -> Plotly Selection
 /////////////////////////////////////////////////////////////////////
