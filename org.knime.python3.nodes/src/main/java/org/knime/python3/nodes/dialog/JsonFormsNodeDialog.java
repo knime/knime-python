@@ -86,7 +86,7 @@ public final class JsonFormsNodeDialog extends NodeDialog {
 
     @Override
     public Page getPage() {
-        return DefaultNodeDialog.buildPage();
+        return DefaultNodeDialog.PAGE;
     }
 
     @Override
