@@ -455,6 +455,7 @@ def view_plotly(fig) -> NodeView:
         ImportError: If plotly is not available.
         TypeError: If the figure is not a plotly figure.
     """
+    import plotly
     import plotly.graph_objects
 
     if not isinstance(fig, plotly.graph_objects.Figure):
@@ -468,6 +469,19 @@ def view_plotly(fig) -> NodeView:
                 + "Selections will not be propagated to and from Python views. "
                 + "This warning can be ignored when running Python code outside of KNIME AP."
             )
+
+        try:
+            current_version = tuple(int(s) for s in plotly.__version__.split("."))
+            if current_version < (5, 10, 0):
+                LOGGER.info(
+                    "Plotly < 5.10.0 does not support deleting the previous selection "
+                    "box or lasso when a selection event from another node comes in. "
+                    "Please update plotly for full selection synchronization support."
+                )
+        except:
+            # This is optional
+            pass
+
         html = fig.to_html(post_script=PLOTLY_POST_JS)
     else:
         # There is no customdata -> Inform the user and do not use our JS for selection
