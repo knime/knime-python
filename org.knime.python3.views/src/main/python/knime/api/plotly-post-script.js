@@ -36,6 +36,9 @@ function updateSelection(mode, selection) {
     selection.forEach((s) => selected.delete(s));
   }
 
+  // Delete selection boxes and lassos
+  Plotly.relayout(plotlyPlot, { selections: []})
+
   // Restyle the plot with the current selection
   if (selected.size == 0) {
     // Reset selection for all traces
@@ -100,6 +103,7 @@ plotlyPlot.on("plotly_selected", function () {
 
 plotlyPlot.on("plotly_deselect", function () {
   // Make sure we deselect everything: All facelets
+  Plotly.relayout(plotlyPlot, { selections: []})
   Plotly.restyle(plotlyPlot, { selectedpoints: [null] });
   selectionService.replace([]);
 });
