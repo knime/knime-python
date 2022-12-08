@@ -69,6 +69,7 @@ from testing_utility import (
     _generate_backends,
     _generate_test_data_frame,
     _generate_test_table,
+    _register_extension_types,
 )
 
 
@@ -181,7 +182,7 @@ class GeoSpatialExtensionTypeTest(unittest.TestCase):
 
             _register_geospatial_value_factories()
             _register_geospatial_col_converters()
-
+            _register_extension_types()
             # to register the arrow<->pandas column converters
             import knime.types.geospatial
 
@@ -357,6 +358,35 @@ class GeoSpatialExtensionTypeTest(unittest.TestCase):
         self.assertEqual(
             schema, arrow_table._schema.to_string(show_schema_metadata=False)
         )
+
+    def test_setting_crs_with_other_ext_types(self):
+        if not GeoSpatialExtensionTypeTest.geospatial_types_found:
+            return
+        _register_extension_types()
+        _register_geospatial_value_factories()
+        _register_extension_types()
+
+        columns = [
+            "latitude",
+            "longitude",
+            "geometry",
+            "tz_datetime",
+            "date",
+            "time",
+            "datetime",
+        ]
+        # test if copying a dataframe with extension types works
+        df = _generate_test_data_frame("GeoWithDateTime.zip", columns=columns)
+
+        import geopandas as gpd
+
+        gdf = gpd.GeoDataFrame(df)
+        # set geometry
+        gdf = gdf.set_geometry("geometry")
+
+        crs = "EPSG:4326"
+        gdf.to_crs(crs, inplace=True)
+        self.assertEqual(gdf.crs, crs)
 
 
 if __name__ == "__main__":

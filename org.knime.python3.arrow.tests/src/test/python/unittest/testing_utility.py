@@ -56,6 +56,139 @@ import knime._arrow._pandas as kap
 import knime.scripting._deprecated._arrow_table as kat
 import knime._arrow._types as katy
 import knime_node_arrow_table as knat
+import knime.api.types as kt
+
+
+def _register_extension_types():
+    ext_types = "knime.types.builtin"
+    kt.register_python_value_factory(
+        ext_types,
+        "LocalTimeValueFactory",
+        '"long"',
+        """
+                    {
+                        "type": "simple",
+                        "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.time.LocalTimeValueFactory\\"}" }
+                    }
+                    """,
+        "datetime.time",
+    )
+
+    kt.register_python_value_factory(
+        ext_types,
+        "LocalDateValueFactory",
+        '"long"',
+        """
+                    {
+                        "type": "simple",
+                        "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.time.LocalDateValueFactory\\"}" }
+                    }
+                    """,
+        "datetime.date",
+    )
+    kt.register_python_value_factory(
+        ext_types,
+        "LocalDateTimeValueFactory",
+        '{"type": "struct", "inner_types": ["long", "long"]}',
+        """
+                    {
+                        "type": "struct",
+                        "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.time.LocalDateTimeValueFactory\\"}" },
+                        "inner": [
+                            {"type": "simple", "traits": {}},
+                            {"type": "simple", "traits": {}}
+                        ]
+                    }
+                    """,
+        "datetime.datetime",
+    )
+    kt.register_python_value_factory(
+        ext_types,
+        "ZonedDateTimeValueFactory2",
+        '{"type": "struct", "inner_types": ["long", "long", "int", "string"]}',
+        """
+                    {
+                        "type": "struct",
+                        "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.time.ZonedDateTimeValueFactory2\\"}" },
+                        "inner": [
+                            {"type": "simple", "traits": {}},
+                            {"type": "simple", "traits": {}},
+                            {"type": "simple", "traits": {}},
+                            {"type": "simple", "traits": {}}
+                        ]
+                    }
+                    """,
+        "datetime.datetime",
+    )
+    kt.register_python_value_factory(
+        ext_types,
+        "ZonedDateTimeValueFactory2",
+        '{"type": "struct", "inner_types": ["long", "long", "int", "string"]}',
+        """
+                    {
+                        "type": "struct",
+                        "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.time.ZonedDateTimeValueFactory2\\"}" },
+                        "inner": [
+                            {"type": "simple", "traits": {}},
+                            {"type": "simple", "traits": {}},
+                            {"type": "simple", "traits": {}},
+                            {"type": "simple", "traits": {}}
+                        ]
+                    }
+                    """,
+        "pandas._libs.tslibs.timestamps.Timestamp",
+        is_default_python_representation=False,
+    )
+    kt.register_python_value_factory(
+        ext_types,
+        "DurationValueFactory",
+        '{"type": "struct", "inner_types": ["long", "int"]}',
+        """
+                    {
+                        "type": "struct",
+                        "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.time.DurationValueFactory\\"}" },
+                        "inner": [
+                            {"type": "simple", "traits": {}},
+                            {"type": "simple", "traits": {}}
+                        ]
+                    }
+                    """,
+        "datetime.timedelta",
+    )
+    kt.register_python_value_factory(
+        ext_types,
+        "DurationValueFactory",
+        '{"type": "struct", "inner_types": ["long", "int"]}',
+        """
+                    {
+                        "type": "struct",
+                        "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.time.DurationValueFactory\\"}" },
+                        "inner": [
+                            {"type": "simple", "traits": {}},
+                            {"type": "simple", "traits": {}}
+                        ]
+                    }
+                    """,
+        "pandas._libs.tslibs.timedeltas.Timedelta",
+        is_default_python_representation=False,
+    )
+    kt.register_python_value_factory(
+        ext_types,
+        "FSLocationValueFactory",
+        '{"type": "struct", "inner_types": ["string", "string", "string"]}',
+        """
+                    {
+                        "type": "struct",
+                        "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.filehandling.core.data.location.FSLocationValueFactory\\"}" },
+                        "inner": [
+                            {"type": "simple", "traits": {}},
+                            {"type": "simple", "traits": {}},
+                            {"type": "simple", "traits": {}}
+                        ]
+                    }
+                    """,
+        "knime.types.builtin.FSLocationValue",
+    )
 
 
 class TestDataSource:
@@ -148,7 +281,7 @@ def _create_dummy_arrow_sink():
 
 
 def _generate_test_table(path):
-    # returns a table with: RowKey, WKT (string) and GeoPoint columns
+    """generates test pa.Table from filepath"""
     knime_generated_table_path = path
     test_data_source = TestDataSource(knime_generated_table_path)
     pa_data_source = knar.ArrowDataSource(test_data_source)
@@ -187,6 +320,14 @@ def _generate_test_data_frame(
     df = kap.arrow_data_to_pandas_df(arrow)
     if columns is not None:
         df.columns = columns
+
+    df = df[
+        df.columns.drop(list(df.filter(regex="DoubleSetCol")))
+    ]  # this column is buggy (DoubleSetColumns)
+    if not lists:
+        df = df[df.columns.drop(list(df.filter(regex="List")))]
+    if not sets:
+        df = df[df.columns.drop(list(df.filter(regex="Set")))]
 
     return df
 

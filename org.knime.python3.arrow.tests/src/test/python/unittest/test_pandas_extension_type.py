@@ -69,6 +69,8 @@ from testing_utility import (
     DummyJavaDataSinkFactory,
     TestDataSource,
     DummyConverter,
+    _generate_test_data_frame,
+    _apply_to_array,
 )
 
 
@@ -178,13 +180,6 @@ def unpickle_knime_extension_scalar(ext_type, storage_scalar):
 
 
 pa.register_extension_type(MyArrowExtType(pa.int64(), "foo"))
-
-
-def _apply_to_array(array, func):
-    if isinstance(array, pa.ChunkedArray):
-        return pa.chunked_array([func(chunk) for chunk in array.chunks])
-    else:
-        return func(array)
 
 
 @register_extension_dtype
@@ -422,41 +417,6 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         )
         return pa.Table.from_arrays(columns, names=list(d.keys()))
 
-    def _generate_test_data_frame(
-        self,
-        file_name="generatedTestData.zip",
-        lists=True,
-        sets=True,
-        columns=None,
-    ) -> pd.DataFrame:
-        """
-        Creates a Dataframe from a KNIME table on disk
-        @param path: path for the KNIME Table
-        @param lists: allow lists in output table (extension lists have difficulties)
-        @param sets: allow sets in output table (extension sets have difficulties)
-        @return: pandas dataframe containing data from KNIME GenerateTestTable node
-        """
-        knime_generated_table_path = os.path.normpath(
-            os.path.join(__file__, "..", file_name)
-        )
-        test_data_source = TestDataSource(knime_generated_table_path)
-        pa_data_source = knar.ArrowDataSource(test_data_source)
-        arrow = pa_data_source.to_arrow_table()
-        arrow = katy.unwrap_primitive_arrays(arrow)
-
-        df = kap.arrow_data_to_pandas_df(arrow)
-        if columns is not None:
-            df.columns = columns
-
-        df = df[
-            df.columns.drop(list(df.filter(regex="DoubleSetCol")))
-        ]  # this column is buggy (DoubleSetColumns)
-        if not lists:
-            df = df[df.columns.drop(list(df.filter(regex="List")))]
-        if not sets:
-            df = df[df.columns.drop(list(df.filter(regex="Set")))]
-        return df
-
     def test_create_extension(self):
         t = self._create_test_table()
         reference_schema = pa.schema(
@@ -567,8 +527,11 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
     def test_complicated_setitem_in_pandas(self):
         # loads a table with all knime extension types
 
-        df = self._generate_test_data_frame(
-            columns=self._TEST_TABLE_COLUMNS, lists=False, sets=False
+        df = _generate_test_data_frame(
+            file_name="generatedTestData.zip",
+            columns=self._TEST_TABLE_COLUMNS,
+            lists=False,
+            sets=False,
         )
 
         # currently, it does not work for lists, sets and dicts
@@ -657,8 +620,11 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         self.assertTrue(df.iloc[2].equals(df.iloc[-1]))
 
     def test_append_sets_lists_2(self):
-        df = self._generate_test_data_frame(
-            columns=self._TEST_TABLE_COLUMNS, lists=True, sets=True
+        df = _generate_test_data_frame(
+            file_name="generatedTestData.zip",
+            columns=self._TEST_TABLE_COLUMNS,
+            lists=True,
+            sets=True,
         )
 
         # currently, it does not work for dicts
@@ -747,9 +713,13 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         with DummyJavaDataSinkFactory() as sink_creator:
             arrow_backend = kat.ArrowBackend(sink_creator)
 
-            df = self._generate_test_data_frame(
-                columns=self._TEST_TABLE_COLUMNS, lists=False, sets=False
+            df = _generate_test_data_frame(
+                file_name="generatedTestData.zip",
+                columns=self._TEST_TABLE_COLUMNS,
+                lists=False,
+                sets=False,
             )
+
             # currently, it does not work for lists, sets and dicts
             wrong_cols = [
                 "StringCol",
@@ -802,9 +772,13 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
 
             # Create table
 
-            df = self._generate_test_data_frame(
-                columns=self._TEST_TABLE_COLUMNS, lists=True, sets=True
+            df = _generate_test_data_frame(
+                file_name="generatedTestData.zip",
+                columns=self._TEST_TABLE_COLUMNS,
+                lists=True,
+                sets=True,
             )
+
             # print(df.columns)
             remove_cols = [
                 "StringCol",
@@ -924,7 +898,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
     def test_struct_dict_encoded_logical_type_extension_type(self):
         # tests the usage of StructDictEncodedLogicalTypeExtensionType for dict decoded strings
         # the type is not used yet anywhere else but in this test
-        df = self._generate_test_data_frame("DictEncString.zip", columns=["Name"])
+        df = _generate_test_data_frame("DictEncString.zip", columns=["Name"])
         self.assertEqual(df["Name"][0].as_py(), "LINESTRING (30 10, 10 30, 40 40)")
         self.assertEqual(df["Name"][4].as_py(), "POINT (30 10)")
         self.assertEqual(df["Name"][5].as_py(), "LINESTRING (40 20, 10 30, 35 40)")

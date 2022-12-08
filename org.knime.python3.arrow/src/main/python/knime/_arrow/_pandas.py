@@ -44,6 +44,7 @@
 import warnings
 from typing import Type, Union
 import bisect
+import re
 
 import numpy as np
 import pandas as pd
@@ -301,8 +302,22 @@ class PandasLogicalTypeExtensionType(pdext.ExtensionDtype):
         return KnimePandasExtensionArray
 
     def construct_from_string(cls: Type[pdext.ExtensionDtype], string: str):
-        # TODO implement this?
-        raise NotImplementedError("construct from string not available yet")
+        # compile a regex to parse the string
+        regex = re.compile(
+            r"PandasLogicalTypeExtensionType\((?P<storage_type>.+), (?P<logical_type>.+)\)"
+        )
+        match = regex.match(string)
+        if match is None:
+            raise TypeError(
+                f"Cannot construct PandasLogicalTypeExtensionType from string {string}"
+            )
+        storage_type = match.group("storage_type")
+        logical_type = match.group("logical_type")
+        # get converter
+        converter = kt.get_converter(logical_type)
+        return PandasLogicalTypeExtensionType(
+            storage_type=storage_type, logical_type=logical_type, converter=converter
+        )
 
     def __from_arrow__(self, arrow_array):
         return KnimePandasExtensionArray(
