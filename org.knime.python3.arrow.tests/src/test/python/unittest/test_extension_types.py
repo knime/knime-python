@@ -52,138 +52,6 @@ import knime.types.builtin as et
 import testing_utility
 
 
-def _register_extension_types():
-    ext_types = "knime.types.builtin"
-    kt.register_python_value_factory(
-        ext_types,
-        "LocalTimeValueFactory",
-        '"long"',
-        """
-                    {
-                        "type": "simple",
-                        "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.time.LocalTimeValueFactory\\"}" }
-                    }
-                    """,
-        "datetime.time",
-    )
-
-    kt.register_python_value_factory(
-        ext_types,
-        "LocalDateValueFactory",
-        '"long"',
-        """
-                    {
-                        "type": "simple",
-                        "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.time.LocalDateValueFactory\\"}" }
-                    }
-                    """,
-        "datetime.date",
-    )
-    kt.register_python_value_factory(
-        ext_types,
-        "LocalDateTimeValueFactory",
-        '{"type": "struct", "inner_types": ["long", "long"]}',
-        """
-                    {
-                        "type": "struct",
-                        "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.time.LocalDateTimeValueFactory\\"}" },
-                        "inner": [
-                            {"type": "simple", "traits": {}},
-                            {"type": "simple", "traits": {}}
-                        ]
-                    }
-                    """,
-        "datetime.datetime",
-    )
-    kt.register_python_value_factory(
-        ext_types,
-        "ZonedDateTimeValueFactory2",
-        '{"type": "struct", "inner_types": ["long", "long", "int", "string"]}',
-        """
-                    {
-                        "type": "struct",
-                        "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.time.ZonedDateTimeValueFactory2\\"}" },
-                        "inner": [
-                            {"type": "simple", "traits": {}},
-                            {"type": "simple", "traits": {}},
-                            {"type": "simple", "traits": {}},
-                            {"type": "simple", "traits": {}}
-                        ]
-                    }
-                    """,
-        "datetime.datetime",
-    )
-    kt.register_python_value_factory(
-        ext_types,
-        "ZonedDateTimeValueFactory2",
-        '{"type": "struct", "inner_types": ["long", "long", "int", "string"]}',
-        """
-                    {
-                        "type": "struct",
-                        "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.time.ZonedDateTimeValueFactory2\\"}" },
-                        "inner": [
-                            {"type": "simple", "traits": {}},
-                            {"type": "simple", "traits": {}},
-                            {"type": "simple", "traits": {}},
-                            {"type": "simple", "traits": {}}
-                        ]
-                    }
-                    """,
-        "pandas._libs.tslibs.timestamps.Timestamp",
-        is_default_python_representation=False,
-    )
-    kt.register_python_value_factory(
-        ext_types,
-        "DurationValueFactory",
-        '{"type": "struct", "inner_types": ["long", "int"]}',
-        """
-                    {
-                        "type": "struct",
-                        "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.time.DurationValueFactory\\"}" },
-                        "inner": [
-                            {"type": "simple", "traits": {}},
-                            {"type": "simple", "traits": {}}
-                        ]
-                    }
-                    """,
-        "datetime.timedelta",
-    )
-    kt.register_python_value_factory(
-        ext_types,
-        "DurationValueFactory",
-        '{"type": "struct", "inner_types": ["long", "int"]}',
-        """
-                    {
-                        "type": "struct",
-                        "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.time.DurationValueFactory\\"}" },
-                        "inner": [
-                            {"type": "simple", "traits": {}},
-                            {"type": "simple", "traits": {}}
-                        ]
-                    }
-                    """,
-        "pandas._libs.tslibs.timedeltas.Timedelta",
-        is_default_python_representation=False,
-    )
-    kt.register_python_value_factory(
-        ext_types,
-        "FSLocationValueFactory",
-        '{"type": "struct", "inner_types": ["string", "string", "string"]}',
-        """
-                    {
-                        "type": "struct",
-                        "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.filehandling.core.data.location.FSLocationValueFactory\\"}" },
-                        "inner": [
-                            {"type": "simple", "traits": {}},
-                            {"type": "simple", "traits": {}},
-                            {"type": "simple", "traits": {}}
-                        ]
-                    }
-                    """,
-        "knime.types.builtin.FSLocationValue",
-    )
-
-
 class TimeExtensionTypeTest(unittest.TestCase):
     _too_large_int = (
         100000000000000000000000000000000  # for testing integers too large to show in c
@@ -196,7 +64,7 @@ class TimeExtensionTypeTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # setup value factories for timestamps
-        _register_extension_types()
+        testing_utility._register_extension_types()
 
     def test_zoned_date_time_value_factory2(self):
         factory = et.ZonedDateTimeValueFactory2()
