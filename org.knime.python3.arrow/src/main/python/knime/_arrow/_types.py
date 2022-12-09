@@ -48,7 +48,7 @@ Arrow implementation of the knime.api.types.
 @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
 """
 
-from typing import Union
+from typing import Union, List
 
 import knime.api.types as kt
 import knime._arrow._dictencoding as kasde
@@ -490,6 +490,10 @@ class LogicalTypeExtensionType(pa.ExtensionType):
             self.storage_type, self._logical_type, self._converter
         )
 
+    def __str__(self):
+        storage_type_string = extract_string_from_pa_dtype(self._storage_type)
+        return f"knime.logical_type({storage_type_string}, {self._logical_type})"
+
 
 class ProxyExtensionType(LogicalTypeExtensionType):
     """
@@ -526,6 +530,10 @@ class ProxyExtensionType(LogicalTypeExtensionType):
         return LogicalTypeExtensionType(
             kt.get_converter(self._logical_type), self.storage_type, self._logical_type
         )
+
+    def __str__(self):
+        storage_type_string = extract_string_from_pa_dtype(self._storage_type)
+        return f"knime.proxy_type<{storage_type_string}, {self._logical_type}>"
 
 
 # Register our extension type with
@@ -606,6 +614,9 @@ class StructDictEncodedLogicalTypeExtensionType(pa.ExtensionType):
             self.value_factory_type._converter,
         )
 
+    def __str__(self):
+        return f"knime.struct_dict_encoded_logical_type<{self.storage_type}, {self.value_factory_type}>"
+
 
 pa.register_extension_type(
     StructDictEncodedLogicalTypeExtensionType(
@@ -644,6 +655,156 @@ _primitive_type_map = {
     "long": pa.int64(),
     "void": pa.null(),
 }
+
+string_to_pa_type = {str(dtype): dtype for dtype in _primitive_type_map.values()}
+string_to_pa_type.update({"uint64": pa.uint64(), "uint32": pa.uint32()})
+
+
+def _split_with_delimiter_when_not_in_angular_brackets(
+    s: str, delimiter: str
+) -> List[str]:
+    """
+    Splits the given string at the given delimiter, but only when the delimiter is not
+    inside brackets.
+    """
+    result = []
+    current = ""
+    bracket_level = 0
+    for c in s:
+        if c == delimiter:
+            if bracket_level == 0:
+                result.append(current)
+                current = ""
+                continue
+        elif c == "<":
+            bracket_level += 1
+        elif c == ">":
+            bracket_level -= 1
+        current += c
+    if current:
+        result.append(current)
+    return result
+
+
+def extract_pa_dtype_from_string(type_string):
+    """Extracts the pyarrow dtype from a string.
+
+    If it is not a basic pa.type use recursion to parse the string
+
+    Args:
+        type_string: string to extract the dtype from
+
+    Returns: pyarrow dtype
+
+    """
+    # remove spaces
+    type_string = type_string.replace(" ", "")
+    # parse struct type
+    if type_string.startswith("struct<"):
+        return _extract_pa_dtype_from_struct_string(type_string)
+    # parse list type
+    if type_string.startswith("list<"):
+        type_string = type_string[5:-1]  # remove list< and >
+        return pa.list_(extract_pa_dtype_from_string(type_string))
+    # parse logical type extension type
+    if type_string.startswith("extension<"):
+        return _extract_pa_dtype_from_extension_string(type_string)
+    # parse basic type
+    elif type_string in string_to_pa_type:
+        return string_to_pa_type[type_string]
+
+    raise TypeError(
+        f"Cannot create pa.dtype as storage type from string: {type_string}"
+    )
+
+
+def _extract_pa_dtype_from_struct_string(type_string):
+    type_string = type_string[7:-1]  # remove struct< and >
+    field_types = []
+    field_names = []
+    field_strings = _split_with_delimiter_when_not_in_angular_brackets(type_string, ",")
+    for field in field_strings:
+        field_name, field_type = field.split(":")
+        field_names.append(field_name)
+        field_types.append(extract_pa_dtype_from_string(field_type))
+    return pa.struct(
+        [pa.field(name, dtype) for name, dtype in zip(field_names, field_types)]
+    )
+
+
+def _extract_pa_dtype_from_extension_string(type_string):
+    # find the inner types of our extension string
+    # e.g. extension<knime.logical_type<string, some_logical_type>>>
+    type_string = type_string[10:-1]  # remove extension< and >
+    # extract the substring until the first '<'
+    knime_class_name = type_string[: type_string.find("<")]
+    # extract the substring from the first '<' to the last '>'
+    inner_types = type_string[type_string.find("<") + 1 : type_string.rfind(">")]
+    inner_types = _split_with_delimiter_when_not_in_angular_brackets(inner_types, ",")
+    # extract the inner types
+    inner_types = [extract_pa_dtype_from_string(type_) for type_ in inner_types]
+    if knime_class_name == "knime.struct_dict_encoded":
+        return kasde.StructDictEncodedType(
+            inner_types[0]
+        )  # inner_types[0] is the value type
+    elif knime_class_name == "knime.struct_dict_encoded_logical_type":
+        return StructDictEncodedLogicalTypeExtensionType(
+            inner_types[0],
+            inner_types[
+                1
+            ],  # inner_types[0] is the logical type, inner_types[1] is the storage type
+        )
+    elif knime_class_name == "knime.proxy_type":
+        converter = kt.get_converter(inner_types[1])
+        return ProxyExtensionType(
+            converter=converter,
+            storage_type=inner_types[0],
+            java_value_factory=inner_types[1],
+        )
+    elif knime_class_name == "knime.logical_type":
+        converter = kt.get_converter(inner_types[1])
+        return LogicalTypeExtensionType(
+            converter=converter,
+            storage_type=inner_types[0],
+            java_value_factory=inner_types[1],
+        )
+    else:
+        raise TypeError(f"Unknown extension type: {knime_class_name}")
+
+
+def extract_string_from_pa_dtype(dtype):
+    """Extracts the string from a pyarrow dtype.
+
+    If it is not a basic pa.type use recursion to parse the dtype
+
+    Args:
+        dtype: pyarrow dtype to extract the string from
+
+    Returns: string
+    """
+    if isinstance(dtype, pa.StructType):
+        return "struct<{}>".format(
+            ",".join(
+                "{}:{}".format(field.name, extract_string_from_pa_dtype(field.type))
+                for field in dtype
+            )
+        )
+    if isinstance(dtype, pa.ListType):
+        return f"list<{extract_string_from_pa_dtype(dtype.value_type)}>"
+    if isinstance(dtype, LogicalTypeExtensionType):
+        return f"extension<knime.logical_type_extension<{ extract_string_from_pa_dtype(dtype.storage_type)}>>"
+    if isinstance(dtype, kasde.StructDictEncodedType):
+        return f"extension<knime.struct_dict_encoded<{extract_string_from_pa_dtype(dtype.value_type)}>>"
+    if isinstance(dtype, StructDictEncodedLogicalTypeExtensionType):
+        return (
+            f"extension<knime.struct_dict_encoded_logical_type<{extract_string_from_pa_dtype(dtype.storage_type)},"
+            f" {extract_string_from_pa_dtype(dtype.value_factory_type),}>>"
+        )
+    # parse basic type
+    elif dtype in string_to_pa_type.values():
+        return str(dtype)
+
+    raise TypeError(f"Cannot create string from pa.dtype: {dtype}")
 
 
 def data_spec_to_arrow(data_spec):

@@ -62,6 +62,8 @@ import knime._arrow._types as katy
 import knime.scripting._deprecated._arrow_table as kat
 import knime_node_arrow_table as knat
 import knime._arrow._dictencoding as kasde
+import knime.api.schema as ks
+import knime.api.types as kt
 
 from testing_utility import (
     DummyJavaDataSink,
@@ -71,6 +73,7 @@ from testing_utility import (
     DummyConverter,
     _generate_test_data_frame,
     _apply_to_array,
+    _register_extension_types,
 )
 
 
@@ -958,6 +961,56 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
                 "[DataType(string), DataType(string), DataType(string), DataType(string)]",
             )
             arrow_backend.close()
+
+    def test_construct_pandas_logical_type_ext_type_from_string(self):
+        # test for the static method that constructs a pandas logical type extension type from a string
+        _register_extension_types()
+        types = (
+            kt.get_python_type_list()
+        )  # get all types that are registered in the python side
+        # test if these types can be constructed via string
+
+        for dtype_strings in types:
+            # get the python type from the string
+            mod, name = dtype_strings.rsplit(".", 1)
+            try:
+                mod = kt._get_module(mod)
+                dtype = getattr(mod, name)
+                correct_type = ks.logical(dtype).to_pandas()
+            except (ValueError, ModuleNotFoundError):
+                continue
+
+            string_type = str(correct_type)
+            constructed_type = kap.PandasLogicalTypeExtensionType.construct_from_string(
+                string=string_type
+            )
+            self.assertEqual(correct_type._logical_type, constructed_type._logical_type)
+            self.assertEqual(correct_type._storage_type, constructed_type._storage_type)
+
+    def test_construct_nested_pandas_logical_type_ext_type_from_string(self):
+        """Test for the static method that constructs a pandas logical type extension type from a string, but with
+        nested types.
+        """
+        # create a nested extension type
+        conv = DummyConverter()
+        struct_dict_enc_type = kasde.StructDictEncodedType(pa.string())
+        combined_storage_type = pa.struct(
+            [
+                pa.field("0", pa.int64()),
+                pa.field("1", struct_dict_enc_type),
+            ]
+        )
+        dtype = katy.LogicalTypeExtensionType(
+            conv, combined_storage_type, "some_logical_type"
+        )
+        # re-create it from its string representation
+        pandas_dtype = dtype.to_pandas_dtype()
+        string_type = str(pandas_dtype)
+        constructed_type = kap.PandasLogicalTypeExtensionType.construct_from_string(
+            string=string_type
+        )
+        self.assertEqual(pandas_dtype._logical_type, constructed_type._logical_type)
+        self.assertEqual(pandas_dtype._storage_type, constructed_type._storage_type)
 
 
 if __name__ == "__main__":
