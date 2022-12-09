@@ -301,17 +301,18 @@ class PandasLogicalTypeExtensionType(pdext.ExtensionDtype):
     def construct_array_type(self):
         return KnimePandasExtensionArray
 
+    @classmethod
     def construct_from_string(cls: Type[pdext.ExtensionDtype], string: str):
         # compile a regex to parse the string
         regex = re.compile(
-            r"PandasLogicalTypeExtensionType\((?P<storage_type>.+), (?P<logical_type>.+)\)"
+            r"knime.pandas_type<(?P<storage_type>.+), (?P<logical_type>.+)>"
         )
         match = regex.match(string)
         if match is None:
-            raise TypeError(
-                f"Cannot construct PandasLogicalTypeExtensionType from string {string}"
-            )
-        storage_type = match.group("storage_type")
+            raise TypeError(f"Cannot construct knime.pandas_type from string {string}")
+        storage_type_string = match.group("storage_type")
+        storage_type = katy.extract_pa_dtype_from_string(storage_type_string)
+
         logical_type = match.group("logical_type")
         # get converter
         converter = kt.get_converter(logical_type)
@@ -325,7 +326,8 @@ class PandasLogicalTypeExtensionType(pdext.ExtensionDtype):
         )
 
     def __str__(self):
-        return f"PandasLogicalTypeExtensionType({self._storage_type}, {self._logical_type})"
+        storage_type_string = katy.extract_string_from_pa_dtype(self._storage_type)
+        return f"knime.pandas_type<{storage_type_string}, {self._logical_type}>"
 
 
 def _apply_to_array(array, func):

@@ -435,7 +435,7 @@ class StructDictEncodedType(pa.ExtensionType):
         self._key_type = key_type
         self._inner_type = inner_type
         pa.ExtensionType.__init__(
-            self, knime_struct_type(key_type, inner_type), "knime.struct_dict_encoded"
+            self, knime_struct_type(key_type, inner_type), f"knime.struct_dict_encoded"
         )
 
     @property
@@ -480,6 +480,9 @@ class StructDictEncodedType(pa.ExtensionType):
             Please use PyArrow 7 or refrain from accessing values in this column.
             """
         )
+
+    def __str__(self):
+        return f"knime.struct_dit_encoded_type<{self._key_type}, {self._inner_type}>"
 
 
 def is_struct_dict_encoded(dtype: pa.DataType):

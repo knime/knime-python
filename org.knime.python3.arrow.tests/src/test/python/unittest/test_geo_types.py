@@ -380,12 +380,15 @@ class GeoSpatialExtensionTypeTest(unittest.TestCase):
 
         import geopandas as gpd
 
+        crs = "EPSG:4326"
+
         gdf = gpd.GeoDataFrame(df)
-        # set geometry
         gdf = gdf.set_geometry("geometry")
 
-        crs = "EPSG:4326"
         gdf.to_crs(crs, inplace=True)
+
+        gdf = gdf.to_crs(crs, inplace=False)
+
         self.assertEqual(gdf.crs, crs)
 
 
