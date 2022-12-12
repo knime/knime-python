@@ -74,6 +74,64 @@ class PandasToPyArrowConversionTest(unittest.TestCase):
         self.assertFalse(wrapped_t[2][2].is_valid)
         self.assertTrue(wrapped_t[2][3].is_valid)
 
+    def test_null_type_wrapping_save_load(self):
+        df = pd.DataFrame(
+            {
+                "RowKey": ["Row1", "Row2", "Row3", "Row4"],
+                "missing": [None, None, None, None],
+                "missingList": [[None, None], [None, None, None], None, [None, None]],
+                "strings": ["a", "b", "c", "d"],
+            }
+        )
+        wrapped_t = katy.wrap_primitive_arrays(pa.Table.from_pandas(df))
+
+        with tempfile.TemporaryFile() as tmpfile:
+            with pa.ipc.new_file(tmpfile, wrapped_t.schema) as writer:
+                writer.write_table(wrapped_t)
+
+            tmpfile.seek(0)
+
+            with pa.ipc.open_file(tmpfile) as reader:
+                read_t = reader.read_all()
+
+        ######################################
+        # START - CODE FOR SHOWING THE PROBLEM
+        ######################################
+
+        def print_buffers(array):
+            print(
+                [
+                    b.to_pybytes() if b is not None else None
+                    for b in array.chunks[0].buffers()
+                ]
+            )
+
+        print("==== BEFORE READ ====")
+        print("Buffers for missing:")
+        print_buffers(wrapped_t[1])
+        print("Buffers for missingList:")
+        print_buffers(wrapped_t[2])
+        print("Buffers for strings:")
+        print_buffers(wrapped_t[3])
+
+        # After reading the buffers are assined incorrectly to the arrays
+        print()
+        print("==== AFTER READ ====")
+        print("Buffers for missing:")
+        print_buffers(read_t[1])
+        print("Buffers for missingList:")
+        print_buffers(read_t[2])
+        print("Buffers for strings:")
+        print_buffers(read_t[3])
+
+        ####################################
+        # END - CODE FOR SHOWING THE PROBLEM
+        ####################################
+
+        self.assertEqual(df["missing"].array, read_t[1].to_pylist())
+        self.assertEqual(df["missingList"].array, read_t[2].to_pylist())
+        self.assertEqual(df["strings"].array, read_t[3].to_pylist())
+
 
 if __name__ == "__main__":
     unittest.main()
