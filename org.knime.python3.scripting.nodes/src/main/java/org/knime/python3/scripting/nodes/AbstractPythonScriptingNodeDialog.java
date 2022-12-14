@@ -255,8 +255,15 @@ public class AbstractPythonScriptingNodeDialog extends DataAwareNodeDialogPane {
             return;
         }
         try {
-            AbstractPythonScriptingNodeModel.getPython3Backend(kernelManager.getKernel()).getOutputView(html,
-                new ExecutionMonitor());
+            final var kernel = kernelManager.getKernel();
+
+            // Check the outputs first to fail with a helpful error message if the output view is not set
+            // NOTE: This will also fail if the node has other outputs that are not set correctly. However, this is the
+            // easiest way to get a good error message in the console
+            kernel.executeAndCheckOutputs("");
+
+            // Save the view to the temporary file
+            AbstractPythonScriptingNodeModel.getPython3Backend(kernel).getOutputView(html, new ExecutionMonitor());
         } catch (PythonIOException ex) {
             var message = "The preview could not be opened:\n" + ex.getShortMessage().orElse(ex.getMessage());
             m_scriptPanel.errorToConsole(message);
