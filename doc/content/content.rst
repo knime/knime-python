@@ -100,6 +100,11 @@ Nodes
    :noindex:
    :inherited-members:
 
+A node is part of a category:
+
+.. autofunction:: knime.extension.category
+   :noindex:
+
 A node has a type:
 
 .. autoclass:: knime.extension.NodeType
