@@ -260,7 +260,9 @@ class PythonNode(ABC):
 
             LOGGER = logging.getLogger(__name__)
 
-            @knext.node(name="Pure Python Node", node_type=knext.NodeType.LEARNER, icon_path="../icons/icon.png", category="/")
+            category = knext.category("/community", "mycategory", "My Category", "My category described", icon="icons/category.png")
+
+            @knext.node(name="Pure Python Node", node_type=knext.NodeType.LEARNER, icon_path="icons/icon.png", category=category)
             @knext.input_table(name="Input Data", description="We read data from here")
             @knext.output_table(name="Output Data", description="Whatever the node has produced")
             class TemplateNode(knext.PythonNode):
@@ -394,7 +396,7 @@ def category(
 
     Returns:
         str: The full path of the category which can be used to create nodes
-            inside this category.
+        inside this category.
     """
     _categories.append(
         _Category(path, level_id, name, description, icon, after, locked)
