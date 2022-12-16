@@ -9,6 +9,7 @@ import OutputConsole from 'scripting-editor/src/components/OutputConsole.vue';
 import WorkspaceTable from './components/WorkspaceTable.vue';
 import InputPortsView from './components/InputPortsView.vue';
 import CondaEnvironment from './components/CondaEnvironment.vue';
+// import { createScriptingService, PythonScriptingService } from './utils/python-mock-scripting-service';
 import { createScriptingService, PythonScriptingService } from './utils/python-scripting-service';
 import type { Workspace,
     InputPortInfo,
