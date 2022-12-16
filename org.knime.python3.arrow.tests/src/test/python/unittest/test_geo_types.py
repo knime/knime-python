@@ -375,6 +375,56 @@ class GeoSpatialExtensionTypeTest(unittest.TestCase):
 
         self.assertEqual(gdf.crs, crs)
 
+    def test_setitem(self):
+        if not GeoSpatialExtensionTypeTest.geospatial_types_found:
+            return
+        import geopandas as gpd
+
+        arrow_backend, node_arrow_backend = _generate_backends()
+
+        # load test table
+        df = _generate_test_data_frame(
+            file_name="5kDictEncodedChunkedGeospatials.zip",
+            columns=["column1", "geometry"],
+        )
+        df.reset_index(inplace=True, drop=True)  # drop index as it messes up equality
+
+        gdf = gpd.GeoDataFrame(df)
+        original_gdf = gdf.copy(deep=True)
+
+        # test iloc setting in the df
+        for col_key in gdf.columns:
+            col_index = gdf.columns.get_loc(col_key)
+            gdf.iloc[1, col_index] = gdf.iloc[2, col_index]  # test iloc
+        self.assertTrue(gdf.iloc[1].equals(gdf.iloc[2]), msg="The rows are not equal")
+        gdf = original_gdf  # reset
+
+        # test loc setting
+        for col_key in gdf.columns:
+            gdf.loc[1, col_key] = gdf.loc[2, col_key]
+        self.assertTrue(gdf.iloc[1].equals(gdf.iloc[2]), msg="The rows are not equal")
+        gdf = original_gdf  # reset
+
+        for col_key in gdf.columns:
+            col_index = gdf.columns.get_loc(col_key)
+            value = gdf.iloc[[5, 6], col_index]
+            gdf.iloc[[1, 2], col_index] = value
+        self.assertTrue(gdf.iloc[1].equals(gdf.iloc[5]), msg="The rows are not equal")
+        self.assertTrue(gdf.iloc[2].equals(gdf.iloc[6]), msg="The rows are not equal")
+        gdf = original_gdf  # reset to original df
+
+        index_arr = np.arange(7)
+        # test np arr setting
+        for col_key in gdf.columns:
+            col_index = gdf.columns.get_loc(col_key)
+            value = gdf.iloc[(index_arr + 7), col_index]
+            gdf.iloc[index_arr, col_index] = value
+        self.assertTrue(gdf.iloc[2].equals(gdf.iloc[9]), msg="The rows are not equal")
+        gdf = original_gdf  # reset to original df
+
+        gdf = pd.concat([gdf, gdf.iloc[2].to_frame().T])
+        self.assertTrue(gdf.iloc[2].equals(gdf.iloc[-1]))
+
 
 if __name__ == "__main__":
     unittest.main()

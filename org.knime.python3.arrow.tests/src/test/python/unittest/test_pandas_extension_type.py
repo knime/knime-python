@@ -530,6 +530,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
     def test_complicated_setitem_in_pandas(self):
         # loads a table with all knime extension types
         _register_extension_types()
+
         df = _generate_test_data_frame(
             file_name="generatedTestData.zip",
             columns=self._TEST_TABLE_COLUMNS,
@@ -537,17 +538,11 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
             sets=False,
         )
 
-        # currently, it does not work for lists, sets and dicts
-        dict_columns = [
-            "TimestampCol",
-            "URICol",
-            "Local Date Time",
-            "Zoned Date Time",
-            "Period",
-            "Duration",
-        ]
+        # These extension types are not registered, thus still saved as dict. They would only work with at indexing.
+        dict_columns = ["TimestampCol", "URICol", "Period"]
         df.drop(dict_columns, axis=1, inplace=True)  # remove all dicts
         df.reset_index(inplace=True, drop=True)  # drop index as it messes up equality
+
         original_df = df.copy(deep=True)
         df.loc[1, lambda dfu: [df.columns[0]]] = df.loc[2, lambda dfu: [df.columns[0]]]
         df = original_df  # reset to original df
@@ -614,25 +609,41 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
             ]  # this works
         self.assertTrue(df.iloc[2].equals(df.iloc[9]), msg="The rows are not equal")
         df = original_df  # reset to original df
-        # test appending with concat
-        # this column seems not to work as pandas overwrites NA values with NaN values, when concatenating
-        # this heavily depends on the pandas version
-        df = df.drop(columns=["MissingValStringCol"])
+        # older pandas versions cast missing values NA to NaN thus the equality check fails
+        df.drop("MissingValStringCol", axis=1, inplace=True)
         df = pd.concat([df, df.iloc[2].to_frame().T])
         self.assertTrue(df.iloc[2].equals(df.iloc[-1]))
+
+    def test_complicated_setitem_in_pandas2(self):
+        _register_extension_types()
+
+        # Test setting for dict encoded values
+        df = self._generate_test_data_frame("DictEncString.zip", columns=["Name"])
+        df.reset_index(inplace=True, drop=True)  # drop index as it messes up equality
+        df.loc[1, "Name"] = df.loc[3, "Name"]
+        self.assertTrue(df.loc[1, "Name"] == df.loc[3, "Name"])
+
+        # here is a bug -> maybe a separate ticket?
+
+        # dtype = df.dtypes["Name"]
+        # col = df["Name"]
+        # wrong_dtype = col.values._data.type
+        # # struct dict enc logical type != struct dict encoded
+        # self.assertTrue(dtype == wrong_dtype)
+        # row1 = df.iloc[1]
+        # row3 = df.iloc[3]
+        # self.assertTrue(row1.equals(row3), msg="The rows are not equal")
 
     def test_complicated_setitem_in_pandas_with_lists_and_sets(self):
         """Test complicated setitem in pandas with lists and sets.
         As lists cannot be set properly with iloc, we use at and loc.
         """
 
-        # loads a table with all knime extension types
         _register_extension_types()
 
         df = self._generate_test_data_frame(
-            columns=self._TEST_TABLE_COLUMNS, lists=False, sets=True
+            columns=self._TEST_TABLE_COLUMNS, lists=True, sets=True
         )
-        print(df.columns)
 
         df.reset_index(inplace=True, drop=True)  # drop index as it messes up equality
         original_df = df.copy(deep=True)
@@ -652,9 +663,6 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
             iloc_val = df.iloc[3:6, col_index]
             df.iloc[:3, col_index] = iloc_val
 
-        row0 = df.iloc[0]
-        row3 = df.iloc[3]
-        # self.assertEquals(row0.all(), row3.all(), msg="The rows are not equal")
         self.assertTrue(df.iloc[0].equals(df.iloc[3]), msg="The rows are not equal")
         df = original_df  # reset to original df
 
@@ -674,12 +682,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         self.assertTrue(df.iloc[2].equals(df.iloc[9]), msg="The rows are not equal")
         df = original_df  # reset to original df
 
-        # test appending with concat
-        # this column seems not to work as pandas overwrites NA values with NaN values, when concatenating
-        # this heavily depends on the pandas version
-        df = df.drop(columns=["MissingValStringCol"])
-        new_df = df.iloc[2].to_frame().T
-        df = pd.concat([df, new_df])
+        df = pd.concat([df, df.iloc[2].to_frame().T])
         self.assertTrue(df.iloc[2].equals(df.iloc[-1]))
 
     def test_append_sets_lists_2(self):
@@ -689,17 +692,12 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
             lists=True,
             sets=True,
         )
+        _register_extension_types()
 
-        # currently, it does not work for dicts
-        dict_columns = [
-            "TimestampCol",
-            "URICol",
-            "Local Date Time",
-            "Zoned Date Time",
-            "Period",
-            "Duration",
-        ]
-        df.drop(dict_columns, axis=1, inplace=True)
+
+        # These extension types are not registered, thus still saved as dict. They would only work with at indexing.
+        dict_columns = ["TimestampCol", "URICol", "Period"]
+        # df.drop(dict_columns, axis=1, inplace=True)  # remove all dicts
         df.reset_index(inplace=True, drop=True)  # drop index as it messes up equality
 
         with DummyJavaDataSinkFactory() as sink_creator:
@@ -966,7 +964,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         chunked_array = _get_chunked_array_for_start_indices(
             correct_chunk_start_indices
         )
-        calc = kap.KnimePandasExtensionArray._get_all_chunk_start_indices(chunked_array)
+        calc = katy._get_all_chunk_start_indices(chunked_array)
         self.assertEqual(correct_chunk_start_indices, calc)
 
         # random chunks
@@ -974,7 +972,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         chunked_array = _get_chunked_array_for_start_indices(
             correct_chunk_start_indices
         )
-        calc = kap.KnimePandasExtensionArray._get_all_chunk_start_indices(chunked_array)
+        calc = katy._get_all_chunk_start_indices(chunked_array)
         self.assertEqual(correct_chunk_start_indices, calc)
 
         # equal size chunks
@@ -982,7 +980,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         chunked_array = _get_chunked_array_for_start_indices(
             correct_chunk_start_indices
         )
-        calc = kap.KnimePandasExtensionArray._get_all_chunk_start_indices(chunked_array)
+        calc = katy._get_all_chunk_start_indices(chunked_array)
         self.assertEqual(correct_chunk_start_indices, calc)
 
     def test_categorical_types(self):
