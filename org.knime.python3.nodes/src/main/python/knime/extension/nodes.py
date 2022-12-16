@@ -298,8 +298,8 @@ class PythonNode(ABC):
             only consist of one column).
 
         Raise:
-            InvalidConfigurationError:
-                If the input configuration does not satisfy this node's requirements.
+            InvalidParametersError:
+                If the current input parameters do not satisfy this node's requirements.
         """
         pass
 
