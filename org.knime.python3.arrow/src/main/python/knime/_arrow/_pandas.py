@@ -542,118 +542,48 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
             "KnimePandasExtensionArray cannot be created from factorized yet."
         )
 
-    def _get_int_item_from_struct_arr(self, storage: pa.StructArray, item: int):
-        """This Method unpacks nested struct arrays and takes the value at index: item
+    def get_the_correct_chunk(self, item):
+        """Returns the correct chunk for the given item.
 
-        it recursively goes into all sub struct arrays and collects the value at item.
-        :param storage: Struct array, which needs to be unpacked
-        :param item: index to be searched
-        :return: Storage Scalar for the value at item
+        Args:
+            item:  The item to get the chunk for.
+
+        Returns:
+            chunk: The chunk that contains the item.
+            item: The correct item index in the chunk.
+
         """
-        storage_scalar_list = []
-        for field_idx in range(storage.type.num_fields):  # we unpack each sub-array
-            field = storage.field(field_idx)
-            # if we have a nested struct array and not the final dict encoded array we recursively access its fields
-            if isinstance(field, pa.StructArray) and not isinstance(
-                field.type, kasde.StructDictEncodedType
-            ):
-                storage_scalar_list.append(
-                    self._get_int_item_from_struct_arr(field, item)
-                )
-            else:
-                storage_scalar_list.append(field[item])
-        storage_scalar_type = katy._struct_type_from_values(*storage_scalar_list)
-        storage_scalar = pa.scalar(
-            tuple(i.as_py() for i in storage_scalar_list), type=storage_scalar_type
-        )
-        return storage_scalar
+        if self._chunk_start_list is None:
+            self._chunk_start_list = katy._get_all_chunk_start_indices(self._data)
+        if item < 0:  # if we have a negative index access
+            item = len(self) + item
+        # use a right bisection to locate the closest chunk index
+        chunk_idx = bisect.bisect_right(self._chunk_start_list, item) - 1
+        item = (
+            item - self._chunk_start_list[chunk_idx]
+        )  # get the index inside the chunk
+        chunk = self._data.chunk(chunk_idx)  # get the correct chunk
+        return chunk, item
 
-    def _get_int_item_from_nested_storage(self, storage: pa.Array, item: int):
-        """This Method unpacks nested storage arrays and takes the value at index: item
-
-        it recursively goes into all sub arrays and collects the value at item.
-        :param storage: Storage array, which needs to be unpacked
-        :param item: index to be searched
-        :return: Storage Scalar for the value at item
-        """
-        dict_decoded = katy.contains_dict_encoded_type(storage.type)
-        # if we have a chunked array we need to calculate the correct chunk and the correct index in the chunk
-        if isinstance(storage, pa.ChunkedArray):
-            chunk, item = self.get_the_correct_chunk(item)
-            return self._get_int_item_from_nested_storage(chunk, item)
-        # if we have a nested struct array we need to access each field and unpack it
-        elif isinstance(storage, pa.StructArray):
-            storage_scalar_list = []
-            for field in storage.flatten():
-                # if we have a nested struct array and not the final dict encoded array we recursively access its fields
-                if isinstance(field, pa.StructArray) and not isinstance(
-                    field.type, kasde.StructDictEncodedType
-                ):
-                    storage_scalar_list.append(
-                        self._get_int_item_from_nested_storage(field, item)
-                    )
-                else:
-                    storage_scalar_list.append(field[item])
-            storage_scalar_type = katy._struct_type_from_values(*storage_scalar_list)
-            storage_scalar = pa.scalar(
-                tuple(i.as_py() for i in storage_scalar_list), type=storage_scalar_type
+    def _get_data_from_ndarray_indexer(self, item):
+        shape = item.shape
+        if len(shape) != 1:
+            raise IndexError(
+                f"Only one dimensional np.arrays can be used as indexer, but the given array has shape"
+                f"'{shape}'"
             )
-            return storage_scalar
-        # if we have a nested list array we need to access each element and unpack it
-        elif isinstance(storage, pa.ListArray):
-            if not dict_decoded:
-                return storage[item]
-            else:
-                # calculate list offsets in value list
-                if item + 1 >= len(storage.offsets):
-                    raise IndexError(
-                        f"Index {item} out of bounds for length {len(storage)}"
-                    )
-
-                start, end = (
-                    storage.offsets[item].as_py(),
-                    storage.offsets[item + 1].as_py(),
+        if item.dtype is np.dtype(np.bool_):
+            # the indexer is a mask array
+            if item.shape[0] != len(self):
+                raise IndexError(
+                    f"The len of the masked array '{item.shape[0]}' is not equal to the length "
+                    f"of the data '{len(self)}'"
                 )
-                value_list = [
-                    self._get_int_item_from_nested_storage(storage.values, i).as_py()
-                    for i in range(start, end)
-                ]
-                if len(value_list) == 0:
-                    return None
-                storage_type = katy.get_storage_type(storage.type)
-                list_scalar = pa.scalar(value_list, type=storage_type)
-                # todo: converter decode????
-                return list_scalar
-        elif isinstance(storage, katy.KnimeExtensionArray):
-            # if the array is not dict encoded we can just access the value at item
-            if not dict_decoded:
-                return storage[item]
-            elif isinstance(storage.type, kasde.StructDictEncodedType):
-                return storage[item]  #  we can also unpack by accessing
-            else:
-                # we have to unpack until we find the dict encoded array
-                return self._get_int_item_from_nested_storage(storage.storage, item)
+            index_list = np.where(item)[0].tolist()
         else:
-            return storage[item]
-
-    @staticmethod
-    def _get_all_chunk_start_indices(chunked_arr: pa.ChunkedArray) -> list:
-        """iterate over chunks to find their start indices
-
-        :param chunked_arr: chunked array from which we calculate the chunk indices
-        :return: list containing the end indices for each chunk
-        """
-        if not isinstance(chunked_arr, pa.ChunkedArray):
-            raise TypeError(
-                f"The input array must be of type pa.ChunkedArray not type {type(chunked_arr)}"
-            )
-        chunk_start = 0
-        chunk_start_list = []
-
-        for chunk in chunked_arr.chunks:
-            chunk_start_list.append(chunk_start)
-            chunk_start += len(chunk)  # chunks end at len - 1
-        return chunk_start_list
+            # the indexer is an integer access array
+            index_list = item.tolist()
+        return self.take(index_list)
 
     def __getitem__(self, item):
         if isinstance(item, int):
@@ -662,8 +592,9 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
                 or isinstance(self._storage_type, kasde.StructDictEncodedType)
                 or isinstance(self._storage_type, pa.ListType)
             ):
-                # what is this?
-                out = self._get_int_item_from_nested_storage(self._data, item)
+                out = katy.get_int_indexer_from_nested_storage(
+                    self._data, item, self.get_the_correct_chunk
+                )
                 if isinstance(out, katy.KnimeExtensionScalar):
                     return out.as_py()  #  output is decoded automatically
                 if out is None:
@@ -678,37 +609,11 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
         elif isinstance(item, list):
             return self.take(item)
         elif isinstance(item, np.ndarray):
-            shape = item.shape
-            if len(shape) != 1:
-                raise IndexError(
-                    f"Only one dimensional np.arrays can be used as indexer, but the given array has shape"
-                    f"'{shape}'"
-                )
-            if item.dtype is np.dtype(np.bool_):
-                # the indexer is a mask array
-                if item.shape[0] != len(self):
-                    raise IndexError(
-                        f"The len of the masked array '{item.shape[0]}' is not equal to the length "
-                        f"of the data '{len(self)}'"
-                    )
-                index_list = np.where(item)[0].tolist()
-            else:
-                # the indexer is an integer access array
-                index_list = item.tolist()
-            return self.take(index_list)
-
-    def get_the_correct_chunk(self, item):
-        if self._chunk_start_list is None:
-            self._chunk_start_list = self._get_all_chunk_start_indices(self._data)
-        if item < 0:  # if we have a negative index access
-            item = len(self) + item
-        # use a right bisection to locate the closest chunk index
-        chunk_idx = bisect.bisect_right(self._chunk_start_list, item) - 1
-        item = (
-            item - self._chunk_start_list[chunk_idx]
-        )  # get the index inside the chunk
-        chunk = self._data.chunk(chunk_idx)  # get the correct chunk
-        return chunk, item
+            return self._get_data_from_ndarray_indexer(item)
+        else:
+            raise TypeError(
+                f"Indexing type {type(item)} not supported for {type(self)}"
+            )
 
     def _set_data_from_input(self, inp: Union[list, np.ndarray]):
         """Set the backbone data array with new values.
@@ -758,7 +663,6 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
         val_i = 0  # index for the value
         for i in range(start, stop, step):  # todo: improve speed with np.array
             if isinstance(value, pd.Series):  # no broadcasting necessary
-                # todo: index
                 try:
                     tmp_list[i] = value.iloc[val_i]
                 except IndexError:

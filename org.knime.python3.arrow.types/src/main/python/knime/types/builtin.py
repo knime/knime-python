@@ -219,8 +219,6 @@ class LocalDateTimeValueFactory(kt.PythonValueFactory):
         if storage is None:
             return None
         try:
-            if storage["0"] is None:
-                return None
             day_of_epoch = storage["0"]
             nano_of_day = storage["1"]
             micro_of_day = nano_of_day // 1000  # here we lose precision

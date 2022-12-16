@@ -604,9 +604,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         # test np arr setting
         for col_key in df.columns:
             col_index = df.columns.get_loc(col_key)
-            df.iloc[index_arr, col_index] = df.iloc[
-                (index_arr + 7), col_index
-            ]  # this works
+            df.iloc[index_arr, col_index] = df.iloc[(index_arr + 7), col_index]
         self.assertTrue(df.iloc[2].equals(df.iloc[9]), msg="The rows are not equal")
         df = original_df  # reset to original df
         # older pandas versions cast missing values NA to NaN thus the equality check fails
@@ -618,7 +616,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         _register_extension_types()
 
         # Test setting for dict encoded values
-        df = self._generate_test_data_frame("DictEncString.zip", columns=["Name"])
+        df = _generate_test_data_frame("DictEncString.zip", columns=["Name"])
         df.reset_index(inplace=True, drop=True)  # drop index as it messes up equality
         df.loc[1, "Name"] = df.loc[3, "Name"]
         self.assertTrue(df.loc[1, "Name"] == df.loc[3, "Name"])
@@ -641,8 +639,11 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
 
         _register_extension_types()
 
-        df = self._generate_test_data_frame(
-            columns=self._TEST_TABLE_COLUMNS, lists=True, sets=True
+        df = _generate_test_data_frame(
+            file_name="generatedTestData.zip",
+            columns=self._TEST_TABLE_COLUMNS,
+            lists=True,
+            sets=True,
         )
 
         df.reset_index(inplace=True, drop=True)  # drop index as it messes up equality
@@ -653,7 +654,6 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
             col_index = df.columns.get_loc(col_key)
             item = df.iloc[1, col_index]
             df.at[3, col_key] = item
-            # self.assertEqual(item, df.iloc[3, col_index])
         self.assertTrue(df.iloc[1].equals(df.iloc[3]), msg="The rows are not equal")
         df = original_df  # reset to original df
 
@@ -693,7 +693,6 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
             sets=True,
         )
         _register_extension_types()
-
 
         # These extension types are not registered, thus still saved as dict. They would only work with at indexing.
         dict_columns = ["TimestampCol", "URICol", "Period"]
