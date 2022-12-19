@@ -66,6 +66,7 @@ import org.knime.python3.nodes.settings.JsonNodeSettingsSchema;
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
+@SuppressWarnings("restriction")
 public final class DelegatingJsonSettingsDataService implements JsonNodeSettingsService<String> {
 
     private final Supplier<NodeDialogProxy> m_proxyProvider;

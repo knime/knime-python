@@ -64,6 +64,7 @@ import org.knime.core.webui.page.Page;
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
+@SuppressWarnings("restriction")
 public final class JsonFormsNodeDialog extends NodeDialog {
 
     private final TextNodeSettingsService m_settingsService;

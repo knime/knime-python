@@ -92,6 +92,7 @@ import org.knime.python3.views.HtmlFileNodeView;
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
+@SuppressWarnings("restriction")
 public abstract class ExtensionNodeSetFactory implements NodeSetFactory, CategorySetFactory {
 
     private static final Map<String, KnimeExtension> ALL_EXTENSIONS = new ConcurrentHashMap<>();
