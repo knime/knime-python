@@ -50,7 +50,6 @@ package org.knime.python3.nodes.dialog;
 
 import java.util.Map;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
@@ -91,7 +90,6 @@ public final class DelegatingJsonSettingsDataService implements JsonNodeSettings
     @Override
     public String fromNodeSettingsToObject(final Map<SettingsType, NodeSettingsRO> settings, final PortObjectSpec[] specs) {
         try (var proxy = m_proxyProvider.get()) {
-            var specsWithoutFlowVars = Stream.of(specs).skip(1).toArray(PortObjectSpec[]::new);
 
             // this is assigned here to accommodate changing the set of parameters during development
             m_lastSettingsSchema = proxy.getSettingsSchema(m_extensionVersion);
@@ -100,7 +98,7 @@ public final class DelegatingJsonSettingsDataService implements JsonNodeSettings
             // note that for m_extensionVersion we must always use the installed extension version below,
             // since we want the dialog to follow the installed extension's set of parameters.
             // Missing parameters will be set to their default values on the Python side.
-            return proxy.getDialogRepresentation(jsonSettings, specsWithoutFlowVars, m_extensionVersion);
+            return proxy.getDialogRepresentation(jsonSettings, specs, m_extensionVersion);
         }
     }
 
