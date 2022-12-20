@@ -381,7 +381,8 @@ def category(
     Args:
         path (Union[str, Category]): The absolute "path" that lead to this
             category e.g. "/io/read". The segments are the category
-            level-IDs, separated by a slash ("/").
+            level-IDs, separated by a slash ("/"). Categories that contain community
+            nodes should be placed in the "/community" category.
         level_id (str): The identifier of the level which is used as a
             path-segment and must be unique at the level specified by
             "path".
