@@ -246,12 +246,13 @@ class PythonNode(ABC):
     """
     Extend this class to provide a pure Python based node extension to KNIME Analytics Platform.
 
-    Users can either use the decorators @kn.input_table, @kn.input_binary, @kn.output_table, @kn.output_binary,
-    and @kn.output_view, or populate the input_ports, output_ports, and output_view attributes.
+    Users can either use the decorators ``@knext.input_table``, ``@knext.input_binary``,
+    ``@knext.output_table``, ``@knext.output_binary``, and ``@knext.output_view``, or
+    populate the ``input_ports``, ``output_ports``, and ``output_view`` attributes.
 
-    Use the Python logging facilities and its `.warning` and `.error` methods to write warnings
-    and errors to the KNIME console. `.info` and `.debug` will only show up in the KNIME console
-    if the log level in KNIME is configured to show these.
+    Use the Python logging facilities and its ``.warning`` and ``.error`` methods to
+    write warnings and errors to the KNIME console. ``.info`` and ``.debug`` will only
+    show up in the KNIME console if the log level in KNIME is configured to show these.
 
     **Example**::
 
