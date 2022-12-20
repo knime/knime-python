@@ -240,7 +240,10 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
         public org.knime.core.node.NodeView<DelegatingNodeModel> createNodeView(final int viewIndex,
             final DelegatingNodeModel nodeModel) {
             // We never have Java Views but only a JS view (see #createNodeView(NodeModel))
-            return null;
+
+            // AP-19877: The dummy view will only be opened by workflow tests
+            // The user cannot open the view because it is not shown in the context menu
+            return new DummyNodeView(nodeModel);
         }
 
         @Override
@@ -273,6 +276,30 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
                 () -> nodeModel.getPathToHtmlView()
                     .orElseThrow(() -> new IllegalStateException("View is not present. This is a coding error.")),
                 m_node.getViewResources()[0]);
+        }
+
+        /** A dummy node view that does nothing and that will only be opened by workflow tests. */
+        private static final class DummyNodeView extends org.knime.core.node.NodeView<DelegatingNodeModel> {
+
+            protected DummyNodeView(final DelegatingNodeModel nodeModel) {
+                super(nodeModel);
+            }
+
+            @Override
+            protected void onClose() {
+                // Dummy
+            }
+
+            @Override
+            protected void onOpen() {
+                // Dummy
+
+            }
+
+            @Override
+            protected void modelChanged() {
+                // Dummy
+            }
         }
     }
 }
