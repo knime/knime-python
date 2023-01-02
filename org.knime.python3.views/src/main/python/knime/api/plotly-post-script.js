@@ -5,12 +5,19 @@ const selectionService = new KnimeUIExtensionService.SelectionService(
 
 const plotlyPlot = document.getElementById("{plot_id}");
 let selected = new Set();
+let updating = false;
 
 /////////////////////////////////////////////////////////////////////
 // KNIME Selection -> Plotly Selection
 /////////////////////////////////////////////////////////////////////
 
 function updateSelection(mode, selection) {
+  // Deactivate plotly_selected events
+  updating = true;
+
+  // Delete selection boxes and lassos
+  Plotly.relayout(plotlyPlot, { selections: [] });
+
   // Update the selected keys
   if (mode == "REPLACE") {
     selected = new Set(selection);
@@ -19,9 +26,6 @@ function updateSelection(mode, selection) {
   } else if (mode == "REMOVE") {
     selection.forEach((s) => selected.delete(s));
   }
-
-  // Delete selection boxes and lassos
-  Plotly.relayout(plotlyPlot, { selections: []})
 
   // Restyle the plot with the current selection
   if (selected.size == 0) {
@@ -42,6 +46,9 @@ function updateSelection(mode, selection) {
       Plotly.restyle(plotlyPlot, { selectedpoints: [indices] }, [i]);
     }
   }
+
+  // Re-activate plotly_selected events
+  updating = false;
 }
 
 iFrameKnimeService.waitForInitialization().then(() => {
@@ -66,6 +73,11 @@ iFrameKnimeService.waitForInitialization().then(() => {
 /////////////////////////////////////////////////////////////////////
 
 plotlyPlot.on("plotly_selected", function () {
+  if (updating) {
+    // Do not do anything if we are updating the plot because of a selection event by KNIME
+    return;
+  }
+
   // Deselect all points on traces without any selection
   plotlyPlot.data.forEach((d, idx) => {
     if (d.selectedpoints === undefined) {
@@ -87,8 +99,7 @@ plotlyPlot.on("plotly_selected", function () {
 
 plotlyPlot.on("plotly_deselect", function () {
   // Make sure we deselect everything: All facelets
-  Plotly.relayout(plotlyPlot, { selections: []})
+  Plotly.relayout(plotlyPlot, { selections: [] });
   Plotly.restyle(plotlyPlot, { selectedpoints: [null] });
   selectionService.replace([]);
 });
-
