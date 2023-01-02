@@ -375,7 +375,7 @@ def category(
 ):
     """Register a new node category.
 
-    A node cateogry must only be created once. Use a string encoding the
+    A node category must only be created once. Use a string encoding the
     absolute category path to add nodes to an existing category.
 
     Args:
