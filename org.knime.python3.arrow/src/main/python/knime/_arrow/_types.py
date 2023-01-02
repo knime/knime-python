@@ -1063,6 +1063,14 @@ def _unwrap_primitive_knime_extension_array(array: pa.Array) -> pa.Array:
         offsets = _get_offsets_with_nulls(array.storage)
         values = _unwrap_primitive_knime_extension_array(array.storage.values)
         return _create_list_array(offsets, values)
+    elif (
+        is_value_factory_type(array.type)
+        and array.type.logical_type == _arrow_to_knime_primitive_types[pa.null()]
+    ):
+        # Because of https://github.com/apache/arrow/issues/15068 we are storing
+        # null / void arrays as strings, se we also need to turn the string array
+        # into nulls on the way back here.
+        return pa.nulls(len(array))
     elif _is_knime_primitive_type(array.type):
         return array.storage
     else:
@@ -1121,9 +1129,9 @@ def _get_wrapped_type(dtype, is_row_key):
     ):
         # There is no special VoidList type in KNIME, so we need two extension types,
         # one for the outer list, and one for the inner void type
-        inner_logical_type = _arrow_to_knime_primitive_types[dtype.value_type]
+        inner_logical_type = _arrow_to_knime_primitive_types[pa.null()]
         inner_ext_type = LogicalTypeExtensionType(
-            kt.get_converter(inner_logical_type), dtype.value_type, inner_logical_type
+            kt.get_converter(inner_logical_type), pa.string(), inner_logical_type
         )
         outer_logical_type = _arrow_to_knime_list_type
         outer_ext_type = LogicalTypeExtensionType(
@@ -1164,20 +1172,16 @@ def _get_offsets_with_nulls(a: Union[pa.ListArray, pa.LargeListArray]):
     return pa.array(a.offsets.to_pylist(), mask=null_mask, type=a.offsets.type)
 
 
-def _nulls(num_nulls: int, dtype: pa.DataType):
-    # We would like to wrap a null vector in an extension type, but there's a bug
-    # that null arrays cannot be wrapped immediately, so we create a new null vector
-    # with the appropriate type. See
-    # https://issues.apache.org/jira/browse/ARROW-14522, which is fixed in PyArrow 7.
-    # We want to support PyArrow 5, which is the last version available for Python 3.6,
-    # and thus have to resort to this tedious construction of a null vector with extension
-    # type.
-    validbits = np.packbits(np.ones(num_nulls, dtype=np.uint8), bitorder="little")
-    return pa.Array.from_buffers(
-        dtype,
-        num_nulls,
-        [pa.py_buffer(validbits)],
-        null_count=num_nulls,
+def _logical_nulls(num_nulls: int):
+    # Because of a bug in PyArrow, ExtensionTypes with null storage type fail to
+    # properly be serialized + deserialized. So instead, we use pa.string() as fallback.
+    logical_type = _arrow_to_knime_primitive_types[pa.null()]
+    null_ext_type = LogicalTypeExtensionType(
+        kt.get_converter(logical_type), pa.string(), logical_type
+    )
+
+    return pa.ExtensionArray.from_storage(
+        null_ext_type, pa.array([None] * num_nulls, pa.string())
     )
 
 
@@ -1221,13 +1225,11 @@ def _wrap_primitive_array(
             # is already LogicalTypeExtensionType
             return array
     elif array.type == pa.null():
-        return _apply_to_array(array, lambda a: _nulls(len(a), dtype=wrapped_type))
+        return _apply_to_array(array, lambda a: _logical_nulls(len(a)))
     elif is_list_type(array.type) and array.type.value_type == pa.null():
 
         def to_list_of_nulls(a):
-            inner_data = _nulls(
-                len(a.values), dtype=wrapped_type.storage_type.value_type
-            )
+            inner_data = _logical_nulls(len(a.values))
             offsets = _get_offsets_with_nulls(a)
             list_data = _create_list_array(offsets, inner_data)
             return pa.ExtensionArray.from_storage(wrapped_type, list_data)

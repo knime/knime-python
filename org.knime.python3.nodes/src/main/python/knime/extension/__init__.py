@@ -111,6 +111,7 @@ blob = _ks.blob
 list_ = _ks.list_
 struct = _ks.struct
 logical = _ks.logical
+null = _ks.null
 supported_value_types = _ks.LogicalType.supported_value_types
 PortObjectSpec = _ks.PortObjectSpec
 BinaryPortObjectSpec = _ks.BinaryPortObjectSpec

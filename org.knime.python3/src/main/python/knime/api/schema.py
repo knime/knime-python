@@ -84,6 +84,7 @@ class PrimitiveTypeId(Enum):
     DOUBLE = "double"
     BOOL = "bool"
     BLOB = "blob"
+    NULL = "null"
 
 
 @unique
@@ -407,6 +408,21 @@ def bool_():
     Create a KNIME boolean type
     """
     return PrimitiveType(PrimitiveTypeId.BOOL)
+
+
+def null():
+    """
+    Create a KNIME null (=void) type.
+
+    Note:
+        Tables coming from KNIME into a pure-Python node's configure method
+        will never have a "null" column data type, as they are represented in
+        KNIME using the most general data type.
+
+        However, a table can have a column with type "null" in the execute method
+        of a pure-Python node and in a Python script node, because there the data is available.
+    """
+    return PrimitiveType(PrimitiveTypeId.NULL)
 
 
 def string(dict_encoding_key_type: DictEncodingKeyType = None):
@@ -1099,6 +1115,7 @@ _knime_type_to_logical_type = {
     string(): _knime_logical_type("StringValueFactory"),
     bool_(): _knime_logical_type("BooleanValueFactory"),
     double(): _knime_logical_type("DoubleValueFactory"),
+    null(): _knime_logical_type("VoidValueFactory"),
     list_(int32()): _knime_logical_type("IntListValueFactory"),
     list_(int64()): _knime_logical_type("LongListValueFactory"),
     list_(string()): _knime_logical_type("StringListValueFactory"),
@@ -1157,8 +1174,8 @@ def _unwrap_primitive_types(schema: Schema) -> Schema:
     """
     unwrapped_columns = []
     for c in schema:
-        c.ktype = _unwrap_primitive_type(c.ktype)
-        unwrapped_columns.append(c)
+        ktype = _unwrap_primitive_type(c.ktype)
+        unwrapped_columns.append(Column(ktype, c.name, c.metadata))
     return schema.__class__.from_columns(unwrapped_columns)
 
 
@@ -1170,8 +1187,8 @@ def _wrap_primitive_types(schema: Schema) -> Schema:
     """
     wrapped_columns = []
     for c in schema:
-        c.ktype = _wrap_primitive_type(c.ktype)
-        wrapped_columns.append(c)
+        ktype = _wrap_primitive_type(c.ktype)
+        wrapped_columns.append(Column(ktype, c.name, c.metadata))
     return schema.__class__.from_columns(wrapped_columns)
 
 
@@ -1192,6 +1209,8 @@ def _create_knime_type_from_id(type_id):
         return bool_()
     elif type_id == "variable_width_binary":
         return blob()
+    elif type_id == "void":
+        return null()
 
 
 def _dict_to_knime_type(spec, traits) -> KnimeType:
@@ -1230,6 +1249,7 @@ _knime_to_type_str = {
     bool_(): "boolean",
     double(): "double",
     blob(): "variable_width_binary",
+    null(): "void",
 }
 
 
