@@ -375,8 +375,8 @@ _arrow_to_knime_types = {
     pa.string(): ks.string(),
     pa.bool_(): ks.bool_(),
     pa.float64(): ks.double(),
-    pa.large_binary(): ks.blob()
-    # pa.null(): ks.void(), ?
+    pa.large_binary(): ks.blob(),
+    pa.null(): ks.null(),
 }
 
 
@@ -391,6 +391,10 @@ def _convert_arrow_type_to_knime(dtype: pa.DataType) -> ks.KnimeType:
             "structDictEncoded", _convert_arrow_type_to_knime(dtype.value_type)
         )
     elif katy.is_value_factory_type(dtype):
+        if dtype.logical_type == katy._arrow_to_knime_list_type:
+            return _convert_arrow_type_to_knime(dtype.storage_type)
+        if dtype.logical_type == katy._arrow_to_knime_primitive_types[pa.null()]:
+            return ks.null()
         if katy._is_knime_primitive_type(dtype):
             return _convert_arrow_type_to_knime(dtype.storage_type)
         return ks.LogicalType(

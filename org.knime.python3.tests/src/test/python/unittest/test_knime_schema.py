@@ -122,6 +122,14 @@ class DoubleTest(TypeTest, unittest.TestCase):
         return isinstance(o, k.PrimitiveType) and o._type_id == k.PrimitiveTypeId.DOUBLE
 
 
+class NullTest(TypeTest, unittest.TestCase):
+    def create_type(self):
+        return k.null()
+
+    def isinstance(self, o):
+        return isinstance(o, k.PrimitiveType) and o._type_id == k.PrimitiveTypeId.NULL
+
+
 class IntListTest(TypeTest, unittest.TestCase):
     def create_type(self):
         return k.list_(k.int32())
@@ -215,6 +223,7 @@ class KnimeTypeInDict(unittest.TestCase):
             k.string(k.DictEncodingKeyType.BYTE): "string[dict_encoding=BYTE_KEY]",
             k.bool_(): "bool",
             k.blob(): "blob",
+            k.null(): "null",
             k.list_(k.int32()): "list<int32>",
             k.struct(k.int32(), k.string()): "struct<int32, string>",
         }
@@ -515,11 +524,13 @@ class SchemaTest(unittest.TestCase):
             k.double(),
             k.string(),
             k.bool_(),
+            k.null(),
             k.list_(k.int32()),
             k.list_(k.int64()),
             k.list_(k.double()),
             k.list_(k.string()),
             k.list_(k.bool_()),
+            k.list_(k.null()),
         ]
         names = [
             "Int",
@@ -527,11 +538,13 @@ class SchemaTest(unittest.TestCase):
             "Double",
             "String",
             "Bool",
+            "Null",
             "Ints",
             "Longs",
             "Doubles",
             "Strings",
             "Bools",
+            "Nulls",
         ]
         s = k.Schema(types, names)
         knime_schema = s.serialize()
