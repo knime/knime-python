@@ -895,13 +895,19 @@ class Schema(_Columnar, PortObjectSpec):
 
     @classmethod
     def from_types(
-        cls, ktypes: List[KnimeType], names: List[str], metadata: List = None
+        cls,
+        ktypes: List[Union[KnimeType, Type]],
+        names: List[str],
+        metadata: List = None,
     ):
         """Create a schema from a list of column data types, names and metadata"""
         return cls(ktypes, names, metadata)
 
     def __init__(
-        self, ktypes: List[KnimeType], names: List[str], metadata: List = None
+        self,
+        ktypes: List[Union[KnimeType, Type]],
+        names: List[str],
+        metadata: List = None,
     ):
         """Create a schema from a list of column data types, names and metadata"""
         if not isinstance(ktypes, Sequence) or not all(
