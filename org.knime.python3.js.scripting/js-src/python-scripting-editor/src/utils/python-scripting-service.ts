@@ -1,8 +1,8 @@
 import type { FlowVariableSetting } from '@knime/ui-extension-service';
-import { ScriptingService,
+import type { ScriptingService, NodeSettings } from 'scripting-editor/src/utils/scripting-service';
+import { ScriptingServiceImpl,
     muteReactivity,
-    createJsonServiceAndLoadSettings } from 'scripting-editor/src/utils/scripting-service';
-import type { NodeSettings } from 'scripting-editor/src/utils/scripting-service';
+    useKnimeScriptingService } from 'scripting-editor/src/utils/scripting-service';
 export type Workspace = { names: string[]; types: string[]; values: string[] };
 
 // Types for the input port view
@@ -37,8 +37,31 @@ export interface PythonNodeSettings extends NodeSettings {
 }
 
 // export interface PythonScriptingService extends
+export interface PythonScriptingService extends ScriptingService<PythonNodeSettings> {
+    dialogOpened();
+    
+    initExecutableOptions();
 
-export class PythonScriptingService extends ScriptingService<PythonNodeSettings> {
+    sendLastConsoleOutput();
+
+    startInteractive(executableSelection: string);
+
+    runInteractive(script: string);
+
+    getInputObjects();
+
+    getInitialExecutableSelection();
+
+    getExecutableSelection();
+
+    setExecutableSelection(id: string);
+
+    getExecutableOptions(executableSelection: string);
+
+    getExecutableInfo(id: string);
+}
+
+class PythonScriptingServiceImpl extends ScriptingServiceImpl<PythonNodeSettings> implements PythonScriptingService {
     dialogOpened(): Promise<void> {
         return this.sendToService('openedDialog');
     }
@@ -102,14 +125,17 @@ const overwritePythonCommandByFlowVarName = ({
 
 export const createScriptingService = async () => {
     const { jsonDataService,
-        flowVariableSettings,
-        initialNodeSettings } = await createJsonServiceAndLoadSettings();
+        flowVariableSettings } = await useKnimeScriptingService();
+
+    const initialNodeSettings = await jsonDataService.initialData();
 
     const pythonScriptingService: PythonNodeSettings = {
         ...initialNodeSettings,
         executableSelection: overwritePythonCommandByFlowVarName({ flowVariableSettings })
     };
-    const scriptingService = new PythonScriptingService(jsonDataService, flowVariableSettings, pythonScriptingService);
+    const scriptingService = new PythonScriptingServiceImpl(
+        jsonDataService, flowVariableSettings, pythonScriptingService
+    );
     muteReactivity(scriptingService);
-    return scriptingService;
+    return scriptingService as PythonScriptingService;
 };
