@@ -1068,7 +1068,7 @@ def _unwrap_primitive_knime_extension_array(array: pa.Array) -> pa.Array:
         and array.type.logical_type == _arrow_to_knime_primitive_types[pa.null()]
     ):
         # Because of https://github.com/apache/arrow/issues/15068 we are storing
-        # null / void arrays as strings, se we also need to turn the string array
+        # null / void arrays as strings, so we also need to turn the string array
         # into nulls on the way back here.
         return pa.nulls(len(array))
     elif _is_knime_primitive_type(array.type):
@@ -1128,7 +1128,9 @@ def _get_wrapped_type(dtype, is_row_key):
         and dtype.value_type == pa.null()
     ):
         # There is no special VoidList type in KNIME, so we need two extension types,
-        # one for the outer list, and one for the inner void type
+        # one for the outer list, and one for the inner void type.
+        # And because of https://github.com/apache/arrow/issues/15068 we are storing
+        # null / void arrays as strings internally.
         inner_logical_type = _arrow_to_knime_primitive_types[pa.null()]
         inner_ext_type = LogicalTypeExtensionType(
             kt.get_converter(inner_logical_type), pa.string(), inner_logical_type

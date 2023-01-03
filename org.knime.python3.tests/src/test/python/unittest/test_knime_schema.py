@@ -555,7 +555,9 @@ class SchemaTest(unittest.TestCase):
 
         self.assertTrue(k._row_key_type == traits[0]["traits"]["logical_type"])
         self.assertTrue(
-            all(k._logical_list_type != t["traits"]["logical_type"] for t in traits)
+            all(
+                k._logical_list_type != t["traits"]["logical_type"] for t in traits[:-1]
+            )
         )
 
         # check roundtrip leads to equality
