@@ -1,9 +1,8 @@
 <script lang="ts">
 
-import { defineComponent, computed, KeepAlive } from 'vue';
+import { defineComponent, KeepAlive } from 'vue';
 import { createScriptingService } from '@/utils/python-scripting-service';
-// import type { PythonScriptingService } from '@/utils/python-mock-scripting-service';
-        
+
 import type { editor,
     Selection } from 'monaco-editor';
 import Button from 'webapps-common/ui/components/Button.vue';
@@ -18,7 +17,6 @@ import type { Workspace,
     ExecutableOption,
     ExecutableInfo,
     PythonNodeSettings } from '../utils/python-scripting-service';
-
 
 import { registerMonacoInputColumnCompletions } from '../utils/python-completions';
 
@@ -49,8 +47,6 @@ const getSelectedLines = (editorModel: editor.ITextModel, selection: Selection) 
 type AppData = {
     // Service
     scriptingSettings?: PythonNodeSettings;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    scriptingService: any;
 
     // Monaco editor
     editor?: editor.IStandaloneCodeEditor;
@@ -81,18 +77,15 @@ export default defineComponent({
     },
     provide() {
         return {
-            scriptingService: computed(() => this.scriptingService)
-            //scriptingService: this.scriptingService
+            scriptingService: this.scriptingService
         };
     },
     async setup() {
-        const pythonScriptingService = await createScriptingService();
-        return { pythonScriptingService };
+        const scriptingService = await createScriptingService();
+        return { scriptingService };
     },
     data(): AppData {
         return {
-            // Service
-            scriptingService: this.pythonScriptingService,
             // Monaco editor
             hasEditorSelection: false,
             // Python process handling

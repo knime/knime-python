@@ -1,15 +1,19 @@
-import type { ConsoleText } from 'scripting-editor/src/utils/scripting-service';
-
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable class-methods-use-this */
 import type { ExecutableOption,
     InputTableInfo,
     PythonNodeSettings,
     CondaPackageInfo,
     InputPortInfo,
-    ExecutableInfo } from './python-scripting-service';
+    ExecutableInfo,
+    PythonScriptingService } from './python-scripting-service';
 
 import type { FlowVariableSetting } from '@knime/ui-extension-service';
 
-export class PythonScriptingService {
+import type { ConsoleText } from 'scripting-editor/src/utils/scripting-service';
+
+
+class PythonScriptingServiceMock implements PythonScriptingService {
     protected readonly flowVariableSettings: {[key: string]: FlowVariableSetting}; // TODO(UIEXT-479) refactor how flow variable information are provided
     // protected readonly initialNodeSettings: T;
     protected currentNodeSettings: PythonNodeSettings;
@@ -32,30 +36,27 @@ export class PythonScriptingService {
             ...initialNodeSettings
         };
     }
-    /* eslint-disable */
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    protected registerEventHandler(type: string, handler: (args: any) => void) {
+        this.eventHandlers[type] = handler;
+    }
+
     dialogOpened(): Promise<void> {
-        return new Promise((r) => setTimeout(r, 100)).then(() => {
-            console.log('dialogOpened');
-        });
+        return new Promise((r) => setTimeout(r, 100));
     }
     
     initExecutableOptions(): Promise<void> {
         //
-        return new Promise((r) => setTimeout(r, 100)).then(() => {
-            console.log('initExecutableOptions');
-        });
+        return new Promise((r) => setTimeout(r, 100));
     }
 
     sendLastConsoleOutput(): Promise<void> {
-        return new Promise((r) => setTimeout(r, 100)).then(() => {
-            console.log('sendLastConsoleOutput');
-        });
+        return new Promise((r) => setTimeout(r, 100));
     }
 
     startInteractive(executableSelection: string): Promise<void> {
-        return new Promise((r) => setTimeout(r, 100)).then(() => {
-            console.log('start interactive');
-        });
+        return new Promise((r) => setTimeout(r, 100));
     }
 
     runInteractive(script: string): Promise<string> {
@@ -89,17 +90,12 @@ export class PythonScriptingService {
         return new Promise((r) => setTimeout(r, 100));
     }
 
-    // TODO is this implemented in the backend?
-    async applySettingsAndExecute() {
-        await this.applySettings();
-    }
-
     getInitialExecutableSelection(): string {
-        return '1'; // this.initialNodeSettings.executableSelection;
+        return this.initialNodeSettings.executableSelection;
     }
 
     getExecutableSelection(): string {
-        return '1';// this.currentNodeSettings.executableSelection;
+        return this.currentNodeSettings.executableSelection;
     }
 
     setExecutableSelection(id: string) {
@@ -110,10 +106,21 @@ export class PythonScriptingService {
         return 'import numpy as np\n';
     }
 
-    setScript(script: string): void {
-        console.log('setscript', script);
+    getScript(): string {
+        return this.currentNodeSettings.script;
     }
-    /* eslint-enable */
+
+    setScript(script: string) {
+        this.currentNodeSettings.script = script;
+    }
+
+    sendLanguageServerMessage(message: string): Promise<any> {
+        return new Promise((r) => setTimeout(r, 100));
+    }
+
+    registerLanguageServerEventHandler(handler: (message: string) => void) {
+        this.registerEventHandler('language-server', handler);
+    }
 
     startLanguageClient(name: string, documentSelector?: string[]) : Promise<any> {
         return new Promise((r) => setTimeout(r, 100));
@@ -150,12 +157,12 @@ export class PythonScriptingService {
 
 export const createScriptingService = async () => {
     await new Promise((r) => setTimeout(r, 1000));
-    const scriptingService = new PythonScriptingService({
+    const scriptingService = new PythonScriptingServiceMock({
         flowVariableSettings: {},
         initialNodeSettings: {
             script: '#This is mocking example',
             executableSelection: '1'
         }
     });
-    return scriptingService;
+    return scriptingService as PythonScriptingService;
 };
