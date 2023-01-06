@@ -53,7 +53,7 @@ export const registerMonacoInputColumnCompletions = (inputPortInfos: InputPortIn
     type CompletionItemWithoutRange = Omit<monaco.languages.CompletionItem, 'range'>;
     let tableIdx = 0;
     let objectIdx = 0;
-    const completions = inputPortInfos.flatMap((portInfo): CompletionItemWithoutRange[] => {
+    const completions = inputPortInfos?.flatMap((portInfo): CompletionItemWithoutRange[] => {
         if (portInfo.type === 'table') {
             const tableInfo = portInfo as InputTableInfo;
             return tableCompletionFor(tableIdx++, tableInfo);
