@@ -1,4 +1,4 @@
-import type { JsonDataService, FlowVariableSetting } from '@knime/ui-extension-service';
+import type { FlowVariableSetting } from '@knime/ui-extension-service';
 import { ScriptingService,
     muteReactivity,
     createJsonServiceAndLoadSettings } from 'scripting-editor/src/utils/scripting-service';
@@ -86,13 +86,9 @@ export class PythonScriptingService extends ScriptingService<PythonNodeSettings>
 }
 
 const overwritePythonCommandByFlowVarName = ({
-    jsonDataService,
-    flowVariableSettings,
-    initialNodeSettings
+    flowVariableSettings
 }: {
-    jsonDataService: JsonDataService;
     flowVariableSettings: { [key: string]: FlowVariableSetting };
-    initialNodeSettings: PythonNodeSettings;
 }) => {
     let executableSelection = '';
     if ('model.python3_command' in flowVariableSettings) {
@@ -101,20 +97,19 @@ const overwritePythonCommandByFlowVarName = ({
             executableSelection = commandFlowVarSetting.controllingFlowVariableName;
         }
     }
-    return {
-        jsonDataService,
-        flowVariableSettings,
-        initialNodeSettings: {
-            script: initialNodeSettings.script,
-            executableSelection
-        }
-    };
+    return executableSelection;
 };
 
 export const createScriptingService = async () => {
-    const scriptingService = new PythonScriptingService(
-        overwritePythonCommandByFlowVarName(await createJsonServiceAndLoadSettings())
-    );
+    const { jsonDataService,
+        flowVariableSettings,
+        initialNodeSettings } = await createJsonServiceAndLoadSettings();
+
+    const pythonScriptingService: PythonNodeSettings = {
+        ...initialNodeSettings,
+        executableSelection: overwritePythonCommandByFlowVarName({ flowVariableSettings })
+    };
+    const scriptingService = new PythonScriptingService(jsonDataService, flowVariableSettings, pythonScriptingService);
     muteReactivity(scriptingService);
     return scriptingService;
 };
