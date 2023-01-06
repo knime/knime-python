@@ -1,5 +1,4 @@
 import type { ConsoleText } from 'scripting-editor/src/utils/scripting-service';
-import { muteReactivity } from 'scripting-editor/src/utils/scripting-service';
 
 import type { ExecutableOption,
     InputTableInfo,
@@ -9,7 +8,6 @@ import type { ExecutableOption,
     ExecutableInfo } from './python-scripting-service';
 
 import type { FlowVariableSetting } from '@knime/ui-extension-service';
-
 
 export class PythonScriptingService {
     protected readonly flowVariableSettings: {[key: string]: FlowVariableSetting}; // TODO(UIEXT-479) refactor how flow variable information are provided
@@ -79,6 +77,7 @@ export class PythonScriptingService {
     getInputObjects(): Promise<InputPortInfo[]> {
         return new Promise((r) => setTimeout(r, 100)).then(() => [
             {
+                variableName: 'MockTable',
                 type: 'table',
                 columnNames: ['T1'],
                 columnTypes: ['int']
@@ -150,6 +149,7 @@ export class PythonScriptingService {
 }
 
 export const createScriptingService = async () => {
+    await new Promise((r) => setTimeout(r, 1000));
     const scriptingService = new PythonScriptingService({
         flowVariableSettings: {},
         initialNodeSettings: {
@@ -157,7 +157,5 @@ export const createScriptingService = async () => {
             executableSelection: '1'
         }
     });
-    await new Promise((r) => setTimeout(r, 100));
-    muteReactivity(scriptingService);
     return scriptingService;
 };
