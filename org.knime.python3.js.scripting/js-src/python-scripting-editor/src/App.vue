@@ -29,10 +29,12 @@ export default defineComponent({
 
 <style lang="postcss" scoped>
   .loading-icon {
-    width: 20%;
-    height: 20%;
+    position: absolute;
+    right: calc(50vw - 50px);
+    top: calc(50vh - 50px);
+    width: 100px;
+    height: 100px;
     stroke-width: calc(32px / 24);
-    margin: 40%;
     stroke: var(--knime-masala);
   }
 </style>
