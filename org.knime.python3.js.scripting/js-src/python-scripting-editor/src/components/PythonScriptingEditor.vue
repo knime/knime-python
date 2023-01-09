@@ -1,7 +1,7 @@
 <script lang="ts">
 
 import { defineComponent, KeepAlive } from 'vue';
-import { createScriptingService } from '@/utils/python-scripting-service';
+import { createScriptingService } from '@/utils/python-mock-scripting-service';
 
 import type { editor,
     Selection } from 'monaco-editor';
@@ -11,6 +11,8 @@ import OutputConsole from 'scripting-editor/src/components/OutputConsole.vue';
 import WorkspaceTable from '../components/WorkspaceTable.vue';
 import InputPortsView from '../components/InputPortsView.vue';
 import CondaEnvironment from '../components/CondaEnvironment.vue';
+
+import PlayIcon from 'webapps-common/ui/assets/img/icons/play.svg';
 
 import type { Workspace,
     InputPortInfo,
@@ -68,6 +70,7 @@ export default defineComponent({
     name: 'PythonScriptingEditor',
     components: {
         ScriptingEditor,
+        PlayIcon,
         Button,
         WorkspaceTable,
         InputPortsView,
@@ -210,6 +213,7 @@ export default defineComponent({
         }
     }
 });
+
 </script>
 
 <template>
@@ -227,12 +231,13 @@ export default defineComponent({
     @monaco-created="onMonacoCreated"
   >
     <template #buttons>
-      <!-- TODO(AP-19344) extract into a dumb component to cleanup the template -->
       <Button
+        :title="'Run script'"
         with-border
         compact
         @click="runFullScript"
       >
+        <PlayIcon />
         Run script
       </Button>
       <Button
@@ -246,23 +251,21 @@ export default defineComponent({
       {{ status }}
     </template>
 
-    <template #lefttabs="{ activeTab }">
+    <template #inputs>
       <InputPortsView
-        v-if="activeTab === 'inputs'"
         :input-port-infos="inputPortInfos"
         @column-clicked="onColumnClicked"
       />
-      <KeepAlive>
-        <CondaEnvironment
-          v-if="activeTab === 'conda_env'"
-          :value="pythonExecutableId"
-          :executable-options="pythonExecutableOptions"
-          :executable-info="pythonExecutableInfo"
-          @input="pythonExecutableChanged"
-        />
-      </KeepAlive>
     </template>
 
+    <template #conda_env>
+      <CondaEnvironment
+        :value="pythonExecutableId"
+        :executable-options="pythonExecutableOptions"
+        :executable-info="pythonExecutableInfo"
+        @input="pythonExecutableChanged"
+      />
+    </template>
     <template #bottomtabs="{ activeTab }">
       <KeepAlive>
         <OutputConsole v-if="activeTab === 'console'" />
