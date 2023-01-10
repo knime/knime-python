@@ -196,6 +196,19 @@ the following parameter types. For a more detailed description see
    :inherited-members:
    :exclude-members: validator
 
+
+.. autoclass:: knime.extension.EnumParameter
+   :members:
+   :noindex:
+   :inherited-members:
+   :exclude-members: validator
+
+
+.. autoclass:: knime.extension.EnumParameterOptions
+   :members:
+   :noindex:
+   :inherited-members:
+
 **Validation**
 
 While each parameter type listed above has default type validation (eg checking if the IntParameter contains only Integers),
