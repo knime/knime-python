@@ -683,16 +683,17 @@ class EnumParameterOptions(Enum):
     A helper class for creating EnumParameter options, based on Python's Enum class.
 
     Developers should subclass this class, and provide enumeration options as class attributes of the subclass,
-    of the form OPTION_NAME = (OPTION_LABEL, OPTION_DESCRIPTION).
+    of the form ``OPTION_NAME = (OPTION_LABEL, OPTION_DESCRIPTION)``.
 
-    Enum option objects can be accessed as attributes of the EnumParameterOptions subclass, e.g. MyEnum.OPTION_NAME.
+    Enum option objects can be accessed as attributes of the EnumParameterOptions subclass, e.g. ``MyEnum.OPTION_NAME``.
     Each option object has the following attributes:
+
     - name: the name of the class attribute, e.g. "OPTION_NAME", which is used as the selection constant;
     - label: the label of the option, displayed in the configuration dialogue of the node;
-    - description: the description of the option, used along with the label to generate a list of the available options
-    in the Node Description and in the configuration dialogue of the node.
+    - description: the description of the option, used along with the label to generate a list of the available options in the Node Description and in the configuration dialogue of the node.
 
-    Example:
+    **Example**::
+
         class CoffeeOptions(EnumParameterOptions):
             CLASSIC = ("Classic", "The classic chocolatey taste, with notes of bitterness and wood.")
             FRUITY = ("Fruity", "A fruity taste, with notes of berries and citrus.")
@@ -736,15 +737,18 @@ class EnumParameterOptions(Enum):
 class EnumParameter(_BaseMultiChoiceParameter):
     """
     Parameter class for multiple-choice parameter types. Replicates and extends the enum functionality
-    previously implemented as part of StringParameter.
+    previously implemented as part of ``StringParameter``.
 
     A subclass of EnumParameterOptions should be provided as the enum parameter, which should contain
-    class attributes of the form OPTION_NAME = (OPTION_LABEL, OPTION_DESCRIPTION). The corresponding
-    option attributes can be accessed via MyOptions.OPTION_NAME.name, .label, and .description respectively.
+    class attributes of the form ``OPTION_NAME = (OPTION_LABEL, OPTION_DESCRIPTION)``. The corresponding
+    option attributes can be accessed via ``MyOptions.OPTION_NAME.name``, ``.label``, and ``.description``
+    respectively.
 
-    The .name attribute of each option is used as the selection constant, e.g. MyOptions.OPTION_NAME.name == "OPTION_NAME".
+    The ``.name`` attribute of each option is used as the selection constant, e.g.
+    ``MyOptions.OPTION_NAME.name == "OPTION_NAME"``.
 
-    Example:
+    **Example**::
+
         class CoffeeOptions(EnumParameterOptions):
             CLASSIC = ("Classic", "The classic chocolatey taste, with notes of bitterness and wood.")
             FRUITY = ("Fruity", "A fruity taste, with notes of berries and citrus.")
