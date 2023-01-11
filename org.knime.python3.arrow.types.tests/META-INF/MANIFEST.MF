@@ -6,15 +6,15 @@ Bundle-Version: 5.0.0.qualifier
 Bundle-ClassPath: .
 Bundle-Vendor: KNIME AG, Zurich, Switzerland
 Bundle-RequiredExecutionEnvironment: JavaSE-11
-Fragment-Host: org.knime.python3.arrow.types;bundle-version="[4.5.0,5.0.0)"
-Require-Bundle: org.knime.core.table;bundle-version="[4.5.0,5.0.0)",
- org.knime.core.columnar;bundle-version="[4.5.0,5.0.0)",
+Fragment-Host: org.knime.python3.arrow.types;bundle-version="[5.0.0,6.0.0)"
+Require-Bundle: org.knime.core.table;bundle-version="[5.0.0,6.0.0)",
+ org.knime.core.columnar;bundle-version="[5.0.0,6.0.0)",
  org.knime.core.columnar.arrow;bundle-version="4.5.0",
  org.apache.arrow.memory-core;bundle-version="[9.0.0,10.0.0)",
  org.apache.arrow.vector;bundle-version="[9.0.0,10.0.0)",
  org.junit;bundle-version="[4.13.0,5.0.0)",
- org.knime.core.data.columnar;bundle-version="[4.5.0,5.0.0)",
+ org.knime.core.data.columnar;bundle-version="[5.0.0,6.0.0)",
  com.fasterxml.jackson.core.jackson-databind;bundle-version="[2.12.1,3.0.0)",
- org.knime.python3.types;bundle-version="[4.7.0,5.0.0)"
+ org.knime.python3.types;bundle-version="[5.0.0,6.0.0)"
 Automatic-Module-Name: org.knime.python3.arrow.types.tests
 Export-Package: org.knime.python3.arrow.types
