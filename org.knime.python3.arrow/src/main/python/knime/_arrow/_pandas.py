@@ -62,6 +62,9 @@ LOGGER = logging.getLogger(__name__)
 
 
 def pandas_df_to_arrow(data_frame: pd.DataFrame, row_ids: str = "auto") -> pa.Table:
+    """
+    Converts the provided DataFrame into a pyarrow Table.
+    """
     if data_frame.shape == (
         0,
         0,
@@ -72,33 +75,46 @@ def pandas_df_to_arrow(data_frame: pd.DataFrame, row_ids: str = "auto") -> pa.Ta
         raise TypeError(
             f"Input must be subclass of a Pandas Dataframe, but is {type(data_frame)}"
         )
+    data_frame = _make_arrow_compatible(data_frame)
+    data_frame = _integrate_row_ids(data_frame, row_ids)
+    return pa.Table.from_pandas(data_frame)
+
+
+def _make_arrow_compatible(data_frame: pd.DataFrame) -> pd.DataFrame:
+    """
+    Converts the DataFrame and any special types contained in it to a "normal" data frame that is understandable by arrow.
+    """
     # extract the schema of the df to convert object type columns to logical types
     schema = extract_knime_schema_from_df(data_frame)
-    # convert the df via registered column converters and by parsing the objects
-    df = convert_df_to_ktypes_from_schema(data_frame, schema)
 
     # change to dataframe, for instance if it was a GeoDataFrame
-    if type(df) != pd.DataFrame:
-        df = pd.DataFrame(df)
+    if type(data_frame) != pd.DataFrame:
+        data_frame = pd.DataFrame(data_frame)
 
+    # convert the df via registered column converters and by parsing the objects
+    data_frame = convert_df_to_ktypes_from_schema(data_frame, schema)
+
+    # Convert all column names to string or PyArrow might complain
+    data_frame.columns = [str(c) for c in data_frame.columns]
+
+    return data_frame
+
+
+def _integrate_row_ids(data_frame: pd.DataFrame, row_ids: str) -> pd.DataFrame:
     # Convert the index to a string series based on the row_ids argument
     if row_ids in ["auto", "keep"]:
-        row_ids_series = _create_row_ids_for_auto_keep(df, row_ids)
+        row_ids_series = _create_row_ids_for_auto_keep(data_frame, row_ids)
         # Prepend the index to the data_frame:
         row_ids_series.name = "<RowID>"
-        df = pd.concat(
-            [row_ids_series.reset_index(drop=True), df.reset_index(drop=True)],
+        return pd.concat(
+            [row_ids_series.reset_index(drop=True), data_frame.reset_index(drop=True)],
             axis=1,
         )
     elif row_ids == "none":
-        df = df.reset_index(drop=True)
+        return data_frame.reset_index(drop=True)
     else:
         raise ValueError('row_ids must be one of ["auto", "keep", "none"]')
 
-    # Convert all column names to string or PyArrow might complain
-    df.columns = [str(c) for c in df.columns]
-
-    return pa.Table.from_pandas(df)
 
 def _create_row_ids_for_auto_keep(df: pd.DataFrame, row_ids: str):
     if df.shape[0] == 0:
@@ -112,8 +128,9 @@ def _create_row_ids_for_auto_keep(df: pd.DataFrame, row_ids: str):
         # Just make sure that the RowID column are strings
         return row_ids_series.astype(str)
 
-def extract_knime_schema_from_df(df: pd.DataFrame):
-    """This method extracts a knime.schema from a dataframe.
+
+def extract_knime_schema_from_df(df: pd.DataFrame) -> dict:
+    """This method extracts a dict schema from a dataframe.
 
     It finds the correct logical type for 'object' columns by using the first type of the first non-empty element in
     that column
@@ -128,6 +145,7 @@ def extract_knime_schema_from_df(df: pd.DataFrame):
     schema = {}
     # extract schema
     for col_name, col_type in zip(df.columns, df.dtypes):
+        # FIXME This check always returns true because everything derives from object
         if isinstance(col_type, object):
             col_type = _resolve_object_type(df[col_name])
         schema[col_name] = col_type
@@ -154,7 +172,7 @@ def _resolve_object_type(col: pd.Series):
         return col.dtype
 
 
-def convert_df_to_ktypes_from_schema(df, schema: dict):
+def convert_df_to_ktypes_from_schema(df: pd.DataFrame, schema: dict) -> pd.DataFrame:
     """Converts a df with a schema containing the correct PandasLogicalTypeExtensionTypes.
 
         This method can be used to convert columns in a dataframe to KNIME types. It iterates over the schema keys to
@@ -165,7 +183,7 @@ def convert_df_to_ktypes_from_schema(df, schema: dict):
     Args:
         df: dataframe to convert
         schema: schema dictionary {col: dtype, …}, where col is a column label and dtype is a numpy.dtype,
-                Python type or PandasLogicalTypeExtensionType to cast one or more of the DataFrame’s columns
+                Python type or PandasLogicalTypeExtensionType to cast one or more of the DataFrame's columns
                 to column-specific types.
 
     Returns:the converted dataframe
@@ -202,9 +220,9 @@ def convert_df_to_ktypes_from_schema(df, schema: dict):
                 df[col_name] = (
                     column.astype(object).where(pd.notnull(column), None).astype(dtype)
                 )
-        except ImportError as e:
+        except ImportError as ex:
             warnings.warn(
-                f"Could not convert the column {col_name}; an import error occured: {e}."
+                f"Could not convert the column {col_name}; an import error occured: {ex}."
             )
         except TypeError:
             warnings.warn(
