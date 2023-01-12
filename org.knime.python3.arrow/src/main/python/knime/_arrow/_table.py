@@ -203,9 +203,13 @@ class ArrowBatchOutputTable(knt.BatchOutputTable):
     def num_batches(self):
         return self._num_batches
 
+    def _write_empty_batch(self) -> None:
+        empty_table = _backend.create_empty_table(pa.schema([("<RowID>", pa.string())]))
+        self.append(empty_table)
+
 
 class ArrowTable(knt.Table):
-    def __init__(self, table):
+    def __init__(self, table: Union[pa.Table, pa.RecordBatch]):
         self._table = table
 
     def to_pandas(

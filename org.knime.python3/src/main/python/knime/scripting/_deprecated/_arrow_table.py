@@ -355,6 +355,10 @@ class ArrowBatchWriteTable(_ArrowWriteTableImpl):
 
         _ArrowWriteTableImpl._append(self, batch)
 
+    def _write_empty_schema(self) -> None:
+        empty_table = ka.create_empty_table(pa.schema([("<RowID>", pa.string())]))
+        self.append(empty_table)
+
     def __str__(self) -> str:
         return super().__str__()
 

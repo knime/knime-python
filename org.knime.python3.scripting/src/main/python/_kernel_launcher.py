@@ -124,6 +124,14 @@ class ScriptingBackendV0(ScriptingBackend):
         kt._backend = kat.ArrowBackend(sink_factory)
 
     def tear_down_arrow(self, flush: bool):
+        # batch tables nothing was ever appended to have an invalid arrow file because no schema
+        # has been written yet
+        for write_table in _ioc._output_tables:
+            if (
+                isinstance(write_table, kat.ArrowBatchWriteTable)
+                and write_table.num_batches == 0
+            ):
+                write_table._write_empty_schema()
         kt._backend.close()
         kt._backend = None
 
@@ -170,6 +178,9 @@ class ScriptingBackendV1(ScriptingBackend):
                 table._write_to_sink(sink)
                 _ioc._output_tables[idx] = sink._java_data_sink
             elif isinstance(table, katn.ArrowBatchOutputTable):
+                # write empty batch to have a valid Arrow schema
+                if table.num_batches == 0:
+                    table._write_empty_batch()
                 _ioc._output_tables[idx] = table._sink._java_data_sink
             else:
                 raise KnimeUserError(
