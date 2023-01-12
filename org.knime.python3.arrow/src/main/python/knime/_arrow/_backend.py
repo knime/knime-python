@@ -341,6 +341,13 @@ def _create_empty_array(dtype: pa.DataType) -> pa.Array:
         return pa.array([], type=dtype)
 
 
+def create_empty_table(schema: pa.Schema) -> pa.Table:
+    """
+    Creates an empty pyarrow.Table with the provided pyarrow.Schema.
+    """
+    return pa.table([_create_empty_array(c.type) for c in schema], schema=schema)
+
+
 @kg.data_sink("org.knime.python3.arrow")
 class ArrowDataSink:
     """A class writing record batches to a file to be read by KNIME."""
