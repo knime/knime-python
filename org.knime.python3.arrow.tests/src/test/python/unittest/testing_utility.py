@@ -190,6 +190,31 @@ def _register_extension_types():
         "knime.types.builtin.FSLocationValue",
     )
 
+    kt.register_python_value_factory(
+        "knime.types.builtin",
+        "DenseByteVectorValueFactory",
+        '"variable_width_binary"',
+        """
+                {
+                    "type": "simple",
+                    "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.value.DenseByteVectorValueFactory\\"}" }
+                }
+                """,
+        "knime.types.builtin.DenseByteVectorValue",
+    )
+    kt.register_python_value_factory(
+        "knime.types.builtin",
+        "DenseBitVectorValueFactory",
+        '"variable_width_binary"',
+        """
+                {
+                    "type": "simple",
+                    "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.value.DenseBitVectorValueFactory\\"}" }
+                }
+                """,
+        "knime.types.builtin.DenseBitVectorValue",
+    )
+
 
 class TestDataSource:
     def __init__(self, absolute_path):
