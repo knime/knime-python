@@ -55,6 +55,11 @@ import pyarrow as pa
 
 import knime._arrow._backend as ka
 import knime._arrow._dictencoding as kasde
+import knime.api.types as kt
+import knime.api.schema as ks
+import knime._arrow._types as katy
+
+from testing_utility import _register_extension_types
 
 
 def _random_string_array(
@@ -73,6 +78,20 @@ def _random_string_array(
         values.append(None)
 
     return [values[random_int(len(values))] for _ in range(num_rows)]
+
+
+def _random_int_array(num_values, max_length=20, seed=0, missing_values=True):
+    random.seed(seed)
+
+    random_ints = [random.randint(0, max_length) for _ in range(num_values)]
+    if missing_values:
+        # replace random values with None
+        missing_mask = [random.random() < 0.5 for _ in range(num_values)]
+        random_ints = [
+            None if missing_mask[i] else random_ints[i] for i in range(num_values)
+        ]
+
+    return random_ints
 
 
 def _struct_dict_encode(data):
@@ -495,6 +514,92 @@ class StructDictArrayTest(AbstractArrayTest, unittest.TestCase):
         self.assertEqual(
             str(lru), "LRUCacheDict([('1', 1), ('2', 2), ('3', 3), ('4', 4), ('0', 0)])"
         )
+
+
+class MyTime:
+    def __init__(self, nano_of_day):
+        if nano_of_day:
+            self.nano_of_day = float(nano_of_day)
+        else:
+            self.nano_of_day = None
+
+    def __str__(self):
+        return f"MyTime(nano_of_day={self.nano_of_day})"
+
+    def __eq__(self, other):
+        if not other:
+            return self.nano_of_day is None
+        return self.nano_of_day == other.nano_of_day
+
+
+class MyLocalTimeValueFactory(kt.PythonValueFactory):
+    def __init__(self) -> None:
+        kt.PythonValueFactory.__init__(self, MyTime)
+
+    def decode(self, nano_of_day):
+        if nano_of_day is None:
+            return None
+        return MyTime(nano_of_day)
+
+    def encode(self, time):
+        if time is None:
+            return None
+        return int(time.nano_of_day)
+
+
+class ProxyArrayTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        _register_extension_types()
+
+        data_spec_json = '"long"'
+        data_traits = """
+                        {
+                            "type": "simple",
+                            "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.time.LocalTimeValueFactory\\"}" }
+                        }
+                        """
+        kt.register_python_value_factory(
+            __name__,
+            "MyLocalTimeValueFactory",
+            data_spec_json,
+            data_traits,
+            "test_extension_arrays.MyTime",
+            False,
+        )
+        print(__name__)
+
+    def test_proxy_array(self):
+        data_spec_json = '"long"'
+        data_traits = """
+                {
+                    "type": "simple",
+                    "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.time.LocalTimeValueFactory\\"}" }
+                }
+                """
+        kt.register_python_value_factory(
+            __name__,
+            "MyLocalTimeValueFactory",
+            data_spec_json,
+            data_traits,
+            "test_extension_arrays.MyTime",
+            False,
+        )
+
+        proxy_type = ks.logical(MyTime).to_pyarrow()
+
+        storage_array = pa.array([1, 2, 3, 4, 5], type=pa.int64())
+        proxy_array = pa.ExtensionArray.from_storage(proxy_type, storage_array)
+        # test getting in pa
+        x = proxy_array[0].as_py()
+        self.assertEqual(x.nano_of_day, 1)
+
+        pandas_proxy_arr = proxy_array.to_pandas()
+        self.assertEqual(pandas_proxy_arr[0].nano_of_day, 1)
+
+        # test setting
+        pandas_proxy_arr[0] = MyTime(1234)
+        self.assertEqual(pandas_proxy_arr[0].nano_of_day, 1234)
 
 
 if __name__ == "__main__":

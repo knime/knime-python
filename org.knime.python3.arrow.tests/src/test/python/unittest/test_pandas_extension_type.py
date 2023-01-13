@@ -976,16 +976,17 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
             try:
                 mod = kt._get_module(mod)
                 dtype = getattr(mod, name)
-                correct_type = ks.logical(dtype).to_pandas()
+                logical_type = ks.logical(dtype)
+                pandas_type = logical_type.to_pandas()
             except (ValueError, ModuleNotFoundError):
                 continue
-
-            string_type = str(correct_type)
+            # test pandas type
+            string_type = str(pandas_type)
             constructed_type = kap.PandasLogicalTypeExtensionType.construct_from_string(
                 string=string_type
             )
-            self.assertEqual(correct_type._logical_type, constructed_type._logical_type)
-            self.assertEqual(correct_type._storage_type, constructed_type._storage_type)
+            self.assertEqual(pandas_type._logical_type, constructed_type._logical_type)
+            self.assertEqual(pandas_type._storage_type, constructed_type._storage_type)
 
     def test_construct_nested_pandas_logical_type_ext_type_from_string(self):
         """Test for the static method that constructs a pandas logical type extension type from a string, but with
@@ -1010,7 +1011,9 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
             string=string_type
         )
         self.assertEqual(pandas_dtype._logical_type, constructed_type._logical_type)
-        self.assertEqual(pandas_dtype._storage_type, constructed_type._storage_type)
+        self.assertEqual(
+            str(pandas_dtype._storage_type), str(constructed_type._storage_type)
+        )
 
 
 if __name__ == "__main__":

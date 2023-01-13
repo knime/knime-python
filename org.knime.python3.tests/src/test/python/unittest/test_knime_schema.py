@@ -53,6 +53,7 @@ import datetime as dt
 
 import knime.api.schema as k
 import knime.api.types as kt
+import knime._arrow._types as katy
 
 
 class TypeTest(ABC):
@@ -746,7 +747,7 @@ class SchemaTest(unittest.TestCase):
 
 class MyTime:
     def __init__(self, nano_of_day):
-        self.nano_of_day = nano_of_day
+        self.nano_of_day = float(nano_of_day)
 
     def __str__(self):
         return f"MyTime(nano_of_day={self.nano_of_day})"
@@ -764,7 +765,7 @@ class MyLocalTimeValueFactory(kt.PythonValueFactory):
     def encode(self, time):
         if time is None:
             return None
-        return time.nano_of_day
+        return int(time.nano_of_day)
 
 
 class ProxyTests(unittest.TestCase):
@@ -817,6 +818,44 @@ class ProxyTests(unittest.TestCase):
             pyarrow_extension_type._converter.__class__, MyLocalTimeValueFactory
         )
         self.assertEqual(pyarrow_extension_type.__class__, kat.ProxyExtensionType)
+
+        import knime._arrow._types as katy
+
+        proxy_type = str(pyarrow_extension_type)
+        p_string = katy.extract_string_from_pa_dtype(pyarrow_extension_type)
+        self.assertEqual(p_string, proxy_type)
+
+    def test_proxy_types_to_string(self):
+        """
+        Tests knime_schema.logical with registered proxy types.
+        """
+
+        _register_extension_types()
+        data_spec_json = '"long"'
+        data_traits = """
+                {
+                    "type": "simple",
+                    "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.time.LocalTimeValueFactory\\"}" }
+                }
+                """
+        kt.register_python_value_factory(
+            __name__,
+            "MyLocalTimeValueFactory",
+            data_spec_json,
+            data_traits,
+            "test_knime_schema.MyTime",
+            False,
+        )
+
+        logical_type = k.logical(MyTime)
+        pyarrow_extension_type = logical_type.to_pyarrow()
+
+        proxy_type = str(pyarrow_extension_type)
+        p_string = katy.extract_string_from_pa_dtype(pyarrow_extension_type)
+        self.assertEqual(p_string, proxy_type)
+
+        p_type = katy.extract_pa_dtype_from_string(proxy_type)
+        self.assertEqual(p_type, pyarrow_extension_type)
 
     def test_type_casting(self):
         """
