@@ -491,8 +491,8 @@ class LogicalTypeExtensionType(pa.ExtensionType):
         )
 
     def __str__(self):
-        storage_type_string = extract_string_from_pa_dtype(self._storage_type)
-        return f"knime.logical_type({storage_type_string}, {self._logical_type})"
+        storage_type_string = extract_string_from_pa_dtype(self.storage_type)
+        return f"extension<knime.logical_type<{storage_type_string}, {self._logical_type}>>"
 
 
 class ProxyExtensionType(LogicalTypeExtensionType):
@@ -532,8 +532,13 @@ class ProxyExtensionType(LogicalTypeExtensionType):
         )
 
     def __str__(self):
-        storage_type_string = extract_string_from_pa_dtype(self._storage_type)
-        return f"knime.proxy_type<{storage_type_string}, {self._logical_type}>"
+        storage_type = extract_string_from_pa_dtype(self.storage_type)
+        converter_string = (
+            self._converter.compatible_type.__module__
+            + "."
+            + self._converter.compatible_type.__qualname__
+        )
+        return f"extension<knime.proxy_type<{storage_type}, {self._logical_type}, {converter_string}>>"
 
 
 # Register our extension type with
@@ -615,7 +620,7 @@ class StructDictEncodedLogicalTypeExtensionType(pa.ExtensionType):
         )
 
     def __str__(self):
-        return f"knime.struct_dict_encoded_logical_type<{self.storage_type}, {self.value_factory_type}>"
+        return f"extension<knime.struct_dict_encoded_logical_type<{self.storage_type}, {self.value_factory_type}>>"
 
 
 pa.register_extension_type(
@@ -742,31 +747,40 @@ def _extract_pa_dtype_from_extension_string(type_string):
     inner_types = type_string[type_string.find("<") + 1 : type_string.rfind(">")]
     inner_types = _split_with_delimiter_when_not_in_angular_brackets(inner_types, ",")
     # extract the inner types
-    inner_types = [extract_pa_dtype_from_string(type_) for type_ in inner_types]
-    if knime_class_name == "knime.struct_dict_encoded":
+
+    if knime_class_name == "knime.struct_dict_encoded_type":
+        inner_types = [
+            extract_pa_dtype_from_string(type_) for type_ in inner_types
+        ]  # no logical type
         return kasde.StructDictEncodedType(
-            inner_types[0]
-        )  # inner_types[0] is the value type
+            inner_type=inner_types[0], key_type=inner_types[1]
+        )
     elif knime_class_name == "knime.struct_dict_encoded_logical_type":
+        storage_type = extract_pa_dtype_from_string(inner_types[0])
+        logical_type = inner_types[1]
         return StructDictEncodedLogicalTypeExtensionType(
-            inner_types[0],
-            inner_types[
-                1
-            ],  # inner_types[0] is the logical type, inner_types[1] is the storage type
+            value_factory_type=logical_type,
+            struct_dict_encoded_type=storage_type,
         )
     elif knime_class_name == "knime.proxy_type":
-        converter = kt.get_converter(inner_types[1])
+        storage_type = extract_pa_dtype_from_string(inner_types[0])
+        logical_type = inner_types[1]
+        converter_string = inner_types[2]
+        python_type = kt.get_python_type_from_name(converter_string)
+        proxy = kt.get_proxy_by_python_type(python_type)
         return ProxyExtensionType(
-            converter=converter,
-            storage_type=inner_types[0],
-            java_value_factory=inner_types[1],
+            converter=proxy[0],
+            storage_type=storage_type,
+            java_value_factory=logical_type,
         )
     elif knime_class_name == "knime.logical_type":
-        converter = kt.get_converter(inner_types[1])
+        storage_type = extract_pa_dtype_from_string(inner_types[0])
+        logical_type = inner_types[1]
+        converter = kt.get_converter(logical_type)
         return LogicalTypeExtensionType(
             converter=converter,
-            storage_type=inner_types[0],
-            java_value_factory=inner_types[1],
+            storage_type=storage_type,
+            java_value_factory=logical_type,
         )
     else:
         raise TypeError(f"Unknown extension type: {knime_class_name}")
@@ -791,20 +805,46 @@ def extract_string_from_pa_dtype(dtype):
         )
     if isinstance(dtype, pa.ListType):
         return f"list<{extract_string_from_pa_dtype(dtype.value_type)}>"
-    if isinstance(dtype, LogicalTypeExtensionType):
-        return f"extension<knime.logical_type_extension<{ extract_string_from_pa_dtype(dtype.storage_type)}>>"
-    if isinstance(dtype, kasde.StructDictEncodedType):
-        return f"extension<knime.struct_dict_encoded<{extract_string_from_pa_dtype(dtype.value_type)}>>"
-    if isinstance(dtype, StructDictEncodedLogicalTypeExtensionType):
-        return (
-            f"extension<knime.struct_dict_encoded_logical_type<{extract_string_from_pa_dtype(dtype.storage_type)},"
-            f" {extract_string_from_pa_dtype(dtype.value_factory_type),}>>"
-        )
+    if (
+        isinstance(dtype, ProxyExtensionType)
+        or isinstance(dtype, LogicalTypeExtensionType)
+        or isinstance(dtype, StructDictEncodedLogicalTypeExtensionType)
+        or isinstance(dtype, kasde.StructDictEncodedType)
+    ):
+        return str(dtype)
     # parse basic type
     elif dtype in string_to_pa_type.values():
         return str(dtype)
 
     raise TypeError(f"Cannot create string from pa.dtype: {dtype}")
+
+
+def get_storage_type(dtype: pa.DataType):
+    """
+    Find storage type, that does not contain ExtensionTypes, such that we can initialize the storage array.
+    For instance in some cases there are StructDictEncodedTypes in nested datatypes, these cannot be instantiated by
+    pyarrow, thus we have to find the underlying storage_type.
+    Args:
+        dtype: pa.type, ( in our case an extensiontype) where we want to locate the storage type
+
+    Returns: storage type
+
+    """
+    if is_value_factory_type(dtype):
+        return get_storage_type(dtype.storage_type)
+    elif kasde.is_struct_dict_encoded(dtype) or is_dict_encoded_value_factory_type(
+        dtype
+    ):
+        return get_storage_type(dtype.value_type)
+    elif is_list_type(dtype):
+        return pa.list_(
+            pa.field(name="$data$", type=get_storage_type(dtype.value_type))
+        )
+    elif pat.is_struct(dtype):
+        struct = [get_storage_type(dtype[i].type) for i in range(dtype.num_fields)]
+        return knime_struct_type(*struct)
+    else:
+        return dtype
 
 
 def data_spec_to_arrow(data_spec):
@@ -833,6 +873,18 @@ def data_spec_to_arrow(data_spec):
             return pa.struct(fields)
         else:
             raise ValueError("Invalid data_spec: " + str(data_spec))
+
+
+def knime_struct_type(*args):
+    """Utility method to create a pyarrow.struct type object for structs coming from KNIME.
+
+    Structs coming from KNIME have no names for the children. Instead the children are named
+    "0", "1", "2", ...
+
+    Arguments:
+        args: The pyarrow types for the children.
+    """
+    return pa.struct([pa.field(f"{i}", t) for i, t in enumerate(args)])
 
 
 def _struct_type_from_values(*args):

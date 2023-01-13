@@ -453,8 +453,8 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
 
             arrow_type = katy.ProxyExtensionType(converter, storage_type, logical_type)
 
-        a = pa.array(scalars, type=storage_type)
-        extension_array = pa.ExtensionArray.from_storage(arrow_type, a)
+        storage_array = pa.array(scalars, type=storage_type)
+        extension_array = pa.ExtensionArray.from_storage(arrow_type, storage_array)
         return KnimePandasExtensionArray(
             storage_type, logical_type, converter, extension_array
         )
@@ -684,7 +684,12 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
                     f"Encoding of the new value is not possible, the array has the type '{ext_type}',"
                     f" maybe its not the right dtype?"
                 )
-            arr = pa.array(encoded_pylist)
+            if katy.contains_knime_extension_type(ext_type):
+                storage_type = katy.get_storage_type(ext_type)
+                arr = pa.array(encoded_pylist, type=storage_type)
+            else:
+                arr = pa.array(encoded_pylist, type=ext_type.storage_type)
+
             self._data = katy._to_extension_array(arr, ext_type)
 
         tmp_list = self._data.to_pylist()  # convert immutable data to mutable list
@@ -855,8 +860,8 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
             null_mask = take(
                 bool_nulls.to_numpy(), indices, fill_value=True, allow_fill=allow_fill
             )  # returns nparray
-
-            taken = pa.array(taken, type=self._storage_type, mask=null_mask)
+            storage_type = katy.get_storage_type(self._storage_type)
+            taken = pa.array(taken, type=storage_type, mask=null_mask)
 
         else:
             taken = storage.take(indices)

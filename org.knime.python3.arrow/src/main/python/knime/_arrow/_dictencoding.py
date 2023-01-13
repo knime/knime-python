@@ -482,7 +482,7 @@ class StructDictEncodedType(pa.ExtensionType):
         )
 
     def __str__(self):
-        return f"knime.struct_dit_encoded_type<{self._key_type}, {self._inner_type}>"
+        return f"extension<knime.struct_dict_encoded_type<{self._key_type}, {self._inner_type}>>"
 
 
 def is_struct_dict_encoded(dtype: pa.DataType):

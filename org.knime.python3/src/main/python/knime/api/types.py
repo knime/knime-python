@@ -154,6 +154,19 @@ def _get_module(module_name):
         raise ValueError(msg)
 
 
+def get_python_type_from_name(name):
+    """Returns the python type for the given name.
+    Args:
+        name: String in the format module.qualname
+
+    Returns: python type
+
+    """
+    module_name, type_name = name.rsplit(".", 1)
+    module = _get_module(module_name)
+    return getattr(module, type_name)
+
+
 def _get_converter_or_value_factory(module, class_name):
     try:
         clazz = getattr(module, class_name)

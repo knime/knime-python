@@ -79,15 +79,11 @@ def _register_rdkit_value_factories():
     kt.register_python_value_factory(
         chem_module,
         "SmilesValueFactory",
-        '{"type": "struct", "inner_types": ["variable_width_binary", "string"]}',
+        '{"type": "struct", "inner_types": ["variable_width_binary"]}',
         """
         {
-            "type": "struct", 
-            "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.geospatial.core.data.cell.GeoCell$ValueFactory\\"}" }, 
-            "inner": [
-                {"type": "simple", "traits": {}},
-                {"type": "simple", "traits": {}}
-            ]
+            "type": "simple", 
+            "traits": {"logical_type": "{\\"value_factory_class\\":\\"org.knime.chem.types.SmilesCellValueFactory\\"}"}
         }
         """,
         "knime.types.chemistry.SmilesValue",
