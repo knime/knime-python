@@ -663,24 +663,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
 
         """
         # Setup
-        import knime.api.types as kt
-
-        kt.register_python_value_factory(
-            "knime.types.builtin",
-            "LocalDateTimeValueFactory",
-            '{"type": "struct", "inner_types": ["long", "long"]}',
-            """
-                    {
-                        "type": "struct",
-                        "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.time.LocalDateTimeValueFactory\\"}" },
-                        "inner": [
-                            {"type": "simple", "traits": {}},
-                            {"type": "simple", "traits": {}}
-                        ]
-                    }
-                    """,
-            "datetime.datetime",
-        )
+        _register_extension_types()
 
         with DummyJavaDataSinkFactory() as sink_creator:
             arrow_backend = kat.ArrowBackend(sink_creator)
@@ -782,7 +765,6 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
                 sets=True,
             )
 
-            # print(df.columns)
             remove_cols = [
                 "StringCol",
                 "StringListCol",
