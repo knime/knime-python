@@ -784,47 +784,47 @@ propagated with or for interoperation with KNIME.
          fragment="true"
          unpack="false"/>
 
-   <plugin
+   <!-- plugin
          id="org.knime.pythonscripting.channel.v1.bin"
          download-size="0"
          install-size="0"
-         version="0.0.0"/>
+         version="0.0.0"/ -->
 
-   <plugin
+   <!-- plugin
          id="org.knime.pythonscripting.channel.v1.bin.linux.x86_64"
          os="linux"
          arch="x86_64"
          download-size="0"
          install-size="0"
          version="0.0.0"
-         fragment="true"/>
+         fragment="true"/ -->
 
-   <plugin
+   <!-- plugin
          id="org.knime.pythonscripting.channel.v1.bin.win32.x86_64"
          os="win32"
          arch="x86_64"
          download-size="0"
          install-size="0"
          version="0.0.0"
-         fragment="true"/>
+         fragment="true"/ -->
 
-   <plugin
+   <!-- plugin
          id="org.knime.pythonscripting.channel.v1.bin.macosx.x86_64"
          os="macosx"
          arch="x86_64"
          download-size="0"
          install-size="0"
          version="0.0.0"
-         fragment="true"/>
+         fragment="true"/ -->
 
 
-   <plugin
+   <!-- plugin
          id="org.knime.pythonscripting.channel.v1.bin.macosx.aarch64"
          os="macosx"
          arch="aarch64"
          download-size="0"
          install-size="0"
          version="0.0.0"
-         fragment="true"/>
+         fragment="true"/ -->
 
 </feature>
