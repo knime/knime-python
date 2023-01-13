@@ -44,31 +44,14 @@
 """
 @author Jonas Klotz, KNIME GmbH, Berlin, Germany
 """
-import os
-from codecs import ignore_errors
-from os import pardir
-from typing import Type, Union
+
 import unittest
+import knime_schema as ks
+import knime.api.types as kt
 import pandas as pd
-import pyarrow as pa
-import numpy as np
-
-import knime._arrow._backend as ka
-import knime.scripting._deprecated._arrow_table as kat
-import knime_node_arrow_table as knat
-
-import knime._arrow._pandas as kap
-import knime._arrow._types as katy
-import knime._arrow._backend as knar
-import knime_types as kt
 
 from testing_utility import (
-    DummyJavaDataSink,
-    DummyWriter,
-    TestDataSource,
-    _generate_backends,
     _generate_test_data_frame,
-    _generate_test_table,
     _register_extension_types,
 )
 
@@ -78,16 +61,37 @@ def _register_rdkit_value_factories():
 
     kt.register_python_value_factory(
         chem_module,
-        "SmilesValueFactory",
-        '{"type": "struct", "inner_types": ["variable_width_binary"]}',
+        "SmilesAdapterValueFactory",
+          '{"type": "struct", "inner_types": ["string", "variable_width_binary"]}',
         """
         {
-            "type": "simple", 
-            "traits": {"logical_type": "{\\"value_factory_class\\":\\"org.knime.chem.types.SmilesCellValueFactory\\"}"}
+            "type": "struct", 
+            "traits": {"logical_type": "{\\"value_factory_class\\":\\"org.knime.chem.types.SmilesAdapterCellValueFactory\\"}"},
+            "inner": [
+                {"type": "simple", "traits": {}},
+                {"type": "simple", "traits": {}}
+            ]
         }
         """,
-        "knime.types.chemistry.SmilesValue",
+        "chemistry.SmilesAdapterValue",
     )
+    kt.register_python_value_factory(
+        chem_module,
+        "SmilesValueFactory",
+        '{"type": "struct", "inner_types": ["string", "variable_width_binary"]}',
+        """
+        {
+            "type": "struct", 
+            "traits": {"logical_type": "{\\"value_factory_class\\":\\"org.knime.chem.types.SmilesCellValueFactory\\"}"},
+            "inner": [
+                {"type": "simple", "traits": {}},
+                {"type": "simple", "traits": {}}
+            ]
+        }
+        """,
+        "chemistry.SmilesValue",
+    )
+
 
 
 class RdKitExtensionTypeTest(unittest.TestCase):
@@ -98,7 +102,6 @@ class RdKitExtensionTypeTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         try:
-            # from rdkit import Chem
             import sys
             import os
 
@@ -127,20 +130,49 @@ class RdKitExtensionTypeTest(unittest.TestCase):
         _register_extension_types()
         _register_rdkit_value_factories()
 
-    def test_rdkit_extension_types(self):
-        """
-        Tests the RDKit extension types.
+    def test_type_registration(self):
+        """ Tests if the RDKit extension types are registered correctly.
         """
         df = _generate_test_data_frame(
-            "rdkit.zip", columns=["smiles", "mol", "fingerprints"]
+            "rdkit.zip", columns=["smiles", "fingerprint", "countFingerprint"]
         )
-        elem = df["fingerprints"][0]
-        import knime_schema as ks
+        for col_key in df.columns:
+            col_index = df.columns.get_loc(col_key)
+            rdkit_fp_type = type(df.iloc[2, col_index])
+            knime_type = ks.logical(rdkit_fp_type)
+            pandas_type = knime_type.to_pandas()
+            col_type = df.dtypes[col_index]
+            self.assertEqual(pandas_type, col_type)
 
-        rdkit_fp_type = type(elem)
-        knime_type = ks.logical(rdkit_fp_type)
-        fingerprint_type = knime_type.to_pandas()
-        df["CountFingerprint"] = pd.Series(
-            [elem], dtype=fingerprint_type, index=df.index
+    def test_setting_in_rdkit_extension_array(self):
+        """
+        Tests if the RDKit extension array setitem method works as expected.
+        """
+        df = _generate_test_data_frame(
+            "rdkit.zip", columns=["smiles", "fingerprint", "countFingerprint"]
         )
-        df["CountFingerprint"][0] = elem
+        df.reset_index(inplace=True, drop=True)  # drop index as it messes up equality
+
+        df.loc[1, lambda dfu: [df.columns[0]]] = df.loc[2, lambda dfu: [df.columns[0]]]
+
+        # test single item setting with int index for all columns
+        for col_key in df.columns:
+            col_index = df.columns.get_loc(col_key)
+            df.iloc[1, col_index] = df.iloc[2, col_index]  # test iloc
+            df.loc[1, col_key] = df.loc[2, col_key]
+
+        self.assertTrue(df.iloc[1].equals(df.iloc[2]), msg="The rows are not equal")
+
+        # test slice setting
+        for col_key in df.columns:
+            col_index = df.columns.get_loc(col_key)
+            df.iloc[:3, col_index] = df.iloc[3:6, col_index]
+            df.loc[:3, col_key] = df.loc[3:6, col_key]
+
+        self.assertTrue(df.iloc[0].equals(df.iloc[2]), msg="The rows are not equal")
+
+        # test concat setting
+        df = pd.concat([df, df.iloc[2].to_frame().T])
+        self.assertTrue(df.iloc[2].equals(df.iloc[-1]))
+
+
