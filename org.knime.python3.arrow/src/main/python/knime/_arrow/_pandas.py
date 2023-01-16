@@ -887,7 +887,7 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
         )
 
     def astype(self, dtype, copy: bool = True):
-        if not isinstance(dtype, PandasLogicalTypeExtensionType):
+        if self.dtype == dtype or not isinstance(dtype, PandasLogicalTypeExtensionType):
             # fall back to default
             return super().astype(dtype, copy)
 
