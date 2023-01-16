@@ -803,17 +803,17 @@ def extract_string_from_pa_dtype(dtype):
                 for field in dtype
             )
         )
+
     if isinstance(dtype, pa.ListType):
         return f"list<{extract_string_from_pa_dtype(dtype.value_type)}>"
+
     if (
         isinstance(dtype, ProxyExtensionType)
         or isinstance(dtype, LogicalTypeExtensionType)
         or isinstance(dtype, StructDictEncodedLogicalTypeExtensionType)
         or isinstance(dtype, kasde.StructDictEncodedType)
+        or dtype in string_to_pa_type.values()
     ):
-        return str(dtype)
-    # parse basic type
-    elif dtype in string_to_pa_type.values():
         return str(dtype)
 
     raise TypeError(f"Cannot create string from pa.dtype: {dtype}")

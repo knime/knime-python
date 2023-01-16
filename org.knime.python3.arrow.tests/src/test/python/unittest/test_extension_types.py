@@ -126,125 +126,129 @@ class TimeExtensionTypeTest(unittest.TestCase):
     def test_passing_arrow_time_types_to_knime(self):
         import pyarrow as pa
 
-        arrow_backend, node_backend = testing_utility._generate_backends()
-        n = 15
-        types = {
-            "t32": pa.time32("ms"),  # no pandas
-            "t64": pa.time64("ns"),  # no pandas
-            "d32": pa.date32(),  # pandas
-            "d64": pa.date64(),  # pandas
-            "dur": pa.duration("ns"),  # pandas
-            "tz_ts": pa.timestamp("ms", tz="America/New_York"),
-        }
-        schema = (
-            "RowKey: string\n"
-            "t32: time32[ms]\n"
-            "t64: time64[ns]\n"
-            "d32: date32[day]\n"
-            "d64: date64[ms]\n"
-            "dur: duration[ns]\n"
-            "tz_ts: timestamp[ms, tz=America/New_York]"
-        )
-        # in pa versions lower than 9 timezones are parsed differently such that half tz's like tz=+07:30 do not work
-        if int(pa.__version__.split(".")[0]) >= 9:
-            types["half_tz_ts"] = pa.timestamp("s", tz="+07:30")
-            types["half_tz_ts2"] = pa.timestamp("s", tz="-07:30")
-            schema += (
-                "\nhalf_tz_ts: timestamp[s, tz=+07:30]\n"
-                "half_tz_ts2: timestamp[s, tz=-07:30]"
+        with testing_utility.ArrowTestBackends() as test_backends:
+            n = 15
+            types = {
+                "t32": pa.time32("ms"),  # no pandas
+                "t64": pa.time64("ns"),  # no pandas
+                "d32": pa.date32(),  # pandas
+                "d64": pa.date64(),  # pandas
+                "dur": pa.duration("ns"),  # pandas
+                "tz_ts": pa.timestamp("ms", tz="America/New_York"),
+            }
+            schema = (
+                "RowKey: string\n"
+                "t32: time32[ms]\n"
+                "t64: time64[ns]\n"
+                "d32: date32[day]\n"
+                "d64: date64[ms]\n"
+                "dur: duration[ns]\n"
+                "tz_ts: timestamp[ms, tz=America/New_York]"
             )
+            # in pa versions lower than 9 timezones are parsed differently such that half tz's like tz=+07:30 do not work
+            if int(pa.__version__.split(".")[0]) >= 9:
+                types["half_tz_ts"] = pa.timestamp("s", tz="+07:30")
+                types["half_tz_ts2"] = pa.timestamp("s", tz="-07:30")
+                schema += (
+                    "\nhalf_tz_ts: timestamp[s, tz=+07:30]\n"
+                    "half_tz_ts2: timestamp[s, tz=-07:30]"
+                )
 
-        arrays = [pa.array([f"Row{i}" for i in range(n)])]
-        for type_name in types.keys():
-            dtype = types[type_name]
-            arrays.append(pa.array([i * 10 for i in range(n)], type=dtype))
+            arrays = [pa.array([f"Row{i}" for i in range(n)])]
+            for type_name in types.keys():
+                dtype = types[type_name]
+                arrays.append(pa.array([i * 10 for i in range(n)], type=dtype))
 
-        names = ["RowKey"] + list(types.keys())
-        table = pa.table(arrays, names=names)
-        arrow_table = arrow_backend.write_table(table)  # send to KNIME
-        self.assertEqual(str(arrow_table._schema), schema)
+            names = ["RowKey"] + list(types.keys())
+            table = pa.table(arrays, names=names)
+            arrow_table = test_backends.deprecated_arrow_backend.write_table(
+                table
+            )  # send to KNIME
+            self.assertEqual(str(arrow_table._schema), schema)
 
     def test_passing_pandas_time_types_to_knime(self):
         import pandas as pd
 
-        arrow_backend, node_backend = testing_utility._generate_backends()
+        with testing_utility.ArrowTestBackends() as test_backends:
+            timestamp_series = pd.Series(
+                pd.date_range("2012-1-1", periods=3, freq="D"), name="timestamp"
+            )
 
-        timestamp_series = pd.Series(
-            pd.date_range("2012-1-1", periods=3, freq="D"), name="timestamp"
-        )
+            timedelta_series = pd.Series(
+                [pd.Timedelta(days=i) for i in range(3)], name="timedelta"
+            )
+            tz_timestamp_series = pd.Series(
+                pd.date_range(
+                    "3/6/2012 05:00", periods=3, freq="D", tz="America/New_York"
+                ),
+                name="tz_timestamp",
+            )
 
-        timedelta_series = pd.Series(
-            [pd.Timedelta(days=i) for i in range(3)], name="timedelta"
-        )
-        tz_timestamp_series = pd.Series(
-            pd.date_range("3/6/2012 05:00", periods=3, freq="D", tz="America/New_York"),
-            name="tz_timestamp",
-        )
+            content = [tz_timestamp_series, timestamp_series, timedelta_series]
+            for ser in content:
+                ser.index = [f"Row{i}" for i in range(3)]
 
-        content = [tz_timestamp_series, timestamp_series, timedelta_series]
-        for ser in content:
-            ser.index = [f"Row{i}" for i in range(3)]
-
-        df = pd.concat(content, axis=1)
-        empty_series = pd.Series([pd.NA] * len(df.columns), index=df.columns)
-        df = df.append(empty_series, ignore_index=True)
-        arrow_table = arrow_backend.write_table(df)
-        schema = (
-            "<RowID>: string\n"
-            "tz_timestamp: extension<knime.logical_type<LogicalTypeExtensionType>>\n"
-            "timestamp: extension<knime.logical_type<LogicalTypeExtensionType>>\n"
-            "timedelta: extension<knime.logical_type<LogicalTypeExtensionType>>"
-        )
-        # for pa 7 and 9 there is apparently different precision
-        self.assertEqual(
-            schema, arrow_table._schema.to_string(show_schema_metadata=False)
-        )
+            df = pd.concat(content, axis=1)
+            empty_series = pd.Series([pd.NA] * len(df.columns), index=df.columns)
+            df = df.append(empty_series, ignore_index=True)
+            arrow_table = test_backends.deprecated_arrow_backend.write_table(df)
+            schema = (
+                "<RowID>: string\n"
+                "tz_timestamp: extension<knime.logical_type<LogicalTypeExtensionType>>\n"
+                "timestamp: extension<knime.logical_type<LogicalTypeExtensionType>>\n"
+                "timedelta: extension<knime.logical_type<LogicalTypeExtensionType>>"
+            )
+            # for pa 7 and 9 there is apparently different precision
+            self.assertEqual(
+                schema, arrow_table._schema.to_string(show_schema_metadata=False)
+            )
 
     def test_passing_datetime_time_types_to_knime(self):
         """These are interpreted as objects in pandas"""
         from datetime import time, timedelta, datetime, date, timezone
         import pandas as pd
 
-        arrow_backend, node_backend = testing_utility._generate_backends()
+        with testing_utility.ArrowTestBackends() as test_backends:
+            df = testing_utility._generate_test_data_frame(
+                "dates.zip", columns=["date"]
+            )
+            arrow_table = test_backends.deprecated_arrow_backend.write_table(df)
+            schema = (
+                "<RowID>: string\n"
+                "date: extension<knime.logical_type<LogicalTypeExtensionType>>"
+            )
+            self.assertEqual(
+                schema, arrow_table._schema.to_string(show_schema_metadata=False)
+            )
 
-        df = testing_utility._generate_test_data_frame("dates.zip", columns=["date"])
-        arrow_table = arrow_backend.write_table(df)
-        schema = (
-            "<RowID>: string\n"
-            "date: extension<knime.logical_type<LogicalTypeExtensionType>>"
-        )
-        self.assertEqual(
-            schema, arrow_table._schema.to_string(show_schema_metadata=False)
-        )
+            # pandas timedelta,  pandas datetime and pandas datetime TZD type
+            # are all handled by the column converter as they're not treated as objects
+            time_delta_series = pd.Series(
+                [timedelta(days=64, seconds=29156, microseconds=i) for i in range(3)]
+            )
+            datetime_series = pd.Series([datetime.now()] * 3)
 
-        # pandas timedelta,  pandas datetime and pandas datetime TZD type
-        # are all handled by the column converter as they're not treated as objects
-        time_delta_series = pd.Series(
-            [timedelta(days=64, seconds=29156, microseconds=i) for i in range(3)]
-        )
-        datetime_series = pd.Series([datetime.now()] * 3)
+            # object in pandas
+            date_series = pd.Series([date(2002, 12, i) for i in range(1, 4)])
+            time_series = pd.Series([time(hour=i) for i in range(1, 4)])
 
-        # object in pandas
-        date_series = pd.Series([date(2002, 12, i) for i in range(1, 4)])
-        time_series = pd.Series([time(hour=i) for i in range(1, 4)])
+            content = [time_delta_series, datetime_series, date_series, time_series]
 
-        content = [time_delta_series, datetime_series, date_series, time_series]
+            for ser in content:
+                ser.index = [f"Row{i}" for i in range(1, 4)]
+            df = pd.concat(content, axis=1)
 
-        for ser in content:
-            ser.index = [f"Row{i}" for i in range(1, 4)]
-        df = pd.concat(content, axis=1)
-
-        arrow_table = arrow_backend.write_table(df)
-        schema = (
-            "<RowID>: string\n"
-            "0: extension<knime.logical_type<LogicalTypeExtensionType>>\n"
-            "1: extension<knime.logical_type<LogicalTypeExtensionType>>\n"
-            "2: extension<knime.logical_type<LogicalTypeExtensionType>>\n"
-            "3: extension<knime.logical_type<LogicalTypeExtensionType>>"
-        )
-        self.assertEqual(
-            schema, arrow_table._schema.to_string(show_schema_metadata=False)
-        )
+            arrow_table = test_backends.deprecated_arrow_backend.write_table(df)
+            schema = (
+                "<RowID>: string\n"
+                "0: extension<knime.logical_type<LogicalTypeExtensionType>>\n"
+                "1: extension<knime.logical_type<LogicalTypeExtensionType>>\n"
+                "2: extension<knime.logical_type<LogicalTypeExtensionType>>\n"
+                "3: extension<knime.logical_type<LogicalTypeExtensionType>>"
+            )
+            self.assertEqual(
+                schema, arrow_table._schema.to_string(show_schema_metadata=False)
+            )
 
     def test_timezone_support(self):
         from dateutil.zoneinfo import get_zonefile_instance
@@ -253,45 +257,45 @@ class TimeExtensionTypeTest(unittest.TestCase):
         import pandas as pd
         import pytz
 
-        arrow_backend, node_backend = testing_utility._generate_backends()
+        with testing_utility.ArrowTestBackends() as test_backends:
+            zonenames = list(get_zonefile_instance().zones)  # 595 elements
+            pytz_tz = sorted(pytz.all_timezones)  # 594 elements
 
-        zonenames = list(get_zonefile_instance().zones)  # 595 elements
-        pytz_tz = sorted(pytz.all_timezones)  # 594 elements
+            datetime_tz_series = pd.Series(
+                [datetime.now(tz=tz.gettz(timezone)) for timezone in zonenames]
+            )
 
-        datetime_tz_series = pd.Series(
-            [datetime.now(tz=tz.gettz(timezone)) for timezone in zonenames]
-        )
+            df = datetime_tz_series.to_frame()
 
-        df = datetime_tz_series.to_frame()
+            arrow_table = test_backends.deprecated_arrow_backend.write_table(df)
+            schema = (
+                "<RowID>: string\n"
+                "0: extension<knime.logical_type<LogicalTypeExtensionType>>"
+            )
+            print(arrow_table._schema.to_string(show_schema_metadata=False))
+            self.assertEqual(
+                schema, arrow_table._schema.to_string(show_schema_metadata=False)
+            )
 
-        arrow_table = arrow_backend.write_table(df)
-        schema = (
-            "<RowID>: string\n"
-            "0: extension<knime.logical_type<LogicalTypeExtensionType>>"
-        )
-        print(arrow_table._schema.to_string(show_schema_metadata=False))
-        self.assertEqual(
-            schema, arrow_table._schema.to_string(show_schema_metadata=False)
-        )
-
-        tz_timestamp_series = pd.Series(
-            [pd.Timestamp(1513393355, unit="s", tz=timezone) for timezone in pytz_tz],
-        )
-        df = tz_timestamp_series.to_frame()
-        empty_series = pd.Series([pd.NA] * len(df.columns), index=df.columns)
-        df = df.append(empty_series, ignore_index=True)
-        arrow_table = arrow_backend.write_table(df)
-        schema = (
-            "<RowID>: string\n"
-            "0: extension<knime.logical_type<LogicalTypeExtensionType>>"
-        )
-        self.assertEqual(
-            schema, arrow_table._schema.to_string(show_schema_metadata=False)
-        )
+            tz_timestamp_series = pd.Series(
+                [
+                    pd.Timestamp(1513393355, unit="s", tz=timezone)
+                    for timezone in pytz_tz
+                ],
+            )
+            df = tz_timestamp_series.to_frame()
+            empty_series = pd.Series([pd.NA] * len(df.columns), index=df.columns)
+            df = df.append(empty_series, ignore_index=True)
+            arrow_table = test_backends.deprecated_arrow_backend.write_table(df)
+            schema = (
+                "<RowID>: string\n"
+                "0: extension<knime.logical_type<LogicalTypeExtensionType>>"
+            )
+            self.assertEqual(
+                schema, arrow_table._schema.to_string(show_schema_metadata=False)
+            )
 
     def test_fslocation(self):
-        arrow_backend, node_backend = testing_utility._generate_backends()
-
         df = testing_utility._generate_test_data_frame(
             "dict_enc_fs_location.zip", columns=["fslocation"]
         )

@@ -46,7 +46,7 @@
 """
 
 import unittest
-import knime_schema as ks
+import knime.api.schema as ks
 import knime.api.types as kt
 import pandas as pd
 
@@ -56,13 +56,13 @@ from testing_utility import (
 )
 
 
-def _register_rdkit_value_factories():
-    chem_module = "chemistry"
+def _register_chemistry_value_factories():
+    chem_module = "knime.types.chemistry"
 
     kt.register_python_value_factory(
         chem_module,
         "SmilesAdapterValueFactory",
-          '{"type": "struct", "inner_types": ["string", "variable_width_binary"]}',
+        '{"type": "struct", "inner_types": ["string", "variable_width_binary"]}',
         """
         {
             "type": "struct", 
@@ -73,7 +73,7 @@ def _register_rdkit_value_factories():
             ]
         }
         """,
-        "chemistry.SmilesAdapterValue",
+        "knime.types.chemistry.SmilesAdapterValue",
     )
     kt.register_python_value_factory(
         chem_module,
@@ -89,14 +89,13 @@ def _register_rdkit_value_factories():
             ]
         }
         """,
-        "chemistry.SmilesValue",
+        "knime.types.chemistry.SmilesValue",
     )
 
 
-
-class RdKitExtensionTypeTest(unittest.TestCase):
+class ChemistryExtensionTypeTest(unittest.TestCase):
     """
-    Tests for the RDKit extension types.
+    Tests for the chemistry extension types.
     """
 
     @classmethod
@@ -106,8 +105,10 @@ class RdKitExtensionTypeTest(unittest.TestCase):
             import os
 
             # we expect that the knime-chemistry git repository is located next to knime-python
+            this_file_path = os.path.dirname(os.path.realpath(__file__))
             sys.path.append(
                 os.path.join(
+                    this_file_path,
                     "..",
                     "..",
                     "..",
@@ -119,41 +120,38 @@ class RdKitExtensionTypeTest(unittest.TestCase):
                     "python",
                     "src",
                     "org",
-                    "knime",
-                    "types",
                 )
             )
-            import chemistry as chemtypes
+            import knime.types.chemistry
         except ImportError as e:
             raise unittest.SkipTest("Module is not installed:  \n", e)
 
         _register_extension_types()
-        _register_rdkit_value_factories()
+        _register_chemistry_value_factories()
 
     def test_type_registration(self):
-        """ Tests if the RDKit extension types are registered correctly.
-        """
+        """Tests if the chemistry extension types are registered correctly."""
         df = _generate_test_data_frame(
             "rdkit.zip", columns=["smiles", "fingerprint", "countFingerprint"]
         )
         for col_key in df.columns:
             col_index = df.columns.get_loc(col_key)
-            rdkit_fp_type = type(df.iloc[2, col_index])
-            knime_type = ks.logical(rdkit_fp_type)
+            value_type = type(df.iloc[2, col_index])
+            knime_type = ks.logical(value_type)
             pandas_type = knime_type.to_pandas()
             col_type = df.dtypes[col_index]
             self.assertEqual(pandas_type, col_type)
 
-    def test_setting_in_rdkit_extension_array(self):
+    def test_setting_in_chemistry_extension_array(self):
         """
-        Tests if the RDKit extension array setitem method works as expected.
+        Tests if the chemistry extension array setitem method works as expected.
         """
         df = _generate_test_data_frame(
             "rdkit.zip", columns=["smiles", "fingerprint", "countFingerprint"]
         )
         df.reset_index(inplace=True, drop=True)  # drop index as it messes up equality
 
-        df.loc[1, lambda dfu: [df.columns[0]]] = df.loc[2, lambda dfu: [df.columns[0]]]
+        df.loc[1, lambda _: [df.columns[0]]] = df.loc[2, lambda _: [df.columns[0]]]
 
         # test single item setting with int index for all columns
         for col_key in df.columns:
@@ -174,5 +172,3 @@ class RdKitExtensionTypeTest(unittest.TestCase):
         # test concat setting
         df = pd.concat([df, df.iloc[2].to_frame().T])
         self.assertTrue(df.iloc[2].equals(df.iloc[-1]))
-
-
