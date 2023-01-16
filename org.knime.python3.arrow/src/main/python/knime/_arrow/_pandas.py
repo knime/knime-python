@@ -684,11 +684,9 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
                     f"Encoding of the new value is not possible, the array has the type '{ext_type}',"
                     f" maybe its not the right dtype?"
                 )
-            if katy.contains_knime_extension_type(ext_type):
-                storage_type = katy.get_storage_type(ext_type)
-                arr = pa.array(encoded_pylist, type=storage_type)
-            else:
-                arr = pa.array(encoded_pylist, type=ext_type.storage_type)
+
+            storage_type = katy.get_storage_type(ext_type)
+            arr = pa.array(encoded_pylist, type=storage_type)
 
             self._data = katy._to_extension_array(arr, ext_type)
 

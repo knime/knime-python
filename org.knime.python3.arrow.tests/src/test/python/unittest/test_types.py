@@ -123,8 +123,10 @@ def _read_write_ipc(input_table):
 
 class NullColumnTypeTest(unittest.TestCase):
     def setUp(self):
-        _, new = testing_utility._generate_backends()
-        kt._backend = new
+        backends = testing_utility.ArrowTestBackends()
+        backends.__enter__()
+        kt._backend = backends.arrow_backend
+        self.addCleanup(backends.__exit__, None, None, None)
 
     def test_null_type_in_table_schema(self):
         # create a table with nulls in a column

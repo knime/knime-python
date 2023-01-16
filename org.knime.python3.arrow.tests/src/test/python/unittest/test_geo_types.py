@@ -63,10 +63,7 @@ import knime._arrow._backend as knar
 import knime_types as kt
 
 from testing_utility import (
-    DummyJavaDataSink,
-    DummyWriter,
-    TestDataSource,
-    _generate_backends,
+    ArrowTestBackends,
     _generate_test_data_frame,
     _generate_test_table,
     _register_extension_types,
@@ -166,6 +163,7 @@ class GeoSpatialExtensionTypeTest(unittest.TestCase):
             this_file_path = os.path.dirname(os.path.realpath(__file__))
             sys.path.append(
                 os.path.join(
+                    this_file_path,
                     "..",
                     "..",
                     "..",
@@ -187,29 +185,25 @@ class GeoSpatialExtensionTypeTest(unittest.TestCase):
             import knime.types.geospatial
 
             GeoSpatialExtensionTypeTest.geospatial_types_found = True
-        except ImportError:
-            # We simply skip the tests if no geospatial extension was found
-            print(
-                "Skipping GeoSpatial tests because knime-geospatial could not be found or 'geopandas' is not available"
+        except ImportError as e:
+            raise unittest.SkipTest(
+                """
+                Skipping GeoSpatial tests because knime-geospatial could 
+                not be found or 'geopandas' is not available
+                """,
+                e,
             )
-            pass
 
     def _to_pandas(self, arrow):
         return kap.arrow_data_to_pandas_df(arrow)
 
     def test_load_table(self):
-        if not GeoSpatialExtensionTypeTest.geospatial_types_found:
-            return
-
         t = _generate_test_table("geospatial_table_3.zip")
         self.assertEqual(["<Row ID>", "column1", "geometry"], t.schema.names)
         self.assertEqual([pa.string(), pa.string()], t.schema.types[0:2])
         self.assertIsInstance(t.schema.types[2], pa.ExtensionType)
 
     def test_load_df(self):
-        if not GeoSpatialExtensionTypeTest.geospatial_types_found:
-            return
-
         t = _generate_test_table("geospatial_table_3.zip")
         df = self._to_pandas(t)
         from shapely.geometry import Point
@@ -218,6 +212,7 @@ class GeoSpatialExtensionTypeTest(unittest.TestCase):
         use_geodf = True
         if use_geodf:
             df = geopandas.GeoDataFrame(df)
+            crs = df.crs
 
         # Appending this way keeps the CRS
         df = pd.concat(
@@ -234,6 +229,7 @@ class GeoSpatialExtensionTypeTest(unittest.TestCase):
             # appending a Point directly only works if it's a GeoDataFrame,
             # but it drops the CRS and we get a deprecation warning from shapely
             df.loc[len(df)] = ["testPoint2", Point(654, 23)]
+            df.crs = crs
 
         out_t = kap.pandas_df_to_arrow(df)
         self.assertEqual(Point(30, 10), out_t[2][0].as_py().to_shapely())
@@ -242,78 +238,70 @@ class GeoSpatialExtensionTypeTest(unittest.TestCase):
             self.assertEqual(Point(654, 23), out_t[2][2].as_py().to_shapely())
 
     def test_knime_node_table(self):
-        if not GeoSpatialExtensionTypeTest.geospatial_types_found:
-            return
         from shapely.geometry import Point
         import geopandas as gpd
 
-        arrow_backend, node_arrow_backend = _generate_backends()
-        # load test table
-        t = _generate_test_table(path="geospatial_table_3.zip")
-        df = self._to_pandas(t)
-        df.columns = ["column1", "geometry"]
+        with ArrowTestBackends() as test_backends:
+            # load test table
+            t = _generate_test_table(path="geospatial_table_3.zip")
+            df = self._to_pandas(t)
+            df.columns = ["column1", "geometry"]
 
-        gdf = gpd.GeoDataFrame(df)
-        gdf = pd.concat(
-            [
-                gdf,
-                gpd.GeoDataFrame(
-                    [["testPoint", Point(12, 34)]], columns=["column1", "geometry"]
-                ),
-            ],
-            ignore_index=True,
-        )
-        gdf["area"] = gdf.area
-        original_df = gdf.reset_index(drop=True)
+            gdf = gpd.GeoDataFrame(df)
+            gdf = pd.concat(
+                [
+                    gdf,
+                    gpd.GeoDataFrame(
+                        [["testPoint", Point(12, 34)]], columns=["column1", "geometry"]
+                    ),
+                ],
+                ignore_index=True,
+            )
+            gdf["area"] = gdf.area
+            original_df = gdf.reset_index(drop=True)
 
-        # new backend
-        gdf_copy = gdf.copy(deep=True)
-        node_table = node_arrow_backend.create_table_from_pandas(
-            gdf_copy, sentinel="min"
-        )
-        geodf2 = gpd.GeoDataFrame(node_table.to_pandas())
-        new_df = geodf2.reset_index(drop=True)
-        self.assertEqual(original_df.crs, new_df.crs)
-        self.assertCountEqual(original_df.columns, new_df.columns)
-        self.assertCountEqual(original_df, new_df)
+            # new backend
+            gdf_copy = gdf.copy(deep=True)
+            node_table = test_backends.arrow_backend.create_table_from_pandas(
+                gdf_copy, sentinel="min"
+            )
+            geodf2 = gpd.GeoDataFrame(node_table.to_pandas())
+            new_df = geodf2.reset_index(drop=True)
+            self.assertEqual(original_df.crs, new_df.crs)
+            self.assertCountEqual(original_df.columns, new_df.columns)
+            self.assertCountEqual(original_df, new_df)
 
-        # old backend
-        gdf_copy = gdf.copy(deep=True)
-        # test if conversion to table alters the original df
-        table = arrow_backend.write_table(gdf_copy)
-        new_df = gdf_copy.reset_index(drop=True)
-        self.assertEqual(original_df.crs, new_df.crs)
-        self.assertCountEqual(original_df.columns, new_df.columns)
-        self.assertCountEqual(original_df, new_df)
+            # old backend
+            gdf_copy = gdf.copy(deep=True)
+            # test if conversion to table alters the original df
+            test_backends.deprecated_arrow_backend.write_table(gdf_copy)
+            new_df = gdf_copy.reset_index(drop=True)
+            self.assertEqual(original_df.crs, new_df.crs)
+            self.assertCountEqual(original_df.columns, new_df.columns)
+            self.assertCountEqual(original_df, new_df)
 
     def test_after_conversion_to_kntable(self):
-        if not GeoSpatialExtensionTypeTest.geospatial_types_found:
-            return
         import geopandas as gpd
 
-        arrow_backend, node_arrow_backend = _generate_backends()
+        with ArrowTestBackends() as test_backends:
+            # load test table
+            df = _generate_test_data_frame(
+                file_name="geospatial_table_3.zip", columns=["column1", "geometry"]
+            )
+            gdf = gpd.GeoDataFrame(df)
 
-        # load test table
-        df = _generate_test_data_frame(
-            file_name="geospatial_table_3.zip", columns=["column1", "geometry"]
-        )
-        gdf = gpd.GeoDataFrame(df)
-
-        # test for new backend
-        gdf_copy = gdf.copy(deep=True)
-        node_table = node_arrow_backend.create_table_from_pandas(
-            gdf_copy, sentinel="min"
-        )
-        self.assertTrue(gdf.equals(gdf_copy))
-        # test for old backend
-        gdf_copy = gdf.copy(deep=True)
-        table = arrow_backend.write_table(gdf_copy)
-        self.assertTrue(gdf.equals(gdf_copy))
+            # test for new backend
+            gdf_copy = gdf.copy(deep=True)
+            test_backends.arrow_backend.create_table_from_pandas(
+                gdf_copy, sentinel="min"
+            )
+            self.assertTrue(gdf.equals(gdf_copy))
+            # test for old backend
+            gdf_copy = gdf.copy(deep=True)
+            test_backends.deprecated_arrow_backend.write_table(gdf_copy)
+            self.assertTrue(gdf.equals(gdf_copy))
 
     def test_dict_decoding_geospatials(self):
-        if not GeoSpatialExtensionTypeTest.geospatial_types_found:
-            return
-
         df = _generate_test_data_frame(
             "5kDictEncodedChunkedGeospatials.zip", columns=["Name", "geometry"]
         )
@@ -333,35 +321,31 @@ class GeoSpatialExtensionTypeTest(unittest.TestCase):
         self.assertEqual(str(sliced[5]), "POINT (30 10)")
 
     def test_missing_values(self):
-        if not GeoSpatialExtensionTypeTest.geospatial_types_found:
-            return
         import geopandas as gpd
 
-        arrow_backend, node_arrow_backend = _generate_backends()
+        with ArrowTestBackends() as test_backends:
+            # load test table
+            df = _generate_test_data_frame(
+                file_name="geospatial_table_3.zip", columns=["column1", "geometry"]
+            )
+            gdf = gpd.GeoDataFrame(df)
+            crs = gdf.crs
+            gdf.loc[len(gdf)] = ["Point(10 10)", np.nan]
+            gdf.loc[len(gdf)] = ["Point(10 10)", pd.NA]
+            gdf = gdf.reset_index(drop=True)
+            gdf.crs = crs
 
-        # load test table
-        df = _generate_test_data_frame(
-            file_name="geospatial_table_3.zip", columns=["column1", "geometry"]
-        )
-        gdf = gpd.GeoDataFrame(df)
-        crs = gdf.crs
-        gdf.loc[len(gdf)] = ["Point(10 10)", np.nan]
-        gdf.loc[len(gdf)] = ["Point(10 10)", pd.NA]
-        gdf = gdf.reset_index(drop=True)
-
-        arrow_table = arrow_backend.write_table(gdf)
-        schema = (
-            "<RowID>: string\n"
-            "column1: string\n"
-            "geometry: extension<knime.logical_type<LogicalTypeExtensionType>>"
-        )
-        self.assertEqual(
-            schema, arrow_table._schema.to_string(show_schema_metadata=False)
-        )
+            arrow_table = test_backends.deprecated_arrow_backend.write_table(gdf)
+            schema = (
+                "<RowID>: string\n"
+                "column1: string\n"
+                "geometry: extension<knime.logical_type<LogicalTypeExtensionType>>"
+            )
+            self.assertEqual(
+                schema, arrow_table._schema.to_string(show_schema_metadata=False)
+            )
 
     def test_setting_crs_with_other_ext_types(self):
-        if not GeoSpatialExtensionTypeTest.geospatial_types_found:
-            return
         _register_extension_types()
         _register_geospatial_value_factories()
         _register_extension_types()

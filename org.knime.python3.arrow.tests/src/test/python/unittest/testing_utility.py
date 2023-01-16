@@ -247,9 +247,7 @@ class DummyJavaDataSink:
         pass
 
     def setFinalSize(self, size):
-        import os
-
-        os.remove(self._path)
+        pass
 
     def write(self, data):
         pass
@@ -283,10 +281,7 @@ class DummyJavaDataSinkFactory:
 
     def __exit__(self, *args):
         for sink in self._sinks:
-            try:
-                os.remove(sink)
-            except FileNotFoundError:
-                pass
+            os.remove(sink)
 
     def create_data_sink(self) -> ka.ArrowDataSink:
         dummy_java_sink = DummyJavaDataSink()
@@ -307,7 +302,7 @@ def _create_dummy_arrow_sink():
 
 def _generate_test_table(path):
     """generates test pa.Table from filepath"""
-    knime_generated_table_path = path
+    knime_generated_table_path = os.path.join(os.path.dirname(__file__), path)
     test_data_source = TestDataSource(knime_generated_table_path)
     pa_data_source = knar.ArrowDataSource(test_data_source)
     arrow = pa_data_source.to_arrow_table()
@@ -316,15 +311,24 @@ def _generate_test_table(path):
     return arrow
 
 
-def _generate_backends():
-    dummy_java_sink = DummyJavaDataSink()
-    dummy_writer = DummyWriter()
-    arrow_sink = ka.ArrowDataSink(dummy_java_sink)
-    arrow_sink._writer = dummy_writer
+class ArrowTestBackends:
+    def __init__(self):
+        self.deprecated_arrow_backend = None
+        self.arrow_backend = None
 
-    arrow_backend = kat.ArrowBackend(DummyJavaDataSink)
-    node_arrow_backend = knat._ArrowBackend(DummyJavaDataSink)
-    return arrow_backend, node_arrow_backend
+    def __enter__(self):
+        dummy_java_sink = DummyJavaDataSink()
+        self._sink_file = dummy_java_sink._path
+        dummy_writer = DummyWriter()
+        arrow_sink = ka.ArrowDataSink(dummy_java_sink)
+        arrow_sink._writer = dummy_writer
+
+        self.deprecated_arrow_backend = kat.ArrowBackend(DummyJavaDataSink)
+        self.arrow_backend = knat._ArrowBackend(DummyJavaDataSink)
+        return self
+
+    def __exit__(self, *args):
+        os.remove(self._sink_file)
 
 
 def _generate_test_data_frame(
@@ -357,14 +361,12 @@ def _generate_test_data_frame(
     return df
 
 
-def _generate_arrow_table(file_name) -> pa.Table:
+def _generate_arrow_table(path) -> pa.Table:
     """Creates an Arrow Table from a KNIME table on disk
 
     @param path: path for the KNIME Table
     """
-    knime_generated_table_path = os.path.normpath(
-        os.path.join(__file__, "..", file_name)
-    )
+    knime_generated_table_path = os.path.join(os.path.dirname(__file__), path)
     test_data_source = TestDataSource(knime_generated_table_path)
     pa_data_source = knar.ArrowDataSource(test_data_source)
     arrow = pa_data_source.to_arrow_table()
