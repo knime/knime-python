@@ -56,6 +56,47 @@ from testing_utility import (
 )
 
 
+class Fingerprint:
+    def __init__(self, length: int, active_bytes: dict):
+        self._length = length
+        self._active_bytes = active_bytes
+
+    def __str__(self):
+        return f"Fingerprint<length={self._length}>:{(self._active_bytes)}"
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, Fingerprint):
+            return False
+
+        return (
+            self._length == other._length and self._active_bytes == other._active_bytes
+        )
+
+
+class FingerprintValueFactory(kt.PythonValueFactory):
+    def __init__(self):
+        kt.PythonValueFactory.__init__(self, Fingerprint)
+
+    def decode(self, storage):
+        if storage is None:
+            return None
+
+        active_bytes = {}
+        for i, v in enumerate(storage):
+            if v:
+                active_bytes[i] = v
+        return Fingerprint(length=len(storage), active_bytes=active_bytes)
+
+    def encode(self, value: Fingerprint):
+        if value is None:
+            return None
+
+        ba = bytearray(value._length)
+        for idx, v in value._active_bytes.items():
+            ba[idx] = v % 256
+        return ba
+
+
 def _register_chemistry_value_factories():
     chem_module = "knime.types.chemistry"
 
@@ -90,6 +131,23 @@ def _register_chemistry_value_factories():
         }
         """,
         "knime.types.chemistry.SmilesValue",
+    )
+
+    dense_byte_vector_spec = '"variable_width_binary"'
+    dense_byte_vector_traits = """
+        {
+            "type": "simple",
+            "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.value.DenseByteVectorValueFactory\\"}" }
+        }
+        """
+
+    kt.register_python_value_factory(
+        __name__,
+        "FingerprintValueFactory",
+        dense_byte_vector_spec,
+        dense_byte_vector_traits,
+        "test_chemistry_types.Fingerprint",
+        False,
     )
 
 
@@ -172,3 +230,32 @@ class ChemistryExtensionTypeTest(unittest.TestCase):
         # test concat setting
         df = pd.concat([df, df.iloc[2].to_frame().T])
         self.assertTrue(df.iloc[2].equals(df.iloc[-1]))
+
+    def test_proxy_fingerprint_type(self):
+        """
+        Test reading/writing the fingerprint data via a proxy type, similar to what RDKit does
+        """
+        df = _generate_test_data_frame(
+            "rdkit.zip", columns=["smiles", "fingerprint", "countFingerprint"]
+        )
+
+        import knime.types.builtin as ktb
+
+        orig_type = ks.logical(ktb.DenseByteVectorValue).to_pandas()
+        self.assertEqual(orig_type, df.dtypes[2])
+
+        fp_type = ks.logical(Fingerprint).to_pandas()
+        casted = df["countFingerprint"].astype(fp_type)
+        self.assertEqual(fp_type, casted.dtype)
+
+        fp = Fingerprint(42, {1: 1, 2: 2, 12: 12})
+        casted[2] = fp
+        self.assertEqual(fp, casted[2])
+        self.assertEqual(str(fp), str(casted[2]))
+
+        roundtrip = casted.astype(orig_type)
+        self.assertFalse(all(roundtrip == df["countFingerprint"]))
+
+
+if __name__ == "__main__":
+    unittest.main()
