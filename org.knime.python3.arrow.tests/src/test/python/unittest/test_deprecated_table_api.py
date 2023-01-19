@@ -434,7 +434,6 @@ class FixedSizeListTest(unittest.TestCase):
 
 
 class MockSink:
-
     def write(self, data) -> None:
         self.data = data
 
