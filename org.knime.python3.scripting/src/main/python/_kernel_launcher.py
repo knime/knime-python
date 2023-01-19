@@ -124,14 +124,14 @@ class ScriptingBackendV0(ScriptingBackend):
         kt._backend = kat.ArrowBackend(sink_factory)
 
     def tear_down_arrow(self, flush: bool):
-        # batch tables nothing was ever appended to have an invalid arrow file because no schema
+        # batch tables without batches have an invalid arrow file because no schema
         # has been written yet
         for write_table in _ioc._output_tables:
             if (
                 isinstance(write_table, kat.ArrowBatchWriteTable)
                 and write_table.num_batches == 0
             ):
-                write_table._write_empty_schema()
+                write_table._write_empty_batch()
         kt._backend.close()
         kt._backend = None
 

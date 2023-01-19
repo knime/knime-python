@@ -52,8 +52,7 @@ Type system and schema definition for KNIME tables.
 # Types
 # --------------------------------------------------------------------
 from abc import ABC, abstractmethod
-from typing import Dict, Iterator, List, Optional, Sequence, Type, Union
-from collections.abc import Iterable
+from typing import Dict, Iterable, Iterator, List, Optional, Sequence, Type, Union
 import logging
 from enum import Enum, unique
 
