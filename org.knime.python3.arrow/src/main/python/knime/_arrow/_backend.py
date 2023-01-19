@@ -325,7 +325,7 @@ def _create_empty_array(dtype: pa.DataType) -> pa.Array:
     elif pa.types.is_list(dtype):
         values = _create_empty_array(dtype.value_type)
         offsets = pa.array([0], type=pa.int32())
-        if pa.__version__ >= "8.0.0":
+        if int(pa.__version__.split(".")[0]) >= 8:
             return pa.ListArray.from_arrays(offsets, values, type=dtype)
         if dtype.value_type in [
             t for t in kat._arrow_to_knime_primitive_list_types.keys()
