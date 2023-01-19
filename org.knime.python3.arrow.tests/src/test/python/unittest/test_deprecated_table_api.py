@@ -433,6 +433,12 @@ class FixedSizeListTest(unittest.TestCase):
         self.assertEqual("4 tests: [0, 1, 2, 3]", str(fsl))
 
 
+class MockSink:
+
+    def write(self, data) -> None:
+        self.data = data
+
+
 class EmptyTableCreationTest(unittest.TestCase):
     def test_create_empty_table(self):
         with self.assertRaises(ValueError):
@@ -440,7 +446,10 @@ class EmptyTableCreationTest(unittest.TestCase):
 
     def test_create_table_from_empty_df(self):
         df = pd.DataFrame()
-        t = kat.ArrowWriteTable(None, df)
+        sink = MockSink()
+        t = kat.ArrowWriteTable(sink, df)
+        self.assertEqual(0, len(sink.data))
+        self.assertEqual("<RowID>", sink.data.column_names[0])
 
 
 if __name__ == "__main__":
