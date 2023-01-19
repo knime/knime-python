@@ -283,11 +283,6 @@ class ArrowTable(knt.Table):
         """
         data = self._get_table()
 
-        if len(data) == 0:
-            # write at least the schema
-            sink.write(data)
-            return
-
         if isinstance(data, pa.RecordBatch):
             batches = [data]
         else:
@@ -304,6 +299,10 @@ class ArrowTable(knt.Table):
         """
         Split a table into batches of KNIMEs desired batch size.
         """
+        if len(data) == 0:
+            # Return data so that we write the schema even if no rows are present
+            return [data]
+
         desired_num_batches = data.nbytes / self._MAX_NUM_BYTES_PER_BATCH
         if desired_num_batches < 1:
             return data.to_batches()
