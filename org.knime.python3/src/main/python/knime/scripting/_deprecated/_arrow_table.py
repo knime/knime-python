@@ -257,6 +257,17 @@ class _ArrowWriteTableImpl(kta.WriteTable):
                 )
             data = kap.pandas_df_to_arrow(data, row_ids="keep")
 
+        if len(data) == 0:
+            # Write out an empty batch anyway to get a valid schema into the Arrow file
+            self._num_batches += 1
+            if len(data.columns) == 0:
+                # Add an empty rowID column to stay backwards compatible
+                data = pa.Table.from_arrays(
+                    [pa.array([], pa.string())], names=["<RowID>"]
+                )
+            self._sink.write(data)
+            return
+
         batches = self._split_table(data)
         self._num_batches += len(batches)
         for b in batches:
