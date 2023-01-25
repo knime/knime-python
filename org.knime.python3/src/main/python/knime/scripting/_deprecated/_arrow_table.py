@@ -262,8 +262,8 @@ class _ArrowWriteTableImpl(kta.WriteTable):
             self._num_batches += 1
             if len(data.columns) == 0:
                 # Add an empty rowID column to stay backwards compatible
-                data = pa.Table.from_arrays(
-                    [pa.array([], pa.string())], names=["<RowID>"]
+                data = kat.wrap_primitive_arrays(
+                    pa.Table.from_arrays([pa.array([], pa.string())], names=["<RowID>"])
                 )
             self._sink.write(data)
             return
