@@ -104,7 +104,11 @@ def _create_table_from_pandas(data, sentinel, row_ids="auto", first_row_id=0):
         raise ValueError(
             f"Table.from_pandas expects a pandas.DataFrame, but got {type(data)}"
         )
-    if row_ids in ["auto", "keep"]:
+    if row_ids == "auto" and data.shape == (0, 0):
+        # ignored by kap.pandas_df_to_arrow because the DataFrame is empty
+        pandas_row_ids = row_ids
+        arrow_row_ids = "generate"
+    elif row_ids in ["auto", "keep"]:
         # The "<RowID>" column is added by the kap.pandas_df_to_arrow function from
         # the DataFrame index
         pandas_row_ids = row_ids
