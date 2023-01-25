@@ -9,8 +9,8 @@
 	<packaging>eclipse-test-plugin</packaging>
   
     <properties>
-        <revision>4.5.0</revision>
-	<sonar.sources></sonar.sources>
+        <revision>4.5.3</revision>
+	<sonar.sources/>
 	<sonar.tests>src</sonar.tests>
     </properties>
 
