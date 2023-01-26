@@ -380,8 +380,6 @@ class GeoSpatialExtensionTypeTest(unittest.TestCase):
             return
         import geopandas as gpd
 
-        arrow_backend, node_arrow_backend = _generate_backends()
-
         # load test table
         df = _generate_test_data_frame(
             file_name="5kDictEncodedChunkedGeospatials.zip",

@@ -87,12 +87,12 @@ def _make_arrow_compatible(data_frame: pd.DataFrame) -> pd.DataFrame:
     # extract the schema of the df to convert object type columns to logical types
     schema = extract_knime_schema_from_df(data_frame)
 
+    # convert the df via registered column converters and by parsing the objects
+    data_frame = convert_df_to_ktypes_from_schema(data_frame, schema)
+
     # change to dataframe, for instance if it was a GeoDataFrame
     if type(data_frame) != pd.DataFrame:
         data_frame = pd.DataFrame(data_frame)
-
-    # convert the df via registered column converters and by parsing the objects
-    data_frame = convert_df_to_ktypes_from_schema(data_frame, schema)
 
     # Convert all column names to string or PyArrow might complain
     data_frame.columns = [str(c) for c in data_frame.columns]
@@ -542,28 +542,28 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
             "KnimePandasExtensionArray cannot be created from factorized yet."
         )
 
-    def get_the_correct_chunk(self, item):
+    def get_chunk_for_global_index(self, index):
         """Returns the correct chunk for the given item.
 
         Args:
-            item:  The item to get the chunk for.
+            index:  The item to get the chunk for.
 
         Returns:
             chunk: The chunk that contains the item.
-            item: The correct item index in the chunk.
+            local_index: The correct index in the chunk.
 
         """
         if self._chunk_start_list is None:
             self._chunk_start_list = katy._get_all_chunk_start_indices(self._data)
-        if item < 0:  # if we have a negative index access
-            item = len(self) + item
+        if index < 0:  # if we have a negative index access
+            index = len(self) + index
         # use a right bisection to locate the closest chunk index
-        chunk_idx = bisect.bisect_right(self._chunk_start_list, item) - 1
-        item = (
-            item - self._chunk_start_list[chunk_idx]
+        chunk_idx = bisect.bisect_right(self._chunk_start_list, index) - 1
+        index = (
+            index - self._chunk_start_list[chunk_idx]
         )  # get the index inside the chunk
         chunk = self._data.chunk(chunk_idx)  # get the correct chunk
-        return chunk, item
+        return chunk, index
 
     def _get_data_from_ndarray_indexer(self, item):
         shape = item.shape
@@ -593,7 +593,7 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
                 or isinstance(self._storage_type, pa.ListType)
             ):
                 out = katy.get_int_indexer_from_nested_storage(
-                    self._data, item, self.get_the_correct_chunk
+                    self._data, item, self.get_chunk_for_global_index
                 )
                 if isinstance(out, katy.KnimeExtensionScalar):
                     return out.as_py()  #  output is decoded automatically

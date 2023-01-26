@@ -74,7 +74,9 @@ if pa.__version__.split(".")[0] == "8":
             if hasattr(self, "type") and isinstance(
                 self.type, LogicalTypeExtensionType
             ):  # if we have an extension type
-                return self.type.decode(self.value.as_py())  # use our own decode
+                return self.type.decode(
+                    self.value.as_py() if self.value else None
+                )  # use our own decode
             return _orig_ext_scalar_as_py(
                 self
             )  # else use the usual ExtensionScalar as_py
@@ -299,11 +301,6 @@ def _get_array_to_storage_fn(dtype: pa.DataType):
 def contains_knime_extension_type(dtype: pa.DataType):
     """
     Checks if the given datatype contains a LogicalTypeExtensionType or a StructDictEncodedLogicalTypeExtensionType
-    Args:
-        dtype:
-
-    Returns:
-
     """
     if (
         is_value_factory_type(dtype)
@@ -499,9 +496,9 @@ class LogicalTypeExtensionType(pa.ExtensionType):
             _ext_type = self
 
             def as_py(self):
-                if self.value is None:
-                    self._ext_type.decode(self.value)
-                return self._ext_type.decode(self.value.as_py())
+                return self._ext_type.decode(
+                    self.value.as_py() if self.value is not None else None
+                )
 
         return LogicalTypeExtensionScalar
 
@@ -647,7 +644,7 @@ class StructDictEncodedLogicalTypeExtensionType(pa.ExtensionType):
 
         class StructDictEncodedLogicalTypeExtensionScalar(pa.ExtensionScalar):
             def as_py(self):
-                return self.value.as_py()
+                return self.value.as_py() if self.value else None
 
         return StructDictEncodedLogicalTypeExtensionScalar
 
@@ -943,11 +940,11 @@ def _struct_type_from_values(*args):
 class KnimeExtensionArray(pa.ExtensionArray):
     _chunk_start_list = None
 
-    def get_the_correct_chunk(self, item):
+    def get_chunk_for_global_index(self, index):
         """Returns the correct chunk for the given item.
 
         Args:
-            item:  The item to get the chunk for.
+            index:  The item to get the chunk for.
 
         Returns:
             chunk: The chunk that contains the item.
@@ -956,15 +953,15 @@ class KnimeExtensionArray(pa.ExtensionArray):
         """
         if self._chunk_start_list is None:
             self._chunk_start_list = _get_all_chunk_start_indices(self.storage)
-        if item < 0:  # if we have a negative index access
-            item = len(self) + item
+        if index < 0:  # if we have a negative index access
+            index = len(self) + index
         # use a right bisection to locate the closest chunk index
-        chunk_idx = bisect.bisect_right(self._chunk_start_list, item) - 1
-        item = (
-            item - self._chunk_start_list[chunk_idx]
+        chunk_idx = bisect.bisect_right(self._chunk_start_list, index) - 1
+        index = (
+            index - self._chunk_start_list[chunk_idx]
         )  # get the index inside the chunk
         chunk = self.storage.chunk(chunk_idx)  # get the correct chunk
-        return chunk, item
+        return chunk, index
 
     def __getitem__(self, idx: int):
         """
@@ -985,7 +982,7 @@ class KnimeExtensionArray(pa.ExtensionArray):
             self.storage, pa.ListArray
         ):
             storage_scalar = get_int_indexer_from_nested_storage(
-                self.storage, idx, self.get_the_correct_chunk
+                self.storage, idx, self.get_chunk_for_global_index
             )
         else:
             storage_scalar = self.storage[idx]
@@ -1071,9 +1068,9 @@ class KnimeExtensionScalar:
         return unpickle_knime_extension_scalar, (self.ext_type, self.storage_scalar)
 
     def as_py(self):
-        if self.storage_scalar is None:
-            return self.ext_type.decode(None)
-        return self.ext_type.decode(self.storage_scalar.as_py())
+        return self.ext_type.decode(
+            self.storage_scalar.as_py() if self.storage_scalar is not None else None
+        )
 
 
 def unpickle_knime_extension_scalar(ext_type, storage_scalar):
