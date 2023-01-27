@@ -361,6 +361,7 @@ class _BaseParameter(ABC):
         default_value: Union[Any, DefaultValueProvider[Any]],
         validator: Optional[Callable[[Any], None]] = None,
         since_version: str = None,
+        is_advanced: bool = False,
     ):
         """
         Args:
@@ -375,6 +376,7 @@ class _BaseParameter(ABC):
         self._validator = validator if validator is not None else _default_validator
         self.__doc__ = description if description is not None else ""
         self._since_version = Version.parse_version(since_version)
+        self._is_advanced = is_advanced
 
     def __set_name__(self, owner, name):
         self._name = name
@@ -475,11 +477,15 @@ class _BaseParameter(ABC):
     ):
         # the extension_version parameter is needed to match the signature of the
         # _extract_ui_schema method for parameter groups
+        options = self._get_options()
+        if self._is_advanced:
+            options["isAdvanced"] = True
+
         return {
             "type": "Control",
             "label": self._label,
             "scope": str(parent_scope.create_child(name)),
-            "options": self._get_options(),
+            "options": options,
         }
 
     @abstractmethod
@@ -512,12 +518,15 @@ class _NumericParameter(_BaseParameter):
         min_value=None,
         max_value=None,
         since_version=None,
+        is_advanced=None,
     ):
         self.min_value = min_value
         self.max_value = max_value
         if validator is None:
             validator = self.default_validator
-        super().__init__(label, description, default_value, validator, since_version)
+        super().__init__(
+            label, description, default_value, validator, since_version, is_advanced
+        )
 
     def check_range(self, value):
         if self.min_value is not None and value < self.min_value:
@@ -551,6 +560,7 @@ class IntParameter(_NumericParameter):
         min_value: Optional[int] = None,
         max_value: Optional[int] = None,
         since_version: Optional[Union[Version, str]] = None,
+        is_advanced: Optional[bool] = None,
     ):
         super().__init__(
             label,
@@ -560,6 +570,7 @@ class IntParameter(_NumericParameter):
             min_value,
             max_value,
             since_version,
+            is_advanced,
         )
 
     def check_type(self, value):
@@ -593,6 +604,7 @@ class DoubleParameter(_NumericParameter):
         min_value: Optional[float] = None,
         max_value: Optional[float] = None,
         since_version: Optional[Union[str, Version]] = None,
+        is_advanced: Optional[bool] = None,
     ):
         super().__init__(
             label,
@@ -602,6 +614,7 @@ class DoubleParameter(_NumericParameter):
             min_value,
             max_value,
             since_version,
+            is_advanced,
         )
 
     def check_type(self, value):
@@ -632,8 +645,11 @@ class _BaseMultiChoiceParameter(_BaseParameter):
         default_value="",
         validator=None,
         since_version=None,
+        is_advanced=None,
     ):
-        super().__init__(label, description, default_value, validator, since_version)
+        super().__init__(
+            label, description, default_value, validator, since_version, is_advanced
+        )
 
     def _get_options(self) -> dict:
         if self._enum is None or len(self._enum) > 4:
@@ -661,13 +677,16 @@ class StringParameter(_BaseMultiChoiceParameter):
         enum: Optional[List[str]] = None,
         validator: Optional[Callable[[str], None]] = None,
         since_version: Optional[Union[Version, str]] = None,
+        is_advanced: Optional[bool] = None,
     ):
         if validator is None:
             validator = self.default_validator
         if enum is not None and not isinstance(enum, list):
             raise TypeError("The enum parameter must be a list.")
         self._enum = enum
-        super().__init__(label, description, default_value, validator, since_version)
+        super().__init__(
+            label, description, default_value, validator, since_version, is_advanced
+        )
 
     def _extract_schema(self, extension_version=None, specs=None):
         schema = super()._extract_schema(specs)
@@ -776,6 +795,7 @@ class EnumParameter(_BaseMultiChoiceParameter):
         enum: Optional[EnumParameterOptions] = None,
         validator: Optional[Callable[[str], None]] = None,
         since_version: Optional[Union[Version, str]] = None,
+        is_advanced: Optional[bool] = None,
     ):
         if validator is None:
             validator = self.default_validator
@@ -790,7 +810,9 @@ class EnumParameter(_BaseMultiChoiceParameter):
             if default_value is None:
                 default_value = self._enum.get_all_options()[0].name
 
-        super().__init__(label, description, default_value, validator, since_version)
+        super().__init__(
+            label, description, default_value, validator, since_version, is_advanced
+        )
 
     def _generate_description(self):
         return self.__doc__ + self._enum._generate_options_description()
@@ -829,6 +851,7 @@ class _BaseColumnParameter(_BaseParameter):
         column_filter: Callable[[ks.Column], bool],
         schema_option: str,
         since_version=None,
+        is_advanced=None,
     ):
         """
         Args:
@@ -839,7 +862,11 @@ class _BaseColumnParameter(_BaseParameter):
             since_version: The version at which this parameter was introduced. Can be omitted if the parameter is part of the first version of the node.
         """
         super().__init__(
-            label, description, default_value=None, since_version=since_version
+            label,
+            description,
+            default_value=None,
+            since_version=since_version,
+            is_advanced=is_advanced,
         )
         self._port_index = port_index
         if column_filter is None:
@@ -878,6 +905,7 @@ class ColumnParameter(_BaseColumnParameter):
         include_row_key: bool = False,
         include_none_column: bool = False,
         since_version: Optional[str] = None,
+        is_advanced: Optional[bool] = None,
     ):
         """
         Args:
@@ -890,7 +918,13 @@ class ColumnParameter(_BaseColumnParameter):
             since_version: The version at which this parameter was introduced. Can be omitted if the parameter is part of the first version of the node.
         """
         super().__init__(
-            label, description, port_index, column_filter, "oneOf", since_version
+            label,
+            description,
+            port_index,
+            column_filter,
+            "oneOf",
+            since_version,
+            is_advanced,
         )
         self._include_row_key = include_row_key
         self._include_none_column = include_none_column
@@ -952,9 +986,16 @@ class MultiColumnParameter(_BaseColumnParameter):
         port_index: Optional[int] = 0,
         column_filter: Optional[Callable[[ks.Column], bool]] = None,
         since_version: Optional[Union[str, Version]] = None,
+        is_advanced: Optional[bool] = None,
     ):
         super().__init__(
-            label, description, port_index, column_filter, "anyOf", since_version
+            label,
+            description,
+            port_index,
+            column_filter,
+            "anyOf",
+            since_version,
+            is_advanced,
         )
 
     def _get_options(self) -> dict:
@@ -990,10 +1031,13 @@ class BoolParameter(_BaseParameter):
         default_value: Union[bool, DefaultValueProvider[bool]] = False,
         validator: Optional[Callable[[bool], None]] = None,
         since_version: Optional[Union[Version, str]] = None,
+        is_advanced: Optional[bool] = None,
     ):
         if validator is None:
             validator = self.default_validator
-        super().__init__(label, description, default_value, validator, since_version)
+        super().__init__(
+            label, description, default_value, validator, since_version, is_advanced
+        )
 
     def _extract_schema(self, extension_version=None, specs=None):
         schema = super()._extract_schema(specs)
