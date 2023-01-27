@@ -67,6 +67,9 @@ import org.knime.python3.js.scripting.nodes.script.PythonScriptingService.Execut
 import org.knime.scripting.editor.ScriptingService;
 import org.knime.scripting.editor.lsp.LanguageServerProxy;
 
+
+
+
 /**
  * A special {@link ScriptingService} for the Python scripting node.
  *
@@ -77,6 +80,8 @@ final class PythonScriptingService extends ScriptingService {
     private final PythonScriptPortsConfiguration m_ports;
 
     private Map<String, ExecutableOption> m_executableOptions = Collections.emptyMap();
+
+    private Map<String, FlowVariable> m_flowVariableOptions = Collections.emptyMap();
 
     // TODO(AP-19357) close the session when the dialog is closed
     // TODO(AP-19332) should the Python session be started immediately? (or whenever the frontend requests it?)
@@ -99,6 +104,10 @@ final class PythonScriptingService extends ScriptingService {
             NodeLogger.getLogger(PythonScriptingService.class).error(e);
             return null;
         }
+    }
+
+    private Map<String, FlowVariable> initFlowVariables() {
+        return getWorkflowControl().getFlowObjectStack().getAllAvailableFlowVariables();
     }
 
     private ExecutableOption getExecutableOption(final String id) {
@@ -150,6 +159,14 @@ final class PythonScriptingService extends ScriptingService {
             // Set the executable options with the currently available flow variables
             m_executableOptions =
                 ExecutableSelectionUtils.getExecutableOptions(getWorkflowControl().getFlowObjectStack());
+        }
+
+        /**
+         * @return
+        */
+        public List<FlowVariableInput> getAllFlowVariables() {
+            m_flowVariableOptions = initFlowVariables();
+            return m_flowVariableOptions.values().stream().map(f -> new FlowVariableInput(f.getName(), f.getValueAsString())).collect(Collectors.toList());
         }
 
         public void sendLastConsoleOutput() {
@@ -251,6 +268,7 @@ final class PythonScriptingService extends ScriptingService {
             return availableOptions;
         }
 
+
         /**
          * @param id the identifier of the executable option
          * @return information about the executable
@@ -289,6 +307,21 @@ final class PythonScriptingService extends ScriptingService {
             this.version = version;
             this.build = build;
             this.channel = channel;
+        }
+    }
+
+    public static class FlowVariableInput {
+
+        public final String name;
+
+        public final String value;
+
+
+        @SuppressWarnings("hiding")
+        FlowVariableInput(final String name,
+            final String value) {
+            this.name = name;
+            this.value = value;
         }
     }
 

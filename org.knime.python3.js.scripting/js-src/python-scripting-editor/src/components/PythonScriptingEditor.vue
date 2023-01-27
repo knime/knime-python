@@ -20,6 +20,9 @@ import type { Workspace,
     ExecutableInfo,
     PythonNodeSettings } from '../utils/python-scripting-service';
 
+import FlowVariables from 'scripting-editor/src/components/FlowVariables.vue';
+import { registerMonacoInputFlowVariableCompletions } from 'scripting-editor/src/utils/scripting-completions';
+import type { FlowVariable } from 'scripting-editor/src/components/FlowVariables.vue';
 import { registerMonacoInputColumnCompletions } from '../utils/python-completions';
 
 
@@ -50,6 +53,7 @@ type AppData = {
     // Service
     scriptingSettings?: PythonNodeSettings;
 
+    // FlowVariables
     // Monaco editor
     editor?: editor.IStandaloneCodeEditor;
     editorModel?: editor.ITextModel;
@@ -63,6 +67,7 @@ type AppData = {
     workspace: Workspace;
 
     // Script inputs
+    flowVariables: FlowVariable[];
     inputPortInfos: InputPortInfo[];
 };
 
@@ -76,6 +81,7 @@ export default defineComponent({
         InputPortsView,
         CondaEnvironment,
         KeepAlive,
+        FlowVariables,
         OutputConsole
     },
     provide() {
@@ -102,7 +108,8 @@ export default defineComponent({
                 values: ['']
             },
             // Script inputs
-            inputPortInfos: []
+            inputPortInfos: [],
+            flowVariables: []
         };
     },
     async mounted() {
@@ -111,13 +118,18 @@ export default defineComponent({
 
         // Set the python executable to the currently selected option -> will start the interactive session
         this.pythonExecutableChanged(this.scriptingService.getExecutableSelection());
-
+        
+        this.flowVariables = await this.scriptingService.getAllFlowVariables();
         // Get some more information from the backend
         this.pythonExecutableOptions = await this.scriptingService.getExecutableOptions(this.pythonExecutableId);
+        // console.log("FlowVariables", await this.scriptingService.getFlowVariables());
         this.inputPortInfos = await this.scriptingService.getInputObjects();
 
         // Add special autocompletion
+        // TODO AP-20083: Abstraction into Python specific completions and scripting-service specific
+        //      Could help to remove monaco dependency for the pythons-scripting-editor
         registerMonacoInputColumnCompletions(this.inputPortInfos);
+        registerMonacoInputFlowVariableCompletions(this.flowVariables);
     },
     methods: {
         startInteractive() {
@@ -255,6 +267,11 @@ export default defineComponent({
       <InputPortsView
         :input-port-infos="inputPortInfos"
         @column-clicked="onColumnClicked"
+      />
+    </template>
+    <template #flow_vars>
+      <FlowVariables
+        :flow-variables="flowVariables"
       />
     </template>
 

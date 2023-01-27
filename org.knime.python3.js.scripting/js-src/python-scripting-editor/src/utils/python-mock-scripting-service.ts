@@ -12,6 +12,8 @@ import type { FlowVariableSetting } from '@knime/ui-extension-service';
 
 import type { ConsoleText } from 'scripting-editor/src/utils/scripting-service';
 
+import type { FlowVariable } from 'scripting-editor/src/components/FlowVariables.vue';
+
 
 class PythonScriptingServiceMock implements PythonScriptingService {
     protected readonly flowVariableSettings: {[key: string]: FlowVariableSetting}; // TODO(UIEXT-479) refactor how flow variable information are provided
@@ -57,6 +59,19 @@ class PythonScriptingServiceMock implements PythonScriptingService {
 
     startInteractive(executableSelection: string): Promise<void> {
         return new Promise((r) => setTimeout(r, 100));
+    }
+
+    getAllFlowVariables(): Promise<FlowVariable[]> {
+        return new Promise((r) => setTimeout(r, 100)).then(() => [
+            {
+                name: 'MyFlowVariable',
+                value: 'CustomFlowVariable'
+            } as FlowVariable,
+            {
+                name: 'MyFlow',
+                value: '1'
+            } as FlowVariable
+        ]);
     }
 
     runInteractive(script: string): Promise<string> {
