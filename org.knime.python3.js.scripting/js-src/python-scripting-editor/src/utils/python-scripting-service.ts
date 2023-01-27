@@ -3,9 +3,8 @@ import type { ScriptingService, NodeSettings } from 'scripting-editor/src/utils/
 import { ScriptingServiceImpl,
     muteReactivity,
     useKnimeScriptingService } from 'scripting-editor/src/utils/scripting-service';
-export type Workspace = { names: string[]; types: string[]; values: string[] };
 
-// Types for the input port view
+export type Workspace = { names: string[]; types: string[]; values: string[] };
 
 export type InputPortBase = { type: 'table' | 'object'; variableName: string };
 export interface InputTableInfo extends InputPortBase {
@@ -17,6 +16,14 @@ export interface InputObjectInfo extends InputPortBase {
     type: 'object';
     objectType: string;
     objectRepr: string;
+}
+export interface FlowVariableSettings {
+    modelVariables: {
+        [key: string]: FlowVariableSetting
+    },
+    viewVariables: {
+        [key: string]: FlowVariableSetting
+    }
 }
 
 export type InputPortInfo = InputTableInfo | InputObjectInfo
@@ -36,7 +43,6 @@ export interface PythonNodeSettings extends NodeSettings {
     executableSelection: string;
 }
 
-// export interface PythonScriptingService extends
 export interface PythonScriptingService extends ScriptingService<PythonNodeSettings> {
     dialogOpened();
     
@@ -57,7 +63,7 @@ export interface PythonScriptingService extends ScriptingService<PythonNodeSetti
     setExecutableSelection(id: string);
 
     getExecutableOptions(executableSelection: string);
-
+    
     getExecutableInfo(id: string);
 }
 
@@ -71,10 +77,11 @@ class PythonScriptingServiceImpl extends ScriptingServiceImpl<PythonNodeSettings
         return this.sendToService('initExecutableOptions');
     }
 
+
     sendLastConsoleOutput(): Promise<void> {
         return this.sendToService('sendLastConsoleOutput');
     }
-
+    
     startInteractive(executableSelection: string): Promise<void> {
         return this.sendToService('startInteractive', [executableSelection]);
     }
@@ -111,11 +118,11 @@ class PythonScriptingServiceImpl extends ScriptingServiceImpl<PythonNodeSettings
 const overwritePythonCommandByFlowVarName = ({
     flowVariableSettings
 }: {
-    flowVariableSettings: { [key: string]: FlowVariableSetting };
+    flowVariableSettings: FlowVariableSettings;
 }) => {
     let executableSelection = '';
     if ('model.python3_command' in flowVariableSettings) {
-        const commandFlowVarSetting: FlowVariableSetting = flowVariableSettings['model.python3_command'];
+        const commandFlowVarSetting: FlowVariableSetting = flowVariableSettings.modelVariables['model.python3_command'];
         if (commandFlowVarSetting.controllingFlowVariableName !== null) {
             executableSelection = commandFlowVarSetting.controllingFlowVariableName;
         }
