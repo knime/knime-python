@@ -79,6 +79,7 @@ public final class FreshPythonGatewayFactory implements PythonGatewayFactory {
                     customizer.customize(entryPoint);
                 }
             } catch (Exception ex) {
+                gateway.close();
                 throw new IllegalStateException("Customization of entry point failed.", ex);
             }
         }
