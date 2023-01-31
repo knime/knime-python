@@ -23,7 +23,7 @@ properties([
 ])
 
 try {
-    knimetools.defaultTychoBuild('org.knime.update.python', 'maven && python-all && java11 && ubuntu22.04')
+    knimetools.defaultTychoBuild('org.knime.update.python', 'maven && python-all && java17 && ubuntu22.04')
 
     node('ubuntu22.04 && python-all') {
         stage('Run pytest') {
