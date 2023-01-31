@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: KNIME Python 3
 Bundle-SymbolicName: org.knime.python3;singleton:=true
-Bundle-Version: 4.7.0.qualifier
+Bundle-Version: 4.7.1.qualifier
 Bundle-ClassPath: knime-python3.jar
 Bundle-Vendor: KNIME AG, Zurich, Switzerland
 Bundle-RequiredExecutionEnvironment: JavaSE-11
