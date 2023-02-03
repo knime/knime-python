@@ -21,9 +21,9 @@ import type { Workspace,
     PythonNodeSettings } from '../utils/python-scripting-service';
 
 import FlowVariables from 'scripting-editor/src/components/FlowVariables.vue';
-import { registerMonacoInputFlowVariableCompletions } from 'scripting-editor/src/utils/scripting-completions';
 import type { FlowVariable } from 'scripting-editor/src/components/FlowVariables.vue';
-import { registerMonacoInputColumnCompletions } from '../utils/python-completions';
+import { registerMonacoInputColumnCompletions,
+    registerMonacoInputFlowVariableCompletions } from '../utils/python-completions';
 
 
 const getSelectedLines = (editorModel: editor.ITextModel, selection: Selection) => {
@@ -268,8 +268,6 @@ export default defineComponent({
         :input-port-infos="inputPortInfos"
         @column-clicked="onColumnClicked"
       />
-    </template>
-    <template #flow_vars>
       <FlowVariables
         :flow-variables="flowVariables"
       />
