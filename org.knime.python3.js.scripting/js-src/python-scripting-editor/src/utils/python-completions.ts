@@ -1,5 +1,6 @@
 import * as monaco from 'monaco-editor';
 import type { InputPortInfo, InputTableInfo, InputObjectInfo } from './python-scripting-service';
+import type { FlowVariable } from 'scripting-editor/src/components/FlowVariables.vue';
 
 const columnCompletionFor = (
     tableIdx: number,
@@ -47,6 +48,46 @@ Current value : \` ${objectInfo.objectRepr} \`
         insertText: objectInfo.variableName
     };
 };
+
+
+const flowVariableCompletion = (flowIndex: number, flowVar: FlowVariable) => ({
+    label: `knio.flow_variables['${flowVar.name}']`,
+    kind: monaco.languages.CompletionItemKind.Variable,
+    documentation: `Access #${flowIndex} flow Variable #${flowVar.name} via knime. }.`,
+    insertText: `knio.flow_variables['${flowVar.name}']`
+});
+   
+
+export const registerMonacoInputFlowVariableCompletions = (inputFlowVariables: FlowVariable[]) => {
+    // Pre-compute the completions but without a range
+    type CompletionItemWithoutRange = Omit<monaco.languages.CompletionItem, 'range'>;
+    let objectIdx = 0;
+    const completions = inputFlowVariables?.flatMap((flowVariable): CompletionItemWithoutRange[] => {
+        const objectInfo = flowVariable as FlowVariable;
+        return [flowVariableCompletion(objectIdx++, objectInfo)];
+    });
+
+    // Register the completion provider using the computed completions
+    monaco.languages.registerCompletionItemProvider('python', {
+        provideCompletionItems(model, position) {
+            const word = model.getWordUntilPosition(position);
+            const range = {
+                startLineNumber: position.lineNumber,
+                endLineNumber: position.lineNumber,
+                startColumn: word.startColumn,
+                endColumn: word.endColumn
+            };
+            return { suggestions: completions.map((c) => ({ range, ...c })) };
+        }
+    });
+};
+
+
+/*
+TODO(AP-20083)
+export interface ScriptingCompletion {
+export const registerMonacoInputColumnCompletions = (completionRule: (input:  ) => ,inputCompletions: ScriptingCompletion[]) => {
+*/
 
 export const registerMonacoInputColumnCompletions = (inputPortInfos: InputPortInfo[]) => {
     // Pre-compute the completions but without a range
