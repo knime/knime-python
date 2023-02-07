@@ -1,4 +1,4 @@
-import type { FlowVariableSetting } from '@knime/ui-extension-service';
+import type { FlowVariableSettings, FlowVariableSetting } from '@knime/ui-extension-service';
 import type { ScriptingService, NodeSettings } from 'scripting-editor/src/utils/scripting-service';
 import { ScriptingServiceImpl,
     muteReactivity,
@@ -16,14 +16,6 @@ export interface InputObjectInfo extends InputPortBase {
     type: 'object';
     objectType: string;
     objectRepr: string;
-}
-export interface FlowVariableSettings {
-    modelVariables: {
-        [key: string]: FlowVariableSetting
-    },
-    viewVariables: {
-        [key: string]: FlowVariableSetting
-    }
 }
 
 export type InputPortInfo = InputTableInfo | InputObjectInfo

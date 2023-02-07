@@ -52,6 +52,7 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -68,8 +69,6 @@ import org.knime.scripting.editor.ScriptingService;
 import org.knime.scripting.editor.lsp.LanguageServerProxy;
 
 
-
-
 /**
  * A special {@link ScriptingService} for the Python scripting node.
  *
@@ -77,20 +76,22 @@ import org.knime.scripting.editor.lsp.LanguageServerProxy;
  */
 final class PythonScriptingService extends ScriptingService {
 
+
+    private static final Predicate<FlowVariable> FLOW_VARIABLE_FILTER =  x -> true;
+
     private final PythonScriptPortsConfiguration m_ports;
 
     private Map<String, ExecutableOption> m_executableOptions = Collections.emptyMap();
-
-    private Map<String, FlowVariable> m_flowVariableOptions = Collections.emptyMap();
 
     // TODO(AP-19357) close the session when the dialog is closed
     // TODO(AP-19332) should the Python session be started immediately? (or whenever the frontend requests it?)
     private PythonScriptingSession m_interactiveSession;
 
+
     /** Create a new {@link PythonScriptingService}. */
     @SuppressWarnings("resource") // TODO(AP-19357) fix this
     PythonScriptingService() {
-        super(connectToLanguageServer());
+        super(connectToLanguageServer(), FLOW_VARIABLE_FILTER);
         m_ports = PythonScriptPortsConfiguration.fromCurrentNodeContext();
         // TODO(AP-19357) stop the language server when the dialog is closed
     }
@@ -104,10 +105,6 @@ final class PythonScriptingService extends ScriptingService {
             NodeLogger.getLogger(PythonScriptingService.class).error(e);
             return null;
         }
-    }
-
-    private Map<String, FlowVariable> initFlowVariables() {
-        return getWorkflowControl().getFlowObjectStack().getAllAvailableFlowVariables();
     }
 
     private ExecutableOption getExecutableOption(final String id) {
@@ -161,13 +158,6 @@ final class PythonScriptingService extends ScriptingService {
                 ExecutableSelectionUtils.getExecutableOptions(getWorkflowControl().getFlowObjectStack());
         }
 
-        /**
-         * @return
-        */
-        public List<FlowVariableInput> getAllFlowVariables() {
-            m_flowVariableOptions = initFlowVariables();
-            return m_flowVariableOptions.values().stream().map(f -> new FlowVariableInput(f.getName(), f.getValueAsString())).collect(Collectors.toList());
-        }
 
         public void sendLastConsoleOutput() {
             // Send the console output of the last execution to the dialog
@@ -268,7 +258,6 @@ final class PythonScriptingService extends ScriptingService {
             return availableOptions;
         }
 
-
         /**
          * @param id the identifier of the executable option
          * @return information about the executable
@@ -307,21 +296,6 @@ final class PythonScriptingService extends ScriptingService {
             this.version = version;
             this.build = build;
             this.channel = channel;
-        }
-    }
-
-    public static class FlowVariableInput {
-
-        public final String name;
-
-        public final String value;
-
-
-        @SuppressWarnings("hiding")
-        FlowVariableInput(final String name,
-            final String value) {
-            this.name = name;
-            this.value = value;
         }
     }
 

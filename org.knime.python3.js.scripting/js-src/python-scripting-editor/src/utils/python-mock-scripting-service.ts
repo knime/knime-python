@@ -10,9 +10,7 @@ import type { ExecutableOption,
 
 import type { FlowVariableSetting } from '@knime/ui-extension-service';
 
-import type { ConsoleText } from 'scripting-editor/src/utils/scripting-service';
-
-import type { FlowVariable } from 'scripting-editor/src/components/FlowVariables.vue';
+import type { FlowVariable, ConsoleText } from 'scripting-editor/src/utils/scripting-service';
 
 
 class PythonScriptingServiceMock implements PythonScriptingService {
@@ -61,7 +59,7 @@ class PythonScriptingServiceMock implements PythonScriptingService {
         return new Promise((r) => setTimeout(r, 100));
     }
 
-    getAllFlowVariables(): Promise<FlowVariable[]> {
+    getFlowVariables(): Promise<FlowVariable[]> {
         return new Promise((r) => setTimeout(r, 100)).then(() => [
             {
                 name: 'MyFlowVariable',
