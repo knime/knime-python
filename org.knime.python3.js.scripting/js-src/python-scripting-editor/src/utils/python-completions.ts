@@ -1,6 +1,6 @@
 import * as monaco from 'monaco-editor';
 import type { InputPortInfo, InputTableInfo, InputObjectInfo } from './python-scripting-service';
-import type { FlowVariable } from 'scripting-editor/src/components/FlowVariables.vue';
+import type { FlowVariable } from 'scripting-editor/src/utils/scripting-service';
 
 const columnCompletionFor = (
     tableIdx: number,
@@ -53,7 +53,7 @@ Current value : \` ${objectInfo.objectRepr} \`
 const flowVariableCompletion = (flowIndex: number, flowVar: FlowVariable) => ({
     label: `knio.flow_variables['${flowVar.name}']`,
     kind: monaco.languages.CompletionItemKind.Variable,
-    documentation: `Access #${flowIndex} flow Variable #${flowVar.name} via knime. }.`,
+    documentation: `Access flow variable "${flowVar.name}" of value ${flowVar.value} .`,
     insertText: `knio.flow_variables['${flowVar.name}']`
 });
    
@@ -83,10 +83,16 @@ export const registerMonacoInputFlowVariableCompletions = (inputFlowVariables: F
 };
 
 
+// eslint-disable-next-line no-warning-comments
 /*
-TODO(AP-20083)
-export interface ScriptingCompletion {
-export const registerMonacoInputColumnCompletions = (completionRule: (input:  ) => ,inputCompletions: ScriptingCompletion[]) => {
+TODO(AP-20083): abstract Monaco completions into knime-scripting-editor
+should look smth like code below. would get rid of monaco dependency outside into knime-scripting-editor.
+
+ - implement interface for completions
+
+export const registerMonacoInputColumnCompletions =
+    (completionRule: (input:  ) =>
+        ,inputCompletions: ScriptingCompletion[]) => {..}
 */
 
 export const registerMonacoInputColumnCompletions = (inputPortInfos: InputPortInfo[]) => {
