@@ -49,6 +49,7 @@
 package org.knime.python3.js.scripting;
 
 import java.io.IOException;
+import java.util.Map;
 
 import org.knime.python3.PythonDataSource;
 import org.knime.python3.PythonEntryPoint;
@@ -68,12 +69,13 @@ public interface PythonJsScriptingEntryPoint extends PythonEntryPoint {
      *
      * @param sources the sources for the inputs. Either {@link PythonArrowDataSource} or
      *            {@link PickledObjectDataSource}.
+     * @param flowVarSources
      * @param numOutTables the number of output tables of the node
      * @param numOutImages the number of output images of the node
      * @param numOutObjects the number of output objects of the node
      * @param callback a callback for accessing Java functionality
      */
-    void setupIO(PythonDataSource[] sources, int numOutTables, int numOutImages, int numOutObjects, Callback callback);
+    void setupIO(PythonDataSource[] sources, Map<String, Object> flowVarSources,int numOutTables, int numOutImages, int numOutObjects, Callback callback);
 
     /**
      * Execute the given script in Python.
@@ -82,6 +84,12 @@ public interface PythonJsScriptingEntryPoint extends PythonEntryPoint {
      * @return the Python workspace after the Script was executed
      */
     String execute(String script);
+
+    /**
+     * @return
+     *     Collection<FlowVariable> getFlowVariable();
+     */
+    Map<String, Object> getFlowVariable();
 
     /**
      * Close the outputs. After calling this, the output tables cannot be modified anymore.
@@ -153,4 +161,5 @@ public interface PythonJsScriptingEntryPoint extends PythonEntryPoint {
          */
         void add_stderr(String text); //NOSONAR
     }
+
 }

@@ -50,6 +50,10 @@ package org.knime.python3.js.scripting.nodes.script;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import org.knime.core.data.filestore.internal.IFileStoreHandler;
@@ -65,11 +69,15 @@ import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.context.ports.PortsConfiguration;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
+import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
+import org.knime.core.node.workflow.VariableType;
+import org.knime.core.node.workflow.VariableTypeRegistry;
 import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
 import org.knime.python3.PythonCommand;
 import org.knime.python3.js.scripting.nodes.script.ConsoleOutputUtils.ConsoleOutputStorage;
+import org.knime.python3.utils.FlowVariableUtils;
 import org.knime.scripting.editor.ScriptingService.ConsoleText;
 
 /**
@@ -96,38 +104,78 @@ final class PythonScriptNodeModel extends NodeModel {
 
     private ConsoleOutputStorage m_consoleOutputStorage;
 
+    static final VariableType<?>[] KNOWN_FLOW_VARIABLE_TYPES = FlowVariableUtils.convertToFlowVariableTypes(Set.of( //
+        Boolean.class, //
+        Boolean[].class, //
+        Double.class, //
+        Double[].class, //
+        Integer.class, //
+        Integer[].class, //
+        Long.class, //
+        Long[].class, //
+        String.class, //
+        String[].class //
+    ));
+
+
     PythonScriptNodeModel(final PortsConfiguration portsConfiguration) {
         super(portsConfiguration.getInputPorts(), portsConfiguration.getOutputPorts());
         m_settings = new PythonScriptNodeSettings();
         m_ports = PythonScriptPortsConfiguration.fromPortsConfiguration(portsConfiguration);
     }
 
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private void pushNewFlowVariable(final FlowVariable variable) {
+        pushFlowVariable(variable.getName(), (VariableType)variable.getVariableType(),
+            variable.getValue(variable.getVariableType()));
+    }
+
+    protected void addNewFlowVariables(final Collection<FlowVariable> newVariables) {
+        final Map<String, FlowVariable> oldVariables =
+            getAvailableFlowVariables(VariableTypeRegistry.getInstance().getAllTypes());
+        for (final FlowVariable variable : newVariables) {
+            if (!Objects.equals(oldVariables.get(variable.getName()), variable)) {
+                pushNewFlowVariable(variable);
+            }
+        }
+    }
     @Override
     protected PortObjectSpec[] configure(final PortObjectSpec[] inSpecs) throws InvalidSettingsException {
         return null; // NOSONAR
     }
 
     @Override
-    protected PortObject[] execute(final PortObject[] inObjects, final ExecutionContext exec) throws Exception {
+    protected PortObject[] execute(final PortObject[] inObjects, final ExecutionContext exec ) throws Exception {
         final PythonCommand pythonCommand =
             ExecutableSelectionUtils.getPythonCommand(m_settings.getExecutableSelection());
         m_consoleOutputStorage = null;
+
+        // rightclick execute
+        Collection<FlowVariable> flowVariables = getAvailableFlowVariables(KNOWN_FLOW_VARIABLE_TYPES).values();
+        //.stream().filter(c -> !c.getName().contains("conda")).collect(Collectors.toCollection(null));
+
         final var consoleConsumer = ConsoleOutputUtils.createConsoleConsumer();
         try (final var session =
             new PythonScriptingSession(pythonCommand, consoleConsumer, getWriteFileStoreHandler())) {
             exec.setProgress(0.0, "Setting up inputs");
-            session.setupIO(inObjects, m_ports.getNumOutTables(), m_ports.getNumOutImages(), m_ports.getNumOutObjects(),
+            session.setupIO(inObjects, flowVariables ,m_ports.getNumOutTables(), m_ports.getNumOutImages(), m_ports.getNumOutObjects(),
                 exec.createSubProgress(0.3));
             exec.setProgress(0.3, "Running script");
             session.execute(m_settings.getScript());
+
             exec.setProgress(0.7, "Processing output");
             final var outputs = session.getOutputs(exec.createSubExecutionContext(0.3));
+            final var flowVars = session.getFlowVariables();
+            addNewFlowVariables(flowVars);
+
             m_sessionShutdownTracker.closeAsynchronously(session);
             return outputs;
         } finally {
             m_consoleOutputStorage = consoleConsumer.finish();
         }
     }
+
 
     @Override
     protected void saveSettingsTo(final NodeSettingsWO settings) {

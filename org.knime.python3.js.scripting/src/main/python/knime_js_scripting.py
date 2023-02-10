@@ -65,6 +65,7 @@ import knime._backend._gateway as kg
 import knime.scripting._deprecated._table as kt
 
 import knime._backend._mainloop as _mainloop
+from py4j.java_gateway import JavaClass
 
 import knime_io as kio
 
@@ -73,6 +74,12 @@ import knime_io as kio
 # TODO(AP-19333) logging (see knime_node_backend)
 # TODO(AP-19333) immediately check the output when it is assined
 #      Also do row checking etc. -> If the interactive run works the node execution should also work
+
+
+class KnimeUserError(Exception):
+    """An error that indicates that there is an error in the user script."""
+
+    pass
 
 
 @kg.data_source("org.knime.python3.pickledobject")
@@ -96,6 +103,7 @@ class ScriptingEntryPoint(kg.EntryPoint):
     def setupIO(
         self,
         data_sources,
+        flow_var_sources,
         num_out_tables,
         num_out_images,
         num_out_objects,
@@ -103,7 +111,7 @@ class ScriptingEntryPoint(kg.EntryPoint):
     ):
         self._java_callback = java_callback
 
-        # TODO(AP-19551) make flow variables available in knio.flow_variables
+        kio.flow_variables = flow_var_sources
 
         # TODO(AP-19339) adapt to new API with Table
         def create_python_sink():
@@ -145,7 +153,6 @@ class ScriptingEntryPoint(kg.EntryPoint):
         ):
             # Run the script
             exec(script, self._workspace)
-
         return self._getVariablesInWorkspace()
 
     def closeOutputs(self, check_outputs):
@@ -177,6 +184,38 @@ class ScriptingEntryPoint(kg.EntryPoint):
             if len(object_as_string) > 1000
             else object_as_string
         )
+
+    def getFlowVariable(self) -> JavaClass:
+        return self.get_flow_variables()
+
+    def _check_flow_variables(self):
+        LinkedHashMap = JavaClass(  # NOSONAR Java naming conventions apply.
+            "java.util.LinkedHashMap", kg.client_server._gateway_client
+        )
+
+        java_flow_variables = LinkedHashMap()
+        for key in kio.flow_variables.keys():
+            flow_variable = kio.flow_variables[key]
+            try:
+                java_flow_variables[key] = flow_variable
+            except AttributeError as ex:
+                # py4j raises attribute errors of the form "'<type>' object has no attribute '_get_object_id'" if it
+                # fails to translate Python objects to Java objects.
+                raise KnimeUserError(
+                    f"Flow variable '{key}' of type '{type(flow_variable)}' cannot be translated to a valid KNIME flow "
+                    f"variable. Please remove the flow variable or change its type to something that can be translated."
+                )
+
+    def get_flow_variables(self) -> JavaClass:
+        self._check_flow_variables()
+        LinkedHashMap = JavaClass(  # NOSONAR Java naming conventions apply.
+            "java.util.LinkedHashMap", kg.client_server._gateway_client
+        )
+        java_flow_variables = LinkedHashMap()
+        for key in kio.flow_variables.keys():
+            flow_variable = kio.flow_variables[key]
+            java_flow_variables[key] = flow_variable
+        return java_flow_variables
 
     def _getVariablesInWorkspace(self) -> List[Dict[str, str]]:
         # TODO(AP-19345) provide integers + doubles not as string

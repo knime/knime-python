@@ -49,7 +49,9 @@
 package org.knime.python3.js.scripting.nodes.script;
 
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -62,6 +64,7 @@ import org.knime.core.data.filestore.internal.NotInWorkflowWriteFileStoreHandler
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.workflow.FlowVariable;
+import org.knime.core.node.workflow.VariableType;
 import org.knime.core.webui.data.DataServiceContext;
 import org.knime.python2.port.PickledObjectPortObjectSpec;
 import org.knime.python3.js.scripting.nodes.script.PythonScriptingService.ExecutableOption.ExecutableOptionType;
@@ -76,8 +79,8 @@ import org.knime.scripting.editor.lsp.LanguageServerProxy;
  */
 final class PythonScriptingService extends ScriptingService {
 
-
-    private static final Predicate<FlowVariable> FLOW_VARIABLE_FILTER =  x -> true;
+    private static final HashSet<VariableType<?>> KNOWN_FLOW_VARIABLE_SET = new HashSet<>(Arrays.asList(PythonScriptNodeModel.KNOWN_FLOW_VARIABLE_TYPES));
+    private static final Predicate<FlowVariable> FLOW_VARIABLE_FILTER =  x -> KNOWN_FLOW_VARIABLE_SET.contains(x.getVariableType());
 
     private final PythonScriptPortsConfiguration m_ports;
 
@@ -86,7 +89,6 @@ final class PythonScriptingService extends ScriptingService {
     // TODO(AP-19357) close the session when the dialog is closed
     // TODO(AP-19332) should the Python session be started immediately? (or whenever the frontend requests it?)
     private PythonScriptingSession m_interactiveSession;
-
 
     /** Create a new {@link PythonScriptingService}. */
     @SuppressWarnings("resource") // TODO(AP-19357) fix this
@@ -149,6 +151,7 @@ final class PythonScriptingService extends ScriptingService {
      */
     public final class PythonJsonRpcService extends JsonRpcService {
 
+
         /**
          * Notify that a new dialog has been opened. Must be called before calling any other method of the RPC server.
          */
@@ -157,7 +160,6 @@ final class PythonScriptingService extends ScriptingService {
             m_executableOptions =
                 ExecutableSelectionUtils.getExecutableOptions(getWorkflowControl().getFlowObjectStack());
         }
-
 
         public void sendLastConsoleOutput() {
             // Send the console output of the last execution to the dialog
@@ -194,8 +196,10 @@ final class PythonScriptingService extends ScriptingService {
             final var fileStoreHandler = NotInWorkflowWriteFileStoreHandler.create();
             m_interactiveSession = new PythonScriptingSession(pythonCommand,
                 PythonScriptingService.this::addConsoleOutputEvent, fileStoreHandler);
-
-            m_interactiveSession.setupIO(workflowControl.getInputData(), m_ports.getNumOutTables(),
+            
+            m_interactiveSession.setupIO(workflowControl.getInputData(),
+                getFlowVariablesForScript().values().stream().filter(FLOW_VARIABLE_FILTER).collect(Collectors.toList()),
+                m_ports.getNumOutTables(),
                 m_ports.getNumOutImages(), m_ports.getNumOutObjects(), new ExecutionMonitor());
         }
 

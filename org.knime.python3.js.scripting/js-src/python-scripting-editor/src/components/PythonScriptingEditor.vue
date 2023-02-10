@@ -25,7 +25,6 @@ import type { FlowVariable } from 'scripting-editor/src/utils/scripting-service'
 import { registerMonacoInputColumnCompletions,
     registerMonacoInputFlowVariableCompletions } from '../utils/python-completions';
 
-
 const getSelectedLines = (editorModel: editor.ITextModel, selection: Selection) => {
     const { startLineNumber, endLineNumber, endColumn } =
         selection.selectionStartLineNumber <= selection.positionLineNumber
