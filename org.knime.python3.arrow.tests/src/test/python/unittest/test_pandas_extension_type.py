@@ -1055,6 +1055,33 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
             str(pandas_dtype._storage_type), str(constructed_type._storage_type)
         )
 
+    def test_list_setitem(self):
+        _register_extension_types()
+        with DummyJavaDataSinkFactory() as sink_creator:
+            arrow_backend = kat.ArrowBackend(sink_creator)
+
+            list_col_name = "List(date)"
+            set_col_name = "Set(date)"
+
+            df = _generate_test_data_frame(
+                file_name="Lists.zip",
+                columns=["Group", list_col_name, set_col_name],
+                lists=True,
+                sets=True,
+            )
+
+            val = df.loc["Row0", set_col_name]
+            df.at["Row1", set_col_name] = val
+
+            val = df.loc["Row0", list_col_name]
+            df.at["Row1", list_col_name] = val
+
+            # assert that the values are equal
+            self.assertEqual(df.loc["Row0", set_col_name], df.loc["Row1", set_col_name])
+            self.assertEqual(
+                df.loc["Row0", list_col_name], df.loc["Row1", list_col_name]
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
