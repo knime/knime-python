@@ -518,7 +518,7 @@ class _NumericParameter(_BaseParameter):
         min_value=None,
         max_value=None,
         since_version=None,
-        is_advanced=None,
+        is_advanced=False,
     ):
         self.min_value = min_value
         self.max_value = max_value
@@ -560,7 +560,7 @@ class IntParameter(_NumericParameter):
         min_value: Optional[int] = None,
         max_value: Optional[int] = None,
         since_version: Optional[Union[Version, str]] = None,
-        is_advanced: Optional[bool] = None,
+        is_advanced: bool = False,
     ):
         super().__init__(
             label,
@@ -604,7 +604,7 @@ class DoubleParameter(_NumericParameter):
         min_value: Optional[float] = None,
         max_value: Optional[float] = None,
         since_version: Optional[Union[str, Version]] = None,
-        is_advanced: Optional[bool] = None,
+        is_advanced: bool = False,
     ):
         super().__init__(
             label,
@@ -645,7 +645,7 @@ class _BaseMultiChoiceParameter(_BaseParameter):
         default_value="",
         validator=None,
         since_version=None,
-        is_advanced=None,
+        is_advanced=False,
     ):
         super().__init__(
             label, description, default_value, validator, since_version, is_advanced
@@ -677,7 +677,7 @@ class StringParameter(_BaseMultiChoiceParameter):
         enum: Optional[List[str]] = None,
         validator: Optional[Callable[[str], None]] = None,
         since_version: Optional[Union[Version, str]] = None,
-        is_advanced: Optional[bool] = None,
+        is_advanced: bool = False,
     ):
         if validator is None:
             validator = self.default_validator
@@ -795,7 +795,7 @@ class EnumParameter(_BaseMultiChoiceParameter):
         enum: Optional[EnumParameterOptions] = None,
         validator: Optional[Callable[[str], None]] = None,
         since_version: Optional[Union[Version, str]] = None,
-        is_advanced: Optional[bool] = None,
+        is_advanced: bool = False,
     ):
         if validator is None:
             validator = self.default_validator
@@ -851,7 +851,7 @@ class _BaseColumnParameter(_BaseParameter):
         column_filter: Callable[[ks.Column], bool],
         schema_option: str,
         since_version=None,
-        is_advanced=None,
+        is_advanced=False,
     ):
         """
         Args:
@@ -905,7 +905,7 @@ class ColumnParameter(_BaseColumnParameter):
         include_row_key: bool = False,
         include_none_column: bool = False,
         since_version: Optional[str] = None,
-        is_advanced: Optional[bool] = None,
+        is_advanced: bool = False,
     ):
         """
         Args:
@@ -986,7 +986,7 @@ class MultiColumnParameter(_BaseColumnParameter):
         port_index: Optional[int] = 0,
         column_filter: Optional[Callable[[ks.Column], bool]] = None,
         since_version: Optional[Union[str, Version]] = None,
-        is_advanced: Optional[bool] = None,
+        is_advanced: bool = False,
     ):
         super().__init__(
             label,
@@ -1031,7 +1031,7 @@ class BoolParameter(_BaseParameter):
         default_value: Union[bool, DefaultValueProvider[bool]] = False,
         validator: Optional[Callable[[bool], None]] = None,
         since_version: Optional[Union[Version, str]] = None,
-        is_advanced: Optional[bool] = None,
+        is_advanced: bool = False,
     ):
         if validator is None:
             validator = self.default_validator
