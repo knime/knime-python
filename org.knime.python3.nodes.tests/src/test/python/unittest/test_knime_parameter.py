@@ -1,5 +1,6 @@
 import unittest
 import knime.extension.parameter as kp
+import knime.api.schema as ks
 
 
 def generate_values_dict(
@@ -7,6 +8,8 @@ def generate_values_dict(
     double_param=1.5,
     string_param="foo",
     bool_param=True,
+    column_param="foo_column",
+    multi_column_param=["foo_column", "bar_column"],
     first=1,
     second=5,
     third=3,
@@ -17,12 +20,19 @@ def generate_values_dict(
             "double_param": double_param,
             "string_param": string_param,
             "bool_param": bool_param,
+            "column_param": column_param,
+            "multi_column_param": multi_column_param,
             "parameter_group": {
                 "subgroup": {"first": first, "second": second},
                 "third": third,
             },
         }
     }
+
+
+def set_column_parameters(parameterized_object):
+    parameterized_object.column_param = "foo_column"
+    parameterized_object.multi_column_param = ["foo_column", "bar_column"]
 
 
 def generate_versioned_values_dict(
@@ -342,6 +352,11 @@ class Parameterized:
     double_param = kp.DoubleParameter("Double Parameter", "A double parameter", 1.5)
     string_param = kp.StringParameter("String Parameter", "A string parameter", "foo")
     bool_param = kp.BoolParameter("Boolean Parameter", "A boolean parameter", True)
+    column_param = kp.ColumnParameter("Column Parameter", "A column parameter")
+    multi_column_param = kp.MultiColumnParameter(
+        "Multi Column Parameter",
+        "A multi column parameter",
+    )
 
     parameter_group = ParameterGroup()
 
@@ -351,11 +366,51 @@ class Parameterized:
             raise ValueError(f"Length of string must not exceed 10!")
 
 
+class ParameterizedWithAdvancedOption:
+    int_param = kp.IntParameter("Int Parameter", "An integer parameter", 3)
+    int_advanced_param = kp.IntParameter(
+        "Int Parameter", "An integer parameter", 3, is_advanced=True
+    )
+
+    double_param = kp.DoubleParameter("Double Parameter", "A double parameter", 1.5)
+    double_advanced_param = kp.DoubleParameter(
+        "Double Parameter", "A double parameter", 1.5, is_advanced=True
+    )
+
+    string_param = kp.StringParameter("String Parameter", "A string parameter", "foo")
+    string_advanced_param = kp.StringParameter(
+        "String Parameter", "A string parameter", "foo", is_advanced=True
+    )
+
+    bool_param = kp.BoolParameter("Boolean Parameter", "A boolean parameter", True)
+    bool_advanced_param = kp.BoolParameter(
+        "Boolean Parameter", "A boolean parameter", True, is_advanced=True
+    )
+
+    column_param = kp.ColumnParameter("Column Parameter", "A column parameter")
+    column_advanced_param = kp.ColumnParameter(
+        "Column Parameter", "A column parameter", is_advanced=True
+    )
+
+    multi_column_param = kp.MultiColumnParameter(
+        "Multi Column Parameter",
+        "A multi column parameter",
+    )
+    multi_column_advanced_param = kp.MultiColumnParameter(
+        "Multi Column Parameter", "A multi column parameter", is_advanced=True
+    )
+
+
 class ParameterizedWithoutGroup:
     int_param = kp.IntParameter("Int Parameter", "An integer parameter", 3)
     double_param = kp.DoubleParameter("Double Parameter", "A double parameter", 1.5)
     string_param = kp.StringParameter("String Parameter", "A string parameter", "foo")
     bool_param = kp.BoolParameter("Boolean Parameter", "A boolean parameter", True)
+    column_param = kp.ColumnParameter("Column Parameter", "A column parameter")
+    multi_column_param = kp.MultiColumnParameter(
+        "Multi Column Parameter",
+        "A multi column parameter",
+    )
 
 
 #### Secondary parameterised objects for testing composition: ####
@@ -466,6 +521,7 @@ class VersionedDefaultsParameterized:
 class ParameterTest(unittest.TestCase):
     def setUp(self):
         self.parameterized = Parameterized()
+        self.parameterized_advanced_option = ParameterizedWithAdvancedOption()
         self.versioned_parameterized = VersionedParameterized()
         self.parameterized_without_group = ParameterizedWithoutGroup()
 
@@ -496,11 +552,18 @@ class ParameterTest(unittest.TestCase):
         """
         Test that parameter values can be retrieved.
         """
+
+        set_column_parameters(self.parameterized)
+
         # root-level parameters
         self.assertEqual(self.parameterized.int_param, 3)
         self.assertEqual(self.parameterized.double_param, 1.5)
         self.assertEqual(self.parameterized.string_param, "foo")
         self.assertEqual(self.parameterized.bool_param, True)
+        self.assertEqual(self.parameterized.column_param, "foo_column")
+        self.assertEqual(
+            self.parameterized.multi_column_param, ["foo_column", "bar_column"]
+        )
 
         # group-level parameters
         self.assertEqual(self.parameterized.parameter_group.third, 3)
@@ -517,12 +580,18 @@ class ParameterTest(unittest.TestCase):
         self.parameterized.double_param = 5.5
         self.parameterized.string_param = "bar"
         self.parameterized.bool_param = False
+        self.parameterized.column_param = "foo_column"
+        self.parameterized.multi_column_param = ["foo_column", "bar_column"]
 
         # group-level parameters
         self.assertEqual(self.parameterized.int_param, 5)
         self.assertEqual(self.parameterized.double_param, 5.5)
         self.assertEqual(self.parameterized.string_param, "bar")
         self.assertEqual(self.parameterized.bool_param, False)
+        self.assertEqual(self.parameterized.column_param, "foo_column")
+        self.assertEqual(
+            self.parameterized.multi_column_param, ["foo_column", "bar_column"]
+        )
 
         # subgroup-level parameters
         self.parameterized.parameter_group.subgroup.first = 2
@@ -532,12 +601,19 @@ class ParameterTest(unittest.TestCase):
         """
         Test extracting nested parameter values.
         """
+
+        set_column_parameters(self.parameterized)
+
         params = kp.extract_parameters(self.parameterized)
+
         expected = generate_values_dict()
         self.assertEqual(params, expected)
 
     def test_inject_parameters(self):
-        params = generate_values_dict(4, 2.7, "bar", False, 3, 2, 1)
+        params = generate_values_dict(
+            4, 2.7, "bar", False, "foo_column", ["foo_column", "bar_column"], 3, 2, 1
+        )
+
         kp.inject_parameters(self.parameterized, params)
         extracted = kp.extract_parameters(self.parameterized)
         self.assertEqual(params, extracted)
@@ -545,7 +621,11 @@ class ParameterTest(unittest.TestCase):
     def test_inject_parameters_with_missing_allowed(self):
         obj = Parameterized()
         params = {"model": {"int_param": 5}}
+
         kp.inject_parameters(obj, params, fail_on_missing=False)
+
+        set_column_parameters(obj)
+
         extracted = kp.extract_parameters(obj)
         expected = generate_values_dict(5)
         self.assertEqual(expected, extracted)
@@ -578,6 +658,16 @@ class ParameterTest(unittest.TestCase):
                             "title": "Boolean Parameter",
                             "description": "A boolean parameter",
                             "type": "boolean",
+                        },
+                        "column_param": {
+                            "title": "Column Parameter",
+                            "description": "A column parameter",
+                            "oneOf": [{"const": "", "title": ""}],
+                        },
+                        "multi_column_param": {
+                            "title": "Multi Column Parameter",
+                            "description": "A multi column parameter",
+                            "anyOf": [{"const": "", "title": ""}],
                         },
                         "parameter_group": {
                             "type": "object",
@@ -616,65 +706,172 @@ class ParameterTest(unittest.TestCase):
 
     def test_extract_ui_schema(self):
         expected = {
+            "type": "VerticalLayout",
             "elements": [
                 {
+                    "type": "Control",
                     "label": "Int Parameter",
-                    "options": {"format": "integer"},
                     "scope": "#/properties/model/properties/int_param",
-                    "type": "Control",
+                    "options": {"format": "integer"},
                 },
                 {
+                    "type": "Control",
                     "label": "Double Parameter",
-                    "options": {"format": "number"},
                     "scope": "#/properties/model/properties/double_param",
-                    "type": "Control",
+                    "options": {"format": "number"},
                 },
                 {
+                    "type": "Control",
                     "label": "String Parameter",
-                    "options": {"format": "string"},
                     "scope": "#/properties/model/properties/string_param",
-                    "type": "Control",
+                    "options": {"format": "string"},
                 },
                 {
+                    "type": "Control",
                     "label": "Boolean Parameter",
-                    "options": {"format": "boolean"},
                     "scope": "#/properties/model/properties/bool_param",
-                    "type": "Control",
+                    "options": {"format": "boolean"},
                 },
                 {
+                    "type": "Control",
+                    "label": "Column Parameter",
+                    "scope": "#/properties/model/properties/column_param",
+                    "options": {
+                        "format": "columnSelection",
+                        "showRowKeys": False,
+                        "showNoneColumn": False,
+                    },
+                },
+                {
+                    "type": "Control",
+                    "label": "Multi Column Parameter",
+                    "scope": "#/properties/model/properties/multi_column_param",
+                    "options": {"format": "columnFilter"},
+                },
+                {
+                    "type": "Section",
+                    "label": "Primary Group",
                     "elements": [
                         {
+                            "type": "Group",
+                            "label": "Subgroup",
                             "elements": [
                                 {
-                                    "label": "First Parameter",
-                                    "options": {"format": "integer"},
-                                    "scope": "#/properties/model/properties/parameter_group/properties/subgroup/properties/first",
                                     "type": "Control",
+                                    "label": "First Parameter",
+                                    "scope": "#/properties/model/properties/parameter_group/properties/subgroup/properties/first",
+                                    "options": {"format": "integer"},
                                 },
                                 {
-                                    "label": "Second Parameter",
-                                    "options": {"format": "integer"},
-                                    "scope": "#/properties/model/properties/parameter_group/properties/subgroup/properties/second",
                                     "type": "Control",
+                                    "label": "Second Parameter",
+                                    "scope": "#/properties/model/properties/parameter_group/properties/subgroup/properties/second",
+                                    "options": {"format": "integer"},
                                 },
                             ],
-                            "label": "Subgroup",
-                            "type": "Group",
                         },
                         {
-                            "label": "Internal int Parameter",
-                            "options": {"format": "integer"},
-                            "scope": "#/properties/model/properties/parameter_group/properties/third",
                             "type": "Control",
+                            "label": "Internal int Parameter",
+                            "scope": "#/properties/model/properties/parameter_group/properties/third",
+                            "options": {"format": "integer"},
                         },
                     ],
-                    "label": "Primary Group",
-                    "type": "Section",
                 },
             ],
-            "type": "VerticalLayout",
         }
         extracted = kp.extract_ui_schema(self.parameterized)
+        self.assertEqual(expected, extracted)
+
+    def test_extract_ui_schema_is_advanced_option(self):
+        expected = {
+            "type": "VerticalLayout",
+            "elements": [
+                {
+                    "type": "Control",
+                    "label": "Int Parameter",
+                    "scope": "#/properties/model/properties/int_param",
+                    "options": {"format": "integer"},
+                },
+                {
+                    "type": "Control",
+                    "label": "Int Parameter",
+                    "scope": "#/properties/model/properties/int_advanced_param",
+                    "options": {"format": "integer", "isAdvanced": True},
+                },
+                {
+                    "type": "Control",
+                    "label": "Double Parameter",
+                    "scope": "#/properties/model/properties/double_param",
+                    "options": {"format": "number"},
+                },
+                {
+                    "type": "Control",
+                    "label": "Double Parameter",
+                    "scope": "#/properties/model/properties/double_advanced_param",
+                    "options": {"format": "number", "isAdvanced": True},
+                },
+                {
+                    "type": "Control",
+                    "label": "String Parameter",
+                    "scope": "#/properties/model/properties/string_param",
+                    "options": {"format": "string"},
+                },
+                {
+                    "type": "Control",
+                    "label": "String Parameter",
+                    "scope": "#/properties/model/properties/string_advanced_param",
+                    "options": {"format": "string", "isAdvanced": True},
+                },
+                {
+                    "type": "Control",
+                    "label": "Boolean Parameter",
+                    "scope": "#/properties/model/properties/bool_param",
+                    "options": {"format": "boolean"},
+                },
+                {
+                    "type": "Control",
+                    "label": "Boolean Parameter",
+                    "scope": "#/properties/model/properties/bool_advanced_param",
+                    "options": {"format": "boolean", "isAdvanced": True},
+                },
+                {
+                    "type": "Control",
+                    "label": "Column Parameter",
+                    "scope": "#/properties/model/properties/column_param",
+                    "options": {
+                        "format": "columnSelection",
+                        "showRowKeys": False,
+                        "showNoneColumn": False,
+                    },
+                },
+                {
+                    "type": "Control",
+                    "label": "Column Parameter",
+                    "scope": "#/properties/model/properties/column_advanced_param",
+                    "options": {
+                        "format": "columnSelection",
+                        "showRowKeys": False,
+                        "showNoneColumn": False,
+                        "isAdvanced": True,
+                    },
+                },
+                {
+                    "type": "Control",
+                    "label": "Multi Column Parameter",
+                    "scope": "#/properties/model/properties/multi_column_param",
+                    "options": {"format": "columnFilter"},
+                },
+                {
+                    "type": "Control",
+                    "label": "Multi Column Parameter",
+                    "scope": "#/properties/model/properties/multi_column_advanced_param",
+                    "options": {"format": "columnFilter", "isAdvanced": True},
+                },
+            ],
+        }
+
+        extracted = kp.extract_ui_schema(self.parameterized_advanced_option)
         self.assertEqual(expected, extracted)
 
     def test_default_validators(self):
@@ -898,11 +1095,19 @@ class ParameterTest(unittest.TestCase):
                     {"name": "Double Parameter", "description": "A double parameter"},
                     {"name": "String Parameter", "description": "A string parameter"},
                     {"name": "Boolean Parameter", "description": "A boolean parameter"},
+                    {
+                        "name": "Column Parameter",
+                        "description": "A column parameter",
+                    },
+                    {
+                        "name": "Multi Column Parameter",
+                        "description": "A multi column parameter",
+                    },
                 ],
             },
             {
                 "name": "Primary Group",
-                "description": """A parameter group which contains a parameter group as a subgroup, and sets a custom validator for a parameter.""",
+                "description": "A parameter group which contains a parameter group as a subgroup, and sets a custom validator for a parameter.",
                 "options": [
                     {
                         "name": "First Parameter",
@@ -929,6 +1134,11 @@ class ParameterTest(unittest.TestCase):
             {"name": "Double Parameter", "description": "A double parameter"},
             {"name": "String Parameter", "description": "A string parameter"},
             {"name": "Boolean Parameter", "description": "A boolean parameter"},
+            {"name": "Column Parameter", "description": "A column parameter"},
+            {
+                "name": "Multi Column Parameter",
+                "description": "A multi column parameter",
+            },
         ]
         description, use_tabs = kp.extract_parameter_descriptions(
             self.parameterized_without_group
