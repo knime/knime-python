@@ -9,7 +9,7 @@ def join(*paths):
 
 
 def add_path(*rel_path):
-    sys.path.append(join(__file__, "..", *rel_path))
+    sys.path.insert(0, join(__file__, "..", *rel_path))
 
 
 def add_src_main_path(plugin_name):
