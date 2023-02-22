@@ -26,4 +26,8 @@ html.writer-html4 .rst-content dl:not(.docutils) > dt, html.writer-html5 .rst-co
 
 .a.reference{
     color: black !important;
+}
 
+.rst-content .toctree-wrapper ul li > * {
+  margin-top: 0;
+}
