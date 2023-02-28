@@ -21,7 +21,7 @@ import type { Workspace,
     PythonNodeSettings } from '../utils/python-scripting-service';
 
 import FlowVariables from 'scripting-editor/src/components/FlowVariables.vue';
-import type { FlowVariable } from 'scripting-editor/src/utils/scripting-service';
+import type { FlowVariableInput } from 'scripting-editor/src/utils/scripting-service';
 import { registerMonacoInputColumnCompletions,
     registerMonacoInputFlowVariableCompletions } from '../utils/python-completions';
 
@@ -65,7 +65,7 @@ type AppData = {
     workspace: Workspace;
 
     // Script inputs
-    flowVariables: FlowVariable[];
+    flowVariableInputs: FlowVariableInput[];
     inputPortInfos: InputPortInfo[];
 };
 
@@ -107,7 +107,7 @@ export default defineComponent({
             },
             // Script inputs
             inputPortInfos: [],
-            flowVariables: []
+            flowVariableInputs: []
         };
     },
     async mounted() {
@@ -116,18 +116,18 @@ export default defineComponent({
 
         // Set the python executable to the currently selected option -> will start the interactive session
         this.pythonExecutableChanged(this.scriptingService.getExecutableSelection());
-        
+
         // Get some more information from the backend
         this.pythonExecutableOptions = await this.scriptingService.getExecutableOptions(this.pythonExecutableId);
         this.inputPortInfos = await this.scriptingService.getInputObjects();
-        this.flowVariables = await this.scriptingService.getFlowVariables();
+        this.flowVariableInputs = await this.scriptingService.getFlowVariableInputs();
 
 
         // Add special autocompletion
         // TODO (AP-20083): Abstraction into Python specific completions and scripting-service specific
         //      Could help to remove monaco dependency for the pythons-scripting-editor
         registerMonacoInputColumnCompletions(this.inputPortInfos);
-        registerMonacoInputFlowVariableCompletions(this.flowVariables);
+        registerMonacoInputFlowVariableCompletions(this.flowVariableInputs);
     },
     methods: {
         startInteractive() {
@@ -267,7 +267,7 @@ export default defineComponent({
         @column-clicked="onColumnClicked"
       />
       <FlowVariables
-        :flow-variables="flowVariables"
+        :flow-variables="flowVariableInputs"
       />
     </template>
 

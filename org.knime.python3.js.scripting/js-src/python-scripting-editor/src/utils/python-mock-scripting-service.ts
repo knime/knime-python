@@ -10,7 +10,7 @@ import type { ExecutableOption,
 
 import type { FlowVariableSetting } from '@knime/ui-extension-service';
 
-import type { FlowVariable, ConsoleText } from 'scripting-editor/src/utils/scripting-service';
+import type { FlowVariableInput, ConsoleText } from 'scripting-editor/src/utils/scripting-service';
 
 
 class PythonScriptingServiceMock implements PythonScriptingService {
@@ -59,16 +59,10 @@ class PythonScriptingServiceMock implements PythonScriptingService {
         return new Promise((r) => setTimeout(r, 100));
     }
 
-    getFlowVariables(): Promise<FlowVariable[]> {
+    getFlowVariableInputs() {
         return new Promise((r) => setTimeout(r, 100)).then(() => [
-            {
-                name: 'MyFlowVariable',
-                value: 'CustomFlowVariable'
-            } as FlowVariable,
-            {
-                name: 'MyFlow',
-                value: '1'
-            } as FlowVariable
+            { name: 'MyFlowVariable', value: 'CustomFlowVariable' },
+            { name: 'MyFlow', value: '1' }
         ]);
     }
 

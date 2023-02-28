@@ -1,6 +1,6 @@
 import * as monaco from 'monaco-editor';
 import type { InputPortInfo, InputTableInfo, InputObjectInfo } from './python-scripting-service';
-import type { FlowVariable } from 'scripting-editor/src/utils/scripting-service';
+import type { FlowVariableInput } from 'scripting-editor/src/utils/scripting-service';
 
 const columnCompletionFor = (
     tableIdx: number,
@@ -50,7 +50,7 @@ Current value : \` ${objectInfo.objectRepr} \`
 };
 
 
-const flowVariableCompletion = (flowIndex: number, flowVar: FlowVariable) => ({
+const flowVariableCompletion = (flowIndex: number, flowVar: FlowVariableInput) => ({
     label: `knio.flow_variables['${flowVar.name}']`,
     kind: monaco.languages.CompletionItemKind.Variable,
     documentation: `Access flow variable "${flowVar.name}" of value ${flowVar.value} .`,
@@ -58,12 +58,12 @@ const flowVariableCompletion = (flowIndex: number, flowVar: FlowVariable) => ({
 });
    
 
-export const registerMonacoInputFlowVariableCompletions = (inputFlowVariables: FlowVariable[]) => {
+export const registerMonacoInputFlowVariableCompletions = (inputFlowVariables: FlowVariableInput[]) => {
     // Pre-compute the completions but without a range
     type CompletionItemWithoutRange = Omit<monaco.languages.CompletionItem, 'range'>;
     let objectIdx = 0;
     const completions = inputFlowVariables?.flatMap((flowVariable): CompletionItemWithoutRange[] => {
-        const objectInfo = flowVariable as FlowVariable;
+        const objectInfo = flowVariable as FlowVariableInput;
         return [flowVariableCompletion(objectIdx++, objectInfo)];
     });
 

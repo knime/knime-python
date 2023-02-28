@@ -117,49 +117,29 @@ final class PythonScriptNodeModel extends NodeModel {
         String[].class //
     ));
 
-
     PythonScriptNodeModel(final PortsConfiguration portsConfiguration) {
         super(portsConfiguration.getInputPorts(), portsConfiguration.getOutputPorts());
         m_settings = new PythonScriptNodeSettings();
         m_ports = PythonScriptPortsConfiguration.fromPortsConfiguration(portsConfiguration);
     }
 
-
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    private void pushNewFlowVariable(final FlowVariable variable) {
-        pushFlowVariable(variable.getName(), (VariableType)variable.getVariableType(),
-            variable.getValue(variable.getVariableType()));
-    }
-
-    protected void addNewFlowVariables(final Collection<FlowVariable> newVariables) {
-        final Map<String, FlowVariable> oldVariables =
-            getAvailableFlowVariables(VariableTypeRegistry.getInstance().getAllTypes());
-        for (final FlowVariable variable : newVariables) {
-            if (!Objects.equals(oldVariables.get(variable.getName()), variable)) {
-                pushNewFlowVariable(variable);
-            }
-        }
-    }
     @Override
     protected PortObjectSpec[] configure(final PortObjectSpec[] inSpecs) throws InvalidSettingsException {
         return null; // NOSONAR
     }
 
     @Override
-    protected PortObject[] execute(final PortObject[] inObjects, final ExecutionContext exec ) throws Exception {
+    protected PortObject[] execute(final PortObject[] inObjects, final ExecutionContext exec) throws Exception {
         final PythonCommand pythonCommand =
             ExecutableSelectionUtils.getPythonCommand(m_settings.getExecutableSelection());
         m_consoleOutputStorage = null;
-
-        // rightclick execute
-        Collection<FlowVariable> flowVariables = getAvailableFlowVariables(KNOWN_FLOW_VARIABLE_TYPES).values();
-        //.stream().filter(c -> !c.getName().contains("conda")).collect(Collectors.toCollection(null));
 
         final var consoleConsumer = ConsoleOutputUtils.createConsoleConsumer();
         try (final var session =
             new PythonScriptingSession(pythonCommand, consoleConsumer, getWriteFileStoreHandler())) {
             exec.setProgress(0.0, "Setting up inputs");
-            session.setupIO(inObjects, flowVariables ,m_ports.getNumOutTables(), m_ports.getNumOutImages(), m_ports.getNumOutObjects(),
+            session.setupIO(inObjects, getAvailableFlowVariables(KNOWN_FLOW_VARIABLE_TYPES).values(),
+                m_ports.getNumOutTables(), m_ports.getNumOutImages(), m_ports.getNumOutObjects(),
                 exec.createSubProgress(0.3));
             exec.setProgress(0.3, "Running script");
             session.execute(m_settings.getScript());
@@ -176,6 +156,21 @@ final class PythonScriptNodeModel extends NodeModel {
         }
     }
 
+    private void addNewFlowVariables(final Collection<FlowVariable> newVariables) {
+        final Map<String, FlowVariable> oldVariables =
+            getAvailableFlowVariables(VariableTypeRegistry.getInstance().getAllTypes());
+        for (final FlowVariable variable : newVariables) {
+            if (!Objects.equals(oldVariables.get(variable.getName()), variable)) {
+                pushNewFlowVariable(variable);
+            }
+        }
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private void pushNewFlowVariable(final FlowVariable variable) {
+        pushFlowVariable(variable.getName(), (VariableType)variable.getVariableType(),
+            variable.getValue(variable.getVariableType()));
+    }
 
     @Override
     protected void saveSettingsTo(final NodeSettingsWO settings) {

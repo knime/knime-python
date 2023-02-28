@@ -50,7 +50,6 @@ package org.knime.python3.scripting.nodes.script;
 
 import java.net.URISyntaxException;
 import java.net.URL;
-import org.knime.core.node.workflow.FlowVariable;
 
 import org.knime.python2.generic.VariableNames;
 import org.knime.python2.ports.DataTableOutputPort;

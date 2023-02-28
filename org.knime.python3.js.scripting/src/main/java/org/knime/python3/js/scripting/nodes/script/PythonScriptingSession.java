@@ -51,7 +51,6 @@ package org.knime.python3.js.scripting.nodes.script;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -123,8 +122,6 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
 
     private int m_numOutObjects;
 
-    private Map<String, Object> m_flowVariables;
-
     PythonScriptingSession(final PythonCommand pythonCommand, final Consumer<ConsoleText> consoleTextConsumer,
         final IWriteFileStoreHandler fileStoreHandler) throws IOException, InterruptedException {
         m_consoleTextConsumer = consoleTextConsumer;
@@ -134,15 +131,15 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
         m_outputRedirector = PythonGatewayUtils.redirectGatewayOutput(m_gateway, LOGGER::info, LOGGER::info);
     }
 
-    void setupIO(final PortObject[] inData, final Collection<FlowVariable> flowVariables, final int numOutTables, final int numOutImages, final int numOutObjects,
-        final ExecutionMonitor exec) throws IOException, CanceledExecutionException {
+    void setupIO(final PortObject[] inData, final Collection<FlowVariable> flowVariables, final int numOutTables,
+        final int numOutImages, final int numOutObjects, final ExecutionMonitor exec)
+        throws IOException, CanceledExecutionException {
         m_numOutTables = numOutTables;
         m_numOutImages = numOutImages;
         m_numOutObjects = numOutObjects;
 
-        m_flowVariables = FlowVariableUtils.convertToMap(flowVariables);
-
         final var sources = PythonIOUtils.createSources(inData, m_tableConverter, exec);
+        final var flowVars = FlowVariableUtils.convertToMap(flowVariables);
         final var callback = new PythonJsScriptingEntryPoint.Callback() {
             @Override
             public PythonArrowDataSink create_sink() throws IOException {
@@ -159,7 +156,7 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
                 m_consoleTextConsumer.accept(new ConsoleText(text, true));
             }
         };
-        m_entryPoint.setupIO(sources, m_flowVariables, numOutTables, numOutImages, numOutObjects, callback);
+        m_entryPoint.setupIO(sources, flowVars, numOutTables, numOutImages, numOutObjects, callback);
     }
 
     String execute(final String script) {
@@ -197,7 +194,6 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
             .flatMap(Stream::of) //
             .toArray(PortObject[]::new);
     }
-
 
     private static PythonGateway<PythonJsScriptingEntryPoint> createGateway(final PythonCommand pythonCommand)
         throws IOException, InterruptedException {

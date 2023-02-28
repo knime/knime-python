@@ -71,7 +71,6 @@ import org.knime.python3.js.scripting.nodes.script.PythonScriptingService.Execut
 import org.knime.scripting.editor.ScriptingService;
 import org.knime.scripting.editor.lsp.LanguageServerProxy;
 
-
 /**
  * A special {@link ScriptingService} for the Python scripting node.
  *
@@ -79,8 +78,11 @@ import org.knime.scripting.editor.lsp.LanguageServerProxy;
  */
 final class PythonScriptingService extends ScriptingService {
 
-    private static final HashSet<VariableType<?>> KNOWN_FLOW_VARIABLE_SET = new HashSet<>(Arrays.asList(PythonScriptNodeModel.KNOWN_FLOW_VARIABLE_TYPES));
-    private static final Predicate<FlowVariable> FLOW_VARIABLE_FILTER =  x -> KNOWN_FLOW_VARIABLE_SET.contains(x.getVariableType());
+    private static final HashSet<VariableType<?>> KNOWN_FLOW_VARIABLE_SET =
+        new HashSet<>(Arrays.asList(PythonScriptNodeModel.KNOWN_FLOW_VARIABLE_TYPES));
+
+    private static final Predicate<FlowVariable> FLOW_VARIABLE_FILTER =
+        x -> KNOWN_FLOW_VARIABLE_SET.contains(x.getVariableType());
 
     private final PythonScriptPortsConfiguration m_ports;
 
@@ -151,7 +153,6 @@ final class PythonScriptingService extends ScriptingService {
      */
     public final class PythonJsonRpcService extends JsonRpcService {
 
-
         /**
          * Notify that a new dialog has been opened. Must be called before calling any other method of the RPC server.
          */
@@ -196,10 +197,8 @@ final class PythonScriptingService extends ScriptingService {
             final var fileStoreHandler = NotInWorkflowWriteFileStoreHandler.create();
             m_interactiveSession = new PythonScriptingSession(pythonCommand,
                 PythonScriptingService.this::addConsoleOutputEvent, fileStoreHandler);
-            
-            m_interactiveSession.setupIO(workflowControl.getInputData(),
-                getFlowVariablesForScript().values().stream().filter(FLOW_VARIABLE_FILTER).collect(Collectors.toList()),
-                m_ports.getNumOutTables(),
+
+            m_interactiveSession.setupIO(workflowControl.getInputData(), getFlowVariables(), m_ports.getNumOutTables(),
                 m_ports.getNumOutImages(), m_ports.getNumOutObjects(), new ExecutionMonitor());
         }
 
