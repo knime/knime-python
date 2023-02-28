@@ -161,8 +161,8 @@ export default defineComponent({
                 }
             });
         },
-        variableClicked(event: string) {
-            this.runScript(`print('print>' + '\\n' + str(${event}))`);
+        variableClicked(varName: string) {
+            this.runScript(`print('>>> print(${varName})\\n' + str(${varName}))`);
         },
         runSelectedLines() {
             const selection = this.getEditor().getSelection();
