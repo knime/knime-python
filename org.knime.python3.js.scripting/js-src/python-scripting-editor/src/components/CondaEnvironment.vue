@@ -10,21 +10,21 @@ import type { ExecutableOption, ExecutableInfo } from '../utils/python-scripting
 export default defineComponent({
     name: 'CondaEnvironment',
     components: {
-        RadioButtons
+        RadioButtons,
     },
     props: {
         value: {
             type: String,
-            default: () => ''
+            default: () => '',
         },
         executableOptions: {
             type: Array as () => Array<ExecutableOption>,
-            default: () => []
+            default: () => [],
         },
         executableInfo: {
             type: Object as PropType<ExecutableInfo>,
-            default: () => null
-        }
+            default: () => null,
+        },
     },
     emits: ['input'],
     computed: {
@@ -53,8 +53,8 @@ export default defineComponent({
                 // Cannot happen
                 throw new Error(`Invalid executable option type: ${option.type}`);
             });
-        }
-    }
+        },
+    },
 });
 </script>
 

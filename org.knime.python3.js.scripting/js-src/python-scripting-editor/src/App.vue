@@ -8,8 +8,8 @@ export default defineComponent({
     name: 'App',
     components: {
         PythonScriptingEditor,
-        LoadingIcon
-    }
+        LoadingIcon,
+    },
 });
 </script>
 

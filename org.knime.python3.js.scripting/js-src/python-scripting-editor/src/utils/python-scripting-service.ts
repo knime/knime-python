@@ -108,7 +108,7 @@ class PythonScriptingServiceImpl extends ScriptingServiceImpl<PythonNodeSettings
 }
 
 const overwritePythonCommandByFlowVarName = ({
-    flowVariableSettings
+    flowVariableSettings,
 }: {
     flowVariableSettings: FlowVariableSettings;
 }) => {
@@ -130,10 +130,10 @@ export const createScriptingService = async () => {
 
     const pythonScriptingService: PythonNodeSettings = {
         ...initialNodeSettings,
-        executableSelection: overwritePythonCommandByFlowVarName({ flowVariableSettings })
+        executableSelection: overwritePythonCommandByFlowVarName({ flowVariableSettings }),
     };
     const scriptingService = new PythonScriptingServiceImpl(
-        jsonDataService, flowVariableSettings, pythonScriptingService
+        jsonDataService, flowVariableSettings, pythonScriptingService,
     );
     muteReactivity(scriptingService);
     return scriptingService as PythonScriptingService;

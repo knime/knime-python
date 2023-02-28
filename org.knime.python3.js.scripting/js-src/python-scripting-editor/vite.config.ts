@@ -11,19 +11,19 @@ export default defineConfig({
         vue(),
         svgLoader(),
         monacoEditorPlugin({
-            languageWorkers: ['editorWorkerService'] // TODO check
-        })
+            languageWorkers: ['editorWorkerService'], // TODO check
+        }),
     ],
     resolve: {
         alias: {
             '@': fileURLToPath(new URL('./src', import.meta.url)),
             '@@': fileURLToPath(new URL('.', import.meta.url)),
-            path: 'path-browserify'
+            path: 'path-browserify',
         },
         dedupe: [
-            'vue'
-        ]
+            'vue',
+        ],
     },
     envPrefix: 'KNIME_',
-    base: './'
+    base: './',
 });

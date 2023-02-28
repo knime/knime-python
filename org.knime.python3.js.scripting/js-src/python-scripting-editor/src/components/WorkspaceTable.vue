@@ -14,18 +14,18 @@ export default defineComponent({
                 return {
                     names: ['no workspace'],
                     types: [''],
-                    values: ['']
+                    values: [''],
                 };
-            }
-        }
+            },
+        },
     },
     emits: ['clicked'],
     computed: {
         workspaceTable() {
             const { names, types, values } = this.workspace;
             return names.map((n: string, i: number) => ({ name: n, type: types[i], value: values[i] }));
-        }
-    }
+        },
+    },
 });
 </script>
 

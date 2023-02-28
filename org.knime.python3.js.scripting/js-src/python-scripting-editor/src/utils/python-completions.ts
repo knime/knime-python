@@ -5,14 +5,14 @@ import type { FlowVariableInput } from 'scripting-editor/src/utils/scripting-ser
 const columnCompletionFor = (
     tableIdx: number,
     tableVarName: string,
-    column: string
+    column: string,
 ) => ['pyarrow', 'pandas'].map((format) => {
     const text = `${tableVarName}.to_${format}()["${column}"]`;
     return {
         label: text,
         kind: monaco.languages.CompletionItemKind.Snippet,
         documentation: `Access the column "${column}" of input table ${tableIdx} using ${format}.`,
-        insertText: text
+        insertText: text,
     };
 });
 
@@ -21,7 +21,7 @@ const tableCompletionFor = (tableIdx: number, tableInfo: InputTableInfo) => [
         label: tableInfo.variableName,
         kind: monaco.languages.CompletionItemKind.Snippet,
         documentation: `Access table ${tableIdx}.`,
-        insertText: tableInfo.variableName
+        insertText: tableInfo.variableName,
     },
     ...['pyarrow', 'pandas'].map((format) => {
         const text = `${tableInfo.variableName}.to_${format}()`;
@@ -29,10 +29,10 @@ const tableCompletionFor = (tableIdx: number, tableInfo: InputTableInfo) => [
             label: text,
             kind: monaco.languages.CompletionItemKind.Snippet,
             documentation: `Access table ${tableIdx} using ${format}.`,
-            insertText: text
+            insertText: text,
         };
     }),
-    ...tableInfo.columnNames.flatMap((column) => columnCompletionFor(tableIdx, tableInfo.variableName, column))
+    ...tableInfo.columnNames.flatMap((column) => columnCompletionFor(tableIdx, tableInfo.variableName, column)),
 ];
 
 const objectCompletionFor = (objectIdx: number, objectInfo: InputObjectInfo) => {
@@ -45,7 +45,7 @@ Current value : \` ${objectInfo.objectRepr} \`
         label: objectInfo.variableName,
         kind: monaco.languages.CompletionItemKind.Snippet,
         documentation: { value: documentation }, // NB: Implement IMarkdownString
-        insertText: objectInfo.variableName
+        insertText: objectInfo.variableName,
     };
 };
 
@@ -54,7 +54,7 @@ const flowVariableCompletion = (flowIndex: number, flowVar: FlowVariableInput) =
     label: `knio.flow_variables['${flowVar.name}']`,
     kind: monaco.languages.CompletionItemKind.Variable,
     documentation: `Access flow variable "${flowVar.name}" of value ${flowVar.value} .`,
-    insertText: `knio.flow_variables['${flowVar.name}']`
+    insertText: `knio.flow_variables['${flowVar.name}']`,
 });
    
 
@@ -75,10 +75,10 @@ export const registerMonacoInputFlowVariableCompletions = (inputFlowVariables: F
                 startLineNumber: position.lineNumber,
                 endLineNumber: position.lineNumber,
                 startColumn: word.startColumn,
-                endColumn: word.endColumn
+                endColumn: word.endColumn,
             };
             return { suggestions: completions.map((c) => ({ range, ...c })) };
-        }
+        },
     });
 };
 
@@ -118,9 +118,9 @@ export const registerMonacoInputColumnCompletions = (inputPortInfos: InputPortIn
                 startLineNumber: position.lineNumber,
                 endLineNumber: position.lineNumber,
                 startColumn: word.startColumn,
-                endColumn: word.endColumn
+                endColumn: word.endColumn,
             };
             return { suggestions: completions.map((c) => ({ range, ...c })) };
-        }
+        },
     });
 };

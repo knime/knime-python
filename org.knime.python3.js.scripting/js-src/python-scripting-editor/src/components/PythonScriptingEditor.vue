@@ -32,19 +32,19 @@ const getSelectedLines = (editorModel: editor.ITextModel, selection: Selection) 
                 // Selection goes from top to bottom
                 startLineNumber: selection.selectionStartLineNumber,
                 endLineNumber: selection.positionLineNumber,
-                endColumn: selection.positionColumn
+                endColumn: selection.positionColumn,
             }
             : {
                 // Selection goes from bottom to top
                 startLineNumber: selection.positionLineNumber,
                 endLineNumber: selection.selectionStartLineNumber,
-                endColumn: selection.selectionStartColumn
+                endColumn: selection.selectionStartColumn,
             };
     return editorModel.getValueInRange({
         startLineNumber,
         endLineNumber: endLineNumber + (endColumn > 1 ? 1 : 0),
         startColumn: 0,
-        endColumn: 0
+        endColumn: 0,
     });
 };
 
@@ -80,11 +80,11 @@ export default defineComponent({
         CondaEnvironment,
         KeepAlive,
         FlowVariables,
-        OutputConsole
+        OutputConsole,
     },
     provide() {
         return {
-            scriptingService: this.scriptingService
+            scriptingService: this.scriptingService,
         };
     },
     async setup() {
@@ -103,11 +103,11 @@ export default defineComponent({
             workspace: {
                 names: ['no workspace'],
                 types: [''],
-                values: ['']
+                values: [''],
             },
             // Script inputs
             inputPortInfos: [],
-            flowVariableInputs: []
+            flowVariableInputs: [],
         };
     },
     async mounted() {
@@ -187,7 +187,7 @@ export default defineComponent({
         },
         onMonacoCreated({
             editor,
-            editorModel
+            editorModel,
         }: {
             editor: editor.IStandaloneCodeEditor;
             editorModel: editor.ITextModel;
@@ -220,8 +220,8 @@ export default defineComponent({
         },
         getEditorModel(): editor.ITextModel {
             return this.editorModel;
-        }
-    }
+        },
+    },
 });
 
 </script>

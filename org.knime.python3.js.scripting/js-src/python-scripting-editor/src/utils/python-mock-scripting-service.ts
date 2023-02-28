@@ -24,7 +24,7 @@ class PythonScriptingServiceMock implements PythonScriptingService {
 
     constructor({
         flowVariableSettings,
-        initialNodeSettings
+        initialNodeSettings,
     }: {
         flowVariableSettings: {[key: string]: FlowVariableSetting};
         initialNodeSettings: PythonNodeSettings
@@ -33,7 +33,7 @@ class PythonScriptingServiceMock implements PythonScriptingService {
         this.initialNodeSettings = initialNodeSettings;
         this.eventHandlers = {};
         this.currentNodeSettings = {
-            ...initialNodeSettings
+            ...initialNodeSettings,
         };
     }
 
@@ -62,7 +62,7 @@ class PythonScriptingServiceMock implements PythonScriptingService {
     getFlowVariableInputs() {
         return new Promise((r) => setTimeout(r, 100)).then(() => [
             { name: 'MyFlowVariable', value: 'CustomFlowVariable' },
-            { name: 'MyFlow', value: '1' }
+            { name: 'MyFlow', value: '1' },
         ]);
     }
 
@@ -71,14 +71,14 @@ class PythonScriptingServiceMock implements PythonScriptingService {
         const res = {
             names: ['x'],
             types: ['int'],
-            values: ['3']
+            values: ['3'],
         };
         this.eventHandlers.console({
             text: 'x=3',
-            stderr: false
+            stderr: false,
         } as ConsoleText);
         return new Promise((r) => setTimeout(r, 100)).then(() => JSON.stringify(
-            res
+            res,
         ));
     }
 
@@ -88,8 +88,8 @@ class PythonScriptingServiceMock implements PythonScriptingService {
                 variableName: 'MockTable',
                 type: 'table',
                 columnNames: ['T1'],
-                columnTypes: ['int']
-            } as InputTableInfo
+                columnTypes: ['int'],
+            } as InputTableInfo,
         ]);
     }
 
@@ -139,7 +139,7 @@ class PythonScriptingServiceMock implements PythonScriptingService {
             id: '1',
             pythonExecutable: '/home/',
             condaEnvName: 'hallo',
-            condaEnvDir: '/home/'
+            condaEnvDir: '/home/',
         } as ExecutableOption]);
     }
 
@@ -150,8 +150,8 @@ class PythonScriptingServiceMock implements PythonScriptingService {
                 name: 'name',
                 version: 'version',
                 build: 'build',
-                channel: 'channel'
-            } as CondaPackageInfo]
+                channel: 'channel',
+            } as CondaPackageInfo],
         } as ExecutableInfo);
     }
 
@@ -168,8 +168,8 @@ export const createScriptingService = async () => {
         flowVariableSettings: {},
         initialNodeSettings: {
             script: '#This is mocking example',
-            executableSelection: '1'
-        }
+            executableSelection: '1',
+        },
     });
     return scriptingService as PythonScriptingService;
 };

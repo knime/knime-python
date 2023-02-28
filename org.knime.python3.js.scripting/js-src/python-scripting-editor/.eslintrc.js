@@ -6,17 +6,20 @@ module.exports = {
     extends: ['@knime/eslint-config/vue3-typescript'],
     globals: {
         consola: true,
-        window: true
+        window: true,
     },
     settings: {
         'import/resolver': {
             alias: {
                 map: [
                     ['@', './src'],
-                    ['@@', '.']
-                ]
-            }
-        }
+                    ['@@', '.'],
+                ],
+            },
+        },
     },
-    ignorePatterns: ['webapps-common/*']
+    ignorePatterns: ['webapps-common/*'],
+    rules: {
+        'comma-dangle': ['error', 'always-multiline'],
+    },
 };

@@ -15,10 +15,10 @@ export default defineComponent({
             type: Array as PropType<InputPortInfo[]>,
             default() {
                 return [];
-            }
-        }
+            },
+        },
     },
-    emits: ['column-clicked']
+    emits: ['column-clicked'],
 });
 </script>
 
