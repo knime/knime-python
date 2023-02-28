@@ -1,12 +1,14 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable class-methods-use-this */
-import type { ExecutableOption,
+import type {
+    ExecutableOption,
     InputTableInfo,
     PythonNodeSettings,
     CondaPackageInfo,
     InputPortInfo,
     ExecutableInfo,
-    PythonScriptingService } from './python-scripting-service';
+    PythonScriptingService,
+} from './python-scripting-service';
 
 import type { FlowVariableSetting } from '@knime/ui-extension-service';
 

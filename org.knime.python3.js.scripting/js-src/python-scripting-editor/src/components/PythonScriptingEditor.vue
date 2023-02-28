@@ -3,8 +3,10 @@
 import { defineComponent, KeepAlive } from 'vue';
 import { createScriptingService } from '@/utils/python-scripting-service';
 
-import type { editor,
-    Selection } from 'monaco-editor';
+import type {
+    editor,
+    Selection,
+} from 'monaco-editor';
 import Button from 'webapps-common/ui/components/Button.vue';
 import ScriptingEditor from 'scripting-editor/src/components/ScriptingEditor.vue';
 import OutputConsole from 'scripting-editor/src/components/OutputConsole.vue';
@@ -14,16 +16,20 @@ import CondaEnvironment from '../components/CondaEnvironment.vue';
 
 import PlayIcon from 'webapps-common/ui/assets/img/icons/play.svg';
 
-import type { Workspace,
+import type {
+    Workspace,
     InputPortInfo,
     ExecutableOption,
     ExecutableInfo,
-    PythonNodeSettings } from '../utils/python-scripting-service';
+    PythonNodeSettings,
+} from '../utils/python-scripting-service';
 
 import FlowVariables from 'scripting-editor/src/components/FlowVariables.vue';
 import type { FlowVariableInput } from 'scripting-editor/src/utils/scripting-service';
-import { registerMonacoInputColumnCompletions,
-    registerMonacoInputFlowVariableCompletions } from '../utils/python-completions';
+import {
+    registerMonacoInputColumnCompletions,
+    registerMonacoInputFlowVariableCompletions,
+} from '../utils/python-completions';
 
 const getSelectedLines = (editorModel: editor.ITextModel, selection: Selection) => {
     const { startLineNumber, endLineNumber, endColumn } =

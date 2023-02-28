@@ -1,8 +1,10 @@
 import type { FlowVariableSettings, FlowVariableSetting } from '@knime/ui-extension-service';
 import type { ScriptingService, NodeSettings } from 'scripting-editor/src/utils/scripting-service';
-import { ScriptingServiceImpl,
+import {
+    ScriptingServiceImpl,
     muteReactivity,
-    useKnimeScriptingService } from 'scripting-editor/src/utils/scripting-service';
+    useKnimeScriptingService,
+} from 'scripting-editor/src/utils/scripting-service';
 
 export type Workspace = { names: string[]; types: string[]; values: string[] };
 

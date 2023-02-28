@@ -21,5 +21,8 @@ module.exports = {
     ignorePatterns: ['webapps-common/*'],
     rules: {
         'comma-dangle': ['error', 'always-multiline'],
+        'object-curly-newline': ['error', {
+            ImportDeclaration: { multiline: true },
+        }],
     },
 };
