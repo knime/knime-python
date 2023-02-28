@@ -23,7 +23,7 @@ export default defineComponent({
 </template>
 
 <style lang="postcss">
-@import 'webapps-common/ui/css';
+@import url('webapps-common/ui/css');
 
 </style>
 
