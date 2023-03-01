@@ -2,14 +2,27 @@
 def BN = (BRANCH_NAME == 'master' || BRANCH_NAME.startsWith('releases/')) ? BRANCH_NAME : 'releases/2023-07'
 
 @groovy.transform.Field
-static final String[] PYTHON_VERSIONS = ['36', '37', '38', '39']
+static final String[] WF_TESTS_PYTHON_ENVS = ['env_py36_pa5.yml', 'env_py38_pa7.yml', 'env_py39_kn47.yml']
 
 @groovy.transform.Field
-static final String DEFAULT_PYTHON_VERSION = '39'
+static final String DEFAULT_WF_TESTS_PYTHON_ENV = 'env_py39_kn47.yml'
 
 library "knime-pipeline@$BN"
 
 def baseBranch = (BN == KNIMEConstants.NEXT_RELEASE_BRANCH ? "master" : BN.replace("releases/",""))
+
+/** Return parameters to select python environment to run workflowtests with */
+def getWFTestsPythonEnvParameters() {
+    def pythonParams = []
+    for (c in WF_TESTS_PYTHON_ENVS) {
+        pythonParams += booleanParam(
+            defaultValue: c == DEFAULT_WF_TESTS_PYTHON_ENV,
+            description: "Run workflowtests with Python environment ${c}",
+            name: c
+        )
+    }
+    return pythonParams
+}
 
 properties([
     pipelineTriggers([
@@ -17,7 +30,7 @@ properties([
             "knime-python-nodes-testing/${BRANCH_NAME.replaceAll('/', '%2F')}, " +
             "knime-core-ui/${BRANCH_NAME.replaceAll('/', '%2F')}")
     ]),
-    parameters(workflowTests.getConfigurationsAsParameters() + getPythonParameters()),
+    parameters(workflowTests.getConfigurationsAsParameters() + getWFTestsPythonEnvParameters()),
     buildDiscarder(logRotator(numToKeepStr: '5')),
     disableConcurrentBuilds()
 ])
@@ -40,13 +53,13 @@ try {
     }
 
     def parallelConfigs = [:]
-    for (py in PYTHON_VERSIONS) {
-        if (params[py]) {
+    for (env in WF_TESTS_PYTHON_ENVS) {
+        if (params[env]) {
             // need to create a deep copy here, otherwise Jenkins will use
             // the last selected option for everything
-            def python_version = new String(py)
-            parallelConfigs["${python_version}"] = {
-                runPython3MultiversionWorkflowTestConfig(python_version, baseBranch)
+            def environmentFile = new String(env)
+            parallelConfigs["${environmentFile}"] = {
+                runPython3MultiversionWorkflowTestConfig(environmentFile, baseBranch)
             }
         }
     }
@@ -64,20 +77,9 @@ try {
      notifications.notifyBuild(currentBuild.result);
  }
 
-/**
-* Return parameters to select python version to run workflowtests with
-*/
-def getPythonParameters() {
-    def pythonParams = []
-    for (c in PYTHON_VERSIONS) {
-        pythonParams += booleanParam(defaultValue: c == DEFAULT_PYTHON_VERSION, description: "Run workflowtests with Python ${c}", name: c)
-    }
-    return pythonParams
-}
-
-def runPython3MultiversionWorkflowTestConfig(String pythonVersion, String baseBranch) {
-    withEnv([ "KNIME_WORKFLOWTEST_PYTHON_VERSION=${pythonVersion}" ]) {
-        stage("Workflowtests with Python: ${pythonVersion}") {
+def runPython3MultiversionWorkflowTestConfig(String environmentFile, String baseBranch) {
+    withEnv([ "KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT=${environmentFile}" ]) {
+        stage("Workflowtests with Python: ${environmentFile}") {
             workflowTests.runTests(
                 dependencies: [
                     repositories: [
@@ -107,7 +109,6 @@ def runPython3MultiversionWorkflowTestConfig(String pythonVersion, String baseBr
                         'org.knime.features.core.columnar.feature.group'
                     ]
                 ],
-                extraNodeLabel: 'python-all'
             )
         }
     }

@@ -1,0 +1,10 @@
+name: python_test_environment
+channels:
+  - conda-forge
+  - knime
+dependencies:
+  - python=3.9
+  - knime-python-base=4.7
+  - nbformat # Jupyter nodebook loading
+  - ipython # Jupyter nodebook loading
+  - matplotlib # Used in default script

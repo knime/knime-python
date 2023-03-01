@@ -1,0 +1,12 @@
+name: python_test_environment
+channels:
+  - conda-forge
+  - knime
+dependencies:
+  - python=3.8
+  - pyarrow=7
+  - pandas=1.3
+  - py4j=0.10
+  - nbformat # Jupyter nodebook loading
+  - ipython # Jupyter nodebook loading
+  - matplotlib # Used in default script
