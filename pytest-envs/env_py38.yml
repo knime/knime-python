@@ -1,0 +1,11 @@
+name: python_test_environment
+channels:
+  - conda-forge
+  - knime
+dependencies:
+  - python=3.8
+  - knime-python-base=4.7
+  - pytest
+  - black # Formatting test
+  - matplotlib # View tests
+  - seaborn # View tests

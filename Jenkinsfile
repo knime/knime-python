@@ -7,6 +7,9 @@ static final String[] WF_TESTS_PYTHON_ENVS = ['env_py36_pa5.yml', 'env_py38_pa7.
 @groovy.transform.Field
 static final String DEFAULT_WF_TESTS_PYTHON_ENV = 'env_py39_kn47.yml'
 
+@groovy.transform.Field
+static final String[] PYTEST_PYTHON_ENVS = ['env_py38', 'env_py39']
+
 library "knime-pipeline@$BN"
 
 def baseBranch = (BN == KNIMEConstants.NEXT_RELEASE_BRANCH ? "master" : BN.replace("releases/",""))
@@ -38,16 +41,30 @@ properties([
 try {
     knimetools.defaultTychoBuild('org.knime.update.python', 'maven && java17 && ubuntu22.04')
 
-    node('ubuntu22.04 && python-all') {
-        stage('Run pytest') {
+    node('ubuntu22.04 && workflow-tests && java17') {
+        stage('Prepare for pytest') {
             env.lastStage = env.STAGE_NAME
             checkout scm
 
-            for (py in ['38', '39']) {
+            // TODO(DEVOPS-1649) remove this step when micromamba is pre-installed
+            sh 'conda install -c conda-forge micromamba'
+        }
+
+        for (pyEnv in PYTEST_PYTHON_ENVS) {
+            stage("Run pytest for ${pyEnv}") {
+                env.lastStage = env.STAGE_NAME
+
+                String envPath = "${env.WORKSPACE}/pytest-envs/${pyEnv}"
+                String envYml = "${env.WORKSPACE}/pytest-envs/${pyEnv}.yml"
+
                 sh """
-                /home/jenkins/miniconda3/envs/knime_py${py}/bin/pytest --junit-xml=pytest_results_py${py}.xml --junit-prefix=py${py} || true
+                /home/jenkins/miniconda3/bin/micromamba create -p ${envPath} -f ${envYml}
                 """
-                junit "pytest_results_py${py}.xml"
+
+                sh """
+                ${envPath}/bin/pytest --junit-xml=pytest_results.xml || true
+                """
+                junit "pytest_results.xml"
             }
         }
     }
