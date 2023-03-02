@@ -1,0 +1,8 @@
+name: python_test_environment
+channels:
+  - conda-forge
+  - knime
+dependencies:
+  - python=3.9
+  - knime-python-base=4.7
+  - matplotlib
