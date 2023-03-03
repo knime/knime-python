@@ -1158,7 +1158,7 @@ def _is_knime_primitive_type(dtype):
 def _unwrap_primitive_knime_extension_array(array: pa.Array) -> pa.Array:
     """
     Unpacks array if it holds primitive types (int, double, string and so on) or a
-    list of primitive types. Otherwise returns the unchanged array.
+    list of primitive types. Otherwise, returns the unchanged array.
 
     Args:
         array: A pa.Array

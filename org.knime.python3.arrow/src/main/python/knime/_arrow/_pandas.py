@@ -624,16 +624,7 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
         """
         ext_type = self._data.type
         try:
-            # is true for lists and sets coming from KNIME and ensures that we can encode the inner type
-            if pa.types.is_list(
-                ext_type.storage_type
-            ) and katy.contains_knime_extension_type(ext_type.storage_type):
-                encoding_func = ext_type.storage_type.value_type.encode
-                encoded_pylist = [
-                    list(map(encoding_func, x)) if x is not None else None for x in inp
-                ]
-            else:
-                encoded_pylist = list(map(ext_type.encode, inp))
+            encoded_pylist = list(map(ext_type.encode, inp))
         except TypeError:
             raise TypeError(
                 f"Encoding of the new value is not possible, the array has the type '{ext_type}',"

@@ -92,6 +92,45 @@ class FallbackPythonValueFactory(PythonValueFactory):
         return False
 
 
+def encode_inner_elements(value):
+    """
+    Encodes the elements of a list or set by using the encode method of the converter of the first notnull element.
+    """
+    # get first notnull element
+    elem = next((item for item in value if item is not None), None)
+    if elem is None:
+        return value
+    try:
+        # get the correct converter
+        inner_type = type(elem)
+        bundle = get_value_factory_bundle_for_python_type(inner_type)
+        inner_converter = get_converter(bundle.logical_type)
+        return [inner_converter.encode(v) for v in value]
+    except TypeError:
+        # if we do not have a converter for the type we just return without conversion
+        return value
+
+
+class SetValueFactory(PythonValueFactory):
+    def __init__(self):
+        PythonValueFactory.__init__(self, set)
+
+    def encode(self, value):
+        if value is None:
+            return None
+        return encode_inner_elements(value)
+
+
+class ListValueFactory(PythonValueFactory):
+    def __init__(self):
+        PythonValueFactory.__init__(self, list)
+
+    def encode(self, value):
+        if value is None:
+            return None
+        return encode_inner_elements(value)
+
+
 class PythonValueFactoryBundle:
     def __init__(
         self,
@@ -179,7 +218,6 @@ def _get_converter_or_value_factory(module, class_name):
         and not issubclass(clazz, ToPandasColumnConverter)
         and not issubclass(clazz, FromPandasColumnConverter)
     ):
-
         raise ValueError(
             f"{class_name} in {module.__name__} is not compatible, must be of type "
             + "knime.api.types.PythonValueFactory or knime.api.types.ToPandasColumnConverter or"
@@ -293,10 +331,22 @@ def get_converter(logical_type):
             logical_type
         ).value_factory
     except ValueError:
+        if logical_type in list_like_value_factories.keys():
+            return list_like_value_factories[logical_type]
         LOGGER.debug(
             f"The fallback value factory is used for the following type: {logical_type}"
         )
         return _fallback_value_factory
+
+
+def _knime_primitive_type(name):
+    return '{"value_factory_class":"org.knime.core.data.v2.value.' + name + '"}'
+
+
+list_like_value_factories = {
+    _knime_primitive_type("ListValueFactory"): ListValueFactory(),
+    _knime_primitive_type("SetValueFactory"): SetValueFactory(),
+}
 
 
 def get_value_factory_bundle_for_java_value_factory(
