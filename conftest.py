@@ -25,7 +25,8 @@ collect_ignore = [
         "test",
         "python",
         "knime_kernel_test.py",
-    )
+    ),
+    "pytest-envs",
 ]
 
 # Add paths to the python sources

@@ -14,7 +14,14 @@ class BlackFormattingTest(unittest.TestCase):
     def test_black_formatting(self):
         root_dir = os.path.normpath(os.path.join(__file__, ".."))
         res = subprocess.run(
-            [self.get_black_path(), root_dir, "--check"], capture_output=True
+            [
+                self.get_black_path(),
+                root_dir,
+                "--check",
+                "--extend-exclude",
+                "pytest-envs",
+            ],
+            capture_output=True,
         )
         if res.returncode != 0:
             print(res.stdout.decode())
