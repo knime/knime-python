@@ -229,7 +229,6 @@ class ArrowReadTable(kta.ReadTable):
 
 
 class _ArrowWriteTableImpl(kta.WriteTable):
-
     _MAX_NUM_BYTES_PER_BATCH = (
         1 << 26
     )  # same target batch size as in org.knime.core.columnar.cursor.ColumnarWriteCursor

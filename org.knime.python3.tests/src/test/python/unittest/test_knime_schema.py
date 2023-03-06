@@ -664,7 +664,8 @@ class SchemaTest(unittest.TestCase):
 
     def test_pyarrow_and_pandas_extension_types(self):
         """Tests the methods `to_pandas()` and `to_pyarrow()` of `knime_schema.LogicalType`.
-        Should give back `knime._arrow._types.LogicalTypeExtensionType` and `knime._arrow._pandas.PandasLogicalTypeExtensionType`"""
+        Should give back `knime._arrow._types.LogicalTypeExtensionType` and `knime._arrow._pandas.PandasLogicalTypeExtensionType`
+        """
         import pyarrow as pa
         import knime.types.builtin as et
         import knime._arrow._types as kat

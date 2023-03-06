@@ -80,6 +80,7 @@ from knime.api.views import (
 )
 import knime.scripting._io_containers as _ioc
 
+
 # -----------------------------------------------------------------------------------------
 def _prepare_input_tables():
     if len(_ioc._input_tables) == 0:

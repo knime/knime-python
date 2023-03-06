@@ -227,7 +227,6 @@ class LocalDateTimeValueFactory(kt.PythonValueFactory):
             )
 
         except OverflowError as e:
-
             if e.args[0] == "date value out of range":
                 raise OverflowError(
                     f"Cannot represent the date {day_of_epoch} days and {micro_of_day} ms {_before_or_after(day_of_epoch)}"

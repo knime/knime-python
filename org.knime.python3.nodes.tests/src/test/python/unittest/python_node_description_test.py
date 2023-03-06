@@ -104,7 +104,6 @@ class MarkdownDocstringTest(unittest.TestCase):
         self.assertEqual(_s, _expected)
 
     def test_basic_em_strong(self):
-
         s = "*strong*"
         #'<p><em>strong</em></p>'
         _expected = "<p><i>strong</i></p>"

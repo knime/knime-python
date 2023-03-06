@@ -83,7 +83,6 @@ def schema_with_knime_metadata(schema: pa.Schema, chunk_size: int) -> pa.Schema:
 
 
 def factory_version_for(arrow_type: pa.DataType):
-
     # TODO synchronize with the versions on the Java side
     if kat.is_value_factory_type(arrow_type):
         return (

@@ -350,7 +350,6 @@ class EntryPoint(kg.EntryPoint):
 
             # Loop over batches
             for b in range(NUM_BATCHES):
-
                 # Create the array
                 data = pa.array(
                     [TEST_VALUES[data_type](r, b) for r in range(NUM_ROWS)],
@@ -371,10 +370,8 @@ class EntryPoint(kg.EntryPoint):
         num_rows = 5
 
         with kg.data_sink_mapper(data_sink) as sink:
-
             # Loop over batches
             for b in range(num_batches):
-
                 # Create some data of different types
                 int_data = pa.array([i + b for i in range(num_rows)], type=pa.int32())
                 string_data = pa.array(
