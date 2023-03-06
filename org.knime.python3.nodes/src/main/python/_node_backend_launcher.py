@@ -652,6 +652,9 @@ class _KnimeNodeBackend(kg.EntryPoint, kn._KnimeNodeBackend):
             )
             short_description = full_description = "Missing description."
         else:
+            # remove first empty line, for nicer formatted short descriptions
+            if node_doc[0] == "\n":
+                node_doc = node_doc[1:]
             split_description = node_doc.splitlines()
             short_description = split_description[0]
             if len(split_description) > 1:
