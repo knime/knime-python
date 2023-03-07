@@ -16,7 +16,7 @@ def getWFTestsPythonEnvParameters() {
     def pythonParams = []
     for (c in WF_TESTS_PYTHON_ENVS) {
         pythonParams += booleanParam(
-            defaultValue: c == DEFAULT_WF_TESTS_PYTHON_ENV,
+            defaultValue: c == DEFAULT_WF_TESTS_PYTHON_ENV || BRANCH_NAME.startsWith('releases/'),
             description: "Run workflowtests with Python environment ${c}",
             name: c
         )
