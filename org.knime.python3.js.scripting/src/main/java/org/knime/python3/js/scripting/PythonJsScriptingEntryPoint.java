@@ -75,7 +75,8 @@ public interface PythonJsScriptingEntryPoint extends PythonEntryPoint {
      * @param numOutObjects the number of output objects of the node
      * @param callback a callback for accessing Java functionality
      */
-    void setupIO(PythonDataSource[] sources, Map<String, Object> flowVarSources,int numOutTables, int numOutImages, int numOutObjects, Callback callback);
+    void setupIO(PythonDataSource[] sources, Map<String, Object> flowVarSources, int numOutTables, int numOutImages,
+        int numOutObjects, Callback callback);
 
     /**
      * Execute the given script in Python.
@@ -86,8 +87,7 @@ public interface PythonJsScriptingEntryPoint extends PythonEntryPoint {
     String execute(String script);
 
     /**
-     * @return
-     *     Collection<FlowVariable> getFlowVariable();
+     * @return Collection<FlowVariable> getFlowVariable();
      */
     Map<String, Object> getFlowVariable();
 
@@ -139,7 +139,7 @@ public interface PythonJsScriptingEntryPoint extends PythonEntryPoint {
     String getOutputObjectStringRepr(int idx);
 
     /** A callback to call Java functions in Python code */
-    public interface Callback {
+    interface Callback {
 
         /**
          * @return a new {@link PythonArrowDataSink} that writes to a temporary file

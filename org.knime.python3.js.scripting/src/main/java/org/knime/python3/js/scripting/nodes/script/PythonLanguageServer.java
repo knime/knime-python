@@ -62,9 +62,7 @@ final class PythonLanguageServer {
 
     // TODO(AP-19338) handle the lifetime of the language server
     // TODO(AP-19338) make language server configurable
-
     // TODO(AP-19338) use the path to a bundled language server
-    private static final String LSP_PATH = "/home/david/anaconda3/bin/pylsp";
 
     private static PythonLanguageServer INSTANCE;
 
@@ -80,7 +78,12 @@ final class PythonLanguageServer {
     private AtomicBoolean m_connected;
 
     private PythonLanguageServer() {
-        m_lsProxy = new LanguageServerProxy(new ProcessBuilder(LSP_PATH));
+        final String lspPath = System.getProperty("knime.python.js.lsp");
+        if (lspPath == null) {
+            throw new IllegalStateException(
+                "Please configure a path to a Python language server via the system property 'knime.python.js.lsp'.");
+        }
+        m_lsProxy = new LanguageServerProxy(new ProcessBuilder(lspPath));
         m_connected = new AtomicBoolean();
     }
 

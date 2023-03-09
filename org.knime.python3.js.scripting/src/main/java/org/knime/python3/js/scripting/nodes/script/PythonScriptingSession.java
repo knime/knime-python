@@ -77,6 +77,7 @@ import org.knime.python3.arrow.Python3ArrowSourceDirectory;
 import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.arrow.PythonArrowTableConverter;
 import org.knime.python3.js.scripting.PythonJsScriptingEntryPoint;
+import org.knime.python3.js.scripting.PythonJsScriptingEntryPoint.Callback;
 import org.knime.python3.js.scripting.PythonJsScriptingSourceDirectory;
 import org.knime.python3.types.PythonValueFactoryModule;
 import org.knime.python3.types.PythonValueFactoryRegistry;
@@ -140,7 +141,12 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
 
         final var sources = PythonIOUtils.createSources(inData, m_tableConverter, exec);
         final var flowVars = FlowVariableUtils.convertToMap(flowVariables);
-        final var callback = new PythonJsScriptingEntryPoint.Callback() {
+        final var callback = createCallback();
+        m_entryPoint.setupIO(sources, flowVars, numOutTables, numOutImages, numOutObjects, callback);
+    }
+
+    private Callback createCallback() {
+        return new PythonJsScriptingEntryPoint.Callback() {
             @Override
             public PythonArrowDataSink create_sink() throws IOException {
                 return m_tableConverter.createSink();
@@ -156,7 +162,6 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
                 m_consoleTextConsumer.accept(new ConsoleText(text, true));
             }
         };
-        m_entryPoint.setupIO(sources, flowVars, numOutTables, numOutImages, numOutObjects, callback);
     }
 
     String execute(final String script) {

@@ -91,6 +91,7 @@ import org.knime.scripting.editor.ScriptingService.ConsoleText;
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
+@SuppressWarnings("javadoc") // Suppress warnings about protected visibility in javadoc
 final class ConsoleOutputUtils {
 
     private ConsoleOutputUtils() {
@@ -236,7 +237,7 @@ final class ConsoleOutputUtils {
     }
 
     /** A storage that holds the console output. */
-    public static class ConsoleOutputStorage implements AutoCloseable {
+    public static class ConsoleOutputStorage implements AutoCloseable { // NOSONAR: Only extended in this file
 
         private final BatchReadStore m_store;
 

@@ -116,28 +116,32 @@ final class PythonScriptingService extends ScriptingService {
             final Map<String, FlowVariable> allFlowVars =
                 getWorkflowControl().getFlowObjectStack().getAllAvailableFlowVariables();
             if (allFlowVars.containsKey(id)) {
-                var value = allFlowVars.get(id).getStringValue();
-                if (value != null) {
-                    // String variable selected
-                    if (ExecutableSelectionUtils.isPathToCondaEnv(value)) {
-                        // Points to a conda environment
-                        return new ExecutableOption(ExecutableOptionType.STRING_VAR, id,
-                            CondaEnvironmentDirectory.getPythonExecutableString(value),
-                            Paths.get(value).getFileName().toString(), value);
-                    } else {
-                        // Points to single Python executable
-                        return new ExecutableOption(ExecutableOptionType.STRING_VAR, id, value, null, null);
-                    }
-                } else {
-                    // Variable selected but it is not a string -> not usable
-                    return new ExecutableOption(ExecutableOptionType.MISSING_VAR, id, null, null, null);
-                }
+                return getExecutableOptionFromVariable(id, allFlowVars.get(id).getStringValue());
             } else {
                 // Missing variable selected
                 return new ExecutableOption(ExecutableOptionType.MISSING_VAR, id, null, null, null);
             }
         }
         return m_executableOptions.get(id);
+    }
+
+    /** Get the {@link ExecutableOption} for the variable value (which might be <code>null</code>) */
+    private static ExecutableOption getExecutableOptionFromVariable(final String id, final String value) {
+        if (value != null) {
+            // String variable selected
+            if (ExecutableSelectionUtils.isPathToCondaEnv(value)) {
+                // Points to a conda environment
+                return new ExecutableOption(ExecutableOptionType.STRING_VAR, id,
+                    CondaEnvironmentDirectory.getPythonExecutableString(value),
+                    Paths.get(value).getFileName().toString(), value);
+            } else {
+                // Points to single Python executable
+                return new ExecutableOption(ExecutableOptionType.STRING_VAR, id, value, null, null);
+            }
+        } else {
+            // Variable selected but it is not a string -> not usable
+            return new ExecutableOption(ExecutableOptionType.MISSING_VAR, id, null, null, null);
+        }
     }
 
     @Override
@@ -230,9 +234,11 @@ final class PythonScriptingService extends ScriptingService {
             for (int i = 0; i < inputSpec.length; i++) {
                 final var spec = inputSpec[i];
                 if (spec instanceof DataTableSpec) {
-                    inputInfos[i] = InputTableInfo.createFromTableSpec(tableIdx++, (DataTableSpec)spec);
+                    inputInfos[i] = InputTableInfo.createFromTableSpec(tableIdx, (DataTableSpec)spec);
+                    tableIdx++;
                 } else if (spec instanceof PickledObjectPortObjectSpec) {
-                    inputInfos[i] = InputObjectInfo.createFromPortSpec(objectIdx++, (PickledObjectPortObjectSpec)spec);
+                    inputInfos[i] = InputObjectInfo.createFromPortSpec(objectIdx, (PickledObjectPortObjectSpec)spec);
+                    objectIdx++;
                 } else {
                     throw new IllegalStateException("Unsupported input port. This is an implementation error.");
                 }
@@ -246,7 +252,7 @@ final class PythonScriptingService extends ScriptingService {
          */
         public List<ExecutableOption> getExecutableOptions(final String executableSelection) {
             final var availableOptions = m_executableOptions.values().stream().sorted((o1, o2) -> {
-                if (!o1.type.equals(o2.type)) {
+                if (o1.type != o2.type) {
                     return o1.type.compareTo(o2.type);
                 }
                 return o1.id.compareTo(o2.id);
@@ -272,9 +278,9 @@ final class PythonScriptingService extends ScriptingService {
 
     /** Information about an Python executable */
     public static class ExecutableInfo {
-        public final String pythonVersion;
+        public final String pythonVersion; // NOSONAR
 
-        public final List<CondaPackageInfo> packages;
+        public final List<CondaPackageInfo> packages; // NOSONAR
 
         @SuppressWarnings("hiding")
         ExecutableInfo(final String pythonVersion, final List<CondaPackageInfo> packages) {
@@ -285,13 +291,13 @@ final class PythonScriptingService extends ScriptingService {
 
     /** Information about an installed Conda package */
     public static class CondaPackageInfo {
-        public final String name;
+        public final String name; // NOSONAR
 
-        public final String version;
+        public final String version; // NOSONAR
 
-        public final String build;
+        public final String build; // NOSONAR
 
-        public final String channel;
+        public final String channel; // NOSONAR
 
         @SuppressWarnings("hiding")
         CondaPackageInfo(final String name, final String version, final String build, final String channel) {
@@ -305,16 +311,16 @@ final class PythonScriptingService extends ScriptingService {
     /** An option to set as a Python executable */
     public static class ExecutableOption {
         /** The type of the option */
-        public final ExecutableOptionType type;
+        public final ExecutableOptionType type; // NOSONAR
 
         /** "" for the preference options or the name of the flow variable otherwise */
-        public final String id;
+        public final String id; // NOSONAR
 
-        public final String pythonExecutable;
+        public final String pythonExecutable; // NOSONAR
 
-        public final String condaEnvName;
+        public final String condaEnvName; // NOSONAR
 
-        public final String condaEnvDir;
+        public final String condaEnvDir; // NOSONAR
 
         @SuppressWarnings("hiding")
         ExecutableOption(final ExecutableOptionType type, final String id, final String pythonExecutable,
@@ -348,13 +354,13 @@ final class PythonScriptingService extends ScriptingService {
     }
 
     /** Information about an input port */
-    public abstract static class InputPortInfo {
-        public final String type;
+    public static class InputPortInfo { // NOSONAR: Only subclassed in this file
+        public final String type; // NOSONAR
 
-        public final String variableName;
+        public final String variableName; // NOSONAR
 
         @SuppressWarnings("hiding")
-        protected InputPortInfo(final String type, final String variableName) {
+        private InputPortInfo(final String type, final String variableName) {
             this.type = type;
             this.variableName = variableName;
         }
@@ -363,9 +369,9 @@ final class PythonScriptingService extends ScriptingService {
     /** Information about a table input port */
     public static final class InputTableInfo extends InputPortInfo {
 
-        public final String[] columnNames;
+        public final String[] columnNames; // NOSONAR
 
-        public final String[] columnTypes;
+        public final String[] columnTypes; // NOSONAR
 
         @SuppressWarnings("hiding")
         private InputTableInfo(final int tableIdx, final String[] columnNames, final String[] columnTypes) {
@@ -385,9 +391,9 @@ final class PythonScriptingService extends ScriptingService {
     /** Information about a pickled object input port */
     public static final class InputObjectInfo extends InputPortInfo {
 
-        public final String objectType;
+        public final String objectType; // NOSONAR
 
-        public final String objectRepr;
+        public final String objectRepr; // NOSONAR
 
         @SuppressWarnings("hiding")
         public InputObjectInfo(final int objectIdx, final String objectType, final String objectRepr) {

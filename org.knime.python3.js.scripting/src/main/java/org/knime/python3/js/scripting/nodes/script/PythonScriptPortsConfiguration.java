@@ -110,8 +110,8 @@ final class PythonScriptPortsConfiguration {
         // Get the node container from the NodeContext
         final var nodeContext = NodeContext.getContext();
         if (nodeContext == null) {
-            throw new IllegalStateException(
-                "A node context must be available when creating a ports configuration. This is an implementation error.");
+            throw new IllegalStateException("A node context must be available when creating a ports configuration. "
+                + "This is an implementation error.");
         }
         final var nodeContainer = nodeContext.getNodeContainer();
 

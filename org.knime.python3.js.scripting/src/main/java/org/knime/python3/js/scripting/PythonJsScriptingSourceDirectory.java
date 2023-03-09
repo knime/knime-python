@@ -53,13 +53,15 @@ import java.nio.file.Path;
 import org.knime.python3.PythonSourceDirectoryLocator;
 
 /**
- * Provides convenient access to the path of the Python source code directory of the org.knime.python3.js.scripting bundle.
+ * Provides convenient access to the path of the Python source code directory of the org.knime.python3.js.scripting
+ * bundle.
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
  */
 public final class PythonJsScriptingSourceDirectory {
 
-    private PythonJsScriptingSourceDirectory() {}
+    private PythonJsScriptingSourceDirectory() {
+    }
 
     /**
      * @return The absolute path to the Python source code directory of the org.knime.python3.js.scripting bundle.

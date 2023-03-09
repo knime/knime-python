@@ -72,6 +72,7 @@ import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
+import org.knime.core.node.NodeLogger;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.image.ImagePortObject;
 import org.knime.core.node.port.image.ImagePortObjectSpec;
@@ -269,6 +270,8 @@ final class PythonIOUtils {
             // - The check in the SvgImageContent constructor failed
 
             // Ignore all issues and try to read it as an PNG
+            NodeLogger.getLogger(PythonIOUtils.class) //
+                .debug("Reading the image as SVG failed. Trying to read as PNG.", e);
         }
 
         // Read as an PNG

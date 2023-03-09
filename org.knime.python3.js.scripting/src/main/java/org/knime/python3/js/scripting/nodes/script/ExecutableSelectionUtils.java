@@ -189,7 +189,17 @@ final class ExecutableSelectionUtils {
 
     private static PythonCommand commandForPreferences() {
         // TODO(AP-19391) Get the Python command from the preferences
-        return new CondaPythonCommand("/home/david/anaconda3",
-            "/home/david/anaconda3/envs/knime-python-scripting");
+        final String condaPath = System.getProperty("knime.python.js.conda");
+        if (condaPath == null) {
+            throw new IllegalStateException(
+                "Please configure a path to a Conda installation via the system property 'knime.python.js.conda'.");
+        }
+        final String envPath = System.getProperty("knime.python.js.env");
+        if (envPath == null) {
+            throw new IllegalStateException(
+                "Please configure a path to a Conda environment via the system property 'knime.python.js.env'.");
+        }
+
+        return new CondaPythonCommand(condaPath, envPath);
     }
 }

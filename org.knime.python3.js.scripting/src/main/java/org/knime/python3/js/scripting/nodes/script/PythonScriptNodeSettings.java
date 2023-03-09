@@ -116,9 +116,9 @@ final class PythonScriptNodeSettings {
     /** For JSON serialization */
     private static final class Settings {
 
-        private final String script;
+        private final String script; // NOSONAR
 
-        private final String executableSelection;
+        private final String executableSelection; // NOSONAR
 
         Settings() {
             // Defaults are given here

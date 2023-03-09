@@ -86,7 +86,7 @@ public final class ConsoleOutputUtilsTest {
         try (var storage = consumer.finish()) {
             final TestConsumer testConsumer = new TestConsumer(SIMPLE_TEST_TEXTS);
             ConsoleOutputUtils.sendConsoleOutputs(storage, testConsumer);
-            assertEquals(SIMPLE_TEST_TEXTS.length, testConsumer.m_nextIdx);
+            assertEquals("Expected to have recieved all texts", SIMPLE_TEST_TEXTS.length, testConsumer.m_nextIdx);
         }
     }
 
@@ -111,7 +111,7 @@ public final class ConsoleOutputUtilsTest {
         try (var loadedStorage = ConsoleOutputUtils.openConsoleOutput(tmpPath)) {
             final TestConsumer testConsumer = new TestConsumer(SIMPLE_TEST_TEXTS);
             ConsoleOutputUtils.sendConsoleOutputs(loadedStorage, testConsumer);
-            assertEquals(SIMPLE_TEST_TEXTS.length, testConsumer.m_nextIdx);
+            assertEquals("Expected to have recieved all texts", SIMPLE_TEST_TEXTS.length, testConsumer.m_nextIdx);
         }
 
         // Cleanup
@@ -127,8 +127,8 @@ public final class ConsoleOutputUtilsTest {
 
     /** Assert that the console text equals the expected text */
     private static void assertEqualsConsoleText(final ConsoleText expected, final ConsoleText actual) {
-        assertEquals(expected.text, actual.text);
-        assertEquals(expected.stderr, actual.stderr);
+        assertEquals("text is expected to be equal", expected.text, actual.text);
+        assertEquals("stderr flag is expected to be equal", expected.stderr, actual.stderr);
     }
 
     /** A consumer that compares what it gets with an array of expected results */
