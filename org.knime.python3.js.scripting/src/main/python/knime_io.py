@@ -47,7 +47,7 @@
 import warnings
 import sys
 
-if "knime.scripting.js.io" in sys.modules:
+if "knime.scripting.io" in sys.modules:
     try:
         import sphinx
 

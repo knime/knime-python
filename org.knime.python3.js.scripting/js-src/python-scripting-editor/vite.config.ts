@@ -4,6 +4,7 @@ import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import svgLoader from 'vite-svg-loader';
 import monacoEditorPlugin from 'vite-plugin-monaco-editor';
+import checker from 'vite-plugin-checker';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -12,6 +13,9 @@ export default defineConfig({
         svgLoader(),
         monacoEditorPlugin({
             languageWorkers: ['editorWorkerService'], // TODO check
+        }),
+        checker({
+            typescript: true,
         }),
     ],
     resolve: {

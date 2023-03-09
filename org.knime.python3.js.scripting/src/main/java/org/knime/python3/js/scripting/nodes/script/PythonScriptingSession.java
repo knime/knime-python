@@ -169,7 +169,7 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
     }
 
     Collection<FlowVariable> getFlowVariables() {
-        return FlowVariableUtils.convertFromMap(m_entryPoint.getFlowVariable(), LOGGER);
+        return FlowVariableUtils.convertFromMap(m_entryPoint.getFlowVariables(), LOGGER);
 
     }
 

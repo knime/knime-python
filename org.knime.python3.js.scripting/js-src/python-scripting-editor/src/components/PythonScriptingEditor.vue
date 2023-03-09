@@ -168,7 +168,8 @@ export default defineComponent({
             });
         },
         variableClicked(varName: string) {
-            this.runScript(`print('>>> print(${varName})\\n' + str(${varName}))`);
+            // TODO(AP-20273): if no workspace is set this yields error
+            this.runScript(`print(f">>> \t {type(${varName}).__name__} - ${varName}\\n {${varName}}")`);
         },
         runSelectedLines() {
             const selection = this.getEditor().getSelection();

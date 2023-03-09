@@ -46,40 +46,37 @@
 @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
 """
 
-import json
-import sys
 from contextlib import redirect_stdout, redirect_stderr
-import pickle
-from typing import Any, Dict, List, TextIO, Callable
+from typing import Any, Dict, List, TextIO, Callable, Optional
 
 import py4j.clientserver
-
-import logging
-
-LOGGER = logging.getLogger(__name__)
-
-import knime._arrow._backend as ka
-import knime.scripting._deprecated._arrow_table as kat
-
-import knime._backend._gateway as kg
-import knime.scripting._deprecated._table as kt
-
-import knime._backend._mainloop as _mainloop
 from py4j.java_gateway import JavaClass
 
-import knime_io as kio
+from knime.scripting._backend import (
+    ScriptingBackendCollection,
+    ScriptingBackendV0,
+    ScriptingBackendV1,
+)
+import knime.scripting._io_containers as _ioc
+
+import knime._arrow._backend as ka
+import knime._backend._gateway as kg
+import knime._backend._gateway as kg
+from knime._backend._mainloop import MainLoop
+
+import json
+import sys
+import logging
+import warnings
+import pickle
+
+LOGGER = logging.getLogger(__name__)
 
 # from _kernel import PythonKernel #from _kernel
 # TODO(AP-19333) organize imports
 # TODO(AP-19333) logging (see knime_node_backend)
 # TODO(AP-19333) immediately check the output when it is assined
 #      Also do row checking etc. -> If the interactive run works the node execution should also work
-
-
-class KnimeUserError(Exception):
-    """An error that indicates that there is an error in the user script."""
-
-    pass
 
 
 @kg.data_source("org.knime.python3.pickledobject")
@@ -93,12 +90,41 @@ def read_pickled_obj(java_data_source):
 
 class ScriptingEntryPoint(kg.EntryPoint):
     def __init__(self):
-        super().__init__()
-        self._main_loop = _mainloop.MainLoop()
+        self._workspace: Dict[str, Any] = {}  # TODO: should we make this thread safe?
+        self._main_loop = MainLoop()
+        self._external_custom_path_initialized = False
+        self._working_dir_initialized = False
+        self._java_callback = None
+        self._backends = ScriptingBackendCollection(
+            {
+                "knime_io": ScriptingBackendV0(),
+                "knime.scripting.io": ScriptingBackendV1(),
+            }
+        )
         sys.stdout.reconfigure(encoding="utf-8")
         sys.stderr.reconfigure(encoding="utf-8")
 
-        self._workspace: Dict[str, Any] = {}
+    def initializeJavaCallback(self, java_callback: JavaClass) -> None:
+        if self._java_callback is not None:
+            raise RuntimeError(
+                "Java callback has already been initialized. Calling this method again is an implementation error."
+            )
+        self._java_callback = java_callback
+
+    @property
+    def java_callback(self):
+        """
+        Provides access to functionality on the Java side. Used by e.g. knime.scripting.jupyter to resolve KNIME URLs.
+        :return: The callback on the Java side of Java type
+        org.knime.python3.scripting.Python3KernelBackendProxy.Callback.
+        """
+        return self._java_callback
+
+    def setFlowVariables(self, flow_variables: Dict[str, Any]) -> None:
+        self._backends.set_flow_variables(flow_variables)
+
+    def getFlowVariables(self) -> JavaClass:
+        return self._backends.get_flow_variables()
 
     def setupIO(
         self,
@@ -111,111 +137,91 @@ class ScriptingEntryPoint(kg.EntryPoint):
     ):
         self._java_callback = java_callback
 
-        kio.flow_variables = flow_var_sources
-
         # TODO(AP-19339) adapt to new API with Table
         def create_python_sink():
             java_sink = java_callback.create_sink()
             return kg.data_sink_mapper(java_sink)
-            # return kat.ArrowBackend(java_callback.create_sink())
+
+        self._backends.set_up_arrow(create_python_sink)
+        self.setFlowVariables(flow_var_sources)
 
         sources = [kg.data_source_mapper(d) for d in data_sources]
 
         # Set the input_tables in knime_io
         # Note: We only support arrow tables
         table_sources = [s for s in sources if isinstance(s, ka.ArrowDataSource)]
-        kio._ioc._pad_up_to_length(kio._ioc._input_tables, len(table_sources))
+        _ioc._pad_up_to_length(_ioc._input_tables, len(table_sources))
+
         for idx, s in enumerate(table_sources):
             # TODO(AP-19333) we need to close the input tables?
-            kio._ioc._input_tables[idx] = kat.ArrowReadTable(s)
+            # ArrowSourceTable
+            _ioc._input_tables[idx] = s
 
         # Set the input_objects in knime_io (every other source)
         objects = [s for s in sources if not isinstance(s, ka.ArrowDataSource)]
-        kio._ioc._pad_up_to_length(kio._ioc._input_objects, len(objects))
+        _ioc._pad_up_to_length(_ioc._input_objects, len(objects))
         for idx, obj in enumerate(objects):
-            kio._ioc._input_objects[idx] = obj
+            _ioc._input_objects[idx] = obj
 
         # Prepare the output_* lists in knime_io
-        kio._ioc._pad_up_to_length(kio._ioc._output_tables, num_out_tables)
-        kio._ioc._pad_up_to_length(kio._ioc._output_images, num_out_images)
-        kio._ioc._pad_up_to_length(kio._ioc._output_objects, num_out_objects)
+        _ioc._pad_up_to_length(_ioc._output_tables, num_out_tables)
+        _ioc._pad_up_to_length(_ioc._output_images, num_out_images)
+        _ioc._pad_up_to_length(_ioc._output_objects, num_out_objects)
 
         # Set the table backend such that new tables can be
         # created in the script
         # !!!!
-        kt._backend = kat.ArrowBackend(create_python_sink)
+        self._backends.tear_down_arrow(flush=False)
 
     def execute(self, script):
+        #
+        def create_python_sink():
+            java_sink = self._java_callback.create_sink()
+            return kg.data_sink_mapper(java_sink)
+
         with redirect_stdout(
             _ForwardingTextIO(sys.stdout, self._java_callback.add_stdout)
         ), redirect_stderr(
             _ForwardingTextIO(sys.stderr, self._java_callback.add_stderr)
         ):
+            self._backends.set_up_arrow(create_python_sink)
             # Run the script
             exec(script, self._workspace)
+
+            # We only need to flush the tables to disk if we also expect the outputs to be
+            # filled, meaning we run the whole script.
         return self._getVariablesInWorkspace()
+
+    def getOutputTable(
+        self,
+        table_index: int,
+    ) -> Optional[JavaClass]:
+        return self._backends.get_output_table_sink(table_index)
 
     def closeOutputs(self, check_outputs):
         # TODO(AP-19333) check the outputs? See knime_kernel _check_outputs
-
         # Close the backend to finish up the outputs
-        kt._backend.close()
-        kt._backend = None
-
-    def getOutputTable(self, idx: int):
-        return kio._ioc._output_tables[idx]._sink._java_data_sink
+        self._backends.tear_down_arrow(flush=check_outputs)
 
     def writeOutputImage(self, idx: int, path: str):
         with open(path, "wb") as file:
-            file.write(kio._ioc._output_images[idx])
+            file.write(_ioc._output_images[idx])
 
     def writeOutputObject(self, idx: int, path: str) -> None:
-        obj = kio._ioc._output_objects[idx]
+        obj = _ioc._output_objects[idx]
         with open(path, "wb") as file:
             pickle.dump(obj=obj, file=file)
 
     def getOutputObjectType(self, idx: int) -> str:
-        return type(kio._ioc._output_objects[idx]).__name__
+        return type(_ioc._output_objects[idx]).__name__
 
     def getOutputObjectStringRepr(self, idx: int) -> str:
-        object_as_string = str(kio._ioc._output_objects[idx])
+        object_as_string = str(_ioc._output_objects[idx])
         return (
             (object_as_string[:996] + "\n...")
             if len(object_as_string) > 1000
             else object_as_string
         )
-
-    def getFlowVariable(self) -> JavaClass:
-        return self.get_flow_variables()
-
-    def _check_flow_variables(self):
-        LinkedHashMap = JavaClass(  # NOSONAR Java naming conventions apply.
-            "java.util.LinkedHashMap", kg.client_server._gateway_client
-        )
-
-        java_flow_variables = LinkedHashMap()
-        for key in kio.flow_variables.keys():
-            flow_variable = kio.flow_variables[key]
-            try:
-                java_flow_variables[key] = flow_variable
-            except AttributeError as ex:
-                # py4j raises attribute errors of the form "'<type>' object has no attribute '_get_object_id'" if it
-                # fails to translate Python objects to Java objects.
-                raise KnimeUserError(
-                    f"Flow variable '{key}' of type '{type(flow_variable)}' cannot be translated to a valid KNIME flow "
-                    f"variable. Please remove the flow variable or change its type to something that can be translated."
-                )
-
-    def get_flow_variables(self) -> JavaClass:
-        self._check_flow_variables()
-        LinkedHashMap = JavaClass(  # NOSONAR Java naming conventions apply.
-            "java.util.LinkedHashMap", kg.client_server._gateway_client
-        )
-        java_flow_variables = LinkedHashMap()
-        for key in kio.flow_variables.keys():
-            flow_variable = kio.flow_variables[key]
-            java_flow_variables[key] = flow_variable
-        return java_flow_variables
 
     def _getVariablesInWorkspace(self) -> List[Dict[str, str]]:
         # TODO(AP-19345) provide integers + doubles not as string
@@ -315,12 +321,56 @@ class _ForwardingTextIO:
 
 if __name__ == "__main__":
     try:
-        scripting_ep = ScriptingEntryPoint()
-        kg.connect_to_knime(scripting_ep)
+        # Hook into warning delivery.
+        default_showwarning = warnings.showwarning
+
+        def showwarning_hook(message, category, filename, lineno, file=None, line=None):
+            """
+            Copied from warnings.showwarning.
+            We use this hook to prefix warning messages with "[WARN]". This makes them easier to identify on Java
+            side and helps printing them at the correct log level.
+            Providing a custom hook is supported as per the API documentations:
+            https://docs.python.org/3/library/warnings.html#warnings.showwarning
+            """
+            try:
+                if file is None:
+                    file = sys.stderr
+                    if file is None:
+                        # sys.stderr is None when run with pythonw.exe - warnings get lost.
+                        return
+                try:
+                    # Do not change the prefix. Expected on Java side.
+                    file.write(
+                        "[WARN]"
+                        + warnings.formatwarning(
+                            message, category, filename, lineno, line
+                        )
+                    )
+                except OSError:
+                    pass  # The file (probably stderr) is invalid - this warning gets lost.
+            except Exception:
+                # Fall back to the default implementation.
+                return default_showwarning(
+                    message, category, filename, lineno, file, line
+                )
+
+        warnings.showwarning = showwarning_hook
+    except Exception:
+        pass
+
+    try:
+        warnings.filterwarnings("default", category=DeprecationWarning)
+
+        logging.basicConfig()
+        logging.getLogger("py4j").setLevel(logging.FATAL)  # suppress py4j logs
+        logging.getLogger().setLevel(logging.INFO)
+
+        kernel = ScriptingEntryPoint()
+        kg.connect_to_knime(kernel)
         py4j.clientserver.server_connection_stopped.connect(
-            lambda *args, **kwargs: scripting_ep._main_loop.exit()
+            lambda *args, **kwargs: kernel._main_loop.exit()
         )
-        scripting_ep._main_loop.enter()
+        kernel._main_loop.enter()
     finally:
         if kg.client_server is not None:
             kg.client_server.shutdown()

@@ -87,9 +87,9 @@ public interface PythonJsScriptingEntryPoint extends PythonEntryPoint {
     String execute(String script);
 
     /**
-     * @return Collection<FlowVariable> getFlowVariable();
+     * @return Collection<FlowVariable> getFlowVariables();
      */
-    Map<String, Object> getFlowVariable();
+    Map<String, Object> getFlowVariables();
 
     /**
      * Close the outputs. After calling this, the output tables cannot be modified anymore.
