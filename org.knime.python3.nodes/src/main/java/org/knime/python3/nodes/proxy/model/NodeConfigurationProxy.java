@@ -72,7 +72,8 @@ public interface NodeConfigurationProxy extends NodeModelProxy, VersionedProxy {
      * @throws InvalidSettingsException if the node can't be configured because the settings are invalid
      */
     PortObjectSpec[] configure(final PortObjectSpec[] inSpecs, FlowVariablesProxy flowVariableProxy,
-        WarningConsumer warningConsumer) throws InvalidSettingsException;
+        CredentialsProviderProxy credentialsProviderProxy, WarningConsumer warningConsumer)
+        throws InvalidSettingsException;
 
     /**
      * Validates the provided settings.

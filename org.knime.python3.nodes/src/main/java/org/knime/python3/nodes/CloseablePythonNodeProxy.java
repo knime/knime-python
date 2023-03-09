@@ -75,6 +75,7 @@ import org.knime.core.node.NodeLogger;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.util.CheckUtils;
+import org.knime.core.node.workflow.ICredentials;
 import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.node.workflow.VariableType;
@@ -207,8 +208,8 @@ final class CloseablePythonNodeProxy
 
     @Override
     public ExecutionResult execute(final PortObject[] inData, final ExecutionContext exec,
-        final FlowVariablesProxy flowVariablesProxy, final WarningConsumer warningConsumer,
-        final WorkflowPathProxy workflowPathProxy) throws Exception {
+        final FlowVariablesProxy flowVariablesProxy, final CredentialsProviderProxy credentialsProviderProxy,
+        final WorkflowPathProxy workflowPathProxy, final WarningConsumer warningConsumer) throws Exception {
         initTableManager();
         Map<String, FileStore> fileStoresByKey = new HashMap<>();
         final var executionResult = new PythonExecutionResult();
@@ -257,6 +258,7 @@ final class CloseablePythonNodeProxy
             public void set_failure(final String message, final String details, final boolean invalidSettings) {
                 failure.setFailure(message, details, invalidSettings);
             }
+
         };
         m_proxy.initializeJavaCallback(callback);
 
@@ -309,6 +311,19 @@ final class CloseablePythonNodeProxy
             public String get_knime_home_dir() {
                 return KNIMEConstants.getKNIMEHomeDir();
             }
+
+            @Override
+            public String[] get_credentials(final String identifier) {
+                ICredentials credentials = credentialsProviderProxy.getCredentials(identifier);
+                return new String[]{credentials.getLogin(), credentials.getPassword(), credentials.getName()};
+
+            }
+
+            @Override
+            public String[] get_credential_names() {
+                return credentialsProviderProxy.getCredentialNames();
+            }
+
         };
 
         final var pythonOutputs = m_proxy.execute(pythonInputs, pythonExecContext);
@@ -340,7 +355,7 @@ final class CloseablePythonNodeProxy
 
     @Override
     public PortObjectSpec[] configure(final PortObjectSpec[] inSpecs, final FlowVariablesProxy flowVariablesProxy,
-        final WarningConsumer warningConsumer)
+        final CredentialsProviderProxy credentialsProviderProxy, final WarningConsumer warningConsumer)
         throws InvalidSettingsException {
 
         final var failure = new FailureState();
@@ -392,6 +407,13 @@ final class CloseablePythonNodeProxy
                 warningConsumer.setWarning(message);
             }
             // TODO: add flow variables
+
+            @Override
+            public String[] get_credential_names() {
+                return credentialsProviderProxy.getCredentialNames();
+
+            }
+
         };
 
         final var serializedInSpecs = Stream.of(inSpecs)//

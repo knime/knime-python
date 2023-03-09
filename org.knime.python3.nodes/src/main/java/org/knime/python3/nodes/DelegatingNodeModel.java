@@ -69,13 +69,16 @@ import org.knime.core.node.NodeView;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.PortType;
+import org.knime.core.node.workflow.CredentialsProvider;
 import org.knime.core.node.workflow.FlowVariable;
+import org.knime.core.node.workflow.ICredentials;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.node.workflow.VariableType;
 import org.knime.core.node.workflow.VariableTypeRegistry;
 import org.knime.core.util.PathUtils;
 import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy;
+import org.knime.python3.nodes.proxy.model.NodeModelProxy.CredentialsProviderProxy;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy.FlowVariablesProxy;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy.WarningConsumer;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy.WorkflowPathProxy;
@@ -90,7 +93,7 @@ import org.knime.python3.utils.FlowVariableUtils;
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
 public final class DelegatingNodeModel extends NodeModel
-    implements FlowVariablesProxy, WarningConsumer, WorkflowPathProxy {
+    implements CredentialsProviderProxy, WorkflowPathProxy, FlowVariablesProxy, WarningConsumer {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(DelegatingNodeModel.class);
 
@@ -127,7 +130,7 @@ public final class DelegatingNodeModel extends NodeModel
     protected PortObjectSpec[] configure(final PortObjectSpec[] inSpecs) throws InvalidSettingsException {
         return runWithProxy(m_proxyProvider::getConfigurationProxy, node -> {
             node.loadValidatedSettings(m_settings);
-            var result = node.configure(inSpecs, this, this);
+            var result = node.configure(inSpecs, this, this, this);
             // allows for auto-configure
             m_settings = node.getSettings(m_extensionVersion);
             return result;
@@ -142,7 +145,7 @@ public final class DelegatingNodeModel extends NodeModel
         }
         return runWithProxy(m_proxyProvider::getExecutionProxy, node -> {
             node.loadValidatedSettings(m_settings);
-            var result = node.execute(inData, exec, this, this, this);
+            var result = node.execute(inData, exec, this, this, this, this);
             m_settings = node.getSettings(m_extensionVersion);
             m_view = result.getView();
             return result.getPortObjects();
@@ -284,5 +287,17 @@ public final class DelegatingNodeModel extends NodeModel
     public String getLocalWorkflowPath() {
         return NodeContext.getContext().getWorkflowManager().getContextV2().getExecutorInfo().getLocalWorkflowPath()
             .toFile().getAbsolutePath();
+    }
+
+    @Override
+    public String[] getCredentialNames() {
+        CredentialsProvider credentialsProvider = getCredentialsProvider();
+        return credentialsProvider.listNames().toArray(String[]::new);
+    }
+
+    @Override
+    public ICredentials getCredentials(final String identifier) {
+        CredentialsProvider credentialsProvider = getCredentialsProvider();
+        return credentialsProvider.get(identifier);
     }
 }

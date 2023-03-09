@@ -434,6 +434,7 @@ class _PythonNodeProxy:
     def execute(
         self, input_objects: List[_PythonPortObject], java_exec_context
     ) -> List[_PythonPortObject]:
+
         _push_log_callback(lambda msg, sev: self._java_callback.log(msg, sev))
 
         inputs = [
@@ -505,6 +506,7 @@ class _PythonNodeProxy:
     def configure(
         self, input_specs: List[_PythonPortObjectSpec], java_config_context
     ) -> List[_PythonPortObjectSpec]:
+
         _push_log_callback(lambda msg, sev: self._java_callback.log(msg, sev))
         inputs = self._specs_to_python(input_specs)
         config_context = kn.ConfigurationContext(

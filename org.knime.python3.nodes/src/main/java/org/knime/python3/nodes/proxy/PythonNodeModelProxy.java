@@ -112,8 +112,8 @@ public interface PythonNodeModelProxy {
     void initializeJavaCallback(Callback callback);
 
     /**
-     * Get a file path with a key, where the key is used to identify the file
-     * in a list of {@link FileStore}s generated during node execution via the {@link Callback}.
+     * Get a file path with a key, where the key is used to identify the file in a list of {@link FileStore}s generated
+     * during node execution via the {@link Callback}.
      *
      * Sonar: Method names follow Python naming convention.
      */
@@ -124,6 +124,7 @@ public interface PythonNodeModelProxy {
 
         /**
          * Create a {@link FileStoreBasedFile}
+         *
          * @param filePath
          * @param key
          */
@@ -175,12 +176,14 @@ public interface PythonNodeModelProxy {
 
         /**
          * Used to send flow variables from KNIME to Python
+         *
          * @return A map of name -> object pairs for the flow variables;
          */
         Map<String, Object> get_flow_variables(); // NOSONAR
 
         /**
          * Used to send flow variables from Python to KNIME
+         *
          * @param flowVariables A map of name -> object pairs for the flow variables;
          */
         void set_flow_variables(Map<String, Object> flowVariables); // NOSONAR
@@ -223,6 +226,12 @@ public interface PythonNodeModelProxy {
         boolean is_canceled(); // NOSONAR
 
         /**
+         * @param identifier (credential flow variable name) to get the credentials
+         * @return String array containing username, password and identifier
+         **/
+        String[] get_credentials(final String identifier); // NOSONAR
+
+        /**
          * @return The temporary directory associated with this workflow
          */
         String get_workflow_temp_dir(); // NOSONAR
@@ -251,6 +260,11 @@ public interface PythonNodeModelProxy {
          * @param message warning message
          */
         void set_warning(final String message);//NOSONAR
+
+        /**
+         * @return identifier for each credential
+         */
+        String[] get_credential_names(); // NOSONAR
 
     }
 }

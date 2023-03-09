@@ -50,6 +50,7 @@ package org.knime.python3.nodes.proxy.model;
 
 import java.util.Map;
 
+import org.knime.core.node.workflow.ICredentials;
 import org.knime.core.util.asynclose.AsynchronousCloseable;
 import org.knime.python3.nodes.proxy.NodeProxy;
 import org.knime.python3.nodes.settings.JsonNodeSettings;
@@ -73,9 +74,33 @@ public interface NodeModelProxy extends AsynchronousCloseable<RuntimeException>,
 
         /**
          * Set updated flow variables after modifications by this node
+         *
          * @param flowVariables
          */
         void setFlowVariables(Map<String, Object> flowVariables);
+
+    }
+
+    /**
+     * Interface that should be implemented by a class that provides access to credentials
+     *
+     * @author Jonas Klotz, KNIME GmbH, Berlin, Germany
+     */
+    interface CredentialsProviderProxy {
+
+        /**
+         * @param identifier used to get the credentials
+         * @return credentials for the given identifier
+         *
+         */
+
+        ICredentials getCredentials(String identifier);
+
+        /**
+         * @return flow variable names for all attached credentials
+         */
+        String[] getCredentialNames();
+
     }
 
     /**
@@ -108,7 +133,5 @@ public interface NodeModelProxy extends AsynchronousCloseable<RuntimeException>,
      * @param settings
      */
     void loadValidatedSettings(JsonNodeSettings settings);
-
-
 
 }

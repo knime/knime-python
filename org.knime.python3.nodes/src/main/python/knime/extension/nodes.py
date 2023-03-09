@@ -52,6 +52,7 @@ from dataclasses import dataclass, asdict
 from enum import Enum
 from typing import Any, Dict, List, Optional, Callable, Type
 import os.path
+
 import knime.extension.parameter as kp
 import knime.api.table as kt
 from knime.api.schema import PortObjectSpec
@@ -143,6 +144,13 @@ class ViewDeclaration:
     static_resources: Optional[str] = None
 
 
+@dataclass(frozen=True)
+class Credential:
+    username: str
+    password: str
+    credential_name: str
+
+
 # re-exporting symbols so that "import knime_node" will include the most needed features
 IntParameter = kp.IntParameter
 DoubleParameter = kp.DoubleParameter
@@ -186,6 +194,15 @@ class _BaseContext:
             message: the warning message to display on the node
         """
         self._java_ctx.set_warning(str(message))
+
+    def get_credential_names(self):
+        """
+
+        Returns: identifier ( flow variable name) for each credential
+
+        """
+        credential_names = list(self._java_ctx.get_credential_names())
+        return credential_names
 
 
 class ConfigurationContext(_BaseContext):
@@ -267,6 +284,23 @@ class ExecutionContext(_BaseContext):
         configuration as well as log files.
         """
         return self._java_ctx.get_knime_home_dir()
+
+    def get_credentials(self, identifier):
+        """
+        Returns the credentials dataclass for the given identifier.
+
+        Args:
+            identifier: the identifier of the credentials to retrieve
+        """
+        from py4j.protocol import Py4JJavaError
+
+        try:
+            credentials = list(self._java_ctx.get_credentials(identifier))
+        except Py4JJavaError:
+            raise KeyError(f"Error retrieving credentials for identifier: {identifier}")
+        # create dataclass from credential list
+        credentials = Credential(credentials[0], credentials[1], credentials[2])
+        return credentials
 
 
 class PythonNode(ABC):

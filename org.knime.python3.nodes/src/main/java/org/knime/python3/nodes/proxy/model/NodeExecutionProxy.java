@@ -66,6 +66,7 @@ public interface NodeExecutionProxy extends NodeModelProxy {
      * @param inData the input data of the node
      * @param exec the execution context
      * @param flowVarProxy for access to flow variables
+     * @param credentialsProviderProxy for access to credentials
      * @param warningConsumer for settings warning messages
      * @param workflowPathProxy to query location information about the current workflow
      * @return the result of the execution
@@ -74,7 +75,8 @@ public interface NodeExecutionProxy extends NodeModelProxy {
      * @throws Exception if the node execution failed
      */
     ExecutionResult execute(final PortObject[] inData, final ExecutionContext exec, FlowVariablesProxy flowVarProxy,
-        WarningConsumer warningConsumer, WorkflowPathProxy workflowPathProxy) throws Exception;
+        CredentialsProviderProxy credentialsProviderProxy, WorkflowPathProxy workflowPathProxy, 
+        WarningConsumer warningConsumer) throws Exception;
 
     /**
      * Encapsulates the result of an execute call.
