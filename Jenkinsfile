@@ -39,15 +39,12 @@ properties([
 ])
 
 try {
-    knimetools.defaultTychoBuild('org.knime.update.python', 'maven && java17 && ubuntu22.04')
+    knimetools.defaultTychoBuild('org.knime.update.python', 'maven && java17 && ubuntu22.04 && workflow-tests')
 
     node('ubuntu22.04 && workflow-tests && java17') {
         stage('Prepare for pytest') {
             env.lastStage = env.STAGE_NAME
             checkout scm
-
-            // TODO(DEVOPS-1649) remove this step when micromamba is pre-installed
-            sh 'conda install -c conda-forge micromamba'
         }
 
         for (pyEnv in PYTEST_PYTHON_ENVS) {
@@ -58,7 +55,7 @@ try {
                 String envYml = "${env.WORKSPACE}/pytest-envs/${pyEnv}.yml"
 
                 sh """
-                /home/jenkins/miniconda3/bin/micromamba create -p ${envPath} -f ${envYml}
+                micromamba create -p ${envPath} -f ${envYml}
                 """
 
                 sh """

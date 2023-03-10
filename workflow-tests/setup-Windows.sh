@@ -6,12 +6,10 @@ if [[ -n $KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT ]]; then
 	prefPath="${WORKSPACE}/workflow-tests/preferences-Windows.epf"
 	echo "Creating Conda environment for: ${KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT} at ${envPath}"
 
-	# TODO(DEVOPS-1649) use pre-installed micromamba
-	cmd /c C:\\Users\\jenkins\\Miniconda3\\condabin\\conda.bat install -c conda-forge micromamba
-	cmd /c C:\\Users\\jenkins\\Miniconda3\\Library\\bin\\micromamba.exe create \
+	cmd /c micromamba.exe create \
 		-p ${envPath} \
 		-f ${WORKSPACE}\\workflow-tests\\${KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT}
-	cmd /c C:\\Users\\jenkins\\Miniconda3\\Library\\bin\\micromamba.exe list -p ${envPath}
+	cmd /c micromamba.exe list -p ${envPath}
 
 	sedi "s|<placeholder_for_env_path>|${envPath//\\/\\\\\\\\}|g" "${prefPath}"
 	cat "${prefPath}"
