@@ -55,7 +55,7 @@ import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.port.PortObjectSpec;
-import org.knime.core.webui.node.dialog.JsonNodeSettingsService;
+import org.knime.core.webui.node.dialog.NodeSettingsService;
 import org.knime.core.webui.node.dialog.SettingsType;
 import org.knime.python3.nodes.proxy.NodeDialogProxy;
 import org.knime.python3.nodes.settings.JsonNodeSettings;
@@ -67,7 +67,7 @@ import org.knime.python3.nodes.settings.JsonNodeSettingsSchema;
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
 @SuppressWarnings("restriction")
-public final class DelegatingJsonSettingsDataService implements JsonNodeSettingsService<String> {
+public final class DelegatingJsonSettingsDataService implements NodeSettingsService {
 
     private final Supplier<NodeDialogProxy> m_proxyProvider;
 
@@ -89,7 +89,7 @@ public final class DelegatingJsonSettingsDataService implements JsonNodeSettings
     }
 
     @Override
-    public String fromNodeSettingsToObject(final Map<SettingsType, NodeSettingsRO> settings, final PortObjectSpec[] specs) {
+    public String fromNodeSettings(final Map<SettingsType, NodeSettingsRO> settings, final PortObjectSpec[] specs) {
         try (var proxy = m_proxyProvider.get()) {
 
             // this is assigned here to accommodate changing the set of parameters during development
@@ -112,7 +112,7 @@ public final class DelegatingJsonSettingsDataService implements JsonNodeSettings
     }
 
     @Override
-    public void toNodeSettingsFromObject(final String jsonSettings, final Map<SettingsType, NodeSettingsWO> settings) {
+    public void toNodeSettings(final String jsonSettings, final Map<SettingsType, NodeSettingsWO> settings) {
         m_lastSettingsSchema.createFromJson(jsonSettings).saveTo(settings.get(SettingsType.MODEL));
     }
 
@@ -124,13 +124,4 @@ public final class DelegatingJsonSettingsDataService implements JsonNodeSettings
         }
     }
 
-    @Override
-    public String fromJson(final String json) {
-        return json;
-    }
-
-    @Override
-    public String toJson(final String obj) {
-        return obj;
-    }
 }

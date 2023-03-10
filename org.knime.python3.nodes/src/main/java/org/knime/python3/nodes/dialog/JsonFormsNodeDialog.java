@@ -50,10 +50,10 @@ package org.knime.python3.nodes.dialog;
 
 import java.util.Optional;
 
-import org.knime.core.webui.data.DataService;
+import org.knime.core.webui.data.RpcDataService;
 import org.knime.core.webui.node.dialog.NodeDialog;
+import org.knime.core.webui.node.dialog.NodeSettingsService;
 import org.knime.core.webui.node.dialog.SettingsType;
-import org.knime.core.webui.node.dialog.TextNodeSettingsService;
 import org.knime.core.webui.node.dialog.impl.DefaultNodeDialog;
 import org.knime.core.webui.page.Page;
 
@@ -67,7 +67,7 @@ import org.knime.core.webui.page.Page;
 @SuppressWarnings("restriction")
 public final class JsonFormsNodeDialog extends NodeDialog {
 
-    private final TextNodeSettingsService m_settingsService;
+    private final NodeSettingsService m_settingsService;
 
     /**
      * Constructor.
@@ -75,13 +75,13 @@ public final class JsonFormsNodeDialog extends NodeDialog {
      * @param settingsType the type of settings this dialog is for
      * @param settingsService providing settings to the dialog
      */
-    public JsonFormsNodeDialog(final SettingsType settingsType, final TextNodeSettingsService settingsService) {
+    public JsonFormsNodeDialog(final SettingsType settingsType, final NodeSettingsService settingsService) {
         super(settingsType);
         m_settingsService = settingsService;
     }
 
     @Override
-    public Optional<DataService> createDataService() {
+    public Optional<RpcDataService> createRpcDataService() {
         return Optional.empty();
     }
 
@@ -91,7 +91,7 @@ public final class JsonFormsNodeDialog extends NodeDialog {
     }
 
     @Override
-    protected TextNodeSettingsService getNodeSettingsService() {
+    protected NodeSettingsService getNodeSettingsService() {
         return m_settingsService;
     }
 

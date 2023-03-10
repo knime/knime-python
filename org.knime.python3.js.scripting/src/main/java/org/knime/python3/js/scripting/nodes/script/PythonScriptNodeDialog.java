@@ -50,13 +50,11 @@ package org.knime.python3.js.scripting.nodes.script;
 
 import java.util.Optional;
 
-import org.knime.core.webui.data.DataService;
-import org.knime.core.webui.data.rpc.json.impl.JsonRpcDataServiceImpl;
-import org.knime.core.webui.data.rpc.json.impl.JsonRpcServer;
+import org.knime.core.webui.data.RpcDataService;
 import org.knime.core.webui.node.dialog.NodeDialog;
+import org.knime.core.webui.node.dialog.NodeSettingsService;
 import org.knime.core.webui.node.dialog.SettingsType;
-import org.knime.core.webui.node.dialog.TextNodeSettingsService;
-import org.knime.core.webui.node.dialog.TextVariableSettingsService;
+import org.knime.core.webui.node.dialog.VariableSettingsService;
 import org.knime.core.webui.page.Page;
 
 final class PythonScriptNodeDialog extends NodeDialog {
@@ -81,19 +79,17 @@ final class PythonScriptNodeDialog extends NodeDialog {
     }
 
     @Override
-    public Optional<DataService> createDataService() {
-        final var rpcServer = new JsonRpcServer();
-        rpcServer.addService("ScriptingService", m_scriptingService.getJsonRpcService());
-        return Optional.of(new JsonRpcDataServiceImpl(rpcServer));
+    public Optional<RpcDataService> createRpcDataService() {
+        return Optional.of(RpcDataService.builder(m_scriptingService.getJsonRpcService()).build());
     }
 
     @Override
-    protected TextNodeSettingsService getNodeSettingsService() {
+    protected NodeSettingsService getNodeSettingsService() {
         return PythonScriptNodeSettings.createNodeSettingsService();
     }
 
     @Override
-    protected Optional<TextVariableSettingsService> getVariableSettingsService() {
+    protected Optional<VariableSettingsService> getVariableSettingsService() {
         return Optional.of(PythonScriptNodeSettings.createVariableSettingsService());
     }
 }

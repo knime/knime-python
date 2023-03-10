@@ -56,11 +56,7 @@ import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.port.PortObjectSpec;
-import org.knime.core.webui.node.dialog.JsonNodeSettingsService;
-import org.knime.core.webui.node.dialog.JsonVariableSettingsService;
 import org.knime.core.webui.node.dialog.SettingsType;
-import org.knime.core.webui.node.dialog.TextNodeSettingsService;
-import org.knime.core.webui.node.dialog.TextVariableSettingsService;
 import org.knime.core.webui.node.dialog.VariableSettingsWO;
 
 import com.google.gson.Gson;
@@ -135,16 +131,15 @@ final class PythonScriptNodeSettings {
         }
     }
 
-    static TextNodeSettingsService createNodeSettingsService() {
+    static NodeSettingsService createNodeSettingsService() {
         return new NodeSettingsService();
     }
 
-    static TextVariableSettingsService createVariableSettingsService() {
+    static VariableSettingsService createVariableSettingsService() {
         return new VariableSettingsService();
     }
 
-    private static final class NodeSettingsService extends JsonSettingsConverter
-        implements JsonNodeSettingsService<Settings> {
+    private static final class NodeSettingsService implements org.knime.core.webui.node.dialog.NodeSettingsService {
         @Override
         public void getDefaultNodeSettings(final Map<SettingsType, NodeSettingsWO> settings,
             final PortObjectSpec[] specs) {
@@ -152,16 +147,17 @@ final class PythonScriptNodeSettings {
         }
 
         @Override
-        public void toNodeSettingsFromObject(final Settings settingsObj,
+        public void toNodeSettings(final String settingsString,
             final Map<SettingsType, NodeSettingsWO> settings) {
+            var settingsObj = GSON.fromJson(settingsString, Settings.class);
             saveSettings(settingsObj, settings.get(SettingsType.MODEL));
         }
 
         @Override
-        public Settings fromNodeSettingsToObject(final Map<SettingsType, NodeSettingsRO> settings,
+        public String fromNodeSettings(final Map<SettingsType, NodeSettingsRO> settings,
             final PortObjectSpec[] specs) {
             try {
-                return loadSettings(settings.get(SettingsType.MODEL));
+                return GSON.toJson(loadSettings(settings.get(SettingsType.MODEL)));
             } catch (final InvalidSettingsException e) {
                 // This should not happen because we do not save invalid settings. We just forward the exception
                 throw new IllegalStateException(e.getMessage(), e);
@@ -169,12 +165,13 @@ final class PythonScriptNodeSettings {
         }
     }
 
-    private static final class VariableSettingsService extends JsonSettingsConverter
-        implements JsonVariableSettingsService<Settings> {
+    private static final class VariableSettingsService
+        implements org.knime.core.webui.node.dialog.VariableSettingsService {
 
         @Override
-        public void toVariableSettingsFromObject(final Settings settingsObj,
+        public void toVariableSettings(final String settingsString,
             final Map<SettingsType, VariableSettingsWO> settings) {
+            var settingsObj = GSON.fromJson(settingsString, Settings.class);
             if (!settingsObj.executableSelection.isEmpty()) {
                 try {
                     settings.get(SettingsType.MODEL).addUsedVariable(EXECUTABLE_SELECTION_CFG_KEY,
@@ -187,14 +184,4 @@ final class PythonScriptNodeSettings {
         }
     }
 
-    private static class JsonSettingsConverter {
-
-        public Settings fromJson(final String json) {
-            return GSON.fromJson(json, Settings.class);
-        }
-
-        public String toJson(final Settings obj) {
-            return GSON.toJson(obj);
-        }
-    }
 }
