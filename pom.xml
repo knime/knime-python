@@ -42,10 +42,6 @@
 		<module>org.knime.python3.nodes.tests</module>
 		<module>org.knime.python3.nodes.py4j.dependencies</module>
 		<module>org.knime.python3.views</module>
-		<!--
-			TODO: Should be enabled once Jenkins supports Python unit tests.
-			<module>org.knime.python3.views.tests</module>
-		-->
 		<module>org.knime.features.python3.scripting</module>
 		<module>org.knime.features.python3.js.scripting</module>
 		<module>org.knime.features.python3.nodes</module>
@@ -57,8 +53,7 @@
 		<repository>
 			<id>p2-knime-scripting-editor</id>
 			<layout>p2</layout>
-			<!-- TODO use <url>${knime.scripting.editor.p2}</url> -->
-			<url>${knime.p2.repo}/knime-scripting-editor/${git.branch}</url>
+			<url>${knime.scripting.editor.p2}</url>
 		</repository>
 		<repository>
 			<id>p2-knime-base-views</id>
