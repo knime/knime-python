@@ -26,4 +26,13 @@
             specSerializer="org.knime.python3.nodes.ports.PythonBinaryBlobPortObjectSpec$Serializer">
       </portType>
    </extension>
+   <extension
+         point="org.eclipse.ui.preferencePages">
+      <page
+            category="org.knime.workbench.ui.preferences"
+            class="org.knime.python3.nodes.preferences.PythonExtensionsPreferencePage"
+            id="org.knime.python3.nodes.preferences"
+            name="Python-based Extensions">
+      </page>
+   </extension>
 </plugin>
