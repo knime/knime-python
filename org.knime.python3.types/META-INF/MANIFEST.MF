@@ -12,4 +12,3 @@ Require-Bundle: com.fasterxml.jackson.core.jackson-databind;bundle-version="[2.1
  org.knime.core.table;bundle-version="[5.0.0,6.0.0)"
 Export-Package: org.knime.python3.types
 Automatic-Module-Name: org.knime.python3.types
-Eclipse-ExtensibleAPI: true

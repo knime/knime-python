@@ -13,5 +13,4 @@ Require-Bundle: org.knime.python3;bundle-version="[5.0.0,6.0.0)",
 Automatic-Module-Name: org.knime.python3.views
 Eclipse-BundleShape: dir
 Eclipse-RegisterBuddy: org.knime.ext.py4j
-Eclipse-ExtensibleAPI: true
 Export-Package: org.knime.python3.views
