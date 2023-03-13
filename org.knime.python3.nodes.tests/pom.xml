@@ -33,11 +33,6 @@
 								<id>org.knime.features.core.columnar</id>
 								<versionRange>0.0.0</versionRange>
 							</requirement>
-							<requirement>
-								<type>eclipse-plugin</type>
-								<id>org.knime.python3.tests</id>
-								<versionRange>0.0.0</versionRange>
-							</requirement>
 						</extraRequirements>
 					</dependency-resolution>
 				</configuration>
