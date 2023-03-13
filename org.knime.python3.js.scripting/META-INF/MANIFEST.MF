@@ -4,7 +4,7 @@ Bundle-Name: KNIME Python Scripting (JS)
 Bundle-SymbolicName: org.knime.python3.js.scripting;singleton:=true
 Bundle-Version: 5.1.0.qualifier
 Bundle-Vendor: KNIME AG, Zurich, Switzerland
-Bundle-RequiredExecutionEnvironment: JavaSE-11
+Bundle-RequiredExecutionEnvironment: JavaSE-17
 Eclipse-BundleShape: dir
 Automatic-Module-Name: org.knime.python3.js.scripting
 Require-Bundle: org.knime.scripting.editor;bundle-version="[5.1.0,6.0.0)",

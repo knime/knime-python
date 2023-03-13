@@ -5,7 +5,7 @@ Bundle-SymbolicName: org.knime.python3.scripting.tests;singleton:=true
 Bundle-Version: 5.1.0.qualifier
 Bundle-ClassPath: .
 Bundle-Vendor: KNIME AG, Zurich, Switzerland
-Bundle-RequiredExecutionEnvironment: JavaSE-11
+Bundle-RequiredExecutionEnvironment: JavaSE-17
 Fragment-Host: org.knime.python3.scripting;bundle-version="[5.0.0,6.0.0)"
 Automatic-Module-Name: org.knime.python3.scripting.tests
 Export-Package: org.knime.python3.scripting

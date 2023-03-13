@@ -5,7 +5,7 @@ Bundle-SymbolicName: org.knime.python3.views;singleton:=true
 Bundle-Version: 5.1.0.qualifier
 Bundle-ClassPath: knime-python3-views.jar
 Bundle-Vendor: KNIME AG, Zurich, Switzerland
-Bundle-RequiredExecutionEnvironment: JavaSE-11
+Bundle-RequiredExecutionEnvironment: JavaSE-17
 Bundle-ActivationPolicy: lazy
 Require-Bundle: org.knime.python3;bundle-version="[5.0.0,6.0.0)",
  org.knime.core;bundle-version="[5.0.0,6.0.0)",

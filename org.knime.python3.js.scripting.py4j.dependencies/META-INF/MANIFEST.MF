@@ -5,7 +5,7 @@ Bundle-SymbolicName: org.knime.python3.js.scripting.py4j.dependencies;singleton:
 Bundle-Version: 5.1.0.qualifier
 Bundle-ClassPath: .
 Bundle-Vendor: KNIME AG, Zurich, Switzerland
-Bundle-RequiredExecutionEnvironment: JavaSE-11
+Bundle-RequiredExecutionEnvironment: JavaSE-17
 Fragment-Host: org.knime.ext.py4j;bundle-version="[0.10.9.2,0.11.0)"
 Automatic-Module-Name: org.knime.python3.js.scripting.py4j.dependencies
 Require-Bundle: org.knime.core.table;bundle-version="[5.0.0,6.0.0]"

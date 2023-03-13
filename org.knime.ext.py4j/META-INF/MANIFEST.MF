@@ -6,7 +6,7 @@ Bundle-Version: 0.10.9.2
 Bundle-ClassPath: .,
  lib/py4j-0.10.9.2.jar
 Bundle-Vendor: KNIME AG, Zurich, Switzerland
-Bundle-RequiredExecutionEnvironment: JavaSE-11
+Bundle-RequiredExecutionEnvironment: JavaSE-17
 Bundle-ActivationPolicy: lazy
 Export-Package: py4j
 Automatic-Module-Name: org.knime.ext.py4j

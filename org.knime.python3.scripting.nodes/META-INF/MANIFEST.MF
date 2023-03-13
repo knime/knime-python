@@ -5,7 +5,7 @@ Bundle-SymbolicName: org.knime.python3.scripting.nodes;singleton:=true
 Bundle-Version: 5.1.0.qualifier
 Bundle-ClassPath: .
 Bundle-Vendor: KNIME AG, Zurich, Switzerland
-Bundle-RequiredExecutionEnvironment: JavaSE-11
+Bundle-RequiredExecutionEnvironment: JavaSE-17
 Bundle-ActivationPolicy: lazy
 Require-Bundle: org.knime.core;bundle-version="[5.0.0,6.0.0)",
  org.knime.base;bundle-version="[5.0.0,6.0.0)",
