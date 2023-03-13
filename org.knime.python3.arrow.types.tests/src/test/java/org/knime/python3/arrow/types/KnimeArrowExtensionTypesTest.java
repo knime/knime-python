@@ -172,7 +172,6 @@ import org.knime.filehandling.core.data.location.FSLocationValueFactory.FSLocati
 import org.knime.filehandling.core.data.location.cell.SimpleFSLocationCellFactory;
 import org.knime.python3.DefaultPythonGateway;
 import org.knime.python3.Python3SourceDirectory;
-import org.knime.python3.Python3TestUtils;
 import org.knime.python3.PythonCommand;
 import org.knime.python3.PythonDataSink;
 import org.knime.python3.PythonDataSource;
@@ -187,6 +186,7 @@ import org.knime.python3.arrow.PythonArrowDataUtils;
 import org.knime.python3.arrow.PythonArrowDataUtils.TableDomainAndMetadata;
 import org.knime.python3.arrow.PythonArrowExtension;
 import org.knime.python3.arrow.TestUtils;
+import org.knime.python3.testing.Python3TestUtils;
 import org.knime.python3.types.PythonModule;
 import org.knime.python3.types.PythonValueFactoryModule;
 import org.knime.python3.types.PythonValueFactoryRegistry;

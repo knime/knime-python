@@ -84,7 +84,6 @@ import org.knime.core.util.FileUtil;
 import org.knime.python2.kernel.PythonKernelBackendUtils;
 import org.knime.python3.DefaultPythonGateway;
 import org.knime.python3.Python3SourceDirectory;
-import org.knime.python3.Python3TestUtils;
 import org.knime.python3.PythonDataSource;
 import org.knime.python3.PythonEntryPoint;
 import org.knime.python3.PythonExtension;
@@ -95,6 +94,7 @@ import org.knime.python3.arrow.PythonArrowDataSource;
 import org.knime.python3.arrow.PythonArrowDataUtils;
 import org.knime.python3.arrow.PythonArrowExtension;
 import org.knime.python3.arrow.TestUtils;
+import org.knime.python3.testing.Python3TestUtils;
 import org.knime.python3.views.Python3ViewsSourceDirectory;
 
 /**

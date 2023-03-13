@@ -46,11 +46,13 @@
  * History
  *   May 31, 2022 (marcel): created
  */
-package org.knime.python3;
+package org.knime.python3.testing;
 
 import java.io.IOException;
 
 import org.apache.commons.lang3.SystemUtils;
+import org.knime.python3.PythonCommand;
+import org.knime.python3.SimplePythonCommand;
 
 /**
  * Contains utilities shared by multiple test fragments in knime-python.

@@ -60,7 +60,6 @@ import java.util.UUID;
 import org.knime.core.columnar.store.FileHandle;
 import org.knime.python3.DefaultPythonGateway;
 import org.knime.python3.Python3SourceDirectory;
-import org.knime.python3.Python3TestUtils;
 import org.knime.python3.PythonCommand;
 import org.knime.python3.PythonDataSink;
 import org.knime.python3.PythonDataSource;
@@ -70,6 +69,7 @@ import org.knime.python3.PythonExtension;
 import org.knime.python3.PythonGateway;
 import org.knime.python3.PythonPath;
 import org.knime.python3.PythonPath.PythonPathBuilder;
+import org.knime.python3.testing.Python3TestUtils;
 
 /**
  * Utilities for Python Arrow data transfer tests.

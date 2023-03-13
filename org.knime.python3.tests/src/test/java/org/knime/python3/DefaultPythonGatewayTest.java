@@ -63,6 +63,7 @@ import java.util.stream.Stream;
 
 import org.junit.Test;
 import org.knime.python3.PythonPath.PythonPathBuilder;
+import org.knime.python3.testing.Python3TestUtils;
 
 import py4j.Py4JException;
 
