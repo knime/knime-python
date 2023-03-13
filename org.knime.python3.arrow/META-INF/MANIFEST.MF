@@ -25,4 +25,3 @@ Export-Package: org.knime.python3.arrow
 Automatic-Module-Name: org.knime.python3.arrow
 Eclipse-BundleShape: dir
 Eclipse-RegisterBuddy: org.knime.ext.py4j
-Eclipse-ExtensibleAPI: true

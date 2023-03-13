@@ -94,6 +94,7 @@ import org.knime.core.columnar.data.dictencoding.DictEncodedData.DictEncodedStri
 import org.knime.core.columnar.data.dictencoding.DictEncodedData.DictEncodedVarBinaryReadData;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpecs;
+import org.knime.python3.testing.Python3ArrowTestUtils;
 
 /**
  * Test transfer of different Arrow types from Python. Always transfers one table with one column of a specific type.
@@ -356,7 +357,7 @@ public class PythonToJavaTypeTest {
             final var entryPoint = pythonGateway.getEntryPoint();
 
             // Define a Python data sink collecting the data
-            final var outPath = TestUtils.createTmpKNIMEArrowPath();
+            final var outPath = Python3ArrowTestUtils.createTmpKNIMEArrowPath();
             final var dataSink = PythonArrowDataUtils.createSink(outPath);
 
             // Call Python

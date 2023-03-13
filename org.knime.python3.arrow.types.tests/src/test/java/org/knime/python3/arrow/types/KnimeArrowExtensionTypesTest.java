@@ -53,8 +53,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.knime.core.table.schema.DataSpecs.STRING;
-import static org.knime.python3.arrow.TestUtils.createTmpKNIMEArrowFileHandle;
-import static org.knime.python3.arrow.TestUtils.createTmpKNIMEArrowPath;
+import static org.knime.python3.testing.Python3ArrowTestUtils.createTmpKNIMEArrowFileHandle;
+import static org.knime.python3.testing.Python3ArrowTestUtils.createTmpKNIMEArrowPath;
 
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -185,7 +185,7 @@ import org.knime.python3.arrow.PythonArrowDataSource;
 import org.knime.python3.arrow.PythonArrowDataUtils;
 import org.knime.python3.arrow.PythonArrowDataUtils.TableDomainAndMetadata;
 import org.knime.python3.arrow.PythonArrowExtension;
-import org.knime.python3.arrow.TestUtils;
+import org.knime.python3.testing.Python3ArrowTestUtils;
 import org.knime.python3.testing.Python3TestUtils;
 import org.knime.python3.types.PythonModule;
 import org.knime.python3.types.PythonValueFactoryModule;
@@ -736,7 +736,7 @@ public class KnimeArrowExtensionTypesTest {
 
 		void runJavaToPythonTest(final ColumnarSchema schema, final DataPreparer preparer, final DataTester<E> tester)
 				throws IOException {
-			final var writePath = TestUtils.createTmpKNIMEArrowFileHandle();
+			final var writePath = Python3ArrowTestUtils.createTmpKNIMEArrowFileHandle();
 			try (final var store = m_storeFactory.createStore(schema, writePath)) {
 				try (final BatchWriter writer = store.getWriter()) {
 					preparer.writeBatch(writer);

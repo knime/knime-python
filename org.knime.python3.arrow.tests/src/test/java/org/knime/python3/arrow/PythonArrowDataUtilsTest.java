@@ -79,6 +79,7 @@ import org.knime.core.columnar.batch.WriteBatch;
 import org.knime.core.columnar.data.IntData.IntReadData;
 import org.knime.core.columnar.data.IntData.IntWriteData;
 import org.knime.core.table.schema.ColumnarSchema;
+import org.knime.python3.testing.Python3ArrowTestUtils;
 
 /**
  * Test different special cases for transferring Arrow data between Java and Python.
@@ -113,7 +114,7 @@ public class PythonArrowDataUtilsTest {
      */
     @Test
     public void testExpectedSchema() throws Exception {
-        final var path = TestUtils.createTmpKNIMEArrowPath();
+        final var path = Python3ArrowTestUtils.createTmpKNIMEArrowPath();
 
         try (final var pythonGateway = TestUtils.openPythonGateway()) {
             final var entryPoint = pythonGateway.getEntryPoint();
@@ -176,7 +177,7 @@ public class PythonArrowDataUtilsTest {
             // Create the data sinks
             final List<DefaultPythonArrowDataSink> sinks = new ArrayList<>();
             for (int i = 0; i < 5; i++) {
-                final Path p = TestUtils.createTmpKNIMEArrowPath();
+                final Path p = Python3ArrowTestUtils.createTmpKNIMEArrowPath();
                 sinks.add(PythonArrowDataUtils.createSink(p));
             }
             entryPoint.testMultipleInputsOutputs(sources, sinks);
@@ -196,12 +197,12 @@ public class PythonArrowDataUtilsTest {
 
     private ArrowBatchStore createWriteStore() throws IOException {
         final var schema = ColumnarSchema.of(INT);
-        final var path = TestUtils.createTmpKNIMEArrowFileHandle();
+        final var path = Python3ArrowTestUtils.createTmpKNIMEArrowFileHandle();
         return m_storeFactory.createStore(schema, path);
     }
 
     private ArrowBatchReadStore createReadStore(final int idx) throws IOException {
-        final var path = TestUtils.createTmpKNIMEArrowPath();
+        final var path = Python3ArrowTestUtils.createTmpKNIMEArrowPath();
         try (final var writeStore = createWriteStore()) {
             try (final var writer = writeStore.getWriter()) {
                 writeData(writer, idx);

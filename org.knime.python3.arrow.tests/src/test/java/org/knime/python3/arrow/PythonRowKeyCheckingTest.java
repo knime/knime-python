@@ -63,6 +63,7 @@ import org.knime.python3.PythonDataSink;
 import org.knime.python3.PythonException;
 import org.knime.python3.PythonGateway;
 import org.knime.python3.arrow.TestUtils.ArrowTestsEntryPoint;
+import org.knime.python3.testing.Python3ArrowTestUtils;
 
 /**
  * Tests for using the {@link RowKeyChecker} with a {@link PythonDataSink}.
@@ -96,7 +97,7 @@ public class PythonRowKeyCheckingTest {
      */
     @Test
     public void testDuplicateRowKeys() throws Exception {
-        final var readPath = TestUtils.createTmpKNIMEArrowPath();
+        final var readPath = Python3ArrowTestUtils.createTmpKNIMEArrowPath();
         try (final PythonGateway<ArrowTestsEntryPoint> pythonGateway = TestUtils.openPythonGateway()) {
             final ArrowTestsEntryPoint entryPoint = pythonGateway.getEntryPoint();
 
@@ -118,7 +119,7 @@ public class PythonRowKeyCheckingTest {
      */
     @Test
     public void testNoDuplicateRowKeys() throws Exception {
-        final var readPath = TestUtils.createTmpKNIMEArrowPath();
+        final var readPath = Python3ArrowTestUtils.createTmpKNIMEArrowPath();
         try (final PythonGateway<ArrowTestsEntryPoint> pythonGateway = TestUtils.openPythonGateway()) {
             final ArrowTestsEntryPoint entryPoint = pythonGateway.getEntryPoint();
 
@@ -140,7 +141,7 @@ public class PythonRowKeyCheckingTest {
      */
     @Test
     public void testDuplicateRowKeysException() throws Exception {
-        final var readPath = TestUtils.createTmpKNIMEArrowPath();
+        final var readPath = Python3ArrowTestUtils.createTmpKNIMEArrowPath();
         try (final PythonGateway<ArrowTestsEntryPoint> pythonGateway = TestUtils.openPythonGateway()) {
             final ArrowTestsEntryPoint entryPoint = pythonGateway.getEntryPoint();
 

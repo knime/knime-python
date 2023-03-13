@@ -95,6 +95,7 @@ import org.knime.core.columnar.data.dictencoding.DictDecodedVarBinaryData.DictDe
 import org.knime.core.data.columnar.table.DefaultColumnarBatchReadStore.ColumnarBatchReadStoreBuilder;
 import org.knime.core.data.columnar.table.DefaultColumnarBatchStore.ColumnarBatchStoreBuilder;
 import org.knime.core.table.schema.ColumnarSchema;
+import org.knime.python3.testing.Python3ArrowTestUtils;
 
 /**
  * Test transfer of different Arrow types to Python. Always transfers one table with one column of a specific type.
@@ -339,8 +340,8 @@ public class JavaToPythonTypeTest {
     /** Test sending data to Python for the given type using the values from the valueSetter */
     private <T extends NullableWriteData> void test(final String type, final ColumnarSchema schema,
         final ValueSetter<T> valueSetter) throws Exception {
-        final var writePath = TestUtils.createTmpKNIMEArrowFileHandle();
-        final var readPath = TestUtils.createTmpKNIMEArrowFileHandle();
+        final var writePath = Python3ArrowTestUtils.createTmpKNIMEArrowFileHandle();
+        final var readPath = Python3ArrowTestUtils.createTmpKNIMEArrowFileHandle();
 
         // Open connection to Python
         try (final var pythonGateway = TestUtils.openPythonGateway()) {

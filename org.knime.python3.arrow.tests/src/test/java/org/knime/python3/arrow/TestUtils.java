@@ -48,16 +48,11 @@
  */
 package org.knime.python3.arrow;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 
-import org.knime.core.columnar.store.FileHandle;
 import org.knime.python3.DefaultPythonGateway;
 import org.knime.python3.Python3SourceDirectory;
 import org.knime.python3.PythonCommand;
@@ -80,50 +75,6 @@ public final class TestUtils {
 
     private TestUtils() {
         // Static utility class
-    }
-
-    /**
-     * Create a temporary file which is deleted on exit.
-     *
-     * @return the file
-     * @throws IOException if the file could not be created
-     */
-    public static Path createTmpKNIMEArrowPath() throws IOException {
-        final Path path = Files.createTempFile("KNIME-" + UUID.randomUUID().toString(), ".knarrow");
-        path.toFile().deleteOnExit();
-        return path;
-    }
-
-    /**
-     * Create FileHandle that is backed by a temporary file which is deleted on exit.
-     *
-     * @return the FileHandle
-     * @throws IOException if the temporary file could not be created
-     */
-    public static FileHandle createTmpKNIMEArrowFileHandle() throws IOException {
-        final var path = createTmpKNIMEArrowPath();
-        return new FileHandle() {
-
-            @Override
-            public void delete() {
-                try {
-                    Files.deleteIfExists(path);
-                } catch (IOException e) {
-                    throw new IllegalStateException(e);
-                }
-            }
-
-            @Override
-            public Path asPath() {
-                return path;
-            }
-
-            @Override
-            public File asFile() {
-                return path.toFile();
-            }
-
-        };
     }
 
     /**
@@ -151,7 +102,7 @@ public final class TestUtils {
     public interface SinkCreator {
         /**
          * @return a new data sink
-         * **/
+         **/
         PythonDataSink createSink();
     }
 
@@ -215,12 +166,14 @@ public final class TestUtils {
 
         /**
          * Test the Python KNIME Table API
+         *
          * @param source providing data to Python
          * @param sinkCreator A sink supplier that is called whenever a new data sink is created on the python side
          * @param numRows number of rows in the input table
          * @param numColumns number of columns in the input table
          * @param mode Of copying data from source to sink, "arrow" or "pandas"
          */
-        PythonDataSink testKnimeTable(PythonDataSource source, SinkCreator sinkCreator, long numRows, long numColumns, String mode);
+        PythonDataSink testKnimeTable(PythonDataSource source, SinkCreator sinkCreator, long numRows, long numColumns,
+            String mode);
     }
 }

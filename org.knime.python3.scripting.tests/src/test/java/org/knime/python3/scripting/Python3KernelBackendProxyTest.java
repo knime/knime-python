@@ -93,7 +93,7 @@ import org.knime.python3.arrow.Python3ArrowSourceDirectory;
 import org.knime.python3.arrow.PythonArrowDataSource;
 import org.knime.python3.arrow.PythonArrowDataUtils;
 import org.knime.python3.arrow.PythonArrowExtension;
-import org.knime.python3.arrow.TestUtils;
+import org.knime.python3.testing.Python3ArrowTestUtils;
 import org.knime.python3.testing.Python3TestUtils;
 import org.knime.python3.views.Python3ViewsSourceDirectory;
 
@@ -227,7 +227,7 @@ public class Python3KernelBackendProxyTest {
     }
 
     private ArrowBatchReadStore createTestStore() throws IOException {
-        final var storePath = TestUtils.createTmpKNIMEArrowFileHandle();
+        final var storePath = Python3ArrowTestUtils.createTmpKNIMEArrowFileHandle();
         try (final ArrowBatchStore store = m_storeFactory.createStore(COLUMN_SCHEMA, storePath)) {
             try (final BatchWriter writer = store.getWriter()) {
                 for (int b = 0; b < NUM_BATCHES; b++) {

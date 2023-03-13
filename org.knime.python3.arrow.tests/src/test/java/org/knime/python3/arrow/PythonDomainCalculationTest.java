@@ -69,6 +69,7 @@ import org.knime.core.data.filestore.internal.NotInWorkflowDataRepository;
 import org.knime.python3.PythonDataSink;
 import org.knime.python3.PythonGateway;
 import org.knime.python3.arrow.TestUtils.ArrowTestsEntryPoint;
+import org.knime.python3.testing.Python3ArrowTestUtils;
 
 /**
  * Tests for using the {@link DomainCalculator} with a {@link PythonDataSink}.
@@ -102,7 +103,7 @@ public class PythonDomainCalculationTest {
      */
     @Test
     public void testDoubleDomain() throws Exception {
-        final var readPath = TestUtils.createTmpKNIMEArrowPath();
+        final var readPath = Python3ArrowTestUtils.createTmpKNIMEArrowPath();
         try (final PythonGateway<ArrowTestsEntryPoint> pythonGateway = TestUtils.openPythonGateway()) {
             final ArrowTestsEntryPoint entryPoint = pythonGateway.getEntryPoint();
 
@@ -126,7 +127,7 @@ public class PythonDomainCalculationTest {
      */
     @Test
     public void testIntDomain() throws Exception {
-        final var readPath = TestUtils.createTmpKNIMEArrowPath();
+        final var readPath = Python3ArrowTestUtils.createTmpKNIMEArrowPath();
         try (final PythonGateway<ArrowTestsEntryPoint> pythonGateway = TestUtils.openPythonGateway()) {
             final ArrowTestsEntryPoint entryPoint = pythonGateway.getEntryPoint();
 
@@ -150,7 +151,7 @@ public class PythonDomainCalculationTest {
      */
     @Test
     public void testStringDomain() throws Exception {
-        final var readPath = TestUtils.createTmpKNIMEArrowPath();
+        final var readPath = Python3ArrowTestUtils.createTmpKNIMEArrowPath();
         try (final PythonGateway<ArrowTestsEntryPoint> pythonGateway = TestUtils.openPythonGateway()) {
             final ArrowTestsEntryPoint entryPoint = pythonGateway.getEntryPoint();
 
@@ -173,7 +174,7 @@ public class PythonDomainCalculationTest {
      */
     @Test
     public void testCategoricalStringDomain() throws Exception {
-        final var readPath = TestUtils.createTmpKNIMEArrowPath();
+        final var readPath = Python3ArrowTestUtils.createTmpKNIMEArrowPath();
         try (final PythonGateway<ArrowTestsEntryPoint> pythonGateway = TestUtils.openPythonGateway()) {
             final ArrowTestsEntryPoint entryPoint = pythonGateway.getEntryPoint();
 

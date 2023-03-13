@@ -77,6 +77,7 @@ import org.knime.core.table.schema.DoubleDataSpec;
 import org.knime.core.table.schema.LongDataSpec;
 import org.knime.core.table.schema.StringDataSpec;
 import org.knime.python3.arrow.TestUtils.SinkCreator;
+import org.knime.python3.testing.Python3ArrowTestUtils;
 
 /**
  * Tests sending data to a KNIME Table and receiving data from it.
@@ -112,8 +113,8 @@ public class KnimeTableTest {
         final var modes = new String[] {"arrow-sentinel", "arrow", "pandas", "dict"};
 
         for (final var mode : modes) {
-            final var sourcePath = TestUtils.createTmpKNIMEArrowFileHandle();
-            final var sinkPath = TestUtils.createTmpKNIMEArrowFileHandle();
+            final var sourcePath = Python3ArrowTestUtils.createTmpKNIMEArrowFileHandle();
+            final var sinkPath = Python3ArrowTestUtils.createTmpKNIMEArrowFileHandle();
 
             final SinkCreator sinkCreator = () -> PythonArrowDataUtils.createSink(sinkPath.asPath());
 
