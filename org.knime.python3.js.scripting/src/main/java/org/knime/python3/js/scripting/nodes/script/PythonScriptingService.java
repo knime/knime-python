@@ -145,17 +145,17 @@ final class PythonScriptingService extends ScriptingService {
     }
 
     @Override
-    public PythonJsonRpcService getJsonRpcService() {
-        return new PythonJsonRpcService();
+    public PythonRpcService getJsonRpcService() {
+        return new PythonRpcService();
     }
 
     /**
-     * An extension of the {@link org.knime.scripting.editor.ScriptingService.JsonRpcService} that provides additional
+     * An extension of the {@link org.knime.scripting.editor.ScriptingService.RpcService} that provides additional
      * methods to the frontend of the Python scripting node.
      *
      * NB: Must be public for the JSON-RPC server
      */
-    public final class PythonJsonRpcService extends JsonRpcService {
+    public final class PythonRpcService extends RpcService {
 
         /**
          * Notify that a new dialog has been opened. Must be called before calling any other method of the RPC server.
