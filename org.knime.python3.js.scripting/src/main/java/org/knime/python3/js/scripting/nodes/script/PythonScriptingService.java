@@ -174,7 +174,7 @@ final class PythonScriptingService extends ScriptingService {
             } catch (final Exception e) {
                 final var message = "Sending the console output of the last execution to the dialog failed.";
                 NodeLogger.getLogger(PythonScriptingService.class).warn(message, e);
-                DataServiceContext.getContext().addWarningMessage(message);
+                DataServiceContext.get().addWarningMessage(message);
             }
         }
 
