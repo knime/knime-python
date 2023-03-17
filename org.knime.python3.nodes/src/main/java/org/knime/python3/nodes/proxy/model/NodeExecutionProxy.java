@@ -67,20 +67,21 @@ public interface NodeExecutionProxy extends NodeModelProxy {
      * @param exec the execution context
      * @param flowVarProxy for access to flow variables
      * @param warningConsumer for settings warning messages
+     * @param workflowPathProxy to query location information about the current workflow
      * @return the result of the execution
      * @throws IOException if the data transfer failed
      * @throws CanceledExecutionException if the node execution is canceled
      * @throws Exception if the node execution failed
      */
     ExecutionResult execute(final PortObject[] inData, final ExecutionContext exec, FlowVariablesProxy flowVarProxy,
-        WarningConsumer warningConsumer) throws Exception;
+        WarningConsumer warningConsumer, WorkflowPathProxy workflowPathProxy) throws Exception;
 
     /**
      * Encapsulates the result of an execute call.
      *
      * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
      */
-    public interface ExecutionResult {
+    interface ExecutionResult {
         /**
          * @return the output port objects
          */

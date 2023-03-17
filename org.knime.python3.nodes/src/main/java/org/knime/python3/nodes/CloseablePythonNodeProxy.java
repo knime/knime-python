@@ -70,6 +70,7 @@ import org.knime.core.data.filestore.internal.IWriteFileStoreHandler;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.KNIMEConstants;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
@@ -77,6 +78,7 @@ import org.knime.core.node.util.CheckUtils;
 import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.node.workflow.VariableType;
+import org.knime.core.util.FileUtil;
 import org.knime.core.util.PathUtils;
 import org.knime.core.util.ThreadUtils;
 import org.knime.core.util.asynclose.AsynchronousCloseable;
@@ -168,11 +170,8 @@ final class CloseablePythonNodeProxy
         return m_closer.asynchronousClose();
     }
 
-
     @Override
-    public String getDialogRepresentation(
-        final JsonNodeSettings settings,
-        final PortObjectSpec[] specs,
+    public String getDialogRepresentation(final JsonNodeSettings settings, final PortObjectSpec[] specs,
         final String extensionVersion) {
         final PythonPortObjectSpec[] serializedSpecs = Arrays.stream(specs)
             .map(PythonPortObjectTypeRegistry::convertToPythonPortObjectSpec).toArray(PythonPortObjectSpec[]::new);
@@ -194,9 +193,7 @@ final class CloseablePythonNodeProxy
     }
 
     @Override
-    public void determineCompatibility(
-        final String savedVersion,
-        final String extensionVersion,
+    public void determineCompatibility(final String savedVersion, final String extensionVersion,
         final String savedParams) {
         m_proxy.determineCompatibility(savedVersion, extensionVersion, savedParams);
     }
@@ -210,11 +207,12 @@ final class CloseablePythonNodeProxy
 
     @Override
     public ExecutionResult execute(final PortObject[] inData, final ExecutionContext exec,
-        final FlowVariablesProxy flowVariablesProxy, final WarningConsumer warningConsumer) throws Exception {
+        final FlowVariablesProxy flowVariablesProxy, final WarningConsumer warningConsumer,
+        final WorkflowPathProxy workflowPathProxy) throws Exception {
         initTableManager();
         Map<String, FileStore> fileStoresByKey = new HashMap<>();
-        final PythonExecutionResult executionResult = new PythonExecutionResult();
-        final FailureState failure = new FailureState();
+        final var executionResult = new PythonExecutionResult();
+        final var failure = new FailureState();
 
         final PythonNodeModelProxy.Callback callback = new Callback() {
             private DefaultLogCallback m_logCallback = new DefaultLogCallback(LOGGER);
@@ -296,6 +294,21 @@ final class CloseablePythonNodeProxy
             public void set_warning(final String message) {
                 warningConsumer.setWarning(message);
             }
+
+            @Override
+            public String get_workflow_temp_dir() {
+                return FileUtil.getWorkflowTempDir().getAbsolutePath();
+            }
+
+            @Override
+            public String get_workflow_dir() {
+                return workflowPathProxy.getLocalWorkflowPath();
+            }
+
+            @Override
+            public String get_knime_home_dir() {
+                return KNIMEConstants.getKNIMEHomeDir();
+            }
         };
 
         final var pythonOutputs = m_proxy.execute(pythonInputs, pythonExecContext);
@@ -327,7 +340,8 @@ final class CloseablePythonNodeProxy
 
     @Override
     public PortObjectSpec[] configure(final PortObjectSpec[] inSpecs, final FlowVariablesProxy flowVariablesProxy,
-        final WarningConsumer warningConsumer) throws InvalidSettingsException {
+        final WarningConsumer warningConsumer)
+        throws InvalidSettingsException {
 
         final var failure = new FailureState();
 
@@ -381,8 +395,8 @@ final class CloseablePythonNodeProxy
         };
 
         final var serializedInSpecs = Stream.of(inSpecs)//
-                .map(PythonPortObjectTypeRegistry::convertToPythonPortObjectSpec)//
-                .toArray(PythonPortObjectSpec[]::new);
+            .map(PythonPortObjectTypeRegistry::convertToPythonPortObjectSpec)//
+            .toArray(PythonPortObjectSpec[]::new);
 
         final var serializedOutSpecs = m_proxy.configure(serializedInSpecs, pythonConfigContext);
         failure.throwIfFailure();
@@ -421,7 +435,6 @@ final class CloseablePythonNodeProxy
     public JsonNodeSettingsSchema getSettingsSchema(final String version) {
         return new JsonNodeSettingsSchema(m_proxy.getSchema(version), version);
     }
-
 
     @Override
     public int getNumViews() {

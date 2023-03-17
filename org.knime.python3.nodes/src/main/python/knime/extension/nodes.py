@@ -51,6 +51,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, asdict
 from enum import Enum
 from typing import Any, Dict, List, Optional, Callable, Type
+import os.path
 import knime.extension.parameter as kp
 import knime.api.table as kt
 from knime.api.schema import PortObjectSpec
@@ -240,6 +241,32 @@ class ExecutionContext(_BaseContext):
         not need to finish. Raising a RuntimeError in that case is encouraged.
         """
         return self._java_ctx.is_canceled()
+
+    def get_workflow_temp_dir(self) -> str:
+        """
+        Returns the local absolute path where temporary files for this workflow
+        should be stored. Files created in this folder are not automatically deleted
+        by KNIME.
+
+        By default, this folder is located in the operating system's
+        temporary folder. In that case, the contents will be cleaned by the OS.
+        """
+        return self._java_ctx.get_workflow_temp_dir()
+
+    def get_workflow_data_area_dir(self) -> str:
+        """
+        Returns the local absolute path to the current workflow's data area folder.
+        This folder is meant to be part of the workflow, so its contents are included
+        whenever the workflow is shared.
+        """
+        return os.path.join(self._java_ctx.get_workflow_dir(), "data")
+
+    def get_knime_home_dir(self) -> str:
+        """
+        Returns the local absolute path to the directory in which KNIME stores its
+        configuration as well as log files.
+        """
+        return self._java_ctx.get_knime_home_dir()
 
 
 class PythonNode(ABC):

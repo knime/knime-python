@@ -625,6 +625,7 @@ class PythonKernel(kg.EntryPoint):
             _CopyingTextIO(sys.stderr)
         ) as stderr:
             self._backends.set_up_arrow(create_python_sink)
+            _ioc._java_callback = self._java_callback
             exec(source_code, self._workspace)
             if check_outputs:
                 self._backends.check_outputs()
@@ -632,6 +633,7 @@ class PythonKernel(kg.EntryPoint):
             # We only need to flush the tables to disk if we also expect the outputs to be
             # filled, meaning we run the whole script.
             self._backends.tear_down_arrow(flush=check_outputs)
+            _ioc._java_callback = None
         return ListConverter().convert(
             [stdout.get_copy(), stderr.get_copy()], kg.client_server._gateway_client
         )

@@ -65,7 +65,7 @@ public interface NodeModelProxy extends AsynchronousCloseable<RuntimeException>,
      *
      * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
      */
-    public interface FlowVariablesProxy {
+    interface FlowVariablesProxy {
         /**
          * @return the map of flow variables that are the inputs to this node
          */
@@ -83,12 +83,25 @@ public interface NodeModelProxy extends AsynchronousCloseable<RuntimeException>,
      *
      * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
      */
-    public interface WarningConsumer {
+    interface WarningConsumer {
 
         /**
          * @param message the warning message to show
          */
         void setWarning(String message);
+    }
+
+    /**
+     * Interface that provides access to the current workflow path on disk
+     *
+     * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
+     */
+    interface WorkflowPathProxy {
+        /**
+         * @return the absolute path to the workflow on disk. Can be a temporary path if the workflow was opened from
+         *          a remote location
+         */
+        String getLocalWorkflowPath();
     }
 
     /**
