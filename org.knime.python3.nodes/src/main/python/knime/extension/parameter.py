@@ -1058,7 +1058,11 @@ def _flatten(lst: list) -> list:
     return flat
 
 
-def parameter_group(label: str, since_version: Optional[Union[Version, str]] = None):
+def parameter_group(
+    label: str,
+    since_version: Optional[Union[Version, str]] = None,
+    is_advanced: bool = False,
+):
     """
     Used for injecting descriptor protocol methods into a custom parameter group class.
     "obj" in this context is the parameterized object instance or a parameter group instance.
@@ -1116,12 +1120,14 @@ def parameter_group(label: str, since_version: Optional[Union[Version, str]] = N
             label=label,
             since_version=group_since_version,
             validator=None,
+            is_advanced=is_advanced,
             *args,
             **kwargs,
         ):
             self._label = label
             self._since_version = Version.parse_version(since_version)
             self._validator = validator
+            self._is_advanced = is_advanced
             self.__parameters__ = {}
             self._override_internal_validator = False
 
@@ -1235,15 +1241,26 @@ def parameter_group(label: str, since_version: Optional[Union[Version, str]] = N
             scope = parent_scope.create_child(name, is_group=True)
             elements = _extract_ui_schema_elements(self, version, scope)
 
+            options = {}
+            if self._is_advanced:
+                options["isAdvanced"] = True
+
             if scope.level() == 1:
                 group_type = "Section"
             else:
                 group_type = "Group"
-            return {"type": group_type, "label": self._label, "elements": elements}
+
+            return {
+                "type": group_type,
+                "label": self._label,
+                "options": options,
+                "elements": elements,
+            }
 
         def _extract_description(self, parent_scope: _Scope):
             scope = parent_scope.create_child(self._name, is_group=True)
             options = _extract_parameter_descriptions(self, scope)
+
             if scope.level() == 1:
                 # this is a tab
                 return {
