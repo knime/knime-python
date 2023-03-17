@@ -195,105 +195,107 @@ def generate_versioned_schema_dict(extension_version):
 def generate_versioned_ui_schema_dict(extension_version):
     if extension_version == "0.1.0":
         return {
+            "type": "VerticalLayout",
             "elements": [
                 {
-                    "label": "Int Parameter",
-                    "options": {"format": "integer"},
-                    "scope": "#/properties/model/properties/int_param",
                     "type": "Control",
+                    "label": "Int Parameter",
+                    "scope": "#/properties/model/properties/int_param",
+                    "options": {"format": "integer"},
                 },
                 {
-                    "label": "Double Parameter",
-                    "options": {"format": "number"},
-                    "scope": "#/properties/model/properties/double_param",
                     "type": "Control",
+                    "label": "Double Parameter",
+                    "scope": "#/properties/model/properties/double_param",
+                    "options": {"format": "number"},
                 },
             ],
-            "type": "VerticalLayout",
         }
     elif extension_version == "0.2.0":
         return {
+            "type": "VerticalLayout",
             "elements": [
                 {
+                    "type": "Control",
                     "label": "Int Parameter",
-                    "options": {"format": "integer"},
                     "scope": "#/properties/model/properties/int_param",
-                    "type": "Control",
+                    "options": {"format": "integer"},
                 },
                 {
+                    "type": "Control",
                     "label": "Double Parameter",
-                    "options": {"format": "number"},
                     "scope": "#/properties/model/properties/double_param",
-                    "type": "Control",
+                    "options": {"format": "number"},
                 },
                 {
+                    "type": "Control",
                     "label": "String Parameter",
-                    "options": {"format": "string"},
                     "scope": "#/properties/model/properties/string_param",
-                    "type": "Control",
+                    "options": {"format": "string"},
                 },
                 {
+                    "type": "Section",
+                    "label": "Versioned parameter group",
+                    "options": {},
                     "elements": [
                         {
-                            "label": "First Parameter",
-                            "options": {"format": "integer"},
-                            "scope": "#/properties/model/properties/group/properties/first",
                             "type": "Control",
-                        },
+                            "label": "First Parameter",
+                            "scope": "#/properties/model/properties/group/properties/first",
+                            "options": {"format": "integer"},
+                        }
                     ],
-                    "label": "Versioned parameter group",
-                    "type": "Section",
                 },
             ],
-            "type": "VerticalLayout",
         }
     elif extension_version == "0.3.0":
         return {
+            "type": "VerticalLayout",
             "elements": [
                 {
+                    "type": "Control",
                     "label": "Int Parameter",
-                    "options": {"format": "integer"},
                     "scope": "#/properties/model/properties/int_param",
-                    "type": "Control",
+                    "options": {"format": "integer"},
                 },
                 {
+                    "type": "Control",
                     "label": "Double Parameter",
-                    "options": {"format": "number"},
                     "scope": "#/properties/model/properties/double_param",
-                    "type": "Control",
+                    "options": {"format": "number"},
                 },
                 {
+                    "type": "Control",
                     "label": "String Parameter",
-                    "options": {"format": "string"},
                     "scope": "#/properties/model/properties/string_param",
-                    "type": "Control",
+                    "options": {"format": "string"},
                 },
                 {
+                    "type": "Control",
                     "label": "Boolean Parameter",
-                    "options": {"format": "boolean"},
                     "scope": "#/properties/model/properties/bool_param",
-                    "type": "Control",
+                    "options": {"format": "boolean"},
                 },
                 {
+                    "type": "Section",
+                    "label": "Versioned parameter group",
+                    "options": {},
                     "elements": [
                         {
-                            "label": "First Parameter",
-                            "options": {"format": "integer"},
-                            "scope": "#/properties/model/properties/group/properties/first",
                             "type": "Control",
+                            "label": "First Parameter",
+                            "scope": "#/properties/model/properties/group/properties/first",
+                            "options": {"format": "integer"},
                         },
                         {
-                            "label": "Second Parameter",
-                            "options": {"format": "integer"},
-                            "scope": "#/properties/model/properties/group/properties/second",
                             "type": "Control",
+                            "label": "Second Parameter",
+                            "scope": "#/properties/model/properties/group/properties/second",
+                            "options": {"format": "integer"},
                         },
                     ],
-                    "label": "Versioned parameter group",
-                    "type": "Section",
                 },
             ],
-            "type": "VerticalLayout",
         }
 
 
@@ -326,6 +328,31 @@ class NestedParameterGroup:
 @kp.parameter_group("Primary Group")
 class ParameterGroup:
     """A parameter group which contains a parameter group as a subgroup, and sets a custom validator for a parameter."""
+
+    subgroup = NestedParameterGroup()
+    third = kp.IntParameter(
+        label="Internal int Parameter",
+        description="Internal int parameter description",
+        default_value=3,
+    )
+
+    @third.validator
+    def int_param_validator(value):
+        if value < 0:
+            raise ValueError("The third parameter must be positive.")
+
+    @subgroup.validator(override=False)
+    def validate_subgroup(values, version=None):
+        if values["first"] + values["second"] < 0:
+            raise ValueError("The sum of the parameters must be non-negative.")
+        elif values["first"] == 42:
+            raise ValueError("Detected a forbidden number.")
+
+
+@kp.parameter_group("Primary Group Advanced", is_advanced=True)
+class ParameterGroupAdvanced:
+    """A parameter group which contains a parameter group as a subgroup, has is_advanced set True,
+    and sets a custom validator for a parameter."""
 
     subgroup = NestedParameterGroup()
     third = kp.IntParameter(
@@ -399,6 +426,9 @@ class ParameterizedWithAdvancedOption:
     multi_column_advanced_param = kp.MultiColumnParameter(
         "Multi Column Parameter", "A multi column parameter", is_advanced=True
     )
+
+    parameter_group = ParameterGroup()
+    parameter_group_advanced = ParameterGroupAdvanced()
 
 
 class ParameterizedWithoutGroup:
@@ -751,10 +781,12 @@ class ParameterTest(unittest.TestCase):
                 {
                     "type": "Section",
                     "label": "Primary Group",
+                    "options": {},
                     "elements": [
                         {
                             "type": "Group",
                             "label": "Subgroup",
+                            "options": {},
                             "elements": [
                                 {
                                     "type": "Control",
@@ -867,6 +899,72 @@ class ParameterTest(unittest.TestCase):
                     "label": "Multi Column Parameter",
                     "scope": "#/properties/model/properties/multi_column_advanced_param",
                     "options": {"format": "columnFilter", "isAdvanced": True},
+                },
+                {
+                    "type": "Section",
+                    "label": "Primary Group",
+                    "options": {},
+                    "elements": [
+                        {
+                            "type": "Group",
+                            "label": "Subgroup",
+                            "options": {},
+                            "elements": [
+                                {
+                                    "type": "Control",
+                                    "label": "First Parameter",
+                                    "scope": "#/properties/model/properties/parameter_group/properties/subgroup/properties/first",
+                                    "options": {"format": "integer"},
+                                },
+                                {
+                                    "type": "Control",
+                                    "label": "Second Parameter",
+                                    "scope": "#/properties/model/properties/parameter_group/properties/subgroup/properties/second",
+                                    "options": {"format": "integer"},
+                                },
+                            ],
+                        },
+                        {
+                            "type": "Control",
+                            "label": "Internal int Parameter",
+                            "scope": "#/properties/model/properties/parameter_group/properties/third",
+                            "options": {"format": "integer"},
+                        },
+                    ],
+                },
+                {
+                    "type": "Section",
+                    "label": "Primary Group Advanced",
+                    "options": {
+                        "isAdvanced": True,
+                    },
+                    "elements": [
+                        {
+                            "type": "Group",
+                            "label": "Subgroup",
+                            "options": {},
+                            "elements": [
+                                {
+                                    "type": "Control",
+                                    "label": "First Parameter",
+                                    "scope": "#/properties/model/properties/parameter_group_advanced/properties/subgroup/properties/first",
+                                    "options": {"format": "integer"},
+                                },
+                                {
+                                    "type": "Control",
+                                    "label": "Second Parameter",
+                                    "scope": "#/properties/model/properties/parameter_group_advanced/properties/subgroup/properties/second",
+                                    "options": {"format": "integer"},
+                                },
+                            ],
+                        },
+                        {
+                            "type": "Control",
+                            "label": "Internal int Parameter",
+                            "scope": "#/properties/model/properties/parameter_group_advanced/properties/third",
+                            "options": {"format": "integer"},
+                        },
+                    ],
                 },
             ],
         }
@@ -1043,45 +1141,47 @@ class ParameterTest(unittest.TestCase):
         obj = ComposedParameterized()
         ui_schema = kp.extract_ui_schema(obj)
         expected = {
+            "type": "VerticalLayout",
             "elements": [
                 {
+                    "type": "Section",
+                    "label": "Parameter group to be used for multiple descriptor instances.",
+                    "options": {},
                     "elements": [
                         {
-                            "label": "Plain int param",
-                            "options": {"format": "integer"},
-                            "scope": "#/properties/model/properties/first_group/properties/first_param",
                             "type": "Control",
+                            "label": "Plain int param",
+                            "scope": "#/properties/model/properties/first_group/properties/first_param",
+                            "options": {"format": "integer"},
                         },
                         {
-                            "label": "Second int param",
-                            "options": {"format": "integer"},
-                            "scope": "#/properties/model/properties/first_group/properties/second_param",
                             "type": "Control",
+                            "label": "Second int param",
+                            "scope": "#/properties/model/properties/first_group/properties/second_param",
+                            "options": {"format": "integer"},
                         },
                     ],
-                    "label": "Parameter group to be used for multiple descriptor instances.",
-                    "type": "Section",
                 },
                 {
+                    "type": "Section",
+                    "label": "Parameter group to be used for multiple descriptor instances.",
+                    "options": {},
                     "elements": [
                         {
-                            "label": "Plain int param",
-                            "options": {"format": "integer"},
-                            "scope": "#/properties/model/properties/second_group/properties/first_param",
                             "type": "Control",
+                            "label": "Plain int param",
+                            "scope": "#/properties/model/properties/second_group/properties/first_param",
+                            "options": {"format": "integer"},
                         },
                         {
-                            "label": "Second int param",
-                            "options": {"format": "integer"},
-                            "scope": "#/properties/model/properties/second_group/properties/second_param",
                             "type": "Control",
+                            "label": "Second int param",
+                            "scope": "#/properties/model/properties/second_group/properties/second_param",
+                            "options": {"format": "integer"},
                         },
                     ],
-                    "label": "Parameter group to be used for multiple descriptor instances.",
-                    "type": "Section",
                 },
             ],
-            "type": "VerticalLayout",
         }
         self.assertEqual(ui_schema, expected)
 
