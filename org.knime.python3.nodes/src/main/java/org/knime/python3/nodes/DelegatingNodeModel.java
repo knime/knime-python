@@ -70,6 +70,7 @@ import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.PortType;
 import org.knime.core.node.workflow.FlowVariable;
+import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.node.workflow.VariableType;
 import org.knime.core.node.workflow.VariableTypeRegistry;
 import org.knime.core.util.PathUtils;
@@ -77,6 +78,7 @@ import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy.FlowVariablesProxy;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy.WarningConsumer;
+import org.knime.python3.nodes.proxy.model.NodeModelProxy.WorkflowPathProxy;
 import org.knime.python3.nodes.proxy.model.NodeModelProxyProvider;
 import org.knime.python3.nodes.settings.JsonNodeSettings;
 import org.knime.python3.nodes.settings.JsonNodeSettingsSchema;
@@ -87,7 +89,8 @@ import org.knime.python3.utils.FlowVariableUtils;
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-public final class DelegatingNodeModel extends NodeModel implements FlowVariablesProxy, WarningConsumer {
+public final class DelegatingNodeModel extends NodeModel
+    implements FlowVariablesProxy, WarningConsumer, WorkflowPathProxy {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(DelegatingNodeModel.class);
 
@@ -112,16 +115,13 @@ public final class DelegatingNodeModel extends NodeModel implements FlowVariable
      * @param extensionVersion the version of the extension
      */
     public DelegatingNodeModel(final NodeModelProxyProvider proxyProvider, final PortType[] inputPorts,
-        final PortType[] outputPorts,
-        final JsonNodeSettings initialSettings,
-        final String extensionVersion) {
+        final PortType[] outputPorts, final JsonNodeSettings initialSettings, final String extensionVersion) {
         super(inputPorts, outputPorts);
         m_proxyProvider = proxyProvider;
         m_settings = initialSettings;
         m_view = Optional.empty();
         m_extensionVersion = extensionVersion;
     }
-
 
     @Override
     protected PortObjectSpec[] configure(final PortObjectSpec[] inSpecs) throws InvalidSettingsException {
@@ -142,7 +142,7 @@ public final class DelegatingNodeModel extends NodeModel implements FlowVariable
         }
         return runWithProxy(m_proxyProvider::getExecutionProxy, node -> {
             node.loadValidatedSettings(m_settings);
-            var result = node.execute(inData, exec, this, this);
+            var result = node.execute(inData, exec, this, this, this);
             m_settings = node.getSettings(m_extensionVersion);
             m_view = result.getView();
             return result.getPortObjects();
@@ -278,5 +278,11 @@ public final class DelegatingNodeModel extends NodeModel implements FlowVariable
                 pushNewFlowVariable(variable);
             }
         }
+    }
+
+    @Override
+    public String getLocalWorkflowPath() {
+        return NodeContext.getContext().getWorkflowManager().getContextV2().getExecutorInfo().getLocalWorkflowPath()
+            .toFile().getAbsolutePath();
     }
 }

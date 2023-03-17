@@ -79,6 +79,7 @@ import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
+import org.knime.core.node.KNIMEConstants;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.NativeNodeContainer;
@@ -268,7 +269,8 @@ public final class Python3KernelBackend implements PythonKernelBackend {
             // process just for testing. Instead, make testing part of launching the process.
             PythonKernel.testInstallation(command, REQUIRED_MODULES);
 
-            final String launcherPath = Python3ScriptingSourceDirectory.getPath().resolve("_kernel_launcher.py").toString();
+            final String launcherPath =
+                Python3ScriptingSourceDirectory.getPath().resolve("_kernel_launcher.py").toString();
             final List<PythonExtension> extensions = Collections.singletonList(PythonArrowExtension.INSTANCE);
             // NB: We do not need the directory of the org.knime.python3.scripting Python code because the launcher
             // is in this directory. Therefore, the directory is added to the PYTHONPATH automatically
@@ -296,7 +298,6 @@ public final class Python3KernelBackend implements PythonKernelBackend {
                 m_gateway = untrackedGateway;
             }
 
-
             @SuppressWarnings("resource") // Will be closed along with gateway.
             final InputStream stdoutStream = m_gateway.getStandardOutputStream();
             @SuppressWarnings("resource") // Will be closed along with gateway.
@@ -315,6 +316,24 @@ public final class Python3KernelBackend implements PythonKernelBackend {
                 @Override
                 public PythonArrowDataSink create_sink() throws IOException {
                     return m_sinkManager.create_sink();
+                }
+
+                @Override
+                public String get_workflow_temp_dir() {
+                    try(var ctx = m_nodeContextManager.pushNodeContext()) {
+                        return FileUtil.getWorkflowTempDir().getAbsolutePath();
+                    }
+                }
+
+                @Override
+                public String get_workflow_dir() {
+                    return m_nodeContextManager.getNodeContext().getWorkflowManager().getContextV2().getExecutorInfo()
+                        .getLocalWorkflowPath().toFile().getAbsolutePath();
+                }
+
+                @Override
+                public String get_knime_home_dir() {
+                    return KNIMEConstants.getKNIMEHomeDir();
                 }
             };
             m_proxy.initializeJavaCallback(callback);

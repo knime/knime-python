@@ -117,7 +117,7 @@ public interface PythonNodeModelProxy {
      *
      * Sonar: Method names follow Python naming convention.
      */
-    public static class FileStoreBasedFile {
+    class FileStoreBasedFile {
         private final String m_filePath;
 
         private final String m_key;
@@ -153,7 +153,7 @@ public interface PythonNodeModelProxy {
      * Sonar: the methods of this interface are intended to be called from Python only, so they follow Python's naming
      * conventions. Sonar issues caused by this are suppressed.
      */
-    public interface Callback extends LogCallback {
+    interface Callback extends LogCallback {
 
         /**
          * @return a new {@link PythonArrowDataSink} that writes to a temporary file
@@ -192,7 +192,7 @@ public interface PythonNodeModelProxy {
          * @param details a detailed message containing the traceback that is logged in the console
          * @param invalidSettings if the failure occurred because of invalid settings
          */
-        void set_failure(String message, String details, boolean invalidSettings);
+        void set_failure(String message, String details, boolean invalidSettings); // NOSONAR
     }
 
     /**
@@ -201,13 +201,13 @@ public interface PythonNodeModelProxy {
      *
      * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
      */
-    public interface PythonExecutionContext extends PythonConfigurationContext {
+    interface PythonExecutionContext extends PythonConfigurationContext {
         /**
          * Set the current node execution progress
          *
          * @param progress between 0 and 1
          */
-        void set_progress(double progress);
+        void set_progress(double progress); // NOSONAR
 
         /**
          * Set the current node execution progress with a message
@@ -215,14 +215,27 @@ public interface PythonNodeModelProxy {
          * @param progress between 0 and 1
          * @param message The message to be shown in the progress monitor
          */
-        void set_progress(final double progress, final String message);
+        void set_progress(final double progress, final String message); // NOSONAR
 
         /**
          * @return True if the node has been cancelled. Then the Python code should return as soon as possible
          */
-        boolean is_canceled();
+        boolean is_canceled(); // NOSONAR
 
+        /**
+         * @return The temporary directory associated with this workflow
+         */
+        String get_workflow_temp_dir(); // NOSONAR
 
+        /**
+         * @return The local absolute path to the current workflow on disk
+         */
+        String get_workflow_dir(); // NOSONAR
+
+        /**
+         * @return The "KNIME Home" directory which is located inside the current workspace
+         */
+        String get_knime_home_dir(); // NOSONAR
     }
 
     /**
@@ -230,7 +243,7 @@ public interface PythonNodeModelProxy {
      *
      * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
      */
-    public interface PythonConfigurationContext {
+    interface PythonConfigurationContext {
 
         /**
          * Sets a warning message on the node.

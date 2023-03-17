@@ -256,5 +256,20 @@ public interface Python3KernelBackendProxy extends PythonEntryPoint {
          * @throws IOException if the temporary file for the sink could not be created
          */
         PythonArrowDataSink create_sink() throws IOException; //NOSONAR
+
+        /**
+         * @return The temporary directory associated with this workflow
+         */
+        String get_workflow_temp_dir(); // NOSONAR
+
+        /**
+         * @return The local absolute path to the current workflow on disk
+         */
+        String get_workflow_dir(); // NOSONAR
+
+        /**
+         * @return The "KNIME Home" directory which is located inside the current workspace
+         */
+        String get_knime_home_dir(); // NOSONAR
     }
 }
