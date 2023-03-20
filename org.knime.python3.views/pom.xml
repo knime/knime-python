@@ -11,9 +11,10 @@
 
 	<properties>
 		<revision>5.1.0</revision>
+		<sonar.sources>src</sonar.sources>
 	</properties>
 
-    <build>
+	<build>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -28,8 +29,8 @@
 						</goals>
 						<configuration>
 							<target>
-                                <property name="knime.ui.extension.service.version" value="0.3.0"/>
-                                <property name="knime.ui.extension.service.checksum" value="bd71689f28d8224489330e70ed128dac182875c0"/>
+								<property name="knime.ui.extension.service.version" value="0.3.0"/>
+								<property name="knime.ui.extension.service.checksum" value="bd71689f28d8224489330e70ed128dac182875c0"/>
 								<ant antfile="${project.basedir}/build.xml">
 									<target name="build"/>
 								</ant>

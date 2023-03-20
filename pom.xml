@@ -19,6 +19,7 @@
 		<feature-branch-extension.branchListProperty>git.branch</feature-branch-extension.branchListProperty>
 		<feature-branch-extension.appendArtifactoryProperties>false</feature-branch-extension.appendArtifactoryProperties>
 		<knime.sonar-env>Sonarcloud</knime.sonar-env>
+        <sonar.python.version>3.9</sonar.python.version>
 	</properties>
 
 	<modules>
