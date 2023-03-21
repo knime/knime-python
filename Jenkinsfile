@@ -8,11 +8,11 @@ static final String[] WF_TESTS_PYTHON_ENVS = ['env_py36_pa5.yml', 'env_py38_pa7.
 static final String DEFAULT_WF_TESTS_PYTHON_ENV = 'env_py39_kn47.yml'
 
 @groovy.transform.Field
-static final String[] PYTEST_PYTHON_ENVS = ['env_py38_legacy', 'env_py38', 'env_py39']
+static final List<String> PYTEST_PYTHON_ENVS = ['env_py38_legacy', 'env_py38', 'env_py39']
 
 library "knime-pipeline@$BN"
 
-def baseBranch = (BN == KNIMEConstants.NEXT_RELEASE_BRANCH ? "master" : BN.replace("releases/",""))
+def baseBranch = (BN == KNIMEConstants.NEXT_RELEASE_BRANCH ? 'master' : BN.replace('releases/', ''))
 
 /** Return parameters to select python environment to run workflowtests with */
 def getWFTestsPythonEnvParameters() {
@@ -54,14 +54,26 @@ try {
                 String envPath = "${env.WORKSPACE}/pytest-envs/${pyEnv}"
                 String envYml = "${env.WORKSPACE}/pytest-envs/${pyEnv}.yml"
 
-                sh """
-                micromamba create -p ${envPath} -f ${envYml}
-                """
+                sh(label: 'create conda env', script: """
+                    micromamba create -p ${envPath} -f ${envYml}
+                """)
 
-                sh """
-                ${envPath}/bin/pytest --junit-xml=pytest_results.xml || true
-                """
-                junit "pytest_results.xml"
+                sh(label: 'run pytest', script: """
+                    ${envPath}/bin/coverage run -m pytest --junit-xml=pytest_results.xml || true
+
+                    # create a separate coverage.xml file for each module
+                    for d in org.knime.python3*/ ; do
+                        ${envPath}/bin/coverage xml -o "\${d}coverage-${pyEnv}.xml" --include "*\$d**/*.py" || true
+
+                        # delete mention of module name in coverage.xml
+                        if [ -f "\${d}coverage-${pyEnv}.xml" ]; then
+                            sed -i "s|\$d||g" "\${d}coverage-${pyEnv}.xml"
+                        fi
+                    done
+                """)
+
+                junit 'pytest_results.xml'
+                stash(name: "${pyEnv}", includes: "**/coverage-${pyEnv}.xml")
             }
         }
     }
@@ -71,7 +83,7 @@ try {
         if (params[env]) {
             // need to create a deep copy here, otherwise Jenkins will use
             // the last selected option for everything
-            def environmentFile = new String(env)
+            String environmentFile = new String(env)
             parallelConfigs["${environmentFile}"] = {
                 runPython3MultiversionWorkflowTestConfig(environmentFile, baseBranch)
             }
@@ -82,14 +94,17 @@ try {
 
     stage('Sonarqube analysis') {
         env.lastStage = env.STAGE_NAME
-        workflowTests.runSonar()
+        env.SONAR_ENV = "Sonarcloud"
+        configs = workflowTests.ALL_CONFIGURATIONS + PYTEST_PYTHON_ENVS
+        echo "running sonar on ${configs}"
+        workflowTests.runSonar(configs)
     }
  } catch (ex) {
-     currentBuild.result = 'FAILURE'
-     throw ex
+    currentBuild.result = 'FAILURE'
+    throw ex
  } finally {
-     notifications.notifyBuild(currentBuild.result);
- }
+    notifications.notifyBuild(currentBuild.result)
+}
 
 def runPython3MultiversionWorkflowTestConfig(String environmentFile, String baseBranch) {
     withEnv([ "KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT=${environmentFile}" ]) {

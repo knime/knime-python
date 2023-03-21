@@ -5,6 +5,7 @@ channels:
 dependencies:
   - python=3.8
   - pytest
+  - coverage
   - pyarrow=6.0
   - numpy=1.19
   - pandas=1.3

@@ -5,6 +5,7 @@ channels:
 dependencies:
   - python=3.9
   - knime-python-base=4.7
+  - coverage
   - pytest
   - black # Formatting test
   - matplotlib # View tests
