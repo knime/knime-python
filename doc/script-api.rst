@@ -77,3 +77,12 @@ Views
 .. autoclass:: knime.scripting.io.NodeView
    :members:
    :noindex:
+
+Utility functions
+-----------------
+
+.. autofunction:: knime.scripting.io.get_workflow_temp_dir
+   :noindex:
+
+.. autofunction:: knime.scripting.io.get_workflow_data_area_dir
+   :noindex:

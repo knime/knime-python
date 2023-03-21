@@ -207,6 +207,7 @@ def get_workflow_data_area_dir() -> str:
     return _ioc._get_workflow_data_area_dir()
 
 
+# Note: Whenever changing this list, also update the docs!
 __all__ = [
     "flow_variables",
     "input_objects",
