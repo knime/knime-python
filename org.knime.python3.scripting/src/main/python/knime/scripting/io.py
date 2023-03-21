@@ -207,14 +207,6 @@ def get_workflow_data_area_dir() -> str:
     return _ioc._get_workflow_data_area_dir()
 
 
-def get_knime_home_dir() -> str:
-    """
-    Returns the local absolute path to the directory in which KNIME stores its
-    configuration as well as log files.
-    """
-    return _ioc._get_knime_home_dir()
-
-
 __all__ = [
     "flow_variables",
     "input_objects",
@@ -227,5 +219,4 @@ __all__ = [
     "BatchOutputTable",
     "get_workflow_temp_dir",
     "get_workflow_data_area_dir",
-    "get_knime_home_dir",
 ]
