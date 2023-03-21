@@ -72,11 +72,6 @@ def _get_workflow_data_area_dir() -> str:
     return os.path.join(_java_callback.get_workflow_dir(), "data")
 
 
-def _get_knime_home_dir() -> str:
-    _check_java_callback()
-    return _java_callback.get_knime_home_dir()
-
-
 def _check_java_callback():
     if _java_callback is None:
         raise RuntimeError("No Java callback configured, this is a coding/setup error")

@@ -266,10 +266,5 @@ public interface Python3KernelBackendProxy extends PythonEntryPoint {
          * @return The local absolute path to the current workflow on disk
          */
         String get_workflow_dir(); // NOSONAR
-
-        /**
-         * @return The "KNIME Home" directory which is located inside the current workspace
-         */
-        String get_knime_home_dir(); // NOSONAR
     }
 }

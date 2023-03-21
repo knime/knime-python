@@ -79,7 +79,6 @@ import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
-import org.knime.core.node.KNIMEConstants;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.NativeNodeContainer;
@@ -329,11 +328,6 @@ public final class Python3KernelBackend implements PythonKernelBackend {
                 public String get_workflow_dir() {
                     return m_nodeContextManager.getNodeContext().getWorkflowManager().getContextV2().getExecutorInfo()
                         .getLocalWorkflowPath().toFile().getAbsolutePath();
-                }
-
-                @Override
-                public String get_knime_home_dir() {
-                    return KNIMEConstants.getKNIMEHomeDir();
                 }
             };
             m_proxy.initializeJavaCallback(callback);
