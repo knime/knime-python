@@ -414,6 +414,31 @@ class ParameterGroup:
             raise ValueError("Detected a forbidden number.")
 
 
+@kp.parameter_group("Primary Group Advanced", is_advanced=True)
+class ParameterGroupAdvanced:
+    """A parameter group which contains a parameter group as a subgroup, has is_advanced set True,
+    and sets a custom validator for a parameter."""
+
+    subgroup = NestedParameterGroup()
+    third = kp.IntParameter(
+        label="Internal int Parameter",
+        description="Internal int parameter description",
+        default_value=3,
+    )
+
+    @third.validator
+    def int_param_validator(value):
+        if value < 0:
+            raise ValueError("The third parameter must be positive.")
+
+    @subgroup.validator(override=False)
+    def validate_subgroup(values, version=None):
+        if values["first"] + values["second"] < 0:
+            raise ValueError("The sum of the parameters must be non-negative.")
+        elif values["first"] == 42:
+            raise ValueError("Detected a forbidden number.")
+
+
 class Parameterized:
     int_param = kp.IntParameter("Int Parameter", "An integer parameter", 3)
     double_param = kp.DoubleParameter("Double Parameter", "A double parameter", 1.5)
@@ -485,6 +510,9 @@ class ParameterizedWithAdvancedOption:
     multi_column_advanced_param = kp.MultiColumnParameter(
         "Multi Column Parameter", "A multi column parameter", is_advanced=True
     )
+
+    parameter_group = ParameterGroup()
+    parameter_group_advanced = ParameterGroupAdvanced()
 
 
 class ParameterizedWithoutGroup:
@@ -1053,6 +1081,72 @@ class ParameterTest(unittest.TestCase):
                     "scope": "#/properties/model/properties/multi_column_advanced_param",
                     "options": {"format": "columnFilter", "isAdvanced": True},
                 },
+                {
+                    "type": "Section",
+                    "label": "Primary Group",
+                    "options": {},
+                    "elements": [
+                        {
+                            "type": "Group",
+                            "label": "Subgroup",
+                            "options": {},
+                            "elements": [
+                                {
+                                    "type": "Control",
+                                    "label": "First Parameter",
+                                    "scope": "#/properties/model/properties/parameter_group/properties/subgroup/properties/first",
+                                    "options": {"format": "integer"},
+                                },
+                                {
+                                    "type": "Control",
+                                    "label": "Second Parameter",
+                                    "scope": "#/properties/model/properties/parameter_group/properties/subgroup/properties/second",
+                                    "options": {"format": "integer"},
+                                },
+                            ],
+                        },
+                        {
+                            "type": "Control",
+                            "label": "Internal int Parameter",
+                            "scope": "#/properties/model/properties/parameter_group/properties/third",
+                            "options": {"format": "integer"},
+                        },
+                    ],
+                },
+                {
+                    "type": "Section",
+                    "label": "Primary Group Advanced",
+                    "options": {
+                        "isAdvanced": True,
+                    },
+                    "elements": [
+                        {
+                            "type": "Group",
+                            "label": "Subgroup",
+                            "options": {},
+                            "elements": [
+                                {
+                                    "type": "Control",
+                                    "label": "First Parameter",
+                                    "scope": "#/properties/model/properties/parameter_group_advanced/properties/subgroup/properties/first",
+                                    "options": {"format": "integer"},
+                                },
+                                {
+                                    "type": "Control",
+                                    "label": "Second Parameter",
+                                    "scope": "#/properties/model/properties/parameter_group_advanced/properties/subgroup/properties/second",
+                                    "options": {"format": "integer"},
+                                },
+                            ],
+                        },
+                        {
+                            "type": "Control",
+                            "label": "Internal int Parameter",
+                            "scope": "#/properties/model/properties/parameter_group_advanced/properties/third",
+                            "options": {"format": "integer"},
+                        },
+                    ],
+                },
             ],
         }
 
@@ -1438,12 +1532,6 @@ class ParameterTest(unittest.TestCase):
             expected = generate_versioned_ui_schema_dict(extension_version=version)
             self.assertEqual(ui_schema, expected)
 
-    # def test_extract_ui_schema_with_version(self):
-    #     for version in ["0.1.0", "0.2.0", "0.3.0"]:
-    #         ui_schema = kp.extract_ui_schema(self.versioned_parameterized, version)
-    #         expected = generate_versioned_ui_schema_dict(extension_version=version)
-    #         self.assertEqual(ui_schema, expected)
-
     def test_version_parsing(self):
         # test default behaviour
         self.assertEqual(kp.Version.parse_version(None), kp.Version(0, 0, 0))
@@ -1479,7 +1567,6 @@ class ParameterTest(unittest.TestCase):
         self.assertTrue(kp.Version(1, 1, 2) >= kp.Version(1, 1, 1))
 
     def test_determining_compatibility(self):
-        # return
         # given the version of the extension that the node settings were saved with,
         # and the version of the installed extension, test identifying whether
         # we have a case of backward or forward compatibility
