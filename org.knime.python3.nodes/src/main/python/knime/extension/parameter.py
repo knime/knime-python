@@ -231,8 +231,10 @@ def extract_parameter_descriptions(obj) -> dict:
 
 
 def _extract_parameter_descriptions(obj, scope: "_Scope"):
-    params = _get_parameters(obj).values()
-    return [param._extract_description(scope) for param in params]
+    result = []
+    for param_name, param_obj in _get_parameters(obj).items():
+        result.append(param_obj._extract_description(param_name, scope))
+    return result
 
 
 def determine_compatability(
@@ -518,7 +520,7 @@ class _BaseParameter(ABC):
     def _get_options(self) -> dict:
         pass
 
-    def _extract_description(self, parent_scope: _Scope):
+    def _extract_description(self, name, parent_scope: _Scope):
         return {"name": self._label, "description": self.__doc__}
 
 
@@ -849,7 +851,7 @@ class EnumParameter(_BaseMultiChoiceParameter):
         schema["oneOf"] = [{"const": e.name, "title": e.label} for e in self._enum]
         return schema
 
-    def _extract_description(self, parent_scope: _Scope):
+    def _extract_description(self, name, parent_scope: _Scope):
         return {"name": self._label, "description": self._generate_description()}
 
     def add_default_validator(self, func):
@@ -1384,10 +1386,12 @@ def parameter_group(
                     "elements": elements,
                 }
 
-            def _extract_description(self, parent_scope: _Scope):
-                scope = parent_scope.create_child(self._name, is_group=True)
+            def _extract_description(self, name, parent_scope: _Scope):
+                scope = parent_scope.create_child(name, is_group=True)
+                obj = _get_parameterized_object(self)
                 options = _extract_parameter_descriptions(
-                    self._original_class_instance, scope
+                    obj,
+                    scope,
                 )
 
                 if scope.level() == 1:
