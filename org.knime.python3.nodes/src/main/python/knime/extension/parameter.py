@@ -77,6 +77,19 @@ def _get_parameters(obj) -> Dict[str, "_BaseParameter"]:
     return {**class_params, **instance_params}
 
 
+def _get_custom_class_methods(cls) -> dict:
+    """
+    Get custom methods of class that are not parameters or parameter groups.
+    """
+    reserved_names = ["__dict__", "__init__"]
+
+    return {
+        method_name: method
+        for method_name, method in cls.__dict__.items()
+        if (not _is_parameter_or_group(method)) and (method_name not in reserved_names)
+    }
+
+
 def extract_parameters(obj, for_dialog: bool = False) -> dict:
     """
     Get all parameter values from obj as a nested dict.
@@ -234,6 +247,11 @@ def determine_compatability(
     saved_version = Version.parse_version(saved_version)
     current_version = Version.parse_version(current_version)
     saved_parameters = saved_parameters["model"]
+    obj = (
+        obj._original_class_instance
+        if hasattr(obj, "_original_class_instance")
+        else obj
+    )
     _determine_compatability(obj, saved_version, current_version, saved_parameters)
 
 
@@ -269,6 +287,12 @@ def _detect_missing_parameters(
     Returns a list containing the names of the parameters available in the installed version of the extension
     that could not be found in the saved parameters of the node.
     """
+    obj = (
+        obj._original_class_instance
+        if hasattr(obj, "_original_class_instance")
+        else obj
+    )
+
     result = []
     for name, param_obj in _get_parameters(obj).items():
         if param_obj._since_version <= current_version:
@@ -295,7 +319,7 @@ def _is_parameter_or_group(obj) -> bool:
 
 def _create_param_dict_if_not_exists(obj):
     """
-    Create a parameter dictionary if it doesn't exist and populate it with the current parameter object.
+    Create a parameter dictionary if it doesn't exist.
     """
     if not hasattr(obj, "__parameters__"):
         obj.__parameters__ = {}
@@ -1058,14 +1082,56 @@ def _flatten(lst: list) -> list:
     return flat
 
 
+def _override_getattr(self, name):
+    """
+    If attribute name is not found in an instance of a class whose __getattr__ is
+    overridden by this function, we check if it is available in the original
+    parameter group class instance, which is expected to be available in self.
+    """
+    # check whether attr is available in the owner class
+    if hasattr(self.__class__, name):
+        return getattr(self.__class__, name)
+
+    # check whether attr is available in the instance of the original class
+    if hasattr(self._original_class_instance, name):
+        attr = getattr(self._original_class_instance, name)
+        # bind class methods to the original class instance
+        if hasattr(attr, "__get__"):
+            attr.__get__(self, name)
+
+        return attr
+
+    raise AttributeError(
+        f"'{self.__class__.__name__}' object has no attribute '{name}'"
+    )
+
+
+def _override_setattr(self, name, value):
+    """
+    Overriding __setattr__ could be a possible solution to nested composition parameter
+    assignments, e.g. node.group.subgroup.param = 42, in which case the .__set__ method
+    of the non-descriptor param object with the group being the owner object.
+    """
+    if "_original_class_instance" not in self.__class__.__dict__:
+        super(self.__class__, self).__setattr__(name, value)
+
+    if name in self._original_class_instance.__class__.__dict__:
+        attr = self._original_class_instance.__class__.__dict__[name]
+        if hasattr(attr, "__set__"):
+            attr.__set__(self, value)
+
+
 def parameter_group(
     label: str,
     since_version: Optional[Union[Version, str]] = None,
     is_advanced: bool = False,
 ):
     """
-    Used for injecting descriptor protocol methods into a custom parameter group class.
-    "obj" in this context is the parameterized object instance or a parameter group instance.
+    Decorator for classes implementing parameter groups. Parameter group classes can define parameters
+    and other parameter groups both as class-level attributes and as instance-level attributed inside the `__init__` method.
+
+    Parameter groups classes can set values to their parameters inside the `__init__` method during the constructor call (e.g.
+    from the node containing the group, or another group).
 
     Group validators need to raise an exception if a values-based condition is violated, where values is a dictionary
     of parameter names and values.
@@ -1110,183 +1176,238 @@ def parameter_group(
                 pass
     """
 
-    def decorate_class(custom_cls):
-        orig_init = custom_cls.__init__
-
-        group_since_version = Version.parse_version(since_version)
-
-        def __init__(
-            self,
-            label=label,
-            since_version=group_since_version,
-            validator=None,
-            is_advanced=is_advanced,
-            *args,
-            **kwargs,
-        ):
-            self._label = label
-            self._since_version = Version.parse_version(since_version)
-            self._validator = validator
-            self._is_advanced = is_advanced
-            self.__parameters__ = {}
-            self._override_internal_validator = False
-
-            orig_init(self, *args, **kwargs)
-
-        def __set_name__(self, owner, name):
-            self._name = name
-
-        def _is_descriptor(parameter_group):
+    def decorate_class(original_class):
+        class ParameterGroupHolder:
             """
-            A parameter_group used as descriptor i.e. declared on class level needs to be
-            handled differently than a parameter_group that is used via composition i.e. passed via __init__.
-            Here we use the _name attribute set via __set_name__ to distinguish the two since __set_name__ is only
-            called if the parameter_group is used as descriptor, namely when it is declared in the class definition.
+            This class implements the methods required for parameter groups, while also retaining an
+            instance of the original class for access to its methods (including __init__).
             """
-            return hasattr(parameter_group, "_name")
 
-        def __get__(self, obj, obj_type=None):
-            """
-            Generate a new GroupView class every time, and return an instance of the class
-            which references a value/subdict of the __parameters__ dict of obj that belongs
-            to this group.
-            """
-            return _create_group_view(self, obj)
+            __kind__ = "parameter_group"
 
-        def _get_value(self, obj, for_dialog: bool = False):
-            param_holder = _get_param_holder(self, obj)
-            return {
-                name: param_obj._get_value(param_holder, for_dialog)
-                for name, param_obj in _get_parameters(param_holder).items()
-            }
-
-        def _get_param_holder(parameter_group, obj):
-            return (
-                _create_group_view(parameter_group, obj)
-                if _is_descriptor(parameter_group)
-                else parameter_group
-            )
-
-        def _create_group_view(self, obj):
-            if not hasattr(obj, "__kind__"):
-                # obj is the root parameterised object
-                _create_param_dict_if_not_exists(obj)
-
-            if self._name not in obj.__parameters__:
-                obj.__parameters__[self._name] = {}
-
-            class GroupView:
-                def __init__(self, group_params_dict):
-                    self.__parameters__ = group_params_dict
-
-            for name, parameter in _get_parameters(self).items():
-                setattr(GroupView, name, parameter)
-
-            return GroupView(obj.__parameters__[self._name])
-
-        def __set__(self, obj, values):
-            raise RuntimeError("Cannot set parameter group values directly.")
-
-        def _set_default_for_version(self, obj, version: Version):
-            param_holder = _get_param_holder(self, obj)
-            # Assumes that if a parameter group is new, so are its elements
-            for param_obj in _get_parameters(param_holder).values():
-                param_obj._set_default_for_version(param_holder, version)
-
-        def _inject(
-            self, obj, values, parameters_version: Version, fail_on_missing: bool
-        ):
-            param_holder = _get_param_holder(self, obj)
-            _inject_parameters(
-                param_holder, values, parameters_version, fail_on_missing
-            )
-
-        def __str__(self):
-            return f"\tGroup name: {self._name}\n\tGroup label: {self._label}"
-
-        def _validate(self, values, version: Version):
-            # validate individual parameters
-            _validate_parameters(self, values, version)
-
-            # use the "internal" group validator if exists
-            if (
-                hasattr(custom_cls, "validate")
-                and not self._override_internal_validator
+            def __init__(
+                self, validator=None, is_advanced=is_advanced, *args, **kwargs
             ):
-                self.validate(values)
+                if "since_version" in kwargs:
+                    provided_since_version = kwargs["since_version"]
+                    del kwargs["since_version"]
+                else:
+                    provided_since_version = since_version
 
-            # use the decorator-defined validator if exists
-            if self._validator is not None:
-                self._validator(values)
+                self._original_class_instance = original_class(*args, **kwargs)
+                self._label = label
 
-        def validator(self, override=None):
-            """
-            To be used as a decorator for setting a validator function for a parameter.
-            """
-            if isinstance(override, bool):
+                # if parameter values of the parameter group were set during its constructor,
+                # the original class instance will have its own __parameters__ dict, which we
+                # then need to reference
+                self.__parameters__ = (
+                    {}
+                    if not hasattr(self._original_class_instance, "__parameters__")
+                    else self._original_class_instance.__parameters__
+                )
+                self._since_version = Version.parse_version(provided_since_version)
+                self._is_advanced = is_advanced
+                self._validator = validator
+                self._override_internal_validator = False
 
-                def decorator(func):
-                    self._validator = func
-                    self._override_internal_validator = override
+                # preserve @classmethods and parameters of the original class
+                self._transfer_original_cls_methods()
+                self._transfer_parameters(self.__class__)
 
-                return decorator
-            else:
-                func = override
-                self._validator = func
-                self._override_internal_validator = True
+            def _transfer_original_cls_methods(self):
+                """
+                Temporary solution to preserve class-level methods of the original class since
+                __getattribute__ somehow doesn't get called with e.g. `NestedComposed.create_default_dict()`
+                """
+                for name, method in _get_custom_class_methods(
+                    self._original_class_instance.__class__
+                ).items():
+                    setattr(self.__class__, name, method)
 
-        def _extract_ui_schema(
-            self, name, parent_scope: _Scope, version: Version = None
-        ):
-            scope = parent_scope.create_child(name, is_group=True)
-            elements = _extract_ui_schema_elements(self, version, scope)
+            def _transfer_parameters(self, target_class):
+                for name, parameter in _get_parameters(
+                    self._original_class_instance
+                ).items():
+                    setattr(target_class, name, parameter)
 
-            options = {}
-            if self._is_advanced:
-                options["isAdvanced"] = True
+            def __set_name__(self, owner, name):
+                self._name = name
 
-            if scope.level() == 1:
-                group_type = "Section"
-            else:
-                group_type = "Group"
+            def _is_descriptor(self):
+                """
+                A parameter_group used as descriptor i.e. declared on class level needs to be
+                handled differently than a parameter_group that is used via composition i.e. passed via __init__.
+                Here we use the _name attribute set via __set_name__ to distinguish the two since __set_name__ is only
+                called if the parameter_group is used as descriptor, namely when it is declared in the class definition.
+                """
+                return hasattr(self, "_name")
 
-            return {
-                "type": group_type,
-                "label": self._label,
-                "options": options,
-                "elements": elements,
-            }
+            def __get__(self, obj, obj_type=None):
+                """
+                Descriptors: generate a new GroupView class every time, and return an instance of the class
+                which references a value/subdict of the __parameters__ dict of obj that belongs
+                to this group, as well as an instance of the original wrapped class for custom
+                method access.
 
-        def _extract_description(self, parent_scope: _Scope):
-            scope = parent_scope.create_child(self._name, is_group=True)
-            options = _extract_parameter_descriptions(self, scope)
+                Composed: return this instance.
+                """
+                return self._get_param_holder(obj)
 
-            if scope.level() == 1:
-                # this is a tab
+            def _get_value(self, obj, for_dialog: bool = False):
+                param_holder = self._get_param_holder(obj)
+
                 return {
-                    "name": self._label,
-                    "description": self.__doc__,
-                    "options": _flatten(options),
+                    name: param_obj._get_value(param_holder, for_dialog)
+                    for name, param_obj in _get_parameters(param_holder).items()
                 }
-            else:
-                return options
 
-        custom_cls.__init__ = __init__
-        custom_cls.__set_name__ = __set_name__
-        custom_cls.__get__ = __get__
-        custom_cls.__set__ = __set__
-        custom_cls.__str__ = __str__
-        custom_cls._get_value = _get_value
-        custom_cls._set_default_for_version = _set_default_for_version
-        custom_cls._inject = _inject
-        custom_cls._validate = _validate
-        custom_cls._validate_specs = validate_specs
-        custom_cls._extract_schema = _extract_schema
-        custom_cls._extract_ui_schema = _extract_ui_schema
-        custom_cls._extract_description = _extract_description
-        custom_cls.validator = validator
-        custom_cls.__kind__ = "parameter_group"
+            def _get_param_holder(self, obj):
+                """
+                When parameters are descriptor based, obj will always be either the root parameteretized object
+                (node), a ParameterGroupHolder, or a GroupView referencing a subdict of the root.__parameters__ dict.
 
-        return custom_cls
+                When parameters are composed, the instance self.__parameters__ dict is used instead, so the holder is self.
+                """
+                return self._create_group_view(obj) if self._is_descriptor() else self
+
+            def _create_group_view(self, obj):
+                """
+                A factory that generates GroupView classes containing class and instance-level
+                attributes of the original parameter group class
+                """
+                if not hasattr(obj, "__kind__"):
+                    # obj is the root parameterised object
+                    _create_param_dict_if_not_exists(obj)
+
+                if self._name not in obj.__parameters__:
+                    # values of parameters of the group were initialised during the constructor
+                    if hasattr(self._original_class_instance, "__parameters__"):
+                        obj.__parameters__[self._name] = self.__parameters__
+                    else:
+                        obj.__parameters__[self._name] = {}
+
+                class GroupView:
+                    def __init__(self, group_params_dict, original_class_instance):
+                        self.__parameters__ = group_params_dict
+                        self._original_class_instance = original_class_instance
+
+                self._transfer_parameters(GroupView)
+
+                # ensure access to methods and attributes of the wrapped parameter group class
+                GroupView.__getattr__ = _override_getattr
+                GroupView.__kind__ = "parameter_group"
+
+                return GroupView(
+                    obj.__parameters__[self._name], self._original_class_instance
+                )
+
+            def __set__(self, obj, values):
+                raise RuntimeError("Cannot set parameter group values directly.")
+
+            def _set_default_for_version(self, obj, version: Version):
+                param_holder = self._get_param_holder(obj)
+                # Assumes that if a parameter group is new, so are its elements
+                for param_obj in _get_parameters(param_holder).values():
+                    param_obj._set_default_for_version(param_holder, version)
+
+            def _inject(
+                self, obj, values, parameters_version: Version, fail_on_missing: bool
+            ):
+                param_holder = self._get_param_holder(obj)
+                _inject_parameters(
+                    param_holder, values, parameters_version, fail_on_missing
+                )
+
+            def __str__(self):
+                return f"\tGroup name: {self._name}\n\tGroup label: {self._label}"
+
+            def _validate(self, values, version: Version):
+                # validate individual parameters
+                _validate_parameters(self._original_class_instance, values, version)
+
+                # use the "internal" group validator if exists
+                if (
+                    hasattr(self._original_class_instance, "validate")
+                    and not self._override_internal_validator
+                ):
+                    self._original_class_instance.validate(values)
+
+                # use the decorator-defined validator if exists
+                if self._validator is not None:
+                    self._validator(values)
+
+            def validator(self, override=None):
+                """
+                To be used as a decorator for setting a validator function for a parameter.
+                """
+                if isinstance(override, bool):
+
+                    def decorator(func):
+                        self._validator = func
+                        self._override_internal_validator = override
+
+                    return decorator
+                else:
+                    func = override
+                    self._validator = func
+                    self._override_internal_validator = True
+
+            def _extract_ui_schema(
+                self, name, parent_scope: _Scope, version: Version = None
+            ):
+                scope = parent_scope.create_child(name, is_group=True)
+                elements = _extract_ui_schema_elements(
+                    self._original_class_instance, version, scope
+                )
+
+                options = {}
+                if self._is_advanced:
+                    options["isAdvanced"] = True
+
+                if scope.level() == 1:
+                    group_type = "Section"
+                else:
+                    group_type = "Group"
+
+                return {
+                    "type": group_type,
+                    "label": self._label,
+                    "options": options,
+                    "elements": elements,
+                }
+
+            def _extract_description(self, parent_scope: _Scope):
+                scope = parent_scope.create_child(self._name, is_group=True)
+                options = _extract_parameter_descriptions(
+                    self._original_class_instance, scope
+                )
+
+                if scope.level() == 1:
+                    # this is a tab
+                    return {
+                        "name": self._label,
+                        "description": self._original_class_instance.__doc__,
+                        "options": _flatten(options),
+                    }
+                else:
+                    return options
+
+            def _extract_schema(self, extension_version: Version, specs):
+                properties = {}
+                for name, param_obj in _get_parameters(
+                    self._original_class_instance
+                ).items():
+                    if param_obj._since_version <= extension_version:
+                        properties[name] = param_obj._extract_schema(
+                            extension_version=extension_version, specs=specs
+                        )
+
+                return {"type": "object", "properties": properties}
+
+        ParameterGroupHolder._validate_specs = validate_specs
+        ParameterGroupHolder.__getattr__ = _override_getattr
+        ParameterGroupHolder.__setattr__ = _override_setattr
+
+        return ParameterGroupHolder
 
     return decorate_class

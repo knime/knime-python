@@ -30,6 +30,71 @@ def generate_values_dict(
     }
 
 
+def generate_values_dict_without_groups(
+    int_param=3,
+    double_param=1.5,
+    string_param="foo",
+    bool_param=True,
+    column_param="foo_column",
+    multi_column_param=["foo_column", "bar_column"],
+):
+    return {
+        "model": {
+            "int_param": int_param,
+            "double_param": double_param,
+            "string_param": string_param,
+            "bool_param": bool_param,
+            "column_param": column_param,
+            "multi_column_param": multi_column_param,
+        }
+    }
+
+
+def generate_values_dict_with_one_group(
+    int_param=3,
+    double_param=1.5,
+    string_param="foo",
+    bool_param=True,
+    column_param="foo_column",
+    multi_column_param=["foo_column", "bar_column"],
+    first=3,
+    second=5,
+):
+    return {
+        "model": {
+            "int_param": int_param,
+            "double_param": double_param,
+            "string_param": string_param,
+            "bool_param": bool_param,
+            "column_param": column_param,
+            "multi_column_param": multi_column_param,
+            "parameter_group": {
+                "first": first,
+                "second": second,
+            },
+        }
+    }
+
+
+def generate_values_dict_for_group_w_custom_method(
+    outer_int_param=0, middle_int_param=1, inner_int_param=2, inner_int_param2=2
+):
+    return {
+        "model": {
+            "outer_group": {
+                "outer_int_param": outer_int_param,
+                "middle_group": {
+                    "middle_int_param": middle_int_param,
+                    "inner_group": {
+                        "inner_int_param": inner_int_param,
+                        "inner_int_param2": inner_int_param2,
+                    },
+                },
+            }
+        }
+    }
+
+
 def set_column_parameters(parameterized_object):
     parameterized_object.column_param = "foo_column"
     parameterized_object.multi_column_param = ["foo_column", "bar_column"]
@@ -349,31 +414,6 @@ class ParameterGroup:
             raise ValueError("Detected a forbidden number.")
 
 
-@kp.parameter_group("Primary Group Advanced", is_advanced=True)
-class ParameterGroupAdvanced:
-    """A parameter group which contains a parameter group as a subgroup, has is_advanced set True,
-    and sets a custom validator for a parameter."""
-
-    subgroup = NestedParameterGroup()
-    third = kp.IntParameter(
-        label="Internal int Parameter",
-        description="Internal int parameter description",
-        default_value=3,
-    )
-
-    @third.validator
-    def int_param_validator(value):
-        if value < 0:
-            raise ValueError("The third parameter must be positive.")
-
-    @subgroup.validator(override=False)
-    def validate_subgroup(values, version=None):
-        if values["first"] + values["second"] < 0:
-            raise ValueError("The sum of the parameters must be non-negative.")
-        elif values["first"] == 42:
-            raise ValueError("Detected a forbidden number.")
-
-
 class Parameterized:
     int_param = kp.IntParameter("Int Parameter", "An integer parameter", 3)
     double_param = kp.DoubleParameter("Double Parameter", "A double parameter", 1.5)
@@ -386,6 +426,25 @@ class Parameterized:
     )
 
     parameter_group = ParameterGroup()
+
+    @string_param.validator
+    def validate_string_param(value):
+        if len(value) > 10:
+            raise ValueError(f"Length of string must not exceed 10!")
+
+
+class ParameterizedWithOneGroup:
+    int_param = kp.IntParameter("Int Parameter", "An integer parameter", 3)
+    double_param = kp.DoubleParameter("Double Parameter", "A double parameter", 1.5)
+    string_param = kp.StringParameter("String Parameter", "A string parameter", "foo")
+    bool_param = kp.BoolParameter("Boolean Parameter", "A boolean parameter", True)
+    column_param = kp.ColumnParameter("Column Parameter", "A column parameter")
+    multi_column_param = kp.MultiColumnParameter(
+        "Multi Column Parameter",
+        "A multi column parameter",
+    )
+
+    parameter_group = NestedParameterGroup()
 
     @string_param.validator
     def validate_string_param(value):
@@ -427,9 +486,6 @@ class ParameterizedWithAdvancedOption:
         "Multi Column Parameter", "A multi column parameter", is_advanced=True
     )
 
-    parameter_group = ParameterGroup()
-    parameter_group_advanced = ParameterGroupAdvanced()
-
 
 class ParameterizedWithoutGroup:
     int_param = kp.IntParameter("Int Parameter", "An integer parameter", 3)
@@ -467,6 +523,18 @@ class ComposedParameterized:
         # Instantiated here for brevety. Usually these would be supplied as arguments to __init__
         self.first_group = ReusableGroup()
         self.second_group = ReusableGroup()
+
+
+class ComposedParameterizedWithoutGroup:
+    param = kp.IntParameter(
+        label="Plain int param",
+        description="Description of the plain int param.",
+        default_value=12345,
+    )
+
+    def __init__(self, value) -> None:
+        # Instantiated here for brevety. Usually these would be supplied as arguments to __init__
+        self.param = value
 
 
 @kp.parameter_group("Nested composed")
@@ -534,7 +602,6 @@ class VersionedDefaultsParameterGroup:
 
 
 class VersionedDefaultsParameterized:
-
     int_param = kp.IntParameter("Int Parameter", "An integer parameter", 3)
 
     double_param = kp.DoubleParameter(
@@ -547,6 +614,87 @@ class VersionedDefaultsParameterized:
     group = VersionedDefaultsParameterGroup()
 
 
+#### Parameterised object for testing parameter groups with additional methods defined by the developer ####
+@kp.parameter_group("Inner group with a custom method")
+class InnerGroupWCustomMethod:
+    inner_int_param = kp.IntParameter("Inner int", "Inner int parameter", 2)
+    inner_int_param2 = kp.IntParameter(
+        "Second inner int", "Second inner int parameter", 2
+    )
+
+    def inner_foo(self):
+        return self.inner_int_param + self.inner_int_param2  # 2 + 2 = 4
+
+    def validate(self, values):
+        if values["inner_int_param"] != values["inner_int_param2"]:
+            raise ValueError("Inner int parameters should always be equal.")
+
+
+@kp.parameter_group("Middle group with a custom method")
+class MiddleGroupWCustomMethod:
+    middle_int_param = kp.IntParameter("Middle int", "Middle int parameter", 1)
+    inner_group = InnerGroupWCustomMethod()
+
+    def middle_foo(self):
+        return self.middle_int_param + self.inner_group.inner_foo()  # 1 + (2 + 2) = 5
+
+
+@kp.parameter_group("Outer group with a custom method")
+class OuterGroupWCustomMethod:
+    outer_int_param = kp.IntParameter("Outer int", "Outer int parameter")
+    middle_group = MiddleGroupWCustomMethod()
+
+    def recursive_method(self, bar):
+        if bar > 4:
+            return self.middle_group.middle_foo()  # 5
+        else:
+            return 1 + self.recursive_method(
+                bar + 1
+            )  # 1 + (1 + (1 + (1 + (1 + 5)))) = 10
+
+    def nested_method(self):
+        return self.middle_group.inner_group.inner_foo()  # 4
+
+    def _protected_method(self):
+        return "bar"
+
+    @middle_group.validator
+    def validate_middle_group(values):
+        if values["middle_int_param"] > values["inner_group"]["inner_int_param"]:
+            raise ValueError(
+                "Middle parameter should be smaller than inner int parameter."
+            )
+
+
+class ParameterizedWithCustomMethods:
+    outer_group = OuterGroupWCustomMethod()
+
+
+@kp.parameter_group(
+    "Subgroup that assigns values to params inside its constructor call"
+)
+class SubgroupWithConstructor:
+    inner_param = kp.IntParameter("Param", "Param description.", 12345)
+
+    def __init__(self, param):
+        self.inner_param = param
+
+
+@kp.parameter_group("Group that assigns values to params inside its constructor call")
+class GroupWithConstructor:
+    param = kp.IntParameter("Param", "Param description.", 12345)
+
+    def __init__(self, param):
+        self.param = param
+
+        # a non-descriptor group
+        self.subgroup = SubgroupWithConstructor(param=69)
+
+
+class ParameterizedUsingConstructor:
+    group = GroupWithConstructor(param=42)
+
+
 #### Tests: ####
 class ParameterTest(unittest.TestCase):
     def setUp(self):
@@ -554,8 +702,17 @@ class ParameterTest(unittest.TestCase):
         self.parameterized_advanced_option = ParameterizedWithAdvancedOption()
         self.versioned_parameterized = VersionedParameterized()
         self.parameterized_without_group = ParameterizedWithoutGroup()
+        self.parameterized_with_custom_methods = ParameterizedWithCustomMethods()
+        self.parameterized_with_one_group = ParameterizedWithOneGroup()
+        self.parameterized_with_constructor = ParameterizedUsingConstructor()
 
         self.maxDiff = None
+
+    def test_parameter_group_constructors_set_values(self):
+        obj = ParameterizedUsingConstructor()
+        params = kp.extract_parameters(obj)
+        expected = {"model": {"group": {"param": 42, "subgroup": {"inner_param": 69}}}}
+        self.assertEqual(params, expected)
 
     def test_inject_with_version_dependent_defaults(self):
         obj = VersionedDefaultsParameterized()
@@ -582,7 +739,6 @@ class ParameterTest(unittest.TestCase):
         """
         Test that parameter values can be retrieved.
         """
-
         set_column_parameters(self.parameterized)
 
         # root-level parameters
@@ -631,11 +787,8 @@ class ParameterTest(unittest.TestCase):
         """
         Test extracting nested parameter values.
         """
-
         set_column_parameters(self.parameterized)
-
         params = kp.extract_parameters(self.parameterized)
-
         expected = generate_values_dict()
         self.assertEqual(params, expected)
 
@@ -900,72 +1053,6 @@ class ParameterTest(unittest.TestCase):
                     "scope": "#/properties/model/properties/multi_column_advanced_param",
                     "options": {"format": "columnFilter", "isAdvanced": True},
                 },
-                {
-                    "type": "Section",
-                    "label": "Primary Group",
-                    "options": {},
-                    "elements": [
-                        {
-                            "type": "Group",
-                            "label": "Subgroup",
-                            "options": {},
-                            "elements": [
-                                {
-                                    "type": "Control",
-                                    "label": "First Parameter",
-                                    "scope": "#/properties/model/properties/parameter_group/properties/subgroup/properties/first",
-                                    "options": {"format": "integer"},
-                                },
-                                {
-                                    "type": "Control",
-                                    "label": "Second Parameter",
-                                    "scope": "#/properties/model/properties/parameter_group/properties/subgroup/properties/second",
-                                    "options": {"format": "integer"},
-                                },
-                            ],
-                        },
-                        {
-                            "type": "Control",
-                            "label": "Internal int Parameter",
-                            "scope": "#/properties/model/properties/parameter_group/properties/third",
-                            "options": {"format": "integer"},
-                        },
-                    ],
-                },
-                {
-                    "type": "Section",
-                    "label": "Primary Group Advanced",
-                    "options": {
-                        "isAdvanced": True,
-                    },
-                    "elements": [
-                        {
-                            "type": "Group",
-                            "label": "Subgroup",
-                            "options": {},
-                            "elements": [
-                                {
-                                    "type": "Control",
-                                    "label": "First Parameter",
-                                    "scope": "#/properties/model/properties/parameter_group_advanced/properties/subgroup/properties/first",
-                                    "options": {"format": "integer"},
-                                },
-                                {
-                                    "type": "Control",
-                                    "label": "Second Parameter",
-                                    "scope": "#/properties/model/properties/parameter_group_advanced/properties/subgroup/properties/second",
-                                    "options": {"format": "integer"},
-                                },
-                            ],
-                        },
-                        {
-                            "type": "Control",
-                            "label": "Internal int Parameter",
-                            "scope": "#/properties/model/properties/parameter_group_advanced/properties/third",
-                            "options": {"format": "integer"},
-                        },
-                    ],
-                },
             ],
         }
 
@@ -1018,7 +1105,6 @@ class ParameterTest(unittest.TestCase):
         - Internal validator: sum of values must not be larger than 100.
         - External validator: sum of values must not be negative OR 'first' must not be equal to 42.
         """
-        # TODO versioning
         params_internal = generate_values_dict(first=100)
         params_external = generate_values_dict(first=-90)
         params_forbidden = generate_values_dict(first=42)
@@ -1052,6 +1138,93 @@ class ParameterTest(unittest.TestCase):
             }
         }
         self.assertEqual(parameters, expected)
+
+    def test_all_pipelines(self):
+        """
+        Test getting and setting for simple parameters and parameter groups.
+        Both descriptor-based and composed approaches are tested.
+        """
+        ##### descriptor-based #####
+        # descriptor non-nested
+        obj_descr_simple = self.parameterized_without_group
+        obj_descr_simple = ParameterizedWithoutGroup()
+        set_column_parameters(obj_descr_simple)
+        # test getting
+        self.assertEqual(obj_descr_simple.int_param, 3)
+        # test setting
+        obj_descr_simple.int_param = 42
+        descr_simple_extracted = kp.extract_parameters(obj_descr_simple)
+        descr_simple_expected = generate_values_dict_without_groups(42)
+        self.assertEqual(descr_simple_extracted, descr_simple_expected)
+
+        # descriptor one group
+        obj_descr_one_group = ParameterizedWithOneGroup()
+        set_column_parameters(obj_descr_one_group)
+        # test getting
+        self.assertEqual(obj_descr_one_group.parameter_group.first, 1)
+        # test setting
+        obj_descr_one_group.parameter_group.first = 42
+        descr_one_group_extracted = kp.extract_parameters(obj_descr_one_group)
+        descr_one_group_expected = generate_values_dict_with_one_group(first=42)
+        self.assertEqual(descr_one_group_extracted, descr_one_group_expected)
+
+        # descriptor nested groups
+        obj_descr_nested_groups = Parameterized()
+        set_column_parameters(obj_descr_nested_groups)
+        # test getting
+        self.assertEqual(obj_descr_nested_groups.parameter_group.subgroup.first, 1)
+        # test setting
+        obj_descr_nested_groups.parameter_group.subgroup.first = 42
+        descr_nested_groups_extracted = kp.extract_parameters(obj_descr_nested_groups)
+        descr_nested_groups_expected = generate_values_dict(first=42)
+        self.assertEqual(descr_nested_groups_extracted, descr_nested_groups_expected)
+
+        ##### composed #####
+        # composed non-nested (here `param` was also declared as a class-level descriptor)
+        obj_composed_simple = ComposedParameterizedWithoutGroup(54321)
+        # test getting
+        self.assertEqual(obj_composed_simple.param, 54321)
+        # test setting
+        obj_composed_simple.param = 42
+        composed_simple_extracted = kp.extract_parameters(obj_composed_simple)
+        composed_simple_expected = {"model": {"param": 42}}
+        self.assertEqual(composed_simple_extracted, composed_simple_expected)
+
+        # composed one group
+        obj_composed_one_group = ComposedParameterized()
+        # test getting
+        self.assertEqual(obj_composed_one_group.first_group.first_param, 12345)
+        # test setting
+        obj_composed_one_group.first_group.first_param = 42
+        composed_one_group_extracted = kp.extract_parameters(obj_composed_one_group)
+        composed_one_group_expected = {
+            "model": {
+                "first_group": {"first_param": 42, "second_param": 54321},
+                "second_group": {"first_param": 12345, "second_param": 54321},
+            }
+        }
+        self.assertEqual(composed_one_group_extracted, composed_one_group_expected)
+
+        # composed nested groups
+        obj_composed_nested_groups = NestedComposedParameterized()
+        # test getting
+        self.assertEqual(
+            obj_composed_nested_groups.group.first_group.first_param, 12345
+        )
+        # test setting
+        obj_composed_nested_groups.group.first_group.first_param = 42
+        composed_nested_groups_extracted = kp.extract_parameters(
+            obj_composed_nested_groups
+        )
+        composed_nested_groups_expected = (
+            obj_composed_nested_groups.create_default_dict()
+        )
+        composed_nested_groups_expected["model"]["group"]["first_group"][
+            "first_param"
+        ] = 42
+        self.assertEqual(
+            composed_nested_groups_extracted, composed_nested_groups_expected
+        )
 
     def test_extract_parameters_from_altered_composed(self):
         obj = ComposedParameterized()
@@ -1224,6 +1397,7 @@ class ParameterTest(unittest.TestCase):
                 ],
             },
         ]
+
         description, use_tabs = kp.extract_parameter_descriptions(self.parameterized)
         self.assertTrue(use_tabs)
         self.assertEqual(description, expected)
@@ -1264,6 +1438,12 @@ class ParameterTest(unittest.TestCase):
             expected = generate_versioned_ui_schema_dict(extension_version=version)
             self.assertEqual(ui_schema, expected)
 
+    # def test_extract_ui_schema_with_version(self):
+    #     for version in ["0.1.0", "0.2.0", "0.3.0"]:
+    #         ui_schema = kp.extract_ui_schema(self.versioned_parameterized, version)
+    #         expected = generate_versioned_ui_schema_dict(extension_version=version)
+    #         self.assertEqual(ui_schema, expected)
+
     def test_version_parsing(self):
         # test default behaviour
         self.assertEqual(kp.Version.parse_version(None), kp.Version(0, 0, 0))
@@ -1299,6 +1479,7 @@ class ParameterTest(unittest.TestCase):
         self.assertTrue(kp.Version(1, 1, 2) >= kp.Version(1, 1, 1))
 
     def test_determining_compatibility(self):
+        # return
         # given the version of the extension that the node settings were saved with,
         # and the version of the installed extension, test identifying whether
         # we have a case of backward or forward compatibility
@@ -1360,6 +1541,44 @@ class ParameterTest(unittest.TestCase):
                     'WARNING:Python backend: - "Second Parameter"',
                 ],
                 context_manager.output,
+            )
+
+    def test_custom_methods_in_parameter_groups(self):
+        self.assertEqual(
+            self.parameterized_with_custom_methods.outer_group.recursive_method(0), 10
+        )
+
+        self.assertEqual(
+            self.parameterized_with_custom_methods.outer_group.middle_group.inner_group.inner_foo(),
+            4,
+        )
+
+        self.assertEqual(
+            self.parameterized_with_custom_methods.outer_group.nested_method(),
+            self.parameterized_with_custom_methods.outer_group.middle_group.inner_group.inner_foo(),
+        )
+
+        self.assertEqual(
+            self.parameterized_with_custom_methods.outer_group._protected_method(),
+            "bar",
+        )
+
+        # test that validation still works
+        forbidden_params_inner = generate_values_dict_for_group_w_custom_method(
+            inner_int_param2=3
+        )
+        forbidden_params_middle = generate_values_dict_for_group_w_custom_method(
+            middle_int_param=10
+        )
+
+        with self.assertRaises(ValueError):
+            kp.validate_parameters(
+                self.parameterized_with_custom_methods, forbidden_params_inner
+            )
+
+        with self.assertRaises(ValueError):
+            kp.validate_parameters(
+                self.parameterized_with_custom_methods, forbidden_params_middle
             )
 
 
