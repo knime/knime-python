@@ -247,11 +247,7 @@ def determine_compatability(
     saved_version = Version.parse_version(saved_version)
     current_version = Version.parse_version(current_version)
     saved_parameters = saved_parameters["model"]
-    obj = (
-        obj._original_class_instance
-        if hasattr(obj, "_original_class_instance")
-        else obj
-    )
+    obj = _get_parameterized_object(obj)
     _determine_compatability(obj, saved_version, current_version, saved_parameters)
 
 
@@ -287,12 +283,6 @@ def _detect_missing_parameters(
     Returns a list containing the names of the parameters available in the installed version of the extension
     that could not be found in the saved parameters of the node.
     """
-    obj = (
-        obj._original_class_instance
-        if hasattr(obj, "_original_class_instance")
-        else obj
-    )
-
     result = []
     for name, param_obj in _get_parameters(obj).items():
         if param_obj._since_version <= current_version:
@@ -307,6 +297,18 @@ def _detect_missing_parameters(
                 result.append(param_obj._label)
 
     return result
+
+
+def _get_parameterized_object(obj):
+    """
+    obj can either be a node, or a ParameterGroupHolder/GroupView instance.
+    The latter are wrappers holding an instance of the original parameter group class
+    referencing the section of the root __parameters__ dict linked to this parameter group.
+    """
+    try:
+        return obj._original_class_instance
+    except AttributeError:
+        return obj
 
 
 def _is_group(param):
@@ -1108,9 +1110,10 @@ def _override_getattr(self, name):
 
 def _override_setattr(self, name, value):
     """
-    Overriding __setattr__ could be a possible solution to nested composition parameter
-    assignments, e.g. node.group.subgroup.param = 42, in which case the .__set__ method
-    of the non-descriptor param object with the group being the owner object.
+    In the case of nested composed parameters, the __set__ method does not get called
+    automatically. We override __setattr__ in order to intercept assignment operations,
+    e.g. node.group.subgroup.param = 42, in which case the .__set__ method of the
+    non-descriptor param object will manually be called, with its group being the owner object.
     """
     if "_original_class_instance" not in self.__class__.__dict__:
         super(self.__class__, self).__setattr__(name, value)
@@ -1188,6 +1191,9 @@ def parameter_group(
             def __init__(
                 self, validator=None, is_advanced=is_advanced, *args, **kwargs
             ):
+                # The since_version for a parameter group can be provided either through the
+                # @parameter_group decorator, or directly through the constructor of its class.
+                # The latter takes precedence over the former, if provided.
                 if "since_version" in kwargs:
                     provided_since_version = kwargs["since_version"]
                     del kwargs["since_version"]
@@ -1211,18 +1217,19 @@ def parameter_group(
                 self._override_internal_validator = False
 
                 # preserve @classmethods and parameters of the original class
-                self._transfer_original_cls_methods()
+                self._transfer_original_cls_methods(self.__class__)
                 self._transfer_parameters(self.__class__)
 
-            def _transfer_original_cls_methods(self):
+            def _transfer_original_cls_methods(self, target_class):
                 """
-                Temporary solution to preserve class-level methods of the original class since
-                __getattribute__ somehow doesn't get called with e.g. `NestedComposed.create_default_dict()`
+                Preserve class-level methods of the original class directly, since such method calls
+                seem to forgo __getattribute__ and thus never end up in the overridden __getattr__ method,
+                e.g. `NestedComposed.create_default_dict()`, where `create_default_dict()` is a @classmethod.
                 """
                 for name, method in _get_custom_class_methods(
                     self._original_class_instance.__class__
                 ).items():
-                    setattr(self.__class__, name, method)
+                    setattr(target_class, name, method)
 
             def _transfer_parameters(self, target_class):
                 for name, parameter in _get_parameters(
@@ -1291,6 +1298,7 @@ def parameter_group(
                         self.__parameters__ = group_params_dict
                         self._original_class_instance = original_class_instance
 
+                self._transfer_original_cls_methods(GroupView)
                 self._transfer_parameters(GroupView)
 
                 # ensure access to methods and attributes of the wrapped parameter group class
