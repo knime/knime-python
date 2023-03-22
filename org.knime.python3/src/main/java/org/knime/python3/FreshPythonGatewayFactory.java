@@ -52,6 +52,8 @@ import java.io.IOException;
 
 import org.knime.core.node.NodeLogger;
 
+import py4j.Py4JException;
+
 /**
  * Always creates a fresh {@link PythonGateway}.
  *
@@ -78,6 +80,11 @@ public final class FreshPythonGatewayFactory implements PythonGatewayFactory {
                 for (var customizer : description.getCustomizers()) {
                     customizer.customize(entryPoint);
                 }
+            } catch (Py4JException ex) {
+                var pythonStackTrace = ex.getMessage().split("\n");
+                var pythonErrorMsg = pythonStackTrace[pythonStackTrace.length - 1];
+                gateway.close();
+                throw new IllegalStateException(pythonErrorMsg + ".\nSee the KNIME log for more details.", ex);
             } catch (Exception ex) {
                 gateway.close();
                 throw new IllegalStateException("Customization of entry point failed.", ex);
