@@ -359,6 +359,8 @@ class ArrowDataSink:
         self._file = pa.OSFile(java_data_sink.getAbsolutePath(), mode="wb")
         self._size = 0
         self._writer = None
+        self._chunk_size = None
+        self._recieved_last_batch = False
 
     def __enter__(self):
         return self
@@ -372,6 +374,14 @@ class ArrowDataSink:
         Writes the full given batch or table to the sink, tables are NOT split into batches.
         Empty batches or tables write only their schema and do not report to Java.
         """
+        # TODO(AP-20353) remove this when we support variable sized batches
+        if self._recieved_last_batch:
+            raise ValueError(
+                "Tried writing a batch after a batch with a different size than the "
+                "first batch. Only the last batch of a table can have a different size "
+                "than the first batch."
+            )
+
         chunk_size = len(data)
         offset = self._get_offset(data.schema, chunk_size)
         if chunk_size == 0 and isinstance(data, pa.Table):
@@ -387,13 +397,37 @@ class ArrowDataSink:
             self._java_data_sink.reportBatchWritten(offset)
             self._size += data.num_rows
 
-    def _get_offset(self, schema: pa.Schema, size: int):
+    def _get_offset(self, schema: pa.Schema, chunk_size: int):
         if self._writer is None:
+            # Remember the chunk size of the first batch. All batches except for the
+            # last one must have the same size
+            # TODO(AP-20353) remove this when we support variable sized batches
+            self._chunk_size = chunk_size
+
             # Init the writer if this is the first batch
             # Also use the offset returned by the init method because the file position
             # is not updated yet
-            return self._init_writer(schema_with_knime_metadata(schema, size))
+            return self._init_writer(schema_with_knime_metadata(schema, chunk_size))
         else:
+            # Check that we have the same chunk size as the first batch
+            # TODO(AP-20353) remove this check when we support variable sized batches
+            if self._chunk_size is None:
+                raise RuntimeError(
+                    "A writer exists but the chunk size is None. "
+                    "This is an implementation error"
+                )
+            if chunk_size != self._chunk_size:
+                if chunk_size < self._chunk_size:
+                    # A smaller chunk size is okay if this is the last batch
+                    self._recieved_last_batch = True
+                else:
+                    # The chunk is bigger: This is not allowed
+                    raise ValueError(
+                        "Tried writing a batch with a different size than the first "
+                        "batch. Only the last batch of a table can have a different "
+                        "size than the first batch."
+                    )
+
             return self._file.tell()
 
     def _init_writer(self, schema: pa.Schema):
