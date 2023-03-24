@@ -15,7 +15,7 @@ export default defineConfig({
             languageWorkers: ['editorWorkerService'], // TODO check
         }),
         checker({
-            typescript: true,
+            vueTsc: true,
         }),
     ],
     resolve: {

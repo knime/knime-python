@@ -137,7 +137,6 @@ class ScriptingEntryPoint(kg.EntryPoint):
     ):
         self._java_callback = java_callback
 
-        # TODO(AP-19339) adapt to new API with Table
         def create_python_sink():
             java_sink = java_callback.create_sink()
             return kg.data_sink_mapper(java_sink)
@@ -168,23 +167,13 @@ class ScriptingEntryPoint(kg.EntryPoint):
         _ioc._pad_up_to_length(_ioc._output_images, num_out_images)
         _ioc._pad_up_to_length(_ioc._output_objects, num_out_objects)
 
-        # Set the table backend such that new tables can be
-        # created in the script
-        # !!!!
-        self._backends.tear_down_arrow(flush=False)
-
     def execute(self, script):
         #
-        def create_python_sink():
-            java_sink = self._java_callback.create_sink()
-            return kg.data_sink_mapper(java_sink)
-
         with redirect_stdout(
             _ForwardingTextIO(sys.stdout, self._java_callback.add_stdout)
         ), redirect_stderr(
             _ForwardingTextIO(sys.stderr, self._java_callback.add_stderr)
         ):
-            self._backends.set_up_arrow(create_python_sink)
             # Run the script
             exec(script, self._workspace)
 
@@ -365,12 +354,12 @@ if __name__ == "__main__":
         logging.getLogger("py4j").setLevel(logging.FATAL)  # suppress py4j logs
         logging.getLogger().setLevel(logging.INFO)
 
-        kernel = ScriptingEntryPoint()
-        kg.connect_to_knime(kernel)
+        scripting_ep = ScriptingEntryPoint()
+        kg.connect_to_knime(scripting_ep)
         py4j.clientserver.server_connection_stopped.connect(
-            lambda *args, **kwargs: kernel._main_loop.exit()
+            lambda *args, **kwargs: scripting_ep._main_loop.exit()
         )
-        kernel._main_loop.enter()
+        scripting_ep._main_loop.enter()
     finally:
         if kg.client_server is not None:
             kg.client_server.shutdown()

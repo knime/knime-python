@@ -87,7 +87,7 @@ public interface PythonJsScriptingEntryPoint extends PythonEntryPoint {
     String execute(String script);
 
     /**
-     * @return Collection<FlowVariable> getFlowVariables();
+     * @return the flow variables defined currently
      */
     Map<String, Object> getFlowVariables();
 

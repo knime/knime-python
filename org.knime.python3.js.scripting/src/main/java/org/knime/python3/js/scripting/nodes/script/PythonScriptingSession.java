@@ -102,7 +102,7 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
     private static final ArrowColumnStoreFactory ARROW_STORE_FACTORY = new ArrowColumnStoreFactory();
 
     private static final Path LAUNCHER = PythonJsScriptingSourceDirectory.getPath()//
-        .resolve("knime_js_scripting.py");
+        .resolve("_knime_scripting_launcher.py");
 
     private final PythonGateway<PythonJsScriptingEntryPoint> m_gateway;
 

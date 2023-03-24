@@ -221,22 +221,6 @@ class ScriptingBackendCollection:
                 value = [x for x in value]
             self.flow_variables[key] = value
 
-    def set_input_table(
-        self, table_index: int, java_table_data_source: Optional[JavaClass]
-    ):
-        """
-        Here we prepare the input table by creating an ArrowDataSource. As soon as the user imports
-        either 'knime_io' or 'knime.scripting.io', the data sources will be converted to the appropriate
-        table representation.
-        """
-        if java_table_data_source is not None:
-            # NB: We don't close the source. It must be available for the lifetime of the process.
-            table_data_source = kg.data_source_mapper(java_table_data_source)
-        else:
-            table_data_source = None
-        _ioc._pad_up_to_length(_ioc._input_tables, table_index + 1)
-        _ioc._input_tables[table_index] = table_data_source
-
     def get_output_table_sink(self, table_index: int) -> JavaClass:
         return self.get_active_backend_or_raise().get_output_table_sink(table_index)
 
@@ -271,55 +255,6 @@ class ScriptingBackendCollection:
             flow_variable = self.flow_variables[key]
             java_flow_variables[key] = flow_variable
         return java_flow_variables
-
-    def set_num_expected_output_tables(self, num_output_tables: int) -> None:
-        _ioc._pad_up_to_length(_ioc._output_tables, num_output_tables)
-
-    def set_input_object(self, object_index: int, path: Optional[str]) -> None:
-        if path is not None:
-            with open(path, "rb") as file:
-                obj = pickle.load(file)
-        else:
-            obj = None
-        _ioc._pad_up_to_length(_ioc._input_objects, object_index + 1)
-        _ioc._input_objects[object_index] = obj
-
-    def set_num_expected_output_objects(self, num_output_objects: int) -> None:
-        _ioc._pad_up_to_length(_ioc._output_objects, num_output_objects)
-
-    def get_output_object(self, object_index: int, path: str) -> None:
-        obj = _ioc._output_objects[object_index]
-        with open(path, "wb") as file:
-            pickle.dump(obj=obj, file=file)
-
-    def get_output_object_type(self, object_index: int) -> str:
-        return type(_ioc._output_objects[object_index]).__name__
-
-    def get_output_object_string_representation(self, object_index: int) -> str:
-        object_as_string = str(_ioc._output_objects[object_index])
-        return (
-            (object_as_string[:996] + "\n...")
-            if len(object_as_string) > 1000
-            else object_as_string
-        )
-
-    def set_num_expected_output_images(self, num_output_images: int) -> None:
-        _ioc._pad_up_to_length(_ioc._output_images, num_output_images)
-
-    def get_output_image(
-        self,
-        image_index: int,
-        path: str,
-    ) -> None:
-        image = _ioc._output_images[image_index]
-        with open(path, "wb") as file:
-            file.write(image)
-
-    def set_expected_output_view(self, expect_view: bool):
-        self._expect_view = expect_view
-
-    def get_output_view(self, view_sink):
-        view_sink.display(self.get_active_backend_or_raise().get_output_view())
 
     def check_outputs(self):
         for i, o in enumerate(_ioc._output_tables):
