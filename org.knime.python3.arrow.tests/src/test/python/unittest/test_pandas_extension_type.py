@@ -647,6 +647,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         )
 
         df.reset_index(inplace=True, drop=True)  # drop index as it messes up equality
+        df = df.replace({np.nan: None, pd.NA: None})
         original_df = df.copy(deep=True)
 
         # test single item setting with int index for all columns

@@ -106,8 +106,8 @@ class PandasToPyArrowConversionTest(unittest.TestCase):
 
         read_t = _read_write_ipc(wrapped_t)
 
-        self.assertEqual(df["missing"].array, read_t[1].to_pylist())
-        self.assertEqual(df["strings"].array, read_t[2].to_pylist())
+        self.assertEqual(df["missing"].to_list(), read_t[1].to_pylist())
+        self.assertEqual(df["strings"].to_list(), read_t[2].to_pylist())
 
 
 def _read_write_ipc(input_table):

@@ -702,7 +702,12 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
                 value = list(value)
         # masked array
         # panda converts all set queries with lists as indices to np.ndarrays
-        tmp_arr = np.asarray(tmp_list)
+        if pa.types.is_list(self._storage_type) or pa.types.is_large_list(
+            self._storage_type
+        ):
+            tmp_arr = np.asarray(tmp_list, dtype="object")
+        else:
+            tmp_arr = np.asarray(tmp_list)
         tmp_arr[item] = value
         self._set_data_from_input(tmp_arr)
 
