@@ -8,7 +8,7 @@ static final String[] WF_TESTS_PYTHON_ENVS = ['env_py36_pa5.yml', 'env_py38_pa7.
 static final String DEFAULT_WF_TESTS_PYTHON_ENV = 'env_py39_kn47.yml'
 
 @groovy.transform.Field
-static final String[] PYTEST_PYTHON_ENVS = ['env_py38', 'env_py39']
+static final String[] PYTEST_PYTHON_ENVS = ['env_py38_legacy', 'env_py38', 'env_py39']
 
 library "knime-pipeline@$BN"
 
