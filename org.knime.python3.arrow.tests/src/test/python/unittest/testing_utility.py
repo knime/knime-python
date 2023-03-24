@@ -273,8 +273,9 @@ class DummyConverter:
 
 
 class DummyJavaDataSinkFactory:
-    def __init__(self) -> None:
+    def __init__(self, chunk_size) -> None:
         self._sinks = []
+        self._chunk_size = chunk_size
 
     def __enter__(self):
         return self.create_data_sink
@@ -288,6 +289,7 @@ class DummyJavaDataSinkFactory:
         dummy_writer = DummyWriter()
         arrow_sink = ka.ArrowDataSink(dummy_java_sink)
         arrow_sink._writer = dummy_writer
+        arrow_sink._chunk_size = self._chunk_size
         self._sinks.append(dummy_java_sink._path)
         return arrow_sink
 

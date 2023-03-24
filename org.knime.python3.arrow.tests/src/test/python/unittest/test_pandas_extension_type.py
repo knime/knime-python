@@ -700,7 +700,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         # df.drop(dict_columns, axis=1, inplace=True)  # remove all dicts
         df.reset_index(inplace=True, drop=True)  # drop index as it messes up equality
 
-        with DummyJavaDataSinkFactory() as sink_creator:
+        with DummyJavaDataSinkFactory(49) as sink_creator:
             backend = kat.ArrowBackend(sink_creator)
             t = backend.batch_write_table()
 
@@ -723,7 +723,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         # Setup
         _register_extension_types()
 
-        with DummyJavaDataSinkFactory() as sink_creator:
+        with DummyJavaDataSinkFactory(5) as sink_creator:
             arrow_backend = kat.ArrowBackend(sink_creator)
 
             # Create table
@@ -754,7 +754,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         Currently, the dict representation of timestamps on the python side is not working properly. This can be
         reproduced in the test by readding the outcommented line in the test.
         """
-        with DummyJavaDataSinkFactory() as sink_creator:
+        with DummyJavaDataSinkFactory(98) as sink_creator:
             arrow_backend = kat.ArrowBackend(sink_creator)
 
             df = _generate_test_data_frame(
@@ -810,7 +810,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         Tests if list extensiontypes can handle missing values
         @return:
         """
-        with DummyJavaDataSinkFactory() as sink_creator:
+        with DummyJavaDataSinkFactory(49) as sink_creator:
             backend = kat.ArrowBackend(sink_creator)
             t = backend.batch_write_table()
 
@@ -984,7 +984,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         self.assertEqual(correct_chunk_start_indices, calc)
 
     def test_categorical_types(self):
-        with DummyJavaDataSinkFactory() as sink_creator:
+        with DummyJavaDataSinkFactory(4) as sink_creator:
             arrow_backend = kat.ArrowBackend(sink_creator)
 
             # Create table
@@ -1058,7 +1058,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
 
     def test_list_setitem(self):
         _register_extension_types()
-        with DummyJavaDataSinkFactory() as sink_creator:
+        with DummyJavaDataSinkFactory(98) as sink_creator:
             arrow_backend = kat.ArrowBackend(sink_creator)
 
             list_col_name = "List(date)"
