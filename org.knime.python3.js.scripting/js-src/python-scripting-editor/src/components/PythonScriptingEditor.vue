@@ -169,7 +169,7 @@ export default defineComponent({
         },
         variableClicked(varName: string) {
             // TODO(AP-20273): if no workspace is set this yields error
-            this.runScript(`print(f">>> \t {type(${varName}).__name__} - ${varName}\\n {${varName}}")`);
+            this.runScript(`print('>>> print(${varName})\\n' + str(${varName}))`);
         },
         runSelectedLines() {
             const selection = this.getEditor().getSelection();
