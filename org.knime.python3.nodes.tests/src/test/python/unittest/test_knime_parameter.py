@@ -723,6 +723,40 @@ class ParameterizedUsingConstructor:
     group = GroupWithConstructor(param=42)
 
 
+@kp.parameter_group("Subgroup with an inner class.")
+class SubgroupWithInnerClass:
+    class InnerClass:
+        attr_1 = 1
+        attr_2 = 100
+
+        @classmethod
+        def _some_inner_method(cls):
+            return cls.attr_2
+
+    inner_param = kp.IntParameter("Inner param", "Inner param description.", 12345)
+
+    def __init__(self, param=InnerClass._some_inner_method()):
+        self.inner_param = param + self.InnerClass.attr_1
+
+
+@kp.parameter_group("Group that calls its subgroup's inner class methods")
+class GroupCallingInnerClass:
+    param = kp.IntParameter("Outer param", "Outer param description.", 54321)
+
+    # will call the InnerClass method as the default value in the constructor
+    subgroup_1 = SubgroupWithInnerClass()
+
+    def __init__(self, param):
+        self.param = param
+
+        # will call the InnerClass attribute to be added to the provided value
+        self.subgroup_2 = SubgroupWithInnerClass(param=69)
+
+
+class ParameterizedWithInnerClassGroups:
+    group = GroupCallingInnerClass(param=SubgroupWithInnerClass.InnerClass.attr_1 + 41)
+
+
 #### Tests: ####
 class ParameterTest(unittest.TestCase):
     def setUp(self):
@@ -731,10 +765,37 @@ class ParameterTest(unittest.TestCase):
         self.versioned_parameterized = VersionedParameterized()
         self.parameterized_without_group = ParameterizedWithoutGroup()
         self.parameterized_with_custom_methods = ParameterizedWithCustomMethods()
-        self.parameterized_with_one_group = ParameterizedWithOneGroup()
-        self.parameterized_with_constructor = ParameterizedUsingConstructor()
 
         self.maxDiff = None
+
+    def test_forbidden_keywords_not_allowed(self):
+        with self.assertRaises(SyntaxError):
+            # we define these inside the test case since the error should be caused
+            # when the parameter group class is initially parsed.
+            @kp.parameter_group("Group with forbidden keyword arguments.")
+            class GroupWithForbiddenKwargs:
+                param = kp.IntParameter("Simple param", "Simple param.", 1)
+
+                def __init__(self, since_version="foo", normal_arg=1):
+                    self.param = normal_arg
+
+            class ParameterizedWithForbiddenKwargs:
+                group = GroupWithForbiddenKwargs("bar", 10)
+
+    def test_inner_classes_are_accessible(self):
+        obj = ParameterizedWithInnerClassGroups()
+        params = kp.extract_parameters(obj)
+        expected = {
+            "model": {
+                "group": {
+                    "param": 42,
+                    "subgroup_1": {"inner_param": 101},
+                    "subgroup_2": {"inner_param": 70},
+                }
+            }
+        }
+        self.assertEqual(params, expected)
+        self.assertEqual(obj.group.subgroup_1.InnerClass._some_inner_method(), 100)
 
     def test_parameter_group_constructors_set_values(self):
         obj = ParameterizedUsingConstructor()
@@ -816,6 +877,7 @@ class ParameterTest(unittest.TestCase):
         Test extracting nested parameter values.
         """
         set_column_parameters(self.parameterized)
+
         params = kp.extract_parameters(self.parameterized)
         expected = generate_values_dict()
         self.assertEqual(params, expected)
@@ -1493,6 +1555,7 @@ class ParameterTest(unittest.TestCase):
         ]
 
         description, use_tabs = kp.extract_parameter_descriptions(self.parameterized)
+
         self.assertTrue(use_tabs)
         self.assertEqual(description, expected)
 
