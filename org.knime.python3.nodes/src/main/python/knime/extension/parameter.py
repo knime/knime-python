@@ -51,6 +51,7 @@ Contains the implementation of the Parameter Dialogue API for building native Py
 from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, TypeVar, Union
+from copy import deepcopy
 import knime.api.schema as ks
 import logging
 
@@ -1086,46 +1087,6 @@ def _flatten(lst: list) -> list:
     return flat
 
 
-def _override_getattr(self, name):
-    """
-    If attribute name is not found in an instance of a class whose __getattr__ is
-    overridden by this function, we check if it is available in the original
-    parameter group class instance, which is expected to be available in self.
-    """
-    # check whether attr is available in the owner class
-    if hasattr(self.__class__, name):
-        return getattr(self.__class__, name)
-
-    # check whether attr is available in the instance of the original class
-    if hasattr(self._original_class_instance, name):
-        attr = getattr(self._original_class_instance, name)
-        # bind class methods to the original class instance
-        if hasattr(attr, "__get__"):
-            attr.__get__(self, name)
-
-        return attr
-
-    raise AttributeError(
-        f"'{self.__class__.__name__}' object has no attribute '{name}'"
-    )
-
-
-def _override_setattr(self, name, value):
-    """
-    In the case of nested composed parameters, the __set__ method does not get called
-    automatically. We override __setattr__ in order to intercept assignment operations,
-    e.g. node.group.subgroup.param = 42, in which case the .__set__ method of the
-    non-descriptor param object will manually be called, with its group being the owner object.
-    """
-    if "_original_class_instance" not in self.__class__.__dict__:
-        super(self.__class__, self).__setattr__(name, value)
-
-    if name in self._original_class_instance.__class__.__dict__:
-        attr = self._original_class_instance.__class__.__dict__[name]
-        if hasattr(attr, "__set__"):
-            attr.__set__(self, value)
-
-
 def parameter_group(
     label: str,
     since_version: Optional[Union[Version, str]] = None,
@@ -1182,7 +1143,7 @@ def parameter_group(
     """
 
     def decorate_class(original_class):
-        class ParameterGroupHolder:
+        class ParameterGroupHolder(original_class):
             """
             This class implements the methods required for parameter groups, while also retaining an
             instance of the original class for access to its methods (including __init__).
@@ -1190,54 +1151,21 @@ def parameter_group(
 
             __kind__ = "parameter_group"
 
-            def __init__(
-                self, validator=None, is_advanced=is_advanced, *args, **kwargs
-            ):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+
+                # TODO do we need to prevent name collisions with the extended class
+                self._label = label
+
                 # The since_version for a parameter group can be provided either through the
                 # @parameter_group decorator, or directly through the constructor of its class.
                 # The latter takes precedence over the former, if provided.
-                if "since_version" in kwargs:
-                    provided_since_version = kwargs["since_version"]
-                    del kwargs["since_version"]
-                else:
-                    provided_since_version = since_version
-
-                self._original_class_instance = original_class(*args, **kwargs)
-                self._label = label
-
-                # if parameter values of the parameter group were set during its constructor,
-                # the original class instance will have its own __parameters__ dict, which we
-                # then need to reference
-                self.__parameters__ = (
-                    {}
-                    if not hasattr(self._original_class_instance, "__parameters__")
-                    else self._original_class_instance.__parameters__
+                self._since_version = Version.parse_version(
+                    kwargs.get("since_version", since_version)
                 )
-                self._since_version = Version.parse_version(provided_since_version)
-                self._is_advanced = is_advanced
-                self._validator = validator
+                self._is_advanced = kwargs.get("is_advanced", is_advanced)
+                self._validator = kwargs.get("validator", None)
                 self._override_internal_validator = False
-
-                # preserve @classmethods and parameters of the original class
-                self._transfer_original_cls_methods(self.__class__)
-                self._transfer_parameters(self.__class__)
-
-            def _transfer_original_cls_methods(self, target_class):
-                """
-                Preserve class-level methods of the original class directly, since such method calls
-                seem to forgo __getattribute__ and thus never end up in the overridden __getattr__ method,
-                e.g. `NestedComposed.create_default_dict()`, where `create_default_dict()` is a @classmethod.
-                """
-                for name, method in _get_custom_class_methods(
-                    self._original_class_instance.__class__
-                ).items():
-                    setattr(target_class, name, method)
-
-            def _transfer_parameters(self, target_class):
-                for name, parameter in _get_parameters(
-                    self._original_class_instance
-                ).items():
-                    setattr(target_class, name, parameter)
 
             def __set_name__(self, owner, name):
                 self._name = name
@@ -1253,13 +1181,13 @@ def parameter_group(
 
             def __get__(self, obj, obj_type=None):
                 """
-                Descriptors: generate a new GroupView class every time, and return an instance of the class
-                which references a value/subdict of the __parameters__ dict of obj that belongs
-                to this group, as well as an instance of the original wrapped class for custom
-                method access.
+                Descriptors: Create a deepcopy of the decorated class instance and inject the parameters
 
                 Composed: return this instance.
                 """
+                assert (
+                    self._is_descriptor()
+                ), "__get__ should only be called if the paramter_group is used as a descriptor."
                 return self._get_param_holder(obj)
 
             def _get_value(self, obj, for_dialog: bool = False):
@@ -1277,39 +1205,32 @@ def parameter_group(
 
                 When parameters are composed, the instance self.__parameters__ dict is used instead, so the holder is self.
                 """
-                return self._create_group_view(obj) if self._is_descriptor() else self
+                return self._copy_and_inject(obj) if self._is_descriptor() else self
 
-            def _create_group_view(self, obj):
+            def _copy_and_inject(self, obj):
                 """
-                A factory that generates GroupView classes containing class and instance-level
-                attributes of the original parameter group class
+                Copies self and ensures that it has the parameters from obj
                 """
+
+                copied_instance = deepcopy(self)
+
                 if not hasattr(obj, "__kind__"):
-                    # obj is the root parameterised object
+                    # obj is the object that contains this parameter group
                     _create_param_dict_if_not_exists(obj)
 
                 if self._name not in obj.__parameters__:
-                    # values of parameters of the group were initialised during the constructor
-                    if hasattr(self._original_class_instance, "__parameters__"):
-                        obj.__parameters__[self._name] = self.__parameters__
+                    # values of parameters of the group were initialised during the constructor and act as defaults
+                    if hasattr(copied_instance, "__parameters__"):
+                        obj.__parameters__[self._name] = copied_instance.__parameters__
                     else:
-                        obj.__parameters__[self._name] = {}
+                        parameter_dict = {}
+                        obj.__parameters__[self._name] = parameter_dict
+                        copied_instance.__parameters__ = parameter_dict
+                else:
+                    # inject the parameters stored in the object into the copied instance
+                    copied_instance.__parameters__ = obj.__parameters__
 
-                class GroupView:
-                    def __init__(self, group_params_dict, original_class_instance):
-                        self.__parameters__ = group_params_dict
-                        self._original_class_instance = original_class_instance
-
-                self._transfer_original_cls_methods(GroupView)
-                self._transfer_parameters(GroupView)
-
-                # ensure access to methods and attributes of the wrapped parameter group class
-                GroupView.__getattr__ = _override_getattr
-                GroupView.__kind__ = "parameter_group"
-
-                return GroupView(
-                    obj.__parameters__[self._name], self._original_class_instance
-                )
+                return copied_instance
 
             def __set__(self, obj, values):
                 raise RuntimeError("Cannot set parameter group values directly.")
@@ -1345,6 +1266,8 @@ def parameter_group(
                 # use the decorator-defined validator if exists
                 if self._validator is not None:
                     self._validator(values)
+
+            _validate_specs = validate_specs
 
             def validator(self, override=None):
                 """
@@ -1415,10 +1338,6 @@ def parameter_group(
                         )
 
                 return {"type": "object", "properties": properties}
-
-        ParameterGroupHolder._validate_specs = validate_specs
-        ParameterGroupHolder.__getattr__ = _override_getattr
-        ParameterGroupHolder.__setattr__ = _override_setattr
 
         return ParameterGroupHolder
 
