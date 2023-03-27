@@ -62,6 +62,9 @@ LOGGER = logging.getLogger(__name__)
 
 
 def _create_table_from_pyarrow(data, sentinel, row_ids="auto", first_row_id=0):
+    # TODO(AP-20353) remove this check when we support variable sized batches
+    _check_batch_sizes_constant(data)
+
     # Handle RowID
     if row_ids == "auto":
         rk_field = data.schema[0]
@@ -94,6 +97,28 @@ def _create_table_from_pyarrow(data, sentinel, row_ids="auto", first_row_id=0):
     data = katy.wrap_primitive_arrays(data)
 
     return ArrowTable(data)
+
+
+def _check_batch_sizes_constant(data: Union[pa.Table, pa.RecordBatch]):
+    """If the data is a pyarrow Table, check that all batches have the same size"""
+    if isinstance(data, pa.Table) and len(data) > 0:
+        batch_sizes = [len(rb) for rb in data.to_batches()]
+        chunk_size = batch_sizes[0]
+
+        # Check all batches except the last one
+        for idx, size in enumerate(batch_sizes[:-1]):
+            if chunk_size != size:
+                raise ValueError(
+                    "all batches of the table must have the same size, "
+                    f"but batch {idx} has size {size} (expected: {chunk_size})"
+                )
+
+        # Check the last batch
+        if chunk_size < batch_sizes[-1]:
+            raise ValueError(
+                f"last batch has size {batch_sizes[-1]}, "
+                f"but must not be bigger than the other batches of size {chunk_size}"
+            )
 
 
 def _create_table_from_pandas(data, sentinel, row_ids="auto", first_row_id=0):
