@@ -7,6 +7,7 @@ if [[ -n $KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT ]]; then
 	echo "Creating Conda environment for: ${KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT} at ${envPath}"
 
 	micromamba create \
+		-r ${WORKSPACE}/micromamba-root \
 		-p ${envPath} \
 		-f ${WORKSPACE}/workflow-tests/${KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT}
 	micromamba list -p ${envPath}
