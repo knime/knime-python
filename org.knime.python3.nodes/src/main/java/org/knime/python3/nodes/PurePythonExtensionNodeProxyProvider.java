@@ -49,8 +49,12 @@
 package org.knime.python3.nodes;
 
 import java.io.IOException;
+import java.util.OptionalInt;
 
+import org.knime.core.node.port.PortObject;
+import org.knime.python3.PythonGateway;
 import org.knime.python3.nodes.PurePythonNodeSetFactory.ResolvedPythonExtension;
+import org.knime.python3.nodes.ports.PythonTransientConnectionPortObject;
 import org.knime.python3.nodes.proxy.CloseableNodeFactoryProxy;
 import org.knime.python3.nodes.proxy.NodeDialogProxy;
 import org.knime.python3.nodes.proxy.NodeProxyProvider;
@@ -58,15 +62,31 @@ import org.knime.python3.nodes.proxy.model.NodeConfigurationProxy;
 import org.knime.python3.nodes.proxy.model.NodeExecutionProxy;
 
 /**
- * {@link NodeProxyProvider} for a KNIME extension written purely in Python.
+ * {@link NodeProxyProvider} for a KNIME extension written purely in Python. There is always one
+ * PurePythonExtensionNodeProxyProvider per node instance.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+ * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
 class PurePythonExtensionNodeProxyProvider implements NodeProxyProvider {
 
     protected final CloseablePythonNodeProxyFactory m_proxyFactory;
 
     protected final ResolvedPythonExtension m_extension;
+
+    /**
+     * We hold on to the gateway here because the proxy provider is linked to a node, and if that node created a
+     * {@link PythonTransientConnectionPortObject} we need to use this very same gateway for all downstream nodes using
+     * this port object.
+     *
+     * When the node is reset, removed from the workflow, or the workflow is closed, it will call
+     * {@link PurePythonExtensionNodeProxyProvider#cleanup()} to make sure the gateway gets closed.
+     *
+     * If this node does not create a connection port, closing the gateway will be handled in {@link DelegatingNodeModel}
+     * and the reference here will point to a closed gateway, which doesn't cost much.
+     */
+    @SuppressWarnings("javadoc")
+    protected PythonGateway<KnimeNodeBackend> m_cachedGateway;
 
     PurePythonExtensionNodeProxyProvider(final ResolvedPythonExtension extension, final String nodeId) {
         m_extension = extension;
@@ -79,8 +99,23 @@ class PurePythonExtensionNodeProxyProvider implements NodeProxyProvider {
     }
 
     @Override
-    public NodeExecutionProxy getExecutionProxy() {
-        return createPythonNode();
+    public NodeExecutionProxy getExecutionProxy(final PortObject[] inputPorts) {
+        OptionalInt requiredPid = getRequiredPid(inputPorts);
+        return createPythonNode(requiredPid);
+    }
+
+    private static OptionalInt getRequiredPid(final PortObject[] inputPorts) {
+        var pid = OptionalInt.empty();
+        for (var inputPort : inputPorts) {
+            if (inputPort instanceof PythonTransientConnectionPortObject connectionPort) {
+                if (pid.isPresent() && pid.getAsInt() != connectionPort.getPid()) {
+                    throw new IllegalStateException(
+                        "Node cannot depend on multiple connection input ports coming from different sources");
+                }
+                pid = OptionalInt.of(connectionPort.getPid());
+            }
+        }
+        return pid;
     }
 
     @Override
@@ -93,16 +128,50 @@ class PurePythonExtensionNodeProxyProvider implements NodeProxyProvider {
         return createPythonNode();
     }
 
-    @SuppressWarnings("resource") // the gateway is managed by the returned object
     private CloseablePythonNodeProxy createPythonNode() {
+        return createPythonNode(OptionalInt.empty());
+    }
+
+    @SuppressWarnings("resource") // the gateway is managed by the returned object
+    private CloseablePythonNodeProxy createPythonNode(final OptionalInt requiredPid) { // NOSONAR
         try {
-            var gateway = m_extension.createGateway();
+            PythonGateway<KnimeNodeBackend> gateway = null;
+            if (requiredPid.isPresent()) {
+                gateway = m_extension.getGatewayByPid(requiredPid.getAsInt());
+
+                if (gateway == null || gateway.getEntryPoint() == null) {
+                    m_extension.releaseGateway(m_cachedGateway);
+                    throw new IllegalStateException(
+                        "No connection data found. Re-execute the upstream node to refresh the connection.");
+                }
+            }
+
+            if (gateway == null) {
+                gateway = m_extension.createGateway();
+                // Holding on to the gateway is no problem here because it can be closed
+                // even if we have a reference to it.
+                m_cachedGateway = gateway;
+            }
             return m_proxyFactory.createProxy(gateway);
         } catch (IOException ex) {
             throw new IllegalStateException("Failed to initialize Python gateway.", ex);
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("Interrupted while creating Python gateway.", ex);
+        }
+    }
+
+    @Override
+    public void cleanup() {
+        if (m_cachedGateway == null) {
+            return;
+        }
+
+        try {
+            m_extension.releaseGateway(m_cachedGateway);
+            m_cachedGateway.close();
+        } catch (IOException ex) {
+            throw new IllegalStateException("Failed to close Python Gateway", ex);
         }
     }
 

@@ -121,12 +121,17 @@ public interface NodeModelProxy extends AsynchronousCloseable<RuntimeException>,
      *
      * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
      */
-    interface WorkflowPathProxy {
+    interface WorkflowPropertiesProxy {
         /**
          * @return the absolute path to the workflow on disk. Can be a temporary path if the workflow was opened from
          *          a remote location
          */
         String getLocalWorkflowPath();
+
+        /**
+         * @return The node name with included ID
+         */
+        String getNodeNameWithID();
     }
 
     /**

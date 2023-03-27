@@ -114,7 +114,8 @@ public final class PythonNodeGatewayFactory {
      * @throws IOException if creation fails due to I/O problems
      * @throws InterruptedException if the creation is interrupted
      */
-    public PythonGateway<KnimeNodeBackend> create() throws IOException, InterruptedException {
+    public PythonGateway<KnimeNodeBackend> create()
+        throws IOException, InterruptedException {
         var command = createCommand(m_extensionId, m_environmentName);
         var gatewayDescriptionBuilder = PythonGatewayDescription.builder(command, LAUNCHER, KnimeNodeBackend.class)//
             .addToPythonPath(Python3SourceDirectory.getPath())//

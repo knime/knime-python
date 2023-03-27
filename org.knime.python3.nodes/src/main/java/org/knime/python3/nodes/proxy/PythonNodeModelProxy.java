@@ -243,6 +243,10 @@ public interface PythonNodeModelProxy {
          */
         String[] get_credential_names(); // NOSONAR
 
+        /**
+         * @return A unique string identifying this node in the workflow
+         */
+        String get_node_id(); // NOSONAR
     }
 
     /**
@@ -317,7 +321,6 @@ public interface PythonNodeModelProxy {
          * @return String array containing username, password and identifier
          **/
         String[] get_credentials(final String identifier); // NOSONAR
-
     }
 
 }

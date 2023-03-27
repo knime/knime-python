@@ -72,6 +72,7 @@ Version = _kp.Version
 PortType = _kn.PortType
 Port = _kn.Port
 PortObject = _kn.PortObject
+ConnectionPortObject = _kn.ConnectionPortObject
 ViewDeclaration = _kn.ViewDeclaration
 ConfigurationContext = _kn.ConfigurationContext
 ExecutionContext = _kn.ExecutionContext

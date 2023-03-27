@@ -48,20 +48,33 @@
  */
 package org.knime.python3.nodes.proxy.model;
 
+import org.knime.core.node.port.PortObject;
+
 /**
  * Provides proxies for the NodeModel.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+ * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
 public interface NodeModelProxyProvider {
 
     /**
+     * @param inputPorts The input port data, required to determine which execution proxy to use
      * @return a proxy handling execute
      */
-    NodeExecutionProxy getExecutionProxy();
+    NodeExecutionProxy getExecutionProxy(PortObject[] inputPorts);
 
     /**
      * @return a proxy for configuration tasks (configure, validate)
      */
     NodeConfigurationProxy getConfigurationProxy();
+
+    /**
+     * In some instances a {@link NodeModelProxyProvider} can retain a reference to the gateway/process
+     * used to execute the proxy. This method asks the {@link NodeModelProxyProvider} to release those
+     * references, if any.
+     *
+     * @since 5.1
+     */
+    void cleanup();
 }

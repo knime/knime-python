@@ -125,6 +125,20 @@ public final class PythonPortObjects {
     }
 
     /**
+     * When connection data is passed to KNIME from Python, it will be packaged as
+     * {@link PurePythonConnectionPortObject}
+     *
+     * @author Carsten Haubold
+     */
+    public interface PurePythonConnectionPortObject extends PurePythonBinaryPortObject {
+
+        /**
+         * @return The process ID of the Python process in which the port object was created
+         */
+        int getPid();
+    }
+
+    /**
      * KNIME-side interface to obtain a {@link PortObject} from a {@link PythonPortObject}
      */
     public interface PortObjectProvider {
@@ -238,8 +252,8 @@ public final class PythonPortObjects {
             final var key = portObject.getFileStoreKey();
             final var fileStore = fileStoresByKey.get(key);
             var spec = PythonBinaryPortObjectSpec.fromJsonString(portObject.getSpec().toJsonString()).m_spec;
-            return new PythonBinaryPortObject(
-                PythonBinaryBlobFileStorePortObject.create(fileStore, spec, execContext), null);
+            return new PythonBinaryPortObject(PythonBinaryBlobFileStorePortObject.create(fileStore, spec, execContext),
+                null);
         }
 
         @Override
@@ -262,6 +276,76 @@ public final class PythonPortObjects {
         }
 
         public PythonBinaryPortObjectSpec getSpec() {
+            return m_spec;
+        }
+    }
+
+    /**
+     * {@link PythonPortObject} implementation for {@link PythonTransientConnectionPortObject}s used and populated on
+     * the Java side.
+     *
+     * @since 5.1
+     */
+    public static final class PythonConnectionPortObject implements PythonPortObject, PortObjectProvider {
+        private final PythonTransientConnectionPortObject m_data;
+
+        private final PythonConnectionPortObjectSpec m_spec;
+
+        /**
+         * Create a {@link PythonBinaryPortObject} with data
+         *
+         * @param binaryData The data to wrap in this port object
+         * @param tableConverter Unused here, but required because fromPurePython is called via reflection from
+         *            {@link PythonPortObjectTypeRegistry}
+         */
+        public PythonConnectionPortObject(final PythonTransientConnectionPortObject binaryData,
+            final PythonArrowTableConverter tableConverter) {
+            m_data = binaryData;
+            m_spec = new PythonConnectionPortObjectSpec(binaryData.getSpec());
+        }
+
+        /**
+         * Create a PythonBinaryPortObject from a PurePythonBinaryPortObject
+         *
+         * @param portObject The {@link PurePythonBinaryPortObject} coming from Python
+         * @param fileStoresByKey A map of {@link String} keys to {@link FileStore}s holding binary data
+         * @param tableConverter Not used here, just needed because fromPurePython is called via reflection from
+         *            {@link PythonPortObjectTypeRegistry}
+         * @param execContext The current {@link ExecutionContext}
+         * @return new {@link PythonBinaryPortObject} wrapping the binary data
+         * @throws IOException if the object could not be converted
+         */
+        public static PythonConnectionPortObject fromPurePython(final PurePythonConnectionPortObject portObject,
+            final Map<String, FileStore> fileStoresByKey, final PythonArrowTableConverter tableConverter,
+            final ExecutionContext execContext) throws IOException {
+            final var key = portObject.getFileStoreKey();
+            final var fileStore = fileStoresByKey.get(key);
+            var spec = PythonConnectionPortObjectSpec.fromJsonString(portObject.getSpec().toJsonString()).m_spec;
+            final var pid = portObject.getPid();
+            return new PythonConnectionPortObject(
+                PythonTransientConnectionPortObject.create(fileStore, spec, pid, execContext), null);
+        }
+
+        @Override
+        public PortObject getPortObject() {
+            return m_data;
+        }
+
+        @Override
+        public String getJavaClassName() {
+            return PythonTransientConnectionPortObject.class.getName();
+        }
+
+        /**
+         * Used on the Python side to get the file path where to read the binary data
+         *
+         * @return The file path where to read the binary data
+         */
+        public String getFilePath() {
+            return m_data.getFilePath();
+        }
+
+        public PythonConnectionPortObjectSpec getSpec() {
             return m_spec;
         }
     }
@@ -373,9 +457,9 @@ public final class PythonPortObjects {
                 final var rootNode = om.readTree(jsonData);
                 return new PythonBinaryPortObjectSpec(PythonBinaryBlobPortObjectSpec.fromJson(rootNode));
             } catch (JsonMappingException ex) {
-                throw new IllegalStateException("Could not parse PythonTablePortObjectSpec from given Json data", ex);
+                throw new IllegalStateException("Could not parse PythonBinaryPortObjectSpec from given Json data", ex);
             } catch (JsonProcessingException ex) { // NOSONAR: if we don't split this block up, Eclipse doesn't like it for some reason
-                throw new IllegalStateException("Could not parse PythonTablePortObjectSpec from given Json data", ex);
+                throw new IllegalStateException("Could not parse PythonBinaryPortObjectSpec from given Json data", ex);
             }
         }
 
@@ -396,8 +480,64 @@ public final class PythonPortObjects {
     }
 
     /**
+     * The {@link PythonConnectionPortObjectSpec} specifies the contents of a Port of binary type that can be populated
+     * and read on the Python side.
+     *
+     * @since 5.1
+     */
+    public static final class PythonConnectionPortObjectSpec implements PythonPortObjectSpec, PortObjectSpecProvider {
+        private final PythonTransientConnectionPortObjectSpec m_spec;
+
+        /**
+         * Create a {@link PythonBinaryPortObjectSpec}
+         *
+         * @param spec
+         */
+        public PythonConnectionPortObjectSpec(final PythonTransientConnectionPortObjectSpec spec) { // NOSONAR
+            m_spec = spec;
+        }
+
+        /**
+         * Construct a {@link PythonBinaryPortObjectSpec} from a JSON representation
+         *
+         * @param jsonData The JSON serialized spec
+         * @return the {@link PythonBinaryPortObjectSpec} as read from JSON
+         */
+        public static PythonConnectionPortObjectSpec fromJsonString(final String jsonData) {
+            final var om = new ObjectMapper();
+            try {
+                final var rootNode = om.readTree(jsonData);
+                return new PythonConnectionPortObjectSpec(PythonTransientConnectionPortObjectSpec.fromJson(rootNode));
+            } catch (JsonMappingException ex) {
+                throw new IllegalStateException("Could not parse PythonConnectionPortObjectSpec from given Json data",
+                    ex);
+            } catch (JsonProcessingException ex) { // NOSONAR: if we don't split this block up, Eclipse doesn't like it for some reason
+                throw new IllegalStateException("Could not parse PythonConnectionPortObjectSpec from given Json data",
+                    ex);
+            }
+        }
+
+        @Override
+        public String toJsonString() {
+            return m_spec.toJson(JsonNodeFactory.instance).toString();
+        }
+
+        @Override
+        public String getJavaClassName() {
+            return PythonTransientConnectionPortObjectSpec.class.getName();
+        }
+
+        @Override
+        public PythonTransientConnectionPortObjectSpec getPortObjectSpec() {
+            return m_spec;
+        }
+    }
+
+    /**
      * Convert port type encoded as string to a {@link PortType}. Possible values are TABLE and BINARY, where BINARY is
-     * followed by a Port Type ID as in "BINARY=org.knime.python3.nodes.test.porttype"
+     * followed by a Port Type ID as in "BINARY=org.knime.python3.nodes.test.porttype", or PortType(...) for general
+     * custom port objects and ConnectionPortObject for connections.
+     *
      *
      * @param identifier Port type identifier (TABLE or BINARY currently).
      * @return {@link PortType}
@@ -407,7 +547,10 @@ public final class PythonPortObjects {
             return BufferedDataTable.TYPE;
         } else if (identifier.startsWith("PortType.BINARY")) {
             return PythonBinaryBlobFileStorePortObject.TYPE;
+        } else if (identifier.startsWith("ConnectionPortType")) {
+            return PythonTransientConnectionPortObject.TYPE;
         } else {
+            // for other custom ports
             return PythonBinaryBlobFileStorePortObject.TYPE;
         }
     }

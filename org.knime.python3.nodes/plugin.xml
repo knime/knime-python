@@ -25,6 +25,15 @@
             specClass="org.knime.python3.nodes.ports.PythonBinaryBlobPortObjectSpec"
             specSerializer="org.knime.python3.nodes.ports.PythonBinaryBlobPortObjectSpec$Serializer">
       </portType>
+      <portType
+            color="#CC6699"
+            hidden="false"
+            name="org.knime.python3.nodes.PythonConnectionPortObject"
+            objectClass="org.knime.python3.nodes.ports.PythonTransientConnectionPortObject"
+            objectSerializer="org.knime.python3.nodes.ports.PythonTransientConnectionPortObject$Serializer"
+            specClass="org.knime.python3.nodes.ports.PythonTransientConnectionPortObjectSpec"
+            specSerializer="org.knime.python3.nodes.ports.PythonTransientConnectionPortObjectSpec$Serializer">
+      </portType>
    </extension>
    <extension
          point="org.eclipse.ui.preferencePages">

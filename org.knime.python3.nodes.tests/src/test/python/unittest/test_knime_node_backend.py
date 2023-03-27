@@ -6,6 +6,7 @@ import tempfile
 import json
 import os
 import test_utilities
+from typing import Dict
 
 
 class AnotherPortObjectSpec(knext.PortObjectSpec):
@@ -29,12 +30,13 @@ class AnotherPortObject(knext.PortObject):
         return AnotherPortObject(spec)
 
 
-def _binary_spec_from_java(id: str, data: dict = None):
-    d = {"id": id}
+def _binary_spec_from_java(id: str, data: dict = None, **kwargs):
+    d = kwargs
+    d["id"] = id
     if data is not None:
         d["data"] = data
     return knb._PythonPortObjectSpec(
-        "org.knime.python3.nodes.ports.PythonBinaryBlobPortObjectSpec", json.dumps(d)
+        "org.knime.python3.nodes.ports.PythonBinaryBlobPortObjectSpec", d
     )
 
 
@@ -68,6 +70,55 @@ class PortTypeRegistryTest(unittest.TestCase):
         def deserialize(
             cls, spec: "PortTypeRegistryTest.TestPortObjectSpec", storage: bytes
         ) -> "PortTypeRegistryTest.TestPortObject":
+            return cls(spec, storage.decode())
+
+        @property
+        def data(self) -> str:
+            return self._data
+
+    class TestConnectionPortObjectSpec(knext.PortObjectSpec):
+        def __init__(self, data: str) -> None:
+            self._data = data
+
+        def serialize(self) -> dict:
+            return {"test_data": self._data}
+
+        @classmethod
+        def deserialize(
+            cls, data: dict
+        ) -> "PortTypeRegistryTest.TestConnectionPortObjectSpec":
+            return cls(data["test_data"])
+
+        @property
+        def data(self) -> str:
+            return self._data
+
+    class TestConnectionPortObject(knext.ConnectionPortObject):
+        def __init__(
+            self,
+            spec: "PortTypeRegistryTest.TestConnectionPortObjectSpec",
+            data: str,
+            transient_data=None,  # optional because it could also be set by set_connection_dict
+        ) -> None:
+            super().__init__(spec)
+            self._data = data
+            self._transient_data = transient_data
+
+        def connection_to_dict(self) -> Dict:
+            return {"payload": self._transient_data}
+
+        def set_connection_dict(self, data: Dict) -> None:
+            self._transient_data = data["payload"]
+
+        def serialize(self) -> bytes:
+            return self._data.encode()
+
+        @classmethod
+        def deserialize(
+            cls,
+            spec: "PortTypeRegistryTest.TestConnectionPortObjectSpec",
+            storage: bytes,
+        ) -> "PortTypeRegistryTest.TestConnectionPortObject":
             return cls(spec, storage.decode())
 
         @property
@@ -126,7 +177,7 @@ class PortTypeRegistryTest(unittest.TestCase):
 
         port = knext.Port(test_port_type, "Test port", "Test port")
         spec = self.TestPortObjectSpec("foo")
-        pypos = self.registry.spec_from_python(spec, port)
+        pypos = self.registry.spec_from_python(spec, port, "NodeId", 0)
         self.assertEqual(
             "org.knime.python3.nodes.ports.PythonBinaryBlobPortObjectSpec",
             pypos.getJavaClassName(),
@@ -141,7 +192,7 @@ class PortTypeRegistryTest(unittest.TestCase):
         port = knext.Port(test_port_type, "", "")
         spec = AnotherPortObjectSpec()
         with self.assertRaises(AssertionError):
-            self.registry.spec_from_python(spec, port)
+            self.registry.spec_from_python(spec, port, "NodeId", 0)
 
     def test_custom_spec_from_python_unknown_spec_class(self):
         unknown_port_type = knext.PortType(
@@ -150,7 +201,7 @@ class PortTypeRegistryTest(unittest.TestCase):
         port = knext.Port(unknown_port_type, "", "")
         spec = self.TestPortObjectSpec("foobar")
         with self.assertRaises(AssertionError):
-            self.registry.spec_from_python(spec, port)
+            self.registry.spec_from_python(spec, port, "NodeId", 0)
 
     def test_custom_spec_to_python_wrong_id(self):
         test_port_type = self.get_port_type(id="foo")
@@ -180,12 +231,18 @@ class PortTypeRegistryTest(unittest.TestCase):
         self.assertEqual("bar", spec.data)
 
     class MockFromJavaObject:
-        def __init__(self, spec, file_path) -> None:
+        def __init__(
+            self,
+            spec,
+            file_path,
+            class_name="org.knime.python3.nodes.ports.PythonBinaryBlobFileStorePortObject",
+        ) -> None:
             self.spec = spec
             self.file_path = file_path
+            self._class_name = class_name
 
         def getJavaClassName(self):
-            return "org.knime.python3.nodes.ports.PythonBinaryBlobFileStorePortObject"
+            return self._class_name
 
         def getSpec(self):
             return self.spec
@@ -256,7 +313,7 @@ class PortTypeRegistryTest(unittest.TestCase):
             try:
                 mock_filestore = MockFileStore(file)
                 out = self.registry.port_object_from_python(
-                    obj, lambda: mock_filestore, port
+                    obj, lambda: mock_filestore, port, "nodeID", 0
                 )
                 self.assertEqual("cream", file.read().decode())
                 self.assertEqual("fs_key", out.getFileStoreKey())
@@ -274,7 +331,7 @@ class PortTypeRegistryTest(unittest.TestCase):
         with self.assertRaises(AssertionError):
             # providing None as file_creator is fine because the method should fail
             # before doing anything with it
-            self.registry.port_object_from_python(obj, None, port)
+            self.registry.port_object_from_python(obj, None, port, "nodeID", 0)
 
     def test_unknown_custom_object_from_python(self):
         obj = self.TestPortObject(self.TestPortObjectSpec("ice"), "cream")
@@ -288,7 +345,98 @@ class PortTypeRegistryTest(unittest.TestCase):
         with self.assertRaises(AssertionError):
             # providing None as file_creator is fine because the method should fail
             # before doing anything with it
-            self.registry.port_object_from_python(obj, None, port)
+            self.registry.port_object_from_python(obj, None, port, "nodeID", 0)
+
+    def test_connection_port_object_from_python(self):
+        test_connection_port_type = self.get_port_type(
+            self.TestConnectionPortObject,
+            self.TestConnectionPortObjectSpec,
+            "test.connection",
+        )
+
+        class MockFileStore:
+            def __init__(self, file) -> None:
+                self.file = file
+
+            def get_key(self):
+                return "fs_key"
+
+            def get_file_path(self):
+                return self.file.name
+
+        spec = self.TestConnectionPortObjectSpec("ice")
+        obj = self.TestConnectionPortObject(
+            spec, "cream", "this data is not serialized"
+        )
+        port = knext.Port(test_connection_port_type, "", "")
+        # delete=False is necessary to allow the framework to open the file
+        with tempfile.NamedTemporaryFile(delete=False) as file:
+            try:
+                mock_filestore = MockFileStore(file)
+                out = self.registry.port_object_from_python(
+                    obj, lambda: mock_filestore, port, "nodeID", 0
+                )
+                self.assertEqual("cream", file.read().decode())
+                self.assertEqual("fs_key", out.getFileStoreKey())
+                self.assertEqual(
+                    json.dumps(
+                        {
+                            "id": test_connection_port_type.id,
+                            "data": {"test_data": "ice"},
+                            "node_id": "nodeID",
+                            "port_idx": 0,
+                        }
+                    ),
+                    out.getSpec().toJsonString(),
+                )
+                key = "nodeID:0"
+                self.assertTrue(key in knb._PortTypeRegistry._connection_port_data)
+                self.assertEqual(
+                    {"payload": "this data is not serialized"},
+                    knb._PortTypeRegistry._connection_port_data[key],
+                )
+            finally:
+                file.close()
+                os.remove(file.name)
+                knb._PortTypeRegistry._connection_port_data.clear()
+
+    def test_connection_port_object_to_python(self):
+        test_connection_port_type = self.get_port_type(
+            self.TestConnectionPortObject,
+            self.TestConnectionPortObjectSpec,
+            "test.connection",
+        )
+
+        knb._PortTypeRegistry._connection_port_data.clear()
+        knb._PortTypeRegistry._connection_port_data["nodeID:0"] = {
+            "payload": "this data is not serialized"
+        }
+
+        # _PythonPortObjectSpec happens to have all method needed by the tested method so we use it here
+        java_spec = _binary_spec_from_java(
+            test_connection_port_type.id,
+            {"test_data": "badabummm"},
+            node_id="nodeID",  # kwargs are inserted into the spec json
+            port_idx=0,
+        )
+        port = knext.Port(test_connection_port_type, "", "")
+        # delete=False is necessary to allow the framework to open the file
+        with tempfile.NamedTemporaryFile(delete=False) as file:
+            try:
+                file.write(b"furball")
+                file.flush()
+                java_obj = self.MockFromJavaObject(
+                    java_spec,
+                    file.name,
+                    class_name="org.knime.python3.nodes.ports.PythonTransientConnectionPortObject",
+                )
+                obj = self.registry.port_object_to_python(java_obj, port)
+                self.assertEqual("furball", obj.data)
+                self.assertEqual("badabummm", obj.spec.data)
+                self.assertEqual("this data is not serialized", obj._transient_data)
+            finally:
+                file.close()
+                os.remove(file.name)
 
 
 class DescriptionParsingTest(unittest.TestCase):

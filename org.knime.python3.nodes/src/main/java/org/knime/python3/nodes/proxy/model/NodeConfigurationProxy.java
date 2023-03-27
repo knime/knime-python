@@ -67,13 +67,15 @@ public interface NodeConfigurationProxy extends NodeModelProxy, VersionedProxy {
      *
      * @param inSpecs the incoming port specs
      * @param flowVariableProxy for flow variable access
+     * @param credentialsProviderProxy to access credential identifiers
+     * @param workflowPropertiesProxy to query workflow information
      * @param warningConsumer for setting warning messages
      * @return the output specs of the node
      * @throws InvalidSettingsException if the node can't be configured because the settings are invalid
      */
     PortObjectSpec[] configure(final PortObjectSpec[] inSpecs, FlowVariablesProxy flowVariableProxy,
-        CredentialsProviderProxy credentialsProviderProxy, WarningConsumer warningConsumer)
-        throws InvalidSettingsException;
+        CredentialsProviderProxy credentialsProviderProxy, WorkflowPropertiesProxy workflowPropertiesProxy,
+        WarningConsumer warningConsumer) throws InvalidSettingsException;
 
     /**
      * Validates the provided settings.

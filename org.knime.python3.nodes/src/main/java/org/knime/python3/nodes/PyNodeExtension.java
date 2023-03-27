@@ -85,7 +85,15 @@ public interface PyNodeExtension {
      */
     PythonNode getNode(String id);
 
-    PythonGateway<KnimeNodeBackend> createGateway() throws IOException, InterruptedException;
+    /**
+     * Create a gateway for this Python node extension.
+     *
+     * @return A Python gateway for this Python extension
+     * @throws IOException
+     * @throws InterruptedException
+     */
+    PythonGateway<KnimeNodeBackend> createGateway()
+        throws IOException, InterruptedException;
 
     /**
      * @param backend Python proxy for node creation

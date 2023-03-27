@@ -44,7 +44,7 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   4 May 2022 (chaubold): created
+ *   27 Mar 2023 (chaubold): created
  */
 package org.knime.python3.nodes.ports;
 
@@ -69,16 +69,17 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.util.RawValue;
 
 /**
- * Specification for the {@link PythonBinaryBlobPortObjectSpec}.
+ * Specification for the {@link PythonTransientConnectionPortObjectSpec}.
  *
+ * @since 5.1
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
-public final class PythonBinaryBlobPortObjectSpec extends AbstractSimplePortObjectSpec {
+public final class PythonTransientConnectionPortObjectSpec extends AbstractSimplePortObjectSpec {
     /**
      * The serializer for the PickeledObject portspec type
      */
     public static final class Serializer
-        extends AbstractSimplePortObjectSpecSerializer<PythonBinaryBlobPortObjectSpec> {
+        extends AbstractSimplePortObjectSpecSerializer<PythonTransientConnectionPortObjectSpec> {
     }
 
     // effectively final
@@ -87,10 +88,16 @@ public final class PythonBinaryBlobPortObjectSpec extends AbstractSimplePortObje
     // effectively final
     private String m_data;
 
+    // effectively final
+    private String m_nodeId;
+
+    // effectively final
+    private int m_portIdx;
+
     /**
      * Deserialization constructor. Fields will be populated in load()
      */
-    public PythonBinaryBlobPortObjectSpec() {
+    public PythonTransientConnectionPortObjectSpec() {
     }
 
     /**
@@ -98,9 +105,12 @@ public final class PythonBinaryBlobPortObjectSpec extends AbstractSimplePortObje
      *
      * @param id An ID describing the type of data inside the binary blob
      */
-    PythonBinaryBlobPortObjectSpec(final String id, final String data) {
+    PythonTransientConnectionPortObjectSpec(final String id, final String data, final String nodeId,
+        final int portIdx) {
         m_id = id;
         m_data = data;
+        m_nodeId = nodeId;
+        m_portIdx = portIdx;
     }
 
     String getId() {
@@ -117,6 +127,8 @@ public final class PythonBinaryBlobPortObjectSpec extends AbstractSimplePortObje
         if (m_data != null) {
             node.putRawValue("data", new RawValue(m_data));
         }
+        node.put("node_id", m_nodeId);
+        node.put("port_idx", m_portIdx);
         return node;
     }
 
@@ -126,22 +138,30 @@ public final class PythonBinaryBlobPortObjectSpec extends AbstractSimplePortObje
      * @param data the JSON data
      * @return a new {@link PythonBinaryBlobPortObjectSpec} object
      */
-    public static PythonBinaryBlobPortObjectSpec fromJson(final JsonNode data) {
+    public static PythonTransientConnectionPortObjectSpec fromJson(final JsonNode data) {
         var specData = data.get("data");
-        return new PythonBinaryBlobPortObjectSpec(data.get("id").asText(),
-            specData == null ? null : specData.toString());
+        return new PythonTransientConnectionPortObjectSpec(//
+            data.get("id").asText(), //
+            specData == null ? null : specData.toString(), //
+            data.get("node_id").asText(), //
+            data.get("port_idx").asInt() //
+        );
     }
 
     @Override
     protected void save(final ModelContentWO model) {
         model.addString("id", m_id);
         model.addString("data", m_data);
+        model.addString("node_id", m_nodeId);
+        model.addInt("port_idx", m_portIdx);
     }
 
     @Override
     protected void load(final ModelContentRO model) throws InvalidSettingsException {
         m_id = model.getString("id", null);
         m_data = model.getString("data", null);
+        m_nodeId = model.getString("node_id", null);
+        m_portIdx = model.getInt("port_idx");
     }
 
     @Override
@@ -149,16 +169,19 @@ public final class PythonBinaryBlobPortObjectSpec extends AbstractSimplePortObje
         if (this == ospec) {
             return true;
         }
-        if (!(ospec instanceof PythonBinaryBlobPortObjectSpec)) {
+        if (!(ospec instanceof PythonTransientConnectionPortObjectSpec)) {
             return false;
         }
-        final PythonBinaryBlobPortObjectSpec spec = (PythonBinaryBlobPortObjectSpec)ospec;
-        return Objects.equals(m_id, spec.m_id) && Objects.equals(m_data, spec.m_data);
+        final PythonTransientConnectionPortObjectSpec spec = (PythonTransientConnectionPortObjectSpec)ospec;
+        return Objects.equals(m_id, spec.m_id) //
+            && Objects.equals(m_data, spec.m_data) //
+            && Objects.equals(m_nodeId, spec.m_nodeId) //
+            && m_portIdx == spec.m_portIdx;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(m_id, m_data);
+        return Objects.hash(m_id, m_data, m_nodeId, m_portIdx);
     }
 
     /**
@@ -166,10 +189,9 @@ public final class PythonBinaryBlobPortObjectSpec extends AbstractSimplePortObje
      */
     @Override
     public JComponent[] getViews() {
-        // TODO display spec values?
         String text;
         if (m_id != null) {
-            text = "<html><b>" + m_id + "</b></html>";
+            text = "<html><b>" + m_id + " at " + m_nodeId + ":" + m_portIdx + "</b></html>";
         } else {
             text = "No object available";
         }
@@ -191,8 +213,7 @@ public final class PythonBinaryBlobPortObjectSpec extends AbstractSimplePortObje
         gbc.weightx = Double.MIN_VALUE;
         panel.add(new JLabel(), gbc);
         final JComponent f = new JScrollPane(panel);
-        f.setName("Python Binary Data");
+        f.setName("Python Connection");
         return new JComponent[]{f};
     }
-
 }

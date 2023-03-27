@@ -69,7 +69,6 @@ import org.knime.core.node.NodeView;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.PortType;
-import org.knime.core.node.workflow.CredentialsProvider;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.ICredentials;
 import org.knime.core.node.workflow.NodeContext;
@@ -81,7 +80,7 @@ import org.knime.python3.nodes.proxy.model.NodeModelProxy;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy.CredentialsProviderProxy;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy.FlowVariablesProxy;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy.WarningConsumer;
-import org.knime.python3.nodes.proxy.model.NodeModelProxy.WorkflowPathProxy;
+import org.knime.python3.nodes.proxy.model.NodeModelProxy.WorkflowPropertiesProxy;
 import org.knime.python3.nodes.proxy.model.NodeModelProxyProvider;
 import org.knime.python3.nodes.settings.JsonNodeSettings;
 import org.knime.python3.nodes.settings.JsonNodeSettingsSchema;
@@ -93,7 +92,7 @@ import org.knime.python3.utils.FlowVariableUtils;
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
 public final class DelegatingNodeModel extends NodeModel
-    implements CredentialsProviderProxy, WorkflowPathProxy, FlowVariablesProxy, WarningConsumer {
+    implements CredentialsProviderProxy, WorkflowPropertiesProxy, FlowVariablesProxy, WarningConsumer {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(DelegatingNodeModel.class);
 
@@ -130,7 +129,7 @@ public final class DelegatingNodeModel extends NodeModel
     protected PortObjectSpec[] configure(final PortObjectSpec[] inSpecs) throws InvalidSettingsException {
         return runWithProxy(m_proxyProvider::getConfigurationProxy, node -> {
             node.loadValidatedSettings(m_settings);
-            var result = node.configure(inSpecs, this, this, this);
+            var result = node.configure(inSpecs, this, this, this, this);
             // allows for auto-configure
             m_settings = node.getSettings(m_extensionVersion);
             return result;
@@ -143,7 +142,8 @@ public final class DelegatingNodeModel extends NodeModel
         if (m_view.isPresent()) {
             PathUtils.deleteFileIfExists(m_view.get());
         }
-        return runWithProxy(m_proxyProvider::getExecutionProxy, node -> {
+
+        return runWithProxy(() -> m_proxyProvider.getExecutionProxy(inData), node -> {
             node.loadValidatedSettings(m_settings);
             var result = node.execute(inData, exec, this, this, this, this);
             m_settings = node.getSettings(m_extensionVersion);
@@ -217,11 +217,16 @@ public final class DelegatingNodeModel extends NodeModel
 
     @Override
     protected void onDispose() {
+        // The nodemodel exists as long as the node is in the WF, but the gateway is re-created on each execution.
+        // So on dispose or reset we need to release the last-used gateway from the ProxyProvider.
+        m_proxyProvider.cleanup();
+
         m_proxyShutdownTracker.waitForAllToClose();
     }
 
     @Override
     protected void reset() {
+        m_proxyProvider.cleanup();
         m_view = Optional.empty();
         m_proxyShutdownTracker.waitForAllToClose();
     }
@@ -290,14 +295,19 @@ public final class DelegatingNodeModel extends NodeModel
 
     @Override
     public String[] getCredentialNames() {
-        CredentialsProvider credentialsProvider = getCredentialsProvider();
+        var credentialsProvider = getCredentialsProvider();
         return credentialsProvider.listNames().toArray(String[]::new);
     }
 
     @Override
     public ICredentials getCredentials(final String identifier) {
-        CredentialsProvider credentialsProvider = getCredentialsProvider();
+        var credentialsProvider = getCredentialsProvider();
         return credentialsProvider.get(identifier);
 
+    }
+
+    @Override
+    public String getNodeNameWithID() {
+        return NodeContext.getContext().getNodeContainer().getNameWithID();
     }
 }

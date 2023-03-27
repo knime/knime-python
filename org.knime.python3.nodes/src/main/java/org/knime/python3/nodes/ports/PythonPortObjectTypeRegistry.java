@@ -64,9 +64,12 @@ import org.knime.python3.arrow.PythonArrowTableConverter;
 import org.knime.python3.nodes.ports.PythonPortObjects.PortObjectProvider;
 import org.knime.python3.nodes.ports.PythonPortObjects.PortObjectSpecProvider;
 import org.knime.python3.nodes.ports.PythonPortObjects.PurePythonBinaryPortObject;
+import org.knime.python3.nodes.ports.PythonPortObjects.PurePythonConnectionPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PurePythonTablePortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonBinaryPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonBinaryPortObjectSpec;
+import org.knime.python3.nodes.ports.PythonPortObjects.PythonConnectionPortObject;
+import org.knime.python3.nodes.ports.PythonPortObjects.PythonConnectionPortObjectSpec;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonTablePortObject;
@@ -116,13 +119,18 @@ public final class PythonPortObjectTypeRegistry {
 
         m_pythonPortObjectMap.put(BufferedDataTable.class.getName(), PythonTablePortObject.class);
         m_pythonPortObjectMap.put(PythonBinaryBlobFileStorePortObject.class.getName(), PythonBinaryPortObject.class);
+        m_pythonPortObjectMap.put(PythonTransientConnectionPortObject.class.getName(), PythonConnectionPortObject.class);
 
         m_pythonPortObjectInterfaceMap.put(BufferedDataTable.class.getName(), PurePythonTablePortObject.class);
         m_pythonPortObjectInterfaceMap.put(PythonBinaryBlobFileStorePortObject.class.getName(),
             PurePythonBinaryPortObject.class);
+        m_pythonPortObjectInterfaceMap.put(PythonTransientConnectionPortObject.class.getName(),
+            PurePythonConnectionPortObject.class);
 
         m_pythonPortObjectSpecMap.put(DataTableSpec.class.getName(), PythonTablePortObjectSpec.class);
         m_pythonPortObjectSpecMap.put(PythonBinaryBlobPortObjectSpec.class.getName(), PythonBinaryPortObjectSpec.class);
+        m_pythonPortObjectSpecMap.put(PythonTransientConnectionPortObjectSpec.class.getName(),
+            PythonConnectionPortObjectSpec.class);
     }
 
     /**
@@ -229,8 +237,8 @@ public final class PythonPortObjectTypeRegistry {
             throw new IllegalStateException("Cannot convert 'null' port object from Python to KNIME");
         }
 
-        if (pythonPortObject instanceof PortObjectProvider) {
-            return ((PortObjectProvider)pythonPortObject).getPortObject();
+        if (pythonPortObject instanceof PortObjectProvider portObjectProvider) {
+            return portObjectProvider.getPortObject();
         }
 
         var registry = InstanceHolder.INSTANCE;

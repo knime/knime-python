@@ -51,8 +51,10 @@ package org.knime.python3.nodes;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 import org.knime.core.node.InvalidSettingsException;
@@ -125,7 +127,7 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
             .map(e -> parseExtension(e.getPath(), e.getBundleName()));
     }
 
-    private static final KnimeExtension parseExtension(final Path extensionPath, final String bundleName) {
+    private static KnimeExtension parseExtension(final Path extensionPath, final String bundleName) {
         try {
             var extension = EXTENSION_PARSER.parseExtension(extensionPath);
             return new ResolvedPythonExtension(extension, bundleName);
@@ -138,6 +140,11 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
     }
 
     static final class ResolvedPythonExtension implements KnimeExtension {
+
+        // For connection port objects we need to use the same Python process to share a connection.
+        // We cache the gateways on extension-level because the processes in an extension share the
+        // conda-environment.
+        private Map<Integer, PythonGateway<KnimeNodeBackend>> m_gatewayCache = new ConcurrentHashMap<>();
 
         private final PyNodeExtension m_extension;
 
@@ -173,12 +180,37 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
             return m_extension.getNodeStream();
         }
 
-        PythonGateway<KnimeNodeBackend> createGateway() throws IOException, InterruptedException {
+        PythonGateway<KnimeNodeBackend> createGateway()
+            throws IOException, InterruptedException {
             return m_extension.createGateway();
         }
 
         PythonNodeProxy createProxy(final KnimeNodeBackend backend, final String nodeId) {
             return m_extension.createNodeProxy(backend, nodeId);
+        }
+
+        PythonGateway<KnimeNodeBackend> getGatewayByPid(final int pid) {
+            return m_gatewayCache.get(pid);
+        }
+
+        @SuppressWarnings("resource")
+        void retainGatewayWithPid(final PythonGateway<KnimeNodeBackend> gateway, final int pid) {
+            m_gatewayCache.put(pid, gateway);
+        }
+
+        @SuppressWarnings("resource")
+        void releaseGateway(final PythonGateway<KnimeNodeBackend> gateway) {
+            Integer pid = null;
+            for (var keyVal : m_gatewayCache.entrySet()) {
+                if (keyVal.getValue() == gateway) {
+                    pid = keyVal.getKey();
+                    break;
+                }
+            }
+
+            if (pid != null) {
+                m_gatewayCache.remove(pid);
+            }
         }
 
         @Override

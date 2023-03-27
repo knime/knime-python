@@ -48,7 +48,7 @@ Backend for KNIME nodes written in Python. Handles the communication with Java.
 @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
 """
 
-from typing import List, Optional, Type
+from typing import Any, Dict, List, Optional, Type, Union
 
 from knime._backend._mainloop import MainLoop
 
@@ -105,15 +105,23 @@ class _PythonTablePortObject:
 
 
 class _PythonPortObjectSpec:
-    def __init__(self, java_class_name, json_string_data):
+    def __init__(self, java_class_name, data_dict: Dict):
         self._java_class_name = java_class_name
-        self._json_string_data = json_string_data
+        self._json_string_data = json.dumps(data_dict)
+        self._data = data_dict
 
     def getJavaClassName(self) -> str:
         return self._java_class_name
 
     def toJsonString(self) -> str:
         return self._json_string_data
+
+    @property
+    def data(self) -> Dict:
+        if self._data is None:
+            # to be able to access the data dict when we're accessing a Java class
+            self._data = json.loads(self.toJsonString())
+        return self._data
 
     class Java:
         implements = [
@@ -146,6 +154,22 @@ class _PythonBinaryPortObject:
         ]
 
 
+class _PythonConnectionPortObject(_PythonBinaryPortObject):
+    def __init__(self, java_class_name, filestore_file, data, spec):
+        super().__init__(java_class_name, filestore_file, data, spec)
+
+    def getPid(self) -> int:
+        """Used on the Java side to obtain the Python process ID"""
+        import os
+
+        return os.getpid()
+
+    class Java:
+        implements = [
+            "org.knime.python3.nodes.ports.PythonPortObjects$PurePythonConnectionPortObject"
+        ]
+
+
 class _FlowVariablesDict(collections.UserDict):
     def __init__(self):
         super().__init__({})
@@ -170,6 +194,9 @@ def _check_attr_is_available(node, attr_name):
 
 
 class _PortTypeRegistry:
+    # One global dictionary for all connections
+    _connection_port_data = {}
+
     def __init__(self, extension_id: str) -> None:
         self._extension_id = extension_id
         self._port_types_by_object_class = {}
@@ -209,6 +236,17 @@ class _PortTypeRegistry:
     def spec_to_python(self, spec: _PythonPortObjectSpec, port: kn.Port):
         class_name = spec.getJavaClassName()
         data = json.loads(spec.toJsonString())
+
+        def deserialize_custom_spec():
+            spec_id = data["id"]
+            assert (
+                spec_id == port.type.id
+            ), f"Expected input port ID {port.type.id} but got {spec_id}"
+            assert (
+                spec_id in self._port_types_by_id
+            ), f"There is no port type with id '{spec_id}' registered."
+            return port.type.spec_class.deserialize(data["data"])
+
         if class_name == "org.knime.core.data.DataTableSpec":
             assert port.type == kn.PortType.TABLE
             return ks.Schema.deserialize(data)
@@ -222,18 +260,20 @@ class _PortTypeRegistry:
                 ), f"Expected binary input port ID {port.id} but got {bpos.id}"
                 return bpos
             else:  # custom spec
-                spec_id = data["id"]
-                assert (
-                    spec_id == port.type.id
-                ), f"Expected input port ID {port.type.id} but got {spec_id}"
-                assert (
-                    spec_id in self._port_types_by_id
-                ), f"There is no port type with id '{spec_id}' registered."
-                return port.type.spec_class.deserialize(data["data"])
+                return deserialize_custom_spec()
+        elif (
+            class_name
+            == "org.knime.python3.nodes.ports.PythonTransientConnectionPortObjectSpec"
+        ):
+            assert port.type not in [kn.PortType.TABLE, kn.PortType.BINARY]
+            assert issubclass(port.type.object_class, kn.ConnectionPortObject)
+            return deserialize_custom_spec()
 
         raise TypeError("Unsupported PortObjectSpec found in Python, got " + class_name)
 
-    def spec_from_python(self, spec, port: kn.Port) -> _PythonPortObjectSpec:
+    def spec_from_python(
+        self, spec, port: kn.Port, node_id: str, port_idx: int
+    ) -> _PythonPortObjectSpec:
         if port.type == kn.PortType.TABLE:
             if isinstance(spec, ks._ColumnarView):
                 spec = spec.get()
@@ -258,21 +298,22 @@ class _PortTypeRegistry:
                 spec, port.type.spec_class
             ), f"Expected output spec of type {port.type.spec_class} but got spec of type {type(spec)}"
             data = {"id": port.type.id, "data": spec.serialize()}
-            class_name = "org.knime.python3.nodes.ports.PythonBinaryBlobPortObjectSpec"
 
-        return _PythonPortObjectSpec(class_name, json.dumps(data))
+            if issubclass(port.type.object_class, kn.ConnectionPortObject):
+                data["node_id"] = node_id
+                data["port_idx"] = port_idx
+                class_name = "org.knime.python3.nodes.ports.PythonTransientConnectionPortObjectSpec"
+            else:
+                class_name = (
+                    "org.knime.python3.nodes.ports.PythonBinaryBlobPortObjectSpec"
+                )
+
+        return _PythonPortObjectSpec(class_name, data)
 
     def port_object_to_python(self, port_object: _PythonPortObject, port: kn.Port):
         class_name = port_object.getJavaClassName()
 
-        if class_name == "org.knime.core.node.BufferedDataTable":
-            assert port.type == kn.PortType.TABLE
-            java_source = port_object.getDataSource()
-            return kat.ArrowSourceTable(kg.data_source_mapper(java_source))
-        elif (
-            class_name
-            == "org.knime.python3.nodes.ports.PythonBinaryBlobFileStorePortObject"
-        ):
+        def deserialize_custom_port_object() -> Union[Any, kn.PortObject]:
             file = port_object.getFilePath()
             spec = self.spec_to_python(port_object.getSpec(), port)
             if port.type == kn.PortType.BINARY:
@@ -282,10 +323,37 @@ class _PortTypeRegistry:
                 with open(file, "rb") as f:
                     return port.type.object_class.deserialize(spec, f.read())
 
+        if class_name == "org.knime.core.node.BufferedDataTable":
+            assert port.type == kn.PortType.TABLE
+            java_source = port_object.getDataSource()
+            return kat.ArrowSourceTable(kg.data_source_mapper(java_source))
+        elif (
+            class_name
+            == "org.knime.python3.nodes.ports.PythonBinaryBlobFileStorePortObject"
+        ):
+            return deserialize_custom_port_object()
+        elif (
+            class_name
+            == "org.knime.python3.nodes.ports.PythonTransientConnectionPortObject"
+        ):
+            python_port_object = deserialize_custom_port_object()
+            data = json.loads(port_object.getSpec().toJsonString())
+            key = f'{data["node_id"]}:{data["port_idx"]}'
+            if key not in _PortTypeRegistry._connection_port_data:
+                raise KeyError(
+                    f'No connection data found for node {data["node_id"]}, port {data["port_idx"]}. '
+                    + "Please re-execute the upstream node providing the connection."
+                )
+
+            python_port_object.set_connection_dict(
+                _PortTypeRegistry._connection_port_data[key]
+            )
+            return python_port_object
+
         raise TypeError("Unsupported PortObjectSpec found in Python, got " + class_name)
 
     def port_object_from_python(
-        self, obj, file_creator, port: kn.Port
+        self, obj, file_creator, port: kn.Port, node_id: str, port_idx: int
     ) -> _PythonPortObject:
         if port.type == kn.PortType.TABLE:
             if isinstance(obj, kt._TabularView):
@@ -317,7 +385,7 @@ class _PortTypeRegistry:
             )
             spec = _PythonPortObjectSpec(
                 "org.knime.python3.nodes.ports.PythonBinaryBlobPortObjectSpec",
-                json.dumps({"id": port.id}),
+                {"id": port.id},
             )
             return _PythonBinaryPortObject(class_name, file_creator(), obj, spec)
         else:
@@ -328,11 +396,25 @@ class _PortTypeRegistry:
                 obj, port.type.object_class
             ), f"Expected output object of type {port.type.object_class}, got object of type {type(obj)}"
             serialized = obj.serialize()
-            spec = self.spec_from_python(obj.spec, port)
-            class_name = (
-                "org.knime.python3.nodes.ports.PythonBinaryBlobFileStorePortObject"
-            )
-            return _PythonBinaryPortObject(class_name, file_creator(), serialized, spec)
+            spec = self.spec_from_python(obj.spec, port, node_id, port_idx)
+
+            if issubclass(port.type.object_class, kn.ConnectionPortObject):
+                class_name = (
+                    "org.knime.python3.nodes.ports.PythonTransientConnectionPortObject"
+                )
+
+                key = f"{node_id}:{port_idx}"
+                _PortTypeRegistry._connection_port_data[key] = obj.connection_to_dict()
+                return _PythonConnectionPortObject(
+                    class_name, file_creator(), serialized, spec
+                )
+            else:
+                class_name = (
+                    "org.knime.python3.nodes.ports.PythonBinaryBlobFileStorePortObject"
+                )
+                return _PythonBinaryPortObject(
+                    class_name, file_creator(), serialized, spec
+                )
 
 
 class _PythonNodeProxy:
@@ -442,25 +524,26 @@ class _PythonNodeProxy:
     ) -> List[_PythonPortObject]:
         _push_log_callback(lambda msg, sev: self._java_callback.log(msg, sev))
 
-        inputs = [
-            self._port_type_registry.port_object_to_python(
-                po, self._node.input_ports[idx]
-            )
-            for idx, po in enumerate(input_objects)
-        ]
-
-        # prepare output table creation
-        def create_python_sink():
-            java_sink = self._java_callback.create_sink()
-            return kg.data_sink_mapper(java_sink)
-
-        kt._backend = kat._ArrowBackend(create_python_sink)
-
-        # execute
-        exec_context = kn.ExecutionContext(
-            java_exec_context, self._get_flow_variables()
-        )
         try:
+            inputs = [
+                self._port_type_registry.port_object_to_python(
+                    po, self._node.input_ports[idx]
+                )
+                for idx, po in enumerate(input_objects)
+            ]
+
+            # prepare output table creation
+            def create_python_sink():
+                java_sink = self._java_callback.create_sink()
+                return kg.data_sink_mapper(java_sink)
+
+            kt._backend = kat._ArrowBackend(create_python_sink)
+
+            # execute
+            exec_context = kn.ExecutionContext(
+                java_exec_context, self._get_flow_variables()
+            )
+
             # TODO: maybe we want to run execute on the main thread? use knime._backend._mainloop
             outputs = self._node.execute(exec_context, *inputs)
 
@@ -494,6 +577,8 @@ class _PythonNodeProxy:
                     obj,
                     lambda: self._java_callback.create_filestore_file(),
                     self._node.output_ports[idx],
+                    java_exec_context.get_node_id(),
+                    idx,
                 )
                 for idx, obj in enumerate(outputs)
             ]
@@ -501,11 +586,13 @@ class _PythonNodeProxy:
         except Exception as ex:
             self._set_failure(ex, 0)
             return None
+        finally:
+            if kt._backend is not None:
+                kt._backend.close()
+                kt._backend = None
 
-        kt._backend.close()
-        kt._backend = None
+            _pop_log_callback()
 
-        _pop_log_callback()
         return ListConverter().convert(java_outputs, kg.client_server._gateway_client)
 
     def configure(
@@ -534,7 +621,9 @@ class _PythonNodeProxy:
             outputs = [outputs]
 
         output_specs = [
-            self._port_type_registry.spec_from_python(spec, self._node.output_ports[i])
+            self._port_type_registry.spec_from_python(
+                spec, self._node.output_ports[i], java_config_context.get_node_id(), i
+            )
             if spec is not None
             else None
             for i, spec in enumerate(outputs)

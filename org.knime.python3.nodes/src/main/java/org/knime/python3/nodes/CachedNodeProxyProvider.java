@@ -94,10 +94,10 @@ final class CachedNodeProxyProvider extends PurePythonExtensionNodeProxyProvider
     private static final ScheduledExecutorService EXEC_SERVICE = Executors.newSingleThreadScheduledExecutor(
         new ThreadFactoryBuilder().setNameFormat("python-node-gateway-cache-cleaner-%d").build());
 
-    private static final LoadingCache<ResolvedPythonExtension, CachedObject<PythonGateway<KnimeNodeBackend>>> GATEWAY_CACHE =
-        createCache();
+    private static final LoadingCache<ResolvedPythonExtension, //
+            CachedObject<PythonGateway<KnimeNodeBackend>>> GATEWAY_CACHE = createCache();
 
-    private static boolean gatewayCacheClosed = false;
+    private static boolean gatewayCacheClosed;
 
     CachedNodeProxyProvider(final ResolvedPythonExtension extension, final String nodeId) {
         super(extension, nodeId);
@@ -155,7 +155,8 @@ final class CachedNodeProxyProvider extends PurePythonExtensionNodeProxyProvider
         PythonGatewayCreationGate.INSTANCE.registerListener(new PythonGatewayCreationGateListener() {
             @Override
             public void onPythonGatewayCreationGateOpen() {
-                // Nothing to do here. Kernel creation is blocked anyways in createPythonNodeFromCache() while gate is closed.
+                // Nothing to do here. Kernel creation is blocked anyways in createPythonNodeFromCache()
+                // while gate is closed.
             }
 
             @Override
@@ -169,8 +170,8 @@ final class CachedNodeProxyProvider extends PurePythonExtensionNodeProxyProvider
     }
 
     @SuppressWarnings("resource") // the value is closed if it isn't used anymore, otherwise the user has to close it
-    private static void onRemoveFromCache(
-        final RemovalNotification<ResolvedPythonExtension, CachedObject<PythonGateway<KnimeNodeBackend>>> notification) {
+    private static void onRemoveFromCache(final RemovalNotification<ResolvedPythonExtension, //
+            CachedObject<PythonGateway<KnimeNodeBackend>>> notification) {
         try {
             notification.getValue().removeFromCache();
         } catch (IOException ex) {
@@ -203,12 +204,8 @@ final class CachedNodeProxyProvider extends PurePythonExtensionNodeProxyProvider
     @SuppressWarnings("resource") // the gateway is managed by the returned object
     private CloseablePythonNodeProxy createPythonNodeFromCache() {
         try {
+            awaitGatewayCreationAllowed();
             CachedObject<PythonGateway<KnimeNodeBackend>> cachedGateway;
-            try {
-                PythonGatewayCreationGate.INSTANCE.awaitPythonGatewayCreationAllowedInterruptibly();
-            } catch (InterruptedException ex) {
-                throw new IllegalStateException("Interrupted while waiting until Python processes may be started", ex);
-            }
             synchronized (GATEWAY_CACHE) {
                 if (gatewayCacheClosed) {
                     throw new IllegalStateException("Gateway cache has been closed.");
@@ -225,6 +222,14 @@ final class CachedNodeProxyProvider extends PurePythonExtensionNodeProxyProvider
             } else {
                 throw new IllegalStateException("Failed to initialize Python gateway.", cause);
             }
+        }
+    }
+
+    private static void awaitGatewayCreationAllowed() {
+        try {
+            PythonGatewayCreationGate.INSTANCE.awaitPythonGatewayCreationAllowedInterruptibly();
+        } catch (InterruptedException ex) { // NOSONAR
+            throw new IllegalStateException("Interrupted while waiting until Python processes may be started", ex);
         }
     }
 

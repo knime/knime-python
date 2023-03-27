@@ -48,18 +48,82 @@
  */
 package org.knime.python3.nodes;
 
+import java.io.IOException;
+
 import org.knime.core.node.NodeLogger;
 import org.knime.python3.PythonGateway;
 import org.knime.python3.PythonGatewayUtils;
 import org.knime.python3.nodes.PurePythonNodeSetFactory.ResolvedPythonExtension;
-import org.knime.python3.utils.AutoCloser;
 
 /**
  * Creates CloseablePythonNodeProxy objects for NodeProxyProvider implementations.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+ * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
 final class CloseablePythonNodeProxyFactory {
+
+    /**
+     * Wrap a gateway with closeable attachments such that either everything can be closed together, or the gateway can
+     * be left open while the attachments are closed nevertheless.
+     *
+     * The gateway is always closed last.
+     */
+    final class CloseableGatewayWithAttachments implements AutoCloseable {
+
+        private final PythonGateway<KnimeNodeBackend> m_gateway;
+
+        private final AutoCloseable[] m_attachments;
+
+        private boolean m_leaveGatewayOpen = false; // NOSONAR being explicit here
+
+        CloseableGatewayWithAttachments(final PythonGateway<KnimeNodeBackend> gateway,
+            final AutoCloseable... attachments) {
+            m_gateway = gateway;
+            m_attachments = attachments;
+        }
+
+        public PythonGateway<KnimeNodeBackend> getGateway() {
+            return m_gateway;
+        }
+
+        public void setLeaveGatewayOpen(final boolean leaveGatewayOpen) {
+            m_leaveGatewayOpen = leaveGatewayOpen;
+        }
+
+        @Override
+        public void close() throws Exception {
+            Exception exception = null;
+            for (var closeable : m_attachments) {
+                try {
+                    closeable.close();
+                } catch (Exception ex) {
+                    exception = ex;
+                }
+            }
+
+            if (!m_leaveGatewayOpen) {
+                try {
+                    m_gateway.close();
+                } catch (IOException ex) {
+                    exception = ex;
+                }
+            }
+
+            if (exception != null) {
+                throw exception;
+            }
+        }
+
+        /**
+         * Instead of closing the gateway, we remember a reference to it
+         */
+        public void retainGateway() {
+            int pid = m_gateway.getEntryPoint().getPid();
+            m_extension.retainGatewayWithPid(m_gateway, pid);
+        }
+
+    }
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(CloseablePythonNodeProxyFactory.class);
 
@@ -88,7 +152,7 @@ final class CloseablePythonNodeProxyFactory {
         var nodeProxy = m_extension.createProxy(backend, m_nodeId);
         // close the gateway after the retriever because the retriever might otherwise
         // get stuck reading the output of the already dead process
-        var closer = new AutoCloser(outputRetrieverHandle, gateway);
+        var closer = new CloseableGatewayWithAttachments(gateway, outputRetrieverHandle);
         return new CloseablePythonNodeProxy(nodeProxy, closer, m_extension.getNode(m_nodeId));
     }
 

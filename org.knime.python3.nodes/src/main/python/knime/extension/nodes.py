@@ -59,6 +59,11 @@ from knime.api.schema import PortObjectSpec
 
 
 class PortObject(ABC):
+    """
+    Base class for custom port objects. The must have a corresponding
+    PortObjectSpec and support serialization from and to bytes.
+    """
+
     def __init__(self, spec: PortObjectSpec) -> None:
         self._spec = spec
 
@@ -79,6 +84,41 @@ class PortObject(ABC):
         pass
 
 
+class ConnectionPortObject(PortObject):
+    """
+    ConnectionPortObjects are a special type of PortObjects which
+    support dealing with non-serializable objects such as DB connections
+    or web sessions.
+
+    ConnectionPortObjects are passed downstream by ensuring that the same Python
+    process is used to execute subsequent nodes. The non-serializable members
+    must be provided as a dict, and the ConnectionPortObject must allow
+    populating those members from a dict.
+    """
+
+    def __init__(self, spec: PortObjectSpec) -> None:
+        super().__init__(spec)
+
+    @abstractmethod
+    def connection_to_dict(self) -> Dict:
+        """
+        Return a dictionary of all non-serializable members that are needed to initialize
+        a ConnectionPortObject for the next node
+        """
+        pass
+
+    @abstractmethod
+    def set_connection_dict(self, data: Dict) -> None:
+        """
+        After the ConnectionPortObject has been created via its `deserialize` method,
+        the non-serializable members should be initialized from the data in the given dict.
+
+        Warning: Do not modify the data in this dict or other downstream nodes of the same
+                 parent can potentially receive this modified dict. This can lead to race conditions.
+        """
+        pass
+
+
 @dataclass
 class PortType:
     id: str
@@ -89,6 +129,7 @@ class PortType:
 
 # special PortTypes that are treated separately
 PortType.BINARY = "PortType.BINARY"
+PortType.CONNECTION = "PortType.CONNECTION"
 PortType.TABLE = "PortType.TABLE"
 
 
@@ -127,14 +168,16 @@ class Port:
     description: str
     id: Optional[
         str
-    ] = None  # can be used by BINARY ports to only allow linking ports with matching IDs
+    ] = None  # can be used by BINARY and CONNECTION ports to only allow linking ports with matching IDs
 
     def __post_init__(self):
         """
         Perform validation after __init__
         """
-        if self.type == PortType.BINARY and self.id is None:
-            raise TypeError(f"{type(self)}s of type BINARY must have a unique 'id' set")
+        if self.type in [PortType.BINARY, PortType.CONNECTION] and self.id is None:
+            raise TypeError(
+                f"{type(self)}s of type BINARY or CONNECTION must have a unique 'id' set"
+            )
 
 
 @dataclass
@@ -588,6 +631,10 @@ class _Node:
         def port_to_str(port):
             if port.type == PortType.BINARY:
                 return f"{port.type}={port.id}"
+            elif hasattr(port.type, "object_class") and issubclass(
+                port.type.object_class, ConnectionPortObject
+            ):
+                return "Connection" + str(port.type)
             else:
                 return str(port.type)
 

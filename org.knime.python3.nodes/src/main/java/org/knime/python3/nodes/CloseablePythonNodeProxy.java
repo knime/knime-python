@@ -87,10 +87,12 @@ import org.knime.core.util.ThreadUtils;
 import org.knime.core.util.asynclose.AsynchronousCloseable;
 import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.arrow.PythonArrowTableConverter;
+import org.knime.python3.nodes.CloseablePythonNodeProxyFactory.CloseableGatewayWithAttachments;
 import org.knime.python3.nodes.extension.ExtensionNode;
 import org.knime.python3.nodes.ports.PythonPortObjectTypeRegistry;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
+import org.knime.python3.nodes.ports.PythonTransientConnectionPortObject;
 import org.knime.python3.nodes.proxy.CloseableNodeFactoryProxy;
 import org.knime.python3.nodes.proxy.NodeDialogProxy;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy;
@@ -120,7 +122,7 @@ final class CloseablePythonNodeProxy
 
     private final PythonNodeProxy m_proxy;
 
-    private final AutoCloseable m_gateway;
+    private final CloseableGatewayWithAttachments m_closeableGateway;
 
     private final AsynchronousCloseable<RuntimeException> m_closer =
         AsynchronousCloseable.createAsynchronousCloser(this::closeInternal);
@@ -147,15 +149,27 @@ final class CloseablePythonNodeProxy
         String[].class //
     );
 
-    CloseablePythonNodeProxy(final PythonNodeProxy proxy, final AutoCloseable gateway, final ExtensionNode nodeSpec) {
+    /**
+     * The {@link ConnectionType} defines whether the node uses a connection port object or not.
+     * This influences whether the gateway should be reused (to maintain the connection) or is
+     * free to be discarded.
+     */
+    private enum ConnectionType {
+        SOURCE, // If a node produces a connection, it must hold on to its gateway until the node gets reset
+        CONNECTED, // If a node uses a connection, it should not close the gateway but also not hold on to it
+        INDEPENDENT // The node does not use any type of connection. Gateway can be closed after execution.
+    }
+
+    CloseablePythonNodeProxy(final PythonNodeProxy proxy, final CloseableGatewayWithAttachments gateway,
+        final ExtensionNode nodeSpec) {
         m_proxy = proxy;
-        m_gateway = gateway;
+        m_closeableGateway = gateway;
         m_nodeSpec = nodeSpec;
     }
 
     private void closeInternal() {
         try {
-            m_gateway.close();
+            m_closeableGateway.close();
             if (m_tableManager != null) {
                 m_tableManager.close();
             }
@@ -259,10 +273,11 @@ final class CloseablePythonNodeProxy
         }
     }
 
+
     @Override
     public ExecutionResult execute(final PortObject[] inData, final ExecutionContext exec,
         final FlowVariablesProxy flowVariablesProxy, final CredentialsProviderProxy credentialsProviderProxy,
-        final WorkflowPathProxy workflowPathProxy, final WarningConsumer warningConsumer) throws Exception {
+        final WorkflowPropertiesProxy workflowPropertiesProxy, final WarningConsumer warningConsumer) throws Exception {
         initTableManager();
         Map<String, FileStore> fileStoresByKey = new HashMap<>();
         final var executionResult = new PythonExecutionResult();
@@ -357,7 +372,7 @@ final class CloseablePythonNodeProxy
 
             @Override
             public String get_workflow_dir() {
-                return workflowPathProxy.getLocalWorkflowPath();
+                return workflowPropertiesProxy.getLocalWorkflowPath();
             }
 
             @Override
@@ -377,6 +392,11 @@ final class CloseablePythonNodeProxy
                 return credentialsProviderProxy.getCredentialNames();
             }
 
+            @Override
+            public String get_node_id() {
+                return workflowPropertiesProxy.getNodeNameWithID();
+            }
+
         };
 
         final var pythonOutputs = m_proxy.execute(pythonInputs, pythonExecContext);
@@ -387,7 +407,38 @@ final class CloseablePythonNodeProxy
             .map(ppo -> PythonPortObjectTypeRegistry.convertFromPythonPortObject(ppo, fileStoresByKey, m_tableManager,
                 outputExec))//
             .toArray(PortObject[]::new);
+
+        var connectionType = determineConnectionType(inData, executionResult.m_portObjects);
+        m_closeableGateway.setLeaveGatewayOpen(connectionType != ConnectionType.INDEPENDENT);
+        if (connectionType == ConnectionType.SOURCE) {
+            m_closeableGateway.retainGateway();
+        }
+
         return executionResult;
+    }
+
+    /**
+     * 1. if no connectionPort in InData but there is one in OutData:
+     *     -> This is a source. Don't close but remember gateway for reset & dispose.
+     * 2. if connectionPort in inData -> the node is connected. Do not close gateway, will be done by source.
+     * 3. no connection port at all -> independent -> close as usual
+     *
+     * @param inData
+     * @param outData
+     * @return
+     */
+    private static ConnectionType determineConnectionType(final PortObject[] inData, final PortObject[] outData) {
+        for (var inputPort : inData) {
+            if (inputPort instanceof PythonTransientConnectionPortObject) {
+                return ConnectionType.CONNECTED;
+            }
+        }
+        for (var outputPort : outData) {
+            if (outputPort instanceof PythonTransientConnectionPortObject) {
+                return ConnectionType.SOURCE;
+            }
+        }
+        return ConnectionType.INDEPENDENT;
     }
 
     public static class PythonExecutionResult implements ExecutionResult {
@@ -408,8 +459,8 @@ final class CloseablePythonNodeProxy
 
     @Override
     public PortObjectSpec[] configure(final PortObjectSpec[] inSpecs, final FlowVariablesProxy flowVariablesProxy,
-        final CredentialsProviderProxy credentialsProviderProxy, final WarningConsumer warningConsumer)
-        throws InvalidSettingsException {
+        final CredentialsProviderProxy credentialsProviderProxy, final WorkflowPropertiesProxy workflowPropertiesProxy,
+        final WarningConsumer warningConsumer) throws InvalidSettingsException {
 
         final var failure = new FailureState();
 
@@ -459,7 +510,6 @@ final class CloseablePythonNodeProxy
             public void set_warning(final String message) {
                 warningConsumer.setWarning(message);
             }
-            // TODO: add flow variables
 
             @Override
             public String[] get_credential_names() {
@@ -467,6 +517,10 @@ final class CloseablePythonNodeProxy
 
             }
 
+            @Override
+            public String get_node_id() {
+                return workflowPropertiesProxy.getNodeNameWithID();
+            }
         };
 
         final var serializedInSpecs = Stream.of(inSpecs)//
