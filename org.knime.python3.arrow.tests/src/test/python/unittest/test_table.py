@@ -477,6 +477,32 @@ class ArrowTableTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             kt.Table.from_pyarrow(create_table(), row_ids="unsupported")
 
+    def test_constant_batch_size_check(self):
+        def _create_pyarrow_table(batch_sizes):
+            return pa.Table.from_batches(
+                [
+                    pa.record_batch(data=[pa.array(list(range(size)))], names=["data"])
+                    for size in batch_sizes
+                ]
+            )
+
+        # Constant batch sizes + last batch smaller - should work
+        knime_table = kt.Table.from_pyarrow(_create_pyarrow_table([10, 10, 7]))
+        self.assertEqual(knime_table.num_rows, 27)
+        self.assertEqual(len(knime_table._table.to_batches()), 3)
+
+        # Non-constant batch sizes - should fail
+        self.assertRaises(
+            ValueError,
+            lambda: kt.Table.from_pyarrow(_create_pyarrow_table([10, 10, 12, 10])),
+        )
+
+        # Last batch bigger than the other batches - should fail
+        self.assertRaises(
+            ValueError,
+            lambda: kt.Table.from_pyarrow(_create_pyarrow_table([10, 10, 12])),
+        )
+
 
 class BatchOutputTableTest(unittest.TestCase):
     @classmethod
