@@ -48,6 +48,7 @@
  */
 package org.knime.python3.js.scripting.nodes.script;
 
+import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
@@ -78,6 +79,8 @@ import org.knime.scripting.editor.lsp.LanguageServerProxy;
  */
 final class PythonScriptingService extends ScriptingService {
 
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonScriptingService.class);
+
     private static final HashSet<VariableType<?>> KNOWN_FLOW_VARIABLE_SET =
         new HashSet<>(Arrays.asList(PythonScriptNodeModel.KNOWN_FLOW_VARIABLE_TYPES));
 
@@ -87,6 +90,9 @@ final class PythonScriptingService extends ScriptingService {
     private final PythonScriptPortsConfiguration m_ports;
 
     private Map<String, ExecutableOption> m_executableOptions = Collections.emptyMap();
+
+    // indicates that killSession has been called
+    private boolean m_expectCancel;
 
     // TODO(AP-19357) close the session when the dialog is closed
     // TODO(AP-19332) should the Python session be started immediately? (or whenever the frontend requests it?)
@@ -106,7 +112,7 @@ final class PythonScriptingService extends ScriptingService {
             return PythonLanguageServer.instance().connect();
         } catch (final Exception e) {
             // TODO(AP-19338) Handle better if the language server can't be used for any reason
-            NodeLogger.getLogger(PythonScriptingService.class).error(e);
+            LOGGER.error(e);
             return null;
         }
     }
@@ -173,7 +179,7 @@ final class PythonScriptingService extends ScriptingService {
                     .sendLastConsoleOutputs(PythonScriptingService.this::addConsoleOutputEvent);
             } catch (final Exception e) {
                 final var message = "Sending the console output of the last execution to the dialog failed.";
-                NodeLogger.getLogger(PythonScriptingService.class).warn(message, e);
+                LOGGER.warn(message, e);
                 DataServiceContext.get().addWarningMessage(message);
             }
         }
@@ -207,18 +213,47 @@ final class PythonScriptingService extends ScriptingService {
         }
 
         /**
+         * Called from frontend during execution. Stops execution and eventually throws py4j error in runInteractive.
+         *
+         */
+        public void killSession() {
+            if (m_interactiveSession != null) {
+                try {
+                    m_expectCancel = true;
+                    m_interactiveSession.close();
+                } catch (final IOException e) {
+                    LOGGER.error(e);
+                    // TOOD(AP-19332)
+                } finally {
+                    m_interactiveSession = null;
+                    m_expectCancel = false;
+                }
+            }
+
+        }
+
+        /**
          * Run the given script in the running interactive session.
          *
          * @param script the Python script
+         * @param checkOutputs
          * @return the workspace serialized as JSON
          */
-        public String runInteractive(final String script) {
+        public String runInteractive(final String script, final boolean checkOutputs) {
             if (m_interactiveSession != null) {
-                // TODO(AP-19333) Error handling
-                return m_interactiveSession.execute(script);
+                try {
+                    return m_interactiveSession.execute(script, checkOutputs);
+                } catch (final Exception e) { // NOSONAR
+                    if (m_expectCancel) {
+                        return "{\"type\":\"execution_canceled\"}"; // NOSONAR
+                    } else {
+                        LOGGER.error(e);
+                        return "{\"type\":\"unexpected_canceled\"}"; // NOSONAR
+                    }
+                }
             } else {
                 // TODO(AP-19332)
-                throw new IllegalStateException("Please start the session before using it");
+                return "{\"type\":\"session_na\"}";
             }
         }
 

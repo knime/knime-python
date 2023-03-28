@@ -68,18 +68,25 @@ class PythonScriptingServiceMock implements PythonScriptingService {
         ]);
     }
 
-    runInteractive(script: string): Promise<string> {
+    cancelScriptExecution(): Promise<void> {
+        return new Promise((r) => setTimeout(r, 300));
+    }
+
+    runInteractive(script: string, checkOutputs: boolean): Promise<string> {
         // Trigger both Console and Workspace change.
         const res = {
-            names: ['x'],
-            types: ['int'],
-            values: ['3'],
+            type: 'workspace',
+            value: {
+                names: ['x'],
+                types: ['int'],
+                values: ['3'],
+            },
         };
         this.eventHandlers.console({
             text: 'x=3',
             stderr: false,
         } as ConsoleText);
-        return new Promise((r) => setTimeout(r, 100)).then(() => JSON.stringify(
+        return new Promise((r) => setTimeout(r, 500)).then(() => JSON.stringify(
             res,
         ));
     }

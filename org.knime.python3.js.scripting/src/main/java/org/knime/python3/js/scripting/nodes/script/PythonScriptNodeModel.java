@@ -56,6 +56,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import org.apache.commons.lang3.StringUtils;
 import org.knime.core.data.filestore.internal.IFileStoreHandler;
 import org.knime.core.data.filestore.internal.IWriteFileStoreHandler;
 import org.knime.core.node.CanceledExecutionException;
@@ -80,6 +81,11 @@ import org.knime.python3.js.scripting.nodes.script.ConsoleOutputUtils.ConsoleOut
 import org.knime.python3.utils.FlowVariableUtils;
 import org.knime.scripting.editor.ScriptingService.ConsoleText;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+
+import py4j.Py4JException;
+
 /**
  * The node model of a Python scripting node.
  *
@@ -103,6 +109,16 @@ final class PythonScriptNodeModel extends NodeModel {
         new AsynchronousCloseableTracker<>(t -> LOGGER.debug("Kernel shutdown failed.", t));
 
     private ConsoleOutputStorage m_consoleOutputStorage;
+
+    private static final Gson GSON = new Gson();
+
+    /**
+     * @param ans Returned JSON String from python backend
+     * @return Parsed JSON
+     */
+    static JsonObject parseJson(final String ans) {
+        return GSON.fromJson(ans, JsonObject.class);
+    }
 
     static final VariableType<?>[] KNOWN_FLOW_VARIABLE_TYPES = FlowVariableUtils.convertToFlowVariableTypes(Set.of( //
         Boolean.class, //
@@ -129,7 +145,8 @@ final class PythonScriptNodeModel extends NodeModel {
     }
 
     @Override
-    protected PortObject[] execute(final PortObject[] inObjects, final ExecutionContext exec) throws Exception {
+    protected PortObject[] execute(final PortObject[] inObjects, final ExecutionContext exec)
+        throws IOException, InterruptedException, CanceledExecutionException {
         final PythonCommand pythonCommand =
             ExecutableSelectionUtils.getPythonCommand(m_settings.getExecutableSelection());
         m_consoleOutputStorage = null;
@@ -142,7 +159,16 @@ final class PythonScriptNodeModel extends NodeModel {
                 m_ports.getNumOutTables(), m_ports.getNumOutImages(), m_ports.getNumOutObjects(),
                 exec.createSubProgress(0.3));
             exec.setProgress(0.3, "Running script");
-            session.execute(m_settings.getScript());
+
+            var ans = parseJson(session.execute(m_settings.getScript(), true));
+            var error = ans.get("type").getAsString();
+
+            if (error.equals("knime_error") || error.equals("execution_error")) {
+                if (ans.has("traceback")) {
+                    LOGGER.warn(ans.get("traceback").getAsString());
+                }
+                throw new IOException(ans.get("value").getAsString());
+            }
 
             exec.setProgress(0.7, "Processing output");
             final var outputs = session.getOutputs(exec.createSubExecutionContext(0.3));
@@ -151,6 +177,10 @@ final class PythonScriptNodeModel extends NodeModel {
 
             m_sessionShutdownTracker.closeAsynchronously(session);
             return outputs;
+        } catch (final Py4JException ex) {
+            LOGGER.warn(ex);
+            throw new Py4JException(StringUtils.removeStart(ex.getMessage(),
+                "An exception was raised by the Python Proxy. Return Message: knime.scripting._backend."));
         } finally {
             m_consoleOutputStorage = consoleConsumer.finish();
         }

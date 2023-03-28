@@ -46,8 +46,10 @@ export interface PythonScriptingService extends ScriptingService<PythonNodeSetti
 
     startInteractive(executableSelection: string);
 
-    runInteractive(script: string);
+    runInteractive(script: string, checkOutputs: boolean);
 
+    cancelScriptExecution();
+    
     getInputObjects();
 
     getInitialExecutableSelection();
@@ -80,8 +82,12 @@ class PythonScriptingServiceImpl extends ScriptingServiceImpl<PythonNodeSettings
         return this.sendToService('startInteractive', [executableSelection]);
     }
 
-    runInteractive(script: string): Promise<string> {
-        return this.sendToService('runInteractive', [script]);
+    cancelScriptExecution(): Promise<void> {
+        return this.sendToService('killSession');
+    }
+
+    runInteractive(script: string, checkOutputs: boolean): Promise<string> {
+        return this.sendToService('runInteractive', [script, checkOutputs]);
     }
 
     getInputObjects(): Promise<InputPortInfo[]> {

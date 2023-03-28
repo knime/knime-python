@@ -150,7 +150,7 @@ class ScriptingBackendV1(ScriptingBackend):
             type_str = (
                 type(table)
                 if table is not None
-                else "None. Did you assign the output table?"
+                else f"None. \nknio.output_tables[{table_index}] has not been populated."
             )
             raise KnimeUserError(
                 f"Output table '{table_index}' must be of type knime.api.Table or knime.api.BatchOutputTable, but got {type_str}"
@@ -177,8 +177,13 @@ class ScriptingBackendV1(ScriptingBackend):
                     table._write_empty_batch()
                 _ioc._output_tables[idx] = table._sink._java_data_sink
             else:
+                type_str = (
+                    type(table)
+                    if table is not None
+                    else f"None. \nknio.output_tables[{idx}] has not been populated."
+                )
                 raise KnimeUserError(
-                    f"Output table '{idx}' must be of type knime.api.Table or knime.api.BatchOutputTable, but got {type(table)}"
+                    f"Output table '{idx}' must be of type knime.api.Table or knime.api.BatchOutputTable, but got {type_str}"
                 )
 
     def tear_down_arrow(self, flush: bool):

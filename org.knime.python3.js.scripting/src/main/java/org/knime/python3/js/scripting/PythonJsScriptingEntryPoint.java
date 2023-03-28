@@ -82,9 +82,10 @@ public interface PythonJsScriptingEntryPoint extends PythonEntryPoint {
      * Execute the given script in Python.
      *
      * @param script the Python script
+     * @param checkOutputs false when subset of lines are executed true when whole script is run
      * @return the Python workspace after the Script was executed
      */
-    String execute(String script);
+    String execute(String script, boolean checkOutputs);
 
     /**
      * @return the flow variables defined currently
@@ -160,6 +161,7 @@ public interface PythonJsScriptingEntryPoint extends PythonEntryPoint {
          * @param text the text
          */
         void add_stderr(String text); //NOSONAR
+
     }
 
 }

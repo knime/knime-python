@@ -161,11 +161,16 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
             public void add_stderr(final String text) {
                 m_consoleTextConsumer.accept(new ConsoleText(text, true));
             }
+
         };
     }
 
-    String execute(final String script) {
-        return m_entryPoint.execute(script);
+    /*
+     * @return JSON according to executed lines. (All or any)
+     *   can be also an error since we tunnel errors from python side as JSON
+     */
+    String execute(final String script, final boolean checkOutputs) {
+        return m_entryPoint.execute(script, checkOutputs);
     }
 
     Collection<FlowVariable> getFlowVariables() {
@@ -230,6 +235,7 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
     }
 
     private void closeInternal() throws IOException {
+        // close gateway / kill process
         try {
             m_outputRedirector.close();
         } catch (final Exception e) {
@@ -239,4 +245,5 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
         m_tableConverter.close();
         m_gateway.close();
     }
+
 }

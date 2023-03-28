@@ -61,22 +61,15 @@ import knime.scripting._io_containers as _ioc
 
 import knime._arrow._backend as ka
 import knime._backend._gateway as kg
-import knime._backend._gateway as kg
 from knime._backend._mainloop import MainLoop
+from knime.scripting._backend import KnimeUserError
 
+import traceback
 import json
 import sys
 import logging
 import warnings
 import pickle
-
-LOGGER = logging.getLogger(__name__)
-
-# from _kernel import PythonKernel #from _kernel
-# TODO(AP-19333) organize imports
-# TODO(AP-19333) logging (see knime_node_backend)
-# TODO(AP-19333) immediately check the output when it is assined
-#      Also do row checking etc. -> If the interactive run works the node execution should also work
 
 
 @kg.data_source("org.knime.python3.pickledobject")
@@ -167,19 +160,73 @@ class ScriptingEntryPoint(kg.EntryPoint):
         _ioc._pad_up_to_length(_ioc._output_images, num_out_images)
         _ioc._pad_up_to_length(_ioc._output_objects, num_out_objects)
 
-    def execute(self, script):
-        #
+    def execute(self, script, check_outputs):
         with redirect_stdout(
             _ForwardingTextIO(sys.stdout, self._java_callback.add_stdout)
         ), redirect_stderr(
             _ForwardingTextIO(sys.stderr, self._java_callback.add_stderr)
         ):
-            # Run the script
-            exec(script, self._workspace)
+            try:
+                assert self._java_callback
+                # TODO: If we want tear down arrow in check_outputs
+                #       then we also need to redo setupio
+                exec(script, self._workspace)
 
-            # We only need to flush the tables to disk if we also expect the outputs to be
-            # filled, meaning we run the whole script.
-        return self._getVariablesInWorkspace()
+                if check_outputs:
+                    self.check_outputs()
+
+                sys.tracebacklimit = -1
+                return self._getVariablesInWorkspace()
+
+            except KnimeUserError as e:
+                self._java_callback.add_stderr(f"KnimeUserError: {str(e)}")
+                return json.dumps(
+                    {"type": "knime_error", "value": f"KnimeUserError: {str(e)}"}
+                )
+
+            except Exception as e:
+                self._java_callback.add_stderr(
+                    f"{traceback.format_exc(limit=4, chain=False)}"  # print last 4 stacktraces to console
+                )
+                return json.dumps(
+                    {
+                        "type": "execution_error",
+                        "value": f"{type(e).__name__}: {str(e)}",
+                        "traceback": f"{traceback.format_exc(limit=None, chain=False)}",
+                    }
+                )
+
+    def check_outputs(self):
+        self._backends.get_active_backend_or_raise()
+        for i, o in enumerate(_ioc._output_tables):
+            self._backends.active_backend.check_output_table(i, o)
+
+        for i, o in enumerate(_ioc._output_images):
+            if o is None:
+                if i == 0 and self._backends._expect_view:
+                    # If we have an output view we will just try to render the view to the
+                    # first output image
+                    _ioc._output_images[0] = self._backends._render_view()
+                else:
+                    raise KnimeUserError(
+                        f"Expected an image in output_images[{i}], got None. \nknio.output_images[{i}] has not been populated."
+                    )
+            else:
+                try:
+                    import io
+
+                    io.BytesIO(o)
+                except TypeError:
+                    raise KnimeUserError(
+                        f"The image in output_images[{i}] (of type {type(o)}) can't be written into a file."
+                    )
+
+        for i, o in enumerate(_ioc._output_objects):
+            if o is None:
+                raise KnimeUserError(
+                    f"Expected an object in output_objects[{i}], got None. \nknio.output_objects[{i}] has not been populated."
+                )
+        self._backends._check_flow_variables()
 
     def getOutputTable(
         self,
@@ -188,9 +235,19 @@ class ScriptingEntryPoint(kg.EntryPoint):
         return self._backends.get_output_table_sink(table_index)
 
     def closeOutputs(self, check_outputs):
-        # TODO(AP-19333) check the outputs? See knime_kernel _check_outputs
-        # Close the backend to finish up the outputs
-        self._backends.tear_down_arrow(flush=check_outputs)
+        # called form nodemodal
+        # if called from execute it should also setup arrow afterwards
+        try:
+            self._backends.tear_down_arrow(flush=check_outputs)
+        except KnimeUserError as e:
+            traceback.clear_frames(e.__traceback__)
+            sys.tracebacklimit = -1
+            raise e
+
+        except Exception as e:
+            raise e
+        finally:
+            sys.tracebacklimit = 1000
 
     def writeOutputImage(self, idx: int, path: str):
         with open(path, "wb") as file:
@@ -215,8 +272,6 @@ class ScriptingEntryPoint(kg.EntryPoint):
     def _getVariablesInWorkspace(self) -> List[Dict[str, str]]:
         # TODO(AP-19345) provide integers + doubles not as string
         # TODO(AP-19345) provide small images of the plots in the workspace
-
-        # TODO(AP-19333) make configurable
         max_string_length = 100
 
         def object_to_string(obj):
@@ -228,7 +283,6 @@ class ScriptingEntryPoint(kg.EntryPoint):
                     else string
                 )
             except Exception:
-                # TODO(AP-19333) handle better?
                 return ""
 
         workspace = {
@@ -262,7 +316,7 @@ class ScriptingEntryPoint(kg.EntryPoint):
             workspace["types"].append(var_type)
             workspace["values"].append(var_value)
 
-        return json.dumps(workspace)
+        return json.dumps({"type": "workspace", "data": workspace})
 
     class Java:
         implements = ["org.knime.python3.js.scripting.PythonJsScriptingEntryPoint"]
@@ -355,11 +409,14 @@ if __name__ == "__main__":
         logging.getLogger().setLevel(logging.INFO)
 
         scripting_ep = ScriptingEntryPoint()
+        # register at beginning and wait for setupIO to emit all
+
         kg.connect_to_knime(scripting_ep)
         py4j.clientserver.server_connection_stopped.connect(
             lambda *args, **kwargs: scripting_ep._main_loop.exit()
         )
         scripting_ep._main_loop.enter()
+        # idles until dialog closed or after execute finish
     finally:
         if kg.client_server is not None:
             kg.client_server.shutdown()

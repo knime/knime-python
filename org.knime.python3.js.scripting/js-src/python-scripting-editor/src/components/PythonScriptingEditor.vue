@@ -1,6 +1,6 @@
 <script lang="ts">
 
-import { defineComponent, KeepAlive } from 'vue';
+import { defineComponent, KeepAlive, computed } from 'vue';
 import { createScriptingService } from '@/utils/python-scripting-service';
 
 import type {
@@ -15,6 +15,7 @@ import InputPortsView from '../components/InputPortsView.vue';
 import CondaEnvironment from '../components/CondaEnvironment.vue';
 
 import PlayIcon from 'webapps-common/ui/assets/img/icons/play.svg';
+import CancelExecution from 'webapps-common/ui/assets/img/icons/cancel-execution.svg';
 
 import type {
     Workspace,
@@ -67,7 +68,7 @@ type AppData = {
     pythonExecutableId: string;
     pythonExecutableOptions: ExecutableOption[];
     pythonExecutableInfo: ExecutableInfo | null;
-    status: 'idle' | 'running';
+    status: 'idle' | 'running' | 'error' | 'success';
     workspace: Workspace;
 
     // Script inputs
@@ -80,6 +81,7 @@ export default defineComponent({
     components: {
         ScriptingEditor,
         PlayIcon,
+        CancelExecution,
         Button,
         WorkspaceTable,
         InputPortsView,
@@ -91,6 +93,7 @@ export default defineComponent({
     provide() {
         return {
             scriptingService: this.scriptingService,
+            executionStatus: computed(() => this.status),
         };
     },
     async setup() {
@@ -106,6 +109,7 @@ export default defineComponent({
             pythonExecutableOptions: [],
             pythonExecutableInfo: null,
             status: 'idle',
+            // Script outputs
             workspace: {
                 names: ['no workspace'],
                 types: [''],
@@ -169,12 +173,13 @@ export default defineComponent({
         },
         variableClicked(varName: string) {
             // TODO(AP-20273): if no workspace is set this yields error
-            this.runScript(`print('>>> print(${varName})\\n' + str(${varName}))`);
+            this.runScript(`print('>>> print(${varName})\\n' + str(${varName}))`, false);
         },
         runSelectedLines() {
+            // TOOD(AP-20325): BaseButton is not being disabled at the moment!
             const selection = this.getEditor().getSelection();
             if (selection) {
-                this.runScript(getSelectedLines(this.getEditorModel(), selection));
+                this.runScript(getSelectedLines(this.getEditorModel(), selection), false);
             } else {
                 // NB: This cannot happen because getSelection never returns null
                 // and the button is disabled if there is no selection
@@ -182,14 +187,45 @@ export default defineComponent({
             }
         },
         runFullScript() {
-            this.runScript(this.getEditorModel().getValue());
+            this.runScript(this.getEditorModel().getValue(), true);
         },
-        runScript(script: string) {
+        cancelScriptExecution() {
+            // Make it possible to cancel python process from scripting editor
+            this.scriptingService.cancelScriptExecution().then(() => {
+                this.status = 'idle';
+            });
+        },
+        runScript(script: string, checkOutputs: boolean) {
             this.status = 'running';
-            this.scriptingService.runInteractive(script)
+            this.scriptingService.runInteractive(script, checkOutputs)
                 .then((res: string) => {
-                    this.workspace = JSON.parse(res);
-                    this.status = 'idle';
+                    let j = JSON.parse(res);
+                    if (j.type === 'workspace') {
+                        // successfull execution
+                        this.workspace = j.data;
+                        this.status = 'success';
+                    }
+                    if (j.type === 'knime_error') {
+                        // knime related error during execution or check outputs
+                        this.status = 'error';
+                    }
+                    if (j.type === 'execution_error') {
+                        // not knime related execution error
+                        this.status = 'error';
+                    }
+                    if (j.type === 'execution_canceled') {
+                        // cancel exec
+                        this.workspace = {
+                            names: ['no workspace'],
+                            types: [''],
+                            values: [''],
+                        };
+                        this.status = 'idle';
+                    }
+                    if (j.type === 'session_na') {
+                        // session was killed but not restarted
+                        this.status = 'error';
+                    }
                 });
         },
         onMonacoCreated({
@@ -233,6 +269,7 @@ export default defineComponent({
 
 </script>
 
+
 <template>
   <ScriptingEditor
     language="python"
@@ -249,6 +286,16 @@ export default defineComponent({
   >
     <template #buttons>
       <Button
+        v-show="status === 'running'"
+        :title="'Cancel Script'"
+        with-border
+        compact
+        @click="cancelScriptExecution"
+      >
+        <CancelExecution />
+        Cancel
+      </Button>
+      <Button
         :title="'Run script'"
         with-border
         compact
@@ -258,14 +305,13 @@ export default defineComponent({
         Run script
       </Button>
       <Button
+        :disabled="!hasEditorSelection"
         with-border
         compact
-        :disabled="!hasEditorSelection"
         @click="runSelectedLines"
       >
         Run selected lines
       </Button>
-      {{ status }}
     </template>
 
     <template #inputs>
