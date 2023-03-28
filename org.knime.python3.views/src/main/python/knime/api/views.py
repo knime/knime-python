@@ -46,9 +46,7 @@ import os
 import io
 import base64
 import logging
-from typing import Any, Union, Optional, Callable
-
-import knime._backend._gateway as kg
+from typing import Union, Optional, Callable
 
 LOGGER = logging.getLogger("knime.api.views")
 
@@ -326,30 +324,6 @@ def view_jpeg(jpeg: bytes) -> NodeView:
     """
     b64 = base64.b64encode(jpeg).decode("ascii")
     return NodeView(_JPEG_HTML_BODY.format(jpeg_b64=b64), svg_or_png=jpeg)
-
-
-# NodeViewSink
-
-
-@kg.data_sink("org.knime.python3.views")
-class NodeViewSink:
-    """A sink consuming views and making them available to the Java process.
-
-    The implementation simply writes the HTML to a file path given by the Java
-    process.
-    """
-
-    def __init__(self, java_data_sink) -> None:
-        self._java_data_sink = java_data_sink
-
-    def display(self, obj: Union[NodeView, Any]):
-        if isinstance(obj, NodeView):
-            node_view = obj
-        else:
-            node_view = view(obj)
-
-        with open(self._java_data_sink.getOutputFilePath(), "w", encoding="utf-8") as f:
-            f.write(node_view.html)
 
 
 ##########################################################################

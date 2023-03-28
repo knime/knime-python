@@ -58,6 +58,7 @@ import knime.extension.parameter as kp
 import knime.api.schema as ks
 
 import knime._arrow._table as kat
+import knime._views  # to register the NodeViewSink
 import knime.api.table as kt
 import importlib
 import json

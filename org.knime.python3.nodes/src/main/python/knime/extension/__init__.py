@@ -126,6 +126,5 @@ view_svg = _kv.view_svg
 view_png = _kv.view_png
 view_jpeg = _kv.view_jpeg
 view_plotly = _kv.view_plotly
-NodeViewSink = _kv.NodeViewSink
 view_matplotlib = _kv.view_matplotlib
 view_seaborn = _kv.view_seaborn

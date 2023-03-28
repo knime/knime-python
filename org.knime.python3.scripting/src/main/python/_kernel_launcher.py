@@ -66,6 +66,7 @@ import knime.scripting._deprecated._arrow_table as kat
 import knime.api.table as ktn
 import knime._arrow._table as katn
 import knime.api.views as kv
+import knime._views  # to register the NodeViewSink
 
 import knime.scripting._io_containers as _ioc
 
