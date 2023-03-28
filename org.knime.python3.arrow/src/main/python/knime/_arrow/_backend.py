@@ -374,6 +374,25 @@ class ArrowDataSink:
         Writes the full given batch or table to the sink, tables are NOT split into batches.
         Empty batches or tables write only their schema and do not report to Java.
         """
+        if isinstance(data, pa.Table):
+            if len(data) == 0:
+                # An empty table results in no batches being written which can cause problems in successor nodes
+                # so we explicitly create an empty record batch in this case
+                self._write_batch(
+                    pa.record_batch(
+                        [_create_empty_array(c.type) for c in data.schema],
+                        schema=data.schema,
+                    )
+                )
+            else:
+                # We write each batch of the table
+                for batch in data.to_batches():
+                    self._write_batch(batch)
+        else:
+            # This is already a batch. Just write it
+            self._write_batch(data)
+
+    def _write_batch(self, data: pa.RecordBatch):
         # TODO(AP-20353) remove this when we support variable sized batches
         if self._recieved_last_batch:
             raise ValueError(
@@ -384,12 +403,6 @@ class ArrowDataSink:
 
         chunk_size = len(data)
         offset = self._get_offset(data.schema, chunk_size)
-        if chunk_size == 0 and isinstance(data, pa.Table):
-            # An empty table results in no batches being written which can cause problems in successor nodes
-            # so we explicitly create an empty record batch in this case
-            data = pa.record_batch(
-                [_create_empty_array(c.type) for c in data.schema], schema=data.schema
-            )
         self._writer.write(data)
         self._file.flush()
         # only report a batch if it contains rows
