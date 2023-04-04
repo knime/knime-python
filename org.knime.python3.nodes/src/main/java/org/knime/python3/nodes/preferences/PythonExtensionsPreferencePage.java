@@ -106,6 +106,8 @@ public class PythonExtensionsPreferencePage extends PreferencePage implements IW
 
     private Text m_logTextBox;
 
+    private Thread m_downloadThread;
+
     /** Constructor */
     public PythonExtensionsPreferencePage() {
         super("Python-based Extensions");
@@ -144,6 +146,15 @@ public class PythonExtensionsPreferencePage extends PreferencePage implements IW
         return contents;
     }
 
+    @Override
+    public boolean performCancel() {
+        if (m_downloadThread != null) {
+            // Interrupt the download. If the download is already finished or interrupted this will have no effect
+            m_downloadThread.interrupt();
+        }
+        return true;
+    }
+
     private void onDownloadClicked() {
         chooseDirectory().ifPresent(this::downloadPackages);
     }
@@ -170,7 +181,7 @@ public class PythonExtensionsPreferencePage extends PreferencePage implements IW
         performActionOnWidgetInUiThread(getControl(), () -> setValid(false), false);
 
         // Run the collection and download in a separate thread
-        new Thread(() -> {
+        m_downloadThread = new Thread(() -> {
             CondaPackageCollectionUtil.collectAndDownloadPackages(target,
                 l -> performActionOnWidgetInUiThread(m_logTextBox, () -> m_logTextBox.append(l + "\n"), true));
 
@@ -178,7 +189,8 @@ public class PythonExtensionsPreferencePage extends PreferencePage implements IW
             performActionOnWidgetInUiThread(m_downloadButton, () -> m_downloadButton.setEnabled(true), false);
             performActionOnWidgetInUiThread(m_progressBar, () -> m_progressBar.setVisible(false), false);
             performActionOnWidgetInUiThread(getControl(), () -> setValid(true), false);
-        }).start();
+        });
+        m_downloadThread.start();
     }
 
     private static void createLinkToDocs(final Composite parent) {
