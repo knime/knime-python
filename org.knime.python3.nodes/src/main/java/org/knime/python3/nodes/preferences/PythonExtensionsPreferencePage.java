@@ -166,6 +166,8 @@ public class PythonExtensionsPreferencePage extends PreferencePage implements IW
             m_logTextBox.setText("");
             m_logTextBox.setVisible(true);
         }, false);
+        // NB: setValid(false) disables the apply button
+        performActionOnWidgetInUiThread(getControl(), () -> setValid(false), false);
 
         // Run the collection and download in a separate thread
         new Thread(() -> {
@@ -175,6 +177,7 @@ public class PythonExtensionsPreferencePage extends PreferencePage implements IW
             // Done: Reset the UI but leave the log text visible
             performActionOnWidgetInUiThread(m_downloadButton, () -> m_downloadButton.setEnabled(true), false);
             performActionOnWidgetInUiThread(m_progressBar, () -> m_progressBar.setVisible(false), false);
+            performActionOnWidgetInUiThread(getControl(), () -> setValid(true), false);
         }).start();
     }
 
