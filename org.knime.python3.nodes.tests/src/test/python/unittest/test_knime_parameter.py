@@ -811,7 +811,7 @@ class ParameterTest(unittest.TestCase):
         self.assertEqual(obj.int_param, 5)
         self.assertEqual(obj.double_param, 0.5)
         self.assertEqual(obj.group.first, -1)
-        kp.inject_parameters(obj, params, "0.1.0", fail_on_missing=False)
+        kp.inject_parameters(obj, params, "0.1.0")
         self.assertEqual(obj.int_param, 5)
         self.assertEqual(obj.double_param, 1.5)
         self.assertEqual(obj.group.first, 1)
@@ -895,7 +895,7 @@ class ParameterTest(unittest.TestCase):
         obj = Parameterized()
         params = {"model": {"int_param": 5}}
 
-        kp.inject_parameters(obj, params, fail_on_missing=False)
+        kp.inject_parameters(obj, params)
 
         set_column_parameters(obj)
 

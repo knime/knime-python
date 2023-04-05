@@ -353,7 +353,7 @@ class _PythonNodeProxy:
         specs: List[_PythonPortObjectSpec],
         extension_version: str,
     ):
-        self.setParameters(parameters, extension_version, False)
+        self.setParameters(parameters, extension_version)
 
         inputs = self._specs_to_python(specs)
 
@@ -403,14 +403,12 @@ class _PythonNodeProxy:
         self,
         parameters: str,
         parameters_version: str,
-        fail_on_missing: bool = False,
     ) -> None:
         parameters_dict = json.loads(parameters)
         kp.inject_parameters(
             self._node,
             parameters_dict,
             parameters_version,
-            fail_on_missing,
         )
 
     def validateParameters(self, parameters: str, version: str) -> None:
