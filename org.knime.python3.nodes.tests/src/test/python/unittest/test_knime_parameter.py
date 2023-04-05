@@ -1671,7 +1671,7 @@ class ParameterTest(unittest.TestCase):
                 [
                     # 0.2.0 -> 0.1.0: forward compatibility (not supported)
                     "ERROR:Python backend: The node was previously configured with a newer version of the extension, 0.2.0, while the current version is 0.1.0.",
-                    "ERROR:Python backend: Please note that the node might not work as expected without being reconfigured.",
+                    "ERROR:Python backend: The node might not work as expected without being reconfigured.",
                     # 0.1.0 -> 0.2.0: backward compatibility
                     "WARNING:Python backend: The node was previously configured with an older version of the extension, 0.1.0, while the current version is 0.2.0.",
                     "WARNING:Python backend: The following parameters have since been added, and are configured with their default values:",
