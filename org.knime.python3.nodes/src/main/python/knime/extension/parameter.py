@@ -102,31 +102,24 @@ def inject_parameters(
     obj,
     parameters: dict,
     parameters_version: str = None,
-    fail_on_missing: bool = True,
 ) -> None:
     """
     This method injects the provided values into the parameter descriptors of the parameterised object,
     which can be a node or a parameter group.
     """
     parameters_version = Version.parse_version(parameters_version)
-    _inject_parameters(obj, parameters["model"], parameters_version, fail_on_missing)
+    _inject_parameters(obj, parameters["model"], parameters_version)
 
 
 def _inject_parameters(
     obj,
     parameters: dict,
     parameters_version: Version,
-    fail_on_missing: bool,
 ) -> None:
     for name, param_obj in _get_parameters(obj).items():
         if param_obj._since_version <= parameters_version:
             if name in parameters:
-                param_obj._inject(
-                    obj, parameters[name], parameters_version, fail_on_missing
-                )
-            elif fail_on_missing:
-                # TODO: fail_on_missing is never set to True - remove it altogether?
-                raise ValueError(f"No value available for parameter '{name}'")
+                param_obj._inject(obj, parameters[name], parameters_version)
         else:
             # the parameter was introduced in a newer version but we might want to initialize
             # the default based on the version the workflow was created with
@@ -257,7 +250,7 @@ def _determine_compatability(
         )
         if missing_params:
             LOGGER.warning(
-                f" The following parameters have since been added, and are configured with their default values:"
+                " The following parameters have since been added, and are configured with their default values:"
             )
             for param in missing_params:
                 LOGGER.warning(f' - "{param}"')
@@ -266,9 +259,7 @@ def _determine_compatability(
         LOGGER.error(
             f" The node was previously configured with a newer version of the extension, {saved_version}, while the current version is {current_version}."
         )
-        LOGGER.error(
-            f" The node might not work as expected without being reconfigured."
-        )
+        LOGGER.error(" The node might not work as expected without being reconfigured.")
 
 
 def _detect_missing_parameters(
@@ -419,10 +410,8 @@ class _BaseParameter(ABC):
     def _set_default_for_version(self, obj, version: Version):
         self.__set__(obj, self._get_default(version))
 
-    def _inject(
-        self, obj, value, parameters_version: Version = None, fail_on_missing=True
-    ):
-        # the parameters_version and fail_on_missing parameters are needed to match the signature of the
+    def _inject(self, obj, value, parameters_version: Version = None):
+        # the parameters_version parameter are needed to match the signature of the
         # _inject method for parameter groups
         self.__set__(obj, value)
 
@@ -943,9 +932,9 @@ class ColumnParameter(_BaseColumnParameter):
             "showNoneColumn": self._include_none_column,
         }
 
-    def _inject(self, obj, value, version, fail_on_missing):
+    def _inject(self, obj, value, version):
         value = None if value == "" else value
-        return super()._inject(obj, value, version, fail_on_missing)
+        return super()._inject(obj, value, version)
 
 
 def _filter_columns(
@@ -961,13 +950,13 @@ def _filter_columns(
     except IndexError as ex:
         raise IndexError(
             f"The port index {port_index} is not contained in the Spec list with length {len(specs)}. "
-            f"Maybe a port_index for a parameter does not match the index for an input table? "
+            "Maybe a port_index for a parameter does not match the index for an input table? "
         ) from None
 
     if not isinstance(spec, ks.Schema):
         raise TypeError(
             f"The port at index {port_index} is not a Table. "
-            f"The ColumnParameter or MultiColumnParameter can only be used for Table ports."
+            "The ColumnParameter or MultiColumnParameter can only be used for Table ports."
         )
 
     filtered = [_const(column.name) for column in spec if column_filter(column)]
@@ -1015,11 +1004,11 @@ class MultiColumnParameter(_BaseColumnParameter):
         else:
             return value
 
-    def _inject(self, obj, value, version, fail_on_missing):
+    def _inject(self, obj, value, version):
         # if there are no columns then the empty string is used as placeholder and we need to filter it out here
         if value is not None:
             value = [c for c in value if c != ""]
-        return super()._inject(obj, value, version, fail_on_missing)
+        return super()._inject(obj, value, version)
 
 
 class BoolParameter(_BaseParameter):
@@ -1261,13 +1250,9 @@ def parameter_group(
                 for param_obj in _get_parameters(param_holder).values():
                     param_obj._set_default_for_version(param_holder, version)
 
-            def _inject(
-                self, obj, values, parameters_version: Version, fail_on_missing: bool
-            ):
+            def _inject(self, obj, values, parameters_version: Version):
                 param_holder = self._get_param_holder(obj)
-                _inject_parameters(
-                    param_holder, values, parameters_version, fail_on_missing
-                )
+                _inject_parameters(param_holder, values, parameters_version)
 
             def __str__(self):
                 return f"\tGroup name: {self._name}\n\tGroup label: {self._label}"
