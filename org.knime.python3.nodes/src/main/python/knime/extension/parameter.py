@@ -148,6 +148,8 @@ def _validate_parameters(obj, parameters: dict, version: Version) -> None:
         if param_obj._since_version <= version:
             if name in parameters:
                 param_obj._validate(parameters[name], version)
+            else:
+                raise ValueError(f'Parameter missing for key "{name}".')
 
 
 def validate_specs(obj, specs) -> None:
@@ -265,7 +267,7 @@ def _determine_compatability(
             f" The node was previously configured with a newer version of the extension, {saved_version}, while the current version is {current_version}."
         )
         LOGGER.error(
-            f" Please note that the node might not work as expected without being reconfigured."
+            f" The node might not work as expected without being reconfigured."
         )
 
 
@@ -280,9 +282,7 @@ def _detect_missing_parameters(
     for name, param_obj in _get_parameters(obj).items():
         if param_obj._since_version <= current_version:
             if _is_group(param_obj):
-                group_params = (
-                    saved_parameters[name] if name in saved_parameters else {}
-                )
+                group_params = saved_parameters.get(name, {})
                 result.extend(
                     _detect_missing_parameters(param_obj, group_params, current_version)
                 )
