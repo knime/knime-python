@@ -460,7 +460,9 @@ class LogicalTypeExtensionType(pa.ExtensionType):
             _ext_type = self
 
             def as_py(self):
-                return self._ext_type.decode(self.value.as_py())
+                return self._ext_type.decode(
+                    self.value.as_py() if self.value is not None else None
+                )
 
         return LogicalTypeExtensionScalar
 
