@@ -60,16 +60,21 @@ import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
+import org.knime.core.node.port.image.ImagePortObject;
+import org.knime.core.node.port.image.ImagePortObjectSpec;
 import org.knime.python3.arrow.PythonArrowTableConverter;
 import org.knime.python3.nodes.ports.PythonPortObjects.PortObjectProvider;
 import org.knime.python3.nodes.ports.PythonPortObjects.PortObjectSpecProvider;
 import org.knime.python3.nodes.ports.PythonPortObjects.PurePythonBinaryPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PurePythonConnectionPortObject;
+import org.knime.python3.nodes.ports.PythonPortObjects.PurePythonImagePortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PurePythonTablePortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonBinaryPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonBinaryPortObjectSpec;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonConnectionPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonConnectionPortObjectSpec;
+import org.knime.python3.nodes.ports.PythonPortObjects.PythonImagePortObject;
+import org.knime.python3.nodes.ports.PythonPortObjects.PythonImagePortObjectSpec;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonTablePortObject;
@@ -121,17 +126,20 @@ public final class PythonPortObjectTypeRegistry {
         m_pythonPortObjectMap.put(PythonBinaryBlobFileStorePortObject.class.getName(), PythonBinaryPortObject.class);
         m_pythonPortObjectMap.put(PythonTransientConnectionPortObject.class.getName(),
             PythonConnectionPortObject.class);
+        m_pythonPortObjectMap.put(ImagePortObject.class.getName(), PythonImagePortObject.class);
 
         m_pythonPortObjectInterfaceMap.put(BufferedDataTable.class.getName(), PurePythonTablePortObject.class);
         m_pythonPortObjectInterfaceMap.put(PythonBinaryBlobFileStorePortObject.class.getName(),
             PurePythonBinaryPortObject.class);
         m_pythonPortObjectInterfaceMap.put(PythonTransientConnectionPortObject.class.getName(),
             PurePythonConnectionPortObject.class);
+        m_pythonPortObjectInterfaceMap.put(ImagePortObject.class.getName(), PurePythonImagePortObject.class);
 
         m_pythonPortObjectSpecMap.put(DataTableSpec.class.getName(), PythonTablePortObjectSpec.class);
         m_pythonPortObjectSpecMap.put(PythonBinaryBlobPortObjectSpec.class.getName(), PythonBinaryPortObjectSpec.class);
         m_pythonPortObjectSpecMap.put(PythonTransientConnectionPortObjectSpec.class.getName(),
             PythonConnectionPortObjectSpec.class);
+        m_pythonPortObjectSpecMap.put(ImagePortObjectSpec.class.getName(), PythonImagePortObjectSpec.class);
     }
 
     /**
@@ -258,7 +266,9 @@ public final class PythonPortObjectTypeRegistry {
             factory = clazz.getMethod("fromPurePython", interfazze, Map.class, PythonArrowTableConverter.class,
                 ExecutionContext.class);
             final var object = factory.invoke(null, pythonPortObject, fileStoresByKey, tableConverter, execContext);
-            return ((PortObjectProvider)object).getPortObject();
+            var po = ((PortObjectProvider)object).getPortObject();
+            return po;
+//            return ((PortObjectProvider)object).getPortObject();
         } catch (InvocationTargetException ex) {
             // If #fromPurePython threw an exception we just use the message of this exception
             throw new IllegalStateException(ex.getCause().getMessage(), ex);

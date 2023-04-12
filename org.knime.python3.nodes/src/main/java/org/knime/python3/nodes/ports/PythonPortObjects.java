@@ -50,16 +50,23 @@ package org.knime.python3.nodes.ports;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Map;
 
+import org.knime.base.data.xml.SvgCell;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.filestore.FileStore;
+import org.knime.core.data.image.ImageContent;
+import org.knime.core.data.image.png.PNGImageContent;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.PortType;
+import org.knime.core.node.port.image.ImagePortObject;
+import org.knime.core.node.port.image.ImagePortObjectSpec;
 import org.knime.core.table.virtual.serialization.AnnotatedColumnarSchemaSerializer;
+import org.knime.python2.generic.ImageContainer;
 import org.knime.python3.PythonDataSource;
 import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.arrow.PythonArrowDataSource;
@@ -112,7 +119,6 @@ public final class PythonPortObjects {
      * @author Carsten Haubold
      */
     public interface PurePythonBinaryPortObject extends PythonPortObject {
-
         /**
          * @return the spec
          */
@@ -136,6 +142,23 @@ public final class PythonPortObjects {
          * @return The process ID of the Python process in which the port object was created
          */
         int getPid();
+    }
+
+    /**
+     * When image data in bytes is passed to KNIME from Python, it will be packaged as {@link PurePythonImagePortObject}
+     *
+     * @author Ivan Prigarin
+     */
+    public interface PurePythonImagePortObject extends PythonPortObject {
+        /**
+         * @return The string containing the encoded image bytes
+         */
+        String getImageBytes();
+
+        /**
+         * @return The format of the provided image
+         */
+        String getImageFormat();
     }
 
     /**
@@ -353,6 +376,66 @@ public final class PythonPortObjects {
     }
 
     /**
+     * {@link PythonPortObject} implementation for {@link PythonImagePortObject}s used and populated on the Java side.
+     */
+    public static final class PythonImagePortObject implements PythonPortObject, PortObjectProvider {
+        private final byte[] m_bytes;
+
+        private final String m_format;
+
+        /**
+         * @param imgBytes
+         * @param imgFormat
+         */
+        public PythonImagePortObject(final String imgBytes, final String imgFormat) {
+            m_bytes = Base64.getDecoder().decode(imgBytes.getBytes());
+            m_format = imgFormat;
+        }
+
+        /**
+         * Create a PythonImagePortObject from a PurePythonImagePortObject.
+         *
+         * @param portObject The {@link PurePythonImagePortObject} coming from Python
+         * @param execContext The current {@link ExecutionContext}
+         * @return new {@link PythonImagePortObject} containing the image data
+         * @throws IOException if the object could not be converted
+         */
+        public static PythonImagePortObject fromPurePython(final PurePythonImagePortObject portObject,
+            final Map<String, FileStore> fileStoresByKey, final PythonArrowTableConverter tableConverter,
+            final ExecutionContext execContext) throws IOException {
+            final var bytes = portObject.getImageBytes();
+            final var format = portObject.getImageFormat();
+            return new PythonImagePortObject(bytes, format);
+        }
+
+        @Override
+        public PortObject getPortObject() {
+            ImageContainer img;
+            ImageContent content;
+            ImagePortObjectSpec spec;
+
+
+            if (m_format.equals("png")) {
+                content = new PNGImageContent(m_bytes);
+                spec = new ImagePortObjectSpec(PNGImageContent.TYPE);
+            } else {
+                // TODO: figure out how to import Apache Batik to be able to call {@link SvgImageContent}
+//                ByteArrayInputStream inputStream = new ByteArrayInputStream(m_bytes);
+//                content = new SvgImageContent(inputStream);
+//                spec = new ImagePortObjectSpec(SvgCell.TYPE);
+                throw new UnsupportedOperationException("SVG support not implemented.");
+            }
+
+            return new ImagePortObject(content, spec);
+        }
+
+        @Override
+        public String getJavaClassName() {
+            return PythonImagePortObject.class.getName();
+        }
+    }
+
+    /**
      * A {@link PortObjectSpec} variant that is used to communicate between Python and KNIME
      */
     public interface PythonPortObjectSpec {
@@ -536,6 +619,73 @@ public final class PythonPortObjects {
     }
 
     /**
+     *
+     * @author ivan
+     */
+    public static final class PythonImagePortObjectSpec implements PythonPortObjectSpec, PortObjectSpecProvider {
+        private final ImagePortObjectSpec m_spec;
+
+        /**
+         * @param spec
+         */
+        public PythonImagePortObjectSpec(final ImagePortObjectSpec spec) {
+            m_spec = spec;
+        }
+
+        @Override
+        public PortObjectSpec getPortObjectSpec() {
+            return m_spec;
+        }
+
+        @Override
+        public String getJavaClassName() {
+            return ImagePortObjectSpec.class.getName();
+        }
+
+        @Override
+        public String toJsonString() {
+            final var om = new ObjectMapper();
+            final var rootNode = om.createObjectNode();
+            if (m_spec.getDataType().equals(PNGImageContent.TYPE)) {
+                rootNode.put("format", "png");
+            } else if (m_spec.getDataType().equals(SvgCell.TYPE)) { // TODO: should replace with SvgImageContent.TYPE once importable
+                rootNode.put("format", "svg");
+            } else {
+                throw new IllegalStateException("Unsupported image type.");
+            }
+            try {
+                return om.writeValueAsString(rootNode);
+            } catch (JsonProcessingException ex) {
+                throw new IllegalStateException("Could not generate Json data for PythonImagePortObjectSpec", ex);
+            }
+        }
+
+        /**
+         * @param jsonData
+         * @return new spec
+         */
+        public static PythonImagePortObjectSpec fromJsonString(final String jsonData) {
+            final var om = new ObjectMapper();
+            try {
+                final var rootNode = om.readTree(jsonData);
+                final var format = rootNode.get("format").asText();
+                if (format.equals("png")) {
+                    return new PythonImagePortObjectSpec(new ImagePortObjectSpec(PNGImageContent.TYPE));
+                } else if (format.equals("svg")) {
+                    throw new IllegalStateException("SVG not supported yet.");
+                } else {
+                    throw new IllegalStateException("Unsupported image format: " + format + ".");
+                }
+            } catch (JsonMappingException ex) {
+                throw new IllegalStateException("Could not parse PythonImagePortObjectSpec from given Json data", ex);
+            } catch (JsonProcessingException ex) { // NOSONAR: Eclipse requires explicit handling of this exception
+                throw new IllegalStateException("Could not parse PythonImagePortObjectSpec from given Json data", ex);
+            }
+        }
+
+    }
+
+    /**
      * Convert port type encoded as string to a {@link PortType}. Possible values are TABLE and BINARY, where BINARY is
      * followed by a Port Type ID as in "BINARY=org.knime.python3.nodes.test.porttype", or PortType(...) for general
      * custom port objects and ConnectionPortObject for connections.
@@ -551,6 +701,8 @@ public final class PythonPortObjects {
             return PythonBinaryBlobFileStorePortObject.TYPE;
         } else if (identifier.startsWith("ConnectionPortType")) {
             return PythonTransientConnectionPortObject.TYPE;
+        } else if (identifier.startsWith("PortType.IMAGE")) {
+            return ImagePortObject.TYPE;
         } else {
             // for other custom ports
             return PythonBinaryBlobFileStorePortObject.TYPE;

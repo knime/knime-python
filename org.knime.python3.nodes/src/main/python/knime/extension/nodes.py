@@ -137,6 +137,17 @@ class PortType:
 PortType.BINARY = "PortType.BINARY"
 PortType.CONNECTION = "PortType.CONNECTION"
 PortType.TABLE = "PortType.TABLE"
+PortType.IMAGE = "PortType.IMAGE"
+
+
+# allowed image formats when using PortType.IMAGE
+class ImageFormat(Enum):
+    PNG = "png"
+    SVG = "svg"
+
+    @classmethod
+    def available_options(cls):
+        return ", ".join(option for option in cls)
 
 
 class _KnimeNodeBackend(ABC):
@@ -882,3 +893,14 @@ def output_view(name: str, description: str, static_resources: Optional[str] = N
         return node_factory
 
     return add_view
+
+
+def output_image(name: str, description: str, format: ImageFormat):
+    """
+    Use this decorator to define an output port of type "Image" of a node.
+    """
+    return lambda node_factory: _add_port(
+        node_factory,
+        "output_ports",
+        Port(PortType.IMAGE, name, description, format=format),
+    )

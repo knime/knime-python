@@ -73,6 +73,8 @@ import py4j.clientserver
 
 # TODO: register extension types
 
+LOGGER = logging.getLogger("Node Backend Launcher")
+
 
 class _PythonPortObject:
     def __init__(self, java_class_name):
@@ -186,6 +188,29 @@ class _PythonConnectionPortObject:
     class Java:
         implements = [
             "org.knime.python3.nodes.ports.PythonPortObjects$PurePythonConnectionPortObject"
+        ]
+
+
+class _PythonImagePortObject:
+    def __init__(self, java_class_name, data, format: kn.ImageFormat):
+        import base64
+
+        self._java_class_name = java_class_name
+        self._img_bytes = base64.b64encode(data).decode("utf-8")
+        self._format = format.value
+
+    def getJavaClassName(self) -> str:
+        return self._java_class_name
+
+    def getImageBytes(self) -> str:
+        return self._img_bytes
+
+    def getImageFormat(self) -> str:
+        return self._format
+
+    class Java:
+        implements = [
+            "org.knime.python3.nodes.ports.PythonPortObjects$PurePythonImagePortObject"
         ]
 
 
@@ -309,6 +334,15 @@ class _PortTypeRegistry:
 
             data = spec.serialize()
             class_name = "org.knime.python3.nodes.ports.PythonBinaryBlobPortObjectSpec"
+        elif port.type == kn.PortType.IMAGE:
+            assert isinstance(spec, ks.ImagePortObjectSpec)
+            assert any(
+                spec.format == option.value for option in kn.ImageFormat
+            ), f"Expected image formats are: {kn.ImageFormat.available_options()}."
+
+            data = spec.serialize()
+            # class_name = "org.knime.python3.nodes.ports.PythonImagePortObjectSpec"
+            class_name = "org.knime.core.node.port.image.ImagePortObjectSpec"
         else:  # custom spec
             assert (
                 port.type.id in self._port_types_by_id
@@ -409,6 +443,9 @@ class _PortTypeRegistry:
                 {"id": port.id},
             )
             return _PythonBinaryPortObject(class_name, file_creator(), obj, spec)
+        elif port.type == kn.PortType.IMAGE:
+            class_name = "org.knime.core.node.port.image.ImagePortObject"
+            return _PythonImagePortObject(class_name, obj, port.format)
         else:
             assert (
                 port.type.id in self._port_types_by_id

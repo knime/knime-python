@@ -80,6 +80,7 @@ DialogCreationContext = _kn.DialogCreationContext
 PythonNode = _kn.PythonNode
 category = _kn.category
 NodeType = _kn.NodeType
+ImageFormat = _kn.ImageFormat
 node = _kn.node
 port_type = _kn.port_type
 InvalidParametersError = _kn.InvalidParametersError
@@ -90,6 +91,7 @@ output_binary = _kn.output_binary
 output_table = _kn.output_table
 output_port = _kn.output_port
 output_view = _kn.output_view
+output_image = _kn.output_image
 
 ## knime.api.table
 Table = _kt.Table
@@ -116,6 +118,7 @@ null = _ks.null
 supported_value_types = _ks.LogicalType.supported_value_types
 PortObjectSpec = _ks.PortObjectSpec
 BinaryPortObjectSpec = _ks.BinaryPortObjectSpec
+ImagePortObjectSpec = _ks.ImagePortObjectSpec
 Column = _ks.Column
 Schema = _ks.Schema
 
