@@ -48,6 +48,7 @@ Contains the implementation of the Parameter Dialogue API for building native Py
 @author Ivan Prigarin, KNIME GmbH, Konstanz, Germany
 @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
 """
+import numbers
 from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, TypeVar, Union
@@ -614,9 +615,9 @@ class DoubleParameter(_NumericParameter):
         )
 
     def check_type(self, value):
-        if not isinstance(value, float):
+        if not isinstance(value, numbers.Number):
             raise TypeError(
-                f"{value} is of type {type(value)}, but should be of type float."
+                f"{value} is of type {type(value)}, but should be a number."
             )
 
     def _extract_schema(self, extension_version=None, specs=None):
