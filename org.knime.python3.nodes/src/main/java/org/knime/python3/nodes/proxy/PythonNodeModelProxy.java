@@ -112,6 +112,14 @@ public interface PythonNodeModelProxy {
     void initializeJavaCallback(Callback callback);
 
     /**
+     * Initializes the Python node's Java callback that provides it with Java-backed functionality (e.g. resolving KNIME
+     * URLs to local file paths).
+     *
+     * @param dialogCallback The node's Java dialog callback.
+     */
+    void initializeJavaCallback(DialogCallback dialogCallback);
+
+    /**
      * Get a file path with a key, where the key is used to identify the file in a list of {@link FileStore}s generated
      * during node execution via the {@link Callback}.
      *
@@ -199,6 +207,70 @@ public interface PythonNodeModelProxy {
     }
 
     /**
+     * Provides Java-backed functionality to the Python side, while creating the dialog.
+     * <P>
+     * Sonar: the methods of this interface are intended to be called from Python only, so they follow Python's naming
+     * conventions. Sonar issues caused by this are suppressed.
+     *
+     * @author Jonas Klotz, KNIME GmbH, Berlin, Germany
+     */
+    interface DialogCallback extends LogCallback {
+        /**
+         * Used to send flow variables from KNIME to Python
+         *
+         * @return A map of name -> object pairs for the flow variables;
+         */
+        Map<String, Object> get_flow_variables(); // NOSONAR
+
+    }
+
+    /**
+     * Context provided to Python while configuring a node. This can e.g. provide flow variables.
+     *
+     * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
+     */
+    interface PythonConfigurationContext {
+
+        /**
+         * Sets a warning message on the node.
+         *
+         * @param message warning message
+         */
+        void set_warning(final String message);//NOSONAR
+
+        /**
+         * @return identifier for each credential
+         */
+        String[] get_credential_names(); // NOSONAR
+
+    }
+
+    /**
+     * Context provided to python when creating a dialog. This can contain for example flow variables or credentials.
+     *
+     * @author Jonas Klotz, KNIME GmbH, Berlin, Germany
+     */
+    interface PythonDialogCreationContext {
+        /**
+         * @return identifier for each credential
+         */
+        String[] get_credential_names(); // NOSONAR
+
+        /**
+         * @param identifier (credential flow variable name) to get the credentials
+         * @return String array containing username, password and identifier
+         **/
+        String[] get_credentials(final String identifier); // NOSONAR
+
+        /**
+         *
+         * @return the specs for all input ports
+         */
+        PythonPortObjectSpec[] get_input_specs(); // NOSONAR
+
+    }
+
+    /**
      * Execution context provided to Python while executing a node. This can be used to perform progress reporting
      * and/or cancellation checks.
      *
@@ -226,12 +298,6 @@ public interface PythonNodeModelProxy {
         boolean is_canceled(); // NOSONAR
 
         /**
-         * @param identifier (credential flow variable name) to get the credentials
-         * @return String array containing username, password and identifier
-         **/
-        String[] get_credentials(final String identifier); // NOSONAR
-
-        /**
          * @return The temporary directory associated with this workflow
          */
         String get_workflow_temp_dir(); // NOSONAR
@@ -245,26 +311,13 @@ public interface PythonNodeModelProxy {
          * @return The "KNIME Home" directory which is located inside the current workspace
          */
         String get_knime_home_dir(); // NOSONAR
-    }
-
-    /**
-     * Context provided to Python while configuring a node. This can e.g. provide flow variables.
-     *
-     * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
-     */
-    interface PythonConfigurationContext {
 
         /**
-         * Sets a warning message on the node.
-         *
-         * @param message warning message
-         */
-        void set_warning(final String message);//NOSONAR
-
-        /**
-         * @return identifier for each credential
-         */
-        String[] get_credential_names(); // NOSONAR
+         * @param identifier (credential flow variable name) to get the credentials
+         * @return String array containing username, password and identifier
+         **/
+        String[] get_credentials(final String identifier); // NOSONAR
 
     }
+
 }

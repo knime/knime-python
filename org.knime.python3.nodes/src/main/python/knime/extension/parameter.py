@@ -156,20 +156,30 @@ def validate_specs(obj, specs) -> None:
         param._validate_specs(specs)
 
 
-def extract_schema(obj, extension_version: str = None, specs=None) -> dict:
+def extract_schema(
+    obj, extension_version: str = None, specs=None, dialog_creation_context=None
+) -> dict:
     extension_version = Version.parse_version(extension_version)
     return {
         "type": "object",
-        "properties": {"model": _extract_schema(obj, extension_version, specs)},
+        "properties": {
+            "model": _extract_schema(
+                obj, extension_version, specs, dialog_creation_context
+            )
+        },
     }
 
 
-def _extract_schema(obj, extension_version: Version, specs):
+def _extract_schema(
+    obj, extension_version: Version, specs, dialog_creation_context=None
+) -> dict:
     properties = {}
     for name, param_obj in _get_parameters(obj).items():
         if param_obj._since_version <= extension_version:
             properties[name] = param_obj._extract_schema(
-                extension_version=extension_version, specs=specs
+                extension_version=extension_version,
+                specs=specs,
+                dialog_creation_context=dialog_creation_context,
             )
 
     return {"type": "object", "properties": properties}
@@ -384,7 +394,7 @@ class _BaseParameter(ABC):
         if self._label is None:
             self._label = name
 
-    def _get_value(self, obj, for_dialog=None):
+    def _get_value(self, obj, for_dialog=None):  # NOSONAR
         # the for_dialog parameter is needed to match the signature of the
         # _get_value method for parameter groups
         return getattr(obj, self._name)
@@ -413,7 +423,7 @@ class _BaseParameter(ABC):
     def _set_default_for_version(self, obj, version: Version):
         self.__set__(obj, self._get_default(version))
 
-    def _inject(self, obj, value, parameters_version: Version = None):
+    def _inject(self, obj, value, parameters_version: Version = None):  # NOSONAR
         # the parameters_version parameter are needed to match the signature of the
         # _inject method for parameter groups
         self.__set__(obj, value)
@@ -430,7 +440,7 @@ class _BaseParameter(ABC):
     def __str__(self):
         return f"\n\t - name: {self._name}\n\t - label: {self._label}\n\t"
 
-    def _validate(self, value, version=None):
+    def _validate(self, value, version=None):  # NOSONAR
         # the version parameter is needed to match the signature of the
         # _validate method for parameter groups
         self._validator(value)
@@ -467,12 +477,15 @@ class _BaseParameter(ABC):
         self._validator = func
 
     def _extract_schema(
-        self, extension_version: Version = None, specs: List[ks.Schema] = None
+        self,
+        extension_version: Version = None,  # NOSONAR
+        specs: List[ks.Schema] = None,  # NOSONAR
+        dialog_creation_context=None,  # NOSONAR
     ):
         return {"title": self._label, "description": self.__doc__}
 
     def _extract_ui_schema(
-        self, name, parent_scope: _Scope, extension_version: Version = None
+        self, name, parent_scope: _Scope, extension_version: Version = None  # NOSONAR
     ):
         # the extension_version parameter is needed to match the signature of the
         # _extract_ui_schema method for parameter groups
@@ -491,7 +504,7 @@ class _BaseParameter(ABC):
     def _get_options(self) -> dict:
         pass
 
-    def _extract_description(self, name, parent_scope: _Scope):
+    def _extract_description(self, name, parent_scope: _Scope):  # NOSONAR
         return {"name": self._label, "description": self.__doc__}
 
 
@@ -535,8 +548,12 @@ class _NumericParameter(_BaseParameter):
         if self.max_value is not None and value > self.max_value:
             raise ValueError(f"{value} is > the max value {self.max_value}")
 
-    def _extract_schema(self, extension_version=None, specs=None):
-        schema = super()._extract_schema(specs)
+    def _extract_schema(
+        self, extension_version=None, specs=None, dialog_creation_context=None
+    ):
+        schema = super()._extract_schema(
+            specs, dialog_creation_context=dialog_creation_context
+        )
         schema["type"] = "number"
         if self.min_value is not None:
             schema["minimum"] = self.min_value
@@ -579,8 +596,12 @@ class IntParameter(_NumericParameter):
                 f"{value} is of type {type(value)}, but should be of type int."
             )
 
-    def _extract_schema(self, extension_version=None, specs=None):
-        prop = super()._extract_schema(specs)
+    def _extract_schema(
+        self, extension_version=None, specs=None, dialog_creation_context=None
+    ):
+        prop = super()._extract_schema(
+            specs, dialog_creation_context=dialog_creation_context
+        )
         prop["type"] = "integer"
         prop["format"] = "int32"
         return prop
@@ -622,8 +643,12 @@ class DoubleParameter(_NumericParameter):
                 f"{value} is of type {type(value)}, but should be a number."
             )
 
-    def _extract_schema(self, extension_version=None, specs=None):
-        schema = super()._extract_schema(specs)
+    def _extract_schema(
+        self, extension_version=None, specs=None, dialog_creation_context=None
+    ):
+        schema = super()._extract_schema(
+            specs, dialog_creation_context=dialog_creation_context
+        )
         schema["format"] = "double"
         return schema
 
@@ -651,7 +676,7 @@ class _BaseMultiChoiceParameter(_BaseParameter):
         )
 
     def _get_options(self) -> dict:
-        if self._enum is None or len(self._enum) > 4:
+        if self._enum is None or len(self._enum) > 4 or callable(self._choices):
             return {"format": "string"}
         else:
             return {"format": "radio"}
@@ -677,19 +702,32 @@ class StringParameter(_BaseMultiChoiceParameter):
         validator: Optional[Callable[[str], None]] = None,
         since_version: Optional[Union[Version, str]] = None,
         is_advanced: bool = False,
+        choices: Callable = None,
     ):
         if validator is None:
             validator = self.default_validator
         if enum is not None and not isinstance(enum, list):
             raise TypeError("The enum parameter must be a list.")
+        if enum and choices:
+            raise ValueError("Cannot specify both enum and choices")
         self._enum = enum
+        self._choices = choices
         super().__init__(
             label, description, default_value, validator, since_version, is_advanced
         )
 
-    def _extract_schema(self, extension_version=None, specs=None):
-        schema = super()._extract_schema(specs)
-        if self._enum is None:
+    def _extract_schema(
+        self, extension_version=None, specs=None, dialog_creation_context=None
+    ):
+        schema = super()._extract_schema(
+            specs, dialog_creation_context=dialog_creation_context
+        )
+
+        if self._choices and dialog_creation_context:
+            schema["oneOf"] = [
+                {"const": e, "title": e} for e in self._choices(dialog_creation_context)
+            ]
+        elif self._enum is None:
             schema["type"] = "string"
         else:
             schema["oneOf"] = [{"const": e, "title": e} for e in self._enum]
@@ -816,8 +854,12 @@ class EnumParameter(_BaseMultiChoiceParameter):
     def _generate_description(self):
         return self.__doc__ + self._enum._generate_options_description()
 
-    def _extract_schema(self, extension_version=None, specs=None):
-        schema = super()._extract_schema(specs)
+    def _extract_schema(
+        self, extension_version=None, specs=None, dialog_creation_context=None
+    ):
+        schema = super()._extract_schema(
+            specs, dialog_creation_context=dialog_creation_context
+        )
         schema["description"] = self._generate_description()
         schema["oneOf"] = [{"const": e.name, "title": e.label} for e in self._enum]
         return schema
@@ -873,8 +915,15 @@ class _BaseColumnParameter(_BaseParameter):
         self._column_filter = column_filter
         self._schema_option = schema_option
 
-    def _extract_schema(self, extension_version=None, specs: List[ks.Schema] = None):
-        schema = super()._extract_schema(specs)
+    def _extract_schema(
+        self,
+        extension_version=None,
+        specs: List[ks.Schema] = None,
+        dialog_creation_context=None,
+    ):
+        schema = super()._extract_schema(
+            specs, dialog_creation_context=dialog_creation_context
+        )
         values = _filter_columns(specs, self._port_index, self._column_filter)
         schema[self._schema_option] = values
         return schema
@@ -950,7 +999,7 @@ def _filter_columns(
             return [_const("")]
 
         spec = specs[port_index]
-    except IndexError as ex:
+    except IndexError:
         raise IndexError(
             f"The port index {port_index} is not contained in the Spec list with length {len(specs)}. "
             "Maybe a port_index for a parameter does not match the index for an input table? "
@@ -1038,8 +1087,12 @@ class BoolParameter(_BaseParameter):
             label, description, default_value, validator, since_version, is_advanced
         )
 
-    def _extract_schema(self, extension_version=None, specs=None):
-        schema = super()._extract_schema(specs)
+    def _extract_schema(
+        self, extension_version=None, specs=None, dialog_creation_context=None
+    ):
+        schema = super()._extract_schema(
+            specs, dialog_creation_context=dialog_creation_context
+        )
         schema["type"] = "boolean"
         return schema
 
@@ -1329,7 +1382,9 @@ def parameter_group(
                 else:
                     return options
 
-            def _extract_schema(self, extension_version: Version, specs):
+            def _extract_schema(
+                self, extension_version: Version, specs, dialog_creation_context=None
+            ):
                 properties = {}
                 for name, param_obj in _get_parameters(self).items():
                     if param_obj._since_version <= extension_version:

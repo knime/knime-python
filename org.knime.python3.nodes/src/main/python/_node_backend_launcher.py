@@ -350,16 +350,23 @@ class _PythonNodeProxy:
     def getDialogRepresentation(
         self,
         parameters: str,
-        specs: List[_PythonPortObjectSpec],
         extension_version: str,
+        python_dialog_context,
     ):
         self.setParameters(parameters, extension_version)
+
+        dialog_context = kn.DialogCreationContext(
+            python_dialog_context, self._get_flow_variables()
+        )
+        specs = dialog_context.get_input_specs()
 
         inputs = self._specs_to_python(specs)
 
         json_forms_dict = {
             "data": kp.extract_parameters(self._node, for_dialog=True),
-            "schema": kp.extract_schema(self._node, extension_version, inputs),
+            "schema": kp.extract_schema(
+                self._node, extension_version, inputs, dialog_context
+            ),
             "ui_schema": kp.extract_ui_schema(self._node, extension_version),
         }
 

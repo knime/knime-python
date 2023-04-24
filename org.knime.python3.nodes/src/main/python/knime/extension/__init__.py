@@ -75,6 +75,7 @@ PortObject = _kn.PortObject
 ViewDeclaration = _kn.ViewDeclaration
 ConfigurationContext = _kn.ConfigurationContext
 ExecutionContext = _kn.ExecutionContext
+DialogCreationContext = _kn.DialogCreationContext
 PythonNode = _kn.PythonNode
 category = _kn.category
 NodeType = _kn.NodeType
@@ -88,7 +89,6 @@ output_binary = _kn.output_binary
 output_table = _kn.output_table
 output_port = _kn.output_port
 output_view = _kn.output_view
-
 
 ## knime.api.table
 Table = _kt.Table

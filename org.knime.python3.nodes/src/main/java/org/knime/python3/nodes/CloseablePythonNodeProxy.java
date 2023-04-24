@@ -71,10 +71,12 @@ import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.KNIMEConstants;
+import org.knime.core.node.Node;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.util.CheckUtils;
+import org.knime.core.node.workflow.CredentialsProvider;
 import org.knime.core.node.workflow.ICredentials;
 import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
@@ -93,6 +95,7 @@ import org.knime.python3.nodes.proxy.CloseableNodeFactoryProxy;
 import org.knime.python3.nodes.proxy.NodeDialogProxy;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy.Callback;
+import org.knime.python3.nodes.proxy.PythonNodeModelProxy.DialogCallback;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy.FileStoreBasedFile;
 import org.knime.python3.nodes.proxy.PythonNodeProxy;
 import org.knime.python3.nodes.proxy.model.NodeConfigurationProxy;
@@ -174,12 +177,58 @@ final class CloseablePythonNodeProxy
     @Override
     public String getDialogRepresentation(final JsonNodeSettings settings, final PortObjectSpec[] specs,
         final String extensionVersion) {
-        final PythonPortObjectSpec[] serializedSpecs = Arrays.stream(specs)
-            .map(PythonPortObjectTypeRegistry::convertToPythonPortObjectSpec).toArray(PythonPortObjectSpec[]::new);
+
+        final PythonNodeModelProxy.DialogCallback dialogCallback = new DialogCallback() {
+
+            private DefaultLogCallback m_logCallback = new DefaultLogCallback(LOGGER);
+
+            @Override
+            public void log(final String message, final String severity) {
+                m_logCallback.log(message, severity);
+
+            }
+
+            @Override
+            public Map<String, Object> get_flow_variables() {
+                return FlowVariableUtils.convertToMap(getNode().getFlowObjectStack()
+                    .getAvailableFlowVariables(getCompatibleFlowVariableTypes()).values());
+            }
+
+        };
+        m_proxy.initializeJavaCallback(dialogCallback);
+
+        final var pythonDialogContext = new PythonNodeModelProxy.PythonDialogCreationContext() {
+
+            @Override
+            public String[] get_credential_names() {
+                return getNode().getCredentialsProvider().listNames().toArray(String[]::new);
+            }
+
+            @Override
+            public String[] get_credentials(final String identifier) {
+                CredentialsProvider credentialsProvider = getNode().getCredentialsProvider();
+                ICredentials credentials = credentialsProvider.get(identifier);
+                return new String[]{credentials.getLogin(), credentials.getPassword(), credentials.getName()};
+            }
+
+            @Override
+            public PythonPortObjectSpec[] get_input_specs() {
+                return Arrays.stream(specs).map(PythonPortObjectTypeRegistry::convertToPythonPortObjectSpec)
+                    .toArray(PythonPortObjectSpec[]::new);
+            }
+        };
+
         // extensionVersion must always be the version of the installed extension, since it is used
         // on the Python side to generate the schema and UI schema, which need to correspond to the
         // set of parameters available in the installed version of the extension.
-        return m_proxy.getDialogRepresentation(settings.getParameters(), serializedSpecs, extensionVersion);
+        return m_proxy.getDialogRepresentation(settings.getParameters(), extensionVersion, pythonDialogContext);
+    }
+
+    /**
+     * @return returns node corresponding to the python context.
+     **/
+    public static Node getNode() {
+        return ((NativeNodeContainer)NodeContext.getContext().getNodeContainer()).getNode();
     }
 
     @Override
@@ -445,7 +494,7 @@ final class CloseablePythonNodeProxy
     }
 
     private static IFileStoreHandler getFileStoreHandler() {
-        return ((NativeNodeContainer)NodeContext.getContext().getNodeContainer()).getNode().getFileStoreHandler();
+        return getNode().getFileStoreHandler();
     }
 
     @Override

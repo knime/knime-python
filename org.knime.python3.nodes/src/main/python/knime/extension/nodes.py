@@ -205,6 +205,34 @@ class _BaseContext:
         return credential_names
 
 
+class DialogCreationContext(_BaseContext):
+    def __init__(self, java_ctx, flow_variables) -> None:
+        super().__init__(java_ctx, flow_variables)
+
+    def get_credentials(self, identifier: str) -> Credential:
+        """
+        Returns the credentials dataclass for the given identifier.
+
+        Args:
+            identifier: the identifier of the credentials to retrieve
+        """
+        from py4j.protocol import Py4JJavaError
+
+        try:
+            credentials = list(self._java_ctx.get_credentials(identifier))
+        except Py4JJavaError:
+            raise KeyError(f"Error retrieving credentials for identifier: {identifier}")
+        # create dataclass from credential list
+        credentials = Credential(credentials[0], credentials[1], credentials[2])
+        return credentials
+
+    def get_input_specs(self) -> List[PortObjectSpec]:
+        """
+        Returns the specs for all input ports of the node.
+        """
+        return self._java_ctx.get_input_specs()
+
+
 class ConfigurationContext(_BaseContext):
     """
     The ConfigurationContext provides utilities to communicate with KNIME
@@ -285,7 +313,7 @@ class ExecutionContext(_BaseContext):
         """
         return self._java_ctx.get_knime_home_dir()
 
-    def get_credentials(self, identifier):
+    def get_credentials(self, identifier: str) -> Credential:
         """
         Returns the credentials dataclass for the given identifier.
 

@@ -298,5 +298,6 @@ public final class DelegatingNodeModel extends NodeModel
     public ICredentials getCredentials(final String identifier) {
         CredentialsProvider credentialsProvider = getCredentialsProvider();
         return credentialsProvider.get(identifier);
+
     }
 }

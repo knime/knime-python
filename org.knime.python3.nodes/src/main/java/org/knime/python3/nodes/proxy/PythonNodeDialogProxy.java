@@ -48,7 +48,7 @@
  */
 package org.knime.python3.nodes.proxy;
 
-import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
+import org.knime.python3.nodes.proxy.PythonNodeModelProxy.PythonDialogCreationContext;
 
 /**
  *
@@ -60,9 +60,11 @@ public interface PythonNodeDialogProxy {
      * @param parameters current node configuration
      * @param portObjectSpecs specs of all input port objects
      * @param extensionVersion the version of the installed extension
+     * @param pythonDialogContext context to create the dialog
      * @return the representation of the dialog e.g. JSON Forms
      */
-    String getDialogRepresentation(String parameters, PythonPortObjectSpec[] portObjectSpecs, String extensionVersion);
+    String getDialogRepresentation(String parameters, String extensionVersion,
+        PythonDialogCreationContext pythonDialogContext);
 
     /**
      * @return the node's settings encoded as JSON
