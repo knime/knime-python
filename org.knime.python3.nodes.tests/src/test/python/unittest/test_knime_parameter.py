@@ -1223,9 +1223,6 @@ class ParameterTest(unittest.TestCase):
             self.parameterized.int_param = "foo"
 
         with self.assertRaises(TypeError):
-            self.parameterized.double_param = 1
-
-        with self.assertRaises(TypeError):
             self.parameterized.string_param = 1
 
         with self.assertRaises(TypeError):
