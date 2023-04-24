@@ -73,8 +73,6 @@ import py4j.clientserver
 
 # TODO: register extension types
 
-LOGGER = logging.getLogger("Node Backend Launcher")
-
 
 class _PythonPortObject:
     def __init__(self, java_class_name):
@@ -341,7 +339,6 @@ class _PortTypeRegistry:
             ), f"Expected image formats are: {kn.ImageFormat.available_options()}."
 
             data = spec.serialize()
-            # class_name = "org.knime.python3.nodes.ports.PythonImagePortObjectSpec"
             class_name = "org.knime.core.node.port.image.ImagePortObjectSpec"
         else:  # custom spec
             assert (

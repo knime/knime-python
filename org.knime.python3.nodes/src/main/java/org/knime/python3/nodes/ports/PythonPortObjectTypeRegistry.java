@@ -266,9 +266,7 @@ public final class PythonPortObjectTypeRegistry {
             factory = clazz.getMethod("fromPurePython", interfazze, Map.class, PythonArrowTableConverter.class,
                 ExecutionContext.class);
             final var object = factory.invoke(null, pythonPortObject, fileStoresByKey, tableConverter, execContext);
-            var po = ((PortObjectProvider)object).getPortObject();
-            return po;
-//            return ((PortObjectProvider)object).getPortObject();
+            return ((PortObjectProvider)object).getPortObject();
         } catch (InvocationTargetException ex) {
             // If #fromPurePython threw an exception we just use the message of this exception
             throw new IllegalStateException(ex.getCause().getMessage(), ex);

@@ -563,7 +563,7 @@ class BinaryPortObjectSpec(PortObjectSpec):
     def deserialize(cls, data):
         # spec is optional therefore we use get instead of __get_item__
         return cls(data["id"])
-    
+
 
 class ImagePortObjectSpec(PortObjectSpec):
     """
@@ -574,7 +574,7 @@ class ImagePortObjectSpec(PortObjectSpec):
 
     def __init__(self, format: Union[str, Enum]) -> None:
         """
-        Create a ImagePortObjectSpec
+        Create an ImagePortObjectSpec
 
         Args:
             format: The format of the image expected to pass through the port.

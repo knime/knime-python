@@ -48,12 +48,14 @@
  */
 package org.knime.python3.nodes.ports;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Map;
 
 import org.knime.base.data.xml.SvgCell;
+import org.knime.base.data.xml.SvgImageContent;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.filestore.FileStore;
 import org.knime.core.data.image.ImageContent;
@@ -66,7 +68,6 @@ import org.knime.core.node.port.PortType;
 import org.knime.core.node.port.image.ImagePortObject;
 import org.knime.core.node.port.image.ImagePortObjectSpec;
 import org.knime.core.table.virtual.serialization.AnnotatedColumnarSchemaSerializer;
-import org.knime.python2.generic.ImageContainer;
 import org.knime.python3.PythonDataSource;
 import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.arrow.PythonArrowDataSource;
@@ -410,28 +411,42 @@ public final class PythonPortObjects {
 
         @Override
         public PortObject getPortObject() {
-            ImageContainer img;
-            ImageContent content;
-            ImagePortObjectSpec spec;
-
-
             if (m_format.equals("png")) {
-                content = new PNGImageContent(m_bytes);
-                spec = new ImagePortObjectSpec(PNGImageContent.TYPE);
+                return convertBytesToPNG();
+            } else if (m_format.equals("svg")) {
+                try {
+                    return convertBytesToSVG();
+                } catch (IOException ex) {
+                    throw new UnsupportedOperationException("Unable to convert image data to SVG.");
+                }
             } else {
-                // TODO: figure out how to import Apache Batik to be able to call {@link SvgImageContent}
-//                ByteArrayInputStream inputStream = new ByteArrayInputStream(m_bytes);
-//                content = new SvgImageContent(inputStream);
-//                spec = new ImagePortObjectSpec(SvgCell.TYPE);
-                throw new UnsupportedOperationException("SVG support not implemented.");
+                throw new UnsupportedOperationException("Unsupported image format detected.");
             }
-
-            return new ImagePortObject(content, spec);
         }
 
         @Override
         public String getJavaClassName() {
             return PythonImagePortObject.class.getName();
+        }
+
+        /**
+         * @return an {@link ImagePortObject} corresponding to the PNG bytes
+         */
+        public ImagePortObject convertBytesToPNG() {
+            ImageContent content = new PNGImageContent(m_bytes);
+            ImagePortObjectSpec spec = new ImagePortObjectSpec(PNGImageContent.TYPE);
+            return new ImagePortObject(content, spec);
+        }
+
+        /**
+         * @return an {@link ImagePortObject} corresponding to the SVG bytes
+         * @throws IOException if the bytes stream can't be converted to an {@link SvgImageContent}
+         */
+        public ImagePortObject convertBytesToSVG() throws IOException {
+            ByteArrayInputStream inputStream = new ByteArrayInputStream(m_bytes);
+            ImageContent content = new SvgImageContent(inputStream);
+            ImagePortObjectSpec spec = new ImagePortObjectSpec(SvgCell.TYPE);
+            return new ImagePortObject(content, spec);
         }
     }
 
@@ -492,9 +507,9 @@ public final class PythonPortObjects {
                 return new PythonTablePortObjectSpec(
                     PythonArrowDataUtils.createDataTableSpec(acs, acs.getColumnNames()));
             } catch (JsonMappingException ex) {
-                throw new IllegalStateException("Could not parse PythonTablePortObjectSpec from given Json data", ex);
+                throw new IllegalStateException("Could not parse PythonTablePortObjectSpec from given JSON data", ex);
             } catch (JsonProcessingException ex) { // NOSONAR: if we don't split this block up, Eclipse doesn't like it for some reason
-                throw new IllegalStateException("Could not parse PythonTablePortObjectSpec from given Json data", ex);
+                throw new IllegalStateException("Could not parse PythonTablePortObjectSpec from given JSON data", ex);
             }
         }
 
@@ -621,12 +636,14 @@ public final class PythonPortObjects {
     /**
      *
      * @author ivan
+     * Wrapper for {@link ImagePortObjectSpec} handling serialization for the Python side.
      */
     public static final class PythonImagePortObjectSpec implements PythonPortObjectSpec, PortObjectSpecProvider {
         private final ImagePortObjectSpec m_spec;
 
         /**
-         * @param spec
+         * @param spec a {@link ImagePortObjectSpec} that contains the data type (PNG or SVG)
+         * used during serialization to JSON.
          */
         public PythonImagePortObjectSpec(final ImagePortObjectSpec spec) {
             m_spec = spec;
@@ -648,21 +665,23 @@ public final class PythonPortObjects {
             final var rootNode = om.createObjectNode();
             if (m_spec.getDataType().equals(PNGImageContent.TYPE)) {
                 rootNode.put("format", "png");
-            } else if (m_spec.getDataType().equals(SvgCell.TYPE)) { // TODO: should replace with SvgImageContent.TYPE once importable
+            } else if (m_spec.getDataType().equals(SvgCell.TYPE)) {
                 rootNode.put("format", "svg");
             } else {
-                throw new IllegalStateException("Unsupported image type.");
+                throw new IllegalStateException("Unsupported image format.");
             }
             try {
                 return om.writeValueAsString(rootNode);
             } catch (JsonProcessingException ex) {
-                throw new IllegalStateException("Could not generate Json data for PythonImagePortObjectSpec", ex);
+                throw new IllegalStateException("Could not generate JSON data for PythonImagePortObjectSpec", ex);
             }
         }
 
         /**
-         * @param jsonData
-         * @return new spec
+         * @param jsonData the spec serialized as JSON
+         * @return the corresponding ImagePortObjectSpec for either PNG or SVG
+         * @throws IllegalStateException if either an unsupported image format is detected
+         * or a problem is encountered during the parsing of the JSON data
          */
         public static PythonImagePortObjectSpec fromJsonString(final String jsonData) {
             final var om = new ObjectMapper();
@@ -672,12 +691,12 @@ public final class PythonPortObjects {
                 if (format.equals("png")) {
                     return new PythonImagePortObjectSpec(new ImagePortObjectSpec(PNGImageContent.TYPE));
                 } else if (format.equals("svg")) {
-                    throw new IllegalStateException("SVG not supported yet.");
+                    return new PythonImagePortObjectSpec(new ImagePortObjectSpec(SvgCell.TYPE));
                 } else {
                     throw new IllegalStateException("Unsupported image format: " + format + ".");
                 }
             } catch (JsonMappingException ex) {
-                throw new IllegalStateException("Could not parse PythonImagePortObjectSpec from given Json data", ex);
+                throw new IllegalStateException("Could not parse PythonImagePortObjectSpec from given JSON data", ex);
             } catch (JsonProcessingException ex) { // NOSONAR: Eclipse requires explicit handling of this exception
                 throw new IllegalStateException("Could not parse PythonImagePortObjectSpec from given Json data", ex);
             }
@@ -688,10 +707,9 @@ public final class PythonPortObjects {
     /**
      * Convert port type encoded as string to a {@link PortType}. Possible values are TABLE and BINARY, where BINARY is
      * followed by a Port Type ID as in "BINARY=org.knime.python3.nodes.test.porttype", or PortType(...) for general
-     * custom port objects and ConnectionPortObject for connections.
+     * custom port objects and ConnectionPortObject for connections, as well as IMAGE.
      *
-     *
-     * @param identifier Port type identifier (TABLE or BINARY currently).
+     * @param identifier Port type identifier (TABLE, BINARY, or IMAGE currently).
      * @return {@link PortType}
      */
     public static PortType getPortTypeForIdentifier(final String identifier) {
@@ -710,10 +728,10 @@ public final class PythonPortObjects {
     }
 
     /**
-     * Convert port types encoded as string to {@link PortType}. The order is important. Possible values are TABLE and
-     * BINARY, where BINARY is followed by a Port Type ID as in "BINARY=org.knime.python3.nodes.test.porttype"
+     * Convert port types encoded as string to {@link PortType}. The order is important. Possible values are TABLE,
+     * BINARY, followed by a Port Type ID as in "BINARY=org.knime.python3.nodes.test.porttype", and IMAGE.
      *
-     * @param identifiers Port type identifiers (TABLE or BINARY currently).
+     * @param identifiers Port type identifiers (TABLE, BINARY, or IMAGE currently).
      * @return {@link PortType}s
      */
     public static PortType[] getPortTypesForIdentifiers(final String[] identifiers) {
