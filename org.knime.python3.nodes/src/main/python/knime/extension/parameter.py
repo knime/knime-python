@@ -401,7 +401,6 @@ class _BaseParameter(ABC):
 
     def __get__(self, obj, objtype=None):
         if not hasattr(self, "_name"):
-            # self._name = objtype
             name = objtype  # HACK: for non-descriptors, the name of the parameter is passed via the objtype argument
         else:
             name = self._name
@@ -416,13 +415,6 @@ class _BaseParameter(ABC):
             def_value = self._get_default()
             obj.__parameters__[name] = def_value
             return def_value
-
-        # if self._name in obj.__parameters__:
-        #     return obj.__parameters__[self._name]
-        # else:
-        #     def_value = self._get_default()
-        #     obj.__parameters__[self._name] = def_value
-        #     return def_value
 
     def _get_default(self, version: Version = None):
         if callable(self._default_value):

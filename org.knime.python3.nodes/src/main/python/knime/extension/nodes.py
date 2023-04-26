@@ -637,12 +637,30 @@ class _Node:
             to the users.
             """
             node = node_factory(*args, **kwargs)
+            self.assert_no_composed_parameters(node)
             node.input_ports = self.input_ports
             node.output_ports = self.output_ports
             node.output_view = self.views[0]
             return node
 
         self.node_factory = port_injector
+
+    def assert_no_composed_parameters(self, node_instance):
+        """
+        Node-level parameter composition is not supported, hence we check that none of the
+        instance attributes are parameter objects. We don't check for the `._name` attribute
+        since an instance-level parameter is by definition not a descriptor.
+        """
+        if any(
+            [
+                isinstance(attr, kp._BaseParameter)
+                for attr in node_instance.__dict__.values()
+            ]
+        ):
+            raise AttributeError(
+                """Only parameter group composition is allowed at the node-level.
+                Individual parameters need to be moved out of the node's `__init__` method and be either defined at the class-level or encapsulated in a parameter group."""
+            )
 
     def to_dict(self):
         def port_to_str(port):
