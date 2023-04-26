@@ -94,7 +94,7 @@ def _extract_parameters(obj, for_dialog: bool) -> dict:
     result = dict()
     params = _get_parameters(obj)
     for name, param_obj in params.items():
-        result[name] = param_obj._get_value(obj, for_dialog)
+        result[name] = param_obj._get_value(obj, name, for_dialog)
 
     return result
 
@@ -120,7 +120,7 @@ def _inject_parameters(
     for name, param_obj in _get_parameters(obj).items():
         if param_obj._since_version <= parameters_version:
             if name in parameters:
-                param_obj._inject(obj, parameters[name], parameters_version)
+                param_obj._inject(obj, parameters[name], name, parameters_version)
         else:
             # the parameter was introduced in a newer version but we might want to initialize
             # the default based on the version the workflow was created with
@@ -394,22 +394,35 @@ class _BaseParameter(ABC):
         if self._label is None:
             self._label = name
 
-    def _get_value(self, obj, for_dialog=None):  # NOSONAR
+    def _get_value(self, obj, name, for_dialog=None):
         # the for_dialog parameter is needed to match the signature of the
         # _get_value method for parameter groups
-        return getattr(obj, self._name)
+        return obj.__getattribute__(name)
 
     def __get__(self, obj, objtype=None):
+        if not hasattr(self, "_name"):
+            # self._name = objtype
+            name = objtype  # HACK: for non-descriptors, the name of the parameter is passed via the objtype argument
+        else:
+            name = self._name
+
         if not hasattr(obj, "__kind__"):
             # obj is the root parameterised object
             _create_param_dict_if_not_exists(obj)
 
-        if self._name in obj.__parameters__:
-            return obj.__parameters__[self._name]
+        if name in obj.__parameters__:
+            return obj.__parameters__[name]
         else:
             def_value = self._get_default()
-            obj.__parameters__[self._name] = def_value
+            obj.__parameters__[name] = def_value
             return def_value
+
+        # if self._name in obj.__parameters__:
+        #     return obj.__parameters__[self._name]
+        # else:
+        #     def_value = self._get_default()
+        #     obj.__parameters__[self._name] = def_value
+        #     return def_value
 
     def _get_default(self, version: Version = None):
         if callable(self._default_value):
@@ -423,19 +436,25 @@ class _BaseParameter(ABC):
     def _set_default_for_version(self, obj, version: Version):
         self.__set__(obj, self._get_default(version))
 
-    def _inject(self, obj, value, parameters_version: Version = None):  # NOSONAR
+    def _inject(self, obj, value, name, parameters_version: Version = None):
         # the parameters_version parameter are needed to match the signature of the
         # _inject method for parameter groups
-        self.__set__(obj, value)
+        self.__set__(obj, {"name": name, "value": value})
 
     def __set__(self, obj, value):
+        if isinstance(value, dict):
+            name = value["name"]
+            value = value["value"]
+        else:
+            name = self._name
+
         if not hasattr(obj, "__kind__"):
             # obj is the root parameterised object
             _create_param_dict_if_not_exists(obj)
 
         # perform individual validation
         self._validate(value)
-        obj.__parameters__[self._name] = value
+        obj.__parameters__[name] = value
 
     def __str__(self):
         return f"\n\t - name: {self._name}\n\t - label: {self._label}\n\t"
@@ -638,9 +657,9 @@ class DoubleParameter(_NumericParameter):
         )
 
     def check_type(self, value):
-        if not isinstance(value, numbers.Number):
+        if not isinstance(value, float):
             raise TypeError(
-                f"{value} is of type {type(value)}, but should be a number."
+                f"{value} is of type {type(value)}, but should be of type float."
             )
 
     def _extract_schema(
@@ -988,9 +1007,9 @@ class ColumnParameter(_BaseColumnParameter):
             "showNoneColumn": self._include_none_column,
         }
 
-    def _inject(self, obj, value, version):
+    def _inject(self, obj, value, name, version):
         value = None if value == "" else value
-        return super()._inject(obj, value, version)
+        return super()._inject(obj, value, name, version)
 
 
 def _filter_columns(
@@ -1006,13 +1025,13 @@ def _filter_columns(
     except IndexError:
         raise IndexError(
             f"The port index {port_index} is not contained in the Spec list with length {len(specs)}. "
-            "Maybe a port_index for a parameter does not match the index for an input table? "
+            f"Maybe a port_index for a parameter does not match the index for an input table? "
         ) from None
 
     if not isinstance(spec, ks.Schema):
         raise TypeError(
             f"The port at index {port_index} is not a Table. "
-            "The ColumnParameter or MultiColumnParameter can only be used for Table ports."
+            f"The ColumnParameter or MultiColumnParameter can only be used for Table ports."
         )
 
     filtered = [_const(column.name) for column in spec if column_filter(column)]
@@ -1053,18 +1072,18 @@ class MultiColumnParameter(_BaseColumnParameter):
     def _get_options(self) -> dict:
         return {"format": "columnFilter"}
 
-    def _get_value(self, obj: Any, for_dialog: bool):
-        value = super()._get_value(obj, for_dialog)
+    def _get_value(self, obj: Any, name, for_dialog: bool):
+        value = super()._get_value(obj, name, for_dialog)
         if for_dialog and value is None:
             return []
         else:
             return value
 
-    def _inject(self, obj, value, version):
+    def _inject(self, obj, value, name, version):
         # if there are no columns then the empty string is used as placeholder and we need to filter it out here
         if value is not None:
             value = [c for c in value if c != ""]
-        return super()._inject(obj, value, version)
+        return super()._inject(obj, value, name, version)
 
 
 class BoolParameter(_BaseParameter):
@@ -1112,6 +1131,39 @@ def _flatten(lst: list) -> list:
         else:
             flat.append(e)
     return flat
+
+
+def get_attr_from_instance(instance, attr):
+    ancestor_classes = inspect.getmro(type(instance))[:-1]
+    try:
+        return instance.__dict__[attr]
+    except KeyError:
+        for cls in ancestor_classes:
+            try:
+                return cls.__dict__[attr]
+            except KeyError:
+                continue
+
+
+class GetSetBase:
+    def __getattribute__(instance, name):
+        obj = super().__getattribute__(name)
+        if isinstance(obj, _BaseParameter):
+            return obj.__get__(instance, name)
+
+        return obj
+
+    def __setattr__(instance, name, value):
+        if not hasattr(instance, name):
+            super().__setattr__(name, value)
+        else:
+            if name in instance.__parameters__:
+                obj = super().__getattribute__(name)
+                if not isinstance(obj, _BaseParameter):
+                    obj = get_attr_from_instance(instance, name)
+                obj.__set__(instance, value)
+            else:
+                super().__setattr__(name, value)
 
 
 def parameter_group(
@@ -1172,7 +1224,7 @@ def parameter_group(
     """
 
     def decorate_class(original_class):
-        class ParameterGroupHolder(original_class):
+        class ParameterGroupHolder(GetSetBase, original_class):
             """
             A wrapper class that inherits from the custom parameter group class in order to retain
             its methods and attributes, while also adding a layer on top to enable the backend infrastructure.
@@ -1259,11 +1311,11 @@ def parameter_group(
                 ), "__get__ should only be called if the paramter_group is used as a descriptor."
                 return self._get_param_holder(obj)
 
-            def _get_value(self, obj, for_dialog: bool = False):
+            def _get_value(self, obj, name, for_dialog: bool = False):
                 param_holder = self._get_param_holder(obj)
 
                 return {
-                    name: param_obj._get_value(param_holder, for_dialog)
+                    name: param_obj._get_value(param_holder, name, for_dialog)
                     for name, param_obj in _get_parameters(param_holder).items()
                 }
 
@@ -1310,7 +1362,7 @@ def parameter_group(
                 for param_obj in _get_parameters(param_holder).values():
                     param_obj._set_default_for_version(param_holder, version)
 
-            def _inject(self, obj, values, parameters_version: Version):
+            def _inject(self, obj, values, name, parameters_version: Version):
                 param_holder = self._get_param_holder(obj)
                 _inject_parameters(param_holder, values, parameters_version)
 
