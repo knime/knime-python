@@ -48,7 +48,6 @@
 """
 
 from abc import ABC, abstractmethod
-import pickle
 import sys
 from py4j.java_collections import JavaArray
 from py4j.java_gateway import JavaClass
@@ -66,6 +65,14 @@ import knime.scripting._io_containers as _ioc
 import knime._backend._gateway as kg
 
 # from autocompletion_utils import disable_autocompletion
+
+
+def _format_table_type_msg(x, idx):
+    return (
+        type(x)
+        if x is not None
+        else f"None. \nknio.output_tables[{idx}] has not been populated."
+    )
 
 
 class ScriptingBackend(ABC):
@@ -95,11 +102,12 @@ class ScriptingBackendV0(ScriptingBackend):
     Deprecated scripting backend provided by knime_io
     """
 
-    def check_output_table(self, table_index, table):
+    def check_output_table(self, idx, table):
         if table is None or not isinstance(table, kat._ArrowWriteTableImpl):
             type_str = type(table) if table is not None else "None"
+
             raise KnimeUserError(
-                f"Expected a WriteTable in output_tables[{table_index}], got {type_str}. "
+                f"Expected a WriteTable in output_tables[{idx}], got {type_str}. "
                 "Please use knime_io.write_table(data) or knime_io.batch_write_table() to create a WriteTable."
             )
 
@@ -141,19 +149,14 @@ class ScriptingBackendV1(ScriptingBackend):
     Current scripting backend provided by knime.scripting.io
     """
 
-    def check_output_table(self, table_index, table):
+    def check_output_table(self, idx, table):
         if table is None or (
             not isinstance(table, katn.ArrowTable)
             and not isinstance(table, ktn._TabularView)
             and not isinstance(table, katn.ArrowBatchOutputTable)
         ):
-            type_str = (
-                type(table)
-                if table is not None
-                else f"None. \nknio.output_tables[{table_index}] has not been populated."
-            )
             raise KnimeUserError(
-                f"Output table '{table_index}' must be of type knime.api.Table or knime.api.BatchOutputTable, but got {type_str}"
+                f"Output table '{idx}' must be of type knime.api.Table or knime.api.BatchOutputTable, but got {_format_table_type_msg(table, idx)}."
             )
 
     def get_output_table_sink(self, table_index: int):
@@ -177,13 +180,8 @@ class ScriptingBackendV1(ScriptingBackend):
                     table._write_empty_batch()
                 _ioc._output_tables[idx] = table._sink._java_data_sink
             else:
-                type_str = (
-                    type(table)
-                    if table is not None
-                    else f"None. \nknio.output_tables[{idx}] has not been populated."
-                )
                 raise KnimeUserError(
-                    f"Output table '{idx}' must be of type knime.api.Table or knime.api.BatchOutputTable, but got {type_str}"
+                    f"Output table '{idx}' must be of type knime.api.Table or knime.api.BatchOutputTable, but got {_format_table_type_msg(table, idx)}"
                 )
 
     def tear_down_arrow(self, flush: bool):

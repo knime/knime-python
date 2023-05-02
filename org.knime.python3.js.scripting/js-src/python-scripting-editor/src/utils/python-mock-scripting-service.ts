@@ -53,6 +53,14 @@ class PythonScriptingServiceMock implements PythonScriptingService {
         return new Promise((r) => setTimeout(r, 100));
     }
 
+    sendToConsole(text: ConsoleText) {
+        this.eventHandlers.console(text);
+    }
+
+    writeConsole(text: string) {
+        this.sendToConsole({ text, stderr: true });
+    }
+
     sendLastConsoleOutput(): Promise<void> {
         return new Promise((r) => setTimeout(r, 100));
     }

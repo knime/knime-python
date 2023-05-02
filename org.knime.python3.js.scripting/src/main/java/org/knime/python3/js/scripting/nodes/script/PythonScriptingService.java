@@ -55,6 +55,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -92,7 +93,7 @@ final class PythonScriptingService extends ScriptingService {
     private Map<String, ExecutableOption> m_executableOptions = Collections.emptyMap();
 
     // indicates that killSession has been called
-    private boolean m_expectCancel;
+    private AtomicBoolean m_expectCancel;
 
     // TODO(AP-19357) close the session when the dialog is closed
     // TODO(AP-19332) should the Python session be started immediately? (or whenever the frontend requests it?)
@@ -103,6 +104,7 @@ final class PythonScriptingService extends ScriptingService {
     PythonScriptingService() {
         super(connectToLanguageServer(), FLOW_VARIABLE_FILTER);
         m_ports = PythonScriptPortsConfiguration.fromCurrentNodeContext();
+        m_expectCancel = new AtomicBoolean(false);
         // TODO(AP-19357) stop the language server when the dialog is closed
     }
 
@@ -219,14 +221,13 @@ final class PythonScriptingService extends ScriptingService {
         public void killSession() {
             if (m_interactiveSession != null) {
                 try {
-                    m_expectCancel = true;
+                    m_expectCancel.set(true);
                     m_interactiveSession.close();
                 } catch (final IOException e) {
                     LOGGER.error(e);
                     // TOOD(AP-19332)
                 } finally {
                     m_interactiveSession = null;
-                    m_expectCancel = false;
                 }
             }
 
@@ -244,12 +245,14 @@ final class PythonScriptingService extends ScriptingService {
                 try {
                     return m_interactiveSession.execute(script, checkOutputs);
                 } catch (final Exception e) { // NOSONAR
-                    if (m_expectCancel) {
+                    if (m_expectCancel.get()) {
                         return "{\"type\":\"execution_canceled\"}"; // NOSONAR
                     } else {
                         LOGGER.error(e);
-                        return "{\"type\":\"unexpected_canceled\"}"; // NOSONAR
+                        return "{\"type\":\"fatal_failure\"}"; // NOSONAR
                     }
+                } finally {
+                    m_expectCancel.set(false);
                 }
             } else {
                 // TODO(AP-19332)

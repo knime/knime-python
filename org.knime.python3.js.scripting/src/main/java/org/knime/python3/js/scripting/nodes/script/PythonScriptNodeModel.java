@@ -55,6 +55,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.apache.commons.lang3.StringUtils;
 import org.knime.core.data.filestore.internal.IFileStoreHandler;
@@ -63,6 +65,7 @@ import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.KNIMEException;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSettingsRO;
@@ -82,6 +85,7 @@ import org.knime.python3.utils.FlowVariableUtils;
 import org.knime.scripting.editor.ScriptingService.ConsoleText;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import py4j.Py4JException;
@@ -112,14 +116,6 @@ final class PythonScriptNodeModel extends NodeModel {
 
     private static final Gson GSON = new Gson();
 
-    /**
-     * @param ans Returned JSON String from python backend
-     * @return Parsed JSON
-     */
-    static JsonObject parseJson(final String ans) {
-        return GSON.fromJson(ans, JsonObject.class);
-    }
-
     static final VariableType<?>[] KNOWN_FLOW_VARIABLE_TYPES = FlowVariableUtils.convertToFlowVariableTypes(Set.of( //
         Boolean.class, //
         Boolean[].class, //
@@ -146,7 +142,7 @@ final class PythonScriptNodeModel extends NodeModel {
 
     @Override
     protected PortObject[] execute(final PortObject[] inObjects, final ExecutionContext exec)
-        throws IOException, InterruptedException, CanceledExecutionException {
+        throws IOException, InterruptedException, CanceledExecutionException, KNIMEException {
         final PythonCommand pythonCommand =
             ExecutableSelectionUtils.getPythonCommand(m_settings.getExecutableSelection());
         m_consoleOutputStorage = null;
@@ -160,15 +156,8 @@ final class PythonScriptNodeModel extends NodeModel {
                 exec.createSubProgress(0.3));
             exec.setProgress(0.3, "Running script");
 
-            var ans = parseJson(session.execute(m_settings.getScript(), true));
-            var error = ans.get("type").getAsString();
-
-            if (error.equals("knime_error") || error.equals("execution_error")) {
-                if (ans.has("traceback")) {
-                    LOGGER.warn(ans.get("traceback").getAsString());
-                }
-                throw new IOException(ans.get("value").getAsString());
-            }
+            var ans = GSON.fromJson(session.execute(m_settings.getScript(), true), JsonObject.class);
+            checkExecutionAnswer(ans);
 
             exec.setProgress(0.7, "Processing output");
             final var outputs = session.getOutputs(exec.createSubExecutionContext(0.3));
@@ -178,11 +167,25 @@ final class PythonScriptNodeModel extends NodeModel {
             m_sessionShutdownTracker.closeAsynchronously(session);
             return outputs;
         } catch (final Py4JException ex) {
-            LOGGER.warn(ex);
-            throw new Py4JException(StringUtils.removeStart(ex.getMessage(),
-                "An exception was raised by the Python Proxy. Return Message: knime.scripting._backend."));
+            throw new KNIMEException(StringUtils.removeStart(ex.getMessage(),
+                "An exception was raised by the Python Proxy. Return Message: knime.scripting._backend."), ex);
         } finally {
             m_consoleOutputStorage = consoleConsumer.finish();
+        }
+    }
+
+    private static void checkExecutionAnswer(final JsonObject ans) throws KNIMEException {
+        var error = ans.get("type").getAsString();
+
+        if (error.equals("knime_error") || error.equals("execution_error")) {
+            if (ans.has("traceback")) {
+                var traceback = StreamSupport.stream(ans.get("traceback").getAsJsonArray().spliterator(), false)
+                    .map(JsonElement::getAsString).collect(Collectors.joining(""));
+
+                LOGGER.warn(traceback);
+
+            }
+            throw new KNIMEException(ans.get("value").getAsString());
         }
     }
 

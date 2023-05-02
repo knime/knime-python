@@ -175,24 +175,22 @@ class ScriptingEntryPoint(kg.EntryPoint):
                 if check_outputs:
                     self.check_outputs()
 
-                sys.tracebacklimit = -1
                 return self._getVariablesInWorkspace()
 
             except KnimeUserError as e:
-                self._java_callback.add_stderr(f"KnimeUserError: {str(e)}")
                 return json.dumps(
                     {"type": "knime_error", "value": f"KnimeUserError: {str(e)}"}
                 )
 
             except Exception as e:
-                self._java_callback.add_stderr(
-                    f"{traceback.format_exc(limit=4, chain=False)}"  # print last 4 stacktraces to console
-                )
+                stacksummary = traceback.extract_tb(e.__traceback__)
+                stacksummary.pop(0)
+
                 return json.dumps(
                     {
                         "type": "execution_error",
-                        "value": f"{type(e).__name__}: {str(e)}",
-                        "traceback": f"{traceback.format_exc(limit=None, chain=False)}",
+                        "value": f"{type(e).__name__}: {str(e)}\n",
+                        "traceback": traceback.format_list(stacksummary),
                     }
                 )
 
@@ -240,14 +238,13 @@ class ScriptingEntryPoint(kg.EntryPoint):
         try:
             self._backends.tear_down_arrow(flush=check_outputs)
         except KnimeUserError as e:
-            traceback.clear_frames(e.__traceback__)
             sys.tracebacklimit = -1
             raise e
 
         except Exception as e:
             raise e
         finally:
-            sys.tracebacklimit = 1000
+            sys.tracebacklimit = None
 
     def writeOutputImage(self, idx: int, path: str):
         with open(path, "wb") as file:
@@ -282,8 +279,10 @@ class ScriptingEntryPoint(kg.EntryPoint):
                     if len(string) > max_string_length
                     else string
                 )
-            except Exception:
-                return ""
+            except Exception as e:
+                raise KnimeUserError(
+                    f"It was not possible to represent {type(obj).__name__} as a string for the workspace."
+                ) from e
 
         workspace = {
             "names": [],
@@ -409,8 +408,6 @@ if __name__ == "__main__":
         logging.getLogger().setLevel(logging.INFO)
 
         scripting_ep = ScriptingEntryPoint()
-        # register at beginning and wait for setupIO to emit all
-
         kg.connect_to_knime(scripting_ep)
         py4j.clientserver.server_connection_stopped.connect(
             lambda *args, **kwargs: scripting_ep._main_loop.exit()

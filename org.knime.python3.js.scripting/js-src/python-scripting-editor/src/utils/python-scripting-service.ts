@@ -42,6 +42,8 @@ export interface PythonScriptingService extends ScriptingService<PythonNodeSetti
     
     initExecutableOptions();
 
+    writeConsole(text: string);
+
     sendLastConsoleOutput();
 
     startInteractive(executableSelection: string);
@@ -61,6 +63,7 @@ export interface PythonScriptingService extends ScriptingService<PythonNodeSetti
     getExecutableOptions(executableSelection: string);
     
     getExecutableInfo(id: string);
+
 }
 
 class PythonScriptingServiceImpl extends ScriptingServiceImpl<PythonNodeSettings> implements PythonScriptingService {
@@ -73,6 +76,9 @@ class PythonScriptingServiceImpl extends ScriptingServiceImpl<PythonNodeSettings
         return this.sendToService('initExecutableOptions');
     }
 
+    writeConsole(text: string) {
+        this.sendToConsole({ text, stderr: false });
+    }
 
     sendLastConsoleOutput(): Promise<void> {
         return this.sendToService('sendLastConsoleOutput');

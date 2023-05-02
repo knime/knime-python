@@ -208,10 +208,17 @@ export default defineComponent({
                     if (j.type === 'knime_error') {
                         // knime related error during execution or check outputs
                         this.status = 'error';
+                        this.scriptingService.writeConsole(j.value);
                     }
                     if (j.type === 'execution_error') {
                         // not knime related execution error
                         this.status = 'error';
+                        
+                        for (let i = 0; i < j.traceback.length; i++) {
+                            this.scriptingService.writeConsole(j.traceback[i]);
+                        }
+
+                        this.scriptingService.writeConsole(j.value);
                     }
                     if (j.type === 'execution_canceled') {
                         // cancel exec
@@ -222,9 +229,14 @@ export default defineComponent({
                         };
                         this.status = 'idle';
                     }
+                    if (j.type === 'fatal_failure') {
+                        this.status = 'error';
+                        this.scriptingService.writeConsole('Unexpected error. Please restart session.');
+                    }
                     if (j.type === 'session_na') {
                         // session was killed but not restarted
                         this.status = 'error';
+                        this.scriptingService.writeConsole('Session unavailable.');
                     }
                 });
         },
@@ -334,7 +346,9 @@ export default defineComponent({
     </template>
     <template #bottomtabs="{ activeTab }">
       <KeepAlive>
-        <OutputConsole v-if="activeTab === 'console'" />
+        <OutputConsole
+          v-if="activeTab === 'console'"
+        />
       </KeepAlive>
     </template>
 
