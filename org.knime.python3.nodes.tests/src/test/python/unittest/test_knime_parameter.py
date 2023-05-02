@@ -554,18 +554,6 @@ class ComposedParameterized:
         self.second_group = ReusableGroup()
 
 
-class ComposedParameterizedWithoutGroup:
-    param = kp.IntParameter(
-        label="Plain int param",
-        description="Description of the plain int param.",
-        default_value=12345,
-    )
-
-    def __init__(self, value) -> None:
-        # Instantiated here for brevety. Usually these would be supplied as arguments to __init__
-        self.param = value
-
-
 @kp.parameter_group("Nested composed")
 class NestedComposed:
     def __init__(self) -> None:
@@ -587,6 +575,82 @@ class NestedComposedParameterized:
     @classmethod
     def create_default_dict(cls):
         return {"model": {"group": NestedComposed.create_default_dict()}}
+
+
+@kp.parameter_group("Nested group")
+class NestedNestedParameters:
+    nested_root_param = kp.StringParameter(
+        "Nested root param",
+        "Nested root param.",
+        "blah",
+    )
+
+    def __init__(self, new_value):
+        self.nested_init_param = kp.StringParameter(
+            "Nested init param",
+            "Nested init param.",
+            new_value,
+        )
+
+
+@kp.parameter_group("Root group")
+class NestedParameters:
+    group_root_param = kp.StringParameter(
+        "Group root param",
+        "Group root param.",
+        "blah",
+    )
+
+    group_root_nested = NestedNestedParameters("blah")
+
+    def __init__(self, new_value):
+        self.new_constructor_param = kp.StringParameter(
+            "Root group init param",
+            "Root group init param.",
+            new_value,
+        )
+        self.group_init_nested = NestedNestedParameters("blah")
+
+
+class ComplexNestedComposedParameterized:
+    root_param = kp.StringParameter("Root param", "Root param.", "blah")
+
+    root_group = NestedParameters("blah")
+
+    def __init__(self):
+        self.init_group = NestedParameters("blah")
+
+    @classmethod
+    def get_expected_params(cls):
+        return {
+            "model": {
+                "root_param": "blah",
+                "root_group": {
+                    "group_root_param": "blah",
+                    "group_root_nested": {
+                        "nested_root_param": "blah",
+                        "nested_init_param": "blah",
+                    },
+                    "new_constructor_param": "blah",
+                    "group_init_nested": {
+                        "nested_root_param": "blah",
+                        "nested_init_param": "blah",
+                    },
+                },
+                "init_group": {
+                    "group_root_param": "blah",
+                    "group_root_nested": {
+                        "nested_root_param": "blah",
+                        "nested_init_param": "blah",
+                    },
+                    "new_constructor_param": "blah",
+                    "group_init_nested": {
+                        "nested_root_param": "blah",
+                        "nested_init_param": "blah",
+                    },
+                },
+            }
+        }
 
 
 @kp.parameter_group("Versioned parameter group")
@@ -1359,93 +1423,6 @@ class ParameterTest(unittest.TestCase):
         }
         self.assertEqual(parameters, expected)
 
-    def test_all_pipelines(self):
-        """
-        Test getting and setting for simple parameters and parameter groups.
-        Both descriptor-based and composed approaches are tested.
-        """
-        ##### descriptor-based #####
-        # descriptor non-nested
-        obj_descr_simple = self.parameterized_without_group
-        obj_descr_simple = ParameterizedWithoutGroup()
-        set_column_parameters(obj_descr_simple)
-        # test getting
-        self.assertEqual(obj_descr_simple.int_param, 3)
-        # test setting
-        obj_descr_simple.int_param = 42
-        descr_simple_extracted = kp.extract_parameters(obj_descr_simple)
-        descr_simple_expected = generate_values_dict_without_groups(42)
-        self.assertEqual(descr_simple_extracted, descr_simple_expected)
-
-        # descriptor one group
-        obj_descr_one_group = ParameterizedWithOneGroup()
-        set_column_parameters(obj_descr_one_group)
-        # test getting
-        self.assertEqual(obj_descr_one_group.parameter_group.first, 1)
-        # test setting
-        obj_descr_one_group.parameter_group.first = 42
-        descr_one_group_extracted = kp.extract_parameters(obj_descr_one_group)
-        descr_one_group_expected = generate_values_dict_with_one_group(first=42)
-        self.assertEqual(descr_one_group_extracted, descr_one_group_expected)
-
-        # descriptor nested groups
-        obj_descr_nested_groups = Parameterized()
-        set_column_parameters(obj_descr_nested_groups)
-        # test getting
-        self.assertEqual(obj_descr_nested_groups.parameter_group.subgroup.first, 1)
-        # test setting
-        obj_descr_nested_groups.parameter_group.subgroup.first = 42
-        descr_nested_groups_extracted = kp.extract_parameters(obj_descr_nested_groups)
-        descr_nested_groups_expected = generate_values_dict(first=42)
-        self.assertEqual(descr_nested_groups_extracted, descr_nested_groups_expected)
-
-        ##### composed #####
-        # composed non-nested (here `param` was also declared as a class-level descriptor)
-        obj_composed_simple = ComposedParameterizedWithoutGroup(54321)
-        # test getting
-        self.assertEqual(obj_composed_simple.param, 54321)
-        # test setting
-        obj_composed_simple.param = 42
-        composed_simple_extracted = kp.extract_parameters(obj_composed_simple)
-        composed_simple_expected = {"model": {"param": 42}}
-        self.assertEqual(composed_simple_extracted, composed_simple_expected)
-
-        # composed one group
-        obj_composed_one_group = ComposedParameterized()
-        # test getting
-        self.assertEqual(obj_composed_one_group.first_group.first_param, 12345)
-        # test setting
-        obj_composed_one_group.first_group.first_param = 42
-        composed_one_group_extracted = kp.extract_parameters(obj_composed_one_group)
-        composed_one_group_expected = {
-            "model": {
-                "first_group": {"first_param": 42, "second_param": 54321},
-                "second_group": {"first_param": 12345, "second_param": 54321},
-            }
-        }
-        self.assertEqual(composed_one_group_extracted, composed_one_group_expected)
-
-        # composed nested groups
-        obj_composed_nested_groups = NestedComposedParameterized()
-        # test getting
-        self.assertEqual(
-            obj_composed_nested_groups.group.first_group.first_param, 12345
-        )
-        # test setting
-        obj_composed_nested_groups.group.first_group.first_param = 42
-        composed_nested_groups_extracted = kp.extract_parameters(
-            obj_composed_nested_groups
-        )
-        composed_nested_groups_expected = (
-            obj_composed_nested_groups.create_default_dict()
-        )
-        composed_nested_groups_expected["model"]["group"]["first_group"][
-            "first_param"
-        ] = 42
-        self.assertEqual(
-            composed_nested_groups_extracted, composed_nested_groups_expected
-        )
-
     def test_extract_parameters_from_altered_composed(self):
         obj = ComposedParameterized()
         obj.first_group.first_param = 3
@@ -1480,6 +1457,62 @@ class ParameterTest(unittest.TestCase):
         kp.inject_parameters(obj, inject, None)
         extracted = kp.extract_parameters(obj)
         self.assertEqual(inject, extracted)
+
+    def test_nested_composed_init_setting(self):
+        """
+        Test value retention when the root group of a nested series of groups is defined inside __init__.
+        Test both composed and descriptor nested groups.
+        """
+        obj = ComplexNestedComposedParameterized()
+        obj_expected = obj.get_expected_params()
+
+        inject_composed = obj_expected.copy()
+        inject_composed["model"]["init_group"]["group_root_param"] = "CHANGED"
+        inject_composed["model"]["init_group"]["new_constructor_param"] = "CHANGED"
+        inject_composed["model"]["init_group"]["group_root_nested"][
+            "nested_root_param"
+        ] = "CHANGED"
+        inject_composed["model"]["init_group"]["group_root_nested"][
+            "nested_init_param"
+        ] = "CHANGED"
+        inject_composed["model"]["init_group"]["group_init_nested"][
+            "nested_root_param"
+        ] = "CHANGED"
+        inject_composed["model"]["init_group"]["group_init_nested"][
+            "nested_init_param"
+        ] = "CHANGED"
+        kp.inject_parameters(obj, inject_composed)
+        composed_extracted = kp.extract_parameters(obj)
+        self.assertEqual(composed_extracted, inject_composed)
+
+    def test_nested_composed_descriptor_setting(self):
+        """
+        Test value retention when the root group of a nested series of groups is a descriptor.
+        Test both composed and descriptor nested groups.
+        """
+        obj = ComplexNestedComposedParameterized()
+        obj_expected = obj.get_expected_params()
+
+        inject_descriptor = obj_expected.copy()
+        inject_descriptor["model"]["root_param"] = "CHANGED"
+        inject_descriptor["model"]["root_group"]["group_root_param"] = "CHANGED"
+        inject_descriptor["model"]["root_group"]["new_constructor_param"] = "CHANGED"
+        inject_descriptor["model"]["root_group"]["group_root_nested"][
+            "nested_root_param"
+        ] = "CHANGED"
+        inject_descriptor["model"]["root_group"]["group_root_nested"][
+            "nested_init_param"
+        ] = "CHANGED"
+
+        inject_descriptor["model"]["root_group"]["group_init_nested"][
+            "nested_root_param"
+        ] = "CHANGED"
+        inject_descriptor["model"]["root_group"]["group_init_nested"][
+            "nested_init_param"
+        ] = "CHANGED"
+        kp.inject_parameters(obj, inject_descriptor)
+        descriptor_extracted = kp.extract_parameters(obj)
+        self.assertEqual(descriptor_extracted, inject_descriptor)
 
     def test_extract_schema_from_composed(self):
         obj = ComposedParameterized()

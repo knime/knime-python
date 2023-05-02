@@ -1138,6 +1138,13 @@ def get_attr_from_instance(instance, attr):
 
 
 class GetSetBase:
+    """
+    This base class is needed primarily to allow composition of parameters and parameter groups.
+
+    Since in the case of composition the __set__ and __get__ methods don't get automatically called, we
+    resort to calling them manually by catching the appropriate object type (e.g. _BaseParameter).
+    """
+
     def __getattribute__(instance, name):
         obj = super().__getattribute__(name)
         if isinstance(obj, _BaseParameter):
@@ -1320,12 +1327,25 @@ def parameter_group(
                 """
                 return self._copy_and_inject(obj) if self._is_descriptor() else self
 
+            def _adjust_composed_children(self, copied_self):
+                """
+                During deepcopying, self's attributes also get copied. Since composed parameter groups are holders of their own
+                __parameters__ dictionaries instead of referencing a subdict of their parent's __parameters__ dictionary, we need
+                to "return" the composed parameter group instances of the deepcopied self to point to the original instances.
+                This results in parameter injection and extraction accessing the same __parameters__ dictionaries of composed parameter groups.
+                """
+                for name, param_obj in _get_parameters(self).items():
+                    if _is_group(param_obj) and not hasattr(param_obj, "_name"):
+                        copied_self.__dict__[name] = param_obj
+
             def _copy_and_inject(self, obj):
                 """
-                Copies self and ensures that it has the parameters from obj.
+                Copies self and ensures that it has the parameters from obj. Additionally, composed parameter group
+                children are adjusted to be that of the original self instead of new objects created during deepcopy to
+                allow for parameter injection and extraction.
                 """
-
                 copied_instance = deepcopy(self)
+                self._adjust_composed_children(copied_instance)
 
                 if not hasattr(obj, "__kind__"):
                     # obj is the object that contains this parameter group
