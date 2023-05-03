@@ -190,21 +190,17 @@ class _PythonConnectionPortObject:
 
 
 class _PythonImagePortObject:
-    def __init__(self, java_class_name, data, format: kn.ImageFormat):
+    def __init__(self, java_class_name, data):
         import base64
 
         self._java_class_name = java_class_name
         self._img_bytes = base64.b64encode(data).decode("utf-8")
-        self._format = format.value
 
     def getJavaClassName(self) -> str:
         return self._java_class_name
 
     def getImageBytes(self) -> str:
         return self._img_bytes
-
-    def getImageFormat(self) -> str:
-        return self._format
 
     class Java:
         implements = [
@@ -442,7 +438,7 @@ class _PortTypeRegistry:
             return _PythonBinaryPortObject(class_name, file_creator(), obj, spec)
         elif port.type == kn.PortType.IMAGE:
             class_name = "org.knime.core.node.port.image.ImagePortObject"
-            return _PythonImagePortObject(class_name, obj, port.format)
+            return _PythonImagePortObject(class_name, obj)
         else:
             assert (
                 port.type.id in self._port_types_by_id

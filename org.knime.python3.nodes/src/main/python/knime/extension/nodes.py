@@ -895,12 +895,12 @@ def output_view(name: str, description: str, static_resources: Optional[str] = N
     return add_view
 
 
-def output_image(name: str, description: str, format: ImageFormat):
+def output_image(name: str, description: str):
     """
     Use this decorator to define an output port of type "Image" of a node.
     """
     return lambda node_factory: _add_port(
         node_factory,
         "output_ports",
-        Port(PortType.IMAGE, name, description, format=format),
+        Port(PortType.IMAGE, name, description),
     )

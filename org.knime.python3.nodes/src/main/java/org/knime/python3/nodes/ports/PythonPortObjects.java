@@ -50,6 +50,7 @@ package org.knime.python3.nodes.ports;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Map;
@@ -156,10 +157,6 @@ public final class PythonPortObjects {
          */
         String getImageBytes();
 
-        /**
-         * @return The format of the provided image
-         */
-        String getImageFormat();
     }
 
     /**
@@ -305,7 +302,7 @@ public final class PythonPortObjects {
         }
 
         /**
-         * @return The {@link PythonBinaryBlobPortObjectSpec}
+         * @return the {@link PythonBinaryPortObjectSpec} for this port object
          */
         public PythonBinaryPortObjectSpec getSpec() {
             return m_spec;
@@ -381,22 +378,25 @@ public final class PythonPortObjects {
      */
     public static final class PythonImagePortObject implements PythonPortObject, PortObjectProvider {
         private final byte[] m_bytes;
-
-        private final String m_format;
+        private final PythonImagePortObjectSpec m_spec;
 
         /**
-         * @param imgBytes
-         * @param imgFormat
+         * Constructor for creating a PythonImagePortObject.
+         *
+         * @param imgBytes the array of bytes containing the image data
+         * @param spec the spec containing the image format
          */
-        public PythonImagePortObject(final String imgBytes, final String imgFormat) {
-            m_bytes = Base64.getDecoder().decode(imgBytes.getBytes());
-            m_format = imgFormat;
+        public PythonImagePortObject(final byte[] imgBytes, final ImagePortObjectSpec spec) {
+            m_bytes = imgBytes;
+            m_spec = new PythonImagePortObjectSpec(spec);
         }
 
         /**
          * Create a PythonImagePortObject from a PurePythonImagePortObject.
          *
          * @param portObject The {@link PurePythonImagePortObject} coming from Python
+         * @param fileStoresByKey Not currently used by this port object type but required due to reflection
+         * @param tableConverter Not needed for this port object type but required due to reflection
          * @param execContext The current {@link ExecutionContext}
          * @return new {@link PythonImagePortObject} containing the image data
          * @throws IOException if the object could not be converted
@@ -404,23 +404,50 @@ public final class PythonPortObjects {
         public static PythonImagePortObject fromPurePython(final PurePythonImagePortObject portObject,
             final Map<String, FileStore> fileStoresByKey, final PythonArrowTableConverter tableConverter,
             final ExecutionContext execContext) throws IOException {
-            final var bytes = portObject.getImageBytes();
-            final var format = portObject.getImageFormat();
-            return new PythonImagePortObject(bytes, format);
+            final var bytes = Base64.getDecoder().decode(portObject.getImageBytes().getBytes());
+            ImagePortObjectSpec spec;
+
+            if (isPngBytes(bytes)) {
+                spec = new ImagePortObjectSpec(PNGImageContent.TYPE);
+            } else if (isSvgBytes(bytes)) {
+                spec = new ImagePortObjectSpec(SvgCell.TYPE);
+            } else {
+                throw new UnsupportedOperationException("Unsupported image format detected.");
+            }
+
+            return new PythonImagePortObject(bytes, spec);
+        }
+
+        private static boolean isPngBytes(final byte[] bytes) {
+            byte[] pngHeader = {(byte)0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n'};
+            if (bytes.length < 8) {
+                return false;
+            }
+            for (int i = 0; i < 8; i++) {
+                if (bytes[i] != pngHeader[i]) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private static boolean isSvgBytes(final byte[] bytes) {
+            String content = new String(bytes, StandardCharsets.UTF_8).trim();
+            return content.startsWith("<svg") || content.contains("<!DOCTYPE svg");
         }
 
         @Override
         public PortObject getPortObject() {
-            if (m_format.equals("png")) {
-                return convertBytesToPNG();
-            } else if (m_format.equals("svg")) {
-                try {
+            try {
+                if (m_spec.isPng()) {
+                    return convertBytesToPNG();
+                } else if (m_spec.isSvg()) {
                     return convertBytesToSVG();
-                } catch (IOException ex) {
-                    throw new UnsupportedOperationException("Unable to convert image data to SVG.");
+                } else {
+                    throw new UnsupportedOperationException("Unsupported image format detected.");
                 }
-            } else {
-                throw new UnsupportedOperationException("Unsupported image format detected.");
+            } catch (IOException ex) {
+                throw new UnsupportedOperationException("Unable to convert image data.");
             }
         }
 
@@ -642,8 +669,8 @@ public final class PythonPortObjects {
         private final ImagePortObjectSpec m_spec;
 
         /**
-         * @param spec a {@link ImagePortObjectSpec} that contains the data type (PNG or SVG)
-         * used during serialization to JSON.
+         * @param spec a {@link ImagePortObjectSpec} that contains the data type (PNG or SVG) used during serialization
+         *            to JSON.
          */
         public PythonImagePortObjectSpec(final ImagePortObjectSpec spec) {
             m_spec = spec;
@@ -652,6 +679,14 @@ public final class PythonPortObjects {
         @Override
         public PortObjectSpec getPortObjectSpec() {
             return m_spec;
+        }
+
+        public boolean isPng() {
+            return m_spec.getDataType().equals(PNGImageContent.TYPE);
+        }
+
+        public boolean isSvg() {
+            return m_spec.getDataType().equals(SvgCell.TYPE);
         }
 
         @Override
@@ -663,9 +698,9 @@ public final class PythonPortObjects {
         public String toJsonString() {
             final var om = new ObjectMapper();
             final var rootNode = om.createObjectNode();
-            if (m_spec.getDataType().equals(PNGImageContent.TYPE)) {
+            if (isPng()) {
                 rootNode.put("format", "png");
-            } else if (m_spec.getDataType().equals(SvgCell.TYPE)) {
+            } else if (isSvg()) {
                 rootNode.put("format", "svg");
             } else {
                 throw new IllegalStateException("Unsupported image format.");
@@ -680,8 +715,8 @@ public final class PythonPortObjects {
         /**
          * @param jsonData the spec serialized as JSON
          * @return the corresponding ImagePortObjectSpec for either PNG or SVG
-         * @throws IllegalStateException if either an unsupported image format is detected
-         * or a problem is encountered during the parsing of the JSON data
+         * @throws IllegalStateException if either an unsupported image format is detected or a problem is encountered
+         *             during the parsing of the JSON data
          */
         public static PythonImagePortObjectSpec fromJsonString(final String jsonData) {
             final var om = new ObjectMapper();
