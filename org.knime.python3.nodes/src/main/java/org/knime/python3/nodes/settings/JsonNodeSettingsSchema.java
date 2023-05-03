@@ -80,9 +80,8 @@ public final class JsonNodeSettingsSchema {
     /**
      * @param settings the saved node settings
      * @return the version the settings were saved with
-     * @throws InvalidSettingsException if settings are missing the version field
      */
-    public static String readVersion(final ConfigBaseRO settings) throws InvalidSettingsException {
+    public static String readVersion(final ConfigBaseRO settings) {
         try {
             // settings won't have the appropriate field if they were saved before versioning
             // was introduced. In this case the version defaults to 0.0.0.
@@ -114,10 +113,11 @@ public final class JsonNodeSettingsSchema {
      *
      * @param settings to load into the newly created object
      * @return a new instance of JsonNodeSettings with this schema and the values from settings
+     * * @throws InvalidSettingsException if the settings are invalid
      */
     public JsonNodeSettings createFromSettingsForValidation(
-        final NodeSettingsRO settings) {
-        return new JsonNodeSettings(settings, m_schema, m_version);
+        final NodeSettingsRO settings) throws InvalidSettingsException {
+        return new JsonNodeSettings(settings, m_schema, readVersion(settings));
 
     }
 
