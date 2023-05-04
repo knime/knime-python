@@ -163,7 +163,8 @@ public final class DelegatingNodeModel extends NodeModel
     protected void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
         runWithProxyConsumer(m_proxyProvider::getConfigurationProxy,
             node -> {
-                var jsonSettings = node.getSettingsSchema(m_extensionVersion).createFromSettings(settings);
+                var savedVersion = JsonNodeSettingsSchema.readVersion(settings);
+                var jsonSettings = node.getSettingsSchema(savedVersion).createFromSettings(settings);
                 node.validateSettings(jsonSettings);
             });
     }
