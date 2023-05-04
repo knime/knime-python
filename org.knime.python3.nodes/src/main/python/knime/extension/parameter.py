@@ -246,15 +246,15 @@ def _determine_compatability(
     missing_params = _detect_missing_parameters(obj, saved_parameters, current_version)
     if saved_version < current_version:
         # backward compatibilitiy
-        LOGGER.warning(
+        LOGGER.debug(
             f" The node was previously configured with an older version of the extension, {saved_version}, while the current version is {current_version}."
         )
         if missing_params:
-            LOGGER.warning(
+            LOGGER.debug(
                 " The following parameters have since been added, and are configured with their default values:"
             )
             for param in missing_params:
-                LOGGER.warning(f' - "{param}"')
+                LOGGER.debug(f' - "{param}"')
     else:
         # forward compatibility (not supported)
         LOGGER.error(
