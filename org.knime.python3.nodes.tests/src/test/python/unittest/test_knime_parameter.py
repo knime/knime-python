@@ -1658,7 +1658,7 @@ class ParameterTest(unittest.TestCase):
             ),
         ]
 
-        with self.assertLogs() as context_manager:
+        with self.assertLogs(level="DEBUG") as context_manager:
             for saved_version, installed_version, saved_params in cases:
                 kp.determine_compatability(
                     self.versioned_parameterized,
@@ -1673,22 +1673,22 @@ class ParameterTest(unittest.TestCase):
                     "ERROR:Python backend: The node was previously configured with a newer version of the extension, 0.2.0, while the current version is 0.1.0.",
                     "ERROR:Python backend: The node might not work as expected without being reconfigured.",
                     # 0.1.0 -> 0.2.0: backward compatibility
-                    "WARNING:Python backend: The node was previously configured with an older version of the extension, 0.1.0, while the current version is 0.2.0.",
-                    "WARNING:Python backend: The following parameters have since been added, and are configured with their default values:",
-                    'WARNING:Python backend: - "String Parameter"',
-                    'WARNING:Python backend: - "First Parameter"',
+                    "DEBUG:Python backend: The node was previously configured with an older version of the extension, 0.1.0, while the current version is 0.2.0.",
+                    "DEBUG:Python backend: The following parameters have since been added, and are configured with their default values:",
+                    'DEBUG:Python backend: - "String Parameter"',
+                    'DEBUG:Python backend: - "First Parameter"',
                     # 0.1.0 -> 0.3.0: backward compatibility
-                    "WARNING:Python backend: The node was previously configured with an older version of the extension, 0.1.0, while the current version is 0.3.0.",
-                    "WARNING:Python backend: The following parameters have since been added, and are configured with their default values:",
-                    'WARNING:Python backend: - "String Parameter"',
-                    'WARNING:Python backend: - "Boolean Parameter"',
-                    'WARNING:Python backend: - "First Parameter"',
-                    'WARNING:Python backend: - "Second Parameter"',
+                    "DEBUG:Python backend: The node was previously configured with an older version of the extension, 0.1.0, while the current version is 0.3.0.",
+                    "DEBUG:Python backend: The following parameters have since been added, and are configured with their default values:",
+                    'DEBUG:Python backend: - "String Parameter"',
+                    'DEBUG:Python backend: - "Boolean Parameter"',
+                    'DEBUG:Python backend: - "First Parameter"',
+                    'DEBUG:Python backend: - "Second Parameter"',
                     # 0.2.0 -> 0.3.0: backward compatibility
-                    "WARNING:Python backend: The node was previously configured with an older version of the extension, 0.2.0, while the current version is 0.3.0.",
-                    "WARNING:Python backend: The following parameters have since been added, and are configured with their default values:",
-                    'WARNING:Python backend: - "Boolean Parameter"',
-                    'WARNING:Python backend: - "Second Parameter"',
+                    "DEBUG:Python backend: The node was previously configured with an older version of the extension, 0.2.0, while the current version is 0.3.0.",
+                    "DEBUG:Python backend: The following parameters have since been added, and are configured with their default values:",
+                    'DEBUG:Python backend: - "Boolean Parameter"',
+                    'DEBUG:Python backend: - "Second Parameter"',
                 ],
                 context_manager.output,
             )

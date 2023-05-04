@@ -162,9 +162,8 @@ public final class DelegatingNodeModel extends NodeModel
     @Override
     protected void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
         runWithProxyConsumer(m_proxyProvider::getConfigurationProxy,
-            // We use the current extension version to allow detection of missing parameters during validation.
             node -> {
-                var jsonSettings = node.getSettingsSchema(m_extensionVersion).createFromSettingsForValidation(settings);
+                var jsonSettings = node.getSettingsSchema(m_extensionVersion).createFromSettings(settings);
                 node.validateSettings(jsonSettings);
             });
     }
@@ -172,7 +171,6 @@ public final class DelegatingNodeModel extends NodeModel
     @Override
     protected void loadValidatedSettingsFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
         runWithProxyConsumer(m_proxyProvider::getConfigurationProxy,
-            // We use the version saved with the settings here in order to generate a matching schema.
             node -> {
                 var savedVersion = JsonNodeSettingsSchema.readVersion(settings);
                 m_settings = node.getSettingsSchema(savedVersion).createFromSettings(settings);

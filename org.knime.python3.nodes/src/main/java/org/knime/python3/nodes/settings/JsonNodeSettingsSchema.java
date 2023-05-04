@@ -97,7 +97,7 @@ public final class JsonNodeSettingsSchema {
      * or the current extension version, depending on how this JsonNodeSettingsSchema object is instantiated.
      *
      * @param settings to load into the newly created object
-     * @return a new instance of JsonNodeSettings with this schema and the values from settings
+     * @return a new instance of JsonNodeSettings with this schema and extension version, and the values from settings
      * @throws InvalidSettingsException if the settings are invalid
      */
     public JsonNodeSettings createFromSettings(
@@ -107,25 +107,10 @@ public final class JsonNodeSettingsSchema {
     }
 
     /**
-     * Creates a new instance of JsonNodeSettings with this schema and the settings stored in {@code settings}.
-     * The version attached to the JsonNodeSettings object is the current extension version, which is needed
-     * to enable detection of missing parameters in the settings when performing validation on the Python side.
-     *
-     * @param settings to load into the newly created object
-     * @return a new instance of JsonNodeSettings with this schema and the values from settings
-     * * @throws InvalidSettingsException if the settings are invalid
-     */
-    public JsonNodeSettings createFromSettingsForValidation(
-        final NodeSettingsRO settings) throws InvalidSettingsException {
-        return new JsonNodeSettings(settings, m_schema, readVersion(settings));
-
-    }
-
-    /**
      * Creates a new instance from the provided JSON string and the schema of this instance.
      *
      * @param json holding the settings
-     * @return a new instance with the same schema as this instance but the values from the json
+     * @return a new instance with the same schema and extension version as this instance but the values from the json
      */
     public JsonNodeSettings createFromJson(final String json) {
         return new JsonNodeSettings(json, m_schema, m_version);
