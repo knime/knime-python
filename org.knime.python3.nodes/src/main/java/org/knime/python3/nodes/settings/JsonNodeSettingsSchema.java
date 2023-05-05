@@ -92,16 +92,14 @@ public final class JsonNodeSettingsSchema {
     }
 
     /**
-     * Creates a new instance of JsonNodeSettings with this schema and the settings stored in {@code settings}.
-     * The version attached to the JsonNodeSettings object is either the version the settings were saved with,
-     * or the current extension version, depending on how this JsonNodeSettingsSchema object is instantiated.
+     * Creates a new instance of JsonNodeSettings with this schema and the settings stored in {@code settings}. The
+     * version attached to the JsonNodeSettings object is either the version the settings were saved with, or the
+     * current extension version, depending on how this JsonNodeSettingsSchema object is instantiated.
      *
      * @param settings to load into the newly created object
      * @return a new instance of JsonNodeSettings with this schema and extension version, and the values from settings
-     * @throws InvalidSettingsException if the settings are invalid
      */
-    public JsonNodeSettings createFromSettings(
-        final NodeSettingsRO settings) throws InvalidSettingsException {
+    public JsonNodeSettings createFromSettings(final NodeSettingsRO settings) {
         return new JsonNodeSettings(settings, m_schema, readVersion(settings));
 
     }
@@ -115,6 +113,5 @@ public final class JsonNodeSettingsSchema {
     public JsonNodeSettings createFromJson(final String json) {
         return new JsonNodeSettings(json, m_schema, m_version);
     }
-
 
 }

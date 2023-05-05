@@ -80,10 +80,10 @@ public interface PythonNodeModelProxy {
      * Validates the given parameters.
      *
      * @param parameters as JSON string
-     * @param version of KNIME with which the parameters were created (used for backwards compatibility)
+     * @param savedVersion of KNIME with which the parameters were created (used for backwards compatibility)
      * @return the validation error or null if there are no errors
      */
-    String validateParameters(final String parameters, String version);
+    String validateParameters(final String parameters, String savedVersion);
 
     /**
      * Performs the node execution.
