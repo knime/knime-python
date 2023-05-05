@@ -51,7 +51,6 @@ package org.knime.python3.nodes.dialog;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.port.PortObjectSpec;
@@ -104,11 +103,7 @@ public final class DelegatingJsonSettingsDataService implements NodeSettingsServ
     }
 
     private JsonNodeSettings loadSettings(final NodeSettingsRO settings) {
-        try {
-            return m_lastSettingsSchema.createFromSettings(settings);
-        } catch (InvalidSettingsException ex) {
-            throw new IllegalArgumentException("The provided settings are invalid.", ex);
-        }
+        return m_lastSettingsSchema.createFromSettings(settings);
     }
 
     @Override

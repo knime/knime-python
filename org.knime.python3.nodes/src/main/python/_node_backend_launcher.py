@@ -411,10 +411,10 @@ class _PythonNodeProxy:
             parameters_version,
         )
 
-    def validateParameters(self, parameters: str, version: str) -> None:
+    def validateParameters(self, parameters: str, saved_version: str) -> None:
         parameters_dict = json.loads(parameters)
         try:
-            kp.validate_parameters(self._node, parameters_dict, version)
+            kp.validate_parameters(self._node, parameters_dict, saved_version)
             return None
         except BaseException as error:
             return str(error)

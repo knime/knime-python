@@ -127,21 +127,23 @@ def _inject_parameters(
             param_obj._set_default_for_version(obj, parameters_version)
 
 
-def validate_parameters(obj, parameters: dict, version: str = None) -> None:
+def validate_parameters(obj, parameters: dict, saved_version: str = None) -> None:
     """
     Perform validation on the individual parameters of obj, which can be a node or a parameter group.
 
     This method will raise a ValueError if a parameter violates its validator.
     """
-    version = Version.parse_version(version)
-    _validate_parameters(obj, parameters["model"], version)
+    saved_version = Version.parse_version(saved_version)
+    _validate_parameters(obj, parameters["model"], saved_version)
 
 
-def _validate_parameters(obj, parameters: dict, version: Version) -> None:
+def _validate_parameters(obj, parameters: dict, saved_version: Version) -> None:
     for name, param_obj in _get_parameters(obj).items():
-        if param_obj._since_version <= version:
+        # NB: If the settings were saved with a version that did not have this parameter
+        # yet we do not need to validate it because it will be set to the default value
+        if param_obj._since_version <= saved_version:
             if name in parameters:
-                param_obj._validate(parameters[name], version)
+                param_obj._validate(parameters[name], saved_version)
             else:
                 raise ValueError(f'Parameter missing for key "{name}".')
 
