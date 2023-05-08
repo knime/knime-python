@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Unit Tests for org.knime.python3.arrow
 Bundle-SymbolicName: org.knime.python3.arrow.tests;singleton:=true
-Bundle-Version: 4.7.1.qualifier
+Bundle-Version: 4.7.3.qualifier
 Bundle-ClassPath: .
 Bundle-Vendor: KNIME AG, Zurich, Switzerland
 Bundle-RequiredExecutionEnvironment: JavaSE-11
