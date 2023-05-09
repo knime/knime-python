@@ -395,26 +395,28 @@ class _BaseParameter(ABC):
             self._label = name
 
     def _get_value(self, obj, name, for_dialog=None):
-        # the for_dialog parameter is needed to match the signature of the
-        # _get_value method for parameter groups
-        return obj.__getattribute__(name)
+        """
+        If `self` is a descriptor, then the `name` parameter was passed down from the `__get__` method
+        via `self._name`. Otherwise, the `name` parameter is passed from the overwritten `__getattribute__` of `GetSetBase`.
 
-    def __get__(self, obj, objtype=None):
-        if not hasattr(self, "_name"):
-            name = objtype  # HACK: for non-descriptors, the name of the parameter is passed via the objtype argument
-        else:
-            name = self._name
-
+        The for_dialog parameter is needed to match the signature of the `_get_value` method for parameter groups.
+        """
         if not hasattr(obj, "__kind__"):
             # obj is the root parameterised object
             _create_param_dict_if_not_exists(obj)
 
         if name in obj.__parameters__:
             return obj.__parameters__[name]
-        else:
-            def_value = self._get_default()
-            obj.__parameters__[name] = def_value
-            return def_value
+
+        def_value = self._get_default()
+        obj.__parameters__[name] = def_value
+        return def_value
+
+    def __get__(self, obj, objtype=None):
+        """
+        Only ever called when `self` is a descriptor, thus having the `_name` attribute.
+        """
+        return self._get_value(obj, self._name)
 
     def _get_default(self, version: Version = None):
         if callable(self._default_value):
@@ -449,7 +451,8 @@ class _BaseParameter(ABC):
         obj.__parameters__[name] = value
 
     def __str__(self):
-        return f"\n\t - name: {self._name}\n\t - label: {self._label}\n\t"
+        param_name = self._label if not hasattr(self, "_name") else self._name
+        return f"\n\t - name: {param_name}\n\t - label: {self._label}\n\t"
 
     def _validate(self, value, version=None):  # NOSONAR
         # the version parameter is needed to match the signature of the
@@ -1064,7 +1067,7 @@ class MultiColumnParameter(_BaseColumnParameter):
     def _get_options(self) -> dict:
         return {"format": "columnFilter"}
 
-    def _get_value(self, obj: Any, name, for_dialog: bool):
+    def _get_value(self, obj: Any, name, for_dialog: bool = False):
         value = super()._get_value(obj, name, for_dialog)
         if for_dialog and value is None:
             return []
@@ -1145,22 +1148,22 @@ class GetSetBase:
     resort to calling them manually by catching the appropriate object type (e.g. _BaseParameter).
     """
 
-    def __getattribute__(instance, name):
+    def __getattribute__(self, name):
         obj = super().__getattribute__(name)
         if isinstance(obj, _BaseParameter):
-            return obj.__get__(instance, name)
+            return obj._get_value(self, name)
 
         return obj
 
-    def __setattr__(instance, name, value):
-        if not hasattr(instance, name):
+    def __setattr__(self, name, value):
+        if not hasattr(self, name):
             super().__setattr__(name, value)
         else:
-            if name in instance.__parameters__:
+            if name in self.__parameters__:
                 obj = super().__getattribute__(name)
                 if not isinstance(obj, _BaseParameter):
-                    obj = get_attr_from_instance(instance, name)
-                obj.__set__(instance, value)
+                    obj = get_attr_from_instance(self, name)
+                obj.__set__(self, value)
             else:
                 super().__setattr__(name, value)
 
@@ -1379,7 +1382,8 @@ def parameter_group(
                 _inject_parameters(param_holder, values, parameters_version)
 
             def __str__(self):
-                return f"\tGroup name: {self._name}\n\tGroup label: {self._label}"
+                group_name = self._label if not hasattr(self, "_name") else self._name
+                return f"\tGroup name: {group_name}\n\tGroup label: {self._label}"
 
             def _validate(self, values, version: Version):
                 # validate individual parameters
