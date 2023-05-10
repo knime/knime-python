@@ -198,7 +198,7 @@ class _BaseContext:
     def get_credential_names(self):
         """
 
-        Returns: identifier ( flow variable name) for each credential
+        Returns the identifier (flow variable name) for each credential
 
         """
         credential_names = list(self._java_ctx.get_credential_names())
@@ -206,6 +206,20 @@ class _BaseContext:
 
 
 class DialogCreationContext(_BaseContext):
+    """
+    The DialogCreationContext provides utilities to communicate with KNIME during the dialog creation phase.
+    It enables access to the flow variables, the specs of the input tables and the credentials. These can be used to
+    create the dialog elements, by passing the respective method as lambda function to the constructor of the
+    string parameter class.
+
+    **Example**::
+
+        class ExampleNode:
+            # This dialog element displays a dropdown with all available credentials
+            string_param = knext.StringParameter(label="Credential parameter", description="Choices is a callable",
+                                         choices=lambda a: knext.DialogCreationContext.get_credential_names(a))
+
+    """
     def __init__(self, java_ctx, flow_variables) -> None:
         super().__init__(java_ctx, flow_variables)
 

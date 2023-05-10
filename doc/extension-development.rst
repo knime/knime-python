@@ -43,6 +43,15 @@ e.g. check whether the user has cancelled the execution of your Python node.
    :noindex:
    :inherited-members:
 
+The dialog creation context is used to create dialogs for the configuration of the node. It can be accessed indirectly,
+by passing its method's as arguments to specific parameters (see the example below).
+
+.. autoclass:: knime.extension.DialogCreationContext
+   :members:
+   :noindex:
+   :inherited-members:
+
+
 Decorators
 ^^^^^^^^^^
 These decorators can be used to easily configure your Python node.
