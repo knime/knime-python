@@ -220,6 +220,7 @@ class DialogCreationContext(_BaseContext):
                                          choices=lambda a: knext.DialogCreationContext.get_credential_names(a))
 
     """
+
     def __init__(self, java_ctx, flow_variables) -> None:
         super().__init__(java_ctx, flow_variables)
 
@@ -245,6 +246,23 @@ class DialogCreationContext(_BaseContext):
         Returns the specs for all input ports of the node.
         """
         return self._java_ctx.get_input_specs()
+
+    def get_flow_variables(self):
+        """
+        Returns the flow variables coming in from KNIME as a dictionary with string keys.
+        The dictionary cannot be edited and supports flow variables of the following types:
+
+        * bool
+        * list(bool)
+        * float
+        * list(float)
+        * int
+        * list(int)
+        * str
+        * list(str)
+
+        """
+        return self._flow_variables
 
 
 class ConfigurationContext(_BaseContext):

@@ -1,6 +1,7 @@
 import unittest
 import knime.extension.parameter as kp
 import knime.api.schema as ks
+import knime.extension.nodes as kn
 
 
 def generate_values_dict(
@@ -757,6 +758,31 @@ class ParameterizedWithInnerClassGroups:
     group = GroupCallingInnerClass(param=SubgroupWithInnerClass.InnerClass.attr_1 + 41)
 
 
+class ParameterizedWithDialogCreationContext:
+    credential_param = kp.StringParameter(
+        label="Credential param",
+        description="Choices is a callable",
+        choices=lambda a: kn.DialogCreationContext.get_credential_names(a),
+    )
+    flow_variable_param = kp.StringParameter(
+        label="Flow variable param",
+        description="Call it a choice",
+        choices=lambda a: kn.DialogCreationContext.get_flow_variables(a),
+    )
+
+
+class DummyDialogCreationContext:
+    class DummyJavaContext:
+        def get_credential_names(self):
+            return ["foo", "bar", "baz"]
+
+        def get_credential(self, name):
+            return "dummy"
+
+    _java_ctx = DummyJavaContext()
+    _flow_variables = ["flow1", "flow2", "flow3"]
+
+
 #### Tests: ####
 class ParameterTest(unittest.TestCase):
     def setUp(self):
@@ -765,6 +791,9 @@ class ParameterTest(unittest.TestCase):
         self.versioned_parameterized = VersionedParameterized()
         self.parameterized_without_group = ParameterizedWithoutGroup()
         self.parameterized_with_custom_methods = ParameterizedWithCustomMethods()
+        self.parameterized_with_dialog_creation_context = (
+            ParameterizedWithDialogCreationContext()
+        )
 
         self.maxDiff = None
 
@@ -975,6 +1004,44 @@ class ParameterTest(unittest.TestCase):
             },
         }
         extracted = kp.extract_schema(self.parameterized)
+        self.assertEqual(expected, extracted)
+
+    def test_extract_dialog_creation_context_parameters(self):
+        # test credential names
+        expected = {
+            "type": "object",
+            "properties": {
+                "model": {
+                    "type": "object",
+                    "properties": {
+                        "credential_param": {
+                            "title": "Credential param",
+                            "description": "Choices is a callable",
+                            "oneOf": [
+                                {"const": "foo", "title": "foo"},
+                                {"const": "bar", "title": "bar"},
+                                {"const": "baz", "title": "baz"},
+                            ],
+                        },
+                        "flow_variable_param": {
+                            "title": "Flow variable param",
+                            "description": "Call it a choice",
+                            "oneOf": [
+                                {"const": "flow1", "title": "flow1"},
+                                {"const": "flow2", "title": "flow2"},
+                                {"const": "flow3", "title": "flow3"},
+                            ],
+                        },
+                    },
+                }
+            },
+        }
+        dummy_dialog = DummyDialogCreationContext()
+        extracted = kp.extract_schema(
+            self.parameterized_with_dialog_creation_context,
+            dialog_creation_context=dummy_dialog,
+        )
+
         self.assertEqual(expected, extracted)
 
     def test_extract_ui_schema(self):
