@@ -87,10 +87,6 @@ def _make_arrow_compatible(data_frame: pd.DataFrame) -> pd.DataFrame:
     # extract the schema of the df to convert object type columns to logical types
     schema = extract_knime_schema_from_df(data_frame)
 
-    # change to dataframe, for instance if it was a GeoDataFrame
-    if type(data_frame) != pd.DataFrame:
-        data_frame = pd.DataFrame(data_frame)
-
     # convert the df via registered column converters and by parsing the objects
     data_frame = convert_df_to_ktypes_from_schema(data_frame, schema)
 
@@ -202,10 +198,10 @@ def convert_df_to_ktypes_from_schema(df: pd.DataFrame, schema: dict) -> pd.DataF
             if col_converter is not None:
                 if not is_converted:
                     # create a shallow copy of the dataframe
-                    df = df.copy(deep=False)
+                    new_df = pd.DataFrame(df.copy(deep=False))
                     is_converted = True
                 with col_converter.warning_manager():
-                    df[col_name] = col_converter.convert_column(df, col_name)
+                    new_df[col_name] = col_converter.convert_column(df, col_name)
 
             # we have an object type, convert our logical type
             elif isinstance(dtype, PandasLogicalTypeExtensionType) and not isinstance(
@@ -213,11 +209,11 @@ def convert_df_to_ktypes_from_schema(df: pd.DataFrame, schema: dict) -> pd.DataF
             ):
                 if not is_converted:
                     # create a shallow copy of the dataframe
-                    df = df.copy(deep=False)
+                    new_df = pd.DataFrame(df.copy(deep=False))
                     is_converted = True
                 # replace all pd.NA or np.NaN Values with the correct na_value and save it as logical type
                 # column need to be cast as object so that the NA, NaN and NaT are not automatically converted back
-                df[col_name] = (
+                new_df[col_name] = (
                     column.astype(object).where(pd.notnull(column), None).astype(dtype)
                 )
         except ImportError as ex:
@@ -231,7 +227,7 @@ def convert_df_to_ktypes_from_schema(df: pd.DataFrame, schema: dict) -> pd.DataF
                 f" knime.schema.logical(correct_dtype).to_pandas()"
             )
 
-    return df
+    return df if not is_converted else new_df
 
 
 def _create_local_dt_type():
