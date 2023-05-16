@@ -676,7 +676,11 @@ class _BaseMultiChoiceParameter(_BaseParameter):
         )
 
     def _get_options(self) -> dict:
-        if self._enum is None or len(self._enum) > 4 or callable(self._choices):
+        if (
+            self._enum is None
+            or len(self._enum) > 4
+            or (hasattr(self, "_choices") and callable(self._choices))
+        ):
             return {"format": "string"}
         else:
             return {"format": "radio"}
