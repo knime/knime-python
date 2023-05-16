@@ -190,6 +190,10 @@ final class CloseablePythonNodeProxy
 
             @Override
             public Map<String, Object> get_flow_variables() {
+                if (getNode().getFlowObjectStack() == null) {
+                    return new HashMap<>();
+                }
+
                 return FlowVariableUtils.convertToMap(getNode().getFlowObjectStack()
                     .getAvailableFlowVariables(getCompatibleFlowVariableTypes()).values());
             }
