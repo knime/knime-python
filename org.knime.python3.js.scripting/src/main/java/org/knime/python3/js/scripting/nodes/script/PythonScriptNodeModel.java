@@ -178,12 +178,11 @@ final class PythonScriptNodeModel extends NodeModel {
         var error = ans.get("type").getAsString();
 
         if (error.equals("knime_error") || error.equals("execution_error")) {
-            if (ans.has("traceback")) {
-                var traceback = StreamSupport.stream(ans.get("traceback").getAsJsonArray().spliterator(), false)
-                    .map(JsonElement::getAsString).collect(Collectors.joining(""));
-
+            var tracebackArray = ans.get("traceback").getAsJsonArray();
+            if (tracebackArray.size() > 0) {
+                var traceback = StreamSupport.stream(tracebackArray.spliterator(), false).map(JsonElement::getAsString)
+                    .collect(Collectors.joining("\n"));
                 LOGGER.warn(traceback);
-
             }
             throw new KNIMEException(ans.get("value").getAsString());
         }

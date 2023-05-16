@@ -179,18 +179,24 @@ class ScriptingEntryPoint(kg.EntryPoint):
 
             except KnimeUserError as e:
                 return json.dumps(
-                    {"type": "knime_error", "value": f"KnimeUserError: {str(e)}"}
+                    {
+                        "type": "knime_error",
+                        "value": f"KnimeUserError: {str(e)}",
+                        "traceback": [],
+                    }
                 )
 
             except Exception as e:
                 stacksummary = traceback.extract_tb(e.__traceback__)
                 stacksummary.pop(0)
+                intro_line = "Traceback (most recent call last):"
 
                 return json.dumps(
                     {
                         "type": "execution_error",
-                        "value": f"{type(e).__name__}: {str(e)}\n",
-                        "traceback": traceback.format_list(stacksummary),
+                        "value": f"{type(e).__name__}: {str(e)}",
+                        "traceback": [intro_line]
+                        + [i[:-1] for i in traceback.format_list(stacksummary)],
                     }
                 )
 
@@ -207,7 +213,7 @@ class ScriptingEntryPoint(kg.EntryPoint):
                     _ioc._output_images[0] = self._backends._render_view()
                 else:
                     raise KnimeUserError(
-                        f"Expected an image in output_images[{i}], got None. \nknio.output_images[{i}] has not been populated."
+                        f"Expected an image in output_images[{i}], got None. knio.output_images[{i}] has not been populated."
                     )
             else:
                 try:
@@ -222,7 +228,7 @@ class ScriptingEntryPoint(kg.EntryPoint):
         for i, o in enumerate(_ioc._output_objects):
             if o is None:
                 raise KnimeUserError(
-                    f"Expected an object in output_objects[{i}], got None. \nknio.output_objects[{i}] has not been populated."
+                    f"Expected an object in output_objects[{i}], got None. knio.output_objects[{i}] has not been populated."
                 )
         self._backends._check_flow_variables()
 

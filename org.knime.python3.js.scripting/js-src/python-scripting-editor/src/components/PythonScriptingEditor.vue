@@ -205,20 +205,13 @@ export default defineComponent({
                         this.workspace = j.data;
                         this.status = 'success';
                     }
-                    if (j.type === 'knime_error') {
+                    if (j.type === 'knime_error' || j.type === 'execution_error') {
                         // knime related error during execution or check outputs
                         this.status = 'error';
-                        this.scriptingService.writeConsole(j.value);
-                    }
-                    if (j.type === 'execution_error') {
-                        // not knime related execution error
-                        this.status = 'error';
-                        
-                        for (let i = 0; i < j.traceback.length; i++) {
-                            this.scriptingService.writeConsole(j.traceback[i]);
-                        }
-
-                        this.scriptingService.writeConsole(j.value);
+                        this.scriptingService.writeConsole('Executing the Python script failed.\n');
+                        this.scriptingService.writeConsole(j.traceback.join('\n'));
+                        this.scriptingService.writeConsole('\n');
+                        this.scriptingService.writeConsole(`${j.value}\n`);
                     }
                     if (j.type === 'execution_canceled') {
                         // cancel exec

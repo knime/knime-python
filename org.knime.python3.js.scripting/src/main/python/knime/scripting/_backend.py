@@ -156,7 +156,7 @@ class ScriptingBackendV1(ScriptingBackend):
             and not isinstance(table, katn.ArrowBatchOutputTable)
         ):
             raise KnimeUserError(
-                f"Output table '{idx}' must be of type knime.api.Table or knime.api.BatchOutputTable, but got {_format_table_type_msg(table, idx)}."
+                f"Output table '{idx}' must be of type knime.api.Table or knime.api.BatchOutputTable, but got {_format_table_type_msg(table, idx)}"
             )
 
     def get_output_table_sink(self, table_index: int):
