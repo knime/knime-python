@@ -48,16 +48,9 @@
  */
 package org.knime.python3.nodes.ports;
 
-import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
 import java.util.Objects;
 
 import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
 
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.ModelContentRO;
@@ -73,7 +66,7 @@ import com.fasterxml.jackson.databind.util.RawValue;
  *
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
-public final class PythonBinaryBlobPortObjectSpec extends AbstractSimplePortObjectSpec {
+public class PythonBinaryBlobPortObjectSpec extends AbstractSimplePortObjectSpec {
     /**
      * The serializer for the PickeledObject portspec type
      */
@@ -82,10 +75,10 @@ public final class PythonBinaryBlobPortObjectSpec extends AbstractSimplePortObje
     }
 
     // effectively final
-    private String m_id;
+    protected String m_id;
 
     // effectively final
-    private String m_data;
+    protected String m_data;
 
     /**
      * Deserialization constructor. Fields will be populated in load()
@@ -161,38 +154,15 @@ public final class PythonBinaryBlobPortObjectSpec extends AbstractSimplePortObje
         return Objects.hash(m_id, m_data);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public JComponent[] getViews() {
-        // TODO display spec values?
         String text;
         if (m_id != null) {
             text = "<html><b>" + m_id + "</b></html>";
         } else {
             text = "No object available";
         }
-        final JLabel label = new JLabel(text);
-        final Font font = label.getFont();
-        final Font plainFont = new Font(font.getFontName(), Font.PLAIN, font.getSize());
-        label.setFont(plainFont);
-        final JPanel panel = new JPanel(new GridBagLayout());
-        final GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.anchor = GridBagConstraints.NORTHWEST;
-        gbc.fill = GridBagConstraints.BOTH;
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        panel.add(label, gbc);
-        gbc.insets = new Insets(0, 0, 0, 0);
-        gbc.gridy++;
-        gbc.weighty = Double.MIN_VALUE;
-        gbc.weightx = Double.MIN_VALUE;
-        panel.add(new JLabel(), gbc);
-        final JComponent f = new JScrollPane(panel);
-        f.setName("Python Binary Data");
-        return new JComponent[]{f};
+        return PortObjectSpecUtils.stringViewForSpec(text);
     }
 
 }

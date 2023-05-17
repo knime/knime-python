@@ -48,25 +48,17 @@
  */
 package org.knime.python3.nodes.ports;
 
-import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
 import java.util.Objects;
 
 import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
 
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.ModelContentRO;
 import org.knime.core.node.ModelContentWO;
-import org.knime.core.node.port.AbstractSimplePortObjectSpec;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.util.RawValue;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * Specification for the {@link PythonTransientConnectionPortObjectSpec}.
@@ -74,19 +66,13 @@ import com.fasterxml.jackson.databind.util.RawValue;
  * @since 5.1
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
-public final class PythonTransientConnectionPortObjectSpec extends AbstractSimplePortObjectSpec {
+public final class PythonTransientConnectionPortObjectSpec extends PythonBinaryBlobPortObjectSpec {
     /**
      * The serializer for the PickeledObject portspec type
      */
     public static final class Serializer
         extends AbstractSimplePortObjectSpecSerializer<PythonTransientConnectionPortObjectSpec> {
     }
-
-    // effectively final
-    private String m_id;
-
-    // effectively final
-    private String m_data;
 
     // effectively final
     private String m_nodeId;
@@ -107,26 +93,18 @@ public final class PythonTransientConnectionPortObjectSpec extends AbstractSimpl
      */
     PythonTransientConnectionPortObjectSpec(final String id, final String data, final String nodeId,
         final int portIdx) {
-        m_id = id;
-        m_data = data;
+        super(id, data);
         m_nodeId = nodeId;
         m_portIdx = portIdx;
     }
 
-    String getId() {
-        return m_id;
-    }
-
     /**
      * @param factory The factory to use when creating JSON nodes
-     * @return A JSON representation of this {@link PythonBinaryBlobPortObjectSpec}
+     * @return A JSON representation of this {@link PythonTransientConnectionPortObjectSpec}
      */
+    @Override
     public JsonNode toJson(final JsonNodeFactory factory) {
-        final var node = factory.objectNode();
-        node.put("id", m_id);
-        if (m_data != null) {
-            node.putRawValue("data", new RawValue(m_data));
-        }
+        var node = (ObjectNode)super.toJson(factory);
         node.put("node_id", m_nodeId);
         node.put("port_idx", m_portIdx);
         return node;
@@ -150,16 +128,14 @@ public final class PythonTransientConnectionPortObjectSpec extends AbstractSimpl
 
     @Override
     protected void save(final ModelContentWO model) {
-        model.addString("id", m_id);
-        model.addString("data", m_data);
+        super.save(model);
         model.addString("node_id", m_nodeId);
         model.addInt("port_idx", m_portIdx);
     }
 
     @Override
     protected void load(final ModelContentRO model) throws InvalidSettingsException {
-        m_id = model.getString("id", null);
-        m_data = model.getString("data", null);
+        super.load(model);
         m_nodeId = model.getString("node_id", null);
         m_portIdx = model.getInt("port_idx");
     }
@@ -184,9 +160,6 @@ public final class PythonTransientConnectionPortObjectSpec extends AbstractSimpl
         return Objects.hash(m_id, m_data, m_nodeId, m_portIdx);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public JComponent[] getViews() {
         String text;
@@ -195,25 +168,6 @@ public final class PythonTransientConnectionPortObjectSpec extends AbstractSimpl
         } else {
             text = "No object available";
         }
-        final JLabel label = new JLabel(text);
-        final Font font = label.getFont();
-        final Font plainFont = new Font(font.getFontName(), Font.PLAIN, font.getSize());
-        label.setFont(plainFont);
-        final JPanel panel = new JPanel(new GridBagLayout());
-        final GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.anchor = GridBagConstraints.NORTHWEST;
-        gbc.fill = GridBagConstraints.BOTH;
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        panel.add(label, gbc);
-        gbc.insets = new Insets(0, 0, 0, 0);
-        gbc.gridy++;
-        gbc.weighty = Double.MIN_VALUE;
-        gbc.weightx = Double.MIN_VALUE;
-        panel.add(new JLabel(), gbc);
-        final JComponent f = new JScrollPane(panel);
-        f.setName("Python Connection");
-        return new JComponent[]{f};
+        return PortObjectSpecUtils.stringViewForSpec(text);
     }
 }
