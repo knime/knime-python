@@ -116,6 +116,10 @@ class _PythonPortObjectSpec:
     def toJsonString(self) -> str:
         return self._json_string_data
 
+    def toString(self) -> str:
+        """For debugging on the Java side"""
+        return self._json_string_data
+
     @property
     def data(self) -> Dict:
         if self._data is None:
@@ -148,6 +152,10 @@ class _PythonBinaryPortObject:
     def getFileStoreKey(self) -> str:
         return self._key
 
+    def toString(self) -> str:
+        """For debugging on the Java side"""
+        return f"PythonBinaryPortObject[spec={self._spec.toJsonString()}]"
+
     class Java:
         implements = [
             "org.knime.python3.nodes.ports.PythonPortObjects$PurePythonBinaryPortObject"
@@ -163,6 +171,10 @@ class _PythonConnectionPortObject(_PythonBinaryPortObject):
         import os
 
         return os.getpid()
+
+    def toString(self) -> str:
+        """For debugging on the Java side"""
+        return f"PythonConnectionPortObject[spec={self._spec.toJsonString()}]"
 
     class Java:
         implements = [
@@ -313,15 +325,10 @@ class _PortTypeRegistry:
     def port_object_to_python(self, port_object: _PythonPortObject, port: kn.Port):
         class_name = port_object.getJavaClassName()
 
-        def deserialize_custom_port_object() -> Union[Any, kn.PortObject]:
+        def read_port_object_data() -> Union[Any, kn.PortObject]:
             file = port_object.getFilePath()
-            spec = self.spec_to_python(port_object.getSpec(), port)
-            if port.type == kn.PortType.BINARY:
-                with open(file, "rb") as f:
-                    return f.read()
-            else:  # custom port object
-                with open(file, "rb") as f:
-                    return port.type.object_class.deserialize(spec, f.read())
+            with open(file, "rb") as f:
+                return f.read()
 
         if class_name == "org.knime.core.node.BufferedDataTable":
             assert port.type == kn.PortType.TABLE
@@ -331,12 +338,19 @@ class _PortTypeRegistry:
             class_name
             == "org.knime.python3.nodes.ports.PythonBinaryBlobFileStorePortObject"
         ):
-            return deserialize_custom_port_object()
+            data = read_port_object_data()
+            if port.type == kn.PortType.BINARY:
+                return data
+            else:
+                spec = self.spec_to_python(port_object.getSpec(), port)
+                return port.type.object_class.deserialize(spec, data)
         elif (
             class_name
             == "org.knime.python3.nodes.ports.PythonTransientConnectionPortObject"
         ):
-            python_port_object = deserialize_custom_port_object()
+            serialized = read_port_object_data()
+            spec = self.spec_to_python(port_object.getSpec(), port)
+
             data = json.loads(port_object.getSpec().toJsonString())
             key = f'{data["node_id"]}:{data["port_idx"]}'
             if key not in _PortTypeRegistry._connection_port_data:
@@ -345,10 +359,8 @@ class _PortTypeRegistry:
                     + "Please re-execute the upstream node providing the connection."
                 )
 
-            python_port_object.set_connection_dict(
-                _PortTypeRegistry._connection_port_data[key]
-            )
-            return python_port_object
+            connection_data = _PortTypeRegistry._connection_port_data[key]
+            return port.type.object_class.deserialize(spec, serialized, connection_data)
 
         raise TypeError("Unsupported PortObjectSpec found in Python, got " + class_name)
 
@@ -402,19 +414,20 @@ class _PortTypeRegistry:
                 class_name = (
                     "org.knime.python3.nodes.ports.PythonTransientConnectionPortObject"
                 )
+                create_port_object = _PythonConnectionPortObject
 
+                # The serialize method above returns a tuple of bytes and connection_data dict for
+                # ConnectionPortObjects, so we split off the connection_data here and store it in a global dict
                 key = f"{node_id}:{port_idx}"
-                _PortTypeRegistry._connection_port_data[key] = obj.connection_to_dict()
-                return _PythonConnectionPortObject(
-                    class_name, file_creator(), serialized, spec
-                )
+                serialized, connection_data = serialized
+                _PortTypeRegistry._connection_port_data[key] = connection_data
             else:
                 class_name = (
                     "org.knime.python3.nodes.ports.PythonBinaryBlobFileStorePortObject"
                 )
-                return _PythonBinaryPortObject(
-                    class_name, file_creator(), serialized, spec
-                )
+                create_port_object = _PythonBinaryPortObject
+
+            return create_port_object(class_name, file_creator(), serialized, spec)
 
 
 class _PythonNodeProxy:

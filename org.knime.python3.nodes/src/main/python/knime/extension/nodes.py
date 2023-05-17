@@ -50,7 +50,7 @@ Provides base implementations and utilities for the development of KNIME nodes i
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, asdict
 from enum import Enum
-from typing import Any, Dict, List, Optional, Callable, Type
+from typing import Any, Dict, List, Optional, Callable, Tuple, Type
 import os.path
 
 import knime.extension.parameter as kp
@@ -79,7 +79,7 @@ class PortObject(ABC):
 
     @classmethod
     @abstractmethod
-    def deserialize(cls, spec: PortObjectSpec, storage: bytes):
+    def deserialize(cls, spec: PortObjectSpec, storage: bytes) -> "PortObject":
         """Creates the PortObject from its spec and storage."""
         pass
 
@@ -100,18 +100,22 @@ class ConnectionPortObject(PortObject):
         super().__init__(spec)
 
     @abstractmethod
-    def connection_to_dict(self) -> Dict:
+    def serialize(self) -> Tuple[bytes, Dict]:
         """
-        Return a dictionary of all non-serializable members that are needed to initialize
-        a ConnectionPortObject for the next node
+        Return a tuple of the bytes-serialized ConnectionPortObject data and a dictionary of
+        all non-serializable members that are needed to initialize a ConnectionPortObject for
+        the next node
         """
         pass
 
+    @classmethod
     @abstractmethod
-    def set_connection_dict(self, data: Dict) -> None:
+    def deserialize(
+        cls, spec: PortObjectSpec, storage: bytes, connection_data: Dict
+    ) -> "ConnectionPortObject":
         """
-        After the ConnectionPortObject has been created via its `deserialize` method,
-        the non-serializable members should be initialized from the data in the given dict.
+        Creates the ConnectionPortObject from its spec, byte-serialized storage, and a dictionary
+        of non-serializable objects, such as a DB connection.
 
         Warning: Do not modify the data in this dict or other downstream nodes of the same
                  parent can potentially receive this modified dict. This can lead to race conditions.
