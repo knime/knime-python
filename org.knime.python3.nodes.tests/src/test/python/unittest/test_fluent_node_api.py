@@ -88,11 +88,16 @@ class NodeApiTest(unittest.TestCase):
 
         input_spec = util.knb._PythonPortObjectSpec(
             java_class_name=TABLE_SPEC_JAVA_CLASS,
-            json_string_data=json_string_data,
+            data_dict=json.loads(json_string_data),
         )
 
+        class MockConfigContext:
+            def get_node_id(self):
+                return "node:2"
+
         configuration = node_proxy.configure(
-            input_specs=[input_spec, input_spec], java_config_context=None
+            input_specs=[input_spec, input_spec],
+            java_config_context=MockConfigContext(),
         )
 
         self.assertEqual(configuration[0].getJavaClassName(), TABLE_SPEC_JAVA_CLASS)

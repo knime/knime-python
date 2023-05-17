@@ -6,7 +6,7 @@ import tempfile
 import json
 import os
 import test_utilities
-from typing import Dict
+from typing import Dict, Tuple
 
 
 class AnotherPortObjectSpec(knext.PortObjectSpec):
@@ -104,22 +104,17 @@ class PortTypeRegistryTest(unittest.TestCase):
             self._data = data
             self._transient_data = transient_data
 
-        def connection_to_dict(self) -> Dict:
-            return {"payload": self._transient_data}
-
-        def set_connection_dict(self, data: Dict) -> None:
-            self._transient_data = data["payload"]
-
-        def serialize(self) -> bytes:
-            return self._data.encode()
+        def serialize(self) -> Tuple[bytes, Dict]:
+            return self._data.encode(), {"payload": self._transient_data}
 
         @classmethod
         def deserialize(
             cls,
             spec: "PortTypeRegistryTest.TestConnectionPortObjectSpec",
             storage: bytes,
+            connection_data: Dict,
         ) -> "PortTypeRegistryTest.TestConnectionPortObject":
-            return cls(spec, storage.decode())
+            return cls(spec, storage.decode(), connection_data["payload"])
 
         @property
         def data(self) -> str:
@@ -274,11 +269,17 @@ class PortTypeRegistryTest(unittest.TestCase):
     def test_wrong_custom_object_to_python(self):
         java_spec = _binary_spec_from_java("foo.bar")
         port = knext.Port(self.get_port_type(), "", "")
-        # None for file path should be fine because the test should fail before we
-        # do anything with the file
-        java_obj = self.MockFromJavaObject(java_spec, None)
-        with self.assertRaises(AssertionError):
-            self.registry.port_object_to_python(java_obj, port)
+
+        with tempfile.NamedTemporaryFile(delete=False) as file:
+            try:
+                file.write(b"furball")
+                file.flush()
+                java_obj = self.MockFromJavaObject(java_spec, file.name)
+                with self.assertRaises(AssertionError):
+                    self.registry.port_object_to_python(java_obj, port)
+            finally:
+                file.close()
+                os.remove(file.name)
 
     def test_unknown_custom_object_to_python(self):
         unknown_port_type = knext.PortType(
@@ -286,11 +287,17 @@ class PortTypeRegistryTest(unittest.TestCase):
         )
         java_spec = _binary_spec_from_java(unknown_port_type.id, {})
         port = knext.Port(unknown_port_type, "", "")
-        # None for file path should be fine because the test should fail before we
-        # do anything with the file
-        java_obj = self.MockFromJavaObject(java_spec, None)
-        with self.assertRaises(AssertionError):
-            self.registry.port_object_to_python(java_obj, port)
+
+        with tempfile.NamedTemporaryFile(delete=False) as file:
+            try:
+                file.write(b"furball")
+                file.flush()
+                java_obj = self.MockFromJavaObject(java_spec, file.name)
+                with self.assertRaises(AssertionError):
+                    self.registry.port_object_to_python(java_obj, port)
+            finally:
+                file.close()
+                os.remove(file.name)
 
     def test_custom_object_from_python(self):
         test_port_type = self.get_port_type()

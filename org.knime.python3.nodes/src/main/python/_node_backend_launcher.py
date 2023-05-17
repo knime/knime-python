@@ -348,6 +348,9 @@ class _PortTypeRegistry:
             class_name
             == "org.knime.python3.nodes.ports.PythonTransientConnectionPortObject"
         ):
+            assert issubclass(
+                port.type.object_class, kn.ConnectionPortObject
+            ), f"unexpected port type {port.type}"
             serialized = read_port_object_data()
             spec = self.spec_to_python(port_object.getSpec(), port)
 
