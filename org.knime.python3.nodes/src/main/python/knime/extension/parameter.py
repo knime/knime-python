@@ -433,15 +433,9 @@ class _BaseParameter(ABC):
     def _inject(self, obj, value, name, parameters_version: Version = None):
         # the parameters_version parameter are needed to match the signature of the
         # _inject method for parameter groups
-        self.__set__(obj, {"name": name, "value": value})
+        self._set_value(obj, value, name)
 
-    def __set__(self, obj, value):
-        if isinstance(value, dict):
-            name = value["name"]
-            value = value["value"]
-        else:
-            name = self._name
-
+    def _set_value(self, obj, value, name):
         if not hasattr(obj, "__kind__"):
             # obj is the root parameterised object
             _create_param_dict_if_not_exists(obj)
@@ -449,6 +443,9 @@ class _BaseParameter(ABC):
         # perform individual validation
         self._validate(value)
         obj.__parameters__[name] = value
+
+    def __set__(self, obj, value):
+        self._set_value(obj, value, self._name)
 
     def __str__(self):
         param_name = self._label if not hasattr(self, "_name") else self._name
@@ -1163,7 +1160,7 @@ class GetSetBase:
                 obj = super().__getattribute__(name)
                 if not isinstance(obj, _BaseParameter):
                     obj = get_attr_from_instance(self, name)
-                obj.__set__(self, value)
+                obj._set_value(self, value, name)
             else:
                 super().__setattr__(name, value)
 
