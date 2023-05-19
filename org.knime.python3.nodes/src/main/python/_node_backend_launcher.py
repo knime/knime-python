@@ -78,7 +78,7 @@ class _PythonPortObject:
     def __init__(self, java_class_name):
         self._java_class_name = java_class_name
 
-    def getJavaClassName(self) -> str:
+    def getJavaClassName(self) -> str:  # NOSONAR - Java naming conventions
         return self._java_class_name
 
     class Java:
@@ -92,10 +92,10 @@ class _PythonTablePortObject:
         self._java_class_name = java_class_name
         self._sink = sink
 
-    def getJavaClassName(self) -> str:
+    def getJavaClassName(self) -> str:  # NOSONAR - Java naming conventions
         return self._java_class_name
 
-    def getPythonArrowDataSink(self):
+    def getPythonArrowDataSink(self):  # NOSONAR - Java naming conventions
         return self._sink
 
     class Java:
@@ -110,13 +110,13 @@ class _PythonPortObjectSpec:
         self._json_string_data = json.dumps(data_dict)
         self._data = data_dict
 
-    def getJavaClassName(self) -> str:
+    def getJavaClassName(self) -> str:  # NOSONAR - Java naming conventions
         return self._java_class_name
 
-    def toJsonString(self) -> str:
+    def toJsonString(self) -> str:  # NOSONAR - Java naming conventions
         return self._json_string_data
 
-    def toString(self) -> str:
+    def toString(self) -> str:  # NOSONAR - Java naming conventions
         """For debugging on the Java side"""
         return self._json_string_data
 
@@ -143,16 +143,16 @@ class _PythonBinaryPortObject:
         with open(filestore_file.get_file_path(), "wb") as f:
             f.write(data)
 
-    def getJavaClassName(self) -> str:
+    def getJavaClassName(self) -> str:  # NOSONAR - Java naming conventions
         return self._java_class_name
 
-    def getSpec(self) -> _PythonPortObjectSpec:
+    def getSpec(self) -> _PythonPortObjectSpec:  # NOSONAR - Java naming conventions
         return self._spec
 
-    def getFileStoreKey(self) -> str:
+    def getFileStoreKey(self) -> str:  # NOSONAR - Java naming conventions
         return self._key
 
-    def toString(self) -> str:
+    def toString(self) -> str:  # NOSONAR - Java naming conventions
         """For debugging on the Java side"""
         return f"PythonBinaryPortObject[spec={self._spec.toJsonString()}]"
 
@@ -166,13 +166,13 @@ class _PythonConnectionPortObject(_PythonBinaryPortObject):
     def __init__(self, java_class_name, filestore_file, data, spec):
         super().__init__(java_class_name, filestore_file, data, spec)
 
-    def getPid(self) -> int:
+    def getPid(self) -> int:  # NOSONAR - Java naming conventions
         """Used on the Java side to obtain the Python process ID"""
         import os
 
         return os.getpid()
 
-    def toString(self) -> str:
+    def toString(self) -> str:  # NOSONAR - Java naming conventions
         """For debugging on the Java side"""
         return f"PythonConnectionPortObject[spec={self._spec.toJsonString()}]"
 
