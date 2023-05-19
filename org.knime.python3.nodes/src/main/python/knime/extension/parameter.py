@@ -652,9 +652,9 @@ class DoubleParameter(_NumericParameter):
         )
 
     def check_type(self, value):
-        if not isinstance(value, float):
+        if not isinstance(value, numbers.Number):
             raise TypeError(
-                f"{value} is of type {type(value)}, but should be of type float."
+                f"{value} is of type {type(value)}, but should be a number."
             )
 
     def _extract_schema(
