@@ -178,8 +178,10 @@ public final class PythonPortObjects {
          * @return the {@link PythonTablePortObject}
          * @throws IOException if the table could not be converted
          */
-        public static PythonTablePortObject fromPurePython(final PurePythonTablePortObject portObject,
-            final Map<String, FileStore> fileStoresByKey, final PythonArrowTableConverter tableConverter,
+        public static PythonTablePortObject fromPurePython( //
+            final PurePythonTablePortObject portObject, //
+            final Map<String, FileStore> fileStoresByKey, // NOSONAR
+            final PythonArrowTableConverter tableConverter, //
             final ExecutionContext execContext) throws IOException {
             try {
                 final var sink = portObject.getPythonArrowDataSink();
@@ -229,8 +231,9 @@ public final class PythonPortObjects {
          * @param tableConverter Unused here, but required because fromPurePython is called via reflection from
          *            {@link PythonPortObjectTypeRegistry}
          */
-        public PythonBinaryPortObject(final PythonBinaryBlobFileStorePortObject binaryData,
-            final PythonArrowTableConverter tableConverter) {
+        public PythonBinaryPortObject( //
+            final PythonBinaryBlobFileStorePortObject binaryData, //
+            final PythonArrowTableConverter tableConverter) { // NOSONAR
             m_data = binaryData;
             m_spec = new PythonBinaryPortObjectSpec(binaryData.getSpec());
         }
@@ -246,13 +249,15 @@ public final class PythonPortObjects {
          * @return new {@link PythonBinaryPortObject} wrapping the binary data
          * @throws IOException if the object could not be converted
          */
-        public static PythonBinaryPortObject fromPurePython(final PurePythonBinaryPortObject portObject,
-            final Map<String, FileStore> fileStoresByKey, final PythonArrowTableConverter tableConverter,
+        public static PythonBinaryPortObject fromPurePython( //
+            final PurePythonBinaryPortObject portObject, //
+            final Map<String, FileStore> fileStoresByKey, //
+            final PythonArrowTableConverter tableConverter, // NOSONAR
             final ExecutionContext execContext) throws IOException {
             final var key = portObject.getFileStoreKey();
             final var fileStore = fileStoresByKey.get(key);
             var spec = PythonBinaryPortObjectSpec.fromJsonString(portObject.getSpec().toJsonString()).m_spec;
-            return new PythonBinaryPortObject(PythonBinaryBlobFileStorePortObject.create(fileStore, spec, execContext),
+            return new PythonBinaryPortObject(PythonBinaryBlobFileStorePortObject.create(fileStore, spec),
                 null);
         }
 
@@ -275,6 +280,9 @@ public final class PythonPortObjects {
             return m_data.getFilePath();
         }
 
+        /**
+         * @return The {@link PythonBinaryBlobPortObjectSpec}
+         */
         public PythonBinaryPortObjectSpec getSpec() {
             return m_spec;
         }
@@ -298,14 +306,15 @@ public final class PythonPortObjects {
          * @param tableConverter Unused here, but required because fromPurePython is called via reflection from
          *            {@link PythonPortObjectTypeRegistry}
          */
-        public PythonConnectionPortObject(final PythonTransientConnectionPortObject binaryData,
-            final PythonArrowTableConverter tableConverter) {
+        public PythonConnectionPortObject(//
+            final PythonTransientConnectionPortObject binaryData, //
+            final PythonArrowTableConverter tableConverter) { // NOSONAR
             m_data = binaryData;
             m_spec = new PythonConnectionPortObjectSpec(binaryData.getSpec());
         }
 
         /**
-         * Create a PythonBinaryPortObject from a PurePythonBinaryPortObject
+         * Create a PythonConnectionPortObject from a PurePythonConnectionPortObject
          *
          * @param portObject The {@link PurePythonBinaryPortObject} coming from Python
          * @param fileStoresByKey A map of {@link String} keys to {@link FileStore}s holding binary data
@@ -315,15 +324,17 @@ public final class PythonPortObjects {
          * @return new {@link PythonBinaryPortObject} wrapping the binary data
          * @throws IOException if the object could not be converted
          */
-        public static PythonConnectionPortObject fromPurePython(final PurePythonConnectionPortObject portObject,
-            final Map<String, FileStore> fileStoresByKey, final PythonArrowTableConverter tableConverter,
+        public static PythonConnectionPortObject fromPurePython(//
+            final PurePythonConnectionPortObject portObject, //
+            final Map<String, FileStore> fileStoresByKey, //
+            final PythonArrowTableConverter tableConverter, // NOSONAR
             final ExecutionContext execContext) throws IOException {
             final var key = portObject.getFileStoreKey();
             final var fileStore = fileStoresByKey.get(key);
             var spec = PythonConnectionPortObjectSpec.fromJsonString(portObject.getSpec().toJsonString()).m_spec;
             final var pid = portObject.getPid();
             return new PythonConnectionPortObject(
-                PythonTransientConnectionPortObject.create(fileStore, spec, pid, execContext), null);
+                PythonTransientConnectionPortObject.create(fileStore, spec, pid), null);
         }
 
         @Override
@@ -345,6 +356,9 @@ public final class PythonPortObjects {
             return m_data.getFilePath();
         }
 
+        /**
+         * @return The {@link PythonConnectionPortObjectSpec}
+         */
         public PythonConnectionPortObjectSpec getSpec() {
             return m_spec;
         }

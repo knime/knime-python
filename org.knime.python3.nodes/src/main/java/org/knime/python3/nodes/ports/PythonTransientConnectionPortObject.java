@@ -48,16 +48,11 @@ package org.knime.python3.nodes.ports;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Objects;
 import java.util.zip.ZipEntry;
 
-import javax.swing.JComponent;
-
 import org.knime.core.data.filestore.FileStore;
-import org.knime.core.data.filestore.FileStorePortObject;
 import org.knime.core.node.CanceledExecutionException;
-import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.PortObjectZipInputStream;
@@ -71,7 +66,7 @@ import org.knime.core.node.port.PortTypeRegistry;
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  * @since 5.1
  */
-public final class PythonTransientConnectionPortObject extends FileStorePortObject {
+public final class PythonTransientConnectionPortObject extends PythonBinaryBlobFileStorePortObject {
 
     /**
      * The type of this port.
@@ -80,22 +75,19 @@ public final class PythonTransientConnectionPortObject extends FileStorePortObje
     public static final PortType TYPE =
         PortTypeRegistry.getInstance().getPortType(PythonTransientConnectionPortObject.class);
 
-    private final PythonTransientConnectionPortObjectSpec m_spec;
-
     private final int m_pid;
 
     /**
      * Deserialization constructor
      */
     private PythonTransientConnectionPortObject(final PythonTransientConnectionPortObjectSpec spec, final int pid) {
-        m_spec = spec;
+        super(spec);
         m_pid = pid;
     }
 
     private PythonTransientConnectionPortObject(final FileStore fileStore,
         final PythonTransientConnectionPortObjectSpec spec, final int pid) {
-        super(Arrays.asList(fileStore));
-        m_spec = spec;
+        super(fileStore, spec);
         m_pid = pid;
     }
 
@@ -105,52 +97,32 @@ public final class PythonTransientConnectionPortObject extends FileStorePortObje
      * @param fileStore the {@link FileStore} holding the data
      * @param spec of the port object
      * @param pid The process ID of the Python process in which this PortObject was created
-     * @param exec The {@link ExecutionContext}
      * @return Newly created {@link PythonBinaryBlobFileStorePortObject}
      * @throws IOException
      */
     public static PythonTransientConnectionPortObject create(final FileStore fileStore,
-        final PythonTransientConnectionPortObjectSpec spec, final int pid, final ExecutionContext exec)
-        throws IOException {
+        final PythonTransientConnectionPortObjectSpec spec, final int pid) throws IOException {
         if (fileStore == null) {
             throw new IOException("FileStore cannot be null for PythonTransientConnectionPortObject");
         }
         return new PythonTransientConnectionPortObject(fileStore, spec, pid);
     }
 
-    /**
-     * @return The path to the file on disk that contains the binary data, needed to access the file in Python
-     */
-    public String getFilePath() {
-        return getFileStore(0).getFile().getAbsolutePath();
-    }
-
-    @Override
-    public String getSummary() {
-        return shortenString(m_spec.getId(), 60, "...");
-    }
-
     @Override
     public PythonTransientConnectionPortObjectSpec getSpec() {
-        return m_spec;
+        return (PythonTransientConnectionPortObjectSpec)super.getSpec();
     }
 
+    /**
+     * @return the process id of the Python process that created this port object
+     */
     public int getPid() {
         return m_pid;
     }
 
     @Override
-    public JComponent[] getViews() {
-        return m_spec.getViews();
-    }
-
-    private static String shortenString(final String string, final int maxLength, final String suffix) {
-        return string.length() > maxLength ? (string.substring(0, maxLength - suffix.length()) + suffix) : string;
-    }
-
-    @Override
     public int hashCode() {
-        return Objects.hash(m_spec);
+        return Objects.hash(m_spec, m_pid);
     }
 
     @Override
@@ -158,11 +130,11 @@ public final class PythonTransientConnectionPortObject extends FileStorePortObje
         if (this == obj) {
             return true;
         }
-        if (!(obj instanceof PythonTransientConnectionPortObject)) {
+        if (obj == null || obj.getClass() != this.getClass()) {
             return false;
         }
         final PythonTransientConnectionPortObject other = (PythonTransientConnectionPortObject)obj;
-        return Objects.equals(m_spec, other.m_spec);
+        return Objects.equals(m_spec, other.m_spec) && m_pid == other.m_pid;
     }
 
     /**

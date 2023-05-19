@@ -119,7 +119,8 @@ public final class PythonPortObjectTypeRegistry {
 
         m_pythonPortObjectMap.put(BufferedDataTable.class.getName(), PythonTablePortObject.class);
         m_pythonPortObjectMap.put(PythonBinaryBlobFileStorePortObject.class.getName(), PythonBinaryPortObject.class);
-        m_pythonPortObjectMap.put(PythonTransientConnectionPortObject.class.getName(), PythonConnectionPortObject.class);
+        m_pythonPortObjectMap.put(PythonTransientConnectionPortObject.class.getName(),
+            PythonConnectionPortObject.class);
 
         m_pythonPortObjectInterfaceMap.put(BufferedDataTable.class.getName(), PurePythonTablePortObject.class);
         m_pythonPortObjectInterfaceMap.put(PythonBinaryBlobFileStorePortObject.class.getName(),

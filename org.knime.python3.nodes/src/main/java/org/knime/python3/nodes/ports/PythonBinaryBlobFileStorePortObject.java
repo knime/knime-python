@@ -57,7 +57,6 @@ import javax.swing.JComponent;
 import org.knime.core.data.filestore.FileStore;
 import org.knime.core.data.filestore.FileStorePortObject;
 import org.knime.core.node.CanceledExecutionException;
-import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.PortObjectZipInputStream;
@@ -71,7 +70,7 @@ import org.knime.core.node.port.PortTypeRegistry;
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  * @since 4.6
  */
-public final class PythonBinaryBlobFileStorePortObject extends FileStorePortObject {
+public class PythonBinaryBlobFileStorePortObject extends FileStorePortObject {
 
     /**
      * The type of this port.
@@ -80,16 +79,27 @@ public final class PythonBinaryBlobFileStorePortObject extends FileStorePortObje
     public static final PortType TYPE =
         PortTypeRegistry.getInstance().getPortType(PythonBinaryBlobFileStorePortObject.class);
 
-    private final PythonBinaryBlobPortObjectSpec m_spec;
+    /**
+     * The corresponding spec of this port object
+     */
+    protected final PythonBinaryBlobPortObjectSpec m_spec;
 
     /**
      * Deserialization constructor
+     * @param spec The {@link PythonBinaryBlobPortObjectSpec} of this port object
      */
-    private PythonBinaryBlobFileStorePortObject(final PythonBinaryBlobPortObjectSpec spec) {
+    protected PythonBinaryBlobFileStorePortObject(final PythonBinaryBlobPortObjectSpec spec) {
         m_spec = spec;
     }
 
-    private PythonBinaryBlobFileStorePortObject(final FileStore fileStore, final PythonBinaryBlobPortObjectSpec spec) {
+    /**
+     * Construction with data inside a FileStore and spec
+     *
+     * @param fileStore the {@link FileStore} holding the data
+     * @param spec of the port object
+     */
+    protected PythonBinaryBlobFileStorePortObject(final FileStore fileStore,
+        final PythonBinaryBlobPortObjectSpec spec) {
         super(Arrays.asList(fileStore));
         m_spec = spec;
     }
@@ -99,12 +109,11 @@ public final class PythonBinaryBlobFileStorePortObject extends FileStorePortObje
      *
      * @param fileStore the {@link FileStore} holding the data
      * @param spec of the port object
-     * @param exec The {@link ExecutionContext}
      * @return Newly created {@link PythonBinaryBlobFileStorePortObject}
      * @throws IOException
      */
     public static PythonBinaryBlobFileStorePortObject create(final FileStore fileStore,
-        final PythonBinaryBlobPortObjectSpec spec, final ExecutionContext exec) throws IOException {
+        final PythonBinaryBlobPortObjectSpec spec) throws IOException {
         if (fileStore == null) {
             throw new IOException("FileStore cannot be null for PythonBinaryBlobFileStorePortObject");
         }
@@ -147,7 +156,7 @@ public final class PythonBinaryBlobFileStorePortObject extends FileStorePortObje
         if (this == obj) {
             return true;
         }
-        if (!(obj instanceof PythonBinaryBlobFileStorePortObject)) {
+        if (obj == null || obj.getClass() != this.getClass()) {
             return false;
         }
         final PythonBinaryBlobFileStorePortObject other = (PythonBinaryBlobFileStorePortObject)obj;

@@ -116,7 +116,7 @@ public final class PythonTransientConnectionPortObjectSpec extends PythonBinaryB
      * @param data the JSON data
      * @return a new {@link PythonBinaryBlobPortObjectSpec} object
      */
-    public static PythonTransientConnectionPortObjectSpec fromJson(final JsonNode data) {
+    public static PythonTransientConnectionPortObjectSpec fromJson(final JsonNode data) { // NOSONAR
         var specData = data.get("data");
         return new PythonTransientConnectionPortObjectSpec(//
             data.get("id").asText(), //
@@ -145,10 +145,12 @@ public final class PythonTransientConnectionPortObjectSpec extends PythonBinaryB
         if (this == ospec) {
             return true;
         }
-        if (!(ospec instanceof PythonTransientConnectionPortObjectSpec)) {
+        if (ospec == null || ospec.getClass() != this.getClass()) {
             return false;
         }
         final PythonTransientConnectionPortObjectSpec spec = (PythonTransientConnectionPortObjectSpec)ospec;
+
+        // Note: we cannot use super.equals for inherited fields as it checks for matching classes
         return Objects.equals(m_id, spec.m_id) //
             && Objects.equals(m_data, spec.m_data) //
             && Objects.equals(m_nodeId, spec.m_nodeId) //

@@ -74,10 +74,18 @@ public class PythonBinaryBlobPortObjectSpec extends AbstractSimplePortObjectSpec
         extends AbstractSimplePortObjectSpecSerializer<PythonBinaryBlobPortObjectSpec> {
     }
 
-    // effectively final
+    /**
+     * The unique identifier of this port object type (defined in Python)
+     *
+     * Effectively final.
+     */
     protected String m_id;
 
-    // effectively final
+    /**
+     * The JSON data of this port object spec encoded as string
+     *
+     * Effectively final.
+     */
     protected String m_data;
 
     /**
@@ -142,7 +150,7 @@ public class PythonBinaryBlobPortObjectSpec extends AbstractSimplePortObjectSpec
         if (this == ospec) {
             return true;
         }
-        if (!(ospec instanceof PythonBinaryBlobPortObjectSpec)) {
+        if (ospec == null || ospec.getClass() != this.getClass()) {
             return false;
         }
         final PythonBinaryBlobPortObjectSpec spec = (PythonBinaryBlobPortObjectSpec)ospec;
