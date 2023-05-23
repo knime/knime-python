@@ -196,10 +196,10 @@ class _PythonImagePortObject:
         self._java_class_name = java_class_name
         self._img_bytes = base64.b64encode(data).decode("utf-8")
 
-    def getJavaClassName(self) -> str:
+    def getJavaClassName(self) -> str:  # NOSONAR
         return self._java_class_name
 
-    def getImageBytes(self) -> str:
+    def getImageBytes(self) -> str:  # NOSONAR
         return self._img_bytes
 
     class Java:

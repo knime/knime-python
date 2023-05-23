@@ -278,8 +278,7 @@ public final class PythonPortObjects {
             final var key = portObject.getFileStoreKey();
             final var fileStore = fileStoresByKey.get(key);
             var spec = PythonBinaryPortObjectSpec.fromJsonString(portObject.getSpec().toJsonString()).m_spec;
-            return new PythonBinaryPortObject(PythonBinaryBlobFileStorePortObject.create(fileStore, spec),
-                null);
+            return new PythonBinaryPortObject(PythonBinaryBlobFileStorePortObject.create(fileStore, spec), null);
         }
 
         @Override
@@ -378,6 +377,7 @@ public final class PythonPortObjects {
      */
     public static final class PythonImagePortObject implements PythonPortObject, PortObjectProvider {
         private final byte[] m_bytes;
+
         private final PythonImagePortObjectSpec m_spec;
 
         /**
@@ -401,9 +401,11 @@ public final class PythonPortObjects {
          * @return new {@link PythonImagePortObject} containing the image data
          * @throws IOException if the object could not be converted
          */
-        public static PythonImagePortObject fromPurePython(final PurePythonImagePortObject portObject,
-            final Map<String, FileStore> fileStoresByKey, final PythonArrowTableConverter tableConverter,
-            final ExecutionContext execContext) throws IOException {
+        public static PythonImagePortObject fromPurePython(//
+            final PurePythonImagePortObject portObject, //
+            final Map<String, FileStore> fileStoresByKey, // NOSONAR
+            final PythonArrowTableConverter tableConverter, // NOSONAR
+            final ExecutionContext execContext) { // NOSONAR
             final var bytes = Base64.getDecoder().decode(portObject.getImageBytes().getBytes());
             ImagePortObjectSpec spec;
 
@@ -419,10 +421,11 @@ public final class PythonPortObjects {
         }
 
         private static boolean isPngBytes(final byte[] bytes) {
-            byte[] pngHeader = {(byte)0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n'};
             if (bytes.length < 8) {
                 return false;
             }
+
+            byte[] pngHeader = {(byte)0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n'};
             for (int i = 0; i < 8; i++) {
                 if (bytes[i] != pngHeader[i]) {
                     return false;
@@ -446,7 +449,7 @@ public final class PythonPortObjects {
                 } else {
                     throw new UnsupportedOperationException("Unsupported image format detected.");
                 }
-            } catch (IOException ex) {
+            } catch (IOException ex) { // NOSONAR
                 throw new UnsupportedOperationException("Unable to convert image data.");
             }
         }
@@ -662,8 +665,7 @@ public final class PythonPortObjects {
 
     /**
      *
-     * @author ivan
-     * Wrapper for {@link ImagePortObjectSpec} handling serialization for the Python side.
+     * @author ivan Wrapper for {@link ImagePortObjectSpec} handling serialization for the Python side.
      */
     public static final class PythonImagePortObjectSpec implements PythonPortObjectSpec, PortObjectSpecProvider {
         private final ImagePortObjectSpec m_spec;

@@ -239,3 +239,52 @@ def my_node_generating_func():
             return input
 
     return MyHiddenNode()
+
+
+@knext.node(
+    name="My image node",
+    node_type=knext.NodeType.SOURCE,
+    icon_path="icon.png",
+    category="/",
+    id="My image node",
+)
+@knext.output_image(
+    name="PNG Output Image",
+    description="Should contain a PNG image.",
+)
+@knext.output_image(
+    name="SVG Output Image",
+    description="Should contain a PNG image.",
+)
+class MyImageNode(knext.PythonNode):
+    """My image node
+
+    This node produces two images: a PNG and an SVG. The node has no parameters.
+    """
+
+    def configure(self, config_context):
+        return (
+            knext.ImagePortObjectSpec(knext.ImageFormat.PNG),
+            knext.ImagePortObjectSpec(knext.ImageFormat.SVG),
+        )
+
+    def execute(self, exec_context):
+        import matplotlib.pyplot as plt
+        import io
+
+        x = [1, 2, 3, 4, 5]
+        y = [1, 2, 3, 4, 5]
+
+        fig, ax = plt.subplots(figsize=(5, 5), dpi=100)
+        ax.plot(x, y)
+
+        buffer_png = io.BytesIO()
+        buffer_svg = io.BytesIO()
+
+        plt.savefig(buffer_png, format="png")
+        plt.savefig(buffer_svg, format="svg")
+
+        return (
+            buffer_png.getvalue(),
+            buffer_svg.getvalue(),
+        )

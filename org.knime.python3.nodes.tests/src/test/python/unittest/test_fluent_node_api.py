@@ -285,5 +285,19 @@ class NodeWithoutPortsTest(unittest.TestCase):
         _PythonNodeProxy(self.node, self.backend._port_type_registry, parser)
 
 
+class NodeWithImageOutputPorts(unittest.TestCase):
+    node_id = "My image node"
+
+    def setUp(self):
+        util.setup_backend("mock_extension")
+        self.node = kn._nodes.get(NodeWithImageOutputPorts.node_id, None)
+
+    def test_image_output_ports(self):
+        self.assertEqual(2, len(self.node.output_ports))
+        self.assertTrue(
+            all(p.type == kn.PortType.IMAGE for p in self.node.output_ports)
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
