@@ -193,6 +193,9 @@ class _PythonImagePortObject:
     def __init__(self, java_class_name, data):
         import base64
 
+        if isinstance(data, str):  # string potentially representing an SVG image
+            data = data.encode("utf-8")
+
         self._java_class_name = java_class_name
         self._img_bytes = base64.b64encode(data).decode("utf-8")
 

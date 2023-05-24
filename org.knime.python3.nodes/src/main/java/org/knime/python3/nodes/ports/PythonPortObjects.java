@@ -50,10 +50,11 @@ package org.knime.python3.nodes.ports;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Map;
+
+import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.knime.base.data.xml.SvgCell;
 import org.knime.base.data.xml.SvgImageContent;
@@ -74,6 +75,8 @@ import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.arrow.PythonArrowDataSource;
 import org.knime.python3.arrow.PythonArrowDataUtils;
 import org.knime.python3.arrow.PythonArrowTableConverter;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -391,6 +394,14 @@ public final class PythonPortObjects {
             m_spec = new PythonImagePortObjectSpec(spec);
         }
 
+
+        /**
+         * @return the spec of this {@link PythonImagePortObject}
+         */
+        public PythonImagePortObjectSpec getSpec() {
+            return m_spec;
+        }
+
         /**
          * Create a PythonImagePortObject from a PurePythonImagePortObject.
          *
@@ -399,7 +410,6 @@ public final class PythonPortObjects {
          * @param tableConverter Not needed for this port object type but required due to reflection
          * @param execContext The current {@link ExecutionContext}
          * @return new {@link PythonImagePortObject} containing the image data
-         * @throws IOException if the object could not be converted
          */
         public static PythonImagePortObject fromPurePython(//
             final PurePythonImagePortObject portObject, //
@@ -434,10 +444,19 @@ public final class PythonPortObjects {
             return true;
         }
 
+
         private static boolean isSvgBytes(final byte[] bytes) {
-            String content = new String(bytes, StandardCharsets.UTF_8).trim();
-            return content.startsWith("<svg") || content.contains("<!DOCTYPE svg");
+            try {
+                ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
+                Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(byteArrayInputStream);
+                Element rootElement = doc.getDocumentElement();
+                return rootElement.getTagName().equals("svg");
+            } catch (Exception e) { // NOSONAR
+                // the bytes don't represent a valid XML
+                return false;
+            }
         }
+
 
         @Override
         public PortObject getPortObject() {
@@ -462,7 +481,7 @@ public final class PythonPortObjects {
         /**
          * @return an {@link ImagePortObject} corresponding to the PNG bytes
          */
-        public ImagePortObject convertBytesToPNG() {
+        private ImagePortObject convertBytesToPNG() {
             ImageContent content = new PNGImageContent(m_bytes);
             ImagePortObjectSpec spec = new ImagePortObjectSpec(PNGImageContent.TYPE);
             return new ImagePortObject(content, spec);
@@ -472,7 +491,7 @@ public final class PythonPortObjects {
          * @return an {@link ImagePortObject} corresponding to the SVG bytes
          * @throws IOException if the bytes stream can't be converted to an {@link SvgImageContent}
          */
-        public ImagePortObject convertBytesToSVG() throws IOException {
+        private ImagePortObject convertBytesToSVG() throws IOException {
             ByteArrayInputStream inputStream = new ByteArrayInputStream(m_bytes);
             ImageContent content = new SvgImageContent(inputStream);
             ImagePortObjectSpec spec = new ImagePortObjectSpec(SvgCell.TYPE);
@@ -683,10 +702,16 @@ public final class PythonPortObjects {
             return m_spec;
         }
 
+        /**
+         * @return true if the type of the wrapped spec is PNG.
+         */
         public boolean isPng() {
             return m_spec.getDataType().equals(PNGImageContent.TYPE);
         }
 
+        /**
+         * @return true if the type of the wrapped spec is SVG.
+         */
         public boolean isSvg() {
             return m_spec.getDataType().equals(SvgCell.TYPE);
         }
