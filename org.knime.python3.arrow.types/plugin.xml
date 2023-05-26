@@ -84,6 +84,17 @@
                ValueFactory="org.knime.core.data.xml.XMLValueFactory"
                ValueTypeName="xml.etree.ElementTree.ElementTree">
          </PythonValueFactory>
+         <PythonValueFactory
+               PythonClassName="PNGImageValueFactory"
+               ValueFactory="org.knime.core.data.image.png.PNGImageValueFactory"
+               ValueTypeName="PIL.Image.Image">
+         </PythonValueFactory>
+         <PythonValueFactory
+               PythonClassName="PNGImageValueFactory"
+               ValueFactory="org.knime.core.data.image.png.PNGImageValueFactory"
+               ValueTypeName="PIL.PngImagePlugin.PngImageFile"
+               isDefaultPythonRepresentation="false">
+         </PythonValueFactory>
       </Module>
    </extension>
 
