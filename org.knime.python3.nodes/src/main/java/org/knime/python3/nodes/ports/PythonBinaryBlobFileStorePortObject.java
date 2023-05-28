@@ -70,7 +70,7 @@ import org.knime.core.node.port.PortTypeRegistry;
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  * @since 4.6
  */
-public class PythonBinaryBlobFileStorePortObject extends FileStorePortObject {
+public final class PythonBinaryBlobFileStorePortObject extends FileStorePortObject {
 
     /**
      * The type of this port.
@@ -82,13 +82,13 @@ public class PythonBinaryBlobFileStorePortObject extends FileStorePortObject {
     /**
      * The corresponding spec of this port object
      */
-    protected final PythonBinaryBlobPortObjectSpec m_spec;
+    private final PythonBinaryBlobPortObjectSpec m_spec;
 
     /**
      * Deserialization constructor
      * @param spec The {@link PythonBinaryBlobPortObjectSpec} of this port object
      */
-    protected PythonBinaryBlobFileStorePortObject(final PythonBinaryBlobPortObjectSpec spec) {
+    private PythonBinaryBlobFileStorePortObject(final PythonBinaryBlobPortObjectSpec spec) {
         m_spec = spec;
     }
 
@@ -98,7 +98,7 @@ public class PythonBinaryBlobFileStorePortObject extends FileStorePortObject {
      * @param fileStore the {@link FileStore} holding the data
      * @param spec of the port object
      */
-    protected PythonBinaryBlobFileStorePortObject(final FileStore fileStore,
+    private PythonBinaryBlobFileStorePortObject(final FileStore fileStore,
         final PythonBinaryBlobPortObjectSpec spec) {
         super(Arrays.asList(fileStore));
         m_spec = spec;

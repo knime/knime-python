@@ -317,24 +317,21 @@ public final class PythonPortObjects {
          * Create a PythonConnectionPortObject from a PurePythonConnectionPortObject
          *
          * @param portObject The {@link PurePythonBinaryPortObject} coming from Python
-         * @param fileStoresByKey A map of {@link String} keys to {@link FileStore}s holding binary data
+         * @param fileStoresByKey Not used here, just needed because fromPurePython is called via reflection
          * @param tableConverter Not used here, just needed because fromPurePython is called via reflection from
          *            {@link PythonPortObjectTypeRegistry}
          * @param execContext The current {@link ExecutionContext}
          * @return new {@link PythonBinaryPortObject} wrapping the binary data
-         * @throws IOException if the object could not be converted
          */
         public static PythonConnectionPortObject fromPurePython(//
             final PurePythonConnectionPortObject portObject, //
-            final Map<String, FileStore> fileStoresByKey, //
+            final Map<String, FileStore> fileStoresByKey, // NOSONAR
             final PythonArrowTableConverter tableConverter, // NOSONAR
-            final ExecutionContext execContext) throws IOException {
-            final var key = portObject.getFileStoreKey();
-            final var fileStore = fileStoresByKey.get(key);
+            final ExecutionContext execContext) {
             var spec = PythonConnectionPortObjectSpec.fromJsonString(portObject.getSpec().toJsonString()).m_spec;
             final var pid = portObject.getPid();
             return new PythonConnectionPortObject(
-                PythonTransientConnectionPortObject.create(fileStore, spec, pid), null);
+                PythonTransientConnectionPortObject.create(spec, pid), null);
         }
 
         @Override
@@ -345,15 +342,6 @@ public final class PythonPortObjects {
         @Override
         public String getJavaClassName() {
             return PythonTransientConnectionPortObject.class.getName();
-        }
-
-        /**
-         * Used on the Python side to get the file path where to read the binary data
-         *
-         * @return The file path where to read the binary data
-         */
-        public String getFilePath() {
-            return m_data.getFilePath();
         }
 
         /**

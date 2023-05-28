@@ -162,15 +162,22 @@ class _PythonBinaryPortObject:
         ]
 
 
-class _PythonConnectionPortObject(_PythonBinaryPortObject):
-    def __init__(self, java_class_name, filestore_file, data, spec):
-        super().__init__(java_class_name, filestore_file, data, spec)
+class _PythonConnectionPortObject:
+    def __init__(self, java_class_name, spec):
+        self._java_class_name = java_class_name
+        self._spec = spec
 
     def getPid(self) -> int:  # NOSONAR - Java naming conventions
         """Used on the Java side to obtain the Python process ID"""
         import os
 
         return os.getpid()
+
+    def getJavaClassName(self) -> str:  # NOSONAR - Java naming conventions
+        return self._java_class_name
+
+    def getSpec(self) -> _PythonPortObjectSpec:  # NOSONAR - Java naming conventions
+        return self._spec
 
     def toString(self) -> str:  # NOSONAR - Java naming conventions
         """For debugging on the Java side"""
@@ -351,7 +358,6 @@ class _PortTypeRegistry:
             assert issubclass(
                 port.type.object_class, kn.ConnectionPortObject
             ), f"unexpected port type {port.type}"
-            serialized = read_port_object_data()
             spec = self.spec_to_python(port_object.getSpec(), port)
 
             data = json.loads(port_object.getSpec().toJsonString())
@@ -363,7 +369,7 @@ class _PortTypeRegistry:
                 )
 
             connection_data = _PortTypeRegistry._connection_port_data[key]
-            return port.type.object_class.deserialize(spec, serialized, connection_data)
+            return port.type.object_class.deserialize(spec, connection_data)
 
         raise TypeError("Unsupported PortObjectSpec found in Python, got " + class_name)
 
@@ -410,27 +416,25 @@ class _PortTypeRegistry:
             assert isinstance(
                 obj, port.type.object_class
             ), f"Expected output object of type {port.type.object_class}, got object of type {type(obj)}"
-            serialized = obj.serialize()
             spec = self.spec_from_python(obj.spec, port, node_id, port_idx)
 
             if issubclass(port.type.object_class, kn.ConnectionPortObject):
                 class_name = (
                     "org.knime.python3.nodes.ports.PythonTransientConnectionPortObject"
                 )
-                create_port_object = _PythonConnectionPortObject
 
-                # The serialize method above returns a tuple of bytes and connection_data dict for
-                # ConnectionPortObjects, so we split off the connection_data here and store it in a global dict
+                # We store the port object data in a global dict referenced by nodeID and portIdx
                 key = f"{node_id}:{port_idx}"
-                serialized, connection_data = serialized
-                _PortTypeRegistry._connection_port_data[key] = connection_data
+                _PortTypeRegistry._connection_port_data[key] = obj.serialize()
+                return _PythonConnectionPortObject(class_name, spec)
             else:
                 class_name = (
                     "org.knime.python3.nodes.ports.PythonBinaryBlobFileStorePortObject"
                 )
-                create_port_object = _PythonBinaryPortObject
-
-            return create_port_object(class_name, file_creator(), serialized, spec)
+                serialized = obj.serialize()
+                return _PythonBinaryPortObject(
+                    class_name, file_creator(), serialized, spec
+                )
 
 
 class _PythonNodeProxy:

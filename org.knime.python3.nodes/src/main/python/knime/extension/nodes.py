@@ -91,34 +91,36 @@ class ConnectionPortObject(PortObject):
     or web sessions.
 
     ConnectionPortObjects are passed downstream by ensuring that the same Python
-    process is used to execute subsequent nodes. The non-serializable members
-    must be provided as a dict, and the ConnectionPortObject must allow
-    populating those members from a dict.
+    process is used to execute subsequent nodes. ConnectionPortObjects use the
+    serialize/deserialize method naming when providing data or creating new instances
+    in new nodes, however the data is not really serialized. Instead, a reference
+    to the Python object representing the data is maintained and handed to downstream
+    nodes. So the data does not need to be serializable/picklable.
     """
 
     def __init__(self, spec: PortObjectSpec) -> None:
         super().__init__(spec)
 
     @abstractmethod
-    def serialize(self) -> Tuple[bytes, Dict]:
+    def serialize(self) -> Any:
         """
-        Return a tuple of the bytes-serialized ConnectionPortObject data and a dictionary of
-        all non-serializable members that are needed to initialize a ConnectionPortObject for
-        the next node
+        Provide the data that makes up this ConnectionPortObject such that it can be used
+        by downstream nodes in the deserialize method.
+
+        The data is not really serialized. Instead, a reference to the Python object is maintained
+        and handed to deserialize in downstream nodes.
         """
         pass
 
     @classmethod
     @abstractmethod
-    def deserialize(
-        cls, spec: PortObjectSpec, storage: bytes, connection_data: Dict
-    ) -> "ConnectionPortObject":
+    def deserialize(cls, spec: PortObjectSpec, data: Any) -> "ConnectionPortObject":
         """
-        Creates the ConnectionPortObject from its spec, byte-serialized storage, and a dictionary
-        of non-serializable objects, such as a DB connection.
+        Construct a ConnectionPortObject from spec and data. The data is the data that has
+        been returned by the serialize method of the ConnectionPortObject by the upstream node.
 
-        Warning: Do not modify the data in this dict or other downstream nodes of the same
-                 parent can potentially receive this modified dict. This can lead to race conditions.
+        The data should not be tempered with, as it is a Python object that is handed to
+        all nodes using this ConnectionPortObject.
         """
         pass
 

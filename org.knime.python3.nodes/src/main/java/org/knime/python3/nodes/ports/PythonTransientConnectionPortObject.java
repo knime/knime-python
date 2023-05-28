@@ -51,9 +51,11 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.zip.ZipEntry;
 
-import org.knime.core.data.filestore.FileStore;
+import javax.swing.JComponent;
+
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionMonitor;
+import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.PortObjectZipInputStream;
 import org.knime.core.node.port.PortObjectZipOutputStream;
@@ -66,51 +68,59 @@ import org.knime.core.node.port.PortTypeRegistry;
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  * @since 5.1
  */
-public final class PythonTransientConnectionPortObject extends PythonBinaryBlobFileStorePortObject {
+public final class PythonTransientConnectionPortObject implements PortObject {
 
     /**
      * The type of this port.
      */
-    @SuppressWarnings("hiding")
     public static final PortType TYPE =
         PortTypeRegistry.getInstance().getPortType(PythonTransientConnectionPortObject.class);
 
     private final int m_pid;
 
     /**
+     * The corresponding spec of this port object
+     */
+    private final PythonTransientConnectionPortObjectSpec m_spec;
+
+    /**
      * Deserialization constructor
      */
     private PythonTransientConnectionPortObject(final PythonTransientConnectionPortObjectSpec spec, final int pid) {
-        super(spec);
-        m_pid = pid;
-    }
-
-    private PythonTransientConnectionPortObject(final FileStore fileStore,
-        final PythonTransientConnectionPortObjectSpec spec, final int pid) {
-        super(fileStore, spec);
+        m_spec = spec;
         m_pid = pid;
     }
 
     /**
-     * Construction with data inside a FileStore and spec
+     * Construction with a spec only, because all data is held on the Python side
      *
-     * @param fileStore the {@link FileStore} holding the data
      * @param spec of the port object
      * @param pid The process ID of the Python process in which this PortObject was created
-     * @return Newly created {@link PythonBinaryBlobFileStorePortObject}
+     * @return Newly created {@link PythonTransientConnectionPortObject}
      * @throws IOException
      */
-    public static PythonTransientConnectionPortObject create(final FileStore fileStore,
-        final PythonTransientConnectionPortObjectSpec spec, final int pid) throws IOException {
-        if (fileStore == null) {
-            throw new IOException("FileStore cannot be null for PythonTransientConnectionPortObject");
-        }
-        return new PythonTransientConnectionPortObject(fileStore, spec, pid);
+    public static PythonTransientConnectionPortObject create(final PythonTransientConnectionPortObjectSpec spec,
+        final int pid) {
+        return new PythonTransientConnectionPortObject(spec, pid);
     }
 
     @Override
     public PythonTransientConnectionPortObjectSpec getSpec() {
-        return (PythonTransientConnectionPortObjectSpec)super.getSpec();
+        return m_spec;
+    }
+
+    @Override
+    public String getSummary() {
+        return shortenString(m_spec.getId(), 60, "...");
+    }
+
+    private static String shortenString(final String string, final int maxLength, final String suffix) {
+        return string.length() > maxLength ? (string.substring(0, maxLength - suffix.length()) + suffix) : string;
+    }
+
+    @Override
+    public JComponent[] getViews() {
+        return m_spec.getViews();
     }
 
     /**

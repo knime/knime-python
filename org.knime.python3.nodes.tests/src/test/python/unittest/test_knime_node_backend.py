@@ -6,7 +6,7 @@ import tempfile
 import json
 import os
 import test_utilities
-from typing import Dict, Tuple
+from typing import Any, Dict
 
 
 class AnotherPortObjectSpec(knext.PortObjectSpec):
@@ -104,17 +104,16 @@ class PortTypeRegistryTest(unittest.TestCase):
             self._data = data
             self._transient_data = transient_data
 
-        def serialize(self) -> Tuple[bytes, Dict]:
-            return self._data.encode(), {"payload": self._transient_data}
+        def serialize(self) -> Any:
+            return (self._data, self._transient_data)
 
         @classmethod
         def deserialize(
             cls,
             spec: "PortTypeRegistryTest.TestConnectionPortObjectSpec",
-            storage: bytes,
-            connection_data: Dict,
+            data: Any,
         ) -> "PortTypeRegistryTest.TestConnectionPortObject":
-            return cls(spec, storage.decode(), connection_data["payload"])
+            return cls(spec, data[0], data[1])
 
         @property
         def data(self) -> str:
@@ -361,51 +360,38 @@ class PortTypeRegistryTest(unittest.TestCase):
             "test.connection",
         )
 
-        class MockFileStore:
-            def __init__(self, file) -> None:
-                self.file = file
-
-            def get_key(self):
-                return "fs_key"
-
-            def get_file_path(self):
-                return self.file.name
-
         spec = self.TestConnectionPortObjectSpec("ice")
         obj = self.TestConnectionPortObject(
             spec, "cream", "this data is not serialized"
         )
         port = knext.Port(test_connection_port_type, "", "")
-        # delete=False is necessary to allow the framework to open the file
-        with tempfile.NamedTemporaryFile(delete=False) as file:
-            try:
-                mock_filestore = MockFileStore(file)
-                out = self.registry.port_object_from_python(
-                    obj, lambda: mock_filestore, port, "nodeID", 0
-                )
-                self.assertEqual("cream", file.read().decode())
-                self.assertEqual("fs_key", out.getFileStoreKey())
-                self.assertEqual(
-                    json.dumps(
-                        {
-                            "id": test_connection_port_type.id,
-                            "data": {"test_data": "ice"},
-                            "node_id": "nodeID",
-                            "port_idx": 0,
-                        }
-                    ),
-                    out.getSpec().toJsonString(),
-                )
-                key = "nodeID:0"
-                self.assertTrue(key in knb._PortTypeRegistry._connection_port_data)
-                self.assertEqual(
-                    {"payload": "this data is not serialized"},
-                    knb._PortTypeRegistry._connection_port_data[key],
-                )
-            finally:
-                file.close()
-                os.remove(file.name)
-                knb._PortTypeRegistry._connection_port_data.clear()
+
+        def invalid_factory():
+            raise AssertionError("Should not be called")
+
+        out = self.registry.port_object_from_python(
+            obj, invalid_factory, port, "nodeID", 0
+        )
+        self.assertEqual(
+            json.dumps(
+                {
+                    "id": test_connection_port_type.id,
+                    "data": {"test_data": "ice"},
+                    "node_id": "nodeID",
+                    "port_idx": 0,
+                }
+            ),
+            out.getSpec().toJsonString(),
+        )
+        key = "nodeID:0"
+        self.assertTrue(key in knb._PortTypeRegistry._connection_port_data)
+        self.assertEqual(
+            ("cream", "this data is not serialized"),
+            knb._PortTypeRegistry._connection_port_data[key],
+            f"{knb._PortTypeRegistry._connection_port_data[key]}",
+        )
+
+        knb._PortTypeRegistry._connection_port_data.clear()
 
     def test_connection_port_object_to_python(self):
         test_connection_port_type = self.get_port_type(
@@ -415,9 +401,10 @@ class PortTypeRegistryTest(unittest.TestCase):
         )
 
         knb._PortTypeRegistry._connection_port_data.clear()
-        knb._PortTypeRegistry._connection_port_data["nodeID:0"] = {
-            "payload": "this data is not serialized"
-        }
+        knb._PortTypeRegistry._connection_port_data["nodeID:0"] = (
+            "furball",
+            "this data is not serialized",
+        )
 
         # _PythonPortObjectSpec happens to have all method needed by the tested method so we use it here
         java_spec = _binary_spec_from_java(
@@ -427,23 +414,16 @@ class PortTypeRegistryTest(unittest.TestCase):
             port_idx=0,
         )
         port = knext.Port(test_connection_port_type, "", "")
-        # delete=False is necessary to allow the framework to open the file
-        with tempfile.NamedTemporaryFile(delete=False) as file:
-            try:
-                file.write(b"furball")
-                file.flush()
-                java_obj = self.MockFromJavaObject(
-                    java_spec,
-                    file.name,
-                    class_name="org.knime.python3.nodes.ports.PythonTransientConnectionPortObject",
-                )
-                obj = self.registry.port_object_to_python(java_obj, port)
-                self.assertEqual("furball", obj.data)
-                self.assertEqual("badabummm", obj.spec.data)
-                self.assertEqual("this data is not serialized", obj._transient_data)
-            finally:
-                file.close()
-                os.remove(file.name)
+
+        java_obj = self.MockFromJavaObject(
+            java_spec,
+            "no filename needed",
+            class_name="org.knime.python3.nodes.ports.PythonTransientConnectionPortObject",
+        )
+        obj = self.registry.port_object_to_python(java_obj, port)
+        self.assertEqual("furball", obj.data)
+        self.assertEqual("badabummm", obj.spec.data)
+        self.assertEqual("this data is not serialized", obj._transient_data)
 
 
 class DescriptionParsingTest(unittest.TestCase):
