@@ -63,7 +63,7 @@ import org.knime.core.node.port.PortType;
 import org.knime.core.node.port.PortTypeRegistry;
 
 /**
- * FileStore-based port object type for Python nodes. The data is never read on the Java side.
+ * A port object type for Python nodes that holds a transient connection object on the Python side.
  *
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  * @since 5.1
@@ -97,7 +97,6 @@ public final class PythonTransientConnectionPortObject implements PortObject {
      * @param spec of the port object
      * @param pid The process ID of the Python process in which this PortObject was created
      * @return Newly created {@link PythonTransientConnectionPortObject}
-     * @throws IOException
      */
     public static PythonTransientConnectionPortObject create(final PythonTransientConnectionPortObjectSpec spec,
         final int pid) {
@@ -182,7 +181,10 @@ public final class PythonTransientConnectionPortObject implements PortObject {
             if (version == 1) {
                 return new PythonTransientConnectionPortObject((PythonTransientConnectionPortObjectSpec)spec, pid);
             } else {
-                throw new IllegalStateException("Unsupported version: " + version);
+                // NB: Adapt the message when adding new versions
+                throw new IllegalStateException(String.format(
+                    "Failed to read a Python connection port object with version %d. Only version 1 is supported.",
+                    version));
             }
         }
     }
