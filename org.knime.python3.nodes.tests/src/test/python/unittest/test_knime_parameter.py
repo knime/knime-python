@@ -11,6 +11,7 @@ def generate_values_dict(
     bool_param=True,
     column_param="foo_column",
     multi_column_param=["foo_column", "bar_column"],
+    full_multi_column_param=["foo_column", "bar_column"],
     first=1,
     second=5,
     third=3,
@@ -23,6 +24,7 @@ def generate_values_dict(
             "bool_param": bool_param,
             "column_param": column_param,
             "multi_column_param": multi_column_param,
+            "full_multi_column_param": full_multi_column_param,
             "parameter_group": {
                 "subgroup": {"first": first, "second": second},
                 "third": third,
@@ -38,6 +40,7 @@ def generate_values_dict_without_groups(
     bool_param=True,
     column_param="foo_column",
     multi_column_param=["foo_column", "bar_column"],
+    full_multi_column_param=["foo_column", "bar_column"],
 ):
     return {
         "model": {
@@ -47,6 +50,7 @@ def generate_values_dict_without_groups(
             "bool_param": bool_param,
             "column_param": column_param,
             "multi_column_param": multi_column_param,
+            "full_multi_column_param": full_multi_column_param,
         }
     }
 
@@ -58,6 +62,7 @@ def generate_values_dict_with_one_group(
     bool_param=True,
     column_param="foo_column",
     multi_column_param=["foo_column", "bar_column"],
+    full_multi_column_param=["foo_column", "bar_column"],
     first=3,
     second=5,
 ):
@@ -69,6 +74,7 @@ def generate_values_dict_with_one_group(
             "bool_param": bool_param,
             "column_param": column_param,
             "multi_column_param": multi_column_param,
+            "full_multi_column_param": full_multi_column_param,
             "parameter_group": {
                 "first": first,
                 "second": second,
@@ -99,6 +105,7 @@ def generate_values_dict_for_group_w_custom_method(
 def set_column_parameters(parameterized_object):
     parameterized_object.column_param = "foo_column"
     parameterized_object.multi_column_param = ["foo_column", "bar_column"]
+    parameterized_object.full_multi_column_param = ["foo_column", "bar_column"]
 
 
 def generate_versioned_values_dict(
@@ -450,6 +457,10 @@ class Parameterized:
         "Multi Column Parameter",
         "A multi column parameter",
     )
+    full_multi_column_param = kp.ColumnFilterParameter(
+        "Full Multi Column Parameter",
+        "A full multi column parameter",
+    )
 
     parameter_group = ParameterGroup()
 
@@ -486,7 +497,10 @@ class ParameterizedWithOneGroup:
         "Multi Column Parameter",
         "A multi column parameter",
     )
-
+    full_multi_column_param = kp.ColumnFilterParameter(
+        "Full Multi Column Parameter",
+        "A full multi column parameter",
+    )
     parameter_group = NestedParameterGroup()
 
     @string_param.validator
@@ -528,7 +542,13 @@ class ParameterizedWithAdvancedOption:
     multi_column_advanced_param = kp.MultiColumnParameter(
         "Multi Column Parameter", "A multi column parameter", is_advanced=True
     )
-
+    full_multi_column_param = kp.ColumnFilterParameter(
+        "Full Multi Column Parameter",
+        "A full multi column parameter",
+    )
+    full_multi_column_param = kp.ColumnFilterParameter(
+        "Full Multi Column Parameter", "A full multi column parameter", is_advanced=True
+    )
     parameter_group = ParameterGroup()
     parameter_group_advanced = ParameterGroupAdvanced()
 
@@ -542,6 +562,10 @@ class ParameterizedWithoutGroup:
     multi_column_param = kp.MultiColumnParameter(
         "Multi Column Parameter",
         "A multi column parameter",
+    )
+    full_multi_column_param = kp.ColumnFilterParameter(
+        "Full Multi Column Parameter",
+        "A full multi column parameter",
     )
 
 
@@ -950,6 +974,9 @@ class ParameterTest(unittest.TestCase):
         self.assertEqual(
             self.parameterized.multi_column_param, ["foo_column", "bar_column"]
         )
+        self.assertEqual(
+            self.parameterized.full_multi_column_param, ["foo_column", "bar_column"]
+        )
 
         # group-level parameters
         self.assertEqual(self.parameterized.parameter_group.third, 3)
@@ -995,7 +1022,16 @@ class ParameterTest(unittest.TestCase):
 
     def test_inject_parameters(self):
         params = generate_values_dict(
-            4, 2.7, "bar", False, "foo_column", ["foo_column", "bar_column"], 3, 2, 1
+            4,
+            2.7,
+            "bar",
+            False,
+            "foo_column",
+            ["foo_column", "bar_column"],
+            ["foo_column", "bar_column"],
+            3,
+            2,
+            1,
         )
 
         kp.inject_parameters(self.parameterized, params)
@@ -1046,17 +1082,111 @@ class ParameterTest(unittest.TestCase):
                         "column_param": {
                             "title": "Column Parameter",
                             "description": "A column parameter",
-                            "oneOf": [{"const": "", "title": ""}],
+                            "oneOf": [
+                                {
+                                    "const": "",
+                                    "title": "",
+                                    "columnType": None,
+                                    "columnTypeDisplayed": None,
+                                }
+                            ],
                         },
                         "multi_column_param": {
                             "title": "Multi Column Parameter",
                             "description": "A multi column parameter",
-                            "anyOf": [{"const": "", "title": ""}],
+                            "anyOf": [
+                                {
+                                    "const": "",
+                                    "title": "",
+                                    "columnType": None,
+                                    "columnTypeDisplayed": None,
+                                }
+                            ],
+                        },
+                        "full_multi_column_param": {
+                            "title": "Full Multi Column Parameter",
+                            "description": "A full multi column parameter",
+                            "type": "object",
+                            "properties": {
+                                "patternFilter": {
+                                    "type": "object",
+                                    "properties": {
+                                        "isCaseSensitive": {
+                                            "type": "boolean",
+                                            "default": True,
+                                        },
+                                        "isInverted": {
+                                            "type": "boolean",
+                                            "default": False,
+                                        },
+                                        "pattern": {"type": "string", "default": ""},
+                                    },
+                                },
+                                "typeFilter": {
+                                    "type": "object",
+                                    "properties": {
+                                        "selectedTypes": {
+                                            "default": [],
+                                            "type": "array",
+                                            "items": {"type": "string"},
+                                        },
+                                        "typeDisplays": {
+                                            "default": [],
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {"type": "string"},
+                                                    "text": {"type": "string"},
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                                "manualFilter": {
+                                    "type": "object",
+                                    "properties": {
+                                        "includeUnknownColumns": {
+                                            "type": "boolean",
+                                            "default": True,
+                                        },
+                                        "manuallyDeselected": {
+                                            "type": "array",
+                                            "items": {"type": "string"},
+                                            "default": [],
+                                        },
+                                        "manuallySelected": {
+                                            "type": "array",
+                                            "items": {"type": "string"},
+                                            "default": [],
+                                        },
+                                    },
+                                },
+                                "mode": {
+                                    "oneOf": [
+                                        {"const": "MANUAL", "title": "Manual"},
+                                        {"const": "REGEX", "title": "Regex"},
+                                        {"const": "WILDCARD", "title": "Wildcard"},
+                                        {"const": "TYPE", "title": "Type"},
+                                    ]
+                                },
+                                "selected": {
+                                    "anyOf": [
+                                        {
+                                            "const": "",
+                                            "title": "",
+                                            "columnType": None,
+                                            "columnTypeDisplayed": None,
+                                        }
+                                    ]
+                                },
+                            },
                         },
                         "parameter_group": {
                             "type": "object",
                             "properties": {
                                 "subgroup": {
+                                    "type": "object",
                                     "properties": {
                                         "first": {
                                             "title": "First Parameter",
@@ -1071,7 +1201,6 @@ class ParameterTest(unittest.TestCase):
                                             "format": "int32",
                                         },
                                     },
-                                    "type": "object",
                                 },
                                 "third": {
                                     "title": "Internal int Parameter",
@@ -1086,6 +1215,8 @@ class ParameterTest(unittest.TestCase):
             },
         }
         extracted = kp.extract_schema(self.parameterized)
+        print(extracted)
+        print(expected)
         self.assertEqual(expected, extracted)
 
     def test_extract_dialog_creation_context_parameters(self):
@@ -1169,6 +1300,16 @@ class ParameterTest(unittest.TestCase):
                     "label": "Multi Column Parameter",
                     "scope": "#/properties/model/properties/multi_column_param",
                     "options": {"format": "columnFilter"},
+                },
+                {
+                    "type": "Control",
+                    "label": "Full Multi Column Parameter",
+                    "scope": "#/properties/model/properties/full_multi_column_param",
+                    "options": {
+                        "format": "columnFilter",
+                        "showSearch": True,
+                        "showMode": True,
+                    },
                 },
                 {
                     "type": "Section",
@@ -1293,6 +1434,17 @@ class ParameterTest(unittest.TestCase):
                     "options": {"format": "columnFilter", "isAdvanced": True},
                 },
                 {
+                    "type": "Control",
+                    "label": "Full Multi Column Parameter",
+                    "scope": "#/properties/model/properties/full_multi_column_param",
+                    "options": {
+                        "format": "columnFilter",
+                        "showSearch": True,
+                        "showMode": True,
+                        "isAdvanced": True,
+                    },
+                },
+                {
                     "type": "Section",
                     "label": "Primary Group",
                     "options": {},
@@ -1327,9 +1479,7 @@ class ParameterTest(unittest.TestCase):
                 {
                     "type": "Section",
                     "label": "Primary Group Advanced",
-                    "options": {
-                        "isAdvanced": True,
-                    },
+                    "options": {"isAdvanced": True},
                     "elements": [
                         {
                             "type": "Group",
@@ -1440,6 +1590,94 @@ class ParameterTest(unittest.TestCase):
             }
         }
         self.assertEqual(parameters, expected)
+
+    def test_all_pipelines(self):
+        """
+        Test getting and setting for simple parameters and parameter groups.
+        Both descriptor-based and composed approaches are tested.
+        """
+        ##### descriptor-based #####
+        # descriptor non-nested
+        obj_descr_simple = self.parameterized_without_group
+        obj_descr_simple = ParameterizedWithoutGroup()
+        set_column_parameters(obj_descr_simple)
+        # test getting
+        self.assertEqual(obj_descr_simple.int_param, 3)
+        # test setting
+        obj_descr_simple.int_param = 42
+        descr_simple_extracted = kp.extract_parameters(obj_descr_simple)
+        descr_simple_expected = generate_values_dict_without_groups(42)
+        self.assertEqual(descr_simple_extracted, descr_simple_expected)
+
+        # descriptor one group
+        obj_descr_one_group = ParameterizedWithOneGroup()
+        set_column_parameters(obj_descr_one_group)
+        # test getting
+        self.assertEqual(obj_descr_one_group.parameter_group.first, 1)
+        # test setting
+        obj_descr_one_group.parameter_group.first = 42
+        descr_one_group_extracted = kp.extract_parameters(obj_descr_one_group)
+        descr_one_group_expected = generate_values_dict_with_one_group(first=42)
+        self.assertEqual(descr_one_group_extracted, descr_one_group_expected)
+
+        # descriptor nested groups
+        obj_descr_nested_groups = Parameterized()
+        set_column_parameters(obj_descr_nested_groups)
+        # test getting
+        self.assertEqual(obj_descr_nested_groups.parameter_group.subgroup.first, 1)
+        # test setting
+        obj_descr_nested_groups.parameter_group.subgroup.first = 42
+        descr_nested_groups_extracted = kp.extract_parameters(obj_descr_nested_groups)
+        descr_nested_groups_expected = generate_values_dict(first=42)
+        self.assertEqual(descr_nested_groups_extracted, descr_nested_groups_expected)
+
+        ##### composed #####
+        # composed non-nested (here `param` was also declared as a class-level descriptor)
+        obj_composed_simple = ComposedParameterizedWithoutGroup(54321)
+        # test getting
+        self.assertEqual(obj_composed_simple.param, 54321)
+        # test setting
+        obj_composed_simple.param = 42
+        composed_simple_extracted = kp.extract_parameters(obj_composed_simple)
+        composed_simple_expected = {"model": {"param": 42}}
+        self.assertEqual(composed_simple_extracted, composed_simple_expected)
+
+        # composed one group
+        obj_composed_one_group = ComposedParameterized()
+        # test getting
+        self.assertEqual(obj_composed_one_group.first_group.first_param, 12345)
+        # test setting
+        obj_composed_one_group.first_group.first_param = 42
+        composed_one_group_extracted = kp.extract_parameters(obj_composed_one_group)
+        composed_one_group_expected = {
+            "model": {
+                "first_group": {"first_param": 42, "second_param": 54321},
+                "second_group": {"first_param": 12345, "second_param": 54321},
+            }
+        }
+        self.assertEqual(composed_one_group_extracted, composed_one_group_expected)
+
+        # composed nested groups
+        obj_composed_nested_groups = NestedComposedParameterized()
+        # test getting
+        self.assertEqual(
+            obj_composed_nested_groups.group.first_group.first_param, 12345
+        )
+        # test setting
+        obj_composed_nested_groups.group.first_group.first_param = 42
+        composed_nested_groups_extracted = kp.extract_parameters(
+            obj_composed_nested_groups
+        )
+        composed_nested_groups_expected = (
+            obj_composed_nested_groups.create_default_dict()
+        )
+        composed_nested_groups_expected["model"]["group"]["first_group"][
+            "first_param"
+        ] = 42
+
+        self.assertEqual(
+            composed_nested_groups_extracted, composed_nested_groups_expected
+        )
 
     def test_extract_parameters_from_altered_composed(self):
         obj = ComposedParameterized()
@@ -1647,6 +1885,10 @@ class ParameterTest(unittest.TestCase):
                         "name": "Multi Column Parameter",
                         "description": "A multi column parameter",
                     },
+                    {
+                        "name": "Full Multi Column Parameter",
+                        "description": "A full multi column parameter",
+                    },
                 ],
             },
             {
@@ -1684,6 +1926,10 @@ class ParameterTest(unittest.TestCase):
             {
                 "name": "Multi Column Parameter",
                 "description": "A multi column parameter",
+            },
+            {
+                "name": "Full Multi Column Parameter",
+                "description": "A full multi column parameter",
             },
         ]
         description, use_tabs = kp.extract_parameter_descriptions(

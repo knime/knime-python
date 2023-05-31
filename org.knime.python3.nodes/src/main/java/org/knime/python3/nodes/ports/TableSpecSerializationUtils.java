@@ -54,6 +54,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
+import org.knime.core.data.DataColumnSpec;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.IDataRepository;
 import org.knime.core.data.columnar.schema.ColumnarValueSchema;
@@ -66,14 +67,17 @@ import org.knime.core.data.v2.RowKeyType;
 import org.knime.core.data.v2.schema.ValueSchemaUtils;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.table.schema.AnnotatedColumnarSchema;
+import org.knime.core.table.schema.AnnotatedColumnarSchema.ColumnMetaData;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DefaultAnnotatedColumnarSchema;
 import org.knime.core.table.virtual.serialization.AnnotatedColumnarSchemaSerializer;
 import org.knime.python3.arrow.PythonArrowDataUtils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * Provide helper methods to serialize and deserialize DataTableSpecs
@@ -196,11 +200,38 @@ public final class TableSpecSerializationUtils {
     private static AnnotatedColumnarSchema specToSchema(final DataTableSpec spec) {
         final var vs = ValueSchemaUtils.create(spec, RowKeyType.CUSTOM, new DummyFileStoreHandler());
         final var cvs = ColumnarValueSchemaUtils.create(vs);
-        // TODO: pass metadata as well?
         var columnNames = new String[spec.getNumColumns() + 1];
         columnNames[0] = "RowKey";
+        var columnMetaData = new ColumnMetaData[columnNames.length];
+        // Set metadata object for the RowKey column to null
+        columnMetaData[0] = null;
+        for (var i = 0; i < columnMetaData.length - 1; i++) {
+            var tableSpec = spec.getColumnSpec(i);
+            columnMetaData[i + 1] = new PythonColumnMetaData(tableSpec);
+        }
         System.arraycopy(spec.getColumnNames(), 0, columnNames, 1, spec.getNumColumns());
-        return DefaultAnnotatedColumnarSchema.annotate(cvs, columnNames);
+        return DefaultAnnotatedColumnarSchema.annotate(cvs, columnNames, columnMetaData);
+    }
+
+    private static final class PythonColumnMetaData implements ColumnMetaData {
+
+        private final String m_preferredValueType;
+
+        private final String m_displayedColumnType;
+
+        public PythonColumnMetaData(final DataColumnSpec tableSpec) {
+            m_preferredValueType = tableSpec.getType().getPreferredValueClass().getName();
+            m_displayedColumnType = tableSpec.getType().getName();
+        }
+
+        @Override
+        public JsonNode toJson(final JsonNodeFactory factory) {
+            ObjectNode objectNode = factory.objectNode();
+            objectNode.put("preferred_value_type", m_preferredValueType);
+            objectNode.put("displayed_column_type", m_displayedColumnType);
+            return objectNode;
+        }
+
     }
 
     private static String serializeColumnarValueSchema(final AnnotatedColumnarSchema schema) {

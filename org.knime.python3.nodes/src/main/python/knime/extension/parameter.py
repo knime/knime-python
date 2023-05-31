@@ -951,7 +951,9 @@ class _BaseColumnParameter(_BaseParameter):
             specs, dialog_creation_context=dialog_creation_context
         )
         values = _filter_columns(specs, self._port_index, self._column_filter)
-        schema[self._schema_option] = values
+
+        if self._schema_option != None:
+            schema[self._schema_option] = values
         return schema
 
     def _validate_specs(self, specs):
@@ -1022,7 +1024,7 @@ def _filter_columns(
 ):
     try:
         if specs is None or specs[port_index] is None:
-            return [_const("")]
+            return [_const("", preferred_type=None, displayed_type=None)]
 
         spec = specs[port_index]
     except IndexError:
@@ -1037,15 +1039,28 @@ def _filter_columns(
             f"The ColumnParameter or MultiColumnParameter can only be used for Table ports."
         )
 
-    filtered = [_const(column.name) for column in spec if column_filter(column)]
+    filtered = [
+        _const(
+            column.name,
+            column.metadata["preferred_value_type"],
+            column.metadata["displayed_column_type"],
+        )
+        for column in spec
+        if column_filter(column)
+    ]
     if len(filtered) > 0:
         return filtered
     else:
-        return [_const("")]
+        return [_const("", preferred_type=None, displayed_type=None)]
 
 
-def _const(name):
-    return {"const": name, "title": name}
+def _const(name, preferred_type, displayed_type):
+    return {
+        "const": name,
+        "title": name,
+        "columnType": preferred_type,
+        "columnTypeDisplayed": displayed_type,
+    }
 
 
 class MultiColumnParameter(_BaseColumnParameter):
@@ -1087,6 +1102,211 @@ class MultiColumnParameter(_BaseColumnParameter):
         if value is not None:
             value = [c for c in value if c != ""]
         return super()._inject(obj, value, name, version)
+
+
+class ColumnFilterParameter(_BaseColumnParameter):
+    """
+    Parameter class that supports full column filtering for columns.
+    """
+
+    def __init__(
+        self,
+        label: Optional[str] = None,
+        description: Optional[str] = None,
+        port_index: Optional[int] = 0,
+        column_filter: Callable[[ks.Column], bool] = None,
+        since_version: Optional[Union[str, Version]] = None,
+        is_advanced: bool = False,
+    ):
+        super().__init__(
+            label,
+            description,
+            port_index,
+            column_filter,
+            None,
+            since_version,
+            is_advanced,
+        )
+
+        self._full_column_selection = self.FullColumnSelection()
+        self._pattern_filter = self._full_column_selection._pattern_filter
+        self._type_filter = self._full_column_selection._type_filter
+        self._manual_filter = self._full_column_selection._manual_filter
+
+    class FullColumnSelection:
+        """
+        A helper class for creating filter objects (``PatternFilter``, ``TypeFilter``, and ``ManualFilter``).
+        """
+
+        def __init__(self):
+            self._pattern_filter = self.PatternFilter()
+            self._type_filter = self.TypeFilter()
+            self._manual_filter = self.ManualFilter()
+            self._selected = {}
+            self.schema = {}
+
+        class PatternFilter:
+            def __init__(self, is_case_sensitive=True, is_inverted=False, pattern=""):
+                self._is_case_senstive = is_case_sensitive
+                self._is_inverted = is_inverted
+                self._pattern = pattern
+
+            def add_pattern_filter(self):
+                return {
+                    "type": "object",
+                    "properties": {
+                        "isCaseSensitive": {
+                            "type": "boolean",
+                            "default": self._is_case_senstive,
+                        },
+                        "isInverted": {"type": "boolean", "default": self._is_inverted},
+                        "pattern": {"type": "string", "default": self._pattern},
+                    },
+                }
+
+        class TypeFilter:
+            def __init__(self, selected_types=None, type_displays=None):
+                if selected_types is None:
+                    selected_types = []
+                if type_displays is None:
+                    type_displays = []
+
+                self._selected_types = selected_types
+                self._type_displays = type_displays
+
+            def add_type_filter(self):
+                return {
+                    "type": "object",
+                    "properties": {
+                        "selectedTypes": {
+                            "default": self._selected_types,
+                            "type": "array",
+                            "items": {"type": "string"},
+                        },
+                        "typeDisplays": {
+                            "default": self._type_displays,
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "id": {"type": "string"},
+                                    "text": {"type": "string"},
+                                },
+                            },
+                        },
+                    },
+                }
+
+        class ManualFilter:
+            def __init__(
+                self,
+                include_unknown_columns=True,
+                manually_deselected=None,
+                manually_selected=None,
+            ):
+
+                if manually_deselected is None:
+                    manually_deselected = []
+                if manually_selected is None:
+                    manually_selected = []
+
+                self._include_unknown_columns = include_unknown_columns
+                self._manually_selected = manually_selected
+                self._manually_deselected = manually_deselected
+
+            def add_manual_filter(self):
+                return {
+                    "type": "object",
+                    "properties": {
+                        "includeUnknownColumns": {
+                            "type": "boolean",
+                            "default": self._include_unknown_columns,
+                        },
+                        "manuallyDeselected": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "default": self._manually_deselected,
+                        },
+                        "manuallySelected": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "default": self._manually_selected,
+                        },
+                    },
+                }
+
+        def add_filters(self):
+            self.schema["patternFilter"] = self._pattern_filter.add_pattern_filter()
+            self.schema["typeFilter"] = self._type_filter.add_type_filter()
+            self.schema["manualFilter"] = self._manual_filter.add_manual_filter()
+
+        def add_mode(self):
+            self.schema["mode"] = {
+                "oneOf": [
+                    {"const": "MANUAL", "title": "Manual"},
+                    {"const": "REGEX", "title": "Regex"},
+                    {"const": "WILDCARD", "title": "Wildcard"},
+                    {"const": "TYPE", "title": "Type"},
+                ],
+            }
+
+        def add_selected(self, values):
+            self.schema["selected"] = {}
+            if values is None:
+                values = {}
+            self.schema["selected"]["anyOf"] = values
+            self._selected = self.schema["selected"]
+
+    def _extract_schema(
+        self,
+        extension_version=None,
+        specs: List[ks.Schema] = None,
+        dialog_creation_context=None,
+    ):
+        schema = super()._extract_schema(
+            specs, dialog_creation_context=dialog_creation_context
+        )
+
+        values = _filter_columns(specs, self._port_index, self._column_filter)
+
+        self._full_column_selection.add_filters()
+        self._full_column_selection.add_mode()
+        self._full_column_selection.add_selected(values)
+
+        schema["type"] = "object"
+        schema["properties"] = self._full_column_selection.schema
+
+        return schema
+
+    def _get_options(self) -> dict:
+        return {"format": "columnFilter", "showSearch": True, "showMode": True}
+
+    def _get_value(self, obj, for_dialog: bool = False):
+        value = super()._get_value(obj, for_dialog)
+        return value
+
+    def _inject(self, obj, value, version):
+        if value is None:
+            value = {
+                "selected": [],
+                "mode": "MANUAL",
+                "patternFilter": {
+                    "pattern": self._pattern_filter._pattern,
+                    "isCaseSensitive": self._pattern_filter._is_case_senstive,
+                    "isInverted": self._pattern_filter._is_inverted,
+                },
+                "manualFilter": {
+                    "manuallySelected": self._manual_filter._manually_selected,
+                    "manuallyDeselected": self._manual_filter._manually_deselected,
+                    "includeUnknownColumns": self._manual_filter._include_unknown_columns,
+                },
+                "typeFilter": {
+                    "selectedTypes": self._type_filter._selected_types,
+                    "typeDisplays": self._type_filter._type_displays,
+                },
+            }
+
+        return super()._inject(obj, value, version)
 
 
 class BoolParameter(_BaseParameter):

@@ -64,6 +64,7 @@ StringParameter = _kp.StringParameter
 parameter_group = _kp.parameter_group
 ColumnParameter = _kp.ColumnParameter
 MultiColumnParameter = _kp.MultiColumnParameter
+ColumnFilterParameter = _kp.ColumnFilterParameter
 EnumParameter = _kp.EnumParameter
 EnumParameterOptions = _kp.EnumParameterOptions
 Version = _kp.Version
