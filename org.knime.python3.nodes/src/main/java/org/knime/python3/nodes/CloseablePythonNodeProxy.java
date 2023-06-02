@@ -65,8 +65,11 @@ import java.util.stream.Stream;
 import org.knime.core.columnar.arrow.ArrowColumnStoreFactory;
 import org.knime.core.data.filestore.FileStore;
 import org.knime.core.data.filestore.FileStoreFactory;
+import org.knime.core.data.filestore.FileStoreKey;
+import org.knime.core.data.filestore.FileStoreUtil;
 import org.knime.core.data.filestore.internal.IFileStoreHandler;
 import org.knime.core.data.filestore.internal.IWriteFileStoreHandler;
+import org.knime.core.data.filestore.internal.NotInWorkflowWriteFileStoreHandler;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.InvalidSettingsException;
@@ -332,6 +335,16 @@ final class CloseablePythonNodeProxy
             public String get_preferred_value_types_as_json(final String tableSchemaJson) {
                 return TableSpecSerializationUtils.getPreferredValueTypesForSerializedSchema(tableSchemaJson);
             }
+            public String[] create_file_store() throws IOException {
+                final var fileStore = createFileStore();
+                return new String[]{fileStore.getFile().getAbsolutePath(),
+                    FileStoreUtil.getFileStoreKey(fileStore).toString()};
+            }
+
+            public String file_store_key_to_absolute_path(final String fileStoreKey) {
+                return getFileStoreHandler().getFileStore(FileStoreKey.fromString(fileStoreKey)).getFile()
+                    .getAbsolutePath();
+            }
 
         };
         m_proxy.initializeJavaCallback(callback);
@@ -563,6 +576,25 @@ final class CloseablePythonNodeProxy
 
     private static IFileStoreHandler getFileStoreHandler() {
         return getNode().getFileStoreHandler();
+    }
+
+    private static FileStore createFileStore() throws IOException {
+        final var uuid = UUID.randomUUID().toString();
+        final var fsHandler = getWriteFileStoreHandler();
+        if (fsHandler instanceof NotInWorkflowWriteFileStoreHandler) {
+            // If we have a NotInWorkflowWriteFileStoreHandler then we are only creating a temporary copy of the
+            // table (e.g. for the Python Script Dialog) and don't need nested loop information anyways.
+            return fsHandler.createFileStore(uuid, null, -1);
+        } else {
+            try {
+                return fsHandler.createFileStore(uuid);
+            } catch (IllegalStateException ex) {
+                LOGGER.debug("FileStore seemed to be readonly, creating FileStore without loop information. "
+                    + "This can happen in the Python Script dialog if the node was saved and the dialog is opened afterwards.",
+                    ex);
+                return fsHandler.createFileStore(uuid, null, -1);
+            }
+        }
     }
 
     @Override
