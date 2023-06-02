@@ -51,6 +51,7 @@ import pandas as pd
 import pandas.api.extensions as pdext
 import pyarrow as pa
 from pandas.core.dtypes.dtypes import register_extension_dtype
+from pandas.api.types import is_object_dtype
 
 import knime._arrow._dictencoding as kasde
 import knime._arrow._types as katy
@@ -142,8 +143,7 @@ def extract_knime_schema_from_df(df: pd.DataFrame) -> dict:
     schema = {}
     # extract schema
     for col_name, col_type in zip(df.columns, df.dtypes):
-        # FIXME This check always returns true because everything derives from object
-        if isinstance(col_type, object):
+        if is_object_dtype(col_type):
             col_type = _resolve_object_type(df[col_name])
         schema[col_name] = col_type
     return schema

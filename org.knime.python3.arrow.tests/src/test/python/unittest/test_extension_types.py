@@ -241,8 +241,8 @@ class TimeExtensionTypeTest(unittest.TestCase):
             arrow_table = test_backends.deprecated_arrow_backend.write_table(df)
             schema = (
                 "<RowID>: string\n"
-                "0: extension<knime.logical_type<LogicalTypeExtensionType>>\n"
-                "1: extension<knime.logical_type<LogicalTypeExtensionType>>\n"
+                "0: duration[ns]\n"
+                "1: timestamp[ns]\n"
                 "2: extension<knime.logical_type<LogicalTypeExtensionType>>\n"
                 "3: extension<knime.logical_type<LogicalTypeExtensionType>>"
             )
