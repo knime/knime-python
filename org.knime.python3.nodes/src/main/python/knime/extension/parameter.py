@@ -1458,7 +1458,9 @@ def parameter_group(
                 for name, param_obj in _get_parameters(self).items():
                     if param_obj._since_version <= extension_version:
                         properties[name] = param_obj._extract_schema(
-                            extension_version=extension_version, specs=specs
+                            extension_version=extension_version,
+                            specs=specs,
+                            dialog_creation_context=dialog_creation_context,
                         )
 
                 return {"type": "object", "properties": properties}
