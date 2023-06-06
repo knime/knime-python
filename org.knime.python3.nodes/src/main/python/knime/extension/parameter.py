@@ -394,7 +394,7 @@ class _BaseParameter(ABC):
         if self._label is None:
             self._label = name
 
-    def _get_value(self, obj, name, for_dialog=None):
+    def _get_value(self, obj, name, for_dialog=None):  # NOSONAR
         """
         If `self` is a descriptor, then the `name` parameter was passed down from the `__get__` method
         via `self._name`. Otherwise, the `name` parameter is passed from the overwritten `__getattribute__` of `GetSetBase`.
@@ -430,7 +430,7 @@ class _BaseParameter(ABC):
     def _set_default_for_version(self, obj, version: Version):
         self.__set__(obj, self._get_default(version))
 
-    def _inject(self, obj, value, name, parameters_version: Version = None):
+    def _inject(self, obj, value, name, parameters_version: Version = None):  # NOSONAR
         # the parameters_version parameter are needed to match the signature of the
         # _inject method for parameter groups
         self._set_value(obj, value, name)
