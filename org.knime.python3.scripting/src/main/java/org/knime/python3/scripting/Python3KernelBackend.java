@@ -343,7 +343,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
 
                 @Override
                 public String file_store_key_to_absolute_path(final String fileStoreKey) {
-                    return getFileStoreHandler().getFileStore(FileStoreKey.fromString(fileStoreKey)).getFile()
+                    return getFileStoreHandler().getFileStore(FileStoreKey.load(fileStoreKey)).getFile()
                         .getAbsolutePath();
                 }
 
@@ -351,7 +351,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
                 public String[] create_file_store() throws IOException {
                     final var fileStore = createFileStore();
                     return new String[]{fileStore.getFile().getAbsolutePath(),
-                        FileStoreUtil.getFileStoreKey(fileStore).toString()};
+                        FileStoreUtil.getFileStoreKey(fileStore).saveToString()};
                 }
 
             };
