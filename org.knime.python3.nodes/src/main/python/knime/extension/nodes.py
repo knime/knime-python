@@ -292,8 +292,9 @@ class DialogCreationContext(_BaseContext):
 
     """
 
-    def __init__(self, java_ctx, flow_variables) -> None:
+    def __init__(self, java_ctx, flow_variables, specs_to_python_converter) -> None:
         super().__init__(java_ctx, flow_variables)
+        self._python_specs = specs_to_python_converter(self._java_ctx.get_input_specs())
 
     def get_credentials(self, identifier: str) -> Credential:
         """
@@ -316,7 +317,7 @@ class DialogCreationContext(_BaseContext):
         """
         Returns the specs for all input ports of the node.
         """
-        return self._java_ctx.get_input_specs()
+        return self._python_specs
 
     def get_flow_variables(self):
         """

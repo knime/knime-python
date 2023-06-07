@@ -175,6 +175,9 @@ def _extract_schema(
     obj, extension_version: Version, specs, dialog_creation_context=None
 ) -> dict:
     properties = {}
+    if specs is None and dialog_creation_context is not None:
+        specs = dialog_creation_context.get_input_specs()
+
     for name, param_obj in _get_parameters(obj).items():
         if param_obj._since_version <= extension_version:
             properties[name] = param_obj._extract_schema(
@@ -186,21 +189,29 @@ def _extract_schema(
     return {"type": "object", "properties": properties}
 
 
-def extract_ui_schema(obj, extension_version: str = None) -> dict:
+def extract_ui_schema(
+    obj, extension_version: str = None, dialog_creation_context=None
+) -> dict:
     extension_version = Version.parse_version(extension_version)
-    elements = _extract_ui_schema_elements(obj, extension_version)
+    elements = _extract_ui_schema_elements(
+        obj, extension_version, dialog_creation_context
+    )
 
     return {"type": "VerticalLayout", "elements": elements}
 
 
-def _extract_ui_schema_elements(obj, extension_version: Version, scope=None) -> dict:
+def _extract_ui_schema_elements(
+    obj, extension_version: Version, dialog_creation_context=None, scope=None
+) -> dict:
     if scope is None:
         scope = _Scope("#/properties/model/properties")
     elements = []
     for name, param_obj in _get_parameters(obj).items():
         if param_obj._since_version <= extension_version:
             elements.append(
-                param_obj._extract_ui_schema(name, scope, extension_version)
+                param_obj._extract_ui_schema(
+                    name, scope, extension_version, dialog_creation_context
+                )
             )
 
     return elements
@@ -497,11 +508,15 @@ class _BaseParameter(ABC):
         return {"title": self._label, "description": self.__doc__}
 
     def _extract_ui_schema(
-        self, name, parent_scope: _Scope, extension_version: Version = None  # NOSONAR
+        self,
+        name,
+        parent_scope: _Scope,
+        extension_version: Version = None,  # NOSONAR
+        dialog_creation_context=None,
     ):
         # the extension_version parameter is needed to match the signature of the
         # _extract_ui_schema method for parameter groups
-        options = self._get_options()
+        options = self._get_options(dialog_creation_context)
         if self._is_advanced:
             options["isAdvanced"] = True
 
@@ -513,7 +528,7 @@ class _BaseParameter(ABC):
         }
 
     @abstractmethod
-    def _get_options(self) -> dict:
+    def _get_options(self, dialog_creation_context=None) -> dict:
         pass
 
     def _extract_description(self, name, parent_scope: _Scope):  # NOSONAR
@@ -618,7 +633,7 @@ class IntParameter(_NumericParameter):
         prop["format"] = "int32"
         return prop
 
-    def _get_options(self) -> dict:
+    def _get_options(self, dialog_creation_context=None) -> dict:
         return {"format": "integer"}
 
 
@@ -664,7 +679,7 @@ class DoubleParameter(_NumericParameter):
         schema["format"] = "double"
         return schema
 
-    def _get_options(self) -> dict:
+    def _get_options(self, dialog_creation_context=None) -> dict:
         return {"format": "number"}
 
 
@@ -687,7 +702,7 @@ class _BaseMultiChoiceParameter(_BaseParameter):
             label, description, default_value, validator, since_version, is_advanced
         )
 
-    def _get_options(self) -> dict:
+    def _get_options(self, dialog_creation_context=None) -> dict:
         if (
             self._enum is None
             or len(self._enum) > 4
@@ -1005,7 +1020,7 @@ class ColumnParameter(_BaseColumnParameter):
         self._include_row_key = include_row_key
         self._include_none_column = include_none_column
 
-    def _get_options(self) -> dict:
+    def _get_options(self, dialog_creation_context=None) -> dict:
         return {
             "format": "columnSelection",
             "showRowKeys": self._include_row_key,
@@ -1087,7 +1102,7 @@ class MultiColumnParameter(_BaseColumnParameter):
             is_advanced,
         )
 
-    def _get_options(self) -> dict:
+    def _get_options(self, dialog_creation_context=None) -> dict:
         return {"format": "columnFilter"}
 
     def _get_value(self, obj: Any, name, for_dialog: bool = False):
@@ -1102,6 +1117,55 @@ class MultiColumnParameter(_BaseColumnParameter):
         if value is not None:
             value = [c for c in value if c != ""]
         return super()._inject(obj, value, name, version)
+
+
+def _possible_values(
+    specs: List[ks.PortObjectSpec],
+    port_index: int,
+    column_filter: Callable[[ks.Column], bool],
+):
+    def entry(name, type, compatibleTypes):
+        entry = {"id": name, "text": name}
+        if type is not None:
+            entry["type"] = {"id": type[0], "text": type[1]}
+        if compatibleTypes is not None:
+            entry["compatibleTypes"] = compatibleTypes
+        return entry
+
+    try:
+        if specs is None or specs[port_index] is None:
+            return [entry("")]
+
+        spec = specs[port_index]
+    except IndexError:
+        raise IndexError(
+            f"The port index {port_index} is not contained in the spec list with length {len(specs)}. "
+            f"Maybe the port_index does not match the index of the corresponding input table? "
+        ) from None
+
+    if not isinstance(spec, ks.Schema):
+        raise TypeError(
+            f"The port at index {port_index} is not a table. "
+            f"The ColumnFilter can only be used for table ports. "
+            f"Available specs are: {specs}"
+        )
+
+    filtered = [
+        entry(
+            column.name,
+            (
+                column.metadata["preferred_value_type"],
+                column.metadata["displayed_column_type"],
+            ),
+            [column.metadata["preferred_value_type"]],  # TODO: add compatible types
+        )
+        for column in spec
+        if column_filter(column)
+    ]
+    if len(filtered) > 0:
+        return filtered
+    else:
+        return [entry("")]
 
 
 class ColumnFilterParameter(_BaseColumnParameter):
@@ -1250,12 +1314,12 @@ class ColumnFilterParameter(_BaseColumnParameter):
                 ],
             }
 
-        def add_selected(self, values):
-            self.schema["selected"] = {}
-            if values is None:
-                values = {}
-            self.schema["selected"]["anyOf"] = values
-            self._selected = self.schema["selected"]
+        def add_selected(self):
+            self.schema["selected"] = {
+                "type": "array",
+                "items": {"type": "string", "configKeys": ["selected_Internals"]},
+                "configKeys": ["selected_Internals"],  # what is this needed for?
+            }
 
     def _extract_schema(
         self,
@@ -1267,25 +1331,40 @@ class ColumnFilterParameter(_BaseColumnParameter):
             specs, dialog_creation_context=dialog_creation_context
         )
 
-        values = _filter_columns(specs, self._port_index, self._column_filter)
-
         self._full_column_selection.add_filters()
         self._full_column_selection.add_mode()
-        self._full_column_selection.add_selected(values)
+        self._full_column_selection.add_selected()
 
         schema["type"] = "object"
         schema["properties"] = self._full_column_selection.schema
 
+        LOGGER.warn("schema:")
+        LOGGER.warn(schema)
+
         return schema
 
-    def _get_options(self) -> dict:
-        return {"format": "columnFilter", "showSearch": True, "showMode": True}
+    def _get_options(self, dialog_creation_context=None) -> dict:
+        # TODO: how do I access the compatible types here?
 
-    def _get_value(self, obj, for_dialog: bool = False):
-        value = super()._get_value(obj, for_dialog)
+        options = {"format": "columnFilter", "showSearch": True, "showMode": True}
+
+        if dialog_creation_context is not None:
+            options["possibleValues"] = _possible_values(
+                dialog_creation_context.get_input_specs(),
+                self._port_index,
+                self._column_filter,
+            )
+
+        LOGGER.warn("ui schema options:")
+        LOGGER.warn(options)
+
+        return options
+
+    def _get_value(self, obj, name, for_dialog: bool = False):
+        value = super()._get_value(obj, name, for_dialog)
         return value
 
-    def _inject(self, obj, value, version):
+    def _inject(self, obj, value, name, version):
         if value is None:
             value = {
                 "selected": [],
@@ -1306,7 +1385,7 @@ class ColumnFilterParameter(_BaseColumnParameter):
                 },
             }
 
-        return super()._inject(obj, value, version)
+        return super()._inject(obj, value, name, version)
 
 
 class BoolParameter(_BaseParameter):
@@ -1342,7 +1421,7 @@ class BoolParameter(_BaseParameter):
         schema["type"] = "boolean"
         return schema
 
-    def _get_options(self) -> dict:
+    def _get_options(self, dialog_creation_context=None) -> dict:
         return {"format": "boolean"}
 
 
@@ -1644,10 +1723,16 @@ def parameter_group(
                     self._override_internal_validator = True
 
             def _extract_ui_schema(
-                self, name, parent_scope: _Scope, version: Version = None
+                self,
+                name,
+                parent_scope: _Scope,
+                version: Version = None,
+                dialog_creation_context=None,
             ):
                 scope = parent_scope.create_child(name, is_group=True)
-                elements = _extract_ui_schema_elements(self, version, scope)
+                elements = _extract_ui_schema_elements(
+                    self, version, dialog_creation_context, scope
+                )
 
                 options = {}
                 if self._is_advanced:

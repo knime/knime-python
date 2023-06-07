@@ -492,18 +492,20 @@ class _PythonNodeProxy:
         self.setParameters(parameters, extension_version)
 
         dialog_context = kn.DialogCreationContext(
-            python_dialog_context, self._get_flow_variables()
+            python_dialog_context, self._get_flow_variables(), self._specs_to_python
         )
-        specs = dialog_context.get_input_specs()
-
-        inputs = self._specs_to_python(specs)
 
         json_forms_dict = {
             "data": kp.extract_parameters(self._node, for_dialog=True),
             "schema": kp.extract_schema(
-                self._node, extension_version, inputs, dialog_context
+                self._node,
+                extension_version,
+                specs=None,
+                dialog_creation_context=dialog_context,
             ),
-            "ui_schema": kp.extract_ui_schema(self._node, extension_version),
+            "ui_schema": kp.extract_ui_schema(
+                self._node, extension_version, dialog_context
+            ),
         }
 
         self._parse_parameter_descriptions(json_forms_dict["schema"])
