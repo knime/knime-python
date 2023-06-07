@@ -483,11 +483,11 @@ class DenseByteVectorValueFactory(kt.PythonValueFactory):
         return value
 
 
-class XmlValueFactory(kt.FileStoreSerializablePythonValueFactory):
+class XmlValueFactory(kt.TableOrFileStorePythonValueFactory):
     def __init__(self):
         import xml.etree.ElementTree
 
-        kt.FileStoreSerializablePythonValueFactory.__init__(
+        kt.TableOrFileStorePythonValueFactory.__init__(
             self, xml.etree.ElementTree.ElementTree
         )
 
@@ -516,20 +516,17 @@ class XmlValueFactory(kt.FileStoreSerializablePythonValueFactory):
         return True
 
 
-class PNGImageValueFactory(kt.FileStoreSerializablePythonValueFactory):
+class PNGImageValueFactory(kt.TableOrFileStorePythonValueFactory):
     def __init__(self):
         import PIL.Image
 
-        kt.FileStoreSerializablePythonValueFactory.__init__(self, PIL.Image.Image)
+        kt.TableOrFileStorePythonValueFactory.__init__(self, PIL.Image.Image)
 
     def deserialize(self, input: "io.BytesIO") -> "PIL.Image.Image":
-
         import PIL.Image as Image
         from io import BytesIO
 
         length = int.from_bytes(input.read(4), byteorder="little")
-        # It would be nicer not to read the content first and then create another BytesIO from it
-        # but if we hand ET.parse a stream it will always try to rewind it to its beginning.
         payload = input.read(length)
         return Image.open(BytesIO(payload))
 

@@ -49,12 +49,12 @@ Defines the Python equivalent to a ValueFactory and related utility method/class
 """
 import warnings
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from contextlib import contextmanager
 import importlib
 import json
 from typing import List, Tuple, Type
 import logging
-from io import BytesIO
 
 LOGGER = logging.getLogger(__name__)
 
@@ -103,23 +103,115 @@ class FileStoreHandler:
         pass
 
 
-class FileStoreSerializablePythonValueFactory(PythonValueFactory):
-    def __init__(self, compatible_type):
-        """
-        Create a FileStoreSerializablePythonValueFactory that can perform special encoding/
-        decoding for the values represented by this ValueFactory and allows storing
-        the content in separate files (file stores) which are linked from the table
-        rather than storing the full content in the table.
+class FileStorePythonValueFactory(PythonValueFactory):
+    """
+    A PythonValueFactory that stores big data in separate files
 
-        Subclasses should implement serialize() and deserialize() and can customize
-        should_be_stored_in_filestore() to determine whether or not a value needs
-        to be stored externally.
+    A FileStorePythonValueFactory reads from files (so called file stores) while
+    decoding values and writes to files when encoding values. This is useful for values
+    that can become large because storing them inside the table is inefficient.
+
+    Subclasses should implement read() and write().
+
+    Args:
+        compatible_type:
+            The class of the value, for which this factory is created.
+    """
+
+    def __init__(self, compatible_type):
+        PythonValueFactory.__init__(self, compatible_type)
+
+    @abstractmethod
+    def read(self, file_paths: List, table_data):
+        """
+        Reads the value at the given file paths locations.
 
         Args:
-            compatible_type:
-                The class of the value, for which this factory is created.
+            file_paths: list of file paths for the file stores of this value
+            table_data: additional data that was stored in the table
+
+        Returns:
+            the read value
         """
-        PythonValueFactory.__init__(self, compatible_type)
+        pass
+
+    @abstractmethod
+    def write(self, file_store_creator: Callable[[], str], value):
+        """
+        Writes the given value to file stores.
+
+        Implementations should call the ``file_store_creator`` without arguments to
+        create new file stores in which the value can be stored. The method can return
+        additional data that should be stored in the table.
+
+        Args:
+            file_store_creator: callable that can be called without arguments and
+                returns a file path that the caller should write to
+            value: value that should be written
+
+        Returns:
+            object with additional data
+        """
+        pass
+
+    def decode(self, storage):
+        if storage is None:
+            return None
+
+        from knime.api.table import _backend
+
+        file_store_keys = storage["0"]
+        if file_store_keys is None or len(file_store_keys) == 0:
+            file_paths = []
+        else:
+            file_store_handler = _backend.file_store_handler
+            file_paths = [
+                file_store_handler.file_store_key_to_absolute_path(key)
+                for key in file_store_keys.split(";")
+            ]
+
+        # NB: additional data is stored at location "1" in the struct
+        return self.read(file_paths, storage["1"])
+
+    def encode(self, value):
+        if value is None:
+            return None
+
+        from knime.api.table import _backend
+
+        file_store_handler = _backend.file_store_handler
+
+        file_store_keys = []
+
+        def file_store_creator():
+            path, key = file_store_handler.create_file_store()
+            file_store_keys.append(key)
+            return path
+
+        tableData = self.write(file_store_creator, value)
+
+        return {
+            "0": ";".join(file_store_keys) if len(file_store_keys) > 0 else None,
+            "1": tableData,
+        }
+
+
+class TableOrFileStorePythonValueFactory(FileStorePythonValueFactory):
+    """
+    A FileStorePythonValueFactory that stores the same data in the table or in a file
+
+    When encoding, subclasses can decide if a value should be stored in the table or in
+    a file by implementing ``should_be_stored_in_filestore()``. The subclass only has
+    to implement on kind of serialization in ``serialize()`` and ``deserialize()``.
+    These methods are used for both cases.
+
+    Args:
+        compatible_type:
+            The class of the value, for which this factory is created.
+    """
+
+    def __init__(self, compatible_type):
+        FileStorePythonValueFactory.__init__(self, compatible_type)
 
     @abstractmethod
     def deserialize(self, input: "io.BytesIO"):
@@ -136,7 +228,7 @@ class FileStoreSerializablePythonValueFactory(PythonValueFactory):
     def serialize(self, value, output: "io.BytesIO"):
         """
         Serialize the value into the given output BytesIO stream. Must be readable
-        in the same way by the corresponding deserialize() method.
+        in the same way by the corresponding ``deserialize()`` method.
 
         Do NOT close the output, this will be done externally.
         """
@@ -145,50 +237,36 @@ class FileStoreSerializablePythonValueFactory(PythonValueFactory):
     def should_be_stored_in_filestore(self, value):
         return True
 
-    def decode(self, storage):
-        if storage is None:
-            return None
+    def write(self, file_store_creator, value):
+        if self.should_be_stored_in_filestore(value):
+            # Store in file store
+            file_name = file_store_creator()
+            with open(file_name, "wb") as f:
+                self.serialize(value, f)
 
-        file_store_key = storage["0"]
-        if file_store_key is None or len(file_store_key) == 0:
+            # TODO: implement hashcode method which is equal to java side
+            return None
+        else:
+            # Store in table
             import io
 
-            bytes_io = io.BytesIO(storage["1"])
-        else:
-            from knime.api.table import _backend
+            with io.BytesIO() as bytes_io:
+                self.serialize(value, bytes_io)
+                return bytes_io.getvalue()
 
-            file_store_handler = _backend.file_store_handler
-            file_name = file_store_handler.file_store_key_to_absolute_path(
-                file_store_key
-            )
-            bytes_io = open(file_name, "rb")
+    def read(self, file_paths, table_data):
+        if len(file_paths) > 0:
+            # Data is stored in file store
+            bytes_io = open(file_paths[0], "rb")
+        else:
+            # Data is stored in table
+            import io
+
+            bytes_io = io.BytesIO(table_data)
+
         value = self.deserialize(bytes_io)
         bytes_io.close()
         return value
-
-    def encode(self, value):
-        if value is None:
-            return None
-
-        file_store_key = None
-        data = None
-
-        if self.should_be_stored_in_filestore(value):
-            from knime.api.table import _backend
-
-            file_store_handler = _backend.file_store_handler
-            file_name, file_store_key = file_store_handler.create_file_store()
-            with open(file_name, "wb") as f:
-                self.serialize(value, f)
-        else:
-            import io
-
-            bytes_io = io.BytesIO()
-            self.serialize(value, bytes_io)
-            data = bytes_io.getvalue()
-            bytes_io.close()
-
-        return {"0": file_store_key, "1": data}
 
 
 class FallbackPythonValueFactory(PythonValueFactory):
