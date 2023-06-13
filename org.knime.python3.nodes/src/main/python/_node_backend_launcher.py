@@ -281,11 +281,12 @@ class _PortTypeRegistry:
         def deserialize_custom_spec():
             spec_id = data["id"]
             assert (
-                spec_id == port.type.id
-            ), f"Expected input port ID {port.type.id} but got {spec_id}"
-            assert (
                 spec_id in self._port_types_by_id
             ), f"There is no port type with id '{spec_id}' registered."
+            incoming_port_type = self._port_types_by_id[spec_id]
+            assert port.type.is_super_type_of(
+                incoming_port_type
+            ), f"The provided input port type {spec_id} must be the same or a sub-type of the node's input port type {port.type}."
             return port.type.spec_class.deserialize(data["data"])
 
         if class_name == "org.knime.core.data.DataTableSpec":

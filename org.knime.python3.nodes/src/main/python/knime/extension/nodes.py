@@ -132,6 +132,16 @@ class PortType:
     object_class: type
     spec_class: type
 
+    def is_super_type_of(self, port_type: "PortType") -> bool:
+        """
+        Returns True if this PortType is the same or a super-type of the provided PortType.
+        One PortType is a supertype of another PortType if both its spec_class and object_class
+        are a super-classes of the other PortTypes spec_class and object_class.
+        """
+        return issubclass(port_type.spec_class, self.spec_class) and issubclass(
+            port_type.object_class, self.object_class
+        )
+
 
 # special PortTypes that are treated separately
 PortType.BINARY = "PortType.BINARY"
