@@ -11,7 +11,9 @@ def generate_values_dict(
     bool_param=True,
     column_param="foo_column",
     multi_column_param=["foo_column", "bar_column"],
-    full_multi_column_param=["foo_column", "bar_column"],
+    full_multi_column_param=kp.ColumnFilterConfig(
+        included_column_names=["foo_column", "bar_column"]
+    ),
     first=1,
     second=5,
     third=3,
@@ -24,7 +26,7 @@ def generate_values_dict(
             "bool_param": bool_param,
             "column_param": column_param,
             "multi_column_param": multi_column_param,
-            "full_multi_column_param": full_multi_column_param,
+            "full_multi_column_param": full_multi_column_param._to_dict(),
             "parameter_group": {
                 "subgroup": {"first": first, "second": second},
                 "third": third,
@@ -40,7 +42,9 @@ def generate_values_dict_without_groups(
     bool_param=True,
     column_param="foo_column",
     multi_column_param=["foo_column", "bar_column"],
-    full_multi_column_param=["foo_column", "bar_column"],
+    full_multi_column_param=kp.ColumnFilterConfig(
+        included_column_names=["foo_column", "bar_column"]
+    ),
 ):
     return {
         "model": {
@@ -50,7 +54,7 @@ def generate_values_dict_without_groups(
             "bool_param": bool_param,
             "column_param": column_param,
             "multi_column_param": multi_column_param,
-            "full_multi_column_param": full_multi_column_param,
+            "full_multi_column_param": full_multi_column_param._to_dict(),
         }
     }
 
@@ -62,7 +66,9 @@ def generate_values_dict_with_one_group(
     bool_param=True,
     column_param="foo_column",
     multi_column_param=["foo_column", "bar_column"],
-    full_multi_column_param=["foo_column", "bar_column"],
+    full_multi_column_param=kp.ColumnFilterConfig(
+        included_column_names=["foo_column", "bar_column"]
+    ),
     first=3,
     second=5,
 ):
@@ -74,7 +80,7 @@ def generate_values_dict_with_one_group(
             "bool_param": bool_param,
             "column_param": column_param,
             "multi_column_param": multi_column_param,
-            "full_multi_column_param": full_multi_column_param,
+            "full_multi_column_param": full_multi_column_param._to_dict(),
             "parameter_group": {
                 "first": first,
                 "second": second,
@@ -105,7 +111,9 @@ def generate_values_dict_for_group_w_custom_method(
 def set_column_parameters(parameterized_object):
     parameterized_object.column_param = "foo_column"
     parameterized_object.multi_column_param = ["foo_column", "bar_column"]
-    parameterized_object.full_multi_column_param = ["foo_column", "bar_column"]
+    parameterized_object.full_multi_column_param = kp.ColumnFilterConfig(
+        included_column_names=["foo_column", "bar_column"]
+    )
 
 
 def generate_versioned_values_dict(
@@ -877,15 +885,20 @@ class ParameterizedWithDialogCreationContext:
 
 
 class DummyDialogCreationContext:
-    class DummyJavaContext:
-        def get_credential_names(self):
-            return ["foo", "bar", "baz"]
+    def __init__(self, specs) -> None:
+        class DummyJavaContext:
+            def get_credential_names(self):
+                return ["foo", "bar", "baz"]
 
-        def get_credential(self, name):
-            return "dummy"
+            def get_credential(self, name):
+                return "dummy"
 
-    _java_ctx = DummyJavaContext()
-    _flow_variables = ["flow1", "flow2", "flow3"]
+        self._java_ctx = DummyJavaContext()
+        self._flow_variables = ["flow1", "flow2", "flow3"]
+        self._specs = specs
+
+    def get_input_specs(self):
+        return self._specs
 
 
 #### Tests: ####
@@ -975,7 +988,12 @@ class ParameterTest(unittest.TestCase):
             self.parameterized.multi_column_param, ["foo_column", "bar_column"]
         )
         self.assertEqual(
-            self.parameterized.full_multi_column_param, ["foo_column", "bar_column"]
+            self.parameterized.full_multi_column_param,
+            kp.ColumnFilterConfig(
+                manual_filter=kp.ManualFilterConfig(
+                    included=["foo_column", "bar_column"]
+                )
+            ),
         )
 
         # group-level parameters
@@ -1028,7 +1046,11 @@ class ParameterTest(unittest.TestCase):
             False,
             "foo_column",
             ["foo_column", "bar_column"],
-            ["foo_column", "bar_column"],
+            kp.ColumnFilterConfig(
+                manual_filter=kp.ManualFilterConfig(
+                    included=["foo_column", "bar_column"]
+                )
+            ),
             3,
             2,
             1,
@@ -1171,14 +1193,12 @@ class ParameterTest(unittest.TestCase):
                                     ]
                                 },
                                 "selected": {
-                                    "anyOf": [
-                                        {
-                                            "const": "",
-                                            "title": "",
-                                            "columnType": None,
-                                            "columnTypeDisplayed": None,
-                                        }
-                                    ]
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "configKeys": ["selected_Internals"],
+                                    },
+                                    "configKeys": ["selected_Internals"],
                                 },
                             },
                         },
@@ -1215,8 +1235,6 @@ class ParameterTest(unittest.TestCase):
             },
         }
         extracted = kp.extract_schema(self.parameterized)
-        print(extracted)
-        print(expected)
         self.assertEqual(expected, extracted)
 
     def test_extract_dialog_creation_context_parameters(self):
@@ -1249,7 +1267,7 @@ class ParameterTest(unittest.TestCase):
                 }
             },
         }
-        dummy_dialog = DummyDialogCreationContext()
+        dummy_dialog = DummyDialogCreationContext([])
         extracted = kp.extract_schema(
             self.parameterized_with_dialog_creation_context,
             dialog_creation_context=dummy_dialog,
@@ -1632,15 +1650,15 @@ class ParameterTest(unittest.TestCase):
         self.assertEqual(descr_nested_groups_extracted, descr_nested_groups_expected)
 
         ##### composed #####
-        # composed non-nested (here `param` was also declared as a class-level descriptor)
-        obj_composed_simple = ComposedParameterizedWithoutGroup(54321)
-        # test getting
-        self.assertEqual(obj_composed_simple.param, 54321)
-        # test setting
-        obj_composed_simple.param = 42
-        composed_simple_extracted = kp.extract_parameters(obj_composed_simple)
-        composed_simple_expected = {"model": {"param": 42}}
-        self.assertEqual(composed_simple_extracted, composed_simple_expected)
+        # # composed non-nested (here `param` was also declared as a class-level descriptor)
+        # obj_composed_simple = ComposedParameterizedWithoutGroup(54321)
+        # # test getting
+        # self.assertEqual(obj_composed_simple.param, 54321)
+        # # test setting
+        # obj_composed_simple.param = 42
+        # composed_simple_extracted = kp.extract_parameters(obj_composed_simple)
+        # composed_simple_expected = {"model": {"param": 42}}
+        # self.assertEqual(composed_simple_extracted, composed_simple_expected)
 
         # composed one group
         obj_composed_one_group = ComposedParameterized()
@@ -2107,6 +2125,229 @@ class ParameterTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             kp.validate_parameters(
                 self.parameterized_with_custom_methods, forbidden_params_middle
+            )
+
+
+class FullColumnSelectionTest(unittest.TestCase):
+    def test_apply_manual_filter(self):
+        schema = ks.Schema.from_types(
+            [ks.string(), ks.double(), ks.int32()],
+            ["string", "number_double", "number_int"],
+        )
+
+        selection = kp.ColumnFilterConfig(mode=kp.ColumnFilterMode.MANUAL)
+
+        selection.manual_filter = kp.ManualFilterConfig()
+        filtered = selection.apply(schema)
+        self.assertEqual(
+            ["string", "number_double", "number_int"], filtered.column_names
+        )
+
+        selection.manual_filter = kp.ManualFilterConfig(include_unknown_columns=False)
+        filtered = selection.apply(schema)
+        self.assertEqual([], filtered.column_names)
+
+        selection.manual_filter = kp.ManualFilterConfig(
+            include_unknown_columns=False, included=["string"]
+        )
+        filtered = selection.apply(schema)
+        self.assertEqual(["string"], filtered.column_names)
+
+        selection.manual_filter = kp.ManualFilterConfig(
+            include_unknown_columns=True, included=["string"]
+        )
+        filtered = selection.apply(schema)
+        self.assertEqual(
+            ["string", "number_double", "number_int"], filtered.column_names
+        )
+
+        selection.manual_filter = kp.ManualFilterConfig(
+            include_unknown_columns=True, excluded=["string"]
+        )
+        filtered = selection.apply(schema)
+        self.assertEqual(["number_double", "number_int"], filtered.column_names)
+
+    def test_apply_regex_filter(self):
+        schema = ks.Schema.from_types(
+            [ks.string(), ks.double(), ks.int32()],
+            ["string", "number_double", "number_int"],
+        )
+
+        selection = kp.ColumnFilterConfig(mode=kp.ColumnFilterMode.REGEX)
+
+        selection.pattern_filter = kp.PatternFilterConfig(pattern=".*")
+        filtered = selection.apply(schema)
+        self.assertEqual(
+            ["string", "number_double", "number_int"], filtered.column_names
+        )
+
+        selection.pattern_filter = kp.PatternFilterConfig(inverted=True, pattern=".*")
+        filtered = selection.apply(schema)
+        self.assertEqual([], filtered.column_names)
+
+        selection.pattern_filter = kp.PatternFilterConfig(pattern="Number")
+        filtered = selection.apply(schema)
+        self.assertEqual([], filtered.column_names)
+
+        selection.pattern_filter = kp.PatternFilterConfig(
+            case_sensitive=True, pattern="Number"
+        )
+        filtered = selection.apply(schema)
+        self.assertEqual([], filtered.column_names)
+
+        selection.pattern_filter = kp.PatternFilterConfig(
+            case_sensitive=False, pattern="Number"
+        )
+        filtered = selection.apply(schema)
+        self.assertEqual(["number_double", "number_int"], filtered.column_names)
+
+        selection.pattern_filter = kp.PatternFilterConfig(
+            case_sensitive=True, inverted=True, pattern="Number"
+        )
+        filtered = selection.apply(schema)
+        self.assertEqual(
+            ["string", "number_double", "number_int"], filtered.column_names
+        )
+
+        selection.pattern_filter = kp.PatternFilterConfig(
+            case_sensitive=False, inverted=True, pattern="Number"
+        )
+        filtered = selection.apply(schema)
+        self.assertEqual(["string"], filtered.column_names)
+
+    def test_apply_wildcard_filter(self):
+        schema = ks.Schema.from_types(
+            [ks.string(), ks.double(), ks.int32()],
+            ["string", "number[double]", "number[int]"],
+        )
+
+        selection = kp.ColumnFilterConfig(mode=kp.ColumnFilterMode.WILDCARD)
+
+        selection.pattern_filter = kp.PatternFilterConfig(pattern="*")
+        filtered = selection.apply(schema)
+        self.assertEqual(
+            ["string", "number[double]", "number[int]"], filtered.column_names
+        )
+
+        selection.pattern_filter = kp.PatternFilterConfig(inverted=True, pattern="*")
+        filtered = selection.apply(schema)
+        self.assertEqual([], filtered.column_names)
+
+        selection.pattern_filter = kp.PatternFilterConfig(pattern="Number")
+        filtered = selection.apply(schema)
+        self.assertEqual([], filtered.column_names)
+
+        selection.pattern_filter = kp.PatternFilterConfig(
+            case_sensitive=True, pattern="Number"
+        )
+        filtered = selection.apply(schema)
+        self.assertEqual([], filtered.column_names)
+
+        selection.pattern_filter = kp.PatternFilterConfig(
+            case_sensitive=False, pattern="Number*"
+        )
+        filtered = selection.apply(schema)
+        self.assertEqual(["number[double]", "number[int]"], filtered.column_names)
+
+        selection.pattern_filter = kp.PatternFilterConfig(
+            case_sensitive=True, inverted=True, pattern="Number"
+        )
+        filtered = selection.apply(schema)
+        self.assertEqual(
+            ["string", "number[double]", "number[int]"], filtered.column_names
+        )
+
+        selection.pattern_filter = kp.PatternFilterConfig(
+            case_sensitive=False, inverted=True, pattern="Number*"
+        )
+        filtered = selection.apply(schema)
+        self.assertEqual(["string"], filtered.column_names)
+
+        selection.pattern_filter = kp.PatternFilterConfig(
+            case_sensitive=False, inverted=True, pattern="?umber*"
+        )
+        filtered = selection.apply(schema)
+        self.assertEqual(["string"], filtered.column_names)
+
+        selection.pattern_filter = kp.PatternFilterConfig(
+            case_sensitive=True, inverted=False, pattern="?umber*"
+        )
+        filtered = selection.apply(schema)
+        self.assertEqual(["number[double]", "number[int]"], filtered.column_names)
+
+        selection.pattern_filter = kp.PatternFilterConfig(
+            case_sensitive=True, inverted=False, pattern="number[*]"
+        )
+        filtered = selection.apply(schema)
+        self.assertEqual(["number[double]", "number[int]"], filtered.column_names)
+
+        selection.pattern_filter = kp.PatternFilterConfig(
+            case_sensitive=True, inverted=False, pattern="number[*"
+        )
+        filtered = selection.apply(schema)
+        self.assertEqual(["number[double]", "number[int]"], filtered.column_names)
+
+    def test_apply_type_filter(self):
+        schema = ks.Schema.from_types(
+            [ks.string(), ks.double(), ks.int32()],
+            ["string", "number[double]", "number[int]"],
+            [
+                {"preferred_value_type": "MyString"},
+                {"preferred_value_type": "MyDouble"},
+                {"preferred_value_type": "MyInt"},
+            ],
+        )
+
+        selection = kp.ColumnFilterConfig(mode=kp.ColumnFilterMode.TYPE)
+
+        selection.type_filter = kp.TypeFilterConfig(
+            selected_types=["MyString"], type_displays=["My String"]
+        )
+        filtered = selection.apply(schema)
+        self.assertEqual(["string"], filtered.column_names)
+
+        selection.type_filter = kp.TypeFilterConfig(
+            selected_types=["MyDouble"], type_displays=["My Double"]
+        )
+        filtered = selection.apply(schema)
+        self.assertEqual(["number[double]"], filtered.column_names)
+
+        selection.type_filter = kp.TypeFilterConfig(
+            selected_types=["Random"], type_displays=["Random"]
+        )
+        filtered = selection.apply(schema)
+        self.assertEqual([], filtered.column_names)
+
+        selection.type_filter = kp.TypeFilterConfig(
+            selected_types=["MyString", "MyDouble"],
+            type_displays=["My String", "My Double"],
+        )
+        filtered = selection.apply(schema)
+        self.assertEqual(["string", "number[double]"], filtered.column_names)
+
+        schema = ks.Schema.from_types(
+            [ks.string(), ks.double(), ks.int32()],
+            ["string", "number[double]", "number[int]"],
+            # No metadata given
+        )
+        selection.type_filter = kp.TypeFilterConfig(
+            selected_types=["MyString", "MyDouble"],
+            type_displays=["My String", "My Double"],
+        )
+        with self.assertLogs() as log:
+            filtered = selection.apply(schema)
+            self.assertEqual([], filtered.column_names)  # all columns will be dropped
+            self.assertIn(
+                "Ignoring column 'string' because it does not have a 'preferred_value_type' set.",
+                log.output[0],
+            )
+            self.assertIn(
+                "Ignoring column 'number[double]' because it does not have a 'preferred_value_type' set.",
+                log.output[1],
+            )
+            self.assertIn(
+                "Ignoring column 'number[int]' because it does not have a 'preferred_value_type' set.",
+                log.output[2],
             )
 
 

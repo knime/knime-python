@@ -1124,17 +1124,17 @@ def _possible_values(
     port_index: int,
     column_filter: Callable[[ks.Column], bool],
 ):
-    def entry(name, type, compatibleTypes):
+    def entry(name, type, compatible_types):
         entry = {"id": name, "text": name}
         if type is not None:
             entry["type"] = {"id": type[0], "text": type[1]}
-        if compatibleTypes is not None:
-            entry["compatibleTypes"] = compatibleTypes
+        if compatible_types is not None:
+            entry["compatibleTypes"] = compatible_types
         return entry
 
     try:
         if specs is None or specs[port_index] is None:
-            return [entry("")]
+            return [entry("", "", "")]
 
         spec = specs[port_index]
     except IndexError:
@@ -1165,7 +1165,333 @@ def _possible_values(
     if len(filtered) > 0:
         return filtered
     else:
-        return [entry("")]
+        return [entry("", "", "")]
+
+
+class ColumnFilterMode(Enum):
+    """
+    The modes that can be selected in the ColumnFilterParameter
+    """
+
+    MANUAL = "Manual"
+    REGEX = "Regex"
+    WILDCARD = "Wildcard"
+    TYPE = "Type"
+
+
+class PatternFilterConfig:
+    """
+    The pattern configuration for the ColumnFilterParameter, used for both, regex and wildcard patterns
+    """
+
+    def __init__(self, pattern="", case_sensitive=True, inverted=False):
+        self.case_senstive = case_sensitive
+        self.inverted = inverted
+        self.pattern = pattern
+
+    def _extract_schema(self):
+        return {
+            "type": "object",
+            "properties": {
+                "isCaseSensitive": {
+                    "type": "boolean",
+                    "default": self.case_senstive,
+                },
+                "isInverted": {"type": "boolean", "default": self.inverted},
+                "pattern": {"type": "string", "default": self.pattern},
+            },
+        }
+
+    def _apply(self, schema: ks.Schema, regex: bool) -> List[str]:
+        import re
+
+        pattern_str = self.pattern
+
+        if not regex:
+            pattern_str = re.escape(pattern_str)
+            pattern_str = pattern_str.replace("\\*", ".*")
+            pattern_str = pattern_str.replace("\\?", ".")
+
+        flags = 0 if self.case_senstive else re.IGNORECASE
+        pattern = re.compile(pattern_str, flags)
+
+        filtered_column_names = []
+        for column in schema:
+            pattern_matches = pattern.search(column.name) != None
+            # The ^ is xor, so we include the column only if
+            # the pattern is matching or it is NOT matching but
+            # we have inverted the search
+            if pattern_matches ^ self.inverted:
+                filtered_column_names.append(column.name)
+        return filtered_column_names
+
+    @classmethod
+    def _from_dict(cls, value: Dict):
+        return cls(
+            value["pattern"],
+            value["isCaseSensitive"],
+            value["isInverted"],
+        )
+
+    def _to_dict(self) -> Dict:
+        return {
+            "pattern": self.pattern,
+            "isCaseSensitive": self.case_senstive,
+            "isInverted": self.inverted,
+        }
+
+
+class TypeFilterConfig:
+    """
+    The type filter configuration for the ColumnFilterParameter
+    """
+
+    def __init__(self, selected_types=None, type_displays=None):
+        if selected_types is None:
+            selected_types = []
+        if type_displays is None:
+            type_displays = []
+
+        self._selected_types = selected_types
+        self._type_displays = type_displays
+
+    def _extract_schema(self):
+        return {
+            "type": "object",
+            "properties": {
+                "selectedTypes": {
+                    "default": self._selected_types,
+                    "type": "array",
+                    "items": {"type": "string"},
+                },
+                "typeDisplays": {
+                    "default": self._type_displays,
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "id": {"type": "string"},
+                            "text": {"type": "string"},
+                        },
+                    },
+                },
+            },
+        }
+
+    def _apply(self, schema: ks.Schema) -> List[str]:
+        filtered_column_names = []
+
+        for column in schema:
+            if column.metadata is None or "preferred_value_type" not in column.metadata:
+                LOGGER.warning(
+                    f"Ignoring column '{column.name}' because it does not have a 'preferred_value_type' set."
+                )
+                continue
+
+            column_type = column.metadata["preferred_value_type"]
+            if column_type in self._selected_types:
+                filtered_column_names.append(column.name)
+
+        return filtered_column_names
+
+    @classmethod
+    def _from_dict(cls, value: Dict):
+        return cls(
+            value["selectedTypes"],
+            value["typeDisplays"],
+        )
+
+    def _to_dict(self) -> Dict:
+        return {
+            "selectedTypes": self._selected_types,
+            "typeDisplays": self._type_displays,
+        }
+
+
+class ManualFilterConfig:
+    """
+    The manual configuration of the ColumnFilterParameter, consisting of the included and excluded
+    columns as well as the info whether unknown columns should be included or excluded.
+    """
+
+    def __init__(
+        self,
+        included: List[str] = None,
+        excluded: List[str] = None,
+        include_unknown_columns=True,
+    ):
+        self.include_unknown_columns = include_unknown_columns
+        self.included = included if included is not None else []
+        self.excluded = excluded if excluded is not None else []
+
+    def _extract_schema(self):
+        return {
+            "type": "object",
+            "properties": {
+                "includeUnknownColumns": {
+                    "type": "boolean",
+                    "default": self.include_unknown_columns,
+                },
+                "manuallyDeselected": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "default": self.excluded,
+                },
+                "manuallySelected": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "default": self.included,
+                },
+            },
+        }
+
+    def _apply(self, schema: ks.Schema) -> List[str]:
+        return [
+            column.name
+            for column in schema
+            if column.name in self.included
+            or (
+                column.name not in self.included
+                and column.name not in self.excluded
+                and self.include_unknown_columns
+            )
+        ]
+
+    @classmethod
+    def _from_dict(cls, value: Dict):
+        return cls(
+            value["manuallySelected"],
+            value["manuallyDeselected"],
+            value["includeUnknownColumns"],
+        )
+
+    def _to_dict(self) -> Dict:
+        return {
+            "manuallySelected": self.included,
+            "manuallyDeselected": self.excluded,
+            "includeUnknownColumns": self.include_unknown_columns,
+        }
+
+
+class ColumnFilterConfig:
+    """
+    The value of a ``ColumnFilterParameter`` is a ``ColumnFilterConfig`` instance with a mode as well
+    as configuration for the different modes.
+
+    Use the ``apply`` method to filter schemas and tables according to this filter config
+
+    **Example**::
+
+        @knext.node(
+            name="Python Column Filter",
+            node_type=knext.NodeType.MANIPULATOR,
+            icon_path=...,
+            category=...,
+        )
+        @knext.input_table("Input Table", "Input table.")
+        @knext.output_table("Output Table", "Output table.")
+        class ColumnFilterNode:
+            column_filter = knext.ColumnFilterParameter("Column Filter", "Column Filter")
+
+            def configure(self, config_context, input_schema: knext.Schema):
+                return self.column_filter.apply(input_schema)
+
+            def execute(self, exec_context, input_table):
+                return self.column_filter.apply(input_table)
+    """
+
+    def __init__(
+        self,
+        mode=ColumnFilterMode.MANUAL,
+        pattern_filter: PatternFilterConfig = None,
+        type_filter: TypeFilterConfig = None,
+        manual_filter: ManualFilterConfig = None,
+        included_column_names: List[str] = None,
+    ):
+        """
+        Construct a ``ColumnFilterConfig`` with given ``mode``, ``pattern_filter``, ``type_filter`` and ``manual_filter``.
+
+        If ``included_column_names`` are provided, ``manual_filter`` and ``mode`` will be ignored and will be configured
+        such that only the explicitly ``included_column_names`` (and unknown columns) are selected.
+        """
+        self.pattern_filter = (
+            pattern_filter if pattern_filter is not None else PatternFilterConfig()
+        )
+        self.type_filter = (
+            type_filter if type_filter is not None else TypeFilterConfig()
+        )
+
+        if included_column_names is not None:
+            self.manual_filter = ManualFilterConfig(included=included_column_names)
+            self.mode = ColumnFilterMode.MANUAL
+        else:
+            self.manual_filter = (
+                manual_filter if manual_filter is not None else ManualFilterConfig()
+            )
+
+            self.mode = mode
+
+    @classmethod
+    def _from_dict(cls, value):
+        return cls(
+            mode=ColumnFilterMode[value["mode"]],
+            pattern_filter=PatternFilterConfig._from_dict(value["patternFilter"]),
+            type_filter=TypeFilterConfig._from_dict(value["typeFilter"]),
+            manual_filter=ManualFilterConfig._from_dict(value["manualFilter"]),
+        )
+
+    def _to_dict(self):
+        return {
+            "mode": self.mode.name,
+            "patternFilter": self.pattern_filter._to_dict(),
+            "typeFilter": self.type_filter._to_dict(),
+            "manualFilter": self.manual_filter._to_dict(),
+        }
+
+    def __eq__(self, other) -> bool:
+        return self._to_dict() == other._to_dict()
+
+    def _extract_schema(self):
+        return {
+            "patternFilter": self.pattern_filter._extract_schema(),
+            "typeFilter": self.type_filter._extract_schema(),
+            "manualFilter": self.manual_filter._extract_schema(),
+            "mode": {
+                "oneOf": [
+                    {"const": "MANUAL", "title": "Manual"},
+                    {"const": "REGEX", "title": "Regex"},
+                    {"const": "WILDCARD", "title": "Wildcard"},
+                    {"const": "TYPE", "title": "Type"},
+                ],
+            },
+            "selected": {
+                "type": "array",
+                "items": {"type": "string", "configKeys": ["selected_Internals"]},
+                "configKeys": ["selected_Internals"],
+            },
+        }
+
+    def apply(self, columnar: ks._Columnar) -> ks._Columnar:
+        """
+        Filter a table schema or a table according to this column filter configuration.
+        """
+        schema = columnar.schema if hasattr(columnar, "schema") else columnar
+
+        filtered_column_names = []
+        if self.mode == ColumnFilterMode.MANUAL:
+            filtered_column_names = self.manual_filter._apply(schema)
+        elif (
+            self.mode == ColumnFilterMode.REGEX
+            or self.mode == ColumnFilterMode.WILDCARD
+        ):
+            filtered_column_names = self.pattern_filter._apply(
+                schema, regex=self.mode == ColumnFilterMode.REGEX
+            )
+        elif self.mode == ColumnFilterMode.TYPE:
+            filtered_column_names = self.type_filter._apply(schema)
+        else:
+            raise ValueError(f"Unknown column filter mode selected: {self.mode}")
+        return columnar[filtered_column_names]
 
 
 class ColumnFilterParameter(_BaseColumnParameter):
@@ -1192,134 +1518,7 @@ class ColumnFilterParameter(_BaseColumnParameter):
             is_advanced,
         )
 
-        self._full_column_selection = self.FullColumnSelection()
-        self._pattern_filter = self._full_column_selection._pattern_filter
-        self._type_filter = self._full_column_selection._type_filter
-        self._manual_filter = self._full_column_selection._manual_filter
-
-    class FullColumnSelection:
-        """
-        A helper class for creating filter objects (``PatternFilter``, ``TypeFilter``, and ``ManualFilter``).
-        """
-
-        def __init__(self):
-            self._pattern_filter = self.PatternFilter()
-            self._type_filter = self.TypeFilter()
-            self._manual_filter = self.ManualFilter()
-            self._selected = {}
-            self.schema = {}
-
-        class PatternFilter:
-            def __init__(self, is_case_sensitive=True, is_inverted=False, pattern=""):
-                self._is_case_senstive = is_case_sensitive
-                self._is_inverted = is_inverted
-                self._pattern = pattern
-
-            def add_pattern_filter(self):
-                return {
-                    "type": "object",
-                    "properties": {
-                        "isCaseSensitive": {
-                            "type": "boolean",
-                            "default": self._is_case_senstive,
-                        },
-                        "isInverted": {"type": "boolean", "default": self._is_inverted},
-                        "pattern": {"type": "string", "default": self._pattern},
-                    },
-                }
-
-        class TypeFilter:
-            def __init__(self, selected_types=None, type_displays=None):
-                if selected_types is None:
-                    selected_types = []
-                if type_displays is None:
-                    type_displays = []
-
-                self._selected_types = selected_types
-                self._type_displays = type_displays
-
-            def add_type_filter(self):
-                return {
-                    "type": "object",
-                    "properties": {
-                        "selectedTypes": {
-                            "default": self._selected_types,
-                            "type": "array",
-                            "items": {"type": "string"},
-                        },
-                        "typeDisplays": {
-                            "default": self._type_displays,
-                            "type": "array",
-                            "items": {
-                                "type": "object",
-                                "properties": {
-                                    "id": {"type": "string"},
-                                    "text": {"type": "string"},
-                                },
-                            },
-                        },
-                    },
-                }
-
-        class ManualFilter:
-            def __init__(
-                self,
-                include_unknown_columns=True,
-                manually_deselected=None,
-                manually_selected=None,
-            ):
-
-                if manually_deselected is None:
-                    manually_deselected = []
-                if manually_selected is None:
-                    manually_selected = []
-
-                self._include_unknown_columns = include_unknown_columns
-                self._manually_selected = manually_selected
-                self._manually_deselected = manually_deselected
-
-            def add_manual_filter(self):
-                return {
-                    "type": "object",
-                    "properties": {
-                        "includeUnknownColumns": {
-                            "type": "boolean",
-                            "default": self._include_unknown_columns,
-                        },
-                        "manuallyDeselected": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                            "default": self._manually_deselected,
-                        },
-                        "manuallySelected": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                            "default": self._manually_selected,
-                        },
-                    },
-                }
-
-        def add_filters(self):
-            self.schema["patternFilter"] = self._pattern_filter.add_pattern_filter()
-            self.schema["typeFilter"] = self._type_filter.add_type_filter()
-            self.schema["manualFilter"] = self._manual_filter.add_manual_filter()
-
-        def add_mode(self):
-            self.schema["mode"] = {
-                "oneOf": [
-                    {"const": "MANUAL", "title": "Manual"},
-                    {"const": "REGEX", "title": "Regex"},
-                    {"const": "WILDCARD", "title": "Wildcard"},
-                    {"const": "TYPE", "title": "Type"},
-                ],
-            }
-
-        def add_selected(self):
-            self.schema["selected"] = {
-                "type": "array",
-                "items": {"type": "string", "configKeys": ["selected_Internals"]},
-                "configKeys": ["selected_Internals"],  # what is this needed for?
-            }
+        self._column_filter_config = ColumnFilterConfig()
 
     def _extract_schema(
         self,
@@ -1331,21 +1530,12 @@ class ColumnFilterParameter(_BaseColumnParameter):
             specs, dialog_creation_context=dialog_creation_context
         )
 
-        self._full_column_selection.add_filters()
-        self._full_column_selection.add_mode()
-        self._full_column_selection.add_selected()
-
         schema["type"] = "object"
-        schema["properties"] = self._full_column_selection.schema
-
-        LOGGER.warn("schema:")
-        LOGGER.warn(schema)
+        schema["properties"] = self._column_filter_config._extract_schema()
 
         return schema
 
     def _get_options(self, dialog_creation_context=None) -> dict:
-        # TODO: how do I access the compatible types here?
-
         options = {"format": "columnFilter", "showSearch": True, "showMode": True}
 
         if dialog_creation_context is not None:
@@ -1355,35 +1545,26 @@ class ColumnFilterParameter(_BaseColumnParameter):
                 self._column_filter,
             )
 
-        LOGGER.warn("ui schema options:")
-        LOGGER.warn(options)
-
         return options
 
-    def _get_value(self, obj, name, for_dialog: bool = False):
-        value = super()._get_value(obj, name, for_dialog)
-        return value
+    def __get__(self, obj, objtype=None):
+        value = super().__get__(obj, objtype)
+
+        # Turn dict into ColumnFilterConfig for better use in Python nodes
+        if value is not None:
+            return ColumnFilterConfig._from_dict(value)
+        else:
+            return None
+
+    def __set__(self, obj, value):
+        # Turn ColumnFilterConfig into dict, because the UI-side needs a dict
+        if value is not None:
+            value = value._to_dict()
+        return super().__set__(obj, value)
 
     def _inject(self, obj, value, name, version):
         if value is None:
-            value = {
-                "selected": [],
-                "mode": "MANUAL",
-                "patternFilter": {
-                    "pattern": self._pattern_filter._pattern,
-                    "isCaseSensitive": self._pattern_filter._is_case_senstive,
-                    "isInverted": self._pattern_filter._is_inverted,
-                },
-                "manualFilter": {
-                    "manuallySelected": self._manual_filter._manually_selected,
-                    "manuallyDeselected": self._manual_filter._manually_deselected,
-                    "includeUnknownColumns": self._manual_filter._include_unknown_columns,
-                },
-                "typeFilter": {
-                    "selectedTypes": self._type_filter._selected_types,
-                    "typeDisplays": self._type_filter._type_displays,
-                },
-            }
+            value = ColumnFilterConfig()._to_dict()
 
         return super()._inject(obj, value, name, version)
 
