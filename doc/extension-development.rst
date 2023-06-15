@@ -121,6 +121,16 @@ the following parameter types. For a more detailed description see
    :inherited-members:
    :exclude-members: validator
 
+.. autoclass:: knime.extension.ColumnFilterParameter
+   :members:
+   :noindex:
+   :inherited-members:
+   :exclude-members: validator
+
+.. autoclass:: knime.extension.ColumnFilterConfig
+   :members:
+   :noindex:
+   :inherited-members:
 
 .. autoclass:: knime.extension.EnumParameter
    :members:
