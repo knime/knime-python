@@ -1308,7 +1308,7 @@ class ParameterTest(unittest.TestCase):
                     "label": "Column Parameter",
                     "scope": "#/properties/model/properties/column_param",
                     "options": {
-                        "format": "columnSelection",
+                        "format": "dropDown",
                         "showRowKeys": False,
                         "showNoneColumn": False,
                     },
@@ -1423,7 +1423,7 @@ class ParameterTest(unittest.TestCase):
                     "label": "Column Parameter",
                     "scope": "#/properties/model/properties/column_param",
                     "options": {
-                        "format": "columnSelection",
+                        "format": "dropDown",
                         "showRowKeys": False,
                         "showNoneColumn": False,
                     },
@@ -1433,7 +1433,7 @@ class ParameterTest(unittest.TestCase):
                     "label": "Column Parameter",
                     "scope": "#/properties/model/properties/column_advanced_param",
                     "options": {
-                        "format": "columnSelection",
+                        "format": "dropDown",
                         "showRowKeys": False,
                         "showNoneColumn": False,
                         "isAdvanced": True,

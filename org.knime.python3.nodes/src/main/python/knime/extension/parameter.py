@@ -1021,11 +1021,20 @@ class ColumnParameter(_BaseColumnParameter):
         self._include_none_column = include_none_column
 
     def _get_options(self, dialog_creation_context=None) -> dict:
-        return {
-            "format": "columnSelection",
+        options = {
+            "format": "dropDown",
             "showRowKeys": self._include_row_key,
             "showNoneColumn": self._include_none_column,
         }
+
+        if dialog_creation_context is not None:
+            options["possibleValues"] = _possible_values(
+                dialog_creation_context.get_input_specs(),
+                self._port_index,
+                self._column_filter,
+            )
+
+        return options
 
     def _inject(self, obj, value, name, version):
         value = None if value == "" else value
