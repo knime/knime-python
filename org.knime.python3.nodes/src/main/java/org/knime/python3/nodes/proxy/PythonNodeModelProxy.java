@@ -53,6 +53,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.knime.core.data.filestore.FileStore;
+import org.knime.core.table.schema.AnnotatedColumnarSchema;
 import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.nodes.LogCallback;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
@@ -204,6 +205,15 @@ public interface PythonNodeModelProxy {
          * @param invalidSettings if the failure occurred because of invalid settings
          */
         void set_failure(String message, String details, boolean invalidSettings); // NOSONAR
+
+        /**
+         * Given a JSON-serialized {@link AnnotatedColumnarSchema}, this method will return
+         * a string-serialized JSON array of elements with "preferred_value_type" and "display_column_type"s
+         * which are needed for the UI schema generation of all column selection UI elements.
+         * @param tableSchemaJson A JSON-serialized {@link AnnotatedColumnarSchema}
+         * @return A JSON array of elements with "preferred_value_type"s, serialized to string
+         */
+        String get_preferred_value_types_as_json(final String tableSchemaJson); // NOSONAR
     }
 
     /**

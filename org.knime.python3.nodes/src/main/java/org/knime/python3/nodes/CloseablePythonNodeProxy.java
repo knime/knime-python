@@ -93,6 +93,7 @@ import org.knime.python3.nodes.ports.PythonPortObjectTypeRegistry;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
 import org.knime.python3.nodes.ports.PythonTransientConnectionPortObject;
+import org.knime.python3.nodes.ports.TableSpecSerializationUtils;
 import org.knime.python3.nodes.proxy.CloseableNodeFactoryProxy;
 import org.knime.python3.nodes.proxy.NodeDialogProxy;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy;
@@ -150,14 +151,13 @@ final class CloseablePythonNodeProxy
     );
 
     /**
-     * The {@link ConnectionType} defines whether the node uses a connection port object or not.
-     * This influences whether the gateway should be reused (to maintain the connection) or is
-     * free to be discarded.
+     * The {@link ConnectionType} defines whether the node uses a connection port object or not. This influences whether
+     * the gateway should be reused (to maintain the connection) or is free to be discarded.
      */
     private enum ConnectionType {
-        SOURCE, // If a node produces a connection, it must hold on to its gateway until the node gets reset
-        CONNECTED, // If a node uses a connection, it should not close the gateway but also not hold on to it
-        INDEPENDENT // The node does not use any type of connection. Gateway can be closed after execution.
+            SOURCE, // If a node produces a connection, it must hold on to its gateway until the node gets reset
+            CONNECTED, // If a node uses a connection, it should not close the gateway but also not hold on to it
+            INDEPENDENT // The node does not use any type of connection. Gateway can be closed after execution.
     }
 
     CloseablePythonNodeProxy(final PythonNodeProxy proxy, final CloseableGatewayWithAttachments gateway,
@@ -273,7 +273,6 @@ final class CloseablePythonNodeProxy
         }
     }
 
-
     @Override
     public ExecutionResult execute(final PortObject[] inData, final ExecutionContext exec,
         final FlowVariablesProxy flowVariablesProxy, final CredentialsProviderProxy credentialsProviderProxy,
@@ -325,6 +324,11 @@ final class CloseablePythonNodeProxy
             @Override
             public void set_failure(final String message, final String details, final boolean invalidSettings) {
                 failure.setFailure(message, details, invalidSettings);
+            }
+
+            @Override
+            public String get_preferred_value_types_as_json(final String tableSchemaJson) {
+                return TableSpecSerializationUtils.getPreferredValueTypesForSerializedSchema(tableSchemaJson);
             }
 
         };
@@ -418,10 +422,9 @@ final class CloseablePythonNodeProxy
     }
 
     /**
-     * 1. if no connectionPort in InData but there is one in OutData:
-     *     -> This is a source. Don't close but remember gateway for reset & dispose.
-     * 2. if connectionPort in inData -> the node is connected. Do not close gateway, will be done by source.
-     * 3. no connection port at all -> independent -> close as usual
+     * 1. if no connectionPort in InData but there is one in OutData: -> This is a source. Don't close but remember
+     * gateway for reset & dispose. 2. if connectionPort in inData -> the node is connected. Do not close gateway, will
+     * be done by source. 3. no connection port at all -> independent -> close as usual
      *
      * @param inData
      * @param outData
@@ -500,6 +503,11 @@ final class CloseablePythonNodeProxy
             @Override
             public void set_failure(final String message, final String details, final boolean invalidSettings) {
                 failure.setFailure(message, details, invalidSettings);
+            }
+
+            @Override
+            public String get_preferred_value_types_as_json(final String tableSchemaJson) {
+                return TableSpecSerializationUtils.getPreferredValueTypesForSerializedSchema(tableSchemaJson);
             }
         };
         m_proxy.initializeJavaCallback(callback);

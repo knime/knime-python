@@ -605,7 +605,7 @@ class Column:
 
     ktype: KnimeType
     name: str
-    metadata: str
+    metadata: Dict
 
     def __init__(self, ktype: Union[KnimeType, Type], name: str, metadata=None):
         """
@@ -614,6 +614,7 @@ class Column:
         Args:
             ktype: The KNIME type of the column or a type which can be converted via knime.api.schema.logical(ktype) to a KNIME type
             name: The name of the column. May not be empty.
+            metadata: Metadata of this column as dictionary
 
         Raises:
             TypeError: if the type is no KNIME type or cannot be converted to a KNIME type

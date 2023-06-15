@@ -56,6 +56,7 @@ import java.util.UUID;
 
 import org.knime.core.data.DataColumnSpec;
 import org.knime.core.data.DataTableSpec;
+import org.knime.core.data.DataType;
 import org.knime.core.data.IDataRepository;
 import org.knime.core.data.columnar.schema.ColumnarValueSchema;
 import org.knime.core.data.columnar.schema.ColumnarValueSchemaUtils;
@@ -64,6 +65,7 @@ import org.knime.core.data.filestore.FileStoreKey;
 import org.knime.core.data.filestore.internal.FileStoreProxy.FlushCallback;
 import org.knime.core.data.filestore.internal.IWriteFileStoreHandler;
 import org.knime.core.data.v2.RowKeyType;
+import org.knime.core.data.v2.ValueFactoryUtils;
 import org.knime.core.data.v2.schema.ValueSchemaUtils;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.table.schema.AnnotatedColumnarSchema;
@@ -71,9 +73,11 @@ import org.knime.core.table.schema.AnnotatedColumnarSchema.ColumnMetaData;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DefaultAnnotatedColumnarSchema;
 import org.knime.core.table.virtual.serialization.AnnotatedColumnarSchemaSerializer;
+import org.knime.core.table.virtual.serialization.ColumnarSchemaSerializer;
 import org.knime.python3.arrow.PythonArrowDataUtils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -246,4 +250,42 @@ public final class TableSpecSerializationUtils {
             throw new IllegalStateException("Python node returned invalid serialized columnar schema", ex);
         }
     }
+
+    private static JsonNode preferredValueTypeToJson(final DataType dataType, final JsonNodeFactory factory) {
+        var objectNode = factory.objectNode();
+        objectNode.put("preferred_value_type", dataType.getPreferredValueClass().getName());
+        objectNode.put("displayed_column_type", dataType.getName());
+        return objectNode;
+    }
+
+    /**
+     * Given a JSON-serialized {@link AnnotatedColumnarSchema}, this method will return a string-serialized JSON array
+     * of elements with "preferred_value_type" and "display_column_type"s which are needed for the UI schema generation
+     * of all column selection UI elements.
+     *
+     * @param tableSchemaJson A JSON-serialized {@link AnnotatedColumnarSchema}
+     * @return A JSON array of elements with "preferred_value_type"s, serialized to string
+     */
+    public static String getPreferredValueTypesForSerializedSchema(final String tableSchemaJson) {
+        final var om = new ObjectMapper();
+        try {
+            final var rootNode = om.readTree(tableSchemaJson);
+            final var columnarSchema = ColumnarSchemaSerializer.load(rootNode.get("schema"));
+
+            final var factory = JsonNodeFactory.instance;
+            final var arrayNode = factory.arrayNode();
+            // We don't have a preferred_value_type for the RowKey
+            for (var columnIdx = 1; columnIdx < columnarSchema.numColumns(); columnIdx++) {
+                final var dataType = ValueFactoryUtils.getDataTypeForTraits(columnarSchema.getTraits(columnIdx));
+                arrayNode.add(preferredValueTypeToJson(dataType, factory));
+            }
+
+            return arrayNode.toString();
+        } catch (JsonMappingException ex) {
+            throw new IllegalStateException("Could not parse AnnotatedColumnarSchema from given JSON data", ex);
+        } catch (JsonProcessingException ex) { // NOSONAR: if we don't split this block up, Eclipse doesn't like it for some reason
+            throw new IllegalStateException("Could not parse AnnotatedColumnarSchema from given JSON data", ex);
+        }
+    }
+
 }

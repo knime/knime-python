@@ -588,6 +588,12 @@ class _PythonNodeProxy:
                 for idx, po in enumerate(input_objects)
             ]
 
+            # inject preferred_value_types as these are not part of a column's metadata
+            for table in [i for i in inputs if isinstance(i, kat.ArrowSourceTable)]:
+                table._inject_metadata(
+                    self._java_callback.get_preferred_value_types_as_json
+                )
+
             # prepare output table creation
             def create_python_sink():
                 java_sink = self._java_callback.create_sink()

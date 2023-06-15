@@ -1174,7 +1174,8 @@ def _possible_values(
                 column.metadata["preferred_value_type"],
                 column.metadata["displayed_column_type"],
             ),
-            [column.metadata["preferred_value_type"]],  # TODO: add compatible types
+            # TODO: add more compatible types in https://knime-com.atlassian.net/browse/AP-20608
+            [column.metadata["preferred_value_type"]],
         )
         for column in spec
         if column_filter(column)

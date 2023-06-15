@@ -342,6 +342,7 @@ class ArrowTable(knt.Table):
 class ArrowSourceTable(ArrowTable):
     def __init__(self, source: "_backend.ArrowDataSource"):
         self._source = source
+        self._schema = _convert_arrow_schema_to_knime(self._source.schema)
 
     def _get_table(self):
         return self._source.to_arrow_table()
@@ -362,7 +363,7 @@ class ArrowSourceTable(ArrowTable):
 
     @property
     def schema(self) -> ks.Schema:
-        return _convert_arrow_schema_to_knime(self._source.schema)
+        return self._schema
 
     def __str__(self):
         return f"ArrowSourceTable[cols={self.num_columns}, rows={self.num_rows}, batches={self.num_batches}]"
@@ -388,6 +389,31 @@ class ArrowSourceTable(ArrowTable):
         while batch_idx < len(self._source):
             yield ArrowTable(self._source[batch_idx])
             batch_idx += 1
+
+    def _inject_metadata(self, metadata_extractor):
+        """
+        We allow KNIME to inject additional metadata, which we only use when executing pure-Python nodes
+        for now. This additional metadata can e.g. be the preferred_value_type which is required to make
+        type filtering in the column filter work -- which is only needed for nodes, not for scripts.
+
+        WARNING: if the metadata contained values with the same keys, they will be overwritten.
+        """
+        import json
+
+        schema_string = json.dumps(self._schema.serialize())
+        metadatas = json.loads(metadata_extractor(schema_string))
+        # schema.serialize adds a row-key column at the beginning, we drop that again
+        metadatas = metadatas[1:]
+
+        for column, metadata in zip(self._schema, metadatas):
+            if not isinstance(metadata, dict):
+                raise TypeError(
+                    f"The injected column metadata should be a dict, but is {metadata}"
+                )
+
+            if column.metadata is None:
+                column.metadata = {}
+            column.metadata.update(metadata)
 
 
 def _convert_arrow_schema_to_knime(schema: pa.Schema) -> ks.Schema:
