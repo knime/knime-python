@@ -1112,7 +1112,15 @@ class MultiColumnParameter(_BaseColumnParameter):
         )
 
     def _get_options(self, dialog_creation_context=None) -> dict:
-        return {"format": "columnFilter"}
+        options = {"format": "twinList"}
+
+        if dialog_creation_context is not None:
+            options["possibleValues"] = _possible_values(
+                dialog_creation_context.get_input_specs(),
+                self._port_index,
+                self._column_filter,
+            )
+        return options
 
     def _get_value(self, obj: Any, name, for_dialog: bool = False):
         value = super()._get_value(obj, name, for_dialog)

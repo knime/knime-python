@@ -1317,7 +1317,7 @@ class ParameterTest(unittest.TestCase):
                     "type": "Control",
                     "label": "Multi Column Parameter",
                     "scope": "#/properties/model/properties/multi_column_param",
-                    "options": {"format": "columnFilter"},
+                    "options": {"format": "twinList"},
                 },
                 {
                     "type": "Control",
@@ -1443,13 +1443,13 @@ class ParameterTest(unittest.TestCase):
                     "type": "Control",
                     "label": "Multi Column Parameter",
                     "scope": "#/properties/model/properties/multi_column_param",
-                    "options": {"format": "columnFilter"},
+                    "options": {"format": "twinList"},
                 },
                 {
                     "type": "Control",
                     "label": "Multi Column Parameter",
                     "scope": "#/properties/model/properties/multi_column_advanced_param",
-                    "options": {"format": "columnFilter", "isAdvanced": True},
+                    "options": {"format": "twinList", "isAdvanced": True},
                 },
                 {
                     "type": "Control",
