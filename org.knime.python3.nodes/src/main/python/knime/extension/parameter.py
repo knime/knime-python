@@ -56,6 +56,7 @@ from copy import deepcopy
 import knime.api.schema as ks
 import logging
 import inspect
+import sys
 
 from knime.extension.version import Version
 
@@ -771,17 +772,27 @@ class EnumParameterOptions(Enum):
             WATERY = ("Watery", "A watery taste, with notes of water and wetness.")
     """
 
-    def __init__(self, label, dscription):
+    def __init__(self, label, description):
         self.label = label
-        self.description = dscription
+        self.description = description
 
     @classmethod
-    def _generate_options_description(cls):
-        options_description = "\n\n**Available options:**\n\n"
-        for member in cls._member_names_:
-            options_description += f"- {cls[member].label}: {cls[member].description}\n"
+    def _generate_options_description(cls, docstring: str):
+        # ensure that the options description is indented correctly
+        if docstring:
+            lines = docstring.expandtabs().splitlines()
+            indent_lvl = _get_indent_level(lines)
+            indent = " " * indent_lvl
+        else:
+            indent = ""
 
-        return options_description
+        options_description = f"\n\n{indent}**Available options:**\n\n"
+        for member in cls._member_names_:
+            options_description += (
+                f"{indent}- {cls[member].label}: {cls[member].description}\n"
+            )
+
+        return docstring.expandtabs() + options_description
 
     @classmethod
     def _get_default_option(cls):
@@ -867,7 +878,7 @@ class EnumParameter(_BaseMultiChoiceParameter):
         )
 
     def _generate_description(self):
-        return self.__doc__ + self._enum._generate_options_description()
+        return self._enum._generate_options_description(self.__doc__)
 
     def _extract_schema(
         self, extension_version=None, specs=None, dialog_creation_context=None
@@ -1468,3 +1479,14 @@ def parameter_group(
         return ParameterGroupHolder
 
     return decorate_class
+
+
+def _get_indent_level(lines):
+    indent = sys.maxsize
+    for line in lines[1:]:
+        stripped = line.lstrip()
+        if stripped:
+            indent = min(indent, len(line) - len(stripped))
+    if indent == sys.maxsize:
+        return 0
+    return indent

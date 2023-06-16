@@ -459,6 +459,23 @@ class Parameterized:
             raise ValueError(f"Length of string must not exceed 10!")
 
 
+class ParameterizedIndentation:
+    indented_spaces_enum = kp.EnumParameter(
+        label="Indented Enum Parameter",
+        description="""
+                Any Text
+                """,
+        default_value="txt",
+    )
+    indented_tabs_enum = kp.EnumParameter(
+        label="Indented Enum Parameter",
+        description="""
+\t\tAny Text
+\t\t""",
+        default_value="txt",
+    )
+
+
 class ParameterizedWithOneGroup:
     int_param = kp.IntParameter("Int Parameter", "An integer parameter", 3)
     double_param = kp.DoubleParameter("Double Parameter", "A double parameter", 1.5)
@@ -858,6 +875,7 @@ class ParameterTest(unittest.TestCase):
         self.parameterized_with_dialog_creation_context = (
             ParameterizedWithDialogCreationContext()
         )
+        self.parameterized_with_indented_docstring = ParameterizedIndentation()
 
         self.maxDiff = None
 
@@ -1672,6 +1690,23 @@ class ParameterTest(unittest.TestCase):
             self.parameterized_without_group
         )
         self.assertFalse(use_tabs)
+        self.assertEqual(description, expected)
+
+    def test_extract_description_with_intendation(self):
+        expected = [
+            {
+                "description": "\n                Any Text\n                \n\n                **Available options:**\n\n                - Default: This is the default option, since additional options have not been provided.\n",
+                "name": "Indented Enum Parameter",
+            },
+            {
+                "description": "\n                Any Text\n                \n\n                **Available options:**\n\n                - Default: This is the default option, since additional options have not been provided.\n",
+                "name": "Indented Enum Parameter",
+            },
+        ]
+        description, use_tabs = kp.extract_parameter_descriptions(
+            self.parameterized_with_indented_docstring
+        )
+
         self.assertEqual(description, expected)
 
     def test_inject_validates(self):
