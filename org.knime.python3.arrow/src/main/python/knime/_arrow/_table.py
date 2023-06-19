@@ -390,7 +390,7 @@ class ArrowSourceTable(ArrowTable):
             yield ArrowTable(self._source[batch_idx])
             batch_idx += 1
 
-    def _inject_metadata(self, metadata_extractor):
+    def _inject_metadata(self, metadata_provider):
         """
         We allow KNIME to inject additional metadata, which we only use when executing pure-Python nodes
         for now. This additional metadata can e.g. be the preferred_value_type which is required to make
@@ -401,9 +401,7 @@ class ArrowSourceTable(ArrowTable):
         import json
 
         schema_string = json.dumps(self._schema.serialize())
-        metadatas = json.loads(metadata_extractor(schema_string))
-        # schema.serialize adds a row-key column at the beginning, we drop that again
-        metadatas = metadatas[1:]
+        metadatas = json.loads(metadata_provider(schema_string))
 
         for column, metadata in zip(self._schema, metadatas):
             if not isinstance(metadata, dict):

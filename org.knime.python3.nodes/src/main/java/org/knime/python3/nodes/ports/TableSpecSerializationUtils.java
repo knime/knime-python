@@ -54,7 +54,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
-import org.knime.core.data.DataColumnSpec;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.DataType;
 import org.knime.core.data.IDataRepository;
@@ -77,7 +76,6 @@ import org.knime.core.table.virtual.serialization.ColumnarSchemaSerializer;
 import org.knime.python3.arrow.PythonArrowDataUtils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -210,8 +208,7 @@ public final class TableSpecSerializationUtils {
         // Set metadata object for the RowKey column to null
         columnMetaData[0] = null;
         for (var i = 0; i < columnMetaData.length - 1; i++) {
-            var tableSpec = spec.getColumnSpec(i);
-            columnMetaData[i + 1] = new PythonColumnMetaData(tableSpec);
+            columnMetaData[i + 1] = new PythonColumnMetaData(spec.getColumnSpec(i).getType());
         }
         System.arraycopy(spec.getColumnNames(), 0, columnNames, 1, spec.getNumColumns());
         return DefaultAnnotatedColumnarSchema.annotate(cvs, columnNames, columnMetaData);
@@ -223,9 +220,9 @@ public final class TableSpecSerializationUtils {
 
         private final String m_displayedColumnType;
 
-        public PythonColumnMetaData(final DataColumnSpec tableSpec) {
-            m_preferredValueType = tableSpec.getType().getPreferredValueClass().getName();
-            m_displayedColumnType = tableSpec.getType().getName();
+        public PythonColumnMetaData(final DataType dataType) {
+            m_preferredValueType = dataType.getPreferredValueClass().getName();
+            m_displayedColumnType = dataType.getName();
         }
 
         @Override
@@ -252,10 +249,7 @@ public final class TableSpecSerializationUtils {
     }
 
     private static JsonNode preferredValueTypeToJson(final DataType dataType, final JsonNodeFactory factory) {
-        var objectNode = factory.objectNode();
-        objectNode.put("preferred_value_type", dataType.getPreferredValueClass().getName());
-        objectNode.put("displayed_column_type", dataType.getName());
-        return objectNode;
+        return (new PythonColumnMetaData(dataType)).toJson(factory);
     }
 
     /**
@@ -281,8 +275,6 @@ public final class TableSpecSerializationUtils {
             }
 
             return arrayNode.toString();
-        } catch (JsonMappingException ex) {
-            throw new IllegalStateException("Could not parse AnnotatedColumnarSchema from given JSON data", ex);
         } catch (JsonProcessingException ex) { // NOSONAR: if we don't split this block up, Eclipse doesn't like it for some reason
             throw new IllegalStateException("Could not parse AnnotatedColumnarSchema from given JSON data", ex);
         }

@@ -931,7 +931,6 @@ class _BaseColumnParameter(_BaseParameter):
         description,
         port_index: int,
         column_filter: Callable[[ks.Column], bool],
-        schema_option: str,
         since_version=None,
         is_advanced=False,
     ):
@@ -954,22 +953,6 @@ class _BaseColumnParameter(_BaseParameter):
         if column_filter is None:
             column_filter = lambda c: True
         self._column_filter = column_filter
-        self._schema_option = schema_option
-
-    def _extract_schema(
-        self,
-        extension_version=None,
-        specs: List[ks.Schema] = None,
-        dialog_creation_context=None,
-    ):
-        schema = super()._extract_schema(
-            specs, dialog_creation_context=dialog_creation_context
-        )
-        values = _filter_columns(specs, self._port_index, self._column_filter)
-
-        if self._schema_option != None:
-            schema[self._schema_option] = values
-        return schema
 
     def _validate_specs(self, specs):
         if len(specs) <= self._port_index:
@@ -1013,12 +996,23 @@ class ColumnParameter(_BaseColumnParameter):
             description,
             port_index,
             column_filter,
-            "oneOf",
             since_version,
             is_advanced,
         )
         self._include_row_key = include_row_key
         self._include_none_column = include_none_column
+
+    def _extract_schema(
+        self,
+        extension_version=None,
+        specs: List[ks.Schema] = None,
+        dialog_creation_context=None,
+    ):
+        schema = super()._extract_schema(
+            specs, dialog_creation_context=dialog_creation_context
+        )
+        schema["type"] = "string"
+        return schema
 
     def _get_options(self, dialog_creation_context=None) -> dict:
         options = {
@@ -1041,52 +1035,6 @@ class ColumnParameter(_BaseColumnParameter):
         return super()._inject(obj, value, name, version)
 
 
-def _filter_columns(
-    specs: List[ks.PortObjectSpec],
-    port_index: int,
-    column_filter: Callable[[ks.Column], bool],
-):
-    try:
-        if specs is None or specs[port_index] is None:
-            return [_const("", preferred_type=None, displayed_type=None)]
-
-        spec = specs[port_index]
-    except IndexError:
-        raise IndexError(
-            f"The port index {port_index} is not contained in the Spec list with length {len(specs)}. "
-            f"Maybe a port_index for a parameter does not match the index for an input table? "
-        ) from None
-
-    if not isinstance(spec, ks.Schema):
-        raise TypeError(
-            f"The port at index {port_index} is not a Table. "
-            f"The ColumnParameter or MultiColumnParameter can only be used for Table ports."
-        )
-
-    filtered = [
-        _const(
-            column.name,
-            column.metadata["preferred_value_type"],
-            column.metadata["displayed_column_type"],
-        )
-        for column in spec
-        if column_filter(column)
-    ]
-    if len(filtered) > 0:
-        return filtered
-    else:
-        return [_const("", preferred_type=None, displayed_type=None)]
-
-
-def _const(name, preferred_type, displayed_type):
-    return {
-        "const": name,
-        "title": name,
-        "columnType": preferred_type,
-        "columnTypeDisplayed": displayed_type,
-    }
-
-
 class MultiColumnParameter(_BaseColumnParameter):
     """
     Parameter class for multiple columns.
@@ -1106,10 +1054,22 @@ class MultiColumnParameter(_BaseColumnParameter):
             description,
             port_index,
             column_filter,
-            "anyOf",
             since_version,
             is_advanced,
         )
+
+    def _extract_schema(
+        self,
+        extension_version=None,
+        specs: List[ks.Schema] = None,
+        dialog_creation_context=None,
+    ):
+        schema = super()._extract_schema(
+            specs, dialog_creation_context=dialog_creation_context
+        )
+        schema["type"] = "array"
+        schema["items"] = {"type": "string"}
+        return schema
 
     def _get_options(self, dialog_creation_context=None) -> dict:
         options = {"format": "twinList"}
@@ -1531,7 +1491,6 @@ class ColumnFilterParameter(_BaseColumnParameter):
             description,
             port_index,
             column_filter,
-            None,
             since_version,
             is_advanced,
         )
