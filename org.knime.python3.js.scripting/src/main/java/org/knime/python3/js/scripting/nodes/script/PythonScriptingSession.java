@@ -75,6 +75,7 @@ import org.knime.python3.PythonGatewayFactory.PythonGatewayDescription;
 import org.knime.python3.PythonGatewayUtils;
 import org.knime.python3.arrow.Python3ArrowSourceDirectory;
 import org.knime.python3.arrow.PythonArrowDataSink;
+import org.knime.python3.arrow.PythonArrowDataUtils;
 import org.knime.python3.arrow.PythonArrowTableConverter;
 import org.knime.python3.js.scripting.PythonJsScriptingEntryPoint;
 import org.knime.python3.js.scripting.PythonJsScriptingEntryPoint.Callback;
@@ -99,7 +100,8 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
     private static final ExecutorService EXECUTOR_SERVICE = ThreadUtils.executorServiceWithContext(
         Executors.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat("python-js-scripting-%d").build()));
 
-    private static final ArrowColumnStoreFactory ARROW_STORE_FACTORY = new ArrowColumnStoreFactory();
+    private static final ArrowColumnStoreFactory ARROW_STORE_FACTORY =
+        PythonArrowDataUtils.getArrowColumnStoreFactory();
 
     private static final Path LAUNCHER = PythonJsScriptingSourceDirectory.getPath()//
         .resolve("_knime_scripting_launcher.py");

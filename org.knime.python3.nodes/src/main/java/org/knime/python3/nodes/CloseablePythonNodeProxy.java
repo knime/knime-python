@@ -86,6 +86,7 @@ import org.knime.core.util.PathUtils;
 import org.knime.core.util.ThreadUtils;
 import org.knime.core.util.asynclose.AsynchronousCloseable;
 import org.knime.python3.arrow.PythonArrowDataSink;
+import org.knime.python3.arrow.PythonArrowDataUtils;
 import org.knime.python3.arrow.PythonArrowTableConverter;
 import org.knime.python3.nodes.CloseablePythonNodeProxyFactory.CloseableGatewayWithAttachments;
 import org.knime.python3.nodes.extension.ExtensionNode;
@@ -130,7 +131,8 @@ final class CloseablePythonNodeProxy
 
     private final ExtensionNode m_nodeSpec;
 
-    private static final ArrowColumnStoreFactory ARROW_STORE_FACTORY = new ArrowColumnStoreFactory();
+    private static final ArrowColumnStoreFactory ARROW_STORE_FACTORY =
+        PythonArrowDataUtils.getArrowColumnStoreFactory();
 
     private PythonArrowTableConverter m_tableManager;
 

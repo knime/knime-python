@@ -65,11 +65,13 @@ import org.knime.core.columnar.arrow.ArrowReaderWriterUtils.OffsetProvider;
 import org.knime.core.columnar.arrow.ArrowSchemaUtils;
 import org.knime.core.columnar.arrow.PathBackedFileHandle;
 import org.knime.core.columnar.batch.RandomAccessBatchReadable;
+import org.knime.core.columnar.store.ColumnStoreFactory;
 import org.knime.core.data.DataColumnDomain;
 import org.knime.core.data.DataColumnSpec;
 import org.knime.core.data.DataColumnSpecCreator;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.IDataRepository;
+import org.knime.core.data.columnar.ColumnStoreFactoryRegistry;
 import org.knime.core.data.columnar.domain.DefaultDomainWritableConfig;
 import org.knime.core.data.columnar.domain.DomainWritableConfig;
 import org.knime.core.data.columnar.schema.ColumnarValueSchema;
@@ -110,6 +112,26 @@ public final class PythonArrowDataUtils {
         .create(ValueSchemaUtils.create(new DataTableSpec(), new ValueFactory<?, ?>[]{VoidRowKeyFactory.INSTANCE}));
 
     private PythonArrowDataUtils() {
+    }
+
+    /**
+     * @return the singleton {@link ColumnStoreFactory} that is used by the columnar backend which must be an
+     *         {@link ArrowColumnStoreFactory}.
+     * @throws IllegalStateException if the singleton {@link ColumnStoreFactory} is not an
+     *             {@link ArrowColumnStoreFactory}
+     * @throws IllegalStateException if no singleton {@link ColumnStoreFactory} is available
+     */
+    public static ArrowColumnStoreFactory getArrowColumnStoreFactory() {
+        try {
+            var storeFactory = ColumnStoreFactoryRegistry.getOrCreateInstance().getFactorySingleton();
+            if (storeFactory instanceof ArrowColumnStoreFactory arrowStoreFactory) {
+                return arrowStoreFactory;
+            }
+            throw new IllegalStateException(
+                "The singleton columnar store factory is not of type ArrowColumnStoreFactory.");
+        } catch (final Exception ex) {
+            throw new IllegalStateException("The singleton columnar store factory is not available.", ex);
+        }
     }
 
     /**

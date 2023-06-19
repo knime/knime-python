@@ -53,7 +53,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Consumer;
 
-import org.knime.core.columnar.arrow.ArrowColumnStoreFactory;
 import org.knime.core.columnar.arrow.PathBackedFileHandle;
 import org.knime.core.columnar.cursor.ColumnarCursorFactory;
 import org.knime.core.columnar.cursor.ColumnarWriteCursorFactory;
@@ -73,6 +72,7 @@ import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DefaultColumnarSchema;
 import org.knime.core.util.PathUtils;
+import org.knime.python3.arrow.PythonArrowDataUtils;
 import org.knime.scripting.editor.ScriptingService.ConsoleText;
 
 /**
@@ -100,7 +100,7 @@ final class ConsoleOutputUtils {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(ConsoleOutputUtils.class);
 
-    private static final ColumnStoreFactory STORE_FACTORY = new ArrowColumnStoreFactory();
+    private static final ColumnStoreFactory STORE_FACTORY = PythonArrowDataUtils.getArrowColumnStoreFactory();
 
     private static final ColumnarSchema TABLE_SCHEMA = //
         DefaultColumnarSchema.builder() //

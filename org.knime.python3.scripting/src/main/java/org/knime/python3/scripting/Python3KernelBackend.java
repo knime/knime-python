@@ -124,6 +124,7 @@ import org.knime.python3.arrow.Python3ArrowSourceDirectory;
 import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.arrow.PythonArrowDataSource;
 import org.knime.python3.arrow.PythonArrowDataSourceFactory;
+import org.knime.python3.arrow.PythonArrowDataUtils;
 import org.knime.python3.arrow.PythonArrowExtension;
 import org.knime.python3.arrow.SinkManager;
 import org.knime.python3.arrow.types.Python3ArrowTypesSourceDirectory;
@@ -154,7 +155,8 @@ public final class Python3KernelBackend implements PythonKernelBackend {
     private static final List<PythonModuleSpec> REQUIRED_MODULES =
         List.of(new PythonModuleSpec("py4j"), new PythonModuleSpec("pyarrow", new Version(5, 0, 0), true));
 
-    private static final ArrowColumnStoreFactory ARROW_STORE_FACTORY = new ArrowColumnStoreFactory();
+    private static final ArrowColumnStoreFactory ARROW_STORE_FACTORY =
+        PythonArrowDataUtils.getArrowColumnStoreFactory();
 
     private final PythonCommand m_command;
 
