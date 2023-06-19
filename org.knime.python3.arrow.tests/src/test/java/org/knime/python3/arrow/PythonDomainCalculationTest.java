@@ -86,8 +86,7 @@ public class PythonDomainCalculationTest {
     @Before
     public void before() {
         m_allocator = new RootAllocator();
-        m_storeFactory = new ArrowColumnStoreFactory(m_allocator, 0, m_allocator.getLimit(),
-            ArrowCompressionUtil.ARROW_NO_COMPRESSION);
+        m_storeFactory = new ArrowColumnStoreFactory(m_allocator, ArrowCompressionUtil.ARROW_NO_COMPRESSION);
     }
 
     /** Close allocator */

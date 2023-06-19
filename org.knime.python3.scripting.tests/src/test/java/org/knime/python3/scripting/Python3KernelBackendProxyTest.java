@@ -121,8 +121,7 @@ public class Python3KernelBackendProxyTest {
     @Before
     public void before() {
         m_allocator = new RootAllocator();
-        m_storeFactory = new ArrowColumnStoreFactory(m_allocator, 0, m_allocator.getLimit(),
-            ArrowCompressionUtil.ARROW_NO_COMPRESSION);
+        m_storeFactory = new ArrowColumnStoreFactory(m_allocator, ArrowCompressionUtil.ARROW_NO_COMPRESSION);
     }
 
     @After
@@ -200,7 +199,8 @@ public class Python3KernelBackendProxyTest {
         });
     }
 
-    private static void performEntryPointTest(final Consumer<Python3KernelBackendProxyTestRunner> test) throws IOException, InterruptedException {
+    private static void performEntryPointTest(final Consumer<Python3KernelBackendProxyTestRunner> test)
+        throws IOException, InterruptedException {
         try (var gateway = openPythonGateway()) {
             test.accept(gateway.getEntryPoint());
         }
@@ -222,7 +222,8 @@ public class Python3KernelBackendProxyTest {
             pythonPath);
     }
 
-    private static PythonGateway<Python3KernelBackendProxyTestRunner> openPythonGateway() throws IOException, InterruptedException {
+    private static PythonGateway<Python3KernelBackendProxyTestRunner> openPythonGateway()
+        throws IOException, InterruptedException {
         return openPythonGateway(Python3KernelBackendProxyTestRunner.class);
     }
 

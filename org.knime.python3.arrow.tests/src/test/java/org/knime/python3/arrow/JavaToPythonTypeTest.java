@@ -116,8 +116,7 @@ public class JavaToPythonTypeTest {
     @Before
     public void before() {
         m_allocator = new RootAllocator();
-        m_storeFactory = new ArrowColumnStoreFactory(m_allocator, 0, m_allocator.getLimit(),
-            ArrowCompressionUtil.ARROW_NO_COMPRESSION);
+        m_storeFactory = new ArrowColumnStoreFactory(m_allocator, ArrowCompressionUtil.ARROW_NO_COMPRESSION);
     }
 
     /** Close allocator */
@@ -216,7 +215,8 @@ public class JavaToPythonTypeTest {
      */
     @Test
     public void testVoid() throws Exception {
-        final ValueSetter<VoidWriteData> valueSetter = (data, b, r) -> {};
+        final ValueSetter<VoidWriteData> valueSetter = (data, b, r) -> {
+        };
         test("void", ColumnarSchema.of(VOID), valueSetter);
     }
 
@@ -290,7 +290,6 @@ public class JavaToPythonTypeTest {
             (data, b, r) -> data.setString(r, "Row: " + r + ", Batch: " + b);
         test("string", ColumnarSchema.of(STRING), valueSetter);
     }
-
 
     /**
      * Test transfer of a dictionary encoded string column to Python.

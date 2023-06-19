@@ -234,8 +234,7 @@ public class KnimeArrowExtensionTypesTest {
 	@Before
 	public void init() {
 		m_allocator = new RootAllocator();
-		m_storeFactory = new ArrowColumnStoreFactory(m_allocator, 0, m_allocator.getLimit(),
-				ArrowCompressionUtil.ARROW_NO_COMPRESSION);
+		m_storeFactory = new ArrowColumnStoreFactory(m_allocator, ArrowCompressionUtil.ARROW_NO_COMPRESSION);
 	}
 
 	private static void prepareFsLocationData(final BatchWriter writer, final String category, final String specifier,
@@ -280,7 +279,8 @@ public class KnimeArrowExtensionTypesTest {
 		return new DataSpecWithTraits(valueFactory.getSpec(), ValueFactoryUtils.getTraits(valueFactory));
 	}
 
-	private PythonArrowEntryPointTester<KnimeArrowExtensionTypeEntryPoint> createTester() throws IOException, InterruptedException {
+	private PythonArrowEntryPointTester<KnimeArrowExtensionTypeEntryPoint> createTester()
+			throws IOException, InterruptedException {
 		final List<PythonValueFactoryModule> modules = PythonValueFactoryRegistry.getModules();
 		final var tester = new PythonArrowEntryPointTester<>(KnimeArrowExtensionTypeEntryPoint.class,
 				"extension_tests_launcher.py", modules.toArray(PythonModule[]::new));
@@ -294,7 +294,8 @@ public class KnimeArrowExtensionTypesTest {
 			final var pythonModule = module.getModuleName();
 			for (final var factory : module) {
 				entryPoint.registerPythonValueFactory(pythonModule, factory.getPythonValueFactoryName(),
-						factory.getDataSpecRepresentation(), factory.getDataTraitsJson(), factory.getValueTypeName(), factory.isDefaultPythonRepresentation());
+						factory.getDataSpecRepresentation(), factory.getDataTraitsJson(), factory.getValueTypeName(),
+						factory.isDefaultPythonRepresentation());
 			}
 		}
 	}
@@ -385,8 +386,9 @@ public class KnimeArrowExtensionTypesTest {
 			w.<FSLocationWriteValue>getWriteValue(0).setLocation(location);
 			w.<IntWriteValue>getWriteValue(1).setIntValue(5);
 		});
-		var tableTester = singleRowTableTester(dataTableSpec(List.of("location", "int"),
-				List.of(SimpleFSLocationCellFactory.TYPE, IntCell.TYPE)), "foo", r -> {
+		var tableTester = singleRowTableTester(
+				dataTableSpec(List.of("location", "int"), List.of(SimpleFSLocationCellFactory.TYPE, IntCell.TYPE)),
+				"foo", r -> {
 					assertEquals(location, r.<FSLocationValue>getValue(0).getFSLocation());
 					assertEquals(5, r.<IntValue>getValue(1).getIntValue());
 				});
@@ -689,7 +691,8 @@ public class KnimeArrowExtensionTypesTest {
 	public interface KnimeArrowExtensionTypeEntryPoint extends PythonEntryPoint {
 
 		void registerPythonValueFactory(final String pythonModule, final String pythonValueFactoryName,
-				final String dataSpec, final String dataTraitsfinal, final String pythonValueTypeName, final boolean isDefaultPythonRepresentation);
+				final String dataSpec, final String dataTraitsfinal, final String pythonValueTypeName,
+				final boolean isDefaultPythonRepresentation);
 
 		void assertIntListEquals(PythonArrowDataSource dataSource, int a, int b, int c, int d, int e);
 
@@ -741,7 +744,8 @@ public class KnimeArrowExtensionTypesTest {
 				try (final BatchWriter writer = store.getWriter()) {
 					preparer.writeBatch(writer);
 				}
-				// HACK for tests: skip the first real column spec because Python will prepend <RowKey> to the list of names
+				// HACK for tests: skip the first real column spec because Python will prepend
+				// <RowKey> to the list of names
 				var columnNames = schema.specStream().skip(1).map(DataSpec::toString).toArray(String[]::new);
 				final var dataSource = PythonArrowDataUtils.createSource(store, 1, columnNames);
 				tester.test(m_gateway.getEntryPoint(), dataSource);

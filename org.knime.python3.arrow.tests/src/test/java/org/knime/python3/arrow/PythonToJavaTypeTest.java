@@ -76,6 +76,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.knime.core.columnar.arrow.ArrowColumnStoreFactory;
+import org.knime.core.columnar.arrow.compress.ArrowCompressionUtil;
 import org.knime.core.columnar.batch.RandomAccessBatchReader;
 import org.knime.core.columnar.batch.ReadBatch;
 import org.knime.core.columnar.data.BooleanData.BooleanReadData;
@@ -119,7 +120,7 @@ public class PythonToJavaTypeTest {
     @Before
     public void before() {
         m_allocator = new RootAllocator();
-        m_storeFactory = new ArrowColumnStoreFactory(m_allocator);
+        m_storeFactory = new ArrowColumnStoreFactory(m_allocator, ArrowCompressionUtil.getDefaultCompression());
     }
 
     /** Close allocator */
@@ -249,8 +250,7 @@ public class PythonToJavaTypeTest {
      */
     @Test
     public void testComplexStructList() throws Exception {
-        test("structcomplex",
-            STRUCT.of(LIST.of(STRUCT.of(INT, STRING)), INT),
+        test("structcomplex", STRUCT.of(LIST.of(STRUCT.of(INT, STRING)), INT),
             PythonToJavaTypeTest::checkComplexStructList);
     }
 
@@ -368,8 +368,9 @@ public class PythonToJavaTypeTest {
         }
     }
 
-    private <T extends NullableReadData> void checkData(final DataSpecs.DataSpecWithTraits spec, final ValueChecker<T> valueChecker,
-        final DefaultPythonArrowDataSink dataSink) throws IOException, AssertionError {
+    private <T extends NullableReadData> void checkData(final DataSpecs.DataSpecWithTraits spec,
+        final ValueChecker<T> valueChecker, final DefaultPythonArrowDataSink dataSink)
+        throws IOException, AssertionError {
         try (final var store = PythonArrowDataUtils.createReadable(dataSink, m_storeFactory)) {
             final ColumnarSchema schema = store.getSchema();
             assertEquals(1, schema.numColumns());

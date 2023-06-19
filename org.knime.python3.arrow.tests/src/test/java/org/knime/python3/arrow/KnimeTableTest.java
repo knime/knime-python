@@ -93,8 +93,7 @@ public class KnimeTableTest {
     @Before
     public void before() {
         m_allocator = new RootAllocator();
-        m_storeFactory = new ArrowColumnStoreFactory(m_allocator, 0, m_allocator.getLimit(),
-            ArrowCompressionUtil.ARROW_NO_COMPRESSION);
+        m_storeFactory = new ArrowColumnStoreFactory(m_allocator, ArrowCompressionUtil.ARROW_NO_COMPRESSION);
     }
 
     /**
@@ -110,7 +109,7 @@ public class KnimeTableTest {
 
         final var numBatches = 50;
         final var numRowsPerBatch = 200_000;
-        final var modes = new String[] {"arrow-sentinel", "arrow", "pandas", "dict"};
+        final var modes = new String[]{"arrow-sentinel", "arrow", "pandas", "dict"};
 
         for (final var mode : modes) {
             final var sourcePath = Python3ArrowTestUtils.createTmpKNIMEArrowFileHandle();
@@ -141,8 +140,8 @@ public class KnimeTableTest {
 
                     long startTime = System.nanoTime();
 
-                    final var dataSink = (DefaultPythonArrowDataSink)entryPoint.testKnimeTable(dataSource, sinkCreator, (long)numBatches * numRowsPerBatch,
-                        schema.numColumns(), mode);
+                    final var dataSink = (DefaultPythonArrowDataSink)entryPoint.testKnimeTable(dataSource, sinkCreator,
+                        (long)numBatches * numRowsPerBatch, schema.numColumns(), mode);
 
                     long endTime = System.nanoTime();
                     long duration = (endTime - startTime);
@@ -187,7 +186,8 @@ public class KnimeTableTest {
         readBatch.release();
     }
 
-    private static void fillLongData(final LongWriteData data, final int batchIdx, final int numRows, final boolean missingLongs) {
+    private static void fillLongData(final LongWriteData data, final int batchIdx, final int numRows,
+        final boolean missingLongs) {
         for (int r = 0; r < numRows; r++) { // NOSONAR
             if (missingLongs && (batchIdx * numRows + r) % 13 == 0) {
                 data.setMissing(r);
@@ -228,7 +228,8 @@ public class KnimeTableTest {
         batch.release();
     }
 
-    private static void checkLongData(final LongReadData data, final int batchIdx, final int numRows, final boolean missingLongs) {
+    private static void checkLongData(final LongReadData data, final int batchIdx, final int numRows,
+        final boolean missingLongs) {
         for (int r = 0; r < numRows; r++) { // NOSONAR
             if (missingLongs && (batchIdx * numRows + r) % 13 == 0) {
                 assertTrue(data.isMissing(r));
