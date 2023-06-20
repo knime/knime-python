@@ -18,4 +18,5 @@
 **/.vscode
 
 # new build output
+*/.polyglot.*
 **/.polyglot.build.properties
