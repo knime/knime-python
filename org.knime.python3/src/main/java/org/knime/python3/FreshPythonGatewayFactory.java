@@ -68,7 +68,8 @@ public final class FreshPythonGatewayFactory implements PythonGatewayFactory {
     public <E extends PythonEntryPoint> PythonGateway<E> create(final PythonGatewayDescription<E> description)
         throws IOException, InterruptedException {
         var launcherPath = description.getLauncherPath().toAbsolutePath().toString();
-        if (description.getCommand() instanceof CondaPythonCommand || description.getCommand() instanceof BundledPythonCommand) {
+        if (description.getCommand() instanceof CondaPythonCommand
+            || description.getCommand() instanceof BundledPythonCommand) {
             PythonGatewayCreationGate.INSTANCE.awaitPythonGatewayCreationAllowedInterruptibly();
         }
         var gateway = DefaultPythonGateway.create(description.getCommand().createProcessBuilder(), launcherPath,
@@ -81,10 +82,8 @@ public final class FreshPythonGatewayFactory implements PythonGatewayFactory {
                     customizer.customize(entryPoint);
                 }
             } catch (Py4JException ex) {
-                var pythonStackTrace = ex.getMessage().split("\n");
-                var pythonErrorMsg = pythonStackTrace[pythonStackTrace.length - 1];
                 gateway.close();
-                throw new IllegalStateException(pythonErrorMsg + ".\nSee the KNIME log for more details.", ex);
+                throw new IOException(ex.getMessage(), ex);
             } catch (Exception ex) {
                 gateway.close();
                 throw new IllegalStateException("Customization of entry point failed.", ex);

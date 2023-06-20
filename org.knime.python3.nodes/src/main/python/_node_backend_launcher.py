@@ -768,10 +768,16 @@ class _KnimeNodeBackend(kg.EntryPoint, kn._KnimeNodeBackend):
     def loadExtension(
         self, extension_id: str, extension_module: str, extension_version: str
     ) -> None:
-        self._port_type_registry = _PortTypeRegistry(extension_id)
-        # load the extension, so that it registers its nodes, categories and port types
-        importlib.import_module(extension_module)
-        kp.set_extension_version(extension_version)
+        try:
+            self._port_type_registry = _PortTypeRegistry(extension_id)
+            # load the extension, so that it registers its nodes, categories and port types
+            importlib.import_module(extension_module)
+            kp.set_extension_version(extension_version)
+        except Exception:
+            error = traceback.format_exc(limit=1, chain=True)
+            raise RuntimeError(
+                f"Failed to load extension {extension_id} from {extension_module} with error: {error}"
+            ) from None
 
     def initializeJavaCallback(self, callback):
         _push_log_callback(lambda msg, sev: callback.log(msg, sev))
