@@ -330,7 +330,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
 
                 @Override
                 public String get_workflow_temp_dir() {
-                    try(var ctx = m_nodeContextManager.pushNodeContext()) {
+                    try (var ctx = m_nodeContextManager.pushNodeContext()) {
                         return FileUtil.getWorkflowTempDir().getAbsolutePath();
                     }
                 }
@@ -343,8 +343,21 @@ public final class Python3KernelBackend implements PythonKernelBackend {
 
                 @Override
                 public String file_store_key_to_absolute_path(final String fileStoreKey) {
-                    return getFileStoreHandler().getFileStore(FileStoreKey.load(fileStoreKey)).getFile()
-                        .getAbsolutePath();
+                    var fsKey = FileStoreKey.load(fileStoreKey);
+
+                    // The file store can be coming from a previously written table -- then it is part of
+                    // the WorkflowDataRepository -- or it could have been created during execution of the Python
+                    // script, then it was using this node's getFileStoreHandler which is potentially a
+                    // NotInWorkflowFileStoreHandler.
+                    IDataRepository dr =
+                        m_nodeContextManager.getNodeContext().getWorkflowManager().getWorkflowDataRepository();
+                    var handler = dr.getHandler(fsKey.getStoreUUID());
+
+                    if (handler != null) {
+                        return handler.getFileStore(fsKey).getFile().getAbsolutePath();
+                    } else {
+                        return getFileStoreHandler().getFileStore(fsKey).getFile().getAbsolutePath();
+                    }
                 }
 
                 @Override
@@ -691,6 +704,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
     }
 
     private IFileStoreHandler getFileStoreHandler() {
+        // returns null if we're only opening the dialog which is != executing the node
         var fsHandler = ((NativeNodeContainer)m_nodeContextManager.getNodeContext().getNodeContainer()).getNode()
             .getFileStoreHandler();
         if (fsHandler != null) {
