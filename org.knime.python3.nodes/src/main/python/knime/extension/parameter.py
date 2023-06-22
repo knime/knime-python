@@ -190,18 +190,18 @@ def _extract_schema(
 
 
 def extract_ui_schema(
-    obj, extension_version: str = None, dialog_creation_context=None
+    obj, dialog_creation_context, extension_version: str = None
 ) -> dict:
     extension_version = Version.parse_version(extension_version)
     elements = _extract_ui_schema_elements(
-        obj, extension_version, dialog_creation_context
+        obj, dialog_creation_context, extension_version
     )
 
     return {"type": "VerticalLayout", "elements": elements}
 
 
 def _extract_ui_schema_elements(
-    obj, extension_version: Version, dialog_creation_context=None, scope=None
+    obj, dialog_creation_context, extension_version: Version, scope=None
 ) -> dict:
     if scope is None:
         scope = _Scope("#/properties/model/properties")
@@ -210,7 +210,7 @@ def _extract_ui_schema_elements(
         if param_obj._since_version <= extension_version:
             elements.append(
                 param_obj._extract_ui_schema(
-                    name, scope, extension_version, dialog_creation_context
+                    name, scope, dialog_creation_context, extension_version
                 )
             )
 
@@ -511,8 +511,8 @@ class _BaseParameter(ABC):
         self,
         name,
         parent_scope: _Scope,
+        dialog_creation_context,
         extension_version: Version = None,  # NOSONAR
-        dialog_creation_context=None,
     ):
         # the extension_version parameter is needed to match the signature of the
         # _extract_ui_schema method for parameter groups
@@ -528,7 +528,7 @@ class _BaseParameter(ABC):
         }
 
     @abstractmethod
-    def _get_options(self, dialog_creation_context=None) -> dict:
+    def _get_options(self, dialog_creation_context) -> dict:
         pass
 
     def _extract_description(self, name, parent_scope: _Scope):  # NOSONAR
@@ -633,7 +633,7 @@ class IntParameter(_NumericParameter):
         prop["format"] = "int32"
         return prop
 
-    def _get_options(self, dialog_creation_context=None) -> dict:
+    def _get_options(self, dialog_creation_context) -> dict:
         return {"format": "integer"}
 
 
@@ -679,7 +679,7 @@ class DoubleParameter(_NumericParameter):
         schema["format"] = "double"
         return schema
 
-    def _get_options(self, dialog_creation_context=None) -> dict:
+    def _get_options(self, dialog_creation_context) -> dict:
         return {"format": "number"}
 
 
@@ -702,7 +702,7 @@ class _BaseMultiChoiceParameter(_BaseParameter):
             label, description, default_value, validator, since_version, is_advanced
         )
 
-    def _get_options(self, dialog_creation_context=None) -> dict:
+    def _get_options(self, dialog_creation_context) -> dict:
         if (
             self._enum is None
             or len(self._enum) > 4
@@ -1014,19 +1014,17 @@ class ColumnParameter(_BaseColumnParameter):
         schema["type"] = "string"
         return schema
 
-    def _get_options(self, dialog_creation_context=None) -> dict:
+    def _get_options(self, dialog_creation_context) -> dict:
         options = {
             "format": "dropDown",
             "showRowKeys": self._include_row_key,
             "showNoneColumn": self._include_none_column,
-        }
-
-        if dialog_creation_context is not None:
-            options["possibleValues"] = _possible_values(
+            "possibleValues": _possible_values(
                 dialog_creation_context.get_input_specs(),
                 self._port_index,
                 self._column_filter,
-            )
+            ),
+        }
 
         return options
 
@@ -1071,15 +1069,15 @@ class MultiColumnParameter(_BaseColumnParameter):
         schema["items"] = {"type": "string"}
         return schema
 
-    def _get_options(self, dialog_creation_context=None) -> dict:
-        options = {"format": "twinList"}
-
-        if dialog_creation_context is not None:
-            options["possibleValues"] = _possible_values(
+    def _get_options(self, dialog_creation_context) -> dict:
+        options = {
+            "format": "twinList",
+            "possibleValues": _possible_values(
                 dialog_creation_context.get_input_specs(),
                 self._port_index,
                 self._column_filter,
-            )
+            ),
+        }
         return options
 
     def _get_value(self, obj: Any, name, for_dialog: bool = False):
@@ -1512,15 +1510,17 @@ class ColumnFilterParameter(_BaseColumnParameter):
 
         return schema
 
-    def _get_options(self, dialog_creation_context=None) -> dict:
-        options = {"format": "columnFilter", "showSearch": True, "showMode": True}
-
-        if dialog_creation_context is not None:
-            options["possibleValues"] = _possible_values(
+    def _get_options(self, dialog_creation_context) -> dict:
+        options = {
+            "format": "columnFilter",
+            "showSearch": True,
+            "showMode": True,
+            "possibleValues": _possible_values(
                 dialog_creation_context.get_input_specs(),
                 self._port_index,
                 self._column_filter,
-            )
+            ),
+        }
 
         return options
 
@@ -1579,7 +1579,7 @@ class BoolParameter(_BaseParameter):
         schema["type"] = "boolean"
         return schema
 
-    def _get_options(self, dialog_creation_context=None) -> dict:
+    def _get_options(self, dialog_creation_context) -> dict:
         return {"format": "boolean"}
 
 
@@ -1884,12 +1884,12 @@ def parameter_group(
                 self,
                 name,
                 parent_scope: _Scope,
+                dialog_creation_context,
                 version: Version = None,
-                dialog_creation_context=None,
             ):
                 scope = parent_scope.create_child(name, is_group=True)
                 elements = _extract_ui_schema_elements(
-                    self, version, dialog_creation_context, scope
+                    self, dialog_creation_context, version, scope
                 )
 
                 options = {}

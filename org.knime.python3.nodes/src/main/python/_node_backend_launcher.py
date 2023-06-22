@@ -504,7 +504,7 @@ class _PythonNodeProxy:
                 dialog_creation_context=dialog_context,
             ),
             "ui_schema": kp.extract_ui_schema(
-                self._node, extension_version, dialog_context
+                self._node, dialog_context, extension_version
             ),
         }
 

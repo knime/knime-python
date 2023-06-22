@@ -3,6 +3,73 @@ import knime.extension.parameter as kp
 import knime.api.schema as ks
 import knime.extension.nodes as kn
 
+test_schema = ks.Schema.from_columns(
+    [
+        ks.Column(
+            ks.int32(),
+            "IntColumn",
+            {
+                "preferred_value_type": "org.knime.core.IntValue",
+                "displayed_column_type": "Integer",
+            },
+        ),
+        ks.Column(
+            ks.double(),
+            "DoubleColumn",
+            {
+                "preferred_value_type": "org.knime.core.DoubleValue",
+                "displayed_column_type": "Double",
+            },
+        ),
+        ks.Column(
+            ks.string(),
+            "StringColumn",
+            {
+                "preferred_value_type": "org.knime.core.StringValue",
+                "displayed_column_type": "String",
+            },
+        ),
+        ks.Column(
+            ks.list_(ks.int64()),
+            "LongListColumn",
+            {
+                "preferred_value_type": "org.knime.core.data.collection.ListDataValue",
+                "displayed_column_type": "Long List",
+            },
+        ),
+    ]
+)
+
+test_possible_values = [
+    {
+        "id": "IntColumn",
+        "text": "IntColumn",
+        "type": {"id": "org.knime.core.IntValue", "text": "Integer"},
+        "compatibleTypes": ["org.knime.core.IntValue"],
+    },
+    {
+        "id": "DoubleColumn",
+        "text": "DoubleColumn",
+        "type": {"id": "org.knime.core.DoubleValue", "text": "Double"},
+        "compatibleTypes": ["org.knime.core.DoubleValue"],
+    },
+    {
+        "id": "StringColumn",
+        "text": "StringColumn",
+        "type": {"id": "org.knime.core.StringValue", "text": "String"},
+        "compatibleTypes": ["org.knime.core.StringValue"],
+    },
+    {
+        "id": "LongListColumn",
+        "text": "LongListColumn",
+        "type": {
+            "id": "org.knime.core.data.collection.ListDataValue",
+            "text": "Long List",
+        },
+        "compatibleTypes": ["org.knime.core.data.collection.ListDataValue"],
+    },
+]
+
 
 def generate_values_dict(
     int_param=3,
@@ -885,7 +952,7 @@ class ParameterizedWithDialogCreationContext:
 
 
 class DummyDialogCreationContext:
-    def __init__(self, specs) -> None:
+    def __init__(self) -> None:
         class DummyJavaContext:
             def get_credential_names(self):
                 return ["foo", "bar", "baz"]
@@ -895,10 +962,9 @@ class DummyDialogCreationContext:
 
         self._java_ctx = DummyJavaContext()
         self._flow_variables = ["flow1", "flow2", "flow3"]
-        self._specs = specs
 
     def get_input_specs(self):
-        return self._specs
+        return [test_schema]
 
 
 #### Tests: ####
@@ -1104,26 +1170,13 @@ class ParameterTest(unittest.TestCase):
                         "column_param": {
                             "title": "Column Parameter",
                             "description": "A column parameter",
-                            "oneOf": [
-                                {
-                                    "const": "",
-                                    "title": "",
-                                    "columnType": None,
-                                    "columnTypeDisplayed": None,
-                                }
-                            ],
+                            "type": "string",
                         },
                         "multi_column_param": {
                             "title": "Multi Column Parameter",
                             "description": "A multi column parameter",
-                            "anyOf": [
-                                {
-                                    "const": "",
-                                    "title": "",
-                                    "columnType": None,
-                                    "columnTypeDisplayed": None,
-                                }
-                            ],
+                            "type": "array",
+                            "items": {"type": "string"},
                         },
                         "full_multi_column_param": {
                             "title": "Full Multi Column Parameter",
@@ -1267,7 +1320,7 @@ class ParameterTest(unittest.TestCase):
                 }
             },
         }
-        dummy_dialog = DummyDialogCreationContext([])
+        dummy_dialog = DummyDialogCreationContext()
         extracted = kp.extract_schema(
             self.parameterized_with_dialog_creation_context,
             dialog_creation_context=dummy_dialog,
@@ -1311,13 +1364,17 @@ class ParameterTest(unittest.TestCase):
                         "format": "dropDown",
                         "showRowKeys": False,
                         "showNoneColumn": False,
+                        "possibleValues": test_possible_values,
                     },
                 },
                 {
                     "type": "Control",
                     "label": "Multi Column Parameter",
                     "scope": "#/properties/model/properties/multi_column_param",
-                    "options": {"format": "twinList"},
+                    "options": {
+                        "format": "twinList",
+                        "possibleValues": test_possible_values,
+                    },
                 },
                 {
                     "type": "Control",
@@ -1327,6 +1384,7 @@ class ParameterTest(unittest.TestCase):
                         "format": "columnFilter",
                         "showSearch": True,
                         "showMode": True,
+                        "possibleValues": test_possible_values,
                     },
                 },
                 {
@@ -1363,7 +1421,9 @@ class ParameterTest(unittest.TestCase):
                 },
             ],
         }
-        extracted = kp.extract_ui_schema(self.parameterized)
+        extracted = kp.extract_ui_schema(
+            self.parameterized, DummyDialogCreationContext()
+        )
         self.assertEqual(expected, extracted)
 
     def test_extract_ui_schema_is_advanced_option(self):
@@ -1426,6 +1486,7 @@ class ParameterTest(unittest.TestCase):
                         "format": "dropDown",
                         "showRowKeys": False,
                         "showNoneColumn": False,
+                        "possibleValues": test_possible_values,
                     },
                 },
                 {
@@ -1437,19 +1498,27 @@ class ParameterTest(unittest.TestCase):
                         "showRowKeys": False,
                         "showNoneColumn": False,
                         "isAdvanced": True,
+                        "possibleValues": test_possible_values,
                     },
                 },
                 {
                     "type": "Control",
                     "label": "Multi Column Parameter",
                     "scope": "#/properties/model/properties/multi_column_param",
-                    "options": {"format": "twinList"},
+                    "options": {
+                        "format": "twinList",
+                        "possibleValues": test_possible_values,
+                    },
                 },
                 {
                     "type": "Control",
                     "label": "Multi Column Parameter",
                     "scope": "#/properties/model/properties/multi_column_advanced_param",
-                    "options": {"format": "twinList", "isAdvanced": True},
+                    "options": {
+                        "format": "twinList",
+                        "possibleValues": test_possible_values,
+                        "isAdvanced": True,
+                    },
                 },
                 {
                     "type": "Control",
@@ -1460,6 +1529,7 @@ class ParameterTest(unittest.TestCase):
                         "showSearch": True,
                         "showMode": True,
                         "isAdvanced": True,
+                        "possibleValues": test_possible_values,
                     },
                 },
                 {
@@ -1529,7 +1599,10 @@ class ParameterTest(unittest.TestCase):
             ],
         }
 
-        extracted = kp.extract_ui_schema(self.parameterized_advanced_option)
+        extracted = kp.extract_ui_schema(
+            self.parameterized_advanced_option,
+            DummyDialogCreationContext(),
+        )
         self.assertEqual(expected, extracted)
 
     def test_default_validators(self):
@@ -1839,7 +1912,7 @@ class ParameterTest(unittest.TestCase):
 
     def test_extract_ui_schema_from_composed(self):
         obj = ComposedParameterized()
-        ui_schema = kp.extract_ui_schema(obj)
+        ui_schema = kp.extract_ui_schema(obj, DummyDialogCreationContext())
         expected = {
             "type": "VerticalLayout",
             "elements": [
@@ -1987,7 +2060,11 @@ class ParameterTest(unittest.TestCase):
 
     def test_extract_ui_schema_with_version(self):
         for version in ["0.1.0", "0.2.0", "0.3.0"]:
-            ui_schema = kp.extract_ui_schema(self.versioned_parameterized, version)
+            ui_schema = kp.extract_ui_schema(
+                self.versioned_parameterized,
+                DummyDialogCreationContext(),
+                version,
+            )
             expected = generate_versioned_ui_schema_dict(extension_version=version)
             self.assertEqual(ui_schema, expected)
 
