@@ -281,7 +281,8 @@ class DialogCreationContext(_BaseContext):
     The DialogCreationContext provides utilities to communicate with KNIME during the dialog creation phase.
     It enables access to the flow variables, the specs of the input tables and the credentials. These can be used to
     create the dialog elements, by passing the respective method as lambda function to the constructor of the
-    string parameter class.
+    string parameter class. The lambdas will receive the dialog creation context as parameter which should be passed
+    as first parameter to the fully qualified method calls of ``DialogCreationContext`` as below:
 
     **Example**::
 

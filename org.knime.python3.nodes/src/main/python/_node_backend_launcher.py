@@ -500,7 +500,6 @@ class _PythonNodeProxy:
             "schema": kp.extract_schema(
                 self._node,
                 extension_version,
-                specs=None,
                 dialog_creation_context=dialog_context,
             ),
             "ui_schema": kp.extract_ui_schema(
@@ -538,10 +537,8 @@ class _PythonNodeProxy:
         parameters_dict = kp.extract_parameters(self._node)
         return json.dumps(parameters_dict)
 
-    def getSchema(self, version=None, specs: List[str] = None) -> str:
-        if specs is not None:
-            specs = self._specs_to_python(specs)
-        schema = kp.extract_schema(self._node, version, specs)
+    def getSchema(self, version=None) -> str:
+        schema = kp.extract_schema(self._node, version)
         return json.dumps(schema)
 
     def setParameters(

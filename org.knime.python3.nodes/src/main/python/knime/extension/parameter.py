@@ -158,31 +158,26 @@ def validate_specs(obj, specs) -> None:
 
 
 def extract_schema(
-    obj, extension_version: str = None, specs=None, dialog_creation_context=None
+    obj, extension_version: str = None, dialog_creation_context=None
 ) -> dict:
     extension_version = Version.parse_version(extension_version)
     return {
         "type": "object",
         "properties": {
-            "model": _extract_schema(
-                obj, extension_version, specs, dialog_creation_context
-            )
+            "model": _extract_schema(obj, extension_version, dialog_creation_context)
         },
     }
 
 
 def _extract_schema(
-    obj, extension_version: Version, specs, dialog_creation_context=None
+    obj, extension_version: Version, dialog_creation_context=None
 ) -> dict:
     properties = {}
-    if specs is None and dialog_creation_context is not None:
-        specs = dialog_creation_context.get_input_specs()
 
     for name, param_obj in _get_parameters(obj).items():
         if param_obj._since_version <= extension_version:
             properties[name] = param_obj._extract_schema(
                 extension_version=extension_version,
-                specs=specs,
                 dialog_creation_context=dialog_creation_context,
             )
 
@@ -502,7 +497,6 @@ class _BaseParameter(ABC):
     def _extract_schema(
         self,
         extension_version: Version = None,  # NOSONAR
-        specs: List[ks.Schema] = None,  # NOSONAR
         dialog_creation_context=None,  # NOSONAR
     ):
         return {"title": self._label, "description": self.__doc__}
@@ -575,11 +569,9 @@ class _NumericParameter(_BaseParameter):
         if self.max_value is not None and value > self.max_value:
             raise ValueError(f"{value} is > the max value {self.max_value}")
 
-    def _extract_schema(
-        self, extension_version=None, specs=None, dialog_creation_context=None
-    ):
+    def _extract_schema(self, extension_version=None, dialog_creation_context=None):
         schema = super()._extract_schema(
-            specs, dialog_creation_context=dialog_creation_context
+            dialog_creation_context=dialog_creation_context
         )
         schema["type"] = "number"
         if self.min_value is not None:
@@ -623,12 +615,8 @@ class IntParameter(_NumericParameter):
                 f"{value} is of type {type(value)}, but should be of type int."
             )
 
-    def _extract_schema(
-        self, extension_version=None, specs=None, dialog_creation_context=None
-    ):
-        prop = super()._extract_schema(
-            specs, dialog_creation_context=dialog_creation_context
-        )
+    def _extract_schema(self, extension_version=None, dialog_creation_context=None):
+        prop = super()._extract_schema(dialog_creation_context=dialog_creation_context)
         prop["type"] = "integer"
         prop["format"] = "int32"
         return prop
@@ -670,11 +658,9 @@ class DoubleParameter(_NumericParameter):
                 f"{value} is of type {type(value)}, but should be a number."
             )
 
-    def _extract_schema(
-        self, extension_version=None, specs=None, dialog_creation_context=None
-    ):
+    def _extract_schema(self, extension_version=None, dialog_creation_context=None):
         schema = super()._extract_schema(
-            specs, dialog_creation_context=dialog_creation_context
+            dialog_creation_context=dialog_creation_context
         )
         schema["format"] = "double"
         return schema
@@ -747,14 +733,15 @@ class StringParameter(_BaseMultiChoiceParameter):
             label, description, default_value, validator, since_version, is_advanced
         )
 
-    def _extract_schema(
-        self, extension_version=None, specs=None, dialog_creation_context=None
-    ):
+    def _extract_schema(self, extension_version=None, dialog_creation_context=None):
         schema = super()._extract_schema(
-            specs, dialog_creation_context=dialog_creation_context
+            dialog_creation_context=dialog_creation_context
         )
 
         if self._choices and dialog_creation_context:
+            # We pass the current DialogCreationContext to the _choices callable
+            # and expect that the node developers write a lambda such that it
+            # passes this parameter as "self" to the respective methods of the context.
             schema["oneOf"] = [
                 {"const": e, "title": e} for e in self._choices(dialog_creation_context)
             ]
@@ -895,11 +882,9 @@ class EnumParameter(_BaseMultiChoiceParameter):
     def _generate_description(self):
         return self._enum._generate_options_description(self.__doc__)
 
-    def _extract_schema(
-        self, extension_version=None, specs=None, dialog_creation_context=None
-    ):
+    def _extract_schema(self, extension_version=None, dialog_creation_context=None):
         schema = super()._extract_schema(
-            specs, dialog_creation_context=dialog_creation_context
+            dialog_creation_context=dialog_creation_context
         )
         schema["description"] = self._generate_description()
         schema["oneOf"] = [{"const": e.name, "title": e.label} for e in self._enum]
@@ -1005,11 +990,10 @@ class ColumnParameter(_BaseColumnParameter):
     def _extract_schema(
         self,
         extension_version=None,
-        specs: List[ks.Schema] = None,
         dialog_creation_context=None,
     ):
         schema = super()._extract_schema(
-            specs, dialog_creation_context=dialog_creation_context
+            dialog_creation_context=dialog_creation_context
         )
         schema["type"] = "string"
         return schema
@@ -1059,11 +1043,10 @@ class MultiColumnParameter(_BaseColumnParameter):
     def _extract_schema(
         self,
         extension_version=None,
-        specs: List[ks.Schema] = None,
         dialog_creation_context=None,
     ):
         schema = super()._extract_schema(
-            specs, dialog_creation_context=dialog_creation_context
+            dialog_creation_context=dialog_creation_context
         )
         schema["type"] = "array"
         schema["items"] = {"type": "string"}
@@ -1498,11 +1481,10 @@ class ColumnFilterParameter(_BaseColumnParameter):
     def _extract_schema(
         self,
         extension_version=None,
-        specs: List[ks.Schema] = None,
         dialog_creation_context=None,
     ):
         schema = super()._extract_schema(
-            specs, dialog_creation_context=dialog_creation_context
+            dialog_creation_context=dialog_creation_context
         )
 
         schema["type"] = "object"
@@ -1570,11 +1552,9 @@ class BoolParameter(_BaseParameter):
             label, description, default_value, validator, since_version, is_advanced
         )
 
-    def _extract_schema(
-        self, extension_version=None, specs=None, dialog_creation_context=None
-    ):
+    def _extract_schema(self, extension_version=None, dialog_creation_context=None):
         schema = super()._extract_schema(
-            specs, dialog_creation_context=dialog_creation_context
+            dialog_creation_context=dialog_creation_context
         )
         schema["type"] = "boolean"
         return schema
@@ -1926,14 +1906,13 @@ def parameter_group(
                     return options
 
             def _extract_schema(
-                self, extension_version: Version, specs, dialog_creation_context=None
+                self, extension_version: Version, dialog_creation_context=None
             ):
                 properties = {}
                 for name, param_obj in _get_parameters(self).items():
                     if param_obj._since_version <= extension_version:
                         properties[name] = param_obj._extract_schema(
                             extension_version=extension_version,
-                            specs=specs,
                             dialog_creation_context=dialog_creation_context,
                         )
 
