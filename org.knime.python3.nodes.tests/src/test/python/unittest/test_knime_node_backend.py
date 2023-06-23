@@ -104,11 +104,11 @@ class PortTypeRegistryTest(unittest.TestCase):
             self._data = data
             self._transient_data = transient_data
 
-        def serialize(self) -> Any:
+        def to_connection_data(self) -> Any:
             return (self._data, self._transient_data)
 
         @classmethod
-        def deserialize(
+        def from_connection_data(
             cls,
             spec: "PortTypeRegistryTest.TestConnectionPortObjectSpec",
             data: Any,

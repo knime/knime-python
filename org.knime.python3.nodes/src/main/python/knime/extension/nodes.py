@@ -91,33 +91,39 @@ class ConnectionPortObject(PortObject):
     or web sessions.
 
     ConnectionPortObjects are passed downstream by ensuring that the same Python
-    process is used to execute subsequent nodes. ConnectionPortObjects use the
-    serialize/deserialize method naming when providing data or creating new instances
-    in new nodes, however the data is not really serialized. Instead, a reference
-    to the Python object representing the data is maintained and handed to downstream
-    nodes. So the data does not need to be serializable/picklable.
+    process is used to execute subsequent nodes. ConnectionPortObjects must provide the
+    data in the ``to_connection_data`` and create new instances from the same data in
+    ``from_connection_data``. A reference to the data Python object is maintained and
+    handed to downstream nodes. So the data does not need to be serializable/picklable.
     """
 
     def __init__(self, spec: PortObjectSpec) -> None:
         super().__init__(spec)
 
+    def serialize(self):
+        raise NotImplementedError("A connection port object cannot be serialized")
+
+    @classmethod
+    def deserialize(cls, spec, storage):
+        raise NotImplementedError("A connection port object cannot be deserialized")
+
     @abstractmethod
-    def serialize(self) -> Any:
+    def to_connection_data(self) -> Any:
         """
         Provide the data that makes up this ConnectionPortObject such that it can be used
-        by downstream nodes in the deserialize method.
-
-        The data is not really serialized. Instead, a reference to the Python object is maintained
-        and handed to deserialize in downstream nodes.
+        by downstream nodes in the ``from_connection_data`` method.
         """
         pass
 
     @classmethod
     @abstractmethod
-    def deserialize(cls, spec: PortObjectSpec, data: Any) -> "ConnectionPortObject":
+    def from_connection_data(
+        cls, spec: PortObjectSpec, data: Any
+    ) -> "ConnectionPortObject":
         """
         Construct a ConnectionPortObject from spec and data. The data is the data that has
-        been returned by the serialize method of the ConnectionPortObject by the upstream node.
+        been returned by the ``to_connection_data`` method of the ConnectionPortObject
+        by the upstream node.
 
         The data should not be tempered with, as it is a Python object that is handed to
         all nodes using this ConnectionPortObject.

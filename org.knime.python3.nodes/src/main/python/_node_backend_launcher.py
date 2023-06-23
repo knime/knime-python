@@ -400,7 +400,7 @@ class _PortTypeRegistry:
                 )
 
             connection_data = _PortTypeRegistry._connection_port_data[key]
-            return port.type.object_class.deserialize(spec, connection_data)
+            return port.type.object_class.from_connection_data(spec, connection_data)
 
         raise TypeError("Unsupported PortObjectSpec found in Python, got " + class_name)
 
@@ -459,7 +459,7 @@ class _PortTypeRegistry:
 
                 # We store the port object data in a global dict referenced by nodeID and portIdx
                 key = f"{node_id}:{port_idx}"
-                _PortTypeRegistry._connection_port_data[key] = obj.serialize()
+                _PortTypeRegistry._connection_port_data[key] = obj.to_connection_data()
                 return _PythonConnectionPortObject(class_name, spec)
             else:
                 class_name = (
