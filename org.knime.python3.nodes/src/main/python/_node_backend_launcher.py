@@ -278,16 +278,9 @@ class _PortTypeRegistry:
         class_name = spec.getJavaClassName()
         data = json.loads(spec.toJsonString())
 
-        def deserialize_custom_spec():
-            spec_id = data["id"]
-            assert (
-                spec_id in self._port_types_by_id
-            ), f"There is no port type with id '{spec_id}' registered."
-            incoming_port_type = self._port_types_by_id[spec_id]
-            assert port.type.is_super_type_of(
-                incoming_port_type
-            ), f"The provided input port type {spec_id} must be the same or a sub-type of the node's input port type {port.type}."
-            return port.type.spec_class.deserialize(data["data"])
+        def deserialize_custom_spec() -> kn.PortObjectSpec:
+            incoming_port_type = self._extract_port_type_from_spec_data(data, port)
+            return incoming_port_type.spec_class.deserialize(data["data"])
 
         if class_name == "org.knime.core.data.DataTableSpec":
             assert port.type == kn.PortType.TABLE
@@ -312,6 +305,19 @@ class _PortTypeRegistry:
             return deserialize_custom_spec()
 
         raise TypeError("Unsupported PortObjectSpec found in Python, got " + class_name)
+
+    def _extract_port_type_from_spec_data(
+        self, data, expected_port: kn.Port
+    ) -> kn.PortType:
+        spec_id = data["id"]
+        assert (
+            spec_id in self._port_types_by_id
+        ), f"There is no port type with id '{spec_id}' registered."
+        incoming_port_type = self._port_types_by_id[spec_id]
+        assert expected_port.type.is_super_type_of(
+            incoming_port_type
+        ), f"The provided input port type {spec_id} must be the same or a sub-type of the node's input port type {expected_port.type}."
+        return incoming_port_type
 
     def spec_from_python(
         self, spec, port: kn.Port, node_id: str, port_idx: int
@@ -380,8 +386,12 @@ class _PortTypeRegistry:
             if port.type == kn.PortType.BINARY:
                 return data
             else:
-                spec = self.spec_to_python(port_object.getSpec(), port)
-                return port.type.object_class.deserialize(spec, data)
+                java_spec = port_object.getSpec()
+                spec = self.spec_to_python(java_spec, port)
+                incoming_port_type = self._extract_port_type_from_spec_data(
+                    json.loads(java_spec.toJsonString()), port
+                )
+                return incoming_port_type.object_class.deserialize(spec, data)
         elif (
             class_name
             == "org.knime.python3.nodes.ports.PythonTransientConnectionPortObject"
