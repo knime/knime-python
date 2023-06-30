@@ -230,7 +230,7 @@ public final class Python3KernelBackend implements PythonKernelBackend {
     /**
      * Will be populated the first time it is accessed
      */
-    private IWriteFileStoreHandler m_writeFileStoreHandler = null;
+    private IWriteFileStoreHandler m_writeFileStoreHandler;
 
     /**
      * Creates a new Python kernel back end by starting a Python process and connecting to it.
@@ -808,8 +808,8 @@ public final class Python3KernelBackend implements PythonKernelBackend {
     private IWriteFileStoreHandler getWriteFileStoreHandler() {
         final IFileStoreHandler nodeFsHandler = getFileStoreHandler();
         IWriteFileStoreHandler fsHandler = null;
-        if (nodeFsHandler instanceof IWriteFileStoreHandler) {
-            fsHandler = (IWriteFileStoreHandler)nodeFsHandler;
+        if (nodeFsHandler instanceof IWriteFileStoreHandler writeFsHandler) {
+            fsHandler = writeFsHandler;
         } else {
             // The node's file store handler will be null or an EmptyFileStoreHandler if we are in the dialog.
             synchronized (m_temporaryFsHandlers) {
@@ -848,12 +848,15 @@ public final class Python3KernelBackend implements PythonKernelBackend {
             // table (e.g. for the Python Script Dialog) and don't need nested loop information anyways.
             return fsHandler.createFileStore(uuid, null, -1);
         } else {
+            if (fsHandler == null) {
+                throw new IllegalStateException("FileStoreHandler is null, cannot create FileStore");
+            }
             try {
                 return fsHandler.createFileStore(uuid);
             } catch (IllegalStateException ex) {
                 LOGGER.debug("FileStore seemed to be readonly, creating FileStore without loop information. "
-                    + "This can happen in the Python Script dialog if the node was saved and the dialog is opened afterwards.",
-                    ex);
+                    + "This can happen in the Python Script dialog if the node was saved "
+                    + "and the dialog is opened afterwards.", ex);
                 return fsHandler.createFileStore(uuid, null, -1);
             }
         }

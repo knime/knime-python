@@ -335,15 +335,15 @@ final class CloseablePythonNodeProxy
             public String get_preferred_value_types_as_json(final String tableSchemaJson) {
                 return TableSpecSerializationUtils.getPreferredValueTypesForSerializedSchema(tableSchemaJson);
             }
-            public String[] create_file_store() throws IOException {
+
+            public String[] create_file_store() throws IOException { // NOSONAR
                 final var fileStore = createFileStore();
                 return new String[]{fileStore.getFile().getAbsolutePath(),
                     FileStoreUtil.getFileStoreKey(fileStore).saveToString()};
             }
 
-            public String file_store_key_to_absolute_path(final String fileStoreKey) {
-                return getFileStoreHandler().getFileStore(FileStoreKey.load(fileStoreKey)).getFile()
-                    .getAbsolutePath();
+            public String file_store_key_to_absolute_path(final String fileStoreKey) { // NOSONAR
+                return getFileStoreHandler().getFileStore(FileStoreKey.load(fileStoreKey)).getFile().getAbsolutePath();
             }
 
         };
@@ -565,13 +565,11 @@ final class CloseablePythonNodeProxy
 
     private static IWriteFileStoreHandler getWriteFileStoreHandler() {
         final IFileStoreHandler nodeFsHandler = getFileStoreHandler();
-        IWriteFileStoreHandler fsHandler = null;
-        if (nodeFsHandler instanceof IWriteFileStoreHandler) {
-            fsHandler = (IWriteFileStoreHandler)nodeFsHandler;
+        if (nodeFsHandler instanceof IWriteFileStoreHandler writeFsHandler) {
+            return writeFsHandler;
         } else {
             throw new IllegalStateException("A NodeContext should be available during execution of Python Nodes");
         }
-        return fsHandler;
     }
 
     private static IFileStoreHandler getFileStoreHandler() {
@@ -590,8 +588,8 @@ final class CloseablePythonNodeProxy
                 return fsHandler.createFileStore(uuid);
             } catch (IllegalStateException ex) {
                 LOGGER.debug("FileStore seemed to be readonly, creating FileStore without loop information. "
-                    + "This can happen in the Python Script dialog if the node was saved and the dialog is opened afterwards.",
-                    ex);
+                    + "This can happen in the Python Script dialog if the node was saved "
+                    + "and the dialog is opened afterwards.", ex);
                 return fsHandler.createFileStore(uuid, null, -1);
             }
         }

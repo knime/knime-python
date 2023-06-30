@@ -89,13 +89,13 @@ class FileStoreHandler:
     Interface for a file store handler that must be provided from the Java side
     """
 
-    def file_store_key_to_absolute_path(file_store_key: str) -> str:
+    def file_store_key_to_absolute_path(self, file_store_key: str) -> str:
         """
         Returns the absolute path of the file addressed by the file_store_key
         """
         pass
 
-    def create_file_store() -> Tuple[str, str]:
+    def create_file_store(self) -> Tuple[str, str]:
         """
         Returns a tuple (absolute_file_name, file_store_key)
         """
@@ -187,11 +187,11 @@ class FileStorePythonValueFactory(PythonValueFactory):
             file_store_keys.append(key)
             return path
 
-        tableData = self.write(file_store_creator, value)
+        table_data = self.write(file_store_creator, value)
 
         return {
             "0": ";".join(file_store_keys) if len(file_store_keys) > 0 else None,
-            "1": tableData,
+            "1": table_data,
         }
 
 
