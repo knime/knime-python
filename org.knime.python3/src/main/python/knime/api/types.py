@@ -49,11 +49,10 @@ Defines the Python equivalent to a ValueFactory and related utility method/class
 """
 import warnings
 from abc import ABC, abstractmethod
-from collections.abc import Callable
 from contextlib import contextmanager
 import importlib
 import json
-from typing import List, Tuple, Type
+from typing import List, Tuple, Type, Callable
 import logging
 
 LOGGER = logging.getLogger(__name__)
