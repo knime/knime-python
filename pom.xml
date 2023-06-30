@@ -28,7 +28,6 @@
 		<module>org.knime.python3</module>
 		<module>org.knime.python3.testing</module>
 		<module>org.knime.python3.tests</module>
-		<module>org.knime.python3.types</module>
 		<module>org.knime.python3.arrow</module>
 		<module>org.knime.python3.arrow.tests</module>
 		<module>org.knime.python3.arrow.types</module>
@@ -132,6 +131,11 @@
 			<id>p2-knime-js-core</id>
 			<layout>p2</layout>
 			<url>${knime.js.core.p2}</url>
+		</repository>
+		<repository>
+			<id>p2-knime-python-types</id>
+			<layout>p2</layout>
+			<url>${knime.python.types.p2}</url>
 		</repository>
 	</repositories>
 </project>
