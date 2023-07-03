@@ -134,14 +134,22 @@ class _PythonPortObjectSpec:
 
 
 class _PythonBinaryPortObject:
-    def __init__(self, java_class_name, filestore_file, data, spec):
+    def __init__(self, java_class_name, filestore_file, spec):
         self._java_class_name = java_class_name
-        self._data = data
         self._spec = spec
         self._key = filestore_file.get_key()
 
+    @classmethod
+    def from_bytes(
+        cls,
+        java_class_name: str,
+        filestore_file,
+        data: bytes,
+        spec: _PythonPortObjectSpec,
+    ) -> "_PythonBinaryPortObject":
         with open(filestore_file.get_file_path(), "wb") as f:
             f.write(data)
+        return cls(java_class_name, filestore_file, spec)
 
     def getJavaClassName(self) -> str:  # NOSONAR - Java naming conventions
         return self._java_class_name
@@ -382,15 +390,19 @@ class _PortTypeRegistry:
             class_name
             == "org.knime.python3.nodes.ports.PythonBinaryBlobFileStorePortObject"
         ):
-            data = read_port_object_data()
             if port.type == kn.PortType.BINARY:
-                return data
+                return read_port_object_data()
             else:
                 java_spec = port_object.getSpec()
                 spec = self.spec_to_python(java_spec, port)
                 incoming_port_type = self._extract_port_type_from_spec_data(
                     json.loads(java_spec.toJsonString()), port
                 )
+                if issubclass(incoming_port_type.object_class, kn.FilestorePortObject):
+                    return incoming_port_type.object_class.read_from(
+                        spec, port_object.getFilePath()
+                    )
+                data = read_port_object_data()
                 return incoming_port_type.object_class.deserialize(spec, data)
         elif (
             class_name
@@ -449,7 +461,9 @@ class _PortTypeRegistry:
                 "org.knime.python3.nodes.ports.PythonBinaryBlobPortObjectSpec",
                 {"id": port.id},
             )
-            return _PythonBinaryPortObject(class_name, file_creator(), obj, spec)
+            return _PythonBinaryPortObject.from_bytes(
+                class_name, file_creator(), obj, spec
+            )
         elif port.type == kn.PortType.IMAGE:
             class_name = "org.knime.core.node.port.image.ImagePortObject"
             return _PythonImagePortObject(class_name, obj)
@@ -475,10 +489,17 @@ class _PortTypeRegistry:
                 class_name = (
                     "org.knime.python3.nodes.ports.PythonBinaryBlobFileStorePortObject"
                 )
-                serialized = obj.serialize()
-                return _PythonBinaryPortObject(
-                    class_name, file_creator(), serialized, spec
-                )
+
+                if issubclass(port.type.object_class, kn.FilestorePortObject):
+                    filestore = file_creator()
+                    file_path = filestore.get_file_path()
+                    obj.write_to(file_path)
+                    return _PythonBinaryPortObject(class_name, filestore, spec)
+                else:
+                    serialized = obj.serialize()
+                    return _PythonBinaryPortObject.from_bytes(
+                        class_name, file_creator(), serialized, spec
+                    )
 
 
 class _PythonNodeProxy:

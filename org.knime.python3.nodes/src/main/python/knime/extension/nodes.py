@@ -131,6 +131,35 @@ class ConnectionPortObject(PortObject):
         pass
 
 
+class FilestorePortObject(PortObject):
+    """
+    FilestorePortObjects are a special kind of PortObject whose serialization methods get
+    direct access to files instead of bytes objects.
+
+    This is experimental internal API that may change arbitrarily between releases.
+    """
+
+    def serialize(self) -> bytes:
+        raise RuntimeError("Serialize should not be called for FilestorePortObjects.")
+
+    @classmethod
+    def deserialize(cls, spec: PortObjectSpec, storage: bytes) -> "PortObject":
+        raise RuntimeError("Deserialize should not be called for FilestorePortObjects.")
+
+    @abstractmethod
+    def write_to(self, file_path: str) -> None:
+        """
+        Write the object into the given file_path.
+        """
+
+    @classmethod
+    @abstractmethod
+    def read_from(cls, spec: PortObjectSpec, file_path: str) -> "FilestorePortObject":
+        """
+        Read the object from the given file_path.
+        """
+
+
 @dataclass
 class PortType:
     id: str
