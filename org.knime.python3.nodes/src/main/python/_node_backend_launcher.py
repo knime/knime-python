@@ -258,7 +258,7 @@ class _PortTypeRegistry:
         object_class: Type[kn.PortObject],
         spec_class: Type[kn.PortObjectSpec],
         id: Optional[str] = None,
-    ):
+    ) -> kn.PortType:
         if object_class in self._port_types_by_object_class:
             raise ValueError(
                 f"There is already a port type with the provided object class '{object_class}' registered."
@@ -281,6 +281,18 @@ class _PortTypeRegistry:
         self._port_types_by_spec_class[spec_class] = port_type
         self._port_types_by_id[id] = port_type
         return port_type
+
+    def get_port_type_for_spec_type(
+        self, spec_type: Type[kn.PortObjectSpec]
+    ) -> kn.PortType:
+        if spec_type in self._port_types_by_spec_class:
+            return self._port_types_by_spec_class[spec_type]
+        raise KeyError(f"The PortObjectSpec type {str(spec_type)} is not registered.")
+
+    def get_port_type_for_id(self, id: str) -> kn.PortType:
+        if id in self._port_types_by_id:
+            return self._port_types_by_id[id]
+        raise KeyError(f"No PortType for id '{id}' registered.")
 
     def spec_to_python(self, spec: _PythonPortObjectSpec, port: kn.Port):
         class_name = spec.getJavaClassName()
@@ -801,6 +813,14 @@ class _KnimeNodeBackend(kg.EntryPoint, kn._KnimeNodeBackend):
         return self._port_type_registry.register_port_type(
             name, object_class, spec_class, id
         )
+
+    def get_port_type_for_spec_type(
+        self, spec_type: Type[kn.PortObjectSpec]
+    ) -> kn.PortType:
+        return self._port_type_registry.get_port_type_for_spec_type(spec_type)
+
+    def get_port_type_for_id(self, id: str) -> kn.PortType:
+        return self._port_type_registry.get_port_type_for_id(id)
 
     def loadExtension(
         self, extension_id: str, extension_module: str, extension_version: str

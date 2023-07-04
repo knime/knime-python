@@ -2,6 +2,7 @@ import unittest
 
 import _node_backend_launcher as knb
 import knime_extension as knext  # old import to test the forwarding import
+import knime.extension.nodes as kn
 import tempfile
 import json
 import os
@@ -476,3 +477,52 @@ class DescriptionParsingTest(unittest.TestCase):
             "output_ports": [],
         }
         self.assertEqual(expected, description)
+
+
+class ValueHoldingPortObject(kn.PortObject):
+    def __init__(self, spec: kn.PortObjectSpec, value: str) -> None:
+        super().__init__(spec)
+        self._value = value
+
+    @property
+    def value(self):
+        return self._value
+
+
+class TestPortObject(ValueHoldingPortObject):
+    def serialize(self) -> bytes:
+        return self._value.encode()
+
+    @classmethod
+    def deserialize(cls, spec, data: bytes):
+        return cls(spec, data.decode())
+
+
+class TestFilestorePortObject(ValueHoldingPortObject, kn.FilestorePortObject):
+    def write_to(self, file_path):
+        with open(file_path, "w") as f:
+            f.write(self.value)
+
+    @classmethod
+    def read_from(cls, spec, file_path):
+        with open(file_path, "r") as f:
+            return cls(spec, f.read())
+
+
+class LoadSavePortObjectTest(unittest.TestCase):
+    def test_save_load_ordinary_po(self):
+        spec = AnotherPortObjectSpec()
+        po = TestPortObject(spec, "foo")
+        self._test_save_load_po(po)
+
+    def test_save_load_filestore_po(self):
+        spec = AnotherPortObjectSpec()
+        po = TestFilestorePortObject(spec, "bar")
+        self._test_save_load_po(po)
+
+    def _test_save_load_po(self, port_object: ValueHoldingPortObject):
+        with tempfile.TemporaryDirectory() as directory:
+            po_path = os.path.join(directory, "po_path")
+            kn.save_port_object(port_object, po_path)
+            loaded = kn.load_port_object(TestPortObject, port_object.spec, po_path)
+            self.assertEqual(port_object.value, loaded.value)
