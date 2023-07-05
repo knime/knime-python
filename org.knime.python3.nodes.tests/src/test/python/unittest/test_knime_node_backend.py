@@ -205,7 +205,7 @@ class PortTypeRegistryTest(unittest.TestCase):
         )
         port = knext.Port(test_port_type, "Test port", "Test_port")
         java_spec = _binary_spec_from_java(other_port_type.id, {})
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(kn.InvalidParametersError):
             self.registry.spec_to_python(java_spec, port)
 
     def test_custom_spec_to_python_unknown_id(self):

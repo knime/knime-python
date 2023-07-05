@@ -333,10 +333,11 @@ class _PortTypeRegistry:
         assert (
             spec_id in self._port_types_by_id
         ), f"There is no port type with id '{spec_id}' registered."
-        incoming_port_type = self._port_types_by_id[spec_id]
-        assert expected_port.type.is_super_type_of(
-            incoming_port_type
-        ), f"The provided input port type {spec_id} must be the same or a sub-type of the node's input port type {expected_port.type}."
+        incoming_port_type: kn.PortType = self._port_types_by_id[spec_id]
+        if not expected_port.type.is_super_type_of(incoming_port_type):
+            raise kn.InvalidParametersError(
+                f"The provided input port type {incoming_port_type.name} must be the same or a sub-type of the node's input port type {expected_port.type.name}."
+            )
         return incoming_port_type
 
     def spec_from_python(
@@ -702,11 +703,11 @@ class _PythonNodeProxy:
         self, input_specs: List[_PythonPortObjectSpec], java_config_context
     ) -> List[_PythonPortObjectSpec]:
         _push_log_callback(lambda msg, sev: self._java_callback.log(msg, sev))
-        inputs = self._specs_to_python(input_specs)
-        config_context = kn.ConfigurationContext(
-            java_config_context, self._get_flow_variables()
-        )
         try:
+            inputs = self._specs_to_python(input_specs)
+            config_context = kn.ConfigurationContext(
+                java_config_context, self._get_flow_variables()
+            )
             kp.validate_specs(self._node, inputs)
             # TODO: maybe we want to run execute on the main thread? use knime._backend._mainloop
             outputs = self._node.configure(config_context, *inputs)
