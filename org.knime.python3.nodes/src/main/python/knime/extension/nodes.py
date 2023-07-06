@@ -352,15 +352,6 @@ class _BaseContext:
         """
         return self._flow_variables
 
-    def set_warning(self, message: str) -> None:
-        """
-        Sets a warning on the node.
-
-        Args:
-            message: the warning message to display on the node
-        """
-        self._java_ctx.set_warning(str(message))
-
     def get_credential_names(self):
         """
 
@@ -369,6 +360,22 @@ class _BaseContext:
         """
         credential_names = list(self._java_ctx.get_credential_names())
         return credential_names
+
+    def get_credentials(self, identifier: str) -> Credential:
+        """
+        Returns the credentials dataclass for the given identifier.
+
+        Args:
+            identifier: the identifier of the credentials to retrieve
+        """
+        from py4j.protocol import Py4JJavaError
+
+        try:
+            credentials = list(self._java_ctx.get_credentials(identifier))
+        except Py4JJavaError:
+            raise KeyError(f"Error retrieving credentials for identifier: {identifier}")
+        # create dataclass from credential list
+        return Credential(credentials[0], credentials[1], credentials[2])
 
 
 class DialogCreationContext(_BaseContext):
@@ -391,23 +398,6 @@ class DialogCreationContext(_BaseContext):
     def __init__(self, java_ctx, flow_variables, specs_to_python_converter) -> None:
         super().__init__(java_ctx, flow_variables)
         self._python_specs = specs_to_python_converter(self._java_ctx.get_input_specs())
-
-    def get_credentials(self, identifier: str) -> Credential:
-        """
-        Returns the credentials dataclass for the given identifier.
-
-        Args:
-            identifier: the identifier of the credentials to retrieve
-        """
-        from py4j.protocol import Py4JJavaError
-
-        try:
-            credentials = list(self._java_ctx.get_credentials(identifier))
-        except Py4JJavaError:
-            raise KeyError(f"Error retrieving credentials for identifier: {identifier}")
-        # create dataclass from credential list
-        credentials = Credential(credentials[0], credentials[1], credentials[2])
-        return credentials
 
     def get_input_specs(self) -> List[PortObjectSpec]:
         """
@@ -439,18 +429,21 @@ class ConfigurationContext(_BaseContext):
     during a node's configure() method.
     """
 
-    def __init__(self, java_config_ctx, flow_variables) -> None:
-        super().__init__(java_config_ctx, flow_variables)
+    def set_warning(self, message: str) -> None:
+        """
+        Sets a warning on the node.
+
+        Args:
+            message: the warning message to display on the node
+        """
+        self._java_ctx.set_warning(str(message))
 
 
-class ExecutionContext(_BaseContext):
+class ExecutionContext(ConfigurationContext):
     """
     The ExecutionContext provides utilities to communicate with KNIME during a
     node's execute() method.
     """
-
-    def __init__(self, java_ctx, flow_variables) -> None:
-        super().__init__(java_ctx, flow_variables)
 
     def set_progress(self, progress: float, message: str = None):
         """Set the progress of the execution.
@@ -512,23 +505,6 @@ class ExecutionContext(_BaseContext):
         configuration as well as log files.
         """
         return self._java_ctx.get_knime_home_dir()
-
-    def get_credentials(self, identifier: str) -> Credential:
-        """
-        Returns the credentials dataclass for the given identifier.
-
-        Args:
-            identifier: the identifier of the credentials to retrieve
-        """
-        from py4j.protocol import Py4JJavaError
-
-        try:
-            credentials = list(self._java_ctx.get_credentials(identifier))
-        except Py4JJavaError:
-            raise KeyError(f"Error retrieving credentials for identifier: {identifier}")
-        # create dataclass from credential list
-        credentials = Credential(credentials[0], credentials[1], credentials[2])
-        return credentials
 
 
 class PythonNode(ABC):

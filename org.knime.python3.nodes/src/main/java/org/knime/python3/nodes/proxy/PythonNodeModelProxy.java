@@ -235,11 +235,30 @@ public interface PythonNodeModelProxy {
     }
 
     /**
+     * Base interface for context callbacks.
+     *
+     * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+     */
+    interface PythonBaseContext {
+        /**
+         * @return identifier for each credential
+         */
+        String[] get_credential_names(); // NOSONAR
+
+        /**
+         * @param identifier (credential flow variable name) to get the credentials
+         * @return String array containing username, password and identifier
+         **/
+        String[] get_credentials(final String identifier); // NOSONAR
+
+    }
+
+    /**
      * Context provided to Python while configuring a node. This can e.g. provide flow variables.
      *
      * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
      */
-    interface PythonConfigurationContext {
+    interface PythonConfigurationContext extends PythonBaseContext {
 
         /**
          * Sets a warning message on the node.
@@ -248,10 +267,6 @@ public interface PythonNodeModelProxy {
          */
         void set_warning(final String message);//NOSONAR
 
-        /**
-         * @return identifier for each credential
-         */
-        String[] get_credential_names(); // NOSONAR
 
         /**
          * @return A unique string identifying this node in the workflow
@@ -264,17 +279,8 @@ public interface PythonNodeModelProxy {
      *
      * @author Jonas Klotz, KNIME GmbH, Berlin, Germany
      */
-    interface PythonDialogCreationContext {
-        /**
-         * @return identifier for each credential
-         */
-        String[] get_credential_names(); // NOSONAR
+    interface PythonDialogCreationContext extends PythonBaseContext {
 
-        /**
-         * @param identifier (credential flow variable name) to get the credentials
-         * @return String array containing username, password and identifier
-         **/
-        String[] get_credentials(final String identifier); // NOSONAR
 
         /**
          *
@@ -326,11 +332,6 @@ public interface PythonNodeModelProxy {
          */
         String get_knime_home_dir(); // NOSONAR
 
-        /**
-         * @param identifier (credential flow variable name) to get the credentials
-         * @return String array containing username, password and identifier
-         **/
-        String[] get_credentials(final String identifier); // NOSONAR
     }
 
 }

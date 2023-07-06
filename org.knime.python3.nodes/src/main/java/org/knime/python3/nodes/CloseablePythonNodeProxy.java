@@ -535,6 +535,12 @@ final class CloseablePythonNodeProxy
             }
 
             @Override
+            public String[] get_credentials(final String identifier) {
+                ICredentials credentials = credentialsProviderProxy.getCredentials(identifier);
+                return new String[]{credentials.getLogin(), credentials.getPassword(), credentials.getName()};
+            }
+
+            @Override
             public String[] get_credential_names() {
                 return credentialsProviderProxy.getCredentialNames();
 
@@ -544,6 +550,7 @@ final class CloseablePythonNodeProxy
             public String get_node_id() {
                 return workflowPropertiesProxy.getNodeNameWithID();
             }
+
         };
 
         final var serializedInSpecs = Stream.of(inSpecs)//
@@ -646,4 +653,5 @@ final class CloseablePythonNodeProxy
             }
         }
     }
+
 }
