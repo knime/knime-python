@@ -1082,7 +1082,7 @@ def _possible_values(
     port_index: int,
     column_filter: Callable[[ks.Column], bool],
 ):
-    def entry(name, type, compatible_types):
+    def entry(name, type=None, compatible_types=None):
         entry = {"id": name, "text": name}
         if type is not None:
             entry["type"] = {"id": type[0], "text": type[1]}
@@ -1092,7 +1092,7 @@ def _possible_values(
 
     try:
         if specs is None or specs[port_index] is None:
-            return [entry("", "", "")]
+            return [entry("")]
 
         spec = specs[port_index]
     except IndexError:
@@ -1124,7 +1124,7 @@ def _possible_values(
     if len(filtered) > 0:
         return filtered
     else:
-        return [entry("", "", "")]
+        return [entry("")]
 
 
 class ColumnFilterMode(Enum):

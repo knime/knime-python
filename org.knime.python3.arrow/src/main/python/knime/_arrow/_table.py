@@ -416,6 +416,9 @@ class ArrowSourceTable(ArrowTable):
 
 def _convert_arrow_schema_to_knime(schema: pa.Schema) -> ks.Schema:
     # TODO the metadata is always "{}"
+    if len(schema) <= 1:
+        return ks.Schema.from_columns([])
+
     types, names, metadata = zip(
         *[
             (
