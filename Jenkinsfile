@@ -125,7 +125,6 @@ def runPython3MultiversionWorkflowTestConfig(String environmentFile, String base
                         'knime-kerberos',
                         'knime-python',
                         'knime-core-columnar',
-                        'knime-core-arrow',
                         'knime-testing-internal',
                         'knime-xml',
                         'knime-python-legacy',
