@@ -59,16 +59,25 @@ These decorators can be used to easily configure your Python node.
 .. autofunction:: knime.extension.node
    :noindex:
 
+.. autofunction:: knime.extension.input_table
+   :noindex:
+
 .. autofunction:: knime.extension.input_binary
    :noindex:
 
-.. autofunction:: knime.extension.input_table
+.. autofunction:: knime.extension.input_port
+   :noindex:
+
+.. autofunction:: knime.extension.output_table
+   :noindex:
+
+.. autofunction:: knime.extension.output_image
    :noindex:
 
 .. autofunction:: knime.extension.output_binary
    :noindex:
 
-.. autofunction:: knime.extension.output_table
+.. autofunction:: knime.extension.output_port
    :noindex:
 
 .. autofunction:: knime.extension.output_view
