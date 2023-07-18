@@ -1,0 +1,22 @@
+package:
+  name: "knime-extension"
+  version: "5.1.0"
+
+source:
+  path: ..
+
+requirements:
+  build:
+    - python
+  run:
+    - python
+
+build:
+  noarch: python
+  script: python setup.py install
+
+about:
+  home: https://knime.com
+  license: GPL-3.0
+  license_file: LICENSE.TXT
+  summary: API for KNIME Python extension development to facilitate autocompletion
