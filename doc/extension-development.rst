@@ -277,3 +277,40 @@ Views
 .. autoclass:: knime.scripting.io.NodeView
    :members:
    :noindex:
+
+
+Port Objects
+------------
+
+Port Object Specs
+^^^^^^^^^^^^^^^^^
+
+.. autoclass:: knime.extension.PortObjectSpec
+   :members:
+   :noindex:
+   :inherited-members:
+
+.. autoclass:: knime.extension.BinaryPortObjectSpec
+   :members:
+   :noindex:
+   :inherited-members:
+
+.. autoclass:: knime.extension.ImagePortObjectSpec
+   :members:
+   :noindex:
+   :inherited-members:
+
+
+Custom Port Object Types
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. autoclass:: knime.extension.PortObject
+   :members:
+   :noindex:
+   :inherited-members:
+
+.. autoclass:: knime.extension.ConnectionPortObject
+   :members:
+   :noindex:
+   :exclude-members: serialize, deserialize
+   :inherited-members:

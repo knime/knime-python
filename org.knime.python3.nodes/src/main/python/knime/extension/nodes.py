@@ -61,7 +61,7 @@ from knime.api.schema import PortObjectSpec
 class PortObject(ABC):
     """
     Base class for custom port objects. The must have a corresponding
-    PortObjectSpec and support serialization from and to bytes.
+    ``PortObjectSpec`` and support serialization from and to bytes.
     """
 
     def __init__(self, spec: PortObjectSpec) -> None:
@@ -69,7 +69,7 @@ class PortObject(ABC):
 
     @property
     def spec(self) -> PortObjectSpec:
-        """Provides access to the spec of the PortObject"""
+        """Provides access to the spec of the PortObject."""
         return self._spec
 
     @abstractmethod
@@ -80,17 +80,17 @@ class PortObject(ABC):
     @classmethod
     @abstractmethod
     def deserialize(cls, spec: PortObjectSpec, storage: bytes) -> "PortObject":
-        """Creates the PortObject from its spec and storage."""
+        """Creates the port object from its spec and storage."""
         pass
 
 
 class ConnectionPortObject(PortObject):
     """
-    ConnectionPortObjects are a special type of PortObjects which
-    support dealing with non-serializable objects such as DB connections
+    Connection port objects are a special type of port objects which
+    support dealing with non-serializable objects such as database connections
     or web sessions.
 
-    ConnectionPortObjects are passed downstream by ensuring that the same Python
+    Connection port objects are passed downstream by ensuring that the same Python
     process is used to execute subsequent nodes. ConnectionPortObjects must provide the
     data in the ``to_connection_data`` and create new instances from the same data in
     ``from_connection_data``. A reference to the data Python object is maintained and

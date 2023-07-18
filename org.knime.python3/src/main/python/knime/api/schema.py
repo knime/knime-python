@@ -519,9 +519,9 @@ def logical(value_type) -> LogicalType:
 
 class PortObjectSpec(ABC):
     """
-    Base protocol for PortObjectSpecs.
+    Base protocol for port object specs.
 
-    A PortObjectSpec must support conversion from/to a dictionary which is then
+    A ``PortObjectSpec`` must support conversion from/to a dictionary which is then
     encoded as JSON and sent to/from KNIME.
     """
 
@@ -539,7 +539,7 @@ class BinaryPortObjectSpec(PortObjectSpec):
     """
     Port object spec for simple binary port objects.
 
-    BinaryPortObjectSpecs have an ID that is used to ensure
+    ``BinaryPortObjectSpecs`` have an ID that is used to ensure
     that only ports with equal ID can be connected.
     """
 
@@ -569,7 +569,8 @@ class ImagePortObjectSpec(PortObjectSpec):
     """
     Port object spec for image port objects.
 
-    ImagePortObjectSpec objects require the format specified via ImageFormat.PNG or ImageFormat.SVG.
+    ``ImagePortObjectSpec`` objects require the format specified via
+    ``knext.ImageFormat.PNG`` or ``knext.ImageFormat.SVG``.
     """
 
     def __init__(self, format: Union[str, Enum]) -> None:
