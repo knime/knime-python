@@ -57,6 +57,8 @@ import knime.api.schema as ks
 import logging
 import inspect
 import sys
+from dataclasses import dataclass
+from functools import lru_cache
 
 from knime.extension.version import Version
 
@@ -188,28 +190,9 @@ def extract_ui_schema(
     obj, dialog_creation_context, extension_version: str = None
 ) -> dict:
     extension_version = Version.parse_version(extension_version)
-    elements = _extract_ui_schema_elements(
+    return _UISchemaExtractor(
         obj, dialog_creation_context, extension_version
-    )
-
-    return {"type": "VerticalLayout", "elements": elements}
-
-
-def _extract_ui_schema_elements(
-    obj, dialog_creation_context, extension_version: Version, scope=None
-) -> dict:
-    if scope is None:
-        scope = _Scope("#/properties/model/properties")
-    elements = []
-    for name, param_obj in _get_parameters(obj).items():
-        if param_obj._since_version <= extension_version:
-            elements.append(
-                param_obj._extract_ui_schema(
-                    name, scope, dialog_creation_context, extension_version
-                )
-            )
-
-    return elements
+    ).extract_ui_schema()
 
 
 def extract_parameter_descriptions(obj) -> dict:
@@ -364,6 +347,120 @@ def _get_extension_version() -> Version:
     return _extension_version
 
 
+class Predicate(ABC):
+    @abstractmethod
+    def to_dict(self):
+        """Converts the predicate into a dict that is JSON serializable."""
+
+
+class OneOf(Predicate):
+    """
+    A predicate that checks that a value is one of a number of values provided in the constructor.
+    """
+
+    def __init__(self, values: List[Any]) -> None:
+        super().__init__()
+        self._values = values
+
+    def to_dict(self):
+        return {"oneOf": [{"const": value} for value in self._values]}
+
+
+class Effect(Enum):
+    """
+    Encodes the effect a rule may cause.
+    """
+
+    SHOW = "SHOW"
+    HIDE = "HIDE"
+    ENABLE = "ENABLE"
+    DISABLE = "DISABLE"
+
+
+@dataclass
+class Rule:
+    """
+    A rule checks a subject for a condition and enacts a corresponding effect if the condition is met.
+    """
+
+    subject: Any
+    condition: Predicate
+    effect: Effect
+
+
+class _UISchemaExtractor:
+    _root_scope = _Scope("#/properties/model/properties")
+
+    def __init__(self, root, dialog_creation_context, extension_version: str) -> None:
+        self._root = root
+        self._dialog_creation_context = dialog_creation_context
+        self._extension_version = extension_version
+
+    def extract_ui_schema(
+        self,
+    ):
+        return {
+            "type": "VerticalLayout",
+            "elements": self._extract_elements(self._root, self._root_scope),
+        }
+
+    def _extract_elements(self, obj, scope: _Scope):
+        return [
+            self._extract_element_schema(scope, name, param_obj)
+            for name, param_obj in _get_parameters(obj).items()
+            # TODO isn't this always the case? How can we have a parameter from the future?
+            if param_obj._since_version <= self._extension_version
+        ]
+
+    def _extract_element_schema(self, scope, name, param_obj):
+        is_group = _is_group(param_obj)
+        element_scope = scope.create_child(name, is_group)
+        if is_group:
+            element_schema = {
+                "type": "Section" if element_scope.level() == 1 else "Group",
+                **param_obj._extract_ui_schema(),
+                "elements": self._extract_elements(param_obj, element_scope),
+            }
+        else:
+            element_schema = {
+                "scope": str(element_scope),
+                **param_obj._extract_ui_schema(self._dialog_creation_context),
+            }
+        if param_obj._rule:
+            element_schema["rule"] = self._create_rule_ui_schema(param_obj._rule)
+
+        return element_schema
+
+    def _create_rule_ui_schema(self, rule: Rule):
+        return {
+            "effect": rule.effect.value,
+            "condition": {
+                "scope": str(self.find_scope(rule.subject)),
+                "schema": rule.condition.to_dict(),
+            },
+        }
+
+    # it is intended that the cache is not shared across instances to prevent unexpected side-effects
+    @lru_cache
+    def find_scope(self, parameter) -> _Scope:
+        parameter_scope = self._find_scope(self._root, parameter, self._root_scope)
+        if parameter_scope:
+            return parameter_scope
+        raise ValueError(f"Can't find scope for parameter {parameter}")
+
+    def _find_scope(self, obj, parameter, scope: _Scope):
+        for name, param_obj in _get_parameters(obj).items():
+            if parameter == param_obj:
+                return scope.create_child(name)
+            elif _is_group(param_obj):
+                found_scope = self._find_scope(
+                    param_obj, parameter, scope.create_child(name, True)
+                )
+                if found_scope:
+                    return found_scope
+        return None
+
+
 class _BaseParameter(ABC):
     """
     Base class for parameter descriptors.
@@ -380,6 +477,7 @@ class _BaseParameter(ABC):
         validator: Optional[Callable[[Any], None]] = None,
         since_version: str = None,
         is_advanced: bool = False,
+        rule: Optional[Rule] = None,
     ):
         """
         Args:
@@ -395,6 +493,7 @@ class _BaseParameter(ABC):
         self.__doc__ = description if description is not None else ""
         self._since_version = Version.parse_version(since_version)
         self._is_advanced = is_advanced
+        self._rule = rule
 
     def __set_name__(self, owner, name):
         self._name = name
@@ -503,10 +602,7 @@ class _BaseParameter(ABC):
 
     def _extract_ui_schema(
         self,
-        name,
-        parent_scope: _Scope,
         dialog_creation_context,
-        extension_version: Version = None,  # NOSONAR
     ):
         # the extension_version parameter is needed to match the signature of the
         # _extract_ui_schema method for parameter groups
@@ -517,7 +613,6 @@ class _BaseParameter(ABC):
         return {
             "type": "Control",
             "label": self._label,
-            "scope": str(parent_scope.create_child(name)),
             "options": options,
         }
 
@@ -552,13 +647,20 @@ class _NumericParameter(_BaseParameter):
         max_value=None,
         since_version=None,
         is_advanced=False,
+        rule=None,
     ):
         self.min_value = min_value
         self.max_value = max_value
         if validator is None:
             validator = self.default_validator
         super().__init__(
-            label, description, default_value, validator, since_version, is_advanced
+            label,
+            description,
+            default_value,
+            validator,
+            since_version,
+            is_advanced,
+            rule,
         )
 
     def check_range(self, value):
@@ -596,6 +698,7 @@ class IntParameter(_NumericParameter):
         max_value: Optional[int] = None,
         since_version: Optional[Union[Version, str]] = None,
         is_advanced: bool = False,
+        rule: Optional[Rule] = None,
     ):
         super().__init__(
             label,
@@ -606,6 +709,7 @@ class IntParameter(_NumericParameter):
             max_value,
             since_version,
             is_advanced,
+            rule,
         )
 
     def check_type(self, value):
@@ -640,6 +744,7 @@ class DoubleParameter(_NumericParameter):
         max_value: Optional[float] = None,
         since_version: Optional[Union[str, Version]] = None,
         is_advanced: bool = False,
+        rule: Optional[Rule] = None,
     ):
         super().__init__(
             label,
@@ -650,6 +755,7 @@ class DoubleParameter(_NumericParameter):
             max_value,
             since_version,
             is_advanced,
+            rule,
         )
 
     def check_type(self, value):
@@ -683,9 +789,16 @@ class _BaseMultiChoiceParameter(_BaseParameter):
         validator=None,
         since_version=None,
         is_advanced=False,
+        rule=None,
     ):
         super().__init__(
-            label, description, default_value, validator, since_version, is_advanced
+            label,
+            description,
+            default_value,
+            validator,
+            since_version,
+            is_advanced,
+            rule,
         )
 
     def _get_options(self, dialog_creation_context) -> dict:
@@ -719,7 +832,8 @@ class StringParameter(_BaseMultiChoiceParameter):
         validator: Optional[Callable[[str], None]] = None,
         since_version: Optional[Union[Version, str]] = None,
         is_advanced: bool = False,
-        choices: Callable = None,
+        choices: Optional[Callable] = None,
+        rule: Optional[Rule] = None,
     ):
         if validator is None:
             validator = self.default_validator
@@ -730,7 +844,13 @@ class StringParameter(_BaseMultiChoiceParameter):
         self._enum = enum
         self._choices = choices
         super().__init__(
-            label, description, default_value, validator, since_version, is_advanced
+            label,
+            description,
+            default_value,
+            validator,
+            since_version,
+            is_advanced,
+            rule,
         )
 
     def _extract_schema(self, extension_version=None, dialog_creation_context=None):
@@ -861,6 +981,7 @@ class EnumParameter(_BaseMultiChoiceParameter):
         validator: Optional[Callable[[str], None]] = None,
         since_version: Optional[Union[Version, str]] = None,
         is_advanced: bool = False,
+        rule: Optional[Rule] = None,
     ):
         if validator is None:
             validator = self.default_validator
@@ -876,7 +997,13 @@ class EnumParameter(_BaseMultiChoiceParameter):
                 default_value = self._enum.get_all_options()[0].name
 
         super().__init__(
-            label, description, default_value, validator, since_version, is_advanced
+            label,
+            description,
+            default_value,
+            validator,
+            since_version,
+            is_advanced,
+            rule,
         )
 
     def _generate_description(self):
@@ -918,6 +1045,7 @@ class _BaseColumnParameter(_BaseParameter):
         column_filter: Callable[[ks.Column], bool],
         since_version=None,
         is_advanced=False,
+        rule=None,
     ):
         """
         Args:
@@ -933,6 +1061,7 @@ class _BaseColumnParameter(_BaseParameter):
             default_value=None,
             since_version=since_version,
             is_advanced=is_advanced,
+            rule=rule,
         )
         self._port_index = port_index
         if column_filter is None:
@@ -965,6 +1094,7 @@ class ColumnParameter(_BaseColumnParameter):
         include_none_column: bool = False,
         since_version: Optional[str] = None,
         is_advanced: bool = False,
+        rule: Optional[Rule] = None,
     ):
         """
         Args:
@@ -983,6 +1113,7 @@ class ColumnParameter(_BaseColumnParameter):
             column_filter,
             since_version,
             is_advanced,
+            rule,
         )
         self._include_row_key = include_row_key
         self._include_none_column = include_none_column
@@ -1030,6 +1161,7 @@ class MultiColumnParameter(_BaseColumnParameter):
         column_filter: Optional[Callable[[ks.Column], bool]] = None,
         since_version: Optional[Union[str, Version]] = None,
         is_advanced: bool = False,
+        rule: Optional[Rule] = None,
     ):
         super().__init__(
             label,
@@ -1038,6 +1170,7 @@ class MultiColumnParameter(_BaseColumnParameter):
             column_filter,
             since_version,
             is_advanced,
+            rule,
         )
 
     def _extract_schema(
@@ -1466,6 +1599,7 @@ class ColumnFilterParameter(_BaseColumnParameter):
         column_filter: Callable[[ks.Column], bool] = None,
         since_version: Optional[Union[str, Version]] = None,
         is_advanced: bool = False,
+        rule: Optional[Rule] = None,
     ):
         super().__init__(
             label,
@@ -1474,6 +1608,7 @@ class ColumnFilterParameter(_BaseColumnParameter):
             column_filter,
             since_version,
             is_advanced,
+            rule,
         )
 
         self._column_filter_config = ColumnFilterConfig()
@@ -1545,11 +1680,18 @@ class BoolParameter(_BaseParameter):
         validator: Optional[Callable[[bool], None]] = None,
         since_version: Optional[Union[Version, str]] = None,
         is_advanced: bool = False,
+        rule: Optional[Rule] = None,
     ):
         if validator is None:
             validator = self.default_validator
         super().__init__(
-            label, description, default_value, validator, since_version, is_advanced
+            label,
+            description,
+            default_value,
+            validator,
+            since_version,
+            is_advanced,
+            rule,
         )
 
     def _extract_schema(self, extension_version=None, dialog_creation_context=None):
@@ -1691,6 +1833,7 @@ def parameter_group(
                 self._is_advanced = self._parse_kwarg(
                     kwargs, "is_advanced", is_advanced
                 )
+                self._rule = self._parse_kwarg(kwargs, "rule", None)
                 self._validator = self._parse_kwarg(kwargs, "validator", None)
                 self._override_internal_validator = False
                 self._label = label
@@ -1862,30 +2005,14 @@ def parameter_group(
 
             def _extract_ui_schema(
                 self,
-                name,
-                parent_scope: _Scope,
-                dialog_creation_context,
-                version: Version = None,
             ):
-                scope = parent_scope.create_child(name, is_group=True)
-                elements = _extract_ui_schema_elements(
-                    self, dialog_creation_context, version, scope
-                )
-
                 options = {}
                 if self._is_advanced:
                     options["isAdvanced"] = True
 
-                if scope.level() == 1:
-                    group_type = "Section"
-                else:
-                    group_type = "Group"
-
                 return {
-                    "type": group_type,
                     "label": self._label,
                     "options": options,
-                    "elements": elements,
                 }
 
             def _extract_description(self, name, parent_scope: _Scope):
