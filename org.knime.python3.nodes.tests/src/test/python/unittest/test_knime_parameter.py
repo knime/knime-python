@@ -628,6 +628,28 @@ class ParameterizedWithAdvancedOption:
     parameter_group_advanced = ParameterGroupAdvanced()
 
 
+@kp.parameter_group("Group with rules")
+class ParameterGroupWithRules:
+    string_param = kp.StringParameter("String Parameter", "A string parameter", "foo")
+    int_param = kp.IntParameter(
+        "Int Parameter",
+        "Int parameter that is hidden if the string parameter is foo",
+        42,
+        rule=kp.Rule(string_param, kp.OneOf(["foo"]), kp.Effect.HIDE),
+    )
+
+
+class ParameterizedWithRule:
+    string_param = kp.StringParameter("String Parameter", "A string parameter", "foo")
+    int_param = kp.IntParameter(
+        "Int Parameter",
+        "Int parameter that is only shown the string parameter is foo",
+        42,
+        rule=kp.Rule(string_param, kp.OneOf(["foo"]), kp.Effect.SHOW),
+    )
+    group = ParameterGroupWithRules()
+
+
 class ParameterizedWithoutGroup:
     int_param = kp.IntParameter("Int Parameter", "An integer parameter", 3)
     double_param = kp.DoubleParameter("Double Parameter", "A double parameter", 1.5)
@@ -979,6 +1001,7 @@ class ParameterTest(unittest.TestCase):
             ParameterizedWithDialogCreationContext()
         )
         self.parameterized_with_indented_docstring = ParameterizedIndentation()
+        self.parameterized_with_rule = ParameterizedWithRule()
 
         self.maxDiff = None
 
@@ -1604,6 +1627,64 @@ class ParameterTest(unittest.TestCase):
             DummyDialogCreationContext(),
         )
         self.assertEqual(expected, extracted)
+
+    def test_extract_ui_schema_with_rules(self):
+        expected = {
+            "type": "VerticalLayout",
+            "elements": [
+                {
+                    "type": "Control",
+                    "label": "String Parameter",
+                    "scope": "#/properties/model/properties/string_param",
+                    "options": {"format": "string"},
+                },
+                {
+                    "type": "Control",
+                    "label": "Int Parameter",
+                    "scope": "#/properties/model/properties/int_param",
+                    "options": {"format": "integer"},
+                    "rule": {
+                        "effect": "SHOW",
+                        "condition": {
+                            "scope": "#/properties/model/properties/string_param",
+                            "schema": {"oneOf": [{"const": "foo"}]},
+                        },
+                    },
+                },
+                {
+                    "type": "Section",
+                    "label": "Group with rules",
+                    "options": {},
+                    "elements": [
+                        {
+                            "type": "Control",
+                            "label": "String Parameter",
+                            "scope": "#/properties/model/properties/group/properties/string_param",
+                            "options": {"format": "string"},
+                        },
+                        {
+                            "type": "Control",
+                            "label": "Int Parameter",
+                            "scope": "#/properties/model/properties/group/properties/int_param",
+                            "options": {"format": "integer"},
+                            "rule": {
+                                "effect": "HIDE",
+                                "condition": {
+                                    "scope": "#/properties/model/properties/group/properties/string_param",
+                                    "schema": {"oneOf": [{"const": "foo"}]},
+                                },
+                            },
+                        },
+                    ],
+                },
+            ],
+        }
+
+        extracted = kp.extract_ui_schema(
+            self.parameterized_with_rule, DummyDialogCreationContext()
+        )
+        self.assertEqual(expected, extracted)
+        # TODO test composition
 
     def test_default_validators(self):
         """
