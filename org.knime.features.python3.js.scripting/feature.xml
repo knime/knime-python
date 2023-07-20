@@ -2,7 +2,7 @@
 <feature
       id="org.knime.features.python3.js.scripting"
       label="KNIME Python - New scripting editor (Preview)"
-      version="5.1.0.qualifier"
+      version="5.2.0.qualifier"
       provider-name="KNIME AG, Zurich, Switzerland">
 
    <description>
