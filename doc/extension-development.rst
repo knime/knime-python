@@ -300,6 +300,10 @@ Port Object Specs
    :noindex:
    :inherited-members:
 
+.. autoclass:: knime.extension.ImageFormat
+   :members:
+   :noindex:
+   :inherited-members:
 
 Custom Port Object Types
 ^^^^^^^^^^^^^^^^^^^^^^^^

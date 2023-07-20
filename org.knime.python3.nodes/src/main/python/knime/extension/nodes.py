@@ -213,10 +213,13 @@ PortType.TABLE = "PortType.TABLE"
 PortType.IMAGE = "PortType.IMAGE"
 
 
-# allowed image formats when using PortType.IMAGE
 class ImageFormat(Enum):
+    """The image formats available for image ports."""
+
     PNG = "png"
+    """The PNG format."""
     SVG = "svg"
+    """The SVG format."""
 
     @classmethod
     def available_options(cls):
@@ -999,7 +1002,42 @@ def output_view(name: str, description: str, static_resources: Optional[str] = N
 
 def output_image(name: str, description: str):
     """
-    Use this decorator to define an output port of type "Image" of a node.
+    Use this decorator to define an output port of the type "Image" of a node.
+
+    The ``configure`` method must return specs of the type ``ImagePortObjectSpec``. The
+    ``execute`` method must return a ``bytes`` object containing the image data. Note
+    that the image data must be valid for the format defined in ``configure``.
+
+    Args:
+        name: The name of the image output port
+        description: Description of the image output port
+
+    **Example**::
+
+        @knext.node(...)
+        @knext.output_image(name="PNG Output Image", description="An example PNG output image")
+        @knext.output_image(name="SVG Output Image", description="An example SVG output image")
+        class ImageNode:
+
+            def configure(self, config_context):
+                return (
+                    knext.ImagePortObjectSpec(knext.ImageFormat.PNG),
+                    knext.ImagePortObjectSpec(knext.ImageFormat.SVG),
+                )
+
+            def execute(self, exec_context):
+                # create a plot ...
+
+                buffer_png = io.BytesIO()
+                plt.savefig(buffer_png, format="png")
+
+                buffer_svg = io.BytesIO()
+                plt.savefig(buffer_svg, format="svg")
+
+                return (
+                    buffer_png.getvalue(),
+                    buffer_svg.getvalue(),
+                )
     """
     return lambda node_factory: _add_port(
         node_factory,
