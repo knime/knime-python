@@ -593,6 +593,10 @@ class _BaseParameter(ABC):
         """
         self._validator = func
 
+    def rule(self, rule: Rule):
+        self._rule = rule
+        return self
+
     def _extract_schema(
         self,
         extension_version: Version = None,  # NOSONAR
@@ -1843,6 +1847,12 @@ def parameter_group(
                 self.__doc__ = original_class.__doc__
 
                 super().__init__(*args, **kwargs)
+
+            # TODO we could also detect if the decorated class already has an attribute/method called rule
+            # and not overwrite it in that case and log a warning instead
+            def rule(self, rule: Rule):
+                self._rule = rule
+                return self
 
             def _check_keyword_compliance(self):
                 """
