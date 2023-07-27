@@ -19,7 +19,7 @@
          point="org.knime.core.PortType">
       <portType
             hidden="false"
-            name="org.knime.python3.nodes.PythonBinaryBlobFileStorePortObject"
+            name="Python Binary Port Object"
             objectClass="org.knime.python3.nodes.ports.PythonBinaryBlobFileStorePortObject"
             objectSerializer="org.knime.python3.nodes.ports.PythonBinaryBlobFileStorePortObject$Serializer"
             specClass="org.knime.python3.nodes.ports.PythonBinaryBlobPortObjectSpec"
@@ -28,7 +28,7 @@
       <portType
             color="#CC6699"
             hidden="false"
-            name="org.knime.python3.nodes.PythonConnectionPortObject"
+            name="Python Connection Port Object"
             objectClass="org.knime.python3.nodes.ports.PythonTransientConnectionPortObject"
             objectSerializer="org.knime.python3.nodes.ports.PythonTransientConnectionPortObject$Serializer"
             specClass="org.knime.python3.nodes.ports.PythonTransientConnectionPortObjectSpec"
