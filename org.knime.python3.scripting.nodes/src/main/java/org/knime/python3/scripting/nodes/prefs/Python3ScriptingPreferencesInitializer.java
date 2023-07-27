@@ -46,12 +46,6 @@
 package org.knime.python3.scripting.nodes.prefs;
 
 import org.eclipse.core.runtime.preferences.AbstractPreferenceInitializer;
-import org.knime.python2.config.CondaEnvironmentsConfig;
-import org.knime.python2.config.ManualEnvironmentsConfig;
-import org.knime.python2.config.PythonConfigStorage;
-import org.knime.python2.config.PythonEnvironmentType;
-import org.knime.python2.config.PythonEnvironmentTypeConfig;
-import org.knime.python2.prefs.PythonPreferences;
 
 /**
  * Preference initializer for the org.knime.python3.scripting.nodes plugin.
@@ -64,7 +58,7 @@ public final class Python3ScriptingPreferencesInitializer extends AbstractPrefer
     /**
      * We first introduced the Python Script nodes in 4.5 such that they (re)used the Python (legacy) preference page,
      * and are now adding a dedicated preference page in 4.6. Thus we initialize the Python Scripting preference page
-     * with the current settings of the {@link PythonPreferences} because we do not want to alter the settings that were
+     * with the current settings of the legacy Python preferences because we do not want to alter the settings that were
      * already configured in the Python preference page.
      */
     @Override
@@ -90,15 +84,15 @@ public final class Python3ScriptingPreferencesInitializer extends AbstractPrefer
     }
 
     static PythonEnvironmentTypeConfig getDefaultPythonEnvironmentTypeConfig() {
-        return new PythonEnvironmentTypeConfig(PythonPreferences.getEnvironmentTypePreference());
+        return new PythonEnvironmentTypeConfig(LegacyPreferncesUtil.getEnvironmentTypePreference());
     }
 
     static CondaEnvironmentsConfig getDefaultCondaEnvironmentsConfig() {
-        return (CondaEnvironmentsConfig)PythonPreferences.getPythonEnvironmentsConfig(PythonEnvironmentType.CONDA);
+        return (CondaEnvironmentsConfig)LegacyPreferncesUtil.getPythonEnvironmentsConfig(PythonEnvironmentType.CONDA);
     }
 
     static ManualEnvironmentsConfig getDefaultManualEnvironmentsConfig() {
-        return (ManualEnvironmentsConfig)PythonPreferences.getPythonEnvironmentsConfig(PythonEnvironmentType.MANUAL);
+        return (ManualEnvironmentsConfig)LegacyPreferncesUtil.getPythonEnvironmentsConfig(PythonEnvironmentType.MANUAL);
     }
 
     private static boolean isPlaceholderCondaEnvSelected() {

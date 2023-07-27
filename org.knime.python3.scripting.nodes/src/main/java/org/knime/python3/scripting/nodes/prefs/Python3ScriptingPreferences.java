@@ -54,15 +54,6 @@ import org.knime.conda.CondaEnvironmentIdentifier;
 import org.knime.conda.prefs.CondaPreferences;
 import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonVersion;
-import org.knime.python2.config.CondaEnvironmentsConfig;
-import org.knime.python2.config.PythonConfigStorage;
-import org.knime.python2.config.PythonEnvironmentConfig;
-import org.knime.python2.config.PythonEnvironmentType;
-import org.knime.python2.config.PythonEnvironmentTypeConfig;
-import org.knime.python2.config.PythonEnvironmentsConfig;
-import org.knime.python2.prefs.PreferenceStorage;
-import org.knime.python2.prefs.PreferenceWrappingConfigStorage;
-import org.knime.python2.prefs.PythonPreferences;
 
 /**
  * Convenience front-end of the preference-based configuration of the Python integration.
@@ -117,7 +108,7 @@ public final class Python3ScriptingPreferences {
      * @return The currently selected Python environment type (Bundled vs. Conda vs. Manual).
      */
     public static PythonEnvironmentType getEnvironmentTypePreference() {
-        PythonEnvironmentType pythonPreferenceSetting = PythonPreferences.getEnvironmentTypePreference();
+        PythonEnvironmentType pythonPreferenceSetting = LegacyPreferncesUtil.getEnvironmentTypePreference();
         final var environmentTypeConfig = new PythonEnvironmentTypeConfig(pythonPreferenceSetting);
         environmentTypeConfig.loadConfigFrom(CURRENT);
         return PythonEnvironmentType.fromId(environmentTypeConfig.getEnvironmentType().getStringValue());
@@ -143,7 +134,7 @@ public final class Python3ScriptingPreferences {
         if (envType == PythonEnvironmentType.BUNDLED) {
             environmentsConfig = getBundledCondaEnvironmentConfig();
         } else {
-            environmentsConfig = PythonPreferences.getPythonEnvironmentsConfig(envType);
+            environmentsConfig = LegacyPreferncesUtil.getPythonEnvironmentsConfig(envType);
             environmentsConfig.loadConfigFrom(CURRENT);
         }
 

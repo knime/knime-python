@@ -55,10 +55,6 @@ import org.knime.core.node.NodeLogger;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
 import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonVersion;
-import org.knime.python2.config.AbstractPythonEnvironmentConfig;
-import org.knime.python2.config.PythonConfigStorage;
-import org.knime.python2.config.PythonEnvironmentConfig;
-import org.knime.python2.config.PythonEnvironmentsConfig;
 import org.knime.python3.BundledPythonCommand;
 
 /**
@@ -99,11 +95,6 @@ public final class BundledCondaEnvironmentConfig extends AbstractPythonEnvironme
     @Override
     public void loadConfigFrom(final PythonConfigStorage storage) {
         storage.loadStringModel(m_bundledCondaEnvironment);
-    }
-
-    @Override
-    public PythonEnvironmentConfig getPython2Config() {
-        throw new IllegalStateException("There is no bundled Python 2 environment");
     }
 
     @Override

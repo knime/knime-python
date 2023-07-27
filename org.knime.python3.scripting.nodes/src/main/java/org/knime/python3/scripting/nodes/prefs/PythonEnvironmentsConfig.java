@@ -44,53 +44,21 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   2 Apr 2022 (Carsten Haubold): created
+ *   Feb 21, 2019 (marcel): created
  */
 package org.knime.python3.scripting.nodes.prefs;
 
-import org.eclipse.swt.SWT;
-import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Label;
-
 /**
- * The {@link BundledCondaEnvironmentPreferencesPanel} displays information about the bundled conda environment.
+ * Copied and modified from org.knime.python2.config.
  *
- * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
+ * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
-public final class BundledCondaEnvironmentPreferencesPanel
-    extends AbstractPythonConfigPanel<BundledCondaEnvironmentConfig, Composite> {
+interface PythonEnvironmentsConfig extends PythonConfig {
 
     /**
-     * Create a panel that displays information about the bundled conda environment.
-     *
-     * @param config The {@link BundledCondaEnvironmentConfig}
-     * @param parent The parent {@link Composite} in which the panel will add its UI elements
+     * @return The config for the Python 2 environment.
      */
-    public BundledCondaEnvironmentPreferencesPanel(final BundledCondaEnvironmentConfig config, final Composite parent) {
-        super(config, parent);
-    }
-
-    @Override
-    protected Composite createPanel(final Composite parent) {
-        final Composite panel = new Composite(parent, SWT.NONE);
-        panel.setLayout(new GridLayout());
-
-        final String bundledEnvDescription =
-            "KNIME Analytics Platform provides its own Python environment that can be used\n"
-                + "by the Python Script nodes. If you select this option, then all Python Script nodes\n"
-                + "that are configured to use the settings from the preference page will make use of this bundled Python environment.\n"
-                + "\n\n"
-                + "This bundled Python environment can not be extended, if you need additional packages for your scripts,\n"
-                + "use the \"Conda\" option above to change the environment for all Python Script nodes or\n"
-                + "use the Conda Environment Propagation Node to set a conda environment for selected nodes\n";
-
-        final Label environmentSelectionLabel = new Label(panel, SWT.NONE);
-        final var gridData = new GridData();
-        environmentSelectionLabel.setLayoutData(gridData);
-        environmentSelectionLabel.setText(bundledEnvDescription);
-
-        return panel;
-    }
+    PythonEnvironmentConfig getPython3Config();
 }

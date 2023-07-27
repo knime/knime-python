@@ -70,17 +70,7 @@ import org.knime.conda.prefs.CondaPreferences;
 import org.knime.core.node.NodeLogger;
 import org.knime.python2.PythonKernelTester.PythonKernelTestResult;
 import org.knime.python2.PythonVersion;
-import org.knime.python2.config.AbstractPythonConfigsObserver.PythonConfigsInstallationTestStatusChangeListener;
-import org.knime.python2.config.CondaEnvironmentCreationObserver;
-import org.knime.python2.config.CondaEnvironmentsConfig;
-import org.knime.python2.config.ManualEnvironmentsConfig;
-import org.knime.python2.config.PythonConfig;
-import org.knime.python2.config.PythonConfigsObserver;
-import org.knime.python2.config.PythonEnvironmentType;
-import org.knime.python2.config.PythonEnvironmentTypeConfig;
-import org.knime.python2.prefs.AbstractPythonPreferencePage;
-import org.knime.python2.prefs.CondaEnvironmentsPreferencePanel;
-import org.knime.python2.prefs.ManualEnvironmentsPreferencePanel;
+import org.knime.python3.scripting.nodes.prefs.AbstractPythonConfigsObserver.PythonConfigsInstallationTestStatusChangeListener;
 
 /**
  * Preference page for configurations related to the org.knime.python3.scripting.nodes plug-in.
@@ -98,8 +88,6 @@ public final class Python3ScriptingPreferencePage extends AbstractPythonPreferen
 
     private CondaEnvironmentsConfig m_condaEnvironmentsConfig;
 
-    private CondaEnvironmentCreationObserver m_python3EnvironmentCreator;
-
     private CondaEnvironmentsPreferencePanel m_condaEnvironmentPanel;
 
     private ManualEnvironmentsConfig m_manualEnvironmentsConfig;
@@ -110,7 +98,7 @@ public final class Python3ScriptingPreferencePage extends AbstractPythonPreferen
 
     private BundledCondaEnvironmentPreferencesPanel m_bundledCondaEnvironmentPanel;
 
-    private PythonConfigsObserver m_configObserver;
+    private Python3ScriptingConfigsObserver m_configObserver;
 
     private final IPropertyChangeListener m_condaDirPropertyChangeListener = event -> {
         if ("condaDirectoryPath".equals(event.getProperty()) && m_configObserver != null) {
@@ -159,15 +147,14 @@ public final class Python3ScriptingPreferencePage extends AbstractPythonPreferen
         // Conda environment:
         m_condaEnvironmentsConfig = Python3ScriptingPreferencesInitializer.getDefaultCondaEnvironmentsConfig();
         configs.add(m_condaEnvironmentsConfig);
-        m_python3EnvironmentCreator = new CondaEnvironmentCreationObserver(PythonVersion.PYTHON3);
-        m_condaEnvironmentPanel = new CondaEnvironmentsPreferencePanel(m_condaEnvironmentsConfig, null,
-            m_python3EnvironmentCreator, environmentConfigurationPanel);
+        m_condaEnvironmentPanel =
+            new CondaEnvironmentsPreferencePanel(m_condaEnvironmentsConfig, environmentConfigurationPanel);
 
         // Manual environment:
         m_manualEnvironmentsConfig = Python3ScriptingPreferencesInitializer.getDefaultManualEnvironmentsConfig();
         configs.add(m_manualEnvironmentsConfig);
         m_manualEnvironmentPanel =
-            new ManualEnvironmentsPreferencePanel(m_manualEnvironmentsConfig, environmentConfigurationPanel, false);
+            new ManualEnvironmentsPreferencePanel(m_manualEnvironmentsConfig, environmentConfigurationPanel);
 
         // Bundled Conda environment:
         configs.add(m_bundledCondaEnvironmentConfig);
@@ -264,7 +251,7 @@ public final class Python3ScriptingPreferencePage extends AbstractPythonPreferen
             e -> displayPanelForEnvironmentType(m_environmentTypeConfig.getEnvironmentType().getStringValue()));
 
         m_configObserver = new Python3ScriptingConfigsObserver(m_environmentTypeConfig, m_condaEnvironmentsConfig,
-            m_python3EnvironmentCreator, m_manualEnvironmentsConfig, m_bundledCondaEnvironmentConfig);
+            m_manualEnvironmentsConfig, m_bundledCondaEnvironmentConfig);
 
         // Displaying installation test results may require resizing the scroll view.
         m_configObserver.addConfigsTestStatusListener(new PythonConfigsInstallationTestStatusChangeListener() {

@@ -44,53 +44,31 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   2 Apr 2022 (Carsten Haubold): created
+ *   Feb 24, 2019 (marcel): created
  */
 package org.knime.python3.scripting.nodes.prefs;
 
-import org.eclipse.swt.SWT;
-import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Label;
+import org.knime.core.node.defaultnodesettings.SettingsModelBoolean;
+import org.knime.core.node.defaultnodesettings.SettingsModelInteger;
+import org.knime.core.node.defaultnodesettings.SettingsModelString;
 
 /**
- * The {@link BundledCondaEnvironmentPreferencesPanel} displays information about the bundled conda environment.
+ * Copied from org.knime.python2.config.
  *
- * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-public final class BundledCondaEnvironmentPreferencesPanel
-    extends AbstractPythonConfigPanel<BundledCondaEnvironmentConfig, Composite> {
+interface PythonConfigStorage {
 
-    /**
-     * Create a panel that displays information about the bundled conda environment.
-     *
-     * @param config The {@link BundledCondaEnvironmentConfig}
-     * @param parent The parent {@link Composite} in which the panel will add its UI elements
-     */
-    public BundledCondaEnvironmentPreferencesPanel(final BundledCondaEnvironmentConfig config, final Composite parent) {
-        super(config, parent);
-    }
+    void saveBooleanModel(SettingsModelBoolean model);
 
-    @Override
-    protected Composite createPanel(final Composite parent) {
-        final Composite panel = new Composite(parent, SWT.NONE);
-        panel.setLayout(new GridLayout());
+    void saveIntegerModel(SettingsModelInteger model);
 
-        final String bundledEnvDescription =
-            "KNIME Analytics Platform provides its own Python environment that can be used\n"
-                + "by the Python Script nodes. If you select this option, then all Python Script nodes\n"
-                + "that are configured to use the settings from the preference page will make use of this bundled Python environment.\n"
-                + "\n\n"
-                + "This bundled Python environment can not be extended, if you need additional packages for your scripts,\n"
-                + "use the \"Conda\" option above to change the environment for all Python Script nodes or\n"
-                + "use the Conda Environment Propagation Node to set a conda environment for selected nodes\n";
+    void saveStringModel(SettingsModelString model);
 
-        final Label environmentSelectionLabel = new Label(panel, SWT.NONE);
-        final var gridData = new GridData();
-        environmentSelectionLabel.setLayoutData(gridData);
-        environmentSelectionLabel.setText(bundledEnvDescription);
+    void loadBooleanModel(SettingsModelBoolean model);
 
-        return panel;
-    }
+    void loadIntegerModel(SettingsModelInteger model);
+
+    void loadStringModel(SettingsModelString model);
 }

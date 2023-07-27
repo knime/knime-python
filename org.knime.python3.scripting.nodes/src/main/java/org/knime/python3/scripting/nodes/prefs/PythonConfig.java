@@ -44,53 +44,44 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   2 Apr 2022 (Carsten Haubold): created
+ *   Feb 24, 2019 (marcel): created
  */
 package org.knime.python3.scripting.nodes.prefs;
 
-import org.eclipse.swt.SWT;
-import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Label;
-
 /**
- * The {@link BundledCondaEnvironmentPreferencesPanel} displays information about the bundled conda environment.
+ * Copied from org.knime.python2.config.
  *
- * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-public final class BundledCondaEnvironmentPreferencesPanel
-    extends AbstractPythonConfigPanel<BundledCondaEnvironmentConfig, Composite> {
+interface PythonConfig {
 
     /**
-     * Create a panel that displays information about the bundled conda environment.
+     * Saves the default values of this config to the given storage (optional operation).
+     * <P>
+     * Note that a config is not to required save its default values at all, in the context of this method, as long as
+     * it is capable of falling back to its default in case the argument storage in
+     * #loadConfigFrom(PythonConfigStorage) does not contain its corresponding entries.
+     * <P>
+     * This method may only be called once and before the first call to #loadConfigFrom(PythonConfigStorage).
      *
-     * @param config The {@link BundledCondaEnvironmentConfig}
-     * @param parent The parent {@link Composite} in which the panel will add its UI elements
+     * @param storage The storage to which to safe the default values of this config.
      */
-    public BundledCondaEnvironmentPreferencesPanel(final BundledCondaEnvironmentConfig config, final Composite parent) {
-        super(config, parent);
+    default void saveDefaultsTo(final PythonConfigStorage storage) {
+        saveConfigTo(storage);
     }
 
-    @Override
-    protected Composite createPanel(final Composite parent) {
-        final Composite panel = new Composite(parent, SWT.NONE);
-        panel.setLayout(new GridLayout());
+    /**
+     * Saves this config to the given storage.
+     *
+     * @param storage The storage to which to safe this config.
+     */
+    void saveConfigTo(PythonConfigStorage storage);
 
-        final String bundledEnvDescription =
-            "KNIME Analytics Platform provides its own Python environment that can be used\n"
-                + "by the Python Script nodes. If you select this option, then all Python Script nodes\n"
-                + "that are configured to use the settings from the preference page will make use of this bundled Python environment.\n"
-                + "\n\n"
-                + "This bundled Python environment can not be extended, if you need additional packages for your scripts,\n"
-                + "use the \"Conda\" option above to change the environment for all Python Script nodes or\n"
-                + "use the Conda Environment Propagation Node to set a conda environment for selected nodes\n";
-
-        final Label environmentSelectionLabel = new Label(panel, SWT.NONE);
-        final var gridData = new GridData();
-        environmentSelectionLabel.setLayoutData(gridData);
-        environmentSelectionLabel.setText(bundledEnvDescription);
-
-        return panel;
-    }
+    /**
+     * Loads this config from the given storage.
+     *
+     * @param storage The storage from which to load this config.
+     */
+    void loadConfigFrom(PythonConfigStorage storage);
 }

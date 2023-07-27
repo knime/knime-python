@@ -44,53 +44,73 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   2 Apr 2022 (Carsten Haubold): created
+ *   Jun 25, 2020 (marcel): created
  */
 package org.knime.python3.scripting.nodes.prefs;
 
-import org.eclipse.swt.SWT;
-import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Label;
+import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * The {@link BundledCondaEnvironmentPreferencesPanel} displays information about the bundled conda environment.
+ * Copied from org.knime.python2.config.
  *
- * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
+ * Wraps a value and notifies observers if the value has been changed.
+ *
+ * @param <T> The type of the observable value.
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
-public final class BundledCondaEnvironmentPreferencesPanel
-    extends AbstractPythonConfigPanel<BundledCondaEnvironmentConfig, Composite> {
+final class ObservableValue<T> {
 
-    /**
-     * Create a panel that displays information about the bundled conda environment.
-     *
-     * @param config The {@link BundledCondaEnvironmentConfig}
-     * @param parent The parent {@link Composite} in which the panel will add its UI elements
-     */
-    public BundledCondaEnvironmentPreferencesPanel(final BundledCondaEnvironmentConfig config, final Composite parent) {
-        super(config, parent);
+    private final CopyOnWriteArrayList<ValueObserver<T>> m_listeners = new CopyOnWriteArrayList<>();
+
+    private T m_value;
+
+    public ObservableValue() {}
+
+    public ObservableValue(final T value) {
+        m_value = value;
     }
 
-    @Override
-    protected Composite createPanel(final Composite parent) {
-        final Composite panel = new Composite(parent, SWT.NONE);
-        panel.setLayout(new GridLayout());
+    /**
+     * @return The wrapped value.
+     */
+    public T getValue() {
+        return m_value;
+    }
 
-        final String bundledEnvDescription =
-            "KNIME Analytics Platform provides its own Python environment that can be used\n"
-                + "by the Python Script nodes. If you select this option, then all Python Script nodes\n"
-                + "that are configured to use the settings from the preference page will make use of this bundled Python environment.\n"
-                + "\n\n"
-                + "This bundled Python environment can not be extended, if you need additional packages for your scripts,\n"
-                + "use the \"Conda\" option above to change the environment for all Python Script nodes or\n"
-                + "use the Conda Environment Propagation Node to set a conda environment for selected nodes\n";
+    /**
+     * Sets the given value as the wrapped value. If both values differ, then the registered observers are notified
+     * about the changed value.
+     *
+     * @param value The value to set.
+     */
+    public void setValue(final T value) {
+        if (!Objects.equals(m_value, value)) {
+            final T oldValue = m_value;
+            m_value = value;
+            notifyObservers(value, oldValue);
+        }
+    }
 
-        final Label environmentSelectionLabel = new Label(panel, SWT.NONE);
-        final var gridData = new GridData();
-        environmentSelectionLabel.setLayoutData(gridData);
-        environmentSelectionLabel.setText(bundledEnvDescription);
+    private void notifyObservers(final T newValue, final T oldValue) {
+        for (ValueObserver<T> l : m_listeners) {
+            l.valueChanged(newValue, oldValue);
+        }
+    }
 
-        return panel;
+    public void addObserver(final ValueObserver<T> observer) {
+        if (!m_listeners.contains(observer)) {
+            m_listeners.add(observer);
+        }
+    }
+
+    public boolean removeObserver(final ValueObserver<T> observer) {
+        return m_listeners.remove(observer);
+    }
+
+    @FunctionalInterface
+    public static interface ValueObserver<T> {
+
+        void valueChanged(T newValue, T oldValue);
     }
 }

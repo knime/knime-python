@@ -44,53 +44,60 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   2 Apr 2022 (Carsten Haubold): created
+ *   Feb 11, 2019 (marcel): created
  */
 package org.knime.python3.scripting.nodes.prefs;
 
-import org.eclipse.swt.SWT;
-import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Label;
+import org.knime.core.node.defaultnodesettings.SettingsModelString;
 
 /**
- * The {@link BundledCondaEnvironmentPreferencesPanel} displays information about the bundled conda environment.
+ * Copied from org.knime.python2.config.
  *
- * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-public final class BundledCondaEnvironmentPreferencesPanel
-    extends AbstractPythonConfigPanel<BundledCondaEnvironmentConfig, Composite> {
+final class PythonEnvironmentTypeConfig implements PythonConfig {
 
     /**
-     * Create a panel that displays information about the bundled conda environment.
-     *
-     * @param config The {@link BundledCondaEnvironmentConfig}
-     * @param parent The parent {@link Composite} in which the panel will add its UI elements
+     * Configuration key for the selection of conda v. manual environment selection.
      */
-    public BundledCondaEnvironmentPreferencesPanel(final BundledCondaEnvironmentConfig config, final Composite parent) {
-        super(config, parent);
+    public static final String CFG_KEY_ENVIRONMENT_TYPE = "pythonEnvironmentType";
+
+    /***
+     * The default selection.
+     */
+    public static final String DEFAULT_ENVIRONMENT_TYPE = PythonEnvironmentType.CONDA.getId();
+
+    /** Default constructor */
+    public PythonEnvironmentTypeConfig() {
+    }
+
+    /**
+     * Construct an environment type config with an initial value
+     *
+     * @param envType The initial env type to set
+     */
+    public PythonEnvironmentTypeConfig(final PythonEnvironmentType envType) {
+        m_environmentType.setStringValue(envType.getId());
+    }
+
+    private final SettingsModelString m_environmentType =
+        new SettingsModelString(CFG_KEY_ENVIRONMENT_TYPE, DEFAULT_ENVIRONMENT_TYPE);
+
+    /**
+     * @return The {@link PythonEnvironmentType#getId() id} of the configured Python environment type.
+     */
+    public SettingsModelString getEnvironmentType() {
+        return m_environmentType;
     }
 
     @Override
-    protected Composite createPanel(final Composite parent) {
-        final Composite panel = new Composite(parent, SWT.NONE);
-        panel.setLayout(new GridLayout());
+    public void saveConfigTo(final PythonConfigStorage storage) {
+        storage.saveStringModel(m_environmentType);
+    }
 
-        final String bundledEnvDescription =
-            "KNIME Analytics Platform provides its own Python environment that can be used\n"
-                + "by the Python Script nodes. If you select this option, then all Python Script nodes\n"
-                + "that are configured to use the settings from the preference page will make use of this bundled Python environment.\n"
-                + "\n\n"
-                + "This bundled Python environment can not be extended, if you need additional packages for your scripts,\n"
-                + "use the \"Conda\" option above to change the environment for all Python Script nodes or\n"
-                + "use the Conda Environment Propagation Node to set a conda environment for selected nodes\n";
-
-        final Label environmentSelectionLabel = new Label(panel, SWT.NONE);
-        final var gridData = new GridData();
-        environmentSelectionLabel.setLayoutData(gridData);
-        environmentSelectionLabel.setText(bundledEnvDescription);
-
-        return panel;
+    @Override
+    public void loadConfigFrom(final PythonConfigStorage storage) {
+        storage.loadStringModel(m_environmentType);
     }
 }

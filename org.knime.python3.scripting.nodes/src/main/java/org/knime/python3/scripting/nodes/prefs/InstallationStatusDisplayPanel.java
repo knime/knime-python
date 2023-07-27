@@ -44,53 +44,67 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   2 Apr 2022 (Carsten Haubold): created
+ *   Feb 14, 2019 (marcel): created
  */
 package org.knime.python3.scripting.nodes.prefs;
 
+import static org.knime.python3.scripting.nodes.prefs.PythonPreferenceUtils.performActionOnWidgetInUiThread;
+import static org.knime.python3.scripting.nodes.prefs.PythonPreferenceUtils.setLabelTextAndResize;
+
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
+import org.knime.core.node.defaultnodesettings.SettingsModelString;
 
 /**
- * The {@link BundledCondaEnvironmentPreferencesPanel} displays information about the bundled conda environment.
+ * Copied from org.knime.python2.prefs.
  *
- * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-public final class BundledCondaEnvironmentPreferencesPanel
-    extends AbstractPythonConfigPanel<BundledCondaEnvironmentConfig, Composite> {
+final class InstallationStatusDisplayPanel extends Composite {
 
     /**
-     * Create a panel that displays information about the bundled conda environment.
-     *
-     * @param config The {@link BundledCondaEnvironmentConfig}
-     * @param parent The parent {@link Composite} in which the panel will add its UI elements
+     * @param infoMessageModel May be updated asynchronously, that is, in a non-UI thread. May contain or be set to a
+     *            {@code null} {@link SettingsModelString#getStringValue() value}.
+     * @param errorMessageModel May be updated asynchronously, that is, in a non-UI thread. May contain or be set to a
+     *            {@code null} {@link SettingsModelString#getStringValue() value}.
+     * @param parent The parent control.
      */
-    public BundledCondaEnvironmentPreferencesPanel(final BundledCondaEnvironmentConfig config, final Composite parent) {
-        super(config, parent);
+    public InstallationStatusDisplayPanel(final SettingsModelString infoMessageModel,
+        final SettingsModelString errorMessageModel, final Composite parent) {
+        super(parent, SWT.NONE);
+        final var gridLayout = new GridLayout();
+        gridLayout.marginWidth = 0;
+        gridLayout.marginHeight = 0;
+        gridLayout.verticalSpacing = 0;
+        setLayout(gridLayout);
+
+        // Info label:
+        final var info = new Label(this, SWT.NONE);
+        setLabelText(info, infoMessageModel.getStringValue());
+        info.setLayoutData(new GridData(GridData.FILL, GridData.CENTER, true, false));
+
+        // Error label:
+        final var error = new Label(this, SWT.NONE);
+        final var red = new Color(parent.getDisplay(), 255, 0, 0);
+        error.setForeground(red);
+        error.addDisposeListener(e -> red.dispose());
+        setLabelText(error, errorMessageModel.getStringValue());
+        error.setLayoutData(new GridData(GridData.FILL, GridData.CENTER, true, false));
+
+        // Hooks:
+        infoMessageModel.addChangeListener(e -> setLabelText(info, infoMessageModel.getStringValue()));
+        errorMessageModel.addChangeListener(e -> setLabelText(error, errorMessageModel.getStringValue()));
     }
 
-    @Override
-    protected Composite createPanel(final Composite parent) {
-        final Composite panel = new Composite(parent, SWT.NONE);
-        panel.setLayout(new GridLayout());
-
-        final String bundledEnvDescription =
-            "KNIME Analytics Platform provides its own Python environment that can be used\n"
-                + "by the Python Script nodes. If you select this option, then all Python Script nodes\n"
-                + "that are configured to use the settings from the preference page will make use of this bundled Python environment.\n"
-                + "\n\n"
-                + "This bundled Python environment can not be extended, if you need additional packages for your scripts,\n"
-                + "use the \"Conda\" option above to change the environment for all Python Script nodes or\n"
-                + "use the Conda Environment Propagation Node to set a conda environment for selected nodes\n";
-
-        final Label environmentSelectionLabel = new Label(panel, SWT.NONE);
-        final var gridData = new GridData();
-        environmentSelectionLabel.setLayoutData(gridData);
-        environmentSelectionLabel.setText(bundledEnvDescription);
-
-        return panel;
+    private static void setLabelText(final Label label, final String text) {
+        performActionOnWidgetInUiThread(label, () -> {
+            setLabelTextAndResize(label, text);
+            return null;
+        }, false);
     }
 }

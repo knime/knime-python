@@ -44,53 +44,63 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   2 Apr 2022 (Carsten Haubold): created
+ *   Mar 9, 2022 (benjamin): created
  */
 package org.knime.python3.scripting.nodes.prefs;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.SelectionAdapter;
+import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Link;
+import org.eclipse.ui.dialogs.PreferencesUtil;
+import org.knime.core.node.defaultnodesettings.SettingsModelString;
 
 /**
- * The {@link BundledCondaEnvironmentPreferencesPanel} displays information about the bundled conda environment.
+ * Copied from org.knime.python2.prefs.
  *
- * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
+ * A panel that shows the a label directing to the Conda preference page and the status of the Conda installation.
+ *
+ * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
  */
-public final class BundledCondaEnvironmentPreferencesPanel
-    extends AbstractPythonConfigPanel<BundledCondaEnvironmentConfig, Composite> {
+final class CondaDirectoryPathStatusPanel extends Composite {
 
     /**
-     * Create a panel that displays information about the bundled conda environment.
-     *
-     * @param config The {@link BundledCondaEnvironmentConfig}
-     * @param parent The parent {@link Composite} in which the panel will add its UI elements
+     * @param infoMessageModel the model storing an information message about the Conda installation
+     * @param errorMessageModel the model storing an error message about the Conda installation
+     * @param parent the parent widget
      */
-    public BundledCondaEnvironmentPreferencesPanel(final BundledCondaEnvironmentConfig config, final Composite parent) {
-        super(config, parent);
-    }
+    public CondaDirectoryPathStatusPanel(final SettingsModelString infoMessageModel,
+        final SettingsModelString errorMessageModel, final Composite parent) {
+        super(parent, SWT.NONE);
+        final var gridLayout = new GridLayout();
+        gridLayout.marginWidth = 0;
+        gridLayout.marginHeight = 0;
+        gridLayout.verticalSpacing = 0;
+        setLayout(gridLayout);
 
-    @Override
-    protected Composite createPanel(final Composite parent) {
-        final Composite panel = new Composite(parent, SWT.NONE);
-        panel.setLayout(new GridLayout());
+        // Link to Conda preference page
+        final Link condaPrefLink = new Link(parent, SWT.NONE);
+        condaPrefLink.setLayoutData(new GridData());
+        final String message =
+            "Please use the <a href=\"org.knime.conda.CondaPreferencePage\">Conda preference page</a>"
+                + " to configure the path to the Conda installation directory.";
+        condaPrefLink.setText(message);
+        condaPrefLink.addSelectionListener(new SelectionAdapter() {
 
-        final String bundledEnvDescription =
-            "KNIME Analytics Platform provides its own Python environment that can be used\n"
-                + "by the Python Script nodes. If you select this option, then all Python Script nodes\n"
-                + "that are configured to use the settings from the preference page will make use of this bundled Python environment.\n"
-                + "\n\n"
-                + "This bundled Python environment can not be extended, if you need additional packages for your scripts,\n"
-                + "use the \"Conda\" option above to change the environment for all Python Script nodes or\n"
-                + "use the Conda Environment Propagation Node to set a conda environment for selected nodes\n";
+            @Override
+            public void widgetSelected(final SelectionEvent e) {
+                PreferencesUtil.createPreferenceDialogOn(getShell(), e.text, null, null);
+            }
+        });
 
-        final Label environmentSelectionLabel = new Label(panel, SWT.NONE);
+        // Status
+        final var statusPanel = new InstallationStatusDisplayPanel(infoMessageModel, errorMessageModel, parent);
         final var gridData = new GridData();
-        environmentSelectionLabel.setLayoutData(gridData);
-        environmentSelectionLabel.setText(bundledEnvDescription);
-
-        return panel;
+        gridData.grabExcessHorizontalSpace = true;
+        gridData.horizontalAlignment = SWT.FILL;
+        statusPanel.setLayoutData(gridData);
     }
 }

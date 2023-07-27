@@ -44,53 +44,74 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   2 Apr 2022 (Carsten Haubold): created
+ *   Feb 26, 2019 (marcel): created
  */
 package org.knime.python3.scripting.nodes.prefs;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.SWTException;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Widget;
 
 /**
- * The {@link BundledCondaEnvironmentPreferencesPanel} displays information about the bundled conda environment.
+ * Copied from org.knime.python2.prefs.
  *
- * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-public final class BundledCondaEnvironmentPreferencesPanel
-    extends AbstractPythonConfigPanel<BundledCondaEnvironmentConfig, Composite> {
+final class PythonPreferenceUtils {
 
-    /**
-     * Create a panel that displays information about the bundled conda environment.
-     *
-     * @param config The {@link BundledCondaEnvironmentConfig}
-     * @param parent The parent {@link Composite} in which the panel will add its UI elements
-     */
-    public BundledCondaEnvironmentPreferencesPanel(final BundledCondaEnvironmentConfig config, final Composite parent) {
-        super(config, parent);
+    private PythonPreferenceUtils() {
     }
 
-    @Override
-    protected Composite createPanel(final Composite parent) {
-        final Composite panel = new Composite(parent, SWT.NONE);
-        panel.setLayout(new GridLayout());
+    /**
+     * @throws RuntimeException If any exception occurs while executing {@link action}. {@link SWTException SWT
+     *             exceptions} caused by disposed SWT components may be suppressed.
+     */
+    static <T> T performActionOnWidgetInUiThread(final Widget widget, final Callable<T> action,
+        final boolean performAsync) {
+        final AtomicReference<T> returnValue = new AtomicReference<>();
+        final AtomicReference<RuntimeException> exception = new AtomicReference<>();
+        try {
+            final Consumer<Runnable> executionMethod = performAsync //
+                ? widget.getDisplay()::asyncExec //
+                : widget.getDisplay()::syncExec;
+            executionMethod.accept(() -> {
+                if (!widget.isDisposed()) {
+                    try {
+                        final var result = action.call();
+                        returnValue.set(result);
+                    } catch (final Exception ex) {
+                        exception.set(new RuntimeException(ex));
+                    }
+                }
+            });
+        } catch (final SWTException ex) { // NOSONAR
+            // Display or control have been disposed - ignore.
+        }
+        if (exception.get() != null) {
+            throw exception.get();
+        }
+        return returnValue.get();
+    }
 
-        final String bundledEnvDescription =
-            "KNIME Analytics Platform provides its own Python environment that can be used\n"
-                + "by the Python Script nodes. If you select this option, then all Python Script nodes\n"
-                + "that are configured to use the settings from the preference page will make use of this bundled Python environment.\n"
-                + "\n\n"
-                + "This bundled Python environment can not be extended, if you need additional packages for your scripts,\n"
-                + "use the \"Conda\" option above to change the environment for all Python Script nodes or\n"
-                + "use the Conda Environment Propagation Node to set a conda environment for selected nodes\n";
-
-        final Label environmentSelectionLabel = new Label(panel, SWT.NONE);
-        final var gridData = new GridData();
-        environmentSelectionLabel.setLayoutData(gridData);
-        environmentSelectionLabel.setText(bundledEnvDescription);
-
-        return panel;
+    /**
+     * @throws SWTException The usual SWT exceptions (access to disposed widget, access from another thread).
+     */
+    static void setLabelTextAndResize(final Label label, final String text) {
+        final String finalText = text != null ? text : "";
+        final Point oldSize = label.getShell().computeSize(SWT.DEFAULT, SWT.DEFAULT);
+        label.setText(finalText);
+        label.getShell().layout(true, true);
+        final Point newSize = label.getShell().computeSize(SWT.DEFAULT, SWT.DEFAULT);
+        // Only grow window.
+        if (newSize.x > oldSize.x || newSize.y > oldSize.y) {
+            label.getShell().pack();
+        }
     }
 }

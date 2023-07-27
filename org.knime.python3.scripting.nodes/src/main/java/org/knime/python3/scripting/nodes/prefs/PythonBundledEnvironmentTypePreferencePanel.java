@@ -57,9 +57,6 @@ import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
-import org.knime.python2.config.AbstractPythonConfigPanel;
-import org.knime.python2.config.PythonEnvironmentType;
-import org.knime.python2.config.PythonEnvironmentTypeConfig;
 
 /**
  * This is an adaptation of the {@link org.knime.python2.prefs.PythonEnvironmentTypePreferencePanel} that also adds the

@@ -44,53 +44,68 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   2 Apr 2022 (Carsten Haubold): created
+ *   Feb 24, 2019 (marcel): created
  */
 package org.knime.python3.scripting.nodes.prefs;
 
-import org.eclipse.swt.SWT;
-import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Label;
+import org.knime.core.node.defaultnodesettings.SettingsModelBoolean;
+import org.knime.core.node.defaultnodesettings.SettingsModelInteger;
+import org.knime.core.node.defaultnodesettings.SettingsModelString;
 
 /**
- * The {@link BundledCondaEnvironmentPreferencesPanel} displays information about the bundled conda environment.
+ * Copied from org.knime.python2.prefs.
  *
- * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
+ * Implementation note: We do not save the enabled state at the moment to not clutter the preferences file
+ * unnecessarily.
+ *
+ * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
+ * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  */
-public final class BundledCondaEnvironmentPreferencesPanel
-    extends AbstractPythonConfigPanel<BundledCondaEnvironmentConfig, Composite> {
+final class PreferenceWrappingConfigStorage implements PythonConfigStorage {
+
+    private final PreferenceStorage m_preferences;
 
     /**
-     * Create a panel that displays information about the bundled conda environment.
-     *
-     * @param config The {@link BundledCondaEnvironmentConfig}
-     * @param parent The parent {@link Composite} in which the panel will add its UI elements
+     * @param preferences The preference storage instance which is wrapped by the instance to construct.
      */
-    public BundledCondaEnvironmentPreferencesPanel(final BundledCondaEnvironmentConfig config, final Composite parent) {
-        super(config, parent);
+    public PreferenceWrappingConfigStorage(final PreferenceStorage preferences) {
+        m_preferences = preferences;
+    }
+
+    /**
+     * @return The wrapped preferences.
+     */
+    public PreferenceStorage getWrappedPreferences() {
+        return m_preferences;
     }
 
     @Override
-    protected Composite createPanel(final Composite parent) {
-        final Composite panel = new Composite(parent, SWT.NONE);
-        panel.setLayout(new GridLayout());
+    public void saveBooleanModel(final SettingsModelBoolean model) {
+        m_preferences.writeBoolean(model.getConfigName(), model.getBooleanValue());
+    }
 
-        final String bundledEnvDescription =
-            "KNIME Analytics Platform provides its own Python environment that can be used\n"
-                + "by the Python Script nodes. If you select this option, then all Python Script nodes\n"
-                + "that are configured to use the settings from the preference page will make use of this bundled Python environment.\n"
-                + "\n\n"
-                + "This bundled Python environment can not be extended, if you need additional packages for your scripts,\n"
-                + "use the \"Conda\" option above to change the environment for all Python Script nodes or\n"
-                + "use the Conda Environment Propagation Node to set a conda environment for selected nodes\n";
+    @Override
+    public void saveIntegerModel(final SettingsModelInteger model) {
+        m_preferences.writeInt(model.getKey(), model.getIntValue());
+    }
 
-        final Label environmentSelectionLabel = new Label(panel, SWT.NONE);
-        final var gridData = new GridData();
-        environmentSelectionLabel.setLayoutData(gridData);
-        environmentSelectionLabel.setText(bundledEnvDescription);
+    @Override
+    public void saveStringModel(final SettingsModelString model) {
+        m_preferences.writeString(model.getKey(), model.getStringValue());
+    }
 
-        return panel;
+    @Override
+    public void loadBooleanModel(final SettingsModelBoolean model) {
+        model.setBooleanValue(m_preferences.readBoolean(model.getConfigName(), model.getBooleanValue()));
+    }
+
+    @Override
+    public void loadIntegerModel(final SettingsModelInteger model) {
+        model.setIntValue(m_preferences.readInt(model.getKey(), model.getIntValue()));
+    }
+
+    @Override
+    public void loadStringModel(final SettingsModelString model) {
+        model.setStringValue(m_preferences.readString(model.getKey(), model.getStringValue()));
     }
 }
