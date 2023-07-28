@@ -52,7 +52,6 @@ import org.eclipse.core.runtime.preferences.DefaultScope;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.knime.conda.CondaEnvironmentIdentifier;
 import org.knime.conda.prefs.CondaPreferences;
-import org.knime.python2.PythonVersion;
 import org.knime.python3.PythonCommand;
 
 /**
@@ -98,13 +97,6 @@ public final class Python3ScriptingPreferences {
     }
 
     /**
-     * @return The currently selected default Python version.
-     */
-    public static PythonVersion getPythonVersionPreference() {
-        return PythonVersion.PYTHON3;
-    }
-
-    /**
      * @return The currently selected Python environment type (Bundled vs. Conda vs. Manual).
      */
     public static PythonEnvironmentType getEnvironmentTypePreference() {
@@ -115,19 +107,9 @@ public final class Python3ScriptingPreferences {
     }
 
     /**
-     * @return The currently selected default Python 3 command.
+     * @return The currently selected default Python command.
      */
-    public static PythonCommand getPython3CommandPreference() {
-        return getPythonCommandPreference(PythonVersion.PYTHON3);
-    }
-
-    private static BundledCondaEnvironmentConfig getBundledCondaEnvironmentConfig() {
-        final var bundledEnvConfig = new BundledCondaEnvironmentConfig(BUNDLED_PYTHON_ENV_ID);
-        bundledEnvConfig.loadConfigFrom(CURRENT);
-        return bundledEnvConfig;
-    }
-
-    private static PythonCommand getPythonCommandPreference(final PythonVersion pythonVersion) {
+    public static PythonCommand getPythonCommandPreference() {
         final var envType = getEnvironmentTypePreference();
         PythonEnvironmentsConfig environmentsConfig;
 
@@ -137,15 +119,13 @@ public final class Python3ScriptingPreferences {
             environmentsConfig = LegacyPreferncesUtil.getPythonEnvironmentsConfig(envType);
             environmentsConfig.loadConfigFrom(CURRENT);
         }
+        return environmentsConfig.getPython3Config().getPythonCommand();
+    }
 
-        PythonEnvironmentConfig environmentConfig;
-        if (PythonVersion.PYTHON3 == pythonVersion) {
-            environmentConfig = environmentsConfig.getPython3Config();
-        } else {
-            throw new IllegalStateException(
-                "Selected default Python version is not Python 3. This is an implementation error.");
-        }
-        return environmentConfig.getPythonCommand();
+    private static BundledCondaEnvironmentConfig getBundledCondaEnvironmentConfig() {
+        final var bundledEnvConfig = new BundledCondaEnvironmentConfig(BUNDLED_PYTHON_ENV_ID);
+        bundledEnvConfig.loadConfigFrom(CURRENT);
+        return bundledEnvConfig;
     }
 
     /**

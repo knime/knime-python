@@ -81,6 +81,7 @@ import org.knime.core.node.workflow.VariableTypeRegistry;
 import org.knime.core.util.PathUtils;
 import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
 import org.knime.core.webui.node.view.NodeView;
+import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonModuleSpec;
 import org.knime.python2.PythonVersion;
 import org.knime.python2.config.PythonCommandConfig;
@@ -89,6 +90,7 @@ import org.knime.python2.kernel.PythonCanceledExecutionException;
 import org.knime.python2.kernel.PythonExecutionMonitorCancelable;
 import org.knime.python2.kernel.PythonIOException;
 import org.knime.python2.kernel.PythonKernel;
+import org.knime.python2.kernel.PythonKernelBackend;
 import org.knime.python2.kernel.PythonKernelBackendRegistry.PythonKernelBackendType;
 import org.knime.python2.kernel.PythonKernelCleanupException;
 import org.knime.python2.kernel.PythonKernelOptions;
@@ -111,9 +113,13 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(AbstractPythonScriptingNodeModel.class);
 
+    static PythonCommand getPythonCommandPreference() {
+        return new LegacyPythonCommand(Python3ScriptingPreferences.getPythonCommandPreference());
+    }
+
     static PythonCommandConfig createCommandConfig() {
         return new PythonCommandConfig(PythonVersion.PYTHON3, Python3ScriptingPreferences::getCondaInstallationPath,
-            Python3ScriptingPreferences::getPython3CommandPreference);
+            AbstractPythonScriptingNodeModel::getPythonCommandPreference);
     }
 
     static void saveScriptTo(final String script, final NodeSettingsWO settings) {
@@ -372,5 +378,44 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
     private void pushNewFlowVariable(final FlowVariable variable) {
         pushFlowVariable(variable.getName(), (VariableType)variable.getVariableType(),
             variable.getValue(variable.getVariableType()));
+    }
+
+    /**
+     * Wraps a {@link org.knime.python3.PythonCommand} into the legacy implementation for using it in a
+     * {@link PythonKernelBackend}.
+     */
+    private static final class LegacyPythonCommand implements PythonCommand {
+
+        private final org.knime.python3.PythonCommand m_pythonCommand;
+
+        private LegacyPythonCommand(final org.knime.python3.PythonCommand pythonCommand) {
+            m_pythonCommand = pythonCommand;
+        }
+
+        @Override
+        public PythonVersion getPythonVersion() {
+            return PythonVersion.PYTHON3;
+        }
+
+        @Override
+        public ProcessBuilder createProcessBuilder() {
+            return m_pythonCommand.createProcessBuilder();
+        }
+
+        @Override
+        public int hashCode() {
+            return m_pythonCommand.hashCode();
+        }
+
+        @Override
+        public boolean equals(final Object obj) {
+            if (obj == this) {
+                return true;
+            }
+            if (!(obj instanceof LegacyPythonCommand)) {
+                return false;
+            }
+            return Objects.equals(((LegacyPythonCommand)obj).m_pythonCommand, m_pythonCommand);
+        }
     }
 }
