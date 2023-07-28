@@ -55,13 +55,12 @@ import org.knime.python3.BundledPythonCommand;
 import org.knime.python3.PythonCommand;
 
 /**
- * The {@link BundledCondaEnvironmentConfig} is a {@link PythonEnvironmentConfig} that points to a bundled conda
- * environment which is identified by the string passed into the constructor.
+ * The BundledCondaEnvironmentConfig is a PythonEnvironmentConfig that points to a bundled conda environment which is
+ * identified by the string passed into the constructor.
  *
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
-public final class BundledCondaEnvironmentConfig extends AbstractPythonEnvironmentConfig
-    implements PythonEnvironmentsConfig {
+final class BundledCondaEnvironmentConfig extends AbstractPythonEnvironmentConfig implements PythonEnvironmentsConfig {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(BundledCondaEnvironmentConfig.class);
 

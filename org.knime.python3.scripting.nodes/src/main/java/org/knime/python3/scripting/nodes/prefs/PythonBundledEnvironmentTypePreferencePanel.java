@@ -64,13 +64,13 @@ import org.knime.core.node.defaultnodesettings.SettingsModelString;
  *
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
-public final class PythonBundledEnvironmentTypePreferencePanel
+final class PythonBundledEnvironmentTypePreferencePanel
     extends AbstractPythonConfigPanel<PythonEnvironmentTypeConfig, Composite> {
 
     /**
-     * Create a {@link PythonBundledEnvironmentTypePreferencePanel}
+     * Create a PythonBundledEnvironmentTypePreferencePanel
      *
-     * @param config The {@link PythonEnvironmentTypeConfig} that is updated when the user selects a different option
+     * @param config The PythonEnvironmentTypeConfig that is updated when the user selects a different option
      * @param parent The parent {@link Composite} in which the environment selection will be added
      * @param isBundledEnvAvailable A boolean flag whether the bundled environment is available. This will
      *            enable/disable the "Bundled" option.
