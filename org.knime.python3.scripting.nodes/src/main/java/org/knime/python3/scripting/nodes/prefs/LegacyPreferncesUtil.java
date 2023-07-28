@@ -48,6 +48,9 @@
  */
 package org.knime.python3.scripting.nodes.prefs;
 
+import org.eclipse.core.runtime.preferences.DefaultScope;
+import org.eclipse.core.runtime.preferences.InstanceScope;
+
 /**
  * Utility for accessing preferences from the Python (legacy) preferences page.
  *
@@ -55,23 +58,41 @@ package org.knime.python3.scripting.nodes.prefs;
  */
 final class LegacyPreferncesUtil {
 
+    private static final PreferenceStorage CURRENT_SCOPE_PREFERENCES =
+        new PreferenceStorage("org.knime.python2", InstanceScope.INSTANCE, DefaultScope.INSTANCE);
+
+    private static final PythonConfigStorage CURRENT = new PreferenceWrappingConfigStorage(CURRENT_SCOPE_PREFERENCES);
+
     private LegacyPreferncesUtil() {
         // Utility class
     }
 
+    /**
+     * Copy of org.knime.python2.prefs.PythonPreferences#getEnvironmentTypePreference() but using the copied config
+     * classes
+     */
     static PythonEnvironmentType getEnvironmentTypePreference() {
-        // TODO implement like PythonPreferences.getEnvironmentTypePreference
-        return PythonEnvironmentType.CONDA;
+        // The config classes are copied over from python2. Therefore they are compatible with the python2 preferences.
+        final var environmentTypeConfig = new PythonEnvironmentTypeConfig();
+        environmentTypeConfig.loadConfigFrom(CURRENT);
+        return PythonEnvironmentType.fromId(environmentTypeConfig.getEnvironmentType().getStringValue());
     }
 
+    /**
+     * Copy of org.knime.python2.prefs.PythonPreferences#getPythonEnvironmentsConfig(PythonEnvironmentType) but using
+     * the copied config classes
+     */
     static PythonEnvironmentsConfig getPythonEnvironmentsConfig(final PythonEnvironmentType environmentType) {
-        // TODO implement like PythonPreferences.getPythonEnvironmentsConfig
+        PythonEnvironmentsConfig environmentsConfig;
         if (environmentType == PythonEnvironmentType.CONDA) {
-            return new CondaEnvironmentsConfig();
+            environmentsConfig = new CondaEnvironmentsConfig();
         } else if (environmentType == PythonEnvironmentType.MANUAL) {
-            return new ManualEnvironmentsConfig();
+            environmentsConfig = new ManualEnvironmentsConfig();
         } else {
-            throw new IllegalStateException("NOOOOOOOOO");
+            throw new IllegalStateException(
+                "Selected Python environment type is neither Conda nor manual. This is an implementation error.");
         }
+        environmentsConfig.loadConfigFrom(CURRENT);
+        return environmentsConfig;
     }
 }
