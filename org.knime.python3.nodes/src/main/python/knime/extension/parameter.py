@@ -174,15 +174,15 @@ def extract_schema(
 def _extract_schema(
     obj, extension_version: Version, dialog_creation_context=None
 ) -> dict:
-    properties = {}
-
-    for name, param_obj in _get_parameters(obj).items():
-        if param_obj._since_version <= extension_version:
-            properties[name] = param_obj._extract_schema(
-                extension_version=extension_version,
-                dialog_creation_context=dialog_creation_context,
-            )
-
+    properties = {
+        name: param_obj._extract_schema(
+            extension_version=extension_version,
+            dialog_creation_context=dialog_creation_context,
+        )
+        for name, param_obj in _get_parameters(obj).items()
+        # TODO how can we run into parameters from the future?
+        if param_obj._since_version <= extension_version
+    }
     return {"type": "object", "properties": properties}
 
 
