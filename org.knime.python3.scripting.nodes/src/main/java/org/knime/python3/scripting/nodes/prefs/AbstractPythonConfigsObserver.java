@@ -50,8 +50,7 @@ package org.knime.python3.scripting.nodes.prefs;
 
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.knime.python2.PythonKernelTester.PythonKernelTestResult;
-import org.knime.python2.PythonVersion;
+import org.knime.python3.scripting.nodes.prefs.PythonKernelTester.PythonKernelTestResult;
 
 /**
  * Copied from org.knime.python2.config.
@@ -91,12 +90,10 @@ class AbstractPythonConfigsObserver {
      * Notifies the listeners that an environment installation test is starting.
      *
      * @param environmentType the type of the environment (conda v. manual)
-     * @param pythonVersion the python version (2 v. 3)
      */
-    protected synchronized void onEnvironmentInstallationTestStarting(final PythonEnvironmentType environmentType,
-        final PythonVersion pythonVersion) {
+    protected synchronized void onEnvironmentInstallationTestStarting(final PythonEnvironmentType environmentType) {
         for (final PythonConfigsInstallationTestStatusChangeListener listener : m_listeners) {
-            listener.environmentInstallationTestStarting(environmentType, pythonVersion);
+            listener.environmentInstallationTestStarting(environmentType);
         }
     }
 
@@ -104,13 +101,12 @@ class AbstractPythonConfigsObserver {
      * Notifies the listeners that an environment installation test has finished.
      *
      * @param environmentType the type of the environment (conda v. manual)
-     * @param pythonVersion the python version (2 v. 3)
      * @param testResult the test result
      */
     protected synchronized void onEnvironmentInstallationTestFinished(final PythonEnvironmentType environmentType,
-        final PythonVersion pythonVersion, final PythonKernelTestResult testResult) {
+        final PythonKernelTestResult testResult) {
         for (final PythonConfigsInstallationTestStatusChangeListener listener : m_listeners) {
-            listener.environmentInstallationTestFinished(environmentType, pythonVersion, testResult);
+            listener.environmentInstallationTestFinished(environmentType, testResult);
         }
     }
 
@@ -155,18 +151,16 @@ class AbstractPythonConfigsObserver {
          * Called asynchronously, that is, possibly not in a UI thread.
          *
          * @param environmentType The environment type of the environment whose installation test is about to start.
-         * @param pythonVersion The Python version of the environment.
          */
-        void environmentInstallationTestStarting(PythonEnvironmentType environmentType, PythonVersion pythonVersion);
+        void environmentInstallationTestStarting(PythonEnvironmentType environmentType);
 
         /**
          * Called asynchronously, that is, possibly not in a UI thread.
          *
          * @param environmentType The environment type of the environment whose installation test has finished.
-         * @param pythonVersion The Python version of the environment.
          * @param testResult The result of the installation test.
          */
-        void environmentInstallationTestFinished(PythonEnvironmentType environmentType, PythonVersion pythonVersion,
+        void environmentInstallationTestFinished(PythonEnvironmentType environmentType,
             PythonKernelTestResult testResult);
     }
 }

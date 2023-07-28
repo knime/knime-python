@@ -60,23 +60,26 @@ import org.knime.conda.CondaEnvironmentIdentifier;
 import org.knime.conda.prefs.CondaPreferences;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
 import org.knime.core.util.Version;
-import org.knime.python2.PythonCommand;
-import org.knime.python2.PythonKernelTester;
-import org.knime.python2.PythonKernelTester.PythonKernelTestResult;
-import org.knime.python2.PythonModuleSpec;
-import org.knime.python2.PythonVersion;
-import org.knime.python2.config.AbstractCondaEnvironmentsPanel;
-import org.knime.python2.config.PythonConfigsObserver;
+import org.knime.python3.scripting.nodes.prefs.PythonKernelTester.PythonKernelTestResult;
 
 /**
- * Specialization of the {@link PythonConfigsObserver} for the org.knime.python3 scripting nodes. Those nodes do no
- * longer offer support for Python version 2 and do not allow to choose a serialization method, but add the option to
- * use a bundled conda environment compared to the {@link PythonConfigsObserver} from org.knime.python2.
+ * Specialization of the PythonConfigsObserver for the org.knime.python3 scripting nodes. Those nodes do no longer offer
+ * support for Python version 2 and do not allow to choose a serialization method, but add the option to use a bundled
+ * conda environment compared to the PythonConfigsObserver from org.knime.python2.
  *
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
 class Python3ScriptingConfigsObserver extends AbstractPythonConfigsObserver {
+
+    private static final String CONDA_ENV_CREATION_INFO = """
+
+            Note: You can create a new Python Conda environment that contains all
+            packages required by the KNIME Python integration by running the command
+
+                conda create --name <ENV_NAME> -c knime -c conda-forge knime-python-scripting python=3.9
+
+            in a conda console.""";
 
     private final PythonEnvironmentTypeConfig m_environmentTypeConfig;
 
@@ -299,46 +302,28 @@ class Python3ScriptingConfigsObserver extends AbstractPythonConfigsObserver {
             environmentsConfig = m_manualEnvironmentsConfig;
             environmentType = PythonEnvironmentType.MANUAL;
         }
-        final PythonEnvironmentConfig environmentConfig;
-        final PythonVersion pythonVersion;
-        environmentConfig = environmentsConfig.getPython3Config();
-        pythonVersion = PythonVersion.PYTHON3;
-
+        final PythonEnvironmentConfig environmentConfig = environmentsConfig.getPython3Config();
         final SettingsModelString infoMessage = environmentConfig.getPythonInstallationInfo();
         final SettingsModelString errorMessage = environmentConfig.getPythonInstallationError();
-        final String environmentCreationInfo;
-        if (isConda) {
-            environmentCreationInfo =
-                "\nNote: You can create a new " + pythonVersion.getName() + " Conda environment that "
-                    + "contains all packages\nrequired by the KNIME Python integration by clicking the '"
-                    + AbstractCondaEnvironmentsPanel.CREATE_NEW_ENVIRONMENT_BUTTON_TEXT + "' button\nabove.";
-        } else {
-            environmentCreationInfo =
-                "\nNote: An easy way to create a new " + pythonVersion.getName() + " Conda environment that "
-                    + "contains all packages\nrequired by the KNIME Python integration can be found on the '"
-                    + PythonEnvironmentType.CONDA.getName() + "' tab of this preference page.";
-        }
         if (isCondaPlaceholder) {
             infoMessage.setStringValue("");
-            errorMessage.setStringValue("No environment available. Please create a new one to be able to use "
-                + pythonVersion.getName() + "." + environmentCreationInfo);
+            errorMessage.setStringValue("No environment available. Please create a new one." + CONDA_ENV_CREATION_INFO);
             return;
         }
         final Collection<PythonModuleSpec> requiredSerializerModules = getAdditionalRequiredModules();
-        infoMessage.setStringValue("Testing " + pythonVersion.getName() + " environment...");
+        infoMessage.setStringValue("Testing Python 3 environment...");
         errorMessage.setStringValue("");
         new Thread(() -> {
-            onEnvironmentInstallationTestStarting(environmentType, pythonVersion);
-            final PythonCommand pythonCommand = environmentConfig.getPythonCommand();
-            final PythonKernelTestResult testResult =
-                PythonKernelTester.testPython3Installation(pythonCommand, requiredSerializerModules, true);
+            onEnvironmentInstallationTestStarting(environmentType);
+            final PythonKernelTestResult testResult = PythonKernelTester
+                .testPython3Installation(environmentConfig.getPythonCommand(), requiredSerializerModules, true);
             infoMessage.setStringValue(testResult.getVersion());
             String errorLog = testResult.getErrorLog();
             if (errorLog != null && !errorLog.isEmpty()) {
-                errorLog += environmentCreationInfo;
+                errorLog += CONDA_ENV_CREATION_INFO;
             }
             errorMessage.setStringValue(errorLog);
-            onEnvironmentInstallationTestFinished(environmentType, pythonVersion, testResult);
+            onEnvironmentInstallationTestFinished(environmentType, testResult);
         }).start();
     }
 

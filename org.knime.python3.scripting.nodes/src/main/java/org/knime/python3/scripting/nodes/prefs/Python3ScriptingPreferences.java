@@ -52,8 +52,8 @@ import org.eclipse.core.runtime.preferences.DefaultScope;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.knime.conda.CondaEnvironmentIdentifier;
 import org.knime.conda.prefs.CondaPreferences;
-import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonVersion;
+import org.knime.python3.PythonCommand;
 
 /**
  * Convenience front-end of the preference-based configuration of the Python integration.

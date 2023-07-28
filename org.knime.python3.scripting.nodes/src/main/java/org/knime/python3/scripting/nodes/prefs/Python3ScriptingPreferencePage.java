@@ -68,9 +68,8 @@ import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.knime.conda.prefs.CondaPreferences;
 import org.knime.core.node.NodeLogger;
-import org.knime.python2.PythonKernelTester.PythonKernelTestResult;
-import org.knime.python2.PythonVersion;
 import org.knime.python3.scripting.nodes.prefs.AbstractPythonConfigsObserver.PythonConfigsInstallationTestStatusChangeListener;
+import org.knime.python3.scripting.nodes.prefs.PythonKernelTester.PythonKernelTestResult;
 
 /**
  * Preference page for configurations related to the org.knime.python3.scripting.nodes plug-in.
@@ -267,14 +266,13 @@ public final class Python3ScriptingPreferencePage extends AbstractPythonPreferen
             }
 
             @Override
-            public void environmentInstallationTestStarting(final PythonEnvironmentType environmentType,
-                final PythonVersion pythonVersion) {
+            public void environmentInstallationTestStarting(final PythonEnvironmentType environmentType) {
                 updateDisplayMinSize();
             }
 
             @Override
             public void environmentInstallationTestFinished(final PythonEnvironmentType environmentType,
-                final PythonVersion pythonVersion, final PythonKernelTestResult testResult) {
+                final PythonKernelTestResult testResult) {
                 updateDisplayMinSize();
             }
         });
