@@ -50,7 +50,7 @@ package org.knime.python3.scripting.nodes.prefs;
 
 import org.knime.core.node.defaultnodesettings.SettingsModelBoolean;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
-import org.knime.python2.PythonCommand;
+import org.knime.python3.PythonCommand;
 
 /**
  * Copied from org.knime.python2.config.

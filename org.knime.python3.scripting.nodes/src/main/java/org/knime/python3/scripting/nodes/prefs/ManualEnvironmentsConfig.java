@@ -48,8 +48,6 @@
  */
 package org.knime.python3.scripting.nodes.prefs;
 
-import org.knime.python2.PythonVersion;
-
 /**
  * Copied and modified from org.knime.python2.config.
  *
@@ -70,7 +68,7 @@ final class ManualEnvironmentsConfig implements PythonEnvironmentsConfig {
     public static final String DEFAULT_PYTHON3_PATH = "python3";
 
     private final ManualEnvironmentConfig m_python3EnvironmentConfig =
-        new ManualEnvironmentConfig(PythonVersion.PYTHON3, CFG_KEY_PYTHON3_PATH, DEFAULT_PYTHON3_PATH);
+        new ManualEnvironmentConfig(CFG_KEY_PYTHON3_PATH, DEFAULT_PYTHON3_PATH);
 
     @Override
     public ManualEnvironmentConfig getPython3Config() {

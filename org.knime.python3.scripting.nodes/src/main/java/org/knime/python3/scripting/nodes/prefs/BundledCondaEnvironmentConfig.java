@@ -48,14 +48,11 @@
  */
 package org.knime.python3.scripting.nodes.prefs;
 
-import java.util.Objects;
-
 import org.knime.conda.envbundling.environment.CondaEnvironmentRegistry;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
-import org.knime.python2.PythonCommand;
-import org.knime.python2.PythonVersion;
 import org.knime.python3.BundledPythonCommand;
+import org.knime.python3.PythonCommand;
 
 /**
  * The {@link BundledCondaEnvironmentConfig} is a {@link PythonEnvironmentConfig} that points to a bundled conda
@@ -121,41 +118,6 @@ public final class BundledCondaEnvironmentConfig extends AbstractPythonEnvironme
             throw new IllegalStateException(errorMsg);
         }
 
-        return new BundledToLegacyCommandAdapter(new BundledPythonCommand(condaEnv.getPath().toString()));
-    }
-
-    private static final class BundledToLegacyCommandAdapter implements PythonCommand {
-
-        private final BundledPythonCommand m_bundledCommand;
-
-        public BundledToLegacyCommandAdapter(final BundledPythonCommand bundledCommand) {
-            m_bundledCommand = bundledCommand;
-        }
-
-        @Override
-        public PythonVersion getPythonVersion() {
-            return PythonVersion.PYTHON3;
-        }
-
-        @Override
-        public ProcessBuilder createProcessBuilder() {
-            return m_bundledCommand.createProcessBuilder();
-        }
-
-        @Override
-        public int hashCode() {
-            return m_bundledCommand.hashCode();
-        }
-
-        @Override
-        public boolean equals(final Object obj) {
-            if (obj == this) {
-                return true;
-            }
-            if (!(obj instanceof BundledToLegacyCommandAdapter)) {
-                return false;
-            }
-            return Objects.equals(((BundledToLegacyCommandAdapter)obj).m_bundledCommand, m_bundledCommand);
-        }
+        return new BundledPythonCommand(condaEnv.getPath().toString());
     }
 }
