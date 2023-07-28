@@ -970,6 +970,11 @@ class EnumParameter(_BaseMultiChoiceParameter):
         )
     """
 
+    class Style(Enum):
+        RADIO = "radio"
+        VALUE_SWITCH = "valueSwitch"
+        DROPDOWN = "string"
+
     def default_validator(self, value):
         if value not in self._enum.get_all_options():
             raise ValueError(
@@ -985,6 +990,7 @@ class EnumParameter(_BaseMultiChoiceParameter):
         validator: Optional[Callable[[str], None]] = None,
         since_version: Optional[Union[Version, str]] = None,
         is_advanced: bool = False,
+        style: Optional[Style] = None,
         rule: Optional[Rule] = None,
     ):
         if validator is None:
@@ -1000,6 +1006,8 @@ class EnumParameter(_BaseMultiChoiceParameter):
             if default_value is None:
                 default_value = self._enum.get_all_options()[0].name
 
+        self._style = style
+
         super().__init__(
             label,
             description,
@@ -1009,6 +1017,11 @@ class EnumParameter(_BaseMultiChoiceParameter):
             is_advanced,
             rule,
         )
+
+    def _get_options(self, dialog_creation_context) -> dict:
+        if self._style:
+            return {"format": self._style.value}
+        return super()._get_options(dialog_creation_context)
 
     def _generate_description(self):
         return self._enum._generate_options_description(self.__doc__)

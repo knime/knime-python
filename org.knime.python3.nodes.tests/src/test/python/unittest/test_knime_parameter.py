@@ -951,6 +951,42 @@ class ParameterizedWithDialogCreationContext:
     )
 
 
+class TestEnumOptions(kp.EnumParameterOptions):
+    FOO = ("Foo", "The foo")
+    BAR = ("Bar", "The bar")
+    BAZ = ("Baz", "The baz")
+
+
+class ParameterizedWithEnumStyles:
+    radio = kp.EnumParameter(
+        "radio",
+        "Radio buttons",
+        TestEnumOptions.FOO,
+        TestEnumOptions,
+        style=kp.EnumParameter.Style.RADIO,
+    )
+    value_switch = kp.EnumParameter(
+        "value switch",
+        "Value switch",
+        TestEnumOptions.FOO,
+        TestEnumOptions,
+        style=kp.EnumParameter.Style.VALUE_SWITCH,
+    )
+    dropdown = kp.EnumParameter(
+        "Dropdown",
+        "dropdown",
+        TestEnumOptions.FOO,
+        TestEnumOptions,
+        style=kp.EnumParameter.Style.DROPDOWN,
+    )
+    default = kp.EnumParameter(
+        "Default",
+        "The default (should be radio for fewer than 4 choices)",
+        TestEnumOptions.FOO,
+        TestEnumOptions,
+    )
+
+
 class DummyDialogCreationContext:
     def __init__(self) -> None:
         class DummyJavaContext:
@@ -1423,6 +1459,41 @@ class ParameterTest(unittest.TestCase):
         }
         extracted = kp.extract_ui_schema(
             self.parameterized, DummyDialogCreationContext()
+        )
+        self.assertEqual(expected, extracted)
+
+    def test_enum_styles(self):
+        expected = {
+            "type": "VerticalLayout",
+            "elements": [
+                {
+                    "type": "Control",
+                    "label": "radio",
+                    "scope": "#/properties/model/properties/radio",
+                    "options": {"format": "radio"},
+                },
+                {
+                    "type": "Control",
+                    "label": "value switch",
+                    "scope": "#/properties/model/properties/value_switch",
+                    "options": {"format": "valueSwitch"},
+                },
+                {
+                    "type": "Control",
+                    "label": "Dropdown",
+                    "scope": "#/properties/model/properties/dropdown",
+                    "options": {"format": "string"},
+                },
+                {
+                    "type": "Control",
+                    "label": "Default",
+                    "scope": "#/properties/model/properties/default",
+                    "options": {"format": "radio"},
+                },
+            ],
+        }
+        extracted = kp.extract_ui_schema(
+            ParameterizedWithEnumStyles(), DummyDialogCreationContext()
         )
         self.assertEqual(expected, extracted)
 
