@@ -51,13 +51,14 @@ package org.knime.python3.scripting.nodes2;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 import org.knime.core.columnar.arrow.PathBackedFileHandle;
 import org.knime.core.columnar.cursor.ColumnarCursorFactory;
 import org.knime.core.columnar.cursor.ColumnarWriteCursorFactory;
+import org.knime.core.columnar.cursor.ColumnarWriteCursorFactory.ColumnarWriteCursor;
 import org.knime.core.columnar.store.BatchReadStore;
-import org.knime.core.columnar.store.BatchStore;
 import org.knime.core.columnar.store.ColumnStoreFactory;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.table.access.BooleanAccess.BooleanReadAccess;
@@ -65,9 +66,7 @@ import org.knime.core.table.access.BooleanAccess.BooleanWriteAccess;
 import org.knime.core.table.access.LongAccess.LongWriteAccess;
 import org.knime.core.table.access.StringAccess.StringReadAccess;
 import org.knime.core.table.access.StringAccess.StringWriteAccess;
-import org.knime.core.table.cursor.WriteCursor;
 import org.knime.core.table.row.ReadAccessRow;
-import org.knime.core.table.row.WriteAccessRow;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DefaultColumnarSchema;
@@ -93,6 +92,12 @@ import org.knime.scripting.editor.ScriptingService.ConsoleText;
  */
 @SuppressWarnings("javadoc") // Suppress warnings about protected visibility in javadoc
 final class ConsoleOutputUtils {
+
+    /**
+     * The maximum number of rows that we write into one table. A value of 5000 is a good compromise between a long
+     * Scrollback and small file sizes.
+     */
+    static final int MAX_ROWS_PER_TABLE = 5000;
 
     private ConsoleOutputUtils() {
         // Utility class
@@ -121,151 +126,240 @@ final class ConsoleOutputUtils {
     }
 
     /**
-     * Send the console output which was saved to the given storage to the consumer.
-     *
-     * @param storage the storage that has the console output saved in it
-     * @param consumer a consumer that the console output is sent to
-     * @throws IOException if reading the console outputs failed
-     */
-    public static void sendConsoleOutputs(final ConsoleOutputStorage storage, final Consumer<ConsoleText> consumer)
-        throws IOException {
-        try (final var cursor = ColumnarCursorFactory.create(storage.m_store, storage.m_size)) {
-            while (cursor.forward()) {
-                final ReadAccessRow access = cursor.access();
-                consumer.accept(new ConsoleText( //
-                    ((StringReadAccess)access.getAccess(1)).getStringValue(), //
-                    ((BooleanReadAccess)access.getAccess(2)).getBooleanValue() //
-                ));
-            }
-        }
-    }
-
-    /**
-     * Save the console output to the given directory. It can be loaded again with {@link #openConsoleOutput(Path)}.
-     * Note that the storage will be closed by this method.
-     *
-     * @param storage the console output storage
-     * @param dir the directory to save to
-     * @throws IOException if writing the files failed
-     */
-    public static void saveConsoleOutput(final ConsoleOutputStorage storage, final Path dir) throws IOException {
-        Files.move(storage.m_store.getFileHandle().asPath(), tableFilePath(dir));
-        Files.writeString(sizeFilePath(dir), "" + storage.m_size);
-        storage.close();
-    }
-
-    /**
      * Load the {@link ConsoleOutputStorage} from the given directory.
      *
      * @param dir the directory on which {@link #saveConsoleOutput(ConsoleOutputStorage, Path)} was called before
      * @return the {@link ConsoleOutputStorage} that can be used to send the console output to another consumer
      */
-    @SuppressWarnings("resource") // ConsoleOutputStorage is closed by the caller
     public static ConsoleOutputStorage openConsoleOutput(final Path dir) {
-        final var sizeFilePath = sizeFilePath(dir);
-        final var tableFilePath = tableFilePath(dir);
-
-        // Nothing to load in the directory
-        if (!Files.exists(sizeFilePath) || !Files.exists(tableFilePath)) {
-            return null;
-        }
-
-        try {
-            return new ConsoleOutputStorage( //
-                STORE_FACTORY.createReadStore(tableFilePath), //
-                Long.parseLong(Files.readString(sizeFilePath)) //
-            );
-        } catch (final IOException e) {
-            LOGGER.error("Opening the console output failed.", e);
-            return null;
-        }
+        return ConsoleOutputStorage.loadFrom(dir);
     }
 
     /**
-     * A consumer that remembers a bunch of {@link ConsoleText} objects. Note that {@link #finish()} must be called to
-     * release resources.
+     * A consumer of {@link ConsoleText} that writes to two Arrow Tables in a Ring-Buffer fashion. To release resources
+     * the caller must call {@link ConsoleOutputConsumer#finish()} and close the storage.
      */
     public static final class ConsoleOutputConsumer implements Consumer<ConsoleText> {
 
-        private final BatchStore m_store;
+        private Table m_extraTable;
 
-        private final WriteCursor<WriteAccessRow> m_cursor;
+        private Table m_currentTable;
 
-        private long m_size;
-
-        private ConsoleOutputConsumer() throws IOException {
-            final var tmpFile = PathUtils.createTempFile("pyscript_console_output", ".arrow");
-            m_store = STORE_FACTORY.createStore(TABLE_SCHEMA, new PathBackedFileHandle(tmpFile));
-            m_cursor = ColumnarWriteCursorFactory.createWriteCursor(m_store);
-            m_size = 0;
+        public ConsoleOutputConsumer() throws IOException {
+            m_currentTable = new Table();
         }
 
         @Override
         public void accept(final ConsoleText t) {
-            m_cursor.forward();
-            final var access = m_cursor.access();
-            ((LongWriteAccess)access.getWriteAccess(0)).setLongValue(System.currentTimeMillis());
-            ((StringWriteAccess)access.getWriteAccess(1)).setStringValue(t.text);
-            ((BooleanWriteAccess)access.getWriteAccess(2)).setBooleanValue(t.stderr);
-            m_size++;
+            try {
+                if (m_currentTable.size() >= MAX_ROWS_PER_TABLE) {
+                    // Switch to the next table
+                    m_currentTable.finish();
+                    if (m_extraTable != null) {
+                        // NB: Close releases all resources and deletes the file
+                        m_extraTable.close();
+                    }
+                    m_extraTable = m_currentTable;
+                    m_currentTable = new Table();
+
+                }
+                m_currentTable.write(t);
+            } catch (IOException ex) {
+                LOGGER.error("Switching to the next table for storing console outputs failed.", ex);
+            }
         }
 
         /**
-         * Finish the consumer and transform it into a storage to read from.
+         * Finish writing to the consumer. Creates a {@link ConsoleOutputStorage} that can be used to save the console
+         * logs to disc and retrieve them to a new consumer.
          *
-         * @return a {@link ConsoleOutputStorage} that can be used to send the consumed output to another consumer
-         * @throws IOException if the collected output cannot be flushed to a temporary file
+         * @return the {@link ConsoleOutputStorage}
+         * @throws IOException if flushing the file failed
          */
-        ConsoleOutputStorage finish() throws IOException {
-            try {
-                m_cursor.flush();
-                m_cursor.close();
-            } catch (final IOException e) {
-                LOGGER.error("Failed to finish console output storage. The console output will not be available.", e);
-            }
-
-            // NB: Delete the temporary file after closing the storage
-            return new ConsoleOutputStorage(m_store, m_size) {
-
-                @Override
-                public void close() {
-                    super.close();
-                    m_store.getFileHandle().delete();
-                }
-            };
+        public ConsoleOutputStorage finish() throws IOException {
+            // NB: The extra table is either null or already finished
+            m_currentTable.finish();
+            // NB: The tables are saved in temporary files which are deleted when closing the table
+            // ConsoleOutputStorage#saveTo can be used to persist the data
+            return new ConsoleOutputStorage(m_extraTable, m_currentTable);
         }
     }
 
-    /** A storage that holds the console output. */
-    public static class ConsoleOutputStorage implements AutoCloseable { // NOSONAR: Only extended in this file
+    /** Stores console output in two columnar tables. */
+    public static final class ConsoleOutputStorage implements AutoCloseable {
 
-        private final BatchReadStore m_store;
+        private final Table m_tableA;
 
-        private final long m_size;
+        private final Table m_tableB;
 
-        private ConsoleOutputStorage(final BatchReadStore store, final long size) {
-            m_store = store;
-            m_size = size;
+        @SuppressWarnings("resource") // Tables will be closed by ConsoleOutputStorage#close
+        private static ConsoleOutputStorage loadFrom(final Path dir) {
+            var tableA = Table.loadFrom(dir, "a");
+            var tableB = Table.loadFrom(dir, "b");
+            if (tableA == null && tableB == null) {
+                return null;
+            } else {
+                return new ConsoleOutputStorage(tableA, tableB);
+            }
+        }
+
+        private ConsoleOutputStorage(final Table tableA, final Table tableB) {
+            m_tableA = tableA;
+            m_tableB = tableB;
+        }
+
+        /**
+         * Send the saved console output to the consumer.
+         *
+         * @param consumer a consumer that the console output is sent to
+         * @throws IOException if reading the console outputs failed
+         */
+        public void sendConsoleOutputs(final Consumer<ConsoleText> consumer) throws IOException {
+            if (m_tableA != null) {
+                m_tableA.readAll(consumer);
+            }
+            if (m_tableB != null) {
+                m_tableB.readAll(consumer);
+            }
+        }
+
+        public void saveTo(final Path dir) throws IOException {
+            if (m_tableA != null) {
+                m_tableA.saveTo(dir, "a");
+            }
+            if (m_tableB != null) {
+                m_tableB.saveTo(dir, "b");
+            }
         }
 
         @Override
         public void close() {
-            // NB: Don't delete the file. For the case where the file is temporary this method is overwritten
-            try {
-                m_store.close();
-            } catch (final IOException e) {
-                LOGGER.error(e);
+            if (m_tableA != null) {
+                try {
+                    m_tableA.close();
+                } catch (IOException ex) {
+                    LOGGER.warn("Failed to close console output storage.", ex);
+                }
+            }
+            if (m_tableB != null) {
+                try {
+                    m_tableB.close();
+                } catch (IOException ex) {
+                    LOGGER.warn("Failed to close console output storage.", ex);
+                }
             }
         }
     }
 
-    /** @return the path to the console.arrow file */
-    private static Path tableFilePath(final Path dir) {
-        return dir.resolve("console.arrow");
-    }
+    /** Internal data structure combining a batch store and a size. Used for writing to and reading from. */
+    private static final class Table implements AutoCloseable {
 
-    /** @return the path to the size.txt file */
-    private static Path sizeFilePath(final Path dir) {
-        return dir.resolve("size.txt");
+        /** load table from an arrow and size file, retuns <code>null</code> if the table could not be load */
+        @SuppressWarnings("resource") // Store will be closed by Table#close
+        static Table loadFrom(final Path dir, final String suffix) {
+            final var sizeFilePath = sizeFilePath(dir, suffix);
+            final var tableFilePath = tableFilePath(dir, suffix);
+
+            // Nothing to load in the directory
+            if (!Files.exists(sizeFilePath) || !Files.exists(tableFilePath)) {
+                return null;
+            }
+
+            try {
+                return new Table( //
+                    STORE_FACTORY.createReadStore(tableFilePath), //
+                    Integer.parseInt(Files.readString(sizeFilePath)) //
+                );
+            } catch (IOException ex) {
+                LOGGER.error("Opening the console output failed.", ex);
+                return null;
+            }
+        }
+
+        private final boolean m_isTmpFile;
+
+        private final BatchReadStore m_store;
+
+        private ColumnarWriteCursor m_writeCursor;
+
+        private int m_size;
+
+        Table() throws IOException {
+            var tmpFile = PathUtils.createTempFile("pyscript_console_output", ".arrow");
+            var writeStore = STORE_FACTORY.createStore(TABLE_SCHEMA, new PathBackedFileHandle(tmpFile));
+            m_writeCursor = ColumnarWriteCursorFactory.createWriteCursor(writeStore);
+            m_store = writeStore;
+            m_size = 0;
+            m_isTmpFile = true;
+        }
+
+        private Table(final BatchReadStore store, final int size) {
+            m_store = store;
+            m_size = size;
+            m_writeCursor = null;
+            m_isTmpFile = false;
+        }
+
+        int size() {
+            return m_size;
+        }
+
+        @SuppressWarnings("resource") // We do not want to close the write cursor
+        void write(final ConsoleText text) {
+            Objects.requireNonNull(m_writeCursor, "Writing to a read-only store. This is an implementation error.");
+            m_writeCursor.forward();
+            final var access = m_writeCursor.access();
+            ((LongWriteAccess)access.getWriteAccess(0)).setLongValue(System.currentTimeMillis());
+            ((StringWriteAccess)access.getWriteAccess(1)).setStringValue(text.text);
+            ((BooleanWriteAccess)access.getWriteAccess(2)).setBooleanValue(text.stderr);
+            m_size++;
+        }
+
+        void finish() throws IOException {
+            if (m_writeCursor != null) {
+                m_writeCursor.flush();
+                m_writeCursor.close();
+                m_writeCursor = null;
+            }
+        }
+
+        void saveTo(final Path dir, final String suffix) throws IOException {
+            Files.move(m_store.getFileHandle().asPath(), tableFilePath(dir, suffix));
+            Files.writeString(sizeFilePath(dir, suffix), "" + m_size);
+        }
+
+        void readAll(final Consumer<ConsoleText> consumer) throws IOException {
+            try (final var cursor = ColumnarCursorFactory.create(m_store, m_size)) {
+                while (cursor.forward()) {
+                    final ReadAccessRow access = cursor.access();
+                    consumer.accept(new ConsoleText( //
+                        ((StringReadAccess)access.getAccess(1)).getStringValue(), //
+                        ((BooleanReadAccess)access.getAccess(2)).getBooleanValue() //
+                    ));
+                }
+            }
+        }
+
+        @Override
+        public void close() throws IOException {
+            try {
+                m_store.close();
+            } finally {
+                if (m_isTmpFile) {
+                    // We only delete the file if it was a temporary file that we created ourselves
+                    m_store.getFileHandle().delete();
+                }
+            }
+        }
+
+        /** @return the path to the console.arrow file */
+        private static Path tableFilePath(final Path dir, final String suffix) {
+            return dir.resolve("console_" + suffix + ".arrow");
+        }
+
+        /** @return the path to the console_size.txt file */
+        private static Path sizeFilePath(final Path dir, final String suffix) {
+            return dir.resolve("console_size_" + suffix + ".txt");
+        }
     }
 }

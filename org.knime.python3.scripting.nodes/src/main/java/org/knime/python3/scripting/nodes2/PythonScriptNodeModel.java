@@ -297,7 +297,7 @@ public final class PythonScriptNodeModel extends NodeModel {
     void sendLastConsoleOutputs(final Consumer<ConsoleText> consumer) throws IOException {
         if (m_consoleOutputStorage != null) {
             consumer.accept(new ConsoleText(SEND_LAST_OUTPUT_PREFIX, false));
-            ConsoleOutputUtils.sendConsoleOutputs(m_consoleOutputStorage, consumer);
+            m_consoleOutputStorage.sendConsoleOutputs(consumer);
             consumer.accept(new ConsoleText(SEND_LAST_OUTPUT_SUFFIX, false));
         }
     }
@@ -316,8 +316,12 @@ public final class PythonScriptNodeModel extends NodeModel {
     protected void saveInternals(final File nodeInternDir, final ExecutionMonitor exec)
         throws IOException, CanceledExecutionException {
         if (m_consoleOutputStorage != null) {
+            // Copy the console output from the temporary files
             final var nodeInternPath = nodeInternDir.toPath();
-            ConsoleOutputUtils.saveConsoleOutput(m_consoleOutputStorage, nodeInternPath);
+            m_consoleOutputStorage.saveTo(nodeInternPath);
+            m_consoleOutputStorage.close();
+
+            // Re-open the new files
             m_consoleOutputStorage = ConsoleOutputUtils.openConsoleOutput(nodeInternPath);
         }
         if (m_view.isPresent()) {

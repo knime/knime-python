@@ -52,7 +52,9 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.function.Consumer;
+import java.util.stream.IntStream;
 
 import org.junit.Test;
 import org.knime.core.util.PathUtils;
@@ -73,6 +75,19 @@ public final class ConsoleOutputUtilsTest {
         new ConsoleText("end with stderr", true), //
     };
 
+    @Test
+    public void testConsumingEmptyOutput() throws IOException {
+        final var consumer = ConsoleOutputUtils.createConsoleConsumer();
+        var emptyArray = new ConsoleText[0];
+        sendToConsumer(emptyArray, consumer);
+        try (var storage = consumer.finish()) {
+            storage.sendConsoleOutputs((text) -> {
+                throw new AssertionError("Got text " + text + " but expected none.");
+            });
+        }
+
+    }
+
     /**
      * Simple test of consuming and re-sending console output.
      *
@@ -85,7 +100,7 @@ public final class ConsoleOutputUtilsTest {
         sendToConsumer(SIMPLE_TEST_TEXTS, consumer);
         try (var storage = consumer.finish()) {
             final TestConsumer testConsumer = new TestConsumer(SIMPLE_TEST_TEXTS);
-            ConsoleOutputUtils.sendConsoleOutputs(storage, testConsumer);
+            storage.sendConsoleOutputs(testConsumer);
             assertEquals("Expected to have recieved all texts", SIMPLE_TEST_TEXTS.length, testConsumer.m_nextIdx);
         }
     }
@@ -104,13 +119,13 @@ public final class ConsoleOutputUtilsTest {
         // Save to a temporary folder
         final Path tmpPath = PathUtils.createTempDir("tmp_output_storage");
         try (var storage = consumer.finish()) {
-            ConsoleOutputUtils.saveConsoleOutput(storage, tmpPath);
+            storage.saveTo(tmpPath);
         }
 
         // Open from the temporary folder and check the values
         try (var loadedStorage = ConsoleOutputUtils.openConsoleOutput(tmpPath)) {
             final TestConsumer testConsumer = new TestConsumer(SIMPLE_TEST_TEXTS);
-            ConsoleOutputUtils.sendConsoleOutputs(loadedStorage, testConsumer);
+            loadedStorage.sendConsoleOutputs(testConsumer);
             assertEquals("Expected to have recieved all texts", SIMPLE_TEST_TEXTS.length, testConsumer.m_nextIdx);
         }
 
@@ -118,11 +133,92 @@ public final class ConsoleOutputUtilsTest {
         PathUtils.deleteDirectoryIfExists(tmpPath);
     }
 
+    /**
+     * Test saving and loading a console output storage with overflow.
+     *
+     * @throws IOException
+     */
+    @Test
+    @SuppressWarnings("static-method")
+    public void testSavingAndLoadingOverflowOutput() throws IOException {
+        final var consumer = ConsoleOutputUtils.createConsoleConsumer();
+        var texts = createTestTexts(ConsoleOutputUtils.MAX_ROWS_PER_TABLE * 2 + 100);
+        sendToConsumer(texts, consumer);
+
+        // Save to a temporary folder
+        final Path tmpPath = PathUtils.createTempDir("tmp_output_storage");
+        try (var storage = consumer.finish()) {
+            storage.saveTo(tmpPath);
+        }
+
+        var expectedTexts =
+            Arrays.stream(texts).skip(ConsoleOutputUtils.MAX_ROWS_PER_TABLE).toArray(ConsoleText[]::new);
+
+        // Open from the temporary folder and check the values
+        try (var loadedStorage = ConsoleOutputUtils.openConsoleOutput(tmpPath)) {
+            final TestConsumer testConsumer = new TestConsumer(expectedTexts);
+            loadedStorage.sendConsoleOutputs(testConsumer);
+            assertEquals("Expected to have recieved all texts", expectedTexts.length, testConsumer.m_nextIdx);
+        }
+
+        // Cleanup
+        PathUtils.deleteDirectoryIfExists(tmpPath);
+    }
+
+    @Test
+    public void testLargeOutputNoOverflow() throws IOException {
+        final var consumer = ConsoleOutputUtils.createConsoleConsumer();
+        var texts = createTestTexts(ConsoleOutputUtils.MAX_ROWS_PER_TABLE * 2);
+        sendToConsumer(texts, consumer);
+
+        try (var storage = consumer.finish()) {
+            final TestConsumer testConsumer = new TestConsumer(texts);
+            storage.sendConsoleOutputs(testConsumer);
+            assertEquals("Expected to have recieved all texts", texts.length, testConsumer.m_nextIdx);
+        }
+    }
+
+    @Test
+    public void testLargeOutputOverflowBy1() throws IOException {
+        final var consumer = ConsoleOutputUtils.createConsoleConsumer();
+        var texts = createTestTexts(ConsoleOutputUtils.MAX_ROWS_PER_TABLE * 2 + 1);
+        sendToConsumer(texts, consumer);
+
+        var expectedTexts =
+            Arrays.stream(texts).skip(ConsoleOutputUtils.MAX_ROWS_PER_TABLE).toArray(ConsoleText[]::new);
+        try (var storage = consumer.finish()) {
+            final TestConsumer testConsumer = new TestConsumer(expectedTexts);
+            storage.sendConsoleOutputs(testConsumer);
+            assertEquals("Expected to have recieved all texts", expectedTexts.length, testConsumer.m_nextIdx);
+        }
+    }
+
+    @Test
+    public void testLargeOutputOverflowTwice() throws IOException {
+        final var consumer = ConsoleOutputUtils.createConsoleConsumer();
+        var texts = createTestTexts(ConsoleOutputUtils.MAX_ROWS_PER_TABLE * 3 + 100);
+        sendToConsumer(texts, consumer);
+
+        var expectedTexts =
+            Arrays.stream(texts).skip(ConsoleOutputUtils.MAX_ROWS_PER_TABLE * 2).toArray(ConsoleText[]::new);
+        try (var storage = consumer.finish()) {
+            final TestConsumer testConsumer = new TestConsumer(expectedTexts);
+            storage.sendConsoleOutputs(testConsumer);
+            assertEquals("Expected to have recieved all texts", expectedTexts.length, testConsumer.m_nextIdx);
+        }
+    }
+
     /** Send the given values to the consumer */
     private static void sendToConsumer(final ConsoleText[] values, final Consumer<ConsoleText> consumer) {
         for (var v : values) {
             consumer.accept(v);
         }
+    }
+
+    private static ConsoleText[] createTestTexts(final int numTexts) {
+        return IntStream.range(0, numTexts) //
+            .mapToObj(i -> new ConsoleText("" + i, false)) //
+            .toArray(ConsoleText[]::new);
     }
 
     /** Assert that the console text equals the expected text */
