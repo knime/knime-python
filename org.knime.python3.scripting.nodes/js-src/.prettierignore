@@ -1,0 +1,6 @@
+package-lock.json
+coverage
+test-results
+dist
+webapps-common
+.vscode

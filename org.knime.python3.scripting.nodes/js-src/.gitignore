@@ -26,3 +26,11 @@ coverage
 *.njsproj
 *.sln
 *.sw?
+
+# Test outputs
+test/*/reports
+test-results/
+
+# Optional eslint/stylelint cache
+.eslintcache
+.stylelintcache

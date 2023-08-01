@@ -4,3 +4,6 @@
 [submodule "org.knime.python3.js.scripting/js-src/python-scripting-editor/knime-scripting-editor"]
 	path = org.knime.python3.js.scripting/js-src/python-scripting-editor/knime-scripting-editor
 	url = ../knime-scripting-editor
+[submodule "org.knime.python3.scripting.nodes/js-src/webapps-common"]
+	path = org.knime.python3.scripting.nodes/js-src/webapps-common
+	url = ../webapps-common
