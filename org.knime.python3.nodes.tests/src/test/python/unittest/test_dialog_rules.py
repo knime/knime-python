@@ -10,8 +10,7 @@ class ParameterGroupWithRules:
         "Int Parameter",
         "Int parameter that is hidden if the string parameter is foo",
         42,
-        rule=kp.Rule(string_param, kp.OneOf(["foo"]), kp.Effect.HIDE),
-    )
+    ).rule(kp.Rule(string_param, kp.OneOf(["foo"]), kp.Effect.HIDE))
 
 
 class ParameterizedWithRule:
@@ -20,8 +19,8 @@ class ParameterizedWithRule:
         "Int Parameter",
         "Int parameter that is only shown the string parameter is foo",
         42,
-        rule=kp.Rule(string_param, kp.OneOf(["foo"]), kp.Effect.SHOW),
-    )
+    ).rule(kp.Rule(string_param, kp.OneOf(["foo"]), kp.Effect.SHOW))
+
     group = ParameterGroupWithRules()
 
 
@@ -33,8 +32,7 @@ class ComposedGroup:
         self.int_param = kp.IntParameter(
             "Int parameter",
             "Int parameter",
-            rule=kp.Rule(string_param, kp.OneOf(["foo", "bar"]), kp.Effect.DISABLE),
-        )
+        ).rule(kp.Rule(string_param, kp.OneOf(["foo", "bar"]), kp.Effect.DISABLE))
 
 
 class ParameterizedWithComposedGroup:
@@ -43,7 +41,7 @@ class ParameterizedWithComposedGroup:
 
 
 class RulesTest(unittest.TestCase):
-    def test_extract_ui_schema_with_rules(self):
+    def test_dialog_rules(self):
         expected = {
             "type": "VerticalLayout",
             "elements": [
@@ -100,7 +98,7 @@ class RulesTest(unittest.TestCase):
         )
         self.assertEqual(expected, extracted)
 
-    def test_extract_ui_schema_with_composition(self):
+    def test_dialog_rules_with_composition(self):
         expected = {
             "type": "VerticalLayout",
             "elements": [
