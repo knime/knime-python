@@ -21,6 +21,7 @@
 		<knime.sonar-env>Sonarcloud</knime.sonar-env>
 		<sonar.python.version>3.9</sonar.python.version>
 		<sonar.python.coverage.reportPaths>coverage-*.xml</sonar.python.coverage.reportPaths>
+		<sonar.nodejs.executable>${project.build.directory}/node/node</sonar.nodejs.executable>
 	</properties>
 
 	<modules>
@@ -38,6 +39,7 @@
 		<module>org.knime.python3.js.scripting.tests</module>
 		<module>org.knime.python3.scripting</module>
 		<module>org.knime.python3.scripting.tests</module>
+		<module>org.knime.python3.scripting.nodes/js-src</module>
 		<module>org.knime.python3.scripting.nodes</module>
 		<module>org.knime.python3.scripting.py4j.dependencies</module>
 		<module>org.knime.python3.nodes</module>
