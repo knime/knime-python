@@ -10,7 +10,7 @@ class ParameterGroupWithRules:
         "Int Parameter",
         "Int parameter that is hidden if the string parameter is foo",
         42,
-    ).rule(kp.Rule(string_param, kp.OneOf(["foo"]), kp.Effect.HIDE))
+    ).rule(kp.Rule(kp.OneOf(string_param, ["foo"]), kp.Effect.HIDE))
 
 
 class ParameterizedWithRule:
@@ -19,7 +19,7 @@ class ParameterizedWithRule:
         "Int Parameter",
         "Int parameter that is only shown the string parameter is foo",
         42,
-    ).rule(kp.Rule(string_param, kp.OneOf(["foo"]), kp.Effect.SHOW))
+    ).rule(kp.Rule(kp.OneOf(string_param, ["foo"]), kp.Effect.SHOW))
 
     group = ParameterGroupWithRules()
 
@@ -32,7 +32,7 @@ class ComposedGroup:
         self.int_param = kp.IntParameter(
             "Int parameter",
             "Int parameter",
-        ).rule(kp.Rule(string_param, kp.OneOf(["foo", "bar"]), kp.Effect.DISABLE))
+        ).rule(kp.Rule(kp.OneOf(string_param, ["foo", "bar"]), kp.Effect.DISABLE))
 
 
 class ParameterizedWithComposedGroup:

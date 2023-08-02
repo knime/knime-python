@@ -347,23 +347,35 @@ def _get_extension_version() -> Version:
     return _extension_version
 
 
-class Predicate(ABC):
+class Condition(ABC):
     @abstractmethod
     def to_dict(self):
-        """Converts the predicate into a dict that is JSON serializable."""
+        """Converts the Condition into a dict that is JSON serializable."""
+
+    @property
+    @abstractmethod
+    def subjects(self) -> List[Any]:
+        """
+        The subjects this condition applies to. Typically these are parameters.
+        """
 
 
-class OneOf(Predicate):
+class OneOf(Condition):
     """
-    A predicate that checks that a value is one of a number of values provided in the constructor.
+    A Condition that checks that a value is one of a number of values provided in the constructor.
     """
 
-    def __init__(self, values: List[Any]) -> None:
+    def __init__(self, subject: Any, values: List[Any]) -> None:
         super().__init__()
         self._values = values
+        self._subject = subject
 
     def to_dict(self):
         return {"oneOf": [{"const": value} for value in self._values]}
+
+    @property
+    def subjects(self) -> List[Any]:
+        return [self._subject]
 
 
 class Effect(Enum):
@@ -380,11 +392,10 @@ class Effect(Enum):
 @dataclass
 class Rule:
     """
-    A rule checks a subject for a condition and enacts a corresponding effect if the condition is met.
+    A rule checks a condition and enacts a corresponding effect if the condition is met.
     """
 
-    subject: Any
-    condition: Predicate
+    condition: Condition
     effect: Effect
 
 
@@ -432,10 +443,15 @@ class _UISchemaExtractor:
         return element_schema
 
     def _create_rule_ui_schema(self, rule: Rule):
+        subjects = rule.condition.subjects
+        if not len(subjects) == 1:
+            raise ValueError(
+                f"Exactly one signal per rule is allowed but received {len(subjects)}."
+            )
         return {
             "effect": rule.effect.value,
             "condition": {
-                "scope": str(self.find_scope(rule.subject)),
+                "scope": str(self.find_scope(subjects[0])),
                 "schema": rule.condition.to_dict(),
             },
         }
