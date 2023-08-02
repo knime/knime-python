@@ -608,8 +608,8 @@ class _BaseParameter(ABC):
         """
         self._validator = func
 
-    def rule(self, rule: Rule):
-        self._rule = rule
+    def rule(self, condition: Condition, effect: Effect):
+        self._rule = Rule(condition, effect)
         return self
 
     def _extract_schema(
@@ -1856,8 +1856,8 @@ def parameter_group(
 
             # TODO we could also detect if the decorated class already has an attribute/method called rule
             # and not overwrite it in that case and log a warning instead
-            def rule(self, rule: Rule):
-                self._rule = rule
+            def rule(self, condition: Condition, effect: Effect):
+                self._rule = Rule(condition, effect)
                 return self
 
             def _check_keyword_compliance(self):
