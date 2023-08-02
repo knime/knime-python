@@ -21,7 +21,7 @@
     "prepare": "cd ../.. && husky install ./org.knime.python3.scripting.nodes/js-src/.husky"
   },
   "dependencies": {
-    "@knime/scripting-editor": "0.0.2",
+    "@knime/scripting-editor": "0.0.4",
     "pinia": "2.1.4",
     "vue": "3.3.4",
     "webapps-common": "file:webapps-common"
@@ -34,6 +34,7 @@
     "@types/node": "18.17.0",
     "@vitejs/plugin-vue": "4.2.3",
     "@vitejs/plugin-vue-jsx": "3.0.1",
+    "@vitest/coverage-v8": "^0.34.1",
     "@vue/eslint-config-prettier": "8.0.0",
     "@vue/eslint-config-typescript": "11.0.3",
     "@vue/test-utils": "2.4.1",
