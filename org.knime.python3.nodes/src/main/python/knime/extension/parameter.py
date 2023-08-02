@@ -477,7 +477,6 @@ class _BaseParameter(ABC):
         validator: Optional[Callable[[Any], None]] = None,
         since_version: str = None,
         is_advanced: bool = False,
-        rule: Optional[Rule] = None,
     ):
         """
         Args:
@@ -493,7 +492,7 @@ class _BaseParameter(ABC):
         self.__doc__ = description if description is not None else ""
         self._since_version = Version.parse_version(since_version)
         self._is_advanced = is_advanced
-        self._rule = rule
+        self._rule = None
 
     def __set_name__(self, owner, name):
         self._name = name
@@ -651,7 +650,6 @@ class _NumericParameter(_BaseParameter):
         max_value=None,
         since_version=None,
         is_advanced=False,
-        rule=None,
     ):
         self.min_value = min_value
         self.max_value = max_value
@@ -664,7 +662,6 @@ class _NumericParameter(_BaseParameter):
             validator,
             since_version,
             is_advanced,
-            rule,
         )
 
     def check_range(self, value):
@@ -702,7 +699,6 @@ class IntParameter(_NumericParameter):
         max_value: Optional[int] = None,
         since_version: Optional[Union[Version, str]] = None,
         is_advanced: bool = False,
-        rule: Optional[Rule] = None,
     ):
         super().__init__(
             label,
@@ -713,7 +709,6 @@ class IntParameter(_NumericParameter):
             max_value,
             since_version,
             is_advanced,
-            rule,
         )
 
     def check_type(self, value):
@@ -748,7 +743,6 @@ class DoubleParameter(_NumericParameter):
         max_value: Optional[float] = None,
         since_version: Optional[Union[str, Version]] = None,
         is_advanced: bool = False,
-        rule: Optional[Rule] = None,
     ):
         super().__init__(
             label,
@@ -759,7 +753,6 @@ class DoubleParameter(_NumericParameter):
             max_value,
             since_version,
             is_advanced,
-            rule,
         )
 
     def check_type(self, value):
@@ -793,7 +786,6 @@ class _BaseMultiChoiceParameter(_BaseParameter):
         validator=None,
         since_version=None,
         is_advanced=False,
-        rule=None,
     ):
         super().__init__(
             label,
@@ -802,7 +794,6 @@ class _BaseMultiChoiceParameter(_BaseParameter):
             validator,
             since_version,
             is_advanced,
-            rule,
         )
 
     def _get_options(self, dialog_creation_context) -> dict:
@@ -837,7 +828,6 @@ class StringParameter(_BaseMultiChoiceParameter):
         since_version: Optional[Union[Version, str]] = None,
         is_advanced: bool = False,
         choices: Optional[Callable] = None,
-        rule: Optional[Rule] = None,
     ):
         if validator is None:
             validator = self.default_validator
@@ -854,7 +844,6 @@ class StringParameter(_BaseMultiChoiceParameter):
             validator,
             since_version,
             is_advanced,
-            rule,
         )
 
     def _extract_schema(self, extension_version=None, dialog_creation_context=None):
@@ -991,7 +980,6 @@ class EnumParameter(_BaseMultiChoiceParameter):
         since_version: Optional[Union[Version, str]] = None,
         is_advanced: bool = False,
         style: Optional[Style] = None,
-        rule: Optional[Rule] = None,
     ):
         if validator is None:
             validator = self.default_validator
@@ -1015,7 +1003,6 @@ class EnumParameter(_BaseMultiChoiceParameter):
             validator,
             since_version,
             is_advanced,
-            rule,
         )
 
     def _get_options(self, dialog_creation_context) -> dict:
@@ -1062,7 +1049,6 @@ class _BaseColumnParameter(_BaseParameter):
         column_filter: Callable[[ks.Column], bool],
         since_version=None,
         is_advanced=False,
-        rule=None,
     ):
         """
         Args:
@@ -1078,7 +1064,6 @@ class _BaseColumnParameter(_BaseParameter):
             default_value=None,
             since_version=since_version,
             is_advanced=is_advanced,
-            rule=rule,
         )
         self._port_index = port_index
         if column_filter is None:
@@ -1111,7 +1096,6 @@ class ColumnParameter(_BaseColumnParameter):
         include_none_column: bool = False,
         since_version: Optional[str] = None,
         is_advanced: bool = False,
-        rule: Optional[Rule] = None,
     ):
         """
         Args:
@@ -1130,7 +1114,6 @@ class ColumnParameter(_BaseColumnParameter):
             column_filter,
             since_version,
             is_advanced,
-            rule,
         )
         self._include_row_key = include_row_key
         self._include_none_column = include_none_column
@@ -1178,7 +1161,6 @@ class MultiColumnParameter(_BaseColumnParameter):
         column_filter: Optional[Callable[[ks.Column], bool]] = None,
         since_version: Optional[Union[str, Version]] = None,
         is_advanced: bool = False,
-        rule: Optional[Rule] = None,
     ):
         super().__init__(
             label,
@@ -1187,7 +1169,6 @@ class MultiColumnParameter(_BaseColumnParameter):
             column_filter,
             since_version,
             is_advanced,
-            rule,
         )
 
     def _extract_schema(
@@ -1616,7 +1597,6 @@ class ColumnFilterParameter(_BaseColumnParameter):
         column_filter: Callable[[ks.Column], bool] = None,
         since_version: Optional[Union[str, Version]] = None,
         is_advanced: bool = False,
-        rule: Optional[Rule] = None,
     ):
         super().__init__(
             label,
@@ -1625,7 +1605,6 @@ class ColumnFilterParameter(_BaseColumnParameter):
             column_filter,
             since_version,
             is_advanced,
-            rule,
         )
 
         self._column_filter_config = ColumnFilterConfig()
@@ -1697,7 +1676,6 @@ class BoolParameter(_BaseParameter):
         validator: Optional[Callable[[bool], None]] = None,
         since_version: Optional[Union[Version, str]] = None,
         is_advanced: bool = False,
-        rule: Optional[Rule] = None,
     ):
         if validator is None:
             validator = self.default_validator
@@ -1708,7 +1686,6 @@ class BoolParameter(_BaseParameter):
             validator,
             since_version,
             is_advanced,
-            rule,
         )
 
     def _extract_schema(self, extension_version=None, dialog_creation_context=None):
@@ -1850,7 +1827,7 @@ def parameter_group(
                 self._is_advanced = self._parse_kwarg(
                     kwargs, "is_advanced", is_advanced
                 )
-                self._rule = self._parse_kwarg(kwargs, "rule", None)
+                self._rule = None
                 self._validator = self._parse_kwarg(kwargs, "validator", None)
                 self._override_internal_validator = False
                 self._label = label
