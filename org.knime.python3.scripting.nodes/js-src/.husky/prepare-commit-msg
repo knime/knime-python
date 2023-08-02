@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+./org.knime.python3.scripting.nodes/js-src/node_modules/.bin/knime-eslint-config-prepare-commit-msg "$@"
