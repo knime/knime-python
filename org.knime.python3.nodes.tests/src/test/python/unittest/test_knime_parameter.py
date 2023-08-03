@@ -340,113 +340,6 @@ def generate_versioned_schema_dict(extension_version):
         }
 
 
-def generate_versioned_ui_schema_dict(extension_version):
-    if extension_version == "0.1.0":
-        return {
-            "type": "VerticalLayout",
-            "elements": [
-                {
-                    "type": "Control",
-                    "label": "Int Parameter",
-                    "scope": "#/properties/model/properties/int_param",
-                    "options": {"format": "integer"},
-                },
-                {
-                    "type": "Control",
-                    "label": "Double Parameter",
-                    "scope": "#/properties/model/properties/double_param",
-                    "options": {"format": "number"},
-                },
-            ],
-        }
-    elif extension_version == "0.2.0":
-        return {
-            "type": "VerticalLayout",
-            "elements": [
-                {
-                    "type": "Control",
-                    "label": "Int Parameter",
-                    "scope": "#/properties/model/properties/int_param",
-                    "options": {"format": "integer"},
-                },
-                {
-                    "type": "Control",
-                    "label": "Double Parameter",
-                    "scope": "#/properties/model/properties/double_param",
-                    "options": {"format": "number"},
-                },
-                {
-                    "type": "Control",
-                    "label": "String Parameter",
-                    "scope": "#/properties/model/properties/string_param",
-                    "options": {"format": "string"},
-                },
-                {
-                    "type": "Section",
-                    "label": "Versioned parameter group",
-                    "options": {},
-                    "elements": [
-                        {
-                            "type": "Control",
-                            "label": "First Parameter",
-                            "scope": "#/properties/model/properties/group/properties/first",
-                            "options": {"format": "integer"},
-                        }
-                    ],
-                },
-            ],
-        }
-    elif extension_version == "0.3.0":
-        return {
-            "type": "VerticalLayout",
-            "elements": [
-                {
-                    "type": "Control",
-                    "label": "Int Parameter",
-                    "scope": "#/properties/model/properties/int_param",
-                    "options": {"format": "integer"},
-                },
-                {
-                    "type": "Control",
-                    "label": "Double Parameter",
-                    "scope": "#/properties/model/properties/double_param",
-                    "options": {"format": "number"},
-                },
-                {
-                    "type": "Control",
-                    "label": "String Parameter",
-                    "scope": "#/properties/model/properties/string_param",
-                    "options": {"format": "string"},
-                },
-                {
-                    "type": "Control",
-                    "label": "Boolean Parameter",
-                    "scope": "#/properties/model/properties/bool_param",
-                    "options": {"format": "boolean"},
-                },
-                {
-                    "type": "Section",
-                    "label": "Versioned parameter group",
-                    "options": {},
-                    "elements": [
-                        {
-                            "type": "Control",
-                            "label": "First Parameter",
-                            "scope": "#/properties/model/properties/group/properties/first",
-                            "options": {"format": "integer"},
-                        },
-                        {
-                            "type": "Control",
-                            "label": "Second Parameter",
-                            "scope": "#/properties/model/properties/group/properties/second",
-                            "options": {"format": "integer"},
-                        },
-                    ],
-                },
-            ],
-        }
-
-
 #### Primary parameterised object and its groups for testing main functionality: ####
 @kp.parameter_group("Subgroup")
 class NestedParameterGroup:
@@ -2128,16 +2021,6 @@ class ParameterTest(unittest.TestCase):
             schema = kp.extract_schema(self.versioned_parameterized, version)
             expected = generate_versioned_schema_dict(extension_version=version)
             self.assertEqual(schema, expected)
-
-    def test_extract_ui_schema_with_version(self):
-        for version in ["0.1.0", "0.2.0", "0.3.0"]:
-            ui_schema = kp.extract_ui_schema(
-                self.versioned_parameterized,
-                DummyDialogCreationContext(),
-                version,
-            )
-            expected = generate_versioned_ui_schema_dict(extension_version=version)
-            self.assertEqual(ui_schema, expected)
 
     def test_version_parsing(self):
         # test default behaviour

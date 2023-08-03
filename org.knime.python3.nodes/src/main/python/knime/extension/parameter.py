@@ -180,19 +180,16 @@ def _extract_schema(
             dialog_creation_context=dialog_creation_context,
         )
         for name, param_obj in _get_parameters(obj).items()
-        # TODO how can we run into parameters from the future?
+        # the schema needs to be versioned because it is not only needed for the
+        # dialog but also to load settings that were stored with earlier versions
+        # of the extension
         if param_obj._since_version <= extension_version
     }
     return {"type": "object", "properties": properties}
 
 
-def extract_ui_schema(
-    obj, dialog_creation_context, extension_version: str = None
-) -> dict:
-    extension_version = Version.parse_version(extension_version)
-    return _UISchemaExtractor(
-        obj, dialog_creation_context, extension_version
-    ).extract_ui_schema()
+def extract_ui_schema(obj, dialog_creation_context) -> dict:
+    return _UISchemaExtractor(obj, dialog_creation_context).extract_ui_schema()
 
 
 def extract_parameter_descriptions(obj) -> dict:
@@ -402,10 +399,9 @@ class Rule:
 class _UISchemaExtractor:
     _root_scope = _Scope("#/properties/model/properties")
 
-    def __init__(self, root, dialog_creation_context, extension_version: str) -> None:
+    def __init__(self, root, dialog_creation_context) -> None:
         self._root = root
         self._dialog_creation_context = dialog_creation_context
-        self._extension_version = extension_version
 
     def extract_ui_schema(
         self,
@@ -419,8 +415,6 @@ class _UISchemaExtractor:
         return [
             self._extract_element_schema(scope, name, param_obj)
             for name, param_obj in _get_parameters(obj).items()
-            # TODO isn't this always the case? How can we have a parameter from the future?
-            if param_obj._since_version <= self._extension_version
         ]
 
     def _extract_element_schema(self, scope, name, param_obj):
