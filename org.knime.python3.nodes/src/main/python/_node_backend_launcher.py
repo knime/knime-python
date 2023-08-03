@@ -546,9 +546,7 @@ class _PythonNodeProxy:
                 extension_version,
                 dialog_creation_context=dialog_context,
             ),
-            "ui_schema": kp.extract_ui_schema(
-                self._node, dialog_context, extension_version
-            ),
+            "ui_schema": kp.extract_ui_schema(self._node, dialog_context),
         }
 
         self._parse_parameter_descriptions(json_forms_dict["schema"])
