@@ -40,6 +40,14 @@ class ParameterizedWithComposedGroup:
         self.group = ComposedGroup()
 
 
+class ParameterGroupWithAttributeNamedRule:
+    rule = kp.StringParameter("rule", "rule", "foo")
+
+
+class ParameterizedWithParameterGoupWithAttributeNamedRule:
+    group = ParameterGroupWithAttributeNamedRule()
+
+
 class RulesTest(unittest.TestCase):
     def test_dialog_rules(self):
         expected = {
@@ -136,3 +144,7 @@ class RulesTest(unittest.TestCase):
             ParameterizedWithComposedGroup(), DummyDialogCreationContext()
         )
         self.assertEqual(expected, extracted)
+
+    def test_existing_rule_attribute_not_overwritten(self):
+        obj = ParameterizedWithParameterGoupWithAttributeNamedRule()
+        self.assertEqual("foo", obj.group.rule)
