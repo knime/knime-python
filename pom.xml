@@ -33,21 +33,17 @@
 		<module>org.knime.python3.arrow.tests</module>
 		<module>org.knime.python3.arrow.types</module>
 		<module>org.knime.python3.arrow.types.tests</module>
-		<module>org.knime.python3.js.scripting/js-src/python-scripting-editor</module>
-		<module>org.knime.python3.js.scripting</module>
-		<module>org.knime.python3.js.scripting.py4j.dependencies</module>
-		<module>org.knime.python3.js.scripting.tests</module>
 		<module>org.knime.python3.scripting</module>
 		<module>org.knime.python3.scripting.tests</module>
 		<module>org.knime.python3.scripting.nodes/js-src</module>
 		<module>org.knime.python3.scripting.nodes</module>
+		<module>org.knime.python3.scripting.nodes.tests</module>
 		<module>org.knime.python3.scripting.py4j.dependencies</module>
 		<module>org.knime.python3.nodes</module>
 		<module>org.knime.python3.nodes.tests</module>
 		<module>org.knime.python3.nodes.py4j.dependencies</module>
 		<module>org.knime.python3.views</module>
 		<module>org.knime.features.python3.scripting</module>
-		<module>org.knime.features.python3.js.scripting</module>
 		<module>org.knime.features.python3.nodes</module>
 		<module>org.knime.update.python</module>
 	</modules>
