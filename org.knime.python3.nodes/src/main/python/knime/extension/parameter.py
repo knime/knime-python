@@ -531,6 +531,9 @@ class _BaseParameter(ABC):
         """
         Only ever called when `self` is a descriptor, thus having the `_name` attribute.
         """
+        if obj is None:
+            # descriptor is called on the class e.g. by hasattr
+            return self
         return self._get_value(obj, self._name)
 
     def _get_default(self, version: Version = None):
@@ -2051,7 +2054,7 @@ def parameter_group(
 
         if hasattr(ParameterGroupHolder, "rule"):
             LOGGER.warn(
-                f"Can't add the rule method to the parameter group {original_class} because it already has a attribute named 'rule'."
+                f"Can't add the rule method to the parameter group {original_class} because it already has an attribute named 'rule'."
             )
         else:
 
