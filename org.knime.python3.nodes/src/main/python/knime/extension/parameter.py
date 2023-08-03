@@ -1854,12 +1854,6 @@ def parameter_group(
 
                 super().__init__(*args, **kwargs)
 
-            # TODO we could also detect if the decorated class already has an attribute/method called rule
-            # and not overwrite it in that case and log a warning instead
-            def rule(self, condition: Condition, effect: Effect):
-                self._rule = Rule(condition, effect)
-                return self
-
             def _check_keyword_compliance(self):
                 """
                 The __init__ method of the wrapped class should not use keyword arguments that
@@ -2060,6 +2054,18 @@ def parameter_group(
                         )
 
                 return {"type": "object", "properties": properties}
+
+        if hasattr(ParameterGroupHolder, "rule"):
+            LOGGER.warn(
+                f"Can't add the rule method to the parameter group {original_class} because it already has a attribute named 'rule'."
+            )
+        else:
+
+            def rule(self, condition: Condition, effect: Effect):
+                self._rule = Rule(condition, effect)
+                return self
+
+            ParameterGroupHolder.rule = rule
 
         return ParameterGroupHolder
 
