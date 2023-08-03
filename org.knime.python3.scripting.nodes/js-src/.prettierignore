@@ -4,3 +4,5 @@ test-results
 dist
 webapps-common
 .vscode
+CHANGELOG.md
+target
