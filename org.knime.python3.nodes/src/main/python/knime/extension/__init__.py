@@ -69,6 +69,8 @@ ColumnFilterConfig = _kp.ColumnFilterConfig
 EnumParameter = _kp.EnumParameter
 EnumParameterOptions = _kp.EnumParameterOptions
 Version = _kp.Version
+Effect = _kp.Effect
+OneOf = _kp.OneOf
 
 ## knime.extension.nodes
 PortType = _kn.PortType
