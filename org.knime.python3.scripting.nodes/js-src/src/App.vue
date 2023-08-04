@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { HelloWorld } from "@knime/scripting-editor";
+import { CodeEditor } from "@knime/scripting-editor";
 </script>
 
 <template>
   <main>
-    <HelloWorld msg="You did it!" />
+    <div style="height: 600px">
+      <CodeEditor initial-script="foo" language="python" />
+    </div>
   </main>
 </template>
