@@ -130,7 +130,8 @@ def runPython3MultiversionWorkflowTestConfig(String environmentFile, String base
                         'knime-python-legacy',
                         'knime-conda',
                         'knime-python-nodes-testing',
-                        'knime-base-views'
+                        'knime-base-views',
+                        'knime-scripting-editor'
                     ],
                     ius: [
                         'org.knime.features.chem.types.feature.group',
