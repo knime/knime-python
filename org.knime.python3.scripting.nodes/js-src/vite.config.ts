@@ -19,6 +19,12 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
+      "monaco-editor":
+        process.env.NODE_ENV === "test"
+          ? fileURLToPath(
+              new URL("./src/__mocks__/monaco-editor", import.meta.url),
+            )
+          : "monaco-editor", // We mock monaco in the test environment
     },
   },
   base: "./",
@@ -41,6 +47,7 @@ export default defineConfig({
         "lib/**",
         "**/*.d.ts",
         "**/__tests__/**",
+        "**/__mocks__/**",
         "test-setup/**",
         "**/{vite,vitest,postcss,lint-staged}.config.{js,cjs,mjs,ts}",
         "**/.{eslint,prettier,stylelint}rc.{js,cjs,yml}",

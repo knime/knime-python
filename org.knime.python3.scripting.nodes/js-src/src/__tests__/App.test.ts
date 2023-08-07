@@ -3,9 +3,9 @@ import { shallowMount } from "@vue/test-utils";
 import App from "../App.vue";
 
 describe("App.vue", () => {
-  it("renders the HelloWorld component with the correct message", () => {
+  it("renders the CodeEditor component with the correct language", () => {
     const wrapper = shallowMount(App);
-    const helloWorldComponent = wrapper.findComponent({ name: "HelloWorld" });
-    expect(helloWorldComponent.props("msg")).toBe("You did it!");
+    const helloWorldComponent = wrapper.findComponent({ name: "CodeEditor" });
+    expect(helloWorldComponent.props("language")).toBe("python");
   });
 });
