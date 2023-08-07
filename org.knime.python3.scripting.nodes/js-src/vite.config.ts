@@ -37,6 +37,9 @@ export default defineConfig({
     transformMode: {
       web: [/\.[jt]sx$/],
     },
+    deps: {
+      inline: ["monaco-editor"],
+    },
     coverage: {
       provider: "v8",
       all: true,
