@@ -34,11 +34,8 @@ export default defineConfig({
     environment: "jsdom",
     reporters: ["default", "junit"],
     root: fileURLToPath(new URL("./", import.meta.url)),
-    transformMode: {
-      web: [/\.[jt]sx$/],
-    },
     deps: {
-      inline: ["monaco-editor"],
+      registerNodeLoader: true, // TODO: This option is deprecated. Replace it with a proper solution
     },
     coverage: {
       provider: "v8",
