@@ -22,7 +22,8 @@
     "prepare": "cd ../.. && husky install ./org.knime.python3.scripting.nodes/js-src/.husky"
   },
   "dependencies": {
-    "@knime/scripting-editor": "0.0.5",
+    "@knime/scripting-editor": "0.0.6",
+    "@knime/ui-extension-service": "0.15.0",
     "pinia": "2.1.4",
     "vue": "3.3.4",
     "webapps-common": "file:webapps-common"
