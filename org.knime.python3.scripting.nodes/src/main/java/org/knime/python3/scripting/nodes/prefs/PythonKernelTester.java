@@ -71,7 +71,7 @@ import org.knime.python3.PythonCommand;
 /**
  * Copied from org.knime.python2.
  *
- * Static class to manage the testing of Python installations for Python versions 2 and 3.
+ * Static class to manage the testing of Python installations for Python 3.
  *
  * @author Clemens von Schwerin, KNIME GmbH, Konstanz
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
@@ -85,10 +85,6 @@ final class PythonKernelTester {
     private static final String SEPARATOR = "__!__separator__!__";
 
     private static final String SUCCESS_MESSAGE = "__!__installation_tests_finished__!__";
-
-    private static final String PYTHON_MAJOR_VERSION_2 = "2";
-
-    private static final String PYTHON_MINIMUM_VERSION_2 = "2.7.0";
 
     private static final String PYTHON_MAJOR_VERSION_3 = "3";
 
@@ -114,22 +110,6 @@ final class PythonKernelTester {
     }
 
     /**
-     * Tests if Python can be started for the given Python 2 command and if all given required custom modules are
-     * installed.
-     *
-     * @param python2Command The Python 2 command to test.
-     * @param additionalRequiredModules Additional custom modules that must exist in the Python installation in order
-     *            for the caller to work properly, must not be {@code null} but may be empty.
-     * @param force Force the test to be rerun again even if the same configuration was successfully tested before.
-     * @return The results of the installation test.
-     */
-    public static PythonKernelTestResult testPython2Installation(final PythonCommand python2Command,
-        final Collection<PythonModuleSpec> additionalRequiredModules, final boolean force) {
-        return testPythonInstallation(python2Command, PYTHON_MAJOR_VERSION_2, PYTHON_MINIMUM_VERSION_2,
-            additionalRequiredModules, Collections.emptyList(), force);
-    }
-
-    /**
      * Tests if Python can be started for the given Python 3 command and if all given required custom modules are
      * installed.
      *
@@ -143,44 +123,6 @@ final class PythonKernelTester {
         final Collection<PythonModuleSpec> additionalRequiredModules, final boolean force) {
         return testPythonInstallation(python3Command, PYTHON_MAJOR_VERSION_3, PYTHON_MINIMUM_VERSION_3,
             additionalRequiredModules, Collections.emptyList(), force);
-    }
-
-    /**
-     * Tests if Python can be started for the given Python 2 command and if all given required custom modules are
-     * installed.
-     *
-     * @param python2Command The Python 2 command to test.
-     * @param additionalRequiredModules Additional custom modules that must exist in the Python installation in order
-     *            for the caller to work properly, must not be {@code null} but may be empty.
-     * @param additionalOptionalModules Additional custom modules that should exist in the Python installation in order
-     *            for the caller to work properly, must not be {@code null} but may be empty.
-     * @param force Force the test to be rerun again even if the same configuration was successfully tested before.
-     * @return The results of the installation test.
-     */
-    public static PythonKernelTestResult testPython2Installation(final PythonCommand python2Command,
-        final Collection<PythonModuleSpec> additionalRequiredModules,
-        final Collection<PythonModuleSpec> additionalOptionalModules, final boolean force) {
-        return testPythonInstallation(python2Command, PYTHON_MAJOR_VERSION_2, PYTHON_MINIMUM_VERSION_2,
-            additionalRequiredModules, additionalOptionalModules, force);
-    }
-
-    /**
-     * Tests if Python can be started for the given Python 3 command and if all given required custom modules are
-     * installed.
-     *
-     * @param python3Command The Python 3 command to test.
-     * @param additionalRequiredModules Additional custom modules that must exist in the Python installation in order
-     *            for the caller to work properly, must not be {@code null} but may be empty.
-     * @param additionalOptionalModules Additional custom modules that should exist in the Python installation in order
-     *            for the caller to work properly, must not be {@code null} but may be empty.
-     * @param force Force the test to be rerun again even if the same configuration was successfully tested before.
-     * @return The results of the installation test.
-     */
-    public static PythonKernelTestResult testPython3Installation(final PythonCommand python3Command,
-        final Collection<PythonModuleSpec> additionalRequiredModules,
-        final Collection<PythonModuleSpec> additionalOptionalModules, final boolean force) {
-        return testPythonInstallation(python3Command, PYTHON_MAJOR_VERSION_3, PYTHON_MINIMUM_VERSION_3,
-            additionalRequiredModules, additionalOptionalModules, force);
     }
 
     /**
