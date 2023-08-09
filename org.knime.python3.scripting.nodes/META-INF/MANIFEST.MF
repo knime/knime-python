@@ -3,7 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: KNIME Python 3 - Scripting Nodes
 Bundle-SymbolicName: org.knime.python3.scripting.nodes;singleton:=true
 Bundle-Version: 5.2.0.qualifier
-Bundle-ClassPath: .
+Bundle-ClassPath: knime-python3-scripting-nodes.jar
 Bundle-Vendor: KNIME AG, Zurich, Switzerland
 Bundle-RequiredExecutionEnvironment: JavaSE-17
 Bundle-ActivationPolicy: lazy
@@ -39,3 +39,4 @@ Require-Bundle: org.knime.core;bundle-version="[5.0.0,6.0.0)",
 Automatic-Module-Name: org.knime.python3.scripting.nodes
 Export-Package: org.knime.python3.scripting.nodes.prefs
 Eclipse-RegisterBuddy: org.knime.ext.py4j
+Eclipse-BundleShape: dir
