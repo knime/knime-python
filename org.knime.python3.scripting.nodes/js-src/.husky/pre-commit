@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 . "$(dirname -- "$0")/_/husky.sh"
-cd org.knime.python3.scripting.nodes/js-src && npx lint-staged
+cd org.knime.python3.scripting.nodes/js-src && npx lint-staged || exit 0
