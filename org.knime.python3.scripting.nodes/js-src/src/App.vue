@@ -28,6 +28,7 @@ const onSaveSettings = () => {
     <!-- TODO delete the save button when it is provided by the UI Extension framework -->
     <Button primary @click="onSaveSettings">Save Settings</Button>
     <ScriptingEditor
+      title="KNIME Python Script Editor (JS)"
       language="python"
       file-name="main.py"
       @monaco-created="onMonacoCreated"
