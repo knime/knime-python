@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { editor } from "monaco-editor";
-import { CodeEditor } from "@knime/scripting-editor";
+import { ScriptingEditor } from "@knime/scripting-editor";
 import Button from "webapps-common/ui/components/Button.vue";
 
 import { pythonScriptingService } from "@/python-scripting-service";
@@ -25,14 +25,16 @@ const onSaveSettings = () => {
 
 <template>
   <main>
-    <div style="height: 600px">
-      <CodeEditor language="python" @monaco-created="onMonacoCreated" />
-    </div>
     <!-- TODO delete the save button when it is provided by the UI Extension framework -->
     <Button primary @click="onSaveSettings">Save Settings</Button>
+    <ScriptingEditor
+      language="python"
+      file-name="main.py"
+      @monaco-created="onMonacoCreated"
+    />
   </main>
 </template>
 
-<style lang="postcss">
+<style>
 @import url("webapps-common/ui/css");
 </style>

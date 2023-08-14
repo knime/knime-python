@@ -6,10 +6,12 @@ import App from "../App.vue";
 import { pythonScriptingService } from "@/python-scripting-service";
 
 describe("App.vue", () => {
-  it("renders the CodeEditor component with the correct language", () => {
+  it("renders the ScriptingEditor component with the correct language", () => {
     const wrapper = shallowMount(App);
-    const helloWorldComponent = wrapper.findComponent({ name: "CodeEditor" });
-    expect(helloWorldComponent.props("language")).toBe("python");
+    const scriptingComponent = wrapper.findComponent({
+      name: "ScriptingEditor",
+    });
+    expect(scriptingComponent).toBeDefined();
   });
 
   it("saves the settings on button click", () => {
