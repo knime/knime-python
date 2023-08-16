@@ -49,6 +49,7 @@
 package org.knime.python3.nodes.dialog;
 
 import java.util.Optional;
+import java.util.Set;
 
 import org.knime.core.webui.data.RpcDataService;
 import org.knime.core.webui.node.dialog.NodeDialog;
@@ -65,7 +66,9 @@ import org.knime.core.webui.page.Page;
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
 @SuppressWarnings("restriction")
-public final class JsonFormsNodeDialog extends NodeDialog {
+public final class JsonFormsNodeDialog implements NodeDialog {
+
+    private final SettingsType m_settingsType;
 
     private final NodeSettingsService m_settingsService;
 
@@ -76,8 +79,13 @@ public final class JsonFormsNodeDialog extends NodeDialog {
      * @param settingsService providing settings to the dialog
      */
     public JsonFormsNodeDialog(final SettingsType settingsType, final NodeSettingsService settingsService) {
-        super(settingsType);
+        m_settingsType = settingsType;
         m_settingsService = settingsService;
+    }
+
+    @Override
+    public Set<SettingsType> getSettingsTypes() {
+        return Set.of(m_settingsType);
     }
 
     @Override
@@ -91,7 +99,7 @@ public final class JsonFormsNodeDialog extends NodeDialog {
     }
 
     @Override
-    protected NodeSettingsService getNodeSettingsService() {
+    public NodeSettingsService getNodeSettingsService() {
         return m_settingsService;
     }
 

@@ -49,6 +49,7 @@
 package org.knime.python3.scripting.nodes2.script;
 
 import java.util.Optional;
+import java.util.Set;
 
 import org.knime.core.webui.data.RpcDataService;
 import org.knime.core.webui.node.dialog.NodeDialog;
@@ -58,15 +59,19 @@ import org.knime.core.webui.node.dialog.VariableSettingsService;
 import org.knime.core.webui.page.Page;
 
 @SuppressWarnings("restriction") // the UIExtension node dialog API is still restricted
-final class PythonScriptNodeDialog extends NodeDialog {
+final class PythonScriptNodeDialog implements NodeDialog {
 
     private final PythonScriptingService m_scriptingService;
 
     PythonScriptNodeDialog() {
-        super(SettingsType.MODEL);
         m_scriptingService = new PythonScriptingService();
         // TODO(AP-19338) language server lifetime
         // TODO(AP-19357) stop the language server
+    }
+
+    @Override
+    public Set<SettingsType> getSettingsTypes() {
+        return Set.of(SettingsType.MODEL);
     }
 
     @Override
@@ -84,12 +89,12 @@ final class PythonScriptNodeDialog extends NodeDialog {
     }
 
     @Override
-    protected NodeSettingsService getNodeSettingsService() {
+    public NodeSettingsService getNodeSettingsService() {
         return PythonScriptNodeSettings.createNodeSettingsService();
     }
 
     @Override
-    protected Optional<VariableSettingsService> getVariableSettingsService() {
+    public Optional<VariableSettingsService> getVariableSettingsService() {
         return Optional.of(PythonScriptNodeSettings.createVariableSettingsService());
     }
 }

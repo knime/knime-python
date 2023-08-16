@@ -77,6 +77,7 @@ import org.knime.core.node.extension.CategorySetFactory;
 import org.knime.core.node.util.CheckUtils;
 import org.knime.core.webui.node.dialog.NodeDialog;
 import org.knime.core.webui.node.dialog.NodeDialogFactory;
+import org.knime.core.webui.node.dialog.NodeDialogManager;
 import org.knime.core.webui.node.dialog.SettingsType;
 import org.knime.core.webui.node.view.NodeView;
 import org.knime.core.webui.node.view.NodeViewFactory;
@@ -259,7 +260,7 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
 
         @Override
         protected NodeDialogPane createNodeDialogPane() {
-            return createNodeDialog().createLegacyFlowVariableNodeDialog();
+            return NodeDialogManager.createLegacyFlowVariableNodeDialog(createNodeDialog());
         }
 
         @Override
