@@ -65,6 +65,7 @@ import org.knime.core.node.port.PortType;
 import org.knime.core.node.port.image.ImagePortObject;
 import org.knime.core.webui.node.dialog.NodeDialog;
 import org.knime.core.webui.node.dialog.NodeDialogFactory;
+import org.knime.core.webui.node.dialog.NodeDialogManager;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
 
 /**
@@ -106,7 +107,7 @@ public final class PythonScriptNodeFactory extends ConfigurableNodeFactory<Pytho
     @Override
     protected NodeDialogPane createNodeDialogPane(final NodeCreationConfiguration creationConfig) {
         // TODO(AP-19377) Display settings that are overwritten by a flow variable correctly
-        return createNodeDialog().createLegacyFlowVariableNodeDialog();
+        return NodeDialogManager.createLegacyFlowVariableNodeDialog(createNodeDialog());
     }
 
     @Override
