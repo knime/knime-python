@@ -3,7 +3,6 @@
   "include": ["src/**/*"],
   "exclude": ["**/__tests__/*"],
   "compilerOptions": {
-    "composite": true,
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
