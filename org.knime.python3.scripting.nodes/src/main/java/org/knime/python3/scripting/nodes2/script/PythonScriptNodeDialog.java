@@ -97,4 +97,9 @@ final class PythonScriptNodeDialog implements NodeDialog {
     public Optional<VariableSettingsService> getVariableSettingsService() {
         return Optional.of(PythonScriptNodeSettings.createVariableSettingsService());
     }
+
+    @Override
+    public boolean canBeEnlarged() {
+        return true;
+    }
 }
