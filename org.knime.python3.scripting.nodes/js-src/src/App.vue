@@ -10,7 +10,6 @@ const menuItems: MenuItem[] = [
     // href: "https://docs.knime.com",
     text: "Python Editor setting 1",
     icon: HelpIcon,
-    id: "someid",
   },
   {
     text: "Python Editor setting 2",
