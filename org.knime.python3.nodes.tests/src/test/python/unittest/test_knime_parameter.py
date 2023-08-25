@@ -2381,6 +2381,17 @@ class FullColumnSelectionTest(unittest.TestCase):
                 log.output[2],
             )
 
+    def test_apply_with_prefilter(self):
+        selection = kp.ColumnFilterConfig(
+            mode=kp.ColumnFilterMode.MANUAL, pre_filter=lambda c: c.name != "bar"
+        )
+        schema = ks.Schema.from_types([ks.string()] * 3, ["foo", "bar", "baz"])
+        selection.manual_filter = kp.ManualFilterConfig(
+            included=["foo"], excluded=["baz"], include_unknown_columns=True
+        )
+        filtered = selection.apply(schema)
+        self.assertEqual(["foo"], filtered.column_names)
+
 
 if __name__ == "__main__":
     unittest.main()

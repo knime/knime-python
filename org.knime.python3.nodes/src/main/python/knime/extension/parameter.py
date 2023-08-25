@@ -1510,6 +1510,7 @@ class ColumnFilterConfig:
         type_filter: TypeFilterConfig = None,
         manual_filter: ManualFilterConfig = None,
         included_column_names: List[str] = None,
+        pre_filter: Callable[[ks.Column], bool] = None,
     ):
         """
         Construct a ``ColumnFilterConfig`` with given ``mode``, ``pattern_filter``, ``type_filter`` and ``manual_filter``.
@@ -1534,13 +1535,16 @@ class ColumnFilterConfig:
 
             self.mode = mode
 
+        self._pre_filter = pre_filter
+
     @classmethod
-    def _from_dict(cls, value):
+    def _from_dict(cls, value, pre_filter: Callable[[ks.Column], bool]):
         return cls(
             mode=ColumnFilterMode[value["mode"]],
             pattern_filter=PatternFilterConfig._from_dict(value["patternFilter"]),
             type_filter=TypeFilterConfig._from_dict(value["typeFilter"]),
             manual_filter=ManualFilterConfig._from_dict(value["manualFilter"]),
+            pre_filter=pre_filter,
         )
 
     def _to_dict(self):
@@ -1579,19 +1583,24 @@ class ColumnFilterConfig:
         Filter a table schema or a table according to this column filter configuration.
         """
         schema = columnar.schema if hasattr(columnar, "schema") else columnar
+        prefiltered_schema = (
+            schema[[column.name for column in schema if self._pre_filter(column)]]
+            if self._pre_filter
+            else schema
+        )
 
         filtered_column_names = []
         if self.mode == ColumnFilterMode.MANUAL:
-            filtered_column_names = self.manual_filter._apply(schema)
+            filtered_column_names = self.manual_filter._apply(prefiltered_schema)
         elif (
             self.mode == ColumnFilterMode.REGEX
             or self.mode == ColumnFilterMode.WILDCARD
         ):
             filtered_column_names = self.pattern_filter._apply(
-                schema, regex=self.mode == ColumnFilterMode.REGEX
+                prefiltered_schema, regex=self.mode == ColumnFilterMode.REGEX
             )
         elif self.mode == ColumnFilterMode.TYPE:
-            filtered_column_names = self.type_filter._apply(schema)
+            filtered_column_names = self.type_filter._apply(prefiltered_schema)
         else:
             raise ValueError(f"Unknown column filter mode selected: {self.mode}")
         return columnar[filtered_column_names]
@@ -1655,7 +1664,7 @@ class ColumnFilterParameter(_BaseColumnParameter):
 
         # Turn dict into ColumnFilterConfig for better use in Python nodes
         if value is not None:
-            return ColumnFilterConfig._from_dict(value)
+            return ColumnFilterConfig._from_dict(value, self._column_filter)
         else:
             return None
 
