@@ -54,6 +54,8 @@ import java.util.function.Supplier;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.port.PortObjectSpec;
+import org.knime.core.webui.node.dialog.NodeAndVariableSettingsRO;
+import org.knime.core.webui.node.dialog.NodeAndVariableSettingsWO;
 import org.knime.core.webui.node.dialog.NodeSettingsService;
 import org.knime.core.webui.node.dialog.SettingsType;
 import org.knime.python3.nodes.proxy.NodeDialogProxy;
@@ -88,7 +90,8 @@ public final class DelegatingJsonSettingsDataService implements NodeSettingsServ
     }
 
     @Override
-    public String fromNodeSettings(final Map<SettingsType, NodeSettingsRO> settings, final PortObjectSpec[] specs) {
+    public String fromNodeSettings(final Map<SettingsType, NodeAndVariableSettingsRO> settings,
+        final PortObjectSpec[] specs) {
         try (var proxy = m_proxyProvider.get()) {
 
             // this is assigned here to accommodate changing the set of parameters during development
@@ -106,13 +109,13 @@ public final class DelegatingJsonSettingsDataService implements NodeSettingsServ
     }
 
     @Override
-    public void toNodeSettings(final String jsonSettings, final Map<SettingsType, NodeSettingsWO> settings) {
+    public void toNodeSettings(final String jsonSettings, final Map<SettingsType, NodeAndVariableSettingsWO> settings) {
         m_lastSettingsSchema.createFromJson(jsonSettings).saveTo(settings.get(SettingsType.MODEL));
     }
 
-
     @Override
-    public void getDefaultNodeSettings(final Map<SettingsType, NodeSettingsWO> settings, final PortObjectSpec[] specs) {
+    public void getDefaultNodeSettings(final Map<SettingsType, NodeSettingsWO> settings,
+        final PortObjectSpec[] specs) {
         try (var proxy = m_proxyProvider.get()) {
             proxy.getSettings(m_extensionVersion).saveTo(settings.get(SettingsType.MODEL));
         }

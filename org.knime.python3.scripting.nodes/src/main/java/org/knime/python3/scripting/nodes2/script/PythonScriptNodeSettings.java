@@ -56,8 +56,9 @@ import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.port.PortObjectSpec;
+import org.knime.core.webui.node.dialog.NodeAndVariableSettingsRO;
+import org.knime.core.webui.node.dialog.NodeAndVariableSettingsWO;
 import org.knime.core.webui.node.dialog.SettingsType;
-import org.knime.core.webui.node.dialog.VariableSettingsWO;
 
 import com.google.gson.Gson;
 
@@ -136,10 +137,6 @@ final class PythonScriptNodeSettings {
         return new NodeSettingsService();
     }
 
-    static VariableSettingsService createVariableSettingsService() {
-        return new VariableSettingsService();
-    }
-
     private static final class NodeSettingsService implements org.knime.core.webui.node.dialog.NodeSettingsService {
         @Override
         public void getDefaultNodeSettings(final Map<SettingsType, NodeSettingsWO> settings,
@@ -148,28 +145,8 @@ final class PythonScriptNodeSettings {
         }
 
         @Override
-        public void toNodeSettings(final String settingsString, final Map<SettingsType, NodeSettingsWO> settings) {
-            var settingsObj = GSON.fromJson(settingsString, Settings.class);
-            saveSettings(settingsObj, settings.get(SettingsType.MODEL));
-        }
-
-        @Override
-        public String fromNodeSettings(final Map<SettingsType, NodeSettingsRO> settings, final PortObjectSpec[] specs) {
-            try {
-                return GSON.toJson(loadSettings(settings.get(SettingsType.MODEL)));
-            } catch (final InvalidSettingsException e) {
-                // This should not happen because we do not save invalid settings. We just forward the exception
-                throw new IllegalStateException(e.getMessage(), e);
-            }
-        }
-    }
-
-    private static final class VariableSettingsService
-        implements org.knime.core.webui.node.dialog.VariableSettingsService {
-
-        @Override
-        public void toVariableSettings(final String settingsString,
-            final Map<SettingsType, VariableSettingsWO> settings) {
+        public void toNodeSettings(final String settingsString,
+            final Map<SettingsType, NodeAndVariableSettingsWO> settings) {
             var settingsObj = GSON.fromJson(settingsString, Settings.class);
             if (!settingsObj.executableSelection.isEmpty()) {
                 try {
@@ -179,6 +156,18 @@ final class PythonScriptNodeSettings {
                     // Cannot happen because we have a setting with the key EXECUTABLE_SELECTION_CFG_KEY
                     throw new IllegalStateException(e);
                 }
+            }
+            saveSettings(settingsObj, settings.get(SettingsType.MODEL));
+        }
+
+        @Override
+        public String fromNodeSettings(final Map<SettingsType, NodeAndVariableSettingsRO> settings,
+            final PortObjectSpec[] specs) {
+            try {
+                return GSON.toJson(loadSettings(settings.get(SettingsType.MODEL)));
+            } catch (final InvalidSettingsException e) {
+                // This should not happen because we do not save invalid settings. We just forward the exception
+                throw new IllegalStateException(e.getMessage(), e);
             }
         }
     }

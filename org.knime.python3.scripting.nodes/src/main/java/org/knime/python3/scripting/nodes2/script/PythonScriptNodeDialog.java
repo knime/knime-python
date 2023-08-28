@@ -55,7 +55,6 @@ import org.knime.core.webui.data.RpcDataService;
 import org.knime.core.webui.node.dialog.NodeDialog;
 import org.knime.core.webui.node.dialog.NodeSettingsService;
 import org.knime.core.webui.node.dialog.SettingsType;
-import org.knime.core.webui.node.dialog.VariableSettingsService;
 import org.knime.core.webui.page.Page;
 
 @SuppressWarnings("restriction") // the UIExtension node dialog API is still restricted
@@ -91,11 +90,6 @@ final class PythonScriptNodeDialog implements NodeDialog {
     @Override
     public NodeSettingsService getNodeSettingsService() {
         return PythonScriptNodeSettings.createNodeSettingsService();
-    }
-
-    @Override
-    public Optional<VariableSettingsService> getVariableSettingsService() {
-        return Optional.of(PythonScriptNodeSettings.createVariableSettingsService());
     }
 
     @Override
