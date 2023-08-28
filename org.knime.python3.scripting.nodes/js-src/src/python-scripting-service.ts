@@ -67,4 +67,14 @@ export const pythonScriptingService = {
   sendToConsole: (text: { text: string }) => {
     scriptingService.sendToConsole(text);
   },
+  startLSPConnection: async (editorModel: any) => {
+    await scriptingService.startLSPConnection(editorModel);
+
+    // Configure the LSP server
+    // TODO(AP-19349) get the current executable option id
+    const config = JSON.parse(
+      await scriptingService.sendToService("getLSPConfig", [""]),
+    );
+    await scriptingService.configureLSPServer(config);
+  },
 };

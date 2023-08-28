@@ -51,6 +51,14 @@ const mockScriptingService: ScriptingServiceType = {
     console.log("getSelectedLines called");
     return "mySelectedLines";
   },
+  async startLSPConnection() {
+    console.log("Started LSP connection");
+    await sleep(SLEEP_TIME);
+  },
+  async configureLSPServer(settings: any) {
+    console.log(`Configured LSP server with ${JSON.stringify(settings)}`);
+    await sleep(SLEEP_TIME);
+  },
 };
 
 export default mockScriptingService;

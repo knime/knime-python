@@ -5,6 +5,8 @@ import HelpIcon from "webapps-common/ui/assets/img/icons/help.svg";
 import type { MenuItem } from "webapps-common/ui/components/MenuItems.vue";
 import PythonEditorControls from "./PythonEditorControls.vue";
 import PythonWorkspace from "./PythonWorkspace.vue";
+import { editor } from "monaco-editor";
+import { pythonScriptingService } from "@/python-scripting-service";
 
 const menuItems: MenuItem[] = [
   {
@@ -21,6 +23,15 @@ const menuItems: MenuItem[] = [
     icon: SettingsIcon,
   },
 ];
+
+const onMonacoCreated = ({
+  editorModel,
+}: {
+  editor: editor.IStandaloneCodeEditor;
+  editorModel: editor.ITextModel;
+}) => {
+  pythonScriptingService.startLSPConnection(editorModel);
+};
 </script>
 
 <template>
@@ -31,6 +42,7 @@ const menuItems: MenuItem[] = [
       :show-run-buttons="true"
       language="python"
       file-name="main.py"
+      @monaco-created="onMonacoCreated"
     >
       <template #code-editor-controls>
         <PythonEditorControls />
