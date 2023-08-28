@@ -74,7 +74,6 @@ import org.knime.python3.scripting.nodes2.script.PythonScriptingService.Executab
 import org.knime.python3.scripting.nodes2.script.PythonScriptingSession.ExecutionInfo;
 import org.knime.python3.scripting.nodes2.script.PythonScriptingSession.ExecutionStatus;
 import org.knime.scripting.editor.ScriptingService;
-import org.knime.scripting.editor.lsp.LanguageServerProxy;
 
 /**
  * A special {@link ScriptingService} for the Python scripting node.
@@ -102,23 +101,10 @@ final class PythonScriptingService extends ScriptingService {
     private PythonScriptingSession m_interactiveSession;
 
     /** Create a new {@link PythonScriptingService}. */
-    @SuppressWarnings("resource") // TODO(AP-19357) fix this
     PythonScriptingService() {
-        super(connectToLanguageServer(), FLOW_VARIABLE_FILTER);
+        super(PythonLanguageServer::startPythonLSP, FLOW_VARIABLE_FILTER);
         m_ports = PythonScriptPortsConfiguration.fromCurrentNodeContext();
         m_expectCancel = new AtomicBoolean(false);
-        // TODO(AP-19357) stop the language server when the dialog is closed
-    }
-
-    private static LanguageServerProxy connectToLanguageServer() {
-        try {
-            // TODO(AP-19338) make language server configurable
-            return PythonLanguageServer.instance().connect();
-        } catch (final Exception e) {
-            // TODO(AP-19338) Handle better if the language server can't be used for any reason
-            LOGGER.error(e);
-            return null;
-        }
     }
 
     private ExecutableOption getExecutableOption(final String id) {

@@ -48,54 +48,33 @@
  */
 package org.knime.python3.scripting.nodes2.script;
 
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.io.IOException;
+import java.util.List;
 
-import org.knime.core.node.NodeLogger;
+import org.knime.python3.scripting.nodes.prefs.Python3ScriptingPreferences;
 import org.knime.scripting.editor.lsp.LanguageServerProxy;
 
 /**
- * TODO(AP-19338) javadoc
+ * Utility for the LSP Server implementation for Python.
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
  */
 final class PythonLanguageServer {
 
-    // TODO(AP-19338) handle the lifetime of the language server
-    // TODO(AP-19338) make language server configurable
-    // TODO(AP-19338) use the path to a bundled language server
-
-    private static PythonLanguageServer INSTANCE;
-
-    public static synchronized PythonLanguageServer instance() {
-        if (INSTANCE == null) {
-            INSTANCE = new PythonLanguageServer();
-        }
-        return INSTANCE;
-    }
-
-    private final LanguageServerProxy m_lsProxy;
-
-    private AtomicBoolean m_connected;
-
     private PythonLanguageServer() {
-        final String lspPath = System.getProperty("knime.python.js.lsp");
-        if (lspPath == null) {
-            throw new IllegalStateException(
-                "Please configure a path to a Python language server via the system property 'knime.python.js.lsp'.");
-        }
-        m_lsProxy = new LanguageServerProxy(new ProcessBuilder(lspPath));
-        m_connected = new AtomicBoolean();
+        // Utility class
     }
 
-    public LanguageServerProxy connect() {
-        if (m_connected.getAndSet(true)) {
-            NodeLogger.getLogger(PythonLanguageServer.class)
-                .warn("Last client did not disconnect from the language server.");
-        }
-        return m_lsProxy;
-    }
-
-    public synchronized void disconnect() {
-        m_connected.set(false);
+    /**
+     * Create a new {@link LanguageServerProxy} that is connected to a "python-lsp-server" process started from the
+     * bundled Python environment.
+     *
+     * @throws IOException if an I/O error occurs starting the process
+     */
+    static LanguageServerProxy startPythonLSP() throws IOException {
+        // TODO(AP-19338) language server configuration
+        var pylspProcessBuilder = Python3ScriptingPreferences.getBundledPythonCommand().createProcessBuilder();
+        pylspProcessBuilder.command().addAll(List.of("-m", "pylsp"));
+        return new LanguageServerProxy(pylspProcessBuilder);
     }
 }

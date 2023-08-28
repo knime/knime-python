@@ -64,8 +64,6 @@ final class PythonScriptNodeDialog implements NodeDialog {
 
     PythonScriptNodeDialog() {
         m_scriptingService = new PythonScriptingService();
-        // TODO(AP-19338) language server lifetime
-        // TODO(AP-19357) stop the language server
     }
 
     @Override
@@ -84,7 +82,8 @@ final class PythonScriptNodeDialog implements NodeDialog {
 
     @Override
     public Optional<RpcDataService> createRpcDataService() {
-        return Optional.of(RpcDataService.builder(m_scriptingService.getJsonRpcService()).build());
+        return Optional.of(RpcDataService.builder(m_scriptingService.getJsonRpcService())
+            .onDeactivate(m_scriptingService::onDeactivate).build());
     }
 
     @Override

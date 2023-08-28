@@ -52,6 +52,7 @@ import org.eclipse.core.runtime.preferences.DefaultScope;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.knime.conda.CondaEnvironmentIdentifier;
 import org.knime.conda.prefs.CondaPreferences;
+import org.knime.python3.BundledPythonCommand;
 import org.knime.python3.PythonCommand;
 
 /**
@@ -120,6 +121,13 @@ public final class Python3ScriptingPreferences {
             environmentsConfig.loadConfigFrom(CURRENT);
         }
         return environmentsConfig.getPython3Config().getPythonCommand();
+    }
+
+    /**
+     * @return The {@link PythonCommand} for the installed bundled environment.
+     */
+    public static BundledPythonCommand getBundledPythonCommand() {
+        return getBundledCondaEnvironmentConfig().getPythonCommand();
     }
 
     private static BundledCondaEnvironmentConfig getBundledCondaEnvironmentConfig() {
