@@ -30,7 +30,7 @@
                PythonClassName="ZonedDateTimeValueFactory2"
                ValueFactory="org.knime.core.data.v2.time.ZonedDateTimeValueFactory2"
                ValueTypeName="pandas._libs.tslibs.timestamps.Timestamp"
-               is_default_python_representation="false">
+               isDefaultPythonRepresentation="false">
          </PythonValueFactory>
 
          <PythonValueFactory
@@ -43,7 +43,7 @@
                PythonClassName="DurationValueFactory"
                ValueFactory="org.knime.core.data.v2.time.DurationValueFactory"
                ValueTypeName="pandas._libs.tslibs.timedeltas.Timedelta"
-               is_default_python_representation="false">
+               isDefaultPythonRepresentation="false">
          </PythonValueFactory>
 
          <PythonValueFactory
