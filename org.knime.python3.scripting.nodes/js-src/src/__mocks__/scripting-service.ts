@@ -21,9 +21,6 @@ const mockScriptingService: ScriptingServiceType = {
     await sleep(SLEEP_TIME);
     return { script: "print('Hello World!')" };
   },
-  getFlowVariableSettings() {
-    return sleep(SLEEP_TIME);
-  },
   async saveSettings(settings: NodeSettings) {
     console.log(`Saved settings ${JSON.stringify(settings)}`);
     await sleep(SLEEP_TIME);
