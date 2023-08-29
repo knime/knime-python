@@ -86,6 +86,7 @@ import org.knime.python3.views.Python3ViewsSourceDirectory;
 import org.knime.scripting.editor.ScriptingService.ConsoleText;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.google.gson.Gson;
 
 /**
  * A running Python process that is used to execute scripts in the context of the Python scripting node.
@@ -170,8 +171,71 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
      * @return JSON according to executed lines. (All or any)
      *   can be also an error since we tunnel errors from python side as JSON
      */
-    String execute(final String script, final boolean checkOutputs) {
-        return m_entryPoint.execute(script, checkOutputs);
+    ExecutionInfo execute(final String script, final boolean checkOutputs) {
+        String jsonFromExecution = m_entryPoint.execute(script, checkOutputs);
+        System.out.println(jsonFromExecution);
+        var parsed = new Gson().fromJson(jsonFromExecution, ExecutionInfo.class);
+        System.out.println(parsed.getStatus());
+        System.out.println(parsed.getDescription());
+        System.out.println(parsed);
+        return parsed;
+    }
+
+    enum ExecutionStatus {
+            SUCCESS, EXECUTION_ERROR, KNIME_ERROR, FATAL_ERROR, CANCELLED
+    }
+
+    static class ExecutionInfo {
+        private final ExecutionStatus status; // NOSONAR
+
+        private final String description; // NOSONAR
+
+        private final String[] traceback; // NOSONAR
+
+        private final Object data; // NOSONAR
+
+        @SuppressWarnings("hiding")
+        ExecutionInfo(final ExecutionStatus status, final String description, final String[] traceback,
+            final Object data) {
+            this.status = status;
+            this.description = description;
+            this.traceback = traceback;
+            this.data = data;
+        }
+
+        @SuppressWarnings("hiding")
+        ExecutionInfo(final ExecutionStatus status, final String description) {
+            this(status, description, null, null);
+        }
+
+        /**
+         * @return the status
+         */
+        public ExecutionStatus getStatus() {
+            return status;
+        }
+
+        /**
+         * @return the traceback
+         */
+        public String[] getTraceback() {
+            return traceback;
+        }
+
+        /**
+         * @return the data
+         */
+        public Object getData() {
+            return data;
+        }
+
+        /**
+         * @return the description
+         */
+        public String getDescription() {
+            return description;
+        }
+
     }
 
     Collection<FlowVariable> getFlowVariables() {
@@ -209,11 +273,11 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
     private static PythonGateway<PythonScriptingEntryPoint> createGateway(final PythonCommand pythonCommand)
         throws IOException, InterruptedException {
         // TODO(AP-19430) set working directory to workflow dir
-        final var gatewayDescriptionBuilder = PythonGatewayDescription
-            .builder(pythonCommand, LAUNCHER.toAbsolutePath(), PythonScriptingEntryPoint.class) //
-            .addToPythonPath(Python3SourceDirectory.getPath()) //
-            .addToPythonPath(Python3ArrowSourceDirectory.getPath()) //
-            .addToPythonPath(Python3ViewsSourceDirectory.getPath());
+        final var gatewayDescriptionBuilder =
+            PythonGatewayDescription.builder(pythonCommand, LAUNCHER.toAbsolutePath(), PythonScriptingEntryPoint.class) //
+                .addToPythonPath(Python3SourceDirectory.getPath()) //
+                .addToPythonPath(Python3ArrowSourceDirectory.getPath()) //
+                .addToPythonPath(Python3ViewsSourceDirectory.getPath());
 
         // Add the paths to the extension types
         PythonValueFactoryRegistry.getModules().stream() //

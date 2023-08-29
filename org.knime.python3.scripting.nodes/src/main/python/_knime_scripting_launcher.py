@@ -180,8 +180,8 @@ class ScriptingEntryPoint(kg.EntryPoint):
             except KnimeUserError as e:
                 return json.dumps(
                     {
-                        "type": "knime_error",
-                        "value": f"KnimeUserError: {str(e)}",
+                        "status": "KNIME_ERROR",
+                        "description": f"KnimeUserError: {str(e)}",
                         "traceback": [],
                     }
                 )
@@ -193,8 +193,8 @@ class ScriptingEntryPoint(kg.EntryPoint):
 
                 return json.dumps(
                     {
-                        "type": "execution_error",
-                        "value": f"{type(e).__name__}: {str(e)}",
+                        "status": "EXECUTION_ERROR",
+                        "description": f"{type(e).__name__}: {str(e)}",
                         "traceback": [intro_line]
                         + [i[:-1] for i in traceback.format_list(stacksummary)],
                     }
@@ -321,7 +321,13 @@ class ScriptingEntryPoint(kg.EntryPoint):
             workspace["types"].append(var_type)
             workspace["values"].append(var_value)
 
-        return json.dumps({"type": "workspace", "data": workspace})
+        return json.dumps(
+            {
+                "status": "SUCCESS",
+                "data": workspace,
+                "description": "Successfully executed script",
+            }
+        )
 
     class Java:
         implements = ["org.knime.python3.scripting.nodes2.PythonScriptingEntryPoint"]

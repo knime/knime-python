@@ -4,6 +4,7 @@ import SettingsIcon from "webapps-common/ui/assets/img/icons/cog.svg";
 import HelpIcon from "webapps-common/ui/assets/img/icons/help.svg";
 import type { MenuItem } from "webapps-common/ui/components/MenuItems.vue";
 import PythonEditorControls from "./PythonEditorControls.vue";
+import PythonWorkspace from "./PythonWorkspace.vue";
 
 const menuItems: MenuItem[] = [
   {
@@ -33,6 +34,9 @@ const menuItems: MenuItem[] = [
     >
       <template #code-editor-controls>
         <PythonEditorControls />
+      </template>
+      <template #right-pane>
+        <PythonWorkspace />
       </template>
     </ScriptingEditor>
   </main>

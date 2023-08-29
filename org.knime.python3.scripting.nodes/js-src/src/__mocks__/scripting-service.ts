@@ -8,9 +8,14 @@ import sleep from "webapps-common/util/sleep";
 const SLEEP_TIME = 500;
 
 const mockScriptingService: ScriptingServiceType = {
-  sendToService(methodName: string, options?: any[]) {
+  async sendToService(methodName: string, options?: any[]) {
     console.log(`Called KNIME ${methodName} with ${JSON.stringify(options)}`);
-    return sleep(SLEEP_TIME);
+    await sleep(SLEEP_TIME);
+    return {
+      status: "SUCCESS",
+      description: "mocked execution info",
+      jsonFromExecution: null,
+    };
   },
   async getInitialSettings() {
     await sleep(SLEEP_TIME);
@@ -34,6 +39,20 @@ const mockScriptingService: ScriptingServiceType = {
   },
   stopEventPoller() {
     // do nothing
+  },
+  sendToConsole(text: { text: string }) {
+    console.log(`sending text to console: ${text}`);
+  },
+  initEditorService(editor: any, editorModel: any) {
+    console.log(`initEditorService called with ${{ editor, editorModel }}`);
+  },
+  getScript() {
+    console.log("getSelectedLines called");
+    return "myScript";
+  },
+  getSelectedLines() {
+    console.log("getSelectedLines called");
+    return "mySelectedLines";
   },
 };
 

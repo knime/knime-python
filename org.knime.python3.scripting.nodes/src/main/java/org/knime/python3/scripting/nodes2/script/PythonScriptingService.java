@@ -63,6 +63,7 @@ import java.util.stream.IntStream;
 import org.knime.conda.CondaEnvironmentDirectory;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.filestore.internal.NotInWorkflowWriteFileStoreHandler;
+import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.workflow.FlowVariable;
@@ -70,6 +71,8 @@ import org.knime.core.node.workflow.VariableType;
 import org.knime.core.webui.data.DataServiceContext;
 import org.knime.python2.port.PickledObjectPortObjectSpec;
 import org.knime.python3.scripting.nodes2.script.PythonScriptingService.ExecutableOption.ExecutableOptionType;
+import org.knime.python3.scripting.nodes2.script.PythonScriptingSession.ExecutionInfo;
+import org.knime.python3.scripting.nodes2.script.PythonScriptingSession.ExecutionStatus;
 import org.knime.scripting.editor.ScriptingService;
 import org.knime.scripting.editor.lsp.LanguageServerProxy;
 
@@ -96,7 +99,6 @@ final class PythonScriptingService extends ScriptingService {
     private AtomicBoolean m_expectCancel;
 
     // TODO(AP-19357) close the session when the dialog is closed
-    // TODO(AP-19332) should the Python session be started immediately? (or whenever the frontend requests it?)
     private PythonScriptingSession m_interactiveSession;
 
     /** Create a new {@link PythonScriptingService}. */
@@ -120,7 +122,7 @@ final class PythonScriptingService extends ScriptingService {
     }
 
     private ExecutableOption getExecutableOption(final String id) {
-        if (!m_executableOptions.containsKey(id)) {
+        if (!getExecutableOptions().containsKey(id)) {
             final Map<String, FlowVariable> allFlowVars =
                 getWorkflowControl().getFlowObjectStack().getAllAvailableFlowVariables();
             if (allFlowVars.containsKey(id)) {
@@ -130,7 +132,7 @@ final class PythonScriptingService extends ScriptingService {
                 return new ExecutableOption(ExecutableOptionType.MISSING_VAR, id, null, null, null);
             }
         }
-        return m_executableOptions.get(id);
+        return getExecutableOptions().get(id);
     }
 
     /** Get the {@link ExecutableOption} for the variable value (which might be <code>null</code>) */
@@ -157,6 +159,15 @@ final class PythonScriptingService extends ScriptingService {
         return new PythonRpcService();
     }
 
+    private synchronized Map<String, ExecutableOption> getExecutableOptions() {
+        if (m_executableOptions == null || m_executableOptions.isEmpty()) {
+            // Set the executable options with the currently available flow variables
+            m_executableOptions =
+                ExecutableSelectionUtils.getExecutableOptions(getWorkflowControl().getFlowObjectStack());
+        }
+        return m_executableOptions;
+    }
+
     /**
      * An extension of the {@link org.knime.scripting.editor.ScriptingService.RpcService} that provides additional
      * methods to the frontend of the Python scripting node.
@@ -164,15 +175,6 @@ final class PythonScriptingService extends ScriptingService {
      * NB: Must be public for the JSON-RPC server
      */
     public final class PythonRpcService extends RpcService {
-
-        /**
-         * Notify that a new dialog has been opened. Must be called before calling any other method of the RPC server.
-         */
-        public void initExecutableOptions() {
-            // Set the executable options with the currently available flow variables
-            m_executableOptions =
-                ExecutableSelectionUtils.getExecutableOptions(getWorkflowControl().getFlowObjectStack());
-        }
 
         @SuppressWarnings("restriction") // the DataServiceContext is still restricted API
         public void sendLastConsoleOutput() {
@@ -191,10 +193,10 @@ final class PythonScriptingService extends ScriptingService {
          * Start the interactive Python session.
          *
          * @param executableSelection the id of the selected executable option
+         * @return Information about the execution status
          * @throws Exception
          */
-        public void startInteractive(final String executableSelection) throws Exception {
-            // TODO(AP-19332) Error handling
+        public StartSessionInfo startInteractive(final String executableSelection) throws Exception {
             if (m_interactiveSession != null) {
                 m_interactiveSession.close();
                 m_interactiveSession = null;
@@ -208,30 +210,42 @@ final class PythonScriptingService extends ScriptingService {
             // TODO do we need to do more with the NotInWorkflowWriteFileStoreHandler?
             // TODO report the progress of converting the tables using the ExecutionMonitor?
             final var fileStoreHandler = NotInWorkflowWriteFileStoreHandler.create();
-            m_interactiveSession = new PythonScriptingSession(pythonCommand,
-                PythonScriptingService.this::addConsoleOutputEvent, fileStoreHandler);
-
-            m_interactiveSession.setupIO(workflowControl.getInputData(), getFlowVariables(), m_ports.getNumOutTables(),
-                m_ports.getNumOutImages(), m_ports.getNumOutObjects(), new ExecutionMonitor());
+            try {
+                m_interactiveSession = new PythonScriptingSession(pythonCommand,
+                    PythonScriptingService.this::addConsoleOutputEvent, fileStoreHandler);
+                m_interactiveSession.setupIO(workflowControl.getInputData(), getFlowVariables(),
+                    m_ports.getNumOutTables(), m_ports.getNumOutImages(), m_ports.getNumOutObjects(),
+                    new ExecutionMonitor());
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return new StartSessionInfo(StartSessionStatus.ERROR, e.getMessage());
+            } catch (IOException | CanceledExecutionException | IllegalArgumentException e) {
+                return new StartSessionInfo(StartSessionStatus.ERROR, e.getMessage());
+            }
+            return new StartSessionInfo(StartSessionStatus.SUCCESS, "Started new python session");
         }
 
         /**
          * Called from frontend during execution. Stops execution and eventually throws py4j error in runInteractive.
          *
+         * @return whether the session has been killed successfully or not
+         *
          */
-        public void killSession() {
-            if (m_interactiveSession != null) {
-                try {
-                    m_expectCancel.set(true);
-                    m_interactiveSession.close();
-                } catch (final IOException e) {
-                    LOGGER.error(e);
-                    // TOOD(AP-19332)
-                } finally {
-                    m_interactiveSession = null;
-                }
+        public KillSessionInfo killSession() {
+            if (m_interactiveSession == null) {
+                return new KillSessionInfo(KillSessionStatus.ERROR, "There is no active python session in progress");
             }
-
+            try {
+                m_expectCancel.set(true);
+                m_interactiveSession.close();
+                return new KillSessionInfo(KillSessionStatus.SUCCESS, "Stopped execution of python session.");
+            } catch (final IOException e) {
+                LOGGER.error(e);
+                return new KillSessionInfo(KillSessionStatus.ERROR, String
+                    .format("An error occurred when stopping the execution of the python session: %s", e.getMessage()));
+            } finally {
+                m_interactiveSession = null;
+            }
         }
 
         /**
@@ -241,23 +255,23 @@ final class PythonScriptingService extends ScriptingService {
          * @param checkOutputs
          * @return the workspace serialized as JSON
          */
-        public String runInteractive(final String script, final boolean checkOutputs) {
-            if (m_interactiveSession != null) {
-                try {
-                    return m_interactiveSession.execute(script, checkOutputs);
-                } catch (final Exception e) { // NOSONAR
-                    if (m_expectCancel.get()) {
-                        return "{\"type\":\"execution_canceled\"}"; // NOSONAR
-                    } else {
-                        LOGGER.error(e);
-                        return "{\"type\":\"fatal_failure\"}"; // NOSONAR
-                    }
-                } finally {
-                    m_expectCancel.set(false);
+        public ExecutionInfo runInteractive(final String script, final boolean checkOutputs) {
+
+            if (m_interactiveSession == null) {
+                return new ExecutionInfo(ExecutionStatus.FATAL_ERROR, "Session not available");
+            }
+
+            try {
+                return m_interactiveSession.execute(script, checkOutputs);
+            } catch (final Exception e) { // NOSONAR
+                if (m_expectCancel.get()) {
+                    return new ExecutionInfo(ExecutionStatus.CANCELLED, "Script execution was cancelled by user");
+                } else {
+                    LOGGER.error(e);
+                    return new ExecutionInfo(ExecutionStatus.FATAL_ERROR, "Execution failed");
                 }
-            } else {
-                // TODO(AP-19332)
-                return "{\"type\":\"session_na\"}";
+            } finally {
+                m_expectCancel.set(false);
             }
         }
 
@@ -289,15 +303,15 @@ final class PythonScriptingService extends ScriptingService {
          * @param executableSelection the id of the selected executable option (which might not be available anymore)
          * @return a sorted list of executable options that the user can select from
          */
-        public List<ExecutableOption> getExecutableOptions(final String executableSelection) {
-            final var availableOptions = m_executableOptions.values().stream().sorted((o1, o2) -> {
+        public List<ExecutableOption> getExecutableOptionsList(final String executableSelection) {
+            final var availableOptions = getExecutableOptions().values().stream().sorted((o1, o2) -> {
                 if (o1.type != o2.type) {
                     return o1.type.compareTo(o2.type);
                 }
                 return o1.id.compareTo(o2.id);
             }).collect(Collectors.toList());
 
-            if (!m_executableOptions.containsKey(executableSelection)) {
+            if (!getExecutableOptions().containsKey(executableSelection)) {
                 // The selected option is not available: String variable selected or variable missing
                 // We add the option to the available options such that the frontend can display it nicely
                 availableOptions.add(getExecutableOption(executableSelection));
@@ -313,6 +327,20 @@ final class PythonScriptingService extends ScriptingService {
         public ExecutableInfo getExecutableInfo(final String id) {
             return ExecutableSelectionUtils.getExecutableInfo(getExecutableOption(id));
         }
+    }
+
+    enum StartSessionStatus {
+            SUCCESS, ERROR
+    }
+
+    static record StartSessionInfo(StartSessionStatus status, String description) {
+    }
+
+    enum KillSessionStatus {
+            SUCCESS, ERROR
+    }
+
+    static record KillSessionInfo(KillSessionStatus status, String description) {
     }
 
     /** Information about an Python executable */

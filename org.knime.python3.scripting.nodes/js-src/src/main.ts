@@ -1,6 +1,6 @@
 import { createApp } from "vue";
 import { createPinia } from "pinia";
-import App from "./App.vue";
+import App from "./components/App.vue";
 import "./python-scripting-service"; // to make sure that the scripting-service is initialized
 
 const app = createApp(App);

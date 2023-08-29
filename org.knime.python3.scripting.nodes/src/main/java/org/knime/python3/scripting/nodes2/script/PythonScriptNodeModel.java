@@ -56,7 +56,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
+import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
 import org.knime.core.data.filestore.internal.IFileStoreHandler;
@@ -81,12 +81,10 @@ import org.knime.core.node.workflow.VariableTypeRegistry;
 import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
 import org.knime.python3.PythonCommand;
 import org.knime.python3.scripting.nodes2.script.ConsoleOutputUtils.ConsoleOutputStorage;
+import org.knime.python3.scripting.nodes2.script.PythonScriptingSession.ExecutionInfo;
+import org.knime.python3.scripting.nodes2.script.PythonScriptingSession.ExecutionStatus;
 import org.knime.python3.utils.FlowVariableUtils;
 import org.knime.scripting.editor.ScriptingService.ConsoleText;
-
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 
 import py4j.Py4JException;
 
@@ -113,8 +111,6 @@ final class PythonScriptNodeModel extends NodeModel {
         new AsynchronousCloseableTracker<>(t -> LOGGER.debug("Kernel shutdown failed.", t));
 
     private ConsoleOutputStorage m_consoleOutputStorage;
-
-    private static final Gson GSON = new Gson();
 
     static final VariableType<?>[] KNOWN_FLOW_VARIABLE_TYPES = FlowVariableUtils.convertToFlowVariableTypes(Set.of( //
         Boolean.class, //
@@ -156,7 +152,7 @@ final class PythonScriptNodeModel extends NodeModel {
                 exec.createSubProgress(0.3));
             exec.setProgress(0.3, "Running script");
 
-            var ans = GSON.fromJson(session.execute(m_settings.getScript(), true), JsonObject.class);
+            var ans = session.execute(m_settings.getScript(), true);
             checkExecutionAnswer(ans);
 
             exec.setProgress(0.7, "Processing output");
@@ -174,17 +170,16 @@ final class PythonScriptNodeModel extends NodeModel {
         }
     }
 
-    private static void checkExecutionAnswer(final JsonObject ans) throws KNIMEException {
-        var error = ans.get("type").getAsString();
+    private static void checkExecutionAnswer(final ExecutionInfo ans) throws KNIMEException {
+        var error = ans.getStatus();
 
-        if (error.equals("knime_error") || error.equals("execution_error")) {
-            var tracebackArray = ans.get("traceback").getAsJsonArray();
-            if (tracebackArray.size() > 0) {
-                var traceback = StreamSupport.stream(tracebackArray.spliterator(), false).map(JsonElement::getAsString)
-                    .collect(Collectors.joining("\n"));
+        if (ExecutionStatus.KNIME_ERROR.equals(error) || ExecutionStatus.EXECUTION_ERROR.equals(error)) {
+            var tracebackArray = ans.getTraceback();
+            if (tracebackArray.length > 0) {
+                var traceback = Stream.of(tracebackArray).collect(Collectors.joining("\n"));
                 LOGGER.warn(traceback);
             }
-            throw new KNIMEException(ans.get("value").getAsString());
+            throw new KNIMEException(ans.getDescription());
         }
     }
 
