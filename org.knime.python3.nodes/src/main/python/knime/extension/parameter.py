@@ -1069,7 +1069,8 @@ class _BaseColumnParameter(_BaseParameter):
         label,
         description,
         port_index: int,
-        column_filter: Callable[[ks.Column], bool],
+        column_filter: Optional[Callable[[ks.Column], bool]] = None,
+        default_value: Optional[Union[Any, DefaultValueProvider[Any]]] = None,
         since_version=None,
         is_advanced=False,
     ):
@@ -1084,7 +1085,7 @@ class _BaseColumnParameter(_BaseParameter):
         super().__init__(
             label,
             description,
-            default_value=None,
+            default_value=default_value,
             since_version=since_version,
             is_advanced=is_advanced,
         )
@@ -1135,6 +1136,7 @@ class ColumnParameter(_BaseColumnParameter):
             description,
             port_index,
             column_filter,
+            None,
             since_version,
             is_advanced,
         )
@@ -1190,6 +1192,7 @@ class MultiColumnParameter(_BaseColumnParameter):
             description,
             port_index,
             column_filter,
+            None,
             since_version,
             is_advanced,
         )
@@ -1626,20 +1629,23 @@ class ColumnFilterParameter(_BaseColumnParameter):
         label: Optional[str] = None,
         description: Optional[str] = None,
         port_index: Optional[int] = 0,
+        default_value: Optional[
+            Union[ColumnFilterConfig, DefaultValueProvider[ColumnFilterConfig]]
+        ] = None,
         column_filter: Callable[[ks.Column], bool] = None,
         since_version: Optional[Union[str, Version]] = None,
         is_advanced: bool = False,
     ):
+        default_value = default_value if default_value else ColumnFilterConfig()
         super().__init__(
             label,
             description,
             port_index,
             column_filter,
+            default_value,
             since_version,
             is_advanced,
         )
-
-        self._column_filter_config = ColumnFilterConfig()
 
     def _extract_schema(
         self,
@@ -1651,7 +1657,8 @@ class ColumnFilterParameter(_BaseColumnParameter):
         )
 
         schema["type"] = "object"
-        schema["properties"] = self._column_filter_config._extract_schema()
+        default_column_filter = super()._get_default(extension_version)
+        schema["properties"] = default_column_filter._extract_schema()
 
         return schema
 
