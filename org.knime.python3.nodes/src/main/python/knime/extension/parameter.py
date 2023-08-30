@@ -94,12 +94,11 @@ def extract_parameters(obj, for_dialog: bool = False) -> dict:
 
 
 def _extract_parameters(obj, for_dialog: bool) -> dict:
-    result = dict()
     params = _get_parameters(obj)
-    for name, param_obj in params.items():
-        result[name] = param_obj._get_value(obj, name, for_dialog)
-
-    return result
+    return {
+        name: param_obj._extract_value(obj, name, for_dialog)
+        for name, param_obj in params.items()
+    }
 
 
 def inject_parameters(
@@ -527,6 +526,17 @@ class _BaseParameter(ABC):
         obj.__parameters__[name] = def_value
         return def_value
 
+    def _to_dict(self, value):
+        """Subclasses can overwrite this method to convert value types to dictionaries."""
+        return value
+
+    def _from_dict(self, value):
+        """Subclasses can overwrite this method to convert dictionaires to value types."""
+        return value
+
+    def _extract_value(self, obj, name, for_dialog=None):
+        return self._to_dict(self._get_value(obj, name, for_dialog))
+
     def __get__(self, obj, objtype=None):
         """
         Only ever called when `self` is a descriptor, thus having the `_name` attribute.
@@ -551,7 +561,7 @@ class _BaseParameter(ABC):
     def _inject(self, obj, value, name, parameters_version: Version = None):  # NOSONAR
         # the parameters_version parameter are needed to match the signature of the
         # _inject method for parameter groups
-        self._set_value(obj, value, name)
+        self._set_value(obj, self._from_dict(value), name)
 
     def _set_value(self, obj, value, name):
         if not hasattr(obj, "__kind__"):
@@ -1659,26 +1669,11 @@ class ColumnFilterParameter(_BaseColumnParameter):
 
         return options
 
-    def __get__(self, obj, objtype=None):
-        value = super().__get__(obj, objtype)
+    def _from_dict(self, value: Dict[str, Any]) -> ColumnFilterConfig:
+        return ColumnFilterConfig._from_dict(value, self._column_filter)
 
-        # Turn dict into ColumnFilterConfig for better use in Python nodes
-        if value is not None:
-            return ColumnFilterConfig._from_dict(value, self._column_filter)
-        else:
-            return None
-
-    def __set__(self, obj, value):
-        # Turn ColumnFilterConfig into dict, because the UI-side needs a dict
-        if value is not None:
-            value = value._to_dict()
-        return super().__set__(obj, value)
-
-    def _inject(self, obj, value, name, version):
-        if value is None:
-            value = ColumnFilterConfig()._to_dict()
-
-        return super()._inject(obj, value, name, version)
+    def _to_dict(self, value: ColumnFilterConfig) -> Dict[str, Any]:
+        return value._to_dict()
 
 
 class BoolParameter(_BaseParameter):
@@ -1917,11 +1912,18 @@ def parameter_group(
                 ), "__get__ should only be called if the paramter_group is used as a descriptor."
                 return self._get_param_holder(obj)
 
-            def _get_value(self, obj, name, for_dialog: bool = False):
+            def _get_value(self, obj, name, for_dialog: bool = False) -> Dict[str, Any]:
                 param_holder = self._get_param_holder(obj)
 
                 return {
                     name: param_obj._get_value(param_holder, name, for_dialog)
+                    for name, param_obj in _get_parameters(param_holder).items()
+                }
+
+            def _extract_value(self, obj, name, for_dialog) -> Dict[str, Any]:
+                param_holder = self._get_param_holder(obj)
+                return {
+                    name: param_obj._extract_value(param_holder, name, for_dialog)
                     for name, param_obj in _get_parameters(param_holder).items()
                 }
 
