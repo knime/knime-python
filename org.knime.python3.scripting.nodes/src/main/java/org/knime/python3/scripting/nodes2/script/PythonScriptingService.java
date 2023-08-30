@@ -75,6 +75,8 @@ import org.knime.python3.scripting.nodes2.script.PythonScriptingService.Executab
 import org.knime.python3.scripting.nodes2.script.PythonScriptingSession.ExecutionInfo;
 import org.knime.python3.scripting.nodes2.script.PythonScriptingSession.ExecutionStatus;
 import org.knime.scripting.editor.ScriptingService;
+import org.knime.scripting.editor.ai.HubConnectionUtils;
+import org.knime.scripting.editor.lsp.LanguageServerProxy;
 
 /**
  * A special {@link ScriptingService} for the Python scripting node.
@@ -329,6 +331,32 @@ final class PythonScriptingService extends ScriptingService {
             return PythonLanguageServer.getConfig(executablePath, extraPaths);
         }
 
+        /**
+         * Ask the AI assistant to generate new code based on the user prompt and the current code.
+         *
+         * The result will be sent to JS as event with identifier "codeSuggestion".
+         *
+         * @param userPrompt Description of what the user wants the code to do
+         * @param currentCode The current code
+         */
+        public void suggestCode(final String userPrompt, final String currentCode) {
+            new Thread(() -> suggestCodeAsync(userPrompt, currentCode)).start();
+
+        }
+
+        private void suggestCodeAsync(final String userPrompt, final String currentCode) {
+            try {
+                var response = new PythonCodeAssistant(HubConnectionUtils.getAuthenticationToken()) //
+                    .generateCode(userPrompt, //
+                        currentCode, //
+                        getWorkflowControl().getInputSpec(), //
+                        getWorkflowControl().getOutputPortTypes(), //
+                        getFlowVariables());
+                sendEvent("codeSuggestion", new CodeSuggestion(CodeSuggestionStatus.SUCCESS, response, null));
+            } catch (IOException ex) { // NOSONAR
+                sendEvent("codeSuggestion", new CodeSuggestion(CodeSuggestionStatus.ERROR, null, ex.getMessage()));
+            }
+        }
     }
 
     enum StartSessionStatus {
@@ -474,5 +502,13 @@ final class PythonScriptingService extends ScriptingService {
         private static InputObjectInfo createFromPortSpec(final int objectIdx, final PickledObjectPortObjectSpec spec) {
             return new InputObjectInfo(objectIdx, spec.getType(), spec.getRepresentation());
         }
+    }
+
+    enum CodeSuggestionStatus {
+            SUCCESS, ERROR
+    }
+
+    /** Information about a code suggestion */
+    static record CodeSuggestion(CodeSuggestionStatus status, String code, String error) {
     }
 }
