@@ -126,7 +126,7 @@ def _inject_parameters(
         else:
             # the parameter was introduced in a newer version but we might want to initialize
             # the default based on the version the workflow was created with
-            param_obj._set_default_for_version(obj, parameters_version)
+            param_obj._set_default_for_version(obj, name, parameters_version)
 
 
 def validate_parameters(obj, parameters: dict, saved_version: str = None) -> None:
@@ -555,8 +555,8 @@ class _BaseParameter(ABC):
         else:
             return self._default_value
 
-    def _set_default_for_version(self, obj, version: Version):
-        self.__set__(obj, self._get_default(version))
+    def _set_default_for_version(self, obj, name, version: Version):
+        self._set_value(obj, self._get_default(version), name)
 
     def _inject(self, obj, value, name, parameters_version: Version = None):  # NOSONAR
         # the parameters_version parameter are needed to match the signature of the
@@ -1977,11 +1977,11 @@ def parameter_group(
             def __set__(self, obj, values):
                 raise RuntimeError("Cannot set parameter group values directly.")
 
-            def _set_default_for_version(self, obj, version: Version):
+            def _set_default_for_version(self, obj, name, version: Version):
                 param_holder = self._get_param_holder(obj)
                 # Assumes that if a parameter group is new, so are its elements
-                for param_obj in _get_parameters(param_holder).values():
-                    param_obj._set_default_for_version(param_holder, version)
+                for name, param_obj in _get_parameters(param_holder).items():
+                    param_obj._set_default_for_version(param_holder, name, version)
 
             def _inject(self, obj, values, name, parameters_version: Version):
                 param_holder = self._get_param_holder(obj)
