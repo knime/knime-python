@@ -1,6 +1,5 @@
-import mockScriptingService from "@/__mocks__/scripting-service";
-import PythonEditorControls from "../PythonEditorControls.vue";
 import { DOMWrapper, VueWrapper, flushPromises, mount } from "@vue/test-utils";
+import PythonEditorControls from "../PythonEditorControls.vue";
 import {
   afterEach,
   beforeEach,
@@ -13,9 +12,16 @@ import {
 import PlayIcon from "webapps-common/ui/assets/img/icons/play.svg";
 import LoadingIcon from "webapps-common/ui/components/LoadingIcon.vue";
 import CancelIcon from "webapps-common/ui/assets/img/icons/circle-close.svg";
+import { getScriptingService } from "@knime/scripting-editor";
 
 describe("PythonEditorControls", () => {
   const doMount = ({ props } = { props: {} }) => {
+    vi.mocked(getScriptingService().sendToService).mockImplementation(() => {
+      return Promise.resolve({
+        status: "SUCCESS",
+        description: "mocked execution info",
+      });
+    });
     const wrapper = mount(PythonEditorControls, { props });
     return { wrapper };
   };
@@ -24,7 +30,7 @@ describe("PythonEditorControls", () => {
 
   beforeEach(() => {
     vi.useFakeTimers();
-    sendToServiceSpy = vi.spyOn(mockScriptingService, "sendToService");
+    sendToServiceSpy = vi.spyOn(getScriptingService(), "sendToService");
   });
 
   afterEach(() => {
@@ -141,6 +147,9 @@ describe("PythonEditorControls", () => {
     });
 
     it("displays correct button texts on run all button mouseover", async () => {
+      vi.mocked(getScriptingService().sendToService).mockImplementation(() => {
+        return new Promise(() => {}); // wait forever
+      });
       await runAllButton.trigger("click");
       await runAllButton.trigger("mouseover");
       expect(runAllButton.text()).toBe("Cancel");
@@ -150,6 +159,9 @@ describe("PythonEditorControls", () => {
     });
 
     it("displays correct button texts on run selected button mouseover", async () => {
+      vi.mocked(getScriptingService().sendToService).mockImplementation(() => {
+        return new Promise(() => {}); // wait forever
+      });
       await runSelectedButton.trigger("click");
       await runSelectedButton.trigger("mouseover");
       expect(runSelectedButton.text()).toBe("Cancel");

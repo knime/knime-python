@@ -1,4 +1,3 @@
-import mockScriptingService from "../../__mocks__/scripting-service";
 import { beforeEach, describe, vi, it, type SpyInstance, expect } from "vitest";
 import {
   handleExecutionInfo,
@@ -9,6 +8,7 @@ import type {
   ExecutionInfoWithWorkspace,
   SessionInfo,
 } from "@/types/common";
+import { getScriptingService } from "@knime/scripting-editor";
 
 describe("utils", () => {
   describe("handleSessionInfo", () => {
@@ -36,7 +36,7 @@ describe("utils", () => {
     };
 
     beforeEach(() => {
-      sendToConsoleSpy = vi.spyOn(mockScriptingService, "sendToConsole");
+      sendToConsoleSpy = vi.spyOn(getScriptingService(), "sendToConsole");
     });
 
     it("does not print successful session info per default", () => {
