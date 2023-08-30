@@ -281,8 +281,10 @@ class NodeWithoutPortsTest(unittest.TestCase):
         from _node_backend_launcher import _PythonNodeProxy, FallBackMarkdownParser
 
         parser = FallBackMarkdownParser()
-        _PythonNodeProxy(self.node_instance, self.backend._port_type_registry, parser)
-        _PythonNodeProxy(self.node, self.backend._port_type_registry, parser)
+        _PythonNodeProxy(
+            self.node_instance, self.backend._port_type_registry, parser, "0.0.1"
+        )
+        _PythonNodeProxy(self.node, self.backend._port_type_registry, parser, "0.0.1")
 
 
 class NodeWithImageOutputPorts(unittest.TestCase):

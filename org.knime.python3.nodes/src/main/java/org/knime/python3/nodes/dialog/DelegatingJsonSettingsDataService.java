@@ -92,13 +92,12 @@ public final class DelegatingJsonSettingsDataService implements NodeSettingsServ
         try (var proxy = m_proxyProvider.get()) {
 
             // this is assigned here to accommodate changing the set of parameters during development
-            m_lastSettingsSchema = proxy.getSettingsSchema(m_extensionVersion);
-            var jsonSettings = loadSettings(settings.get(SettingsType.MODEL));
-
-            // note that for m_extensionVersion we must always use the installed extension version below,
-            // since we want the dialog to follow the installed extension's set of parameters.
-            // Missing parameters will be set to their default values on the Python side.
-            return proxy.getDialogRepresentation(jsonSettings, specs, m_extensionVersion);
+            var modelSettings = settings.get(SettingsType.MODEL);
+            m_lastSettingsSchema = proxy.getSettingsSchema(JsonNodeSettingsSchema.readVersion(modelSettings));
+            var jsonSettings = loadSettings(modelSettings);
+            // the Python side needs the version of the settings to properly load the settings
+            // the schema extraction then uses the current version of the extension which is already known on the Python side
+            return proxy.getDialogRepresentation(jsonSettings, specs, jsonSettings.getCreationVersion());
         }
     }
 
