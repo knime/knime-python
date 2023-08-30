@@ -517,7 +517,11 @@ class _PortTypeRegistry:
 
 class _PythonNodeProxy:
     def __init__(
-        self, node: kn.PythonNode, port_type_registry: _PortTypeRegistry, knime_parser
+        self,
+        node: kn.PythonNode,
+        port_type_registry: _PortTypeRegistry,
+        knime_parser,
+        extension_version,
     ) -> None:
         _check_attr_is_available(node, "input_ports")
         _check_attr_is_available(node, "output_ports")
@@ -526,14 +530,16 @@ class _PythonNodeProxy:
         self._num_outports = len(node.output_ports)
         self._port_type_registry = port_type_registry
         self._knime_parser = knime_parser
+        self._extension_version = extension_version
 
     def getDialogRepresentation(
         self,
         parameters: str,
-        extension_version: str,
+        parameters_version: str,
         python_dialog_context,
     ):
-        self.setParameters(parameters, extension_version)
+        # parameters could be from an older version
+        self.setParameters(parameters, parameters_version)
 
         dialog_context = kn.DialogCreationContext(
             python_dialog_context, self._get_flow_variables(), self._specs_to_python
@@ -543,7 +549,7 @@ class _PythonNodeProxy:
             "data": kp.extract_parameters(self._node, for_dialog=True),
             "schema": kp.extract_schema(
                 self._node,
-                extension_version,
+                self._extension_version,  # we need the current schema for the dialog
                 dialog_creation_context=dialog_context,
             ),
             "ui_schema": kp.extract_ui_schema(self._node, dialog_context),
@@ -829,6 +835,7 @@ class _KnimeNodeBackend(kg.EntryPoint, kn._KnimeNodeBackend):
             # load the extension, so that it registers its nodes, categories and port types
             importlib.import_module(extension_module)
             kp.set_extension_version(extension_version)
+            self._extension_version = extension_version
         except Exception:
             error = traceback.format_exc(limit=1, chain=True)
             raise RuntimeError(
@@ -904,7 +911,9 @@ class _KnimeNodeBackend(kg.EntryPoint, kn._KnimeNodeBackend):
     def createNodeFromExtension(self, node_id: str) -> _PythonNodeProxy:
         node_info = kn._nodes[node_id]
         node = node_info.node_factory()
-        return _PythonNodeProxy(node, self._port_type_registry, self._knime_parser)
+        return _PythonNodeProxy(
+            node, self._port_type_registry, self._knime_parser, self._extension_version
+        )
 
     @property
     def _knime_parser(self):
