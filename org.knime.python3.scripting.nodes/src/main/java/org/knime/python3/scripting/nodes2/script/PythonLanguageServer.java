@@ -50,6 +50,7 @@ package org.knime.python3.scripting.nodes2.script;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.knime.python3.scripting.nodes.prefs.Python3ScriptingPreferences;
 import org.knime.scripting.editor.lsp.LanguageServerProxy;
@@ -72,9 +73,30 @@ final class PythonLanguageServer {
      * @throws IOException if an I/O error occurs starting the process
      */
     static LanguageServerProxy startPythonLSP() throws IOException {
-        // TODO(AP-19338) language server configuration
         var pylspProcessBuilder = Python3ScriptingPreferences.getBundledPythonCommand().createProcessBuilder();
         pylspProcessBuilder.command().addAll(List.of("-m", "pylsp"));
         return new LanguageServerProxy(pylspProcessBuilder);
+    }
+
+    /**
+     * @return the configuration for the LSP server as a JSON string
+     */
+    static String getLSPConfig(final String executablePath, final List<String> extraPaths) {
+        var extraPathsJoined = extraPaths.stream().map(p -> '"' + p + '"').collect(Collectors.joining(","));
+        return """
+                {
+                  "pylsp": {
+                    "configurationSources": [],
+                    "plugins": {
+                      "jedi": {
+                        "environment": "%s",
+                        "extra_paths": [ %s ]
+                      },
+                      "pycodestyle": {
+                        "enabled": false
+                      }
+                    }
+                  }
+                }""".formatted(executablePath, extraPathsJoined);
     }
 }

@@ -49,6 +49,7 @@
 package org.knime.python3.scripting.nodes2.script;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
@@ -313,6 +314,21 @@ final class PythonScriptingService extends ScriptingService {
         public ExecutableInfo getExecutableInfo(final String id) {
             return ExecutableSelectionUtils.getExecutableInfo(getExecutableOption(id));
         }
+
+        /**
+         * @param executableSelection the identifier of the active executable option
+         * @return the path to the Python executable. Only to be used for configuring the LSP server.
+         */
+        public String getLSPConfig(final String executableSelection) {
+            var executablePath = ExecutableSelectionUtils.getPythonCommand(getExecutableOption(executableSelection))
+                .getPythonExecutablePath().toAbsolutePath().toString();
+            var extraPaths = PythonScriptingSession.getExtraPythonPaths().stream() //
+                .map(Path::toAbsolutePath) //
+                .map(Path::toString) //
+                .toList();
+            return PythonLanguageServer.getLSPConfig(executablePath, extraPaths);
+        }
+
     }
 
     enum StartSessionStatus {

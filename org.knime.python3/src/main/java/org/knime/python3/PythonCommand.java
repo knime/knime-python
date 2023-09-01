@@ -48,6 +48,8 @@
  */
 package org.knime.python3;
 
+import java.nio.file.Path;
+
 /**
  * Describes an external Python process. The process can be started via the {@link ProcessBuilder} returned by
  * {@link #createProcessBuilder()}.
@@ -66,6 +68,12 @@ public interface PythonCommand {
      *         this command instance.
      */
     ProcessBuilder createProcessBuilder();
+
+    /**
+     * @return The path to the Python executable. Should only be used to gather information about the Python environment
+     *         without running the Python executable. Use {@link #createProcessBuilder()} to start Python processes.
+     */
+    Path getPythonExecutablePath();
 
     @Override
     int hashCode();

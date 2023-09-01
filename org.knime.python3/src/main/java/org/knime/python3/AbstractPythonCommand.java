@@ -48,6 +48,7 @@
  */
 package org.knime.python3;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -71,6 +72,11 @@ abstract class AbstractPythonCommand implements PythonCommand {
     @Override
     public ProcessBuilder createProcessBuilder() {
         return new ProcessBuilder(new ArrayList<>(m_command));
+    }
+
+    @Override
+    public Path getPythonExecutablePath() {
+        return Path.of(m_command.get(0));
     }
 
     @Override

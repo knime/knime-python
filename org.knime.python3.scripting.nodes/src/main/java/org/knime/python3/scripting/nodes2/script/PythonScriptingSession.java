@@ -50,7 +50,9 @@ package org.knime.python3.scripting.nodes2.script;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -77,6 +79,7 @@ import org.knime.python3.arrow.Python3ArrowSourceDirectory;
 import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.arrow.PythonArrowDataUtils;
 import org.knime.python3.arrow.PythonArrowTableConverter;
+import org.knime.python3.scripting.Python3ScriptingSourceDirectory;
 import org.knime.python3.scripting.nodes2.PythonScriptingEntryPoint;
 import org.knime.python3.scripting.nodes2.PythonScriptingSourceDirectory;
 import org.knime.python3.types.PythonValueFactoryModule;
@@ -274,17 +277,30 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
         throws IOException, InterruptedException {
         // TODO(AP-19430) set working directory to workflow dir
         final var gatewayDescriptionBuilder =
-            PythonGatewayDescription.builder(pythonCommand, LAUNCHER.toAbsolutePath(), PythonScriptingEntryPoint.class) //
-                .addToPythonPath(Python3SourceDirectory.getPath()) //
-                .addToPythonPath(Python3ArrowSourceDirectory.getPath()) //
-                .addToPythonPath(Python3ViewsSourceDirectory.getPath());
+            PythonGatewayDescription.builder(pythonCommand, LAUNCHER.toAbsolutePath(), PythonScriptingEntryPoint.class);
 
-        // Add the paths to the extension types
+        getExtraPythonPaths().forEach(gatewayDescriptionBuilder::addToPythonPath);
+        return Activator.GATEWAY_FACTORY.create(gatewayDescriptionBuilder.build());
+    }
+
+    /**
+     * @return a list of extra paths containing Python sources for KNIME plugins
+     */
+    public static List<Path> getExtraPythonPaths() {
+        var paths = new ArrayList<Path>();
+
+        // Paths to the common API
+        paths.add(Python3ScriptingSourceDirectory.getPath());
+        paths.add(Python3SourceDirectory.getPath());
+        paths.add(Python3ArrowSourceDirectory.getPath());
+        paths.add(Python3ViewsSourceDirectory.getPath());
+
+        // Paths to the extension types
         PythonValueFactoryRegistry.getModules().stream() //
             .map(PythonValueFactoryModule::getParentDirectory) //
-            .forEach(gatewayDescriptionBuilder::addToPythonPath);
+            .forEach(paths::add);
 
-        return Activator.GATEWAY_FACTORY.create(gatewayDescriptionBuilder.build());
+        return paths;
     }
 
     @Override
