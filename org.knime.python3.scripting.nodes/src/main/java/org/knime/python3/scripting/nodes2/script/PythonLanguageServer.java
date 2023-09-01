@@ -62,6 +62,34 @@ import org.knime.scripting.editor.lsp.LanguageServerProxy;
  */
 final class PythonLanguageServer {
 
+    private static final String LSP_CONFIG = """
+            {
+              "pylsp": {
+                "configurationSources": [],
+                "plugins": {
+                  "jedi": {
+                    "environment": "%s",
+                    "extra_paths": [ %s ]
+                  },
+                  "pycodestyle": {
+                    "enabled": false
+                  }
+                }
+              }
+            }""";
+
+    /**
+     * System property to replace the default command for the language server. The default command uses
+     * "python-lsp-server" from the bundled scripting environment.
+     */
+    private static final String LSP_SERVER_COMMAND_PROPERTY = System.getProperty("knime.python.lsp.command");
+
+    /**
+     * System property to replace the default config for the language server. The config is formated with the path to
+     * the Python executable and a comma separated list of folders on the PYTHON_PATH.
+     */
+    private static final String LSP_CONFIG_PROPERTY = System.getProperty("knime.python.lsp.config", LSP_CONFIG);
+
     private PythonLanguageServer() {
         // Utility class
     }
@@ -73,6 +101,10 @@ final class PythonLanguageServer {
      * @throws IOException if an I/O error occurs starting the process
      */
     static LanguageServerProxy startPythonLSP() throws IOException {
+        if (LSP_SERVER_COMMAND_PROPERTY != null) {
+            // NB: We do not respect parameters in quotes because if would be too complicated for a debug property
+            return new LanguageServerProxy(new ProcessBuilder(LSP_SERVER_COMMAND_PROPERTY.split(" ")));
+        }
         var pylspProcessBuilder = Python3ScriptingPreferences.getBundledPythonCommand().createProcessBuilder();
         pylspProcessBuilder.command().addAll(List.of("-m", "pylsp"));
         return new LanguageServerProxy(pylspProcessBuilder);
@@ -83,20 +115,6 @@ final class PythonLanguageServer {
      */
     static String getLSPConfig(final String executablePath, final List<String> extraPaths) {
         var extraPathsJoined = extraPaths.stream().map(p -> '"' + p + '"').collect(Collectors.joining(","));
-        return """
-                {
-                  "pylsp": {
-                    "configurationSources": [],
-                    "plugins": {
-                      "jedi": {
-                        "environment": "%s",
-                        "extra_paths": [ %s ]
-                      },
-                      "pycodestyle": {
-                        "enabled": false
-                      }
-                    }
-                  }
-                }""".formatted(executablePath, extraPathsJoined);
+        return LSP_CONFIG_PROPERTY.formatted(executablePath, extraPathsJoined);
     }
 }
