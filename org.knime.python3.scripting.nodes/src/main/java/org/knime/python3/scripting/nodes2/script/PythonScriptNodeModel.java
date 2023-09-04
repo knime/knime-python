@@ -179,7 +179,7 @@ final class PythonScriptNodeModel extends NodeModel {
                 var traceback = Stream.of(tracebackArray).collect(Collectors.joining("\n"));
                 LOGGER.warn(traceback);
             }
-            throw new KNIMEException(ans.getDescription());
+            throw new KNIMEException("Execute failed: " + ans.getDescription());
         }
     }
 
