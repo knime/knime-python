@@ -103,7 +103,7 @@ final class PythonScriptingService extends ScriptingService {
 
     /** Create a new {@link PythonScriptingService}. */
     PythonScriptingService() {
-        super(PythonLanguageServer::startPythonLSP, FLOW_VARIABLE_FILTER);
+        super(PythonLanguageServer::startLanguageServer, FLOW_VARIABLE_FILTER);
         m_ports = PythonScriptPortsConfiguration.fromCurrentNodeContext();
         m_expectCancel = new AtomicBoolean(false);
     }
@@ -319,14 +319,14 @@ final class PythonScriptingService extends ScriptingService {
          * @param executableSelection the identifier of the active executable option
          * @return the path to the Python executable. Only to be used for configuring the LSP server.
          */
-        public String getLSPConfig(final String executableSelection) {
+        public String getLanguageServerConfig(final String executableSelection) {
             var executablePath = ExecutableSelectionUtils.getPythonCommand(getExecutableOption(executableSelection))
                 .getPythonExecutablePath().toAbsolutePath().toString();
             var extraPaths = PythonScriptingSession.getExtraPythonPaths().stream() //
                 .map(Path::toAbsolutePath) //
                 .map(Path::toString) //
                 .toList();
-            return PythonLanguageServer.getLSPConfig(executablePath, extraPaths);
+            return PythonLanguageServer.getConfig(executablePath, extraPaths);
         }
 
     }

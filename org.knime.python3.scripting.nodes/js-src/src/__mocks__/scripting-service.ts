@@ -51,11 +51,11 @@ const mockScriptingService: ScriptingServiceType = {
     console.log("getSelectedLines called");
     return "mySelectedLines";
   },
-  async startLSPConnection() {
-    console.log("Started LSP connection");
+  async connectToLanguageServer() {
+    console.log("Connected to language server");
     await sleep(SLEEP_TIME);
   },
-  async configureLSPServer(settings: any) {
+  async configureLanguageServer(settings: any) {
     console.log(`Configured LSP server with ${JSON.stringify(settings)}`);
     await sleep(SLEEP_TIME);
   },

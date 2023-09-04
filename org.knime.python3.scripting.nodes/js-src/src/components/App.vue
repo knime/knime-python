@@ -30,7 +30,7 @@ const onMonacoCreated = ({
   editor: editor.IStandaloneCodeEditor;
   editorModel: editor.ITextModel;
 }) => {
-  pythonScriptingService.startLSPConnection(editorModel);
+  pythonScriptingService.connectToLanguageServer(editorModel);
 };
 </script>
 

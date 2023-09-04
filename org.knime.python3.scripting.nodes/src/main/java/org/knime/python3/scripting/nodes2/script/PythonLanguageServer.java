@@ -100,7 +100,7 @@ final class PythonLanguageServer {
      *
      * @throws IOException if an I/O error occurs starting the process
      */
-    static LanguageServerProxy startPythonLSP() throws IOException {
+    static LanguageServerProxy startLanguageServer() throws IOException {
         if (LSP_SERVER_COMMAND_PROPERTY != null) {
             // NB: We do not respect parameters in quotes because if would be too complicated for a debug property
             return new LanguageServerProxy(new ProcessBuilder(LSP_SERVER_COMMAND_PROPERTY.split(" ")));
@@ -113,7 +113,7 @@ final class PythonLanguageServer {
     /**
      * @return the configuration for the LSP server as a JSON string
      */
-    static String getLSPConfig(final String executablePath, final List<String> extraPaths) {
+    static String getConfig(final String executablePath, final List<String> extraPaths) {
         var extraPathsJoined = extraPaths.stream().map(p -> '"' + p + '"').collect(Collectors.joining(","));
         return LSP_CONFIG_PROPERTY.formatted(executablePath, extraPathsJoined);
     }
