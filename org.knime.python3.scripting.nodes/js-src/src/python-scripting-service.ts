@@ -67,8 +67,8 @@ export const pythonScriptingService = {
   sendToConsole: (text: { text: string }) => {
     scriptingService.sendToConsole(text);
   },
-  connectToLanguageServer: async (editorModel: any) => {
-    await scriptingService.connectToLanguageServer(editorModel);
+  connectToLanguageServer: async () => {
+    await scriptingService.connectToLanguageServer();
 
     // Configure the LSP server
     // TODO(AP-19349) get the current executable option id

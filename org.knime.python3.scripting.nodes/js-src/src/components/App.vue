@@ -5,7 +5,6 @@ import HelpIcon from "webapps-common/ui/assets/img/icons/help.svg";
 import type { MenuItem } from "webapps-common/ui/components/MenuItems.vue";
 import PythonEditorControls from "./PythonEditorControls.vue";
 import PythonWorkspace from "./PythonWorkspace.vue";
-import { editor } from "monaco-editor";
 import { pythonScriptingService } from "@/python-scripting-service";
 
 const menuItems: MenuItem[] = [
@@ -24,13 +23,8 @@ const menuItems: MenuItem[] = [
   },
 ];
 
-const onMonacoCreated = ({
-  editorModel,
-}: {
-  editor: editor.IStandaloneCodeEditor;
-  editorModel: editor.ITextModel;
-}) => {
-  pythonScriptingService.connectToLanguageServer(editorModel);
+const onMonacoCreated = () => {
+  pythonScriptingService.connectToLanguageServer();
 };
 </script>
 
