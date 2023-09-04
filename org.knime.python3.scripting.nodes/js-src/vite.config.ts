@@ -34,7 +34,7 @@ export default defineConfig({
     include: ["src/**/__tests__/**/*.test.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
     exclude: ["**/node_modules/**", "**/dist/**", "webapps-common/**"],
     environment: "jsdom",
-    reporters: ["default", "junit"],
+    reporters: ["default"],
     root: fileURLToPath(new URL("./", import.meta.url)),
     deps: {
       registerNodeLoader: true, // TODO: This option is deprecated. Replace it with a proper solution
