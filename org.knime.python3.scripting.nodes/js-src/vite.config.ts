@@ -31,6 +31,9 @@ export default defineConfig({
   },
   base: "./",
   test: {
+    setupFiles: [
+      fileURLToPath(new URL("./test-setup/setup.ts", import.meta.url)),
+    ],
     include: ["src/**/__tests__/**/*.test.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
     exclude: ["**/node_modules/**", "**/dist/**", "webapps-common/**"],
     environment: "jsdom",
