@@ -63,6 +63,7 @@ import org.knime.core.node.workflow.FlowObjectStack;
 import org.knime.python3.CondaPythonCommand;
 import org.knime.python3.PythonCommand;
 import org.knime.python3.SimplePythonCommand;
+import org.knime.python3.scripting.nodes.prefs.Python3ScriptingPreferences;
 import org.knime.python3.scripting.nodes2.script.PythonScriptingService.CondaPackageInfo;
 import org.knime.python3.scripting.nodes2.script.PythonScriptingService.ExecutableInfo;
 import org.knime.python3.scripting.nodes2.script.PythonScriptingService.ExecutableOption;
@@ -188,18 +189,6 @@ final class ExecutableSelectionUtils {
     }
 
     private static PythonCommand commandForPreferences() {
-        // TODO(AP-19391) Get the Python command from the preferences
-        final String condaPath = System.getProperty("knime.python.js.conda");
-        if (condaPath == null) {
-            throw new IllegalStateException(
-                "Please configure a path to a Conda installation via the system property 'knime.python.js.conda'.");
-        }
-        final String envPath = System.getProperty("knime.python.js.env");
-        if (envPath == null) {
-            throw new IllegalStateException(
-                "Please configure a path to a Conda environment via the system property 'knime.python.js.env'.");
-        }
-
-        return new CondaPythonCommand(condaPath, envPath);
+        return Python3ScriptingPreferences.getPythonCommandPreference();
     }
 }
