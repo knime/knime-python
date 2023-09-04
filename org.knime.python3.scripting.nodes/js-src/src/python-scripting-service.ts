@@ -97,6 +97,9 @@ print("Hello, I am a fake AI")
     console.log(`Configuring Language Server: ${config}`);
     await sleep(SLEEP_TIME);
   },
+  pasteToEditor() {
+    // do nothing
+  },
 };
 
 const scriptingService =
