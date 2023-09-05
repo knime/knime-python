@@ -174,7 +174,12 @@ public final class PythonArrowTableConverter implements AutoCloseable {
                 tables[i] =
                     m_executor.performCancelable(() -> m_sinkManager.convertToTable(s, exec), exec::checkCanceled);
             } catch (ExecutionException ex) {// NOSONAR the ExecutionException acts as a holder for another exception
-                throw new IOException(ex.getCause());
+                var cause = ex.getCause();
+                if (cause instanceof IOException ioCause) {
+                    throw ioCause;
+                } else {
+                    throw new IOException(cause);
+                }
             }
             i++;
         }
