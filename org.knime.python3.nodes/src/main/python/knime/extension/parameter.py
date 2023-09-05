@@ -888,6 +888,74 @@ class StringParameter(_BaseMultiChoiceParameter):
         return schema
 
 
+class MultilineStringParameter(_BaseParameter):
+    """
+    Parameter class for string type with multiline supported.
+    """
+
+    def default_validator(self, value):
+        if not isinstance(value, str):
+            raise TypeError(
+                f"{value} is of type {type(value)}, but should be of type string."
+            )
+
+    def __init__(
+        self,
+        label: Optional[str] = None,
+        description: Optional[str] = None,
+        default_value: Union[str, DefaultValueProvider[str]] = "",
+        validator: Optional[Callable[[str], None]] = None,
+        since_version: Optional[Union[Version, str]] = None,
+        is_advanced: bool = False,
+        number_of_lines: Optional[int] = 3,
+    ):
+        if validator is None:
+            validator = self.default_validator
+
+        if not isinstance(number_of_lines, int):
+            raise TypeError(
+                f"Number of lines is of type {type(number_of_lines)}, but should be of type integer."
+            )
+        elif number_of_lines <= 0:
+            raise ValueError(f"Number of lines should be of type positive integer.")
+
+        self._number_of_lines = number_of_lines
+
+        super().__init__(
+            label,
+            description,
+            default_value,
+            validator,
+            since_version,
+            is_advanced,
+        )
+
+    def _extract_schema(self, extension_version=None, dialog_creation_context=None):
+        schema = super()._extract_schema(
+            dialog_creation_context=dialog_creation_context
+        )
+        schema["type"] = "string"
+
+        return schema
+
+    def _extract_ui_schema(
+        self,
+        dialog_creation_context,
+    ):
+        options = self._get_options(dialog_creation_context)
+        if self._is_advanced:
+            options["isAdvanced"] = True
+
+        return {
+            "type": "Control",
+            "label": self._label,
+            "options": options,
+        }
+
+    def _get_options(self, dialog_creation_context) -> dict:
+        return {"format": "textArea", "rows": self._number_of_lines}
+
+
 class EnumParameterOptions(Enum):
     """
     A helper class for creating EnumParameter options, based on Python's Enum class.

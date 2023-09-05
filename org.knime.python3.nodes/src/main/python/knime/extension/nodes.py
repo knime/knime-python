@@ -324,6 +324,7 @@ IntParameter = kp.IntParameter
 DoubleParameter = kp.DoubleParameter
 BoolParameter = kp.BoolParameter
 StringParameter = kp.StringParameter
+MultilineStringParameter = kp.MultilineStringParameter
 parameter_group = kp.parameter_group
 ColumnParameter = kp.ColumnParameter
 MultiColumnParameter = kp.MultiColumnParameter
