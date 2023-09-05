@@ -48,11 +48,13 @@
  */
 package org.knime.python3.nodes.settings;
 
-import org.knime.core.node.InvalidSettingsException;
+import static org.knime.core.webui.node.dialog.defaultdialog.jsonforms.JsonNodeSettingsMapperUtil.getNestedJsonObject;
+
 import org.knime.core.node.NodeSettings;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.defaultnodesettings.SettingsModel;
+import org.knime.core.webui.node.dialog.SettingsType;
 import org.knime.core.webui.node.dialog.defaultdialog.jsonforms.JsonNodeSettingsMapperUtil;
 
 /**
@@ -92,10 +94,7 @@ public final class JsonNodeSettings {
      * @param schema of the settings
      * @param version the extension version
      */
-    JsonNodeSettings(
-        final NodeSettingsRO settings,
-        final String schema,
-        final String version) {
+    JsonNodeSettings(final NodeSettingsRO settings, final String schema, final String version) {
         m_schema = schema;
         var preprocessed = preprocess(settings);
         m_parameters = JsonNodeSettingsMapperUtil.nodeSettingsToJsonString(preprocessed);
@@ -122,14 +121,9 @@ public final class JsonNodeSettings {
      * @param settings to save to
      */
     public void saveTo(final NodeSettingsWO settings) {
-        var tempSettings = new NodeSettings("temp");
-        JsonNodeSettingsMapperUtil.jsonStringToNodeSettings(m_parameters, m_schema, tempSettings);
-        try {
-            var modelSettings = tempSettings.getNodeSettings("model");
-            modelSettings.copyTo(settings);
-        } catch (InvalidSettingsException ex) {
-            throw new IllegalStateException("Parameter conversion did not add model settings.", ex);
-        }
+        var modelSchema = getNestedJsonObject(m_schema, "properties", SettingsType.MODEL.getConfigKey());
+        var modelParameters = getNestedJsonObject(m_parameters, SettingsType.MODEL.getConfigKey());
+        JsonNodeSettingsMapperUtil.jsonStringToNodeSettings(modelParameters, modelSchema, settings);
         settings.addString(EXTENSION_VERSION, m_version);
     }
 

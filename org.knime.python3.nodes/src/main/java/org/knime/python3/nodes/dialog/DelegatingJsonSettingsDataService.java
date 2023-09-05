@@ -58,6 +58,8 @@ import org.knime.core.webui.node.dialog.NodeAndVariableSettingsRO;
 import org.knime.core.webui.node.dialog.NodeAndVariableSettingsWO;
 import org.knime.core.webui.node.dialog.NodeSettingsService;
 import org.knime.core.webui.node.dialog.SettingsType;
+import org.knime.core.webui.node.dialog.defaultdialog.jsonforms.JsonFormsConsts;
+import org.knime.core.webui.node.dialog.defaultdialog.jsonforms.JsonNodeSettingsMapperUtil;
 import org.knime.python3.nodes.proxy.NodeDialogProxy;
 import org.knime.python3.nodes.settings.JsonNodeSettings;
 import org.knime.python3.nodes.settings.JsonNodeSettingsSchema;
@@ -110,7 +112,9 @@ public final class DelegatingJsonSettingsDataService implements NodeSettingsServ
 
     @Override
     public void toNodeSettings(final String jsonSettings, final Map<SettingsType, NodeAndVariableSettingsWO> settings) {
-        m_lastSettingsSchema.createFromJson(jsonSettings).saveTo(settings.get(SettingsType.MODEL));
+        // the jsonSettings received from the frontend are wrapped into a 'data' object
+        var unwrapped = JsonNodeSettingsMapperUtil.getNestedJsonObject(jsonSettings, JsonFormsConsts.FIELD_NAME_DATA);
+        m_lastSettingsSchema.createFromJson(unwrapped).saveTo(settings.get(SettingsType.MODEL));
     }
 
     @Override
