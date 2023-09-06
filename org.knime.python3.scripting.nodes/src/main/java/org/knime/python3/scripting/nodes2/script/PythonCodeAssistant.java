@@ -61,22 +61,15 @@ import org.knime.core.node.port.image.ImagePortObject;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
 import org.knime.python2.port.PickledObjectPortObjectSpec;
-import org.knime.scripting.editor.ai.AbstractCodeAssistant;
+import org.knime.scripting.editor.ai.HubConnectionUtils;
 
 /**
  * This class provides methods to generate Python code with the help of AI
  *
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
-public class PythonCodeAssistant extends AbstractCodeAssistant {
-    /**
-     * Create an instance of the {@link PythonCodeAssistant}
-     *
-     * @param authenticationToken The token used to authenticate with the KNIME Hub
-     */
-    protected PythonCodeAssistant(final String authenticationToken) {
-        super(authenticationToken);
-    }
+public final class PythonCodeAssistant {
+    private PythonCodeAssistant() {}
 
     /**
      * Query the AI to generate Python code for the given prompt
@@ -89,7 +82,7 @@ public class PythonCodeAssistant extends AbstractCodeAssistant {
      * @return The newly generated code
      * @throws IOException
      */
-    public String generateCode( //
+    public static String generateCode( //
         final String userPrompt, //
         final String oldCode, //
         final PortObjectSpec[] inputPortSpecs, //
@@ -107,7 +100,7 @@ public class PythonCodeAssistant extends AbstractCodeAssistant {
                 false)
         );
 
-        return sendRequest("/v1/code_generation/python", request);
+        return HubConnectionUtils.sendRequest("/v1/code_generation/python", request);
     }
 
     private static NameAndType[] toColumnNameTypeList(final DataColumnSpec... dataColumnSpecs) {

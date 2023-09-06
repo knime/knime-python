@@ -75,8 +75,6 @@ import org.knime.python3.scripting.nodes2.script.PythonScriptingService.Executab
 import org.knime.python3.scripting.nodes2.script.PythonScriptingSession.ExecutionInfo;
 import org.knime.python3.scripting.nodes2.script.PythonScriptingSession.ExecutionStatus;
 import org.knime.scripting.editor.ScriptingService;
-import org.knime.scripting.editor.ai.HubConnectionUtils;
-import org.knime.scripting.editor.lsp.LanguageServerProxy;
 
 /**
  * A special {@link ScriptingService} for the Python scripting node.
@@ -346,12 +344,14 @@ final class PythonScriptingService extends ScriptingService {
 
         private void suggestCodeAsync(final String userPrompt, final String currentCode) {
             try {
-                var response = new PythonCodeAssistant(HubConnectionUtils.getAuthenticationToken()) //
-                    .generateCode(userPrompt, //
-                        currentCode, //
-                        getWorkflowControl().getInputSpec(), //
-                        getWorkflowControl().getOutputPortTypes(), //
-                        getFlowVariables());
+                var response = PythonCodeAssistant.generateCode(//
+                    userPrompt, //
+                    currentCode, //
+                    // TODO: make this work if no tables are connected after merging
+                    //https://knime-com.atlassian.net/browse/AP-19346
+                    getWorkflowControl().getInputSpec(), //
+                    getWorkflowControl().getOutputPortTypes(), //
+                    getFlowVariables());
                 sendEvent("codeSuggestion", new CodeSuggestion(CodeSuggestionStatus.SUCCESS, response, null));
             } catch (IOException ex) { // NOSONAR
                 sendEvent("codeSuggestion", new CodeSuggestion(CodeSuggestionStatus.ERROR, null, ex.getMessage()));
