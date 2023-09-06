@@ -21,15 +21,16 @@ export type InputPortInfo = {
 };
 
 export type Workspace = {
-  names: string[];
-  types: string[];
-  values: string[];
-};
+  name: string;
+  type: string;
+  value: string;
+}[];
 
 export type ExecutionInfoWithTraceback = {
   status: "EXECUTION_ERROR";
   description: string;
   traceback: string[];
+  data: Workspace;
 };
 
 export type ExecutionInfoWithWorkspace = {

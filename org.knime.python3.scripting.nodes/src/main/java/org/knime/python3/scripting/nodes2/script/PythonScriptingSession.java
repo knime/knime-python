@@ -176,12 +176,7 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
      */
     ExecutionInfo execute(final String script, final boolean checkOutputs) {
         String jsonFromExecution = m_entryPoint.execute(script, checkOutputs);
-        System.out.println(jsonFromExecution);
-        var parsed = new Gson().fromJson(jsonFromExecution, ExecutionInfo.class);
-        System.out.println(parsed.getStatus());
-        System.out.println(parsed.getDescription());
-        System.out.println(parsed);
-        return parsed;
+        return new Gson().fromJson(jsonFromExecution, ExecutionInfo.class);
     }
 
     enum ExecutionStatus {

@@ -175,7 +175,13 @@ class ScriptingEntryPoint(kg.EntryPoint):
                 if check_outputs:
                     self.check_outputs()
 
-                return self._getVariablesInWorkspace()
+                return json.dumps(
+                    {
+                        "status": "SUCCESS",
+                        "data": self._getVariablesInWorkspace(),
+                        "description": "Successfully executed script",
+                    }
+                )
 
             except KnimeUserError as e:
                 return json.dumps(
@@ -183,6 +189,7 @@ class ScriptingEntryPoint(kg.EntryPoint):
                         "status": "KNIME_ERROR",
                         "description": f"KnimeUserError: {str(e)}",
                         "traceback": [],
+                        "data": self._getVariablesInWorkspace(),
                     }
                 )
 
@@ -197,6 +204,7 @@ class ScriptingEntryPoint(kg.EntryPoint):
                         "description": f"{type(e).__name__}: {str(e)}",
                         "traceback": [intro_line]
                         + [i[:-1] for i in traceback.format_list(stacksummary)],
+                        "data": self._getVariablesInWorkspace(),
                     }
                 )
 
@@ -290,11 +298,7 @@ class ScriptingEntryPoint(kg.EntryPoint):
                     f"It was not possible to represent {type(obj).__name__} as a string for the workspace."
                 ) from e
 
-        workspace = {
-            "names": [],
-            "types": [],
-            "values": [],
-        }
+        workspace = []
 
         for key, value in self._workspace.items():
             if key.startswith("__") and key.endswith("__"):
@@ -317,17 +321,9 @@ class ScriptingEntryPoint(kg.EntryPoint):
                 # module, type or function
                 var_value = ""
 
-            workspace["names"].append(key)
-            workspace["types"].append(var_type)
-            workspace["values"].append(var_value)
+            workspace.append({"name": key, "type": var_type, "value": var_value})
 
-        return json.dumps(
-            {
-                "status": "SUCCESS",
-                "data": workspace,
-                "description": "Successfully executed script",
-            }
-        )
+        return workspace
 
     class Java:
         implements = ["org.knime.python3.scripting.nodes2.PythonScriptingEntryPoint"]

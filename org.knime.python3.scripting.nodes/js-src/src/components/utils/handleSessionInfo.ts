@@ -2,8 +2,10 @@ import { pythonScriptingService } from "@/python-scripting-service";
 import {
   type ExecutionInfo,
   type ExecutionInfoWithTraceback,
+  type ExecutionInfoWithWorkspace,
   type SessionInfo,
 } from "@/types/common";
+import { useWorkspaceStore } from "@/store";
 
 const sessionInfoToString = (newSessionInfo: SessionInfo): string => {
   const { status, description } = newSessionInfo;
@@ -62,10 +64,7 @@ export const handleSessionInfo = (
  * @param onlyShowErrors If true, only errors are sent to console
  */
 export const handleExecutionInfo = (newExecutionInfo: ExecutionInfo) => {
-  if (newExecutionInfo.status === "SUCCESS") {
-    // TODO AP-19345: workspace to store
-    // const executionInfoWithWorkspace = newExecutionInfo as ExecutionInfoWithWorkspace;
-  } else {
-    // TODO AP-19345: reset workspace?
-  }
+  const executionInfoWithWorkspace = newExecutionInfo as ExecutionInfoWithWorkspace;
+  const workspace = executionInfoWithWorkspace.data;
+  useWorkspaceStore().update(workspace);
 };
