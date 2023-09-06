@@ -1,8 +1,10 @@
-import type {
-  NodeSettings,
-  ScriptingServiceType,
+import {
+  type NodeSettings,
+  type ScriptingServiceType,
+  EditorService,
+  getScriptingService,
 } from "@knime/scripting-editor";
-import { getScriptingService } from "@knime/scripting-editor";
+
 import {
   type ExecutableOption,
   type ExecutionInfo,
@@ -11,7 +13,6 @@ import {
   type StartSessionInfo,
 } from "./types/common";
 
-import { EditorService } from "@knime/scripting-editor/src/editor-service";
 import sleep from "webapps-common/util/sleep";
 
 /* eslint-disable no-console */
