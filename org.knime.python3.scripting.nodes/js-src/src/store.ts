@@ -1,16 +1,12 @@
-import { defineStore } from "pinia"
 import type { Workspace } from "./types/common";
+import { reactive } from "vue";
 
-export const useWorkspaceStore = defineStore("workspace", {
-  state: (): { workspace: Workspace } => {
-    return { workspace: [] }
-  },
-  actions: {
-    reset() {
-      this.workspace = [];
-    },
-    update(workspace: Workspace) {
-      this.workspace = workspace;
-    },
-  },
-})
+export type WorkspaceStore = {
+  workspace?: Workspace;
+};
+
+const workspace: WorkspaceStore = reactive<WorkspaceStore>({});
+
+export const useWorkspaceStore = (): WorkspaceStore => {
+  return workspace;
+};

@@ -9,6 +9,7 @@ import type {
   SessionInfo,
 } from "@/types/common";
 import { getScriptingService } from "@knime/scripting-editor";
+import { useWorkspaceStore } from "@/store";
 
 describe("utils", () => {
   describe("handleSessionInfo", () => {
@@ -22,17 +23,14 @@ describe("utils", () => {
     const successfulExecutionInfo: ExecutionInfoWithWorkspace = {
       status: "SUCCESS",
       description: "successful info",
-      data: {
-        types: ["int"],
-        names: ["x"],
-        values: ["1"],
-      },
+      data: [{ type: "int", name: "x", value: "1" }],
     };
 
     const executionInfoWithTraceback: ExecutionInfoWithTraceback = {
       status: "EXECUTION_ERROR",
       description: "an error occurred",
       traceback: ["this", "is", "a", "traceback"],
+      data: [],
     };
 
     beforeEach(() => {
@@ -66,8 +64,10 @@ describe("utils", () => {
     });
 
     it("stores workspace", () => {
+      const store = useWorkspaceStore();
+      expect(store.workspace).toBeUndefined();
       handleExecutionInfo(successfulExecutionInfo);
-      // TODO: AP-19346
+      expect(store.workspace).toStrictEqual(successfulExecutionInfo.data);
     });
   });
 });

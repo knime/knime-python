@@ -64,7 +64,9 @@ export const handleSessionInfo = (
  * @param onlyShowErrors If true, only errors are sent to console
  */
 export const handleExecutionInfo = (newExecutionInfo: ExecutionInfo) => {
-  const executionInfoWithWorkspace = newExecutionInfo as ExecutionInfoWithWorkspace;
+  const executionInfoWithWorkspace =
+    newExecutionInfo as ExecutionInfoWithWorkspace;
   const workspace = executionInfoWithWorkspace.data;
-  useWorkspaceStore().update(workspace);
+  const store = useWorkspaceStore();
+  store.workspace = workspace;
 };

@@ -16,7 +16,7 @@ const restartPythonSession = async () => {
   handleSessionInfo(
     await pythonScriptingService.startInteractivePythonSession(),
   );
-  workspaceStore.reset();
+  workspaceStore.workspace = [];
 };
 
 const handleClick = async (variableName: string) => {
@@ -30,7 +30,7 @@ const handleClick = async (variableName: string) => {
 
 <template>
   <div class="workspace">
-    <table>
+    <table aria-label="Current python workspace variables.">
       <thead>
         <th>Name</th>
         <th>Type</th>
