@@ -54,6 +54,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -66,12 +67,18 @@ import java.util.stream.Stream;
 import org.knime.conda.CondaEnvironmentDirectory;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.filestore.internal.NotInWorkflowWriteFileStoreHandler;
+import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.NodeLogger;
+import org.knime.core.node.port.PortType;
+import org.knime.core.node.port.flowvariable.FlowVariablePortObject;
+import org.knime.core.node.port.image.ImagePortObject;
+import org.knime.core.node.port.image.ImagePortObjectSpec;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.VariableType;
 import org.knime.core.webui.data.DataServiceContext;
+import org.knime.python2.port.PickledObjectFileStorePortObject;
 import org.knime.python2.port.PickledObjectPortObjectSpec;
 import org.knime.python3.scripting.nodes2.script.PythonScriptingService.ExecutableOption.ExecutableOptionType;
 import org.knime.python3.scripting.nodes2.script.PythonScriptingSession.ExecutionInfo;
@@ -86,6 +93,12 @@ import org.knime.scripting.editor.ScriptingService;
 final class PythonScriptingService extends ScriptingService {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonScriptingService.class);
+
+    private static final String INPUT_OUTPUT_TYPE_TABLE = "Table";
+
+    private static final String INPUT_OUTPUT_TYPE_IMAGE = "Image";
+
+    private static final String INPUT_OUTPUT_TYPE_OBJECT = "Object";
 
     private static final HashSet<VariableType<?>> KNOWN_FLOW_VARIABLE_SET =
         new HashSet<>(Arrays.asList(PythonScriptNodeModel.KNOWN_FLOW_VARIABLE_TYPES));
@@ -164,8 +177,6 @@ final class PythonScriptingService extends ScriptingService {
      * NB: Must be public for the JSON-RPC server
      */
     public final class PythonRpcService extends RpcService {
-        private CodeAliasProvider m_pythonCodeAliasProvider = getCodeAliasProvider();
-
         @SuppressWarnings("restriction") // the DataServiceContext is still restricted API
         public void sendLastConsoleOutput() {
             // Send the console output of the last execution to the dialog
@@ -267,16 +278,16 @@ final class PythonScriptingService extends ScriptingService {
 
         @Override
         public InputOutputModel getFlowVariableInputs() {
-            var subItems = getFlowVariables().stream().map(f -> {
-                return new InputOutputModelSubItem(f.getName(), f.getVariableType().toString(),
-                    String.format("knio.flow_variables[\"%s\"]", f.getName()));
+            var subItems = getFlowVariables().stream().map(f -> { // NOSONAR
+                return new InputOutputModelSubItem( //
+                    f.getName(), //
+                    f.getVariableType().toString(), //
+                    PythonCodeAliasProvider.getFlowVariableCodeAlias(f.getName()));
             }).toArray(InputOutputModelSubItem[]::new);
-            return new InputOutputModel("Flow Variables", "knio.flow_variables", subItems);
+            return new InputOutputModel("Flow Variables", PythonCodeAliasProvider.getFlowVariableCodeAlias(null),
+                subItems);
         }
 
-        /**
-         * @return information about all input ports that are available to the script
-         */
         @Override
         public List<InputOutputModel> getInputObjects() {
             try {
@@ -286,9 +297,6 @@ final class PythonScriptingService extends ScriptingService {
             }
         }
 
-        /**
-         * @return information about all output ports that are available in the script
-         */
         @Override
         public List<InputOutputModel> getOutputObjects() {
             return getDefaultOutputPortInfo();
@@ -300,14 +308,19 @@ final class PythonScriptingService extends ScriptingService {
 
             int tableIdx = 0;
             int objectIdx = 0;
+            int imageIdx = 0;
             for (int i = 0; i < inputSpec.length; i++) {
                 final var spec = inputSpec[i];
-                if (spec instanceof DataTableSpec) {
-                    inputInfos.add(createFromTableSpec(tableIdx, (DataTableSpec)spec));
+                if (spec instanceof DataTableSpec dataTableSpec) {
+                    inputInfos.add(createFromTableSpec(tableIdx, dataTableSpec,
+                        PythonCodeAliasProvider::getInputObjectCodeAlias, INPUT_OUTPUT_TYPE_TABLE));
                     tableIdx++;
                 } else if (spec instanceof PickledObjectPortObjectSpec) {
-                    inputInfos.add(createFromPortSpec(objectIdx, (PickledObjectPortObjectSpec)spec));
+                    inputInfos.add(createFromPortSpec(objectIdx, INPUT_OUTPUT_TYPE_OBJECT));
                     objectIdx++;
+                } else if (spec instanceof ImagePortObjectSpec) {
+                    inputInfos.add(createFromPortSpec(imageIdx, INPUT_OUTPUT_TYPE_IMAGE));
+                    imageIdx++;
                 } else {
                     throw new IllegalStateException("Unsupported input port. This is an implementation error.");
                 }
@@ -316,25 +329,48 @@ final class PythonScriptingService extends ScriptingService {
         }
 
         private List<InputOutputModel> getDefaultInputPortInfo() {
-            var inputPortTypes = Stream.of(getWorkflowControl().getInputPortTypes())
-                .filter(inputPortType -> !inputPortType.getName().contains("Flow Variable")).toList();
-            return IntStream.range(0, inputPortTypes.size()).mapToObj(i -> {
-                var inputName = String.format("Input %s %d", inputPortTypes.get(i).getName(), i + 1);
-                var codeAlias =
-                    m_pythonCodeAliasProvider.getInputObjectCodeAlias(i, inputPortTypes.get(0).getName(), null);
+            return getDefaultPortInfo("Input", getWorkflowControl().getInputPortTypes());
+        }
+
+        private List<InputOutputModel> getDefaultOutputPortInfo() {
+            return getDefaultPortInfo("Output", getWorkflowControl().getOutputPortTypes());
+        }
+
+        private List<InputOutputModel> getDefaultPortInfo(final String namePrefix, final PortType... portTypes) {
+            var relevantPortTypes = Stream.of(portTypes).filter(PythonRpcService::isNoFlowVariablePort).toList();
+            var portTypeCounter = new HashMap<String, Integer>();
+            return IntStream.range(0, relevantPortTypes.size()).mapToObj(i -> { // NOSONAR
+                var type = portTypeToInputOutputType(relevantPortTypes.get(i));
+                var index = portTypeCounter.computeIfAbsent(type, t -> 0);
+                portTypeCounter.put(type, index + 1);
+                var inputName = String.format("%s %s %d", namePrefix, type, index + 1);
+                String codeAlias;
+                if (namePrefix.equals("Input")) {
+                    codeAlias =
+                        PythonCodeAliasProvider.getInputObjectCodeAlias(index, type, null);
+                } else {
+                    codeAlias =
+                        PythonCodeAliasProvider.getOutputObjectCodeAlias(index, type, null);
+                }
                 return new InputOutputModel(inputName, codeAlias, null);
             }).toList();
         }
 
-        private List<InputOutputModel> getDefaultOutputPortInfo() {
-            var outputPortTypes = Stream.of(getWorkflowControl().getOutputPortTypes())
-                .filter(outputPortType -> !outputPortType.getName().contains("Flow Variable")).toList();
-            return IntStream.range(0, outputPortTypes.size()).mapToObj(i -> {
-                var inputName = String.format("Output %s %d", outputPortTypes.get(i).getName(), i + 1);
-                var codeAlias =
-                    m_pythonCodeAliasProvider.getOutputObjectCodeAlias(i, outputPortTypes.get(0).getName(), null);
-                return new InputOutputModel(inputName, codeAlias, null);
-            }).toList();
+        @SuppressWarnings("deprecation")
+        private String portTypeToInputOutputType(final PortType portType) {
+            if(portType.acceptsPortObjectClass(BufferedDataTable.class)) {
+                return INPUT_OUTPUT_TYPE_TABLE;
+            } else if(portType.acceptsPortObjectClass(PickledObjectFileStorePortObject.class)) {
+                return INPUT_OUTPUT_TYPE_OBJECT;
+            } else if(portType.acceptsPortObjectClass(ImagePortObject.class)) {
+                return INPUT_OUTPUT_TYPE_IMAGE;
+            } else {
+                throw new IllegalArgumentException("Unsupported port type: " + portType.getName());
+            }
+        }
+
+        private static boolean isNoFlowVariablePort(final PortType portType) {
+            return !portType.acceptsPortObjectClass(FlowVariablePortObject.class);
         }
 
         /**
@@ -409,76 +445,10 @@ final class PythonScriptingService extends ScriptingService {
             }
         }
 
-        @Override
-        public CodeAliasProvider getCodeAliasProvider() {
-            return new CodeAliasProvider() {
-                private String appendStringSuffix(final String prefix, final String variableName) {
-                    return String.format("%s[\"%s\"]", prefix, variableName);
-                }
-
-                private String appendIndexSuffix(final String prefix, final int index) {
-                    return String.format("%s[%d]", prefix, index);
-                }
-
-                @Override
-                public String getFlowVariableCodeAlias(final String flowVariableName) {
-                    if (flowVariableName == null) {
-                        return "knio.flow_variables";
-                    }
-                    return appendStringSuffix("knio.flow_variables", flowVariableName);
-                }
-
-                @Override
-                public String getInputObjectCodeAlias(final int index, final String type, final String subItemName) {
-                    switch (type) {
-                        case "Table": {
-                            var tableAlias = appendIndexSuffix("knio.input_tables", index);
-                            if (subItemName == null) {
-                                return tableAlias;
-                            }
-                            return appendStringSuffix(tableAlias, subItemName);
-                        }
-                        default:
-                            throw new IllegalArgumentException("Unexpected input object type: " + type);
-                    }
-                }
-
-                @Override
-                public String getOutputObjectCodeAlias(final int index, final String type, final String subItemName) {
-                    switch (type) {
-                        case "Table": {
-                            var tableAlias = appendIndexSuffix("knio.output_tables", index);
-                            if (subItemName == null) {
-                                return tableAlias;
-                            }
-                            return appendStringSuffix(tableAlias, subItemName);
-                        }
-                        default:
-                            throw new IllegalArgumentException("Unexpected input object type: " + type);
-                    }
-                }
-            };
-        }
-
-        private InputOutputModel createFromTableSpec(final int tableIdx, final DataTableSpec spec) {
-            final var columnNames = spec.getColumnNames();
-            final var columnTypes = IntStream.range(0, spec.getNumColumns())
-                .mapToObj(i -> spec.getColumnSpec(i).getType().getName()).toArray(String[]::new);
-            final var codeAliases = IntStream.range(0, spec.getNumColumns())
-                .mapToObj(i -> m_pythonCodeAliasProvider.getInputObjectCodeAlias(tableIdx, "Table", columnNames[i]))
-                .toArray(String[]::new);
-            final var subItems = IntStream.range(0, spec.getNumColumns())
-                .mapToObj(i -> new InputOutputModelSubItem(columnNames[i], columnTypes[i], codeAliases[i])).toArray(InputOutputModelSubItem[]::new);
-
-            return new InputOutputModel("Input Table " + (tableIdx + 1),
-                m_pythonCodeAliasProvider.getInputObjectCodeAlias(tableIdx, "Table", null), subItems);
-        }
-
-        private InputOutputModel createFromPortSpec(final int objectIdx, final PickledObjectPortObjectSpec spec) {
-            var name = "Input Object " + objectIdx + 1;
-            // how to handle types in code alias provider?
-            var codeAlias = String.format("knio.input_objects[%d]", objectIdx);
-            return new InputOutputModel(name, codeAlias, null);
+        private InputOutputModel createFromPortSpec(final int index, final String displayName) {
+            var name = String.format("Input %s %d", displayName, index + 1);
+            return new InputOutputModel(name, PythonCodeAliasProvider.getInputObjectCodeAlias(index, displayName, null),
+                null);
         }
 
     }
@@ -582,5 +552,62 @@ final class PythonScriptingService extends ScriptingService {
 
     /** Information about a code suggestion */
     static record CodeSuggestion(CodeSuggestionStatus status, String code, String error) {
+    }
+
+    private static final class PythonCodeAliasProvider {
+        private PythonCodeAliasProvider() {
+        }
+
+        private static String appendStringSuffix(final String prefix, final String variableName) {
+            return String.format("%s[\"%s\"]", prefix, variableName);
+        }
+
+        private static String appendIndexSuffix(final String prefix, final int index) {
+            return String.format("%s[%d]", prefix, index);
+        }
+
+        public static String getFlowVariableCodeAlias(final String flowVariableName) {
+            if (flowVariableName == null) {
+                return "knio.flow_variables";
+            }
+            return appendStringSuffix("knio.flow_variables", flowVariableName);
+        }
+
+        public static String getInputObjectCodeAlias(final int index, final String type, final String subItemName) {
+            switch (type) {
+                case INPUT_OUTPUT_TYPE_TABLE: {
+                    var tableAlias = appendIndexSuffix("knio.input_tables", index);
+                    if (subItemName == null) {
+                        return tableAlias;
+                    }
+                    return appendStringSuffix(tableAlias, subItemName);
+                }
+                case INPUT_OUTPUT_TYPE_OBJECT: {
+                    return appendIndexSuffix("knio.input_objects", index);
+                }
+                default:
+                    throw new IllegalArgumentException("Unexpected input object type: " + type);
+            }
+        }
+
+        public static String getOutputObjectCodeAlias(final int index, final String type, final String subItemName) {
+            switch (type) {
+                case INPUT_OUTPUT_TYPE_TABLE: {
+                    var tableAlias = appendIndexSuffix("knio.output_tables", index);
+                    if (subItemName == null) {
+                        return tableAlias;
+                    }
+                    return appendStringSuffix(tableAlias, subItemName);
+                }
+                case INPUT_OUTPUT_TYPE_OBJECT: {
+                    return appendIndexSuffix("knio.output_objects", index);
+                }
+                case INPUT_OUTPUT_TYPE_IMAGE: {
+                    return appendIndexSuffix("knio.output_images", index);
+                }
+                default:
+                    throw new IllegalArgumentException("Unexpected input object type: " + type);
+            }
+        }
     }
 }

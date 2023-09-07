@@ -167,17 +167,21 @@ final class ExecutableSelectionUtils {
     }
 
     private static Stream<ExecutableOption> getCondaFlowVariableOptions(final FlowObjectStack flowVarStack) {
-        return flowVarStack //
-            .getAvailableFlowVariables(CondaEnvironmentType.INSTANCE) //
-            .entrySet() //
-            .stream() //
-            .map(e -> {
-                var flowVarName = e.getKey();
-                var env = e.getValue().getValue(CondaEnvironmentType.INSTANCE).getIdentifier();
-                return new ExecutableOption(ExecutableOptionType.CONDA_ENV_VAR, flowVarName,
-                    CondaEnvironmentDirectory.getPythonExecutableString(env.getDirectoryPath()), env.getName(),
-                    env.getDirectoryPath());
-            }); //
+        if (flowVarStack != null) {
+            return flowVarStack //
+                .getAvailableFlowVariables(CondaEnvironmentType.INSTANCE) //
+                .entrySet() //
+                .stream() //
+                .map(e -> {
+                    var flowVarName = e.getKey();
+                    var env = e.getValue().getValue(CondaEnvironmentType.INSTANCE).getIdentifier();
+                    return new ExecutableOption(ExecutableOptionType.CONDA_ENV_VAR, flowVarName,
+                        CondaEnvironmentDirectory.getPythonExecutableString(env.getDirectoryPath()), env.getName(),
+                        env.getDirectoryPath());
+                }); //
+        } else {
+            return Stream.empty();
+        }
     }
 
     private static PythonCommand commandForConda(final String condaEnvDir) {
