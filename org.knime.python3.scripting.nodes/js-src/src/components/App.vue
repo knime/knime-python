@@ -6,6 +6,7 @@ import type { MenuItem } from "webapps-common/ui/components/MenuItems.vue";
 import PythonEditorControls from "./PythonEditorControls.vue";
 import PythonWorkspace from "./PythonWorkspace.vue";
 import { pythonScriptingService } from "@/python-scripting-service";
+import * as monaco from "monaco-editor";
 
 const menuItems: MenuItem[] = [
   {
@@ -23,7 +24,25 @@ const menuItems: MenuItem[] = [
   },
 ];
 
-const onMonacoCreated = () => {
+const onMonacoCreated = ({
+  editor,
+  editorModel,
+}: {
+  editor: monaco.editor.IStandaloneCodeEditor;
+  editorModel: monaco.editor.ITextModel;
+}) => {
+  // Use 4 spaces instead of tabs
+  editorModel.updateOptions({
+    tabSize: 4,
+    insertSpaces: true,
+  });
+
+  // Replace tabs by spaces on paste
+  editor.onDidPaste(() => {
+    editor.getAction("editor.action.indentationToSpaces")?.run();
+  });
+
+  // Connect to the language server
   pythonScriptingService.connectToLanguageServer();
 };
 </script>
