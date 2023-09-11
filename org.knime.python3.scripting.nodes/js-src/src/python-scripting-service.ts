@@ -100,6 +100,10 @@ print("Hello, I am a fake AI")
   pasteToEditor() {
     // do nothing
   },
+  supportsCodeAssistant(): Promise<boolean> {
+    console.log("Checking whether code assistance is available");
+    return Promise.resolve(true);
+  },
 };
 
 const scriptingService =
