@@ -104,6 +104,10 @@ print("Hello, I am a fake AI")
     console.log("Checking whether code assistance is available");
     return Promise.resolve(true);
   },
+  inputsAvailable(): Promise<boolean> {
+    console.log("Checking whether inputs are available");
+    return Promise.resolve(true);
+  },
   closeDialog() {
     console.log("Closing dialog");
     return Promise.resolve();

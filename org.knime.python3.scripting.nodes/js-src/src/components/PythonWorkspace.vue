@@ -6,6 +6,8 @@ import {
   handleExecutionInfo,
 } from "./utils/handleSessionInfo";
 import { useWorkspaceStore } from "@/store";
+import { getScriptingService } from "@knime/scripting-editor";
+import { onMounted, ref } from "vue";
 
 const workspaceStore = useWorkspaceStore();
 
@@ -26,6 +28,14 @@ const handleClick = async (variableName: string) => {
   handleSessionInfo(executionInfo);
   handleExecutionInfo(executionInfo);
 };
+
+const resetButtonEnabled = ref<boolean>(false);
+
+onMounted(async () => {
+  if (await getScriptingService().inputsAvailable()) {
+    resetButtonEnabled.value = true;
+  }
+});
 </script>
 
 <template>
@@ -51,6 +61,7 @@ const handleClick = async (variableName: string) => {
     <Button
       class="restart-button"
       compact
+      :disabled="!resetButtonEnabled"
       :with-border="false"
       @click="restartPythonSession"
     >

@@ -25,6 +25,12 @@ vi.mock("@knime/scripting-editor", async () => {
     stopEventPoller: vi.fn(),
     sendToConsole: vi.fn(),
     initEditorService: vi.fn(),
+    inputsAvailable: vi.fn(() => {
+      return true;
+    }),
+    supportsCodeAssistant: vi.fn(() => {
+      return true;
+    }),
   };
 
   const scriptEditorModule = await vi.importActual("@knime/scripting-editor");

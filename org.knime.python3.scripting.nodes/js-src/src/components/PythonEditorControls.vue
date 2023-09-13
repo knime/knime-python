@@ -9,15 +9,28 @@ import {
   handleExecutionInfo,
   handleSessionInfo,
 } from "./utils/handleSessionInfo";
+import { getScriptingService } from "@knime/scripting-editor";
+
+const isRunningSupported = ref(false);
 
 onMounted(async () => {
-  handleSessionInfo(
-    await pythonScriptingService.startInteractivePythonSession(),
-  );
+  if (await getScriptingService().inputsAvailable()) {
+    isRunningSupported.value = true;
+
+    handleSessionInfo(
+      await pythonScriptingService.startInteractivePythonSession(),
+    );
+  } else {
+    getScriptingService().sendToConsole({
+      text: "Missing input data. Connect all input ports and execute preceeding nodes to enable script execution.",
+    });
+  }
 });
 
 onUnmounted(() => {
-  pythonScriptingService.killInteractivePythonSession();
+  if (isRunningSupported.value) {
+    pythonScriptingService.killInteractivePythonSession();
+  }
 });
 
 const runningSelected = ref(false);
@@ -110,7 +123,7 @@ const onHoverRunButton = (
     <Button
       compact
       with-border
-      :disabled="running && !runningSelected"
+      :disabled="!isRunningSupported || (running && !runningSelected)"
       class="run-selected-button"
       @click="
         runButtonClicked(
@@ -129,7 +142,7 @@ const onHoverRunButton = (
       </div>
     </Button>
     <Button
-      :disabled="running && !runningAll"
+      :disabled="!isRunningSupported || (running && !runningAll)"
       class="run-all-button"
       primary
       compact
