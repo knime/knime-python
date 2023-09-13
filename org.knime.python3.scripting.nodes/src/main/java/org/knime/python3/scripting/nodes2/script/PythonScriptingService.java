@@ -236,7 +236,7 @@ final class PythonScriptingService extends ScriptingService {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 return new StartSessionInfo(StartSessionStatus.ERROR, e.getMessage());
-            } catch (IOException | CanceledExecutionException | IllegalArgumentException e) {
+            } catch (IOException | CanceledExecutionException | IllegalArgumentException e) { // NOSONAR
                 return new StartSessionInfo(StartSessionStatus.ERROR, e.getMessage());
             }
             return new StartSessionInfo(StartSessionStatus.SUCCESS, "Started new python session");
@@ -448,8 +448,6 @@ final class PythonScriptingService extends ScriptingService {
                 var response = PythonCodeAssistant.generateCode(//
                     userPrompt, //
                     currentCode, //
-                    // TODO: make this work if no tables are connected after merging
-                    //https://knime-com.atlassian.net/browse/AP-19346
                     getWorkflowControl().getInputSpec(), //
                     getWorkflowControl().getOutputPortTypes(), //
                     getFlowVariables());
@@ -464,7 +462,6 @@ final class PythonScriptingService extends ScriptingService {
             return new InputOutputModel(name, PythonCodeAliasProvider.getInputObjectCodeAlias(index, displayName, null),
                 null);
         }
-
     }
 
     enum StartSessionStatus {
