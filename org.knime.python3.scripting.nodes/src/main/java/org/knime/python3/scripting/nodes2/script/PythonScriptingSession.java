@@ -78,6 +78,7 @@ import org.knime.python3.PythonGatewayUtils;
 import org.knime.python3.arrow.Python3ArrowSourceDirectory;
 import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.arrow.PythonArrowDataUtils;
+import org.knime.python3.arrow.PythonArrowExtension;
 import org.knime.python3.arrow.PythonArrowTableConverter;
 import org.knime.python3.scripting.Python3ScriptingSourceDirectory;
 import org.knime.python3.scripting.nodes2.PythonScriptingEntryPoint;
@@ -273,6 +274,8 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
         // TODO(AP-19430) set working directory to workflow dir
         final var gatewayDescriptionBuilder =
             PythonGatewayDescription.builder(pythonCommand, LAUNCHER.toAbsolutePath(), PythonScriptingEntryPoint.class);
+
+        gatewayDescriptionBuilder.withPreloaded(PythonArrowExtension.INSTANCE);
 
         getExtraPythonPaths().forEach(gatewayDescriptionBuilder::addToPythonPath);
         return Activator.GATEWAY_FACTORY.create(gatewayDescriptionBuilder.build());
