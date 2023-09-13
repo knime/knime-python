@@ -162,6 +162,38 @@ public interface PythonScriptingEntryPoint extends PythonEntryPoint {
          */
         void add_stderr(String text); //NOSONAR
 
+
+        /**
+         * Resolves the given KNIME URL to a local path, potentially involving copying a remote file to a local
+         * temporary file.
+         *
+         * @param knimeUrl The {@code knime://} URL to resolve to a local path.
+         * @return The resolved local path.
+         * @throws IOException If resolving the URL failed. Wrapped in a {@code Py4JJavaError} on Python side.
+         */
+        String resolve_knime_url(String knimeUrl) throws IOException; // NOSONAR
+
+        /**
+         * @return The temporary directory associated with this workflow
+         */
+        String get_workflow_temp_dir(); // NOSONAR
+
+        /**
+         * @return The local absolute path to the current workflow on disk
+         */
+        String get_workflow_dir(); // NOSONAR
+
+        /**
+         * @param fileStoreKey The string representation of a file store key
+         * @return the absolute path of the file on disk
+         */
+        String file_store_key_to_absolute_path(String fileStoreKey); // NOSONAR
+
+        /**
+         * @return A tuple of two strings: the absolute path of the file on disk and the file store key
+         * @throws IOException if the file store could not be created
+         */
+        String[] create_file_store() throws IOException; // NOSONAR
     }
 
 }

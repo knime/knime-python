@@ -56,6 +56,26 @@ _output_tables = []
 _output_images = []
 _output_objects = []
 
+# Access to functionality from the Java side that can be exposed via knio
+_java_callback = None
+
+
+def _get_workflow_temp_dir() -> str:
+    _check_java_callback()
+    return _java_callback.get_workflow_temp_dir()
+
+
+def _get_workflow_data_area_dir() -> str:
+    _check_java_callback()
+    import os.path
+
+    return os.path.join(_java_callback.get_workflow_dir(), "data")
+
+
+def _check_java_callback():
+    if _java_callback is None:
+        raise RuntimeError("No Java callback configured, this is a coding/setup error")
+
 
 def _pad_up_to_length(lst: list, length: int) -> None:
     lst += [None] * (length - len(lst))

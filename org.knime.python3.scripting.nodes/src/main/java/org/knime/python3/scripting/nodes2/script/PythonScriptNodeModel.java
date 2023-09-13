@@ -59,6 +59,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
+import org.knime.core.data.filestore.FileStoreKey;
 import org.knime.core.data.filestore.internal.IFileStoreHandler;
 import org.knime.core.data.filestore.internal.IWriteFileStoreHandler;
 import org.knime.core.node.CanceledExecutionException;
@@ -83,6 +84,7 @@ import org.knime.python3.PythonCommand;
 import org.knime.python3.scripting.nodes2.script.ConsoleOutputUtils.ConsoleOutputStorage;
 import org.knime.python3.scripting.nodes2.script.PythonScriptingSession.ExecutionInfo;
 import org.knime.python3.scripting.nodes2.script.PythonScriptingSession.ExecutionStatus;
+import org.knime.python3.scripting.nodes2.script.PythonScriptingSession.FileStoreHandlerSupplier;
 import org.knime.python3.utils.FlowVariableUtils;
 import org.knime.scripting.editor.ScriptingService.ConsoleText;
 
@@ -145,7 +147,7 @@ final class PythonScriptNodeModel extends NodeModel {
 
         final var consoleConsumer = ConsoleOutputUtils.createConsoleConsumer();
         try (final var session =
-            new PythonScriptingSession(pythonCommand, consoleConsumer, getWriteFileStoreHandler())) {
+            new PythonScriptingSession(pythonCommand, consoleConsumer, new ModelFileStoreHandlerSupplier())) {
             exec.setProgress(0.0, "Setting up inputs");
             session.setupIO(inObjects, getAvailableFlowVariables(KNOWN_FLOW_VARIABLE_TYPES).values(),
                 m_ports.getNumOutTables(), m_ports.getNumOutImages(), m_ports.getNumOutObjects(),
@@ -256,20 +258,32 @@ final class PythonScriptNodeModel extends NodeModel {
         }
     }
 
-    private static IWriteFileStoreHandler getWriteFileStoreHandler() {
-        final IFileStoreHandler nodeFsHandler = getFileStoreHandler();
-        IWriteFileStoreHandler fsHandler = null;
-        if (nodeFsHandler instanceof IWriteFileStoreHandler) {
-            fsHandler = (IWriteFileStoreHandler)nodeFsHandler;
-        } else {
-            // This cannot happen
-            throw new IllegalStateException(
-                "A NodeContext should be available during execution of the Python scrpting node.");
-        }
-        return fsHandler;
-    }
+    private static final class ModelFileStoreHandlerSupplier implements FileStoreHandlerSupplier {
 
-    private static IFileStoreHandler getFileStoreHandler() {
-        return ((NativeNodeContainer)NodeContext.getContext().getNodeContainer()).getNode().getFileStoreHandler();
+        @Override
+        public IWriteFileStoreHandler getWriteFileStoreHandler() {
+            final IFileStoreHandler nodeFsHandler = getFileStoreHandlerFromContext();
+            if (nodeFsHandler instanceof IWriteFileStoreHandler fsHandler) {
+                return fsHandler;
+            } else {
+                // This cannot happen
+                throw new IllegalStateException(
+                    "A NodeContext should be available during execution of the Python scrpting node.");
+            }
+        }
+
+        @Override
+        public IFileStoreHandler getFileStoreHandler(final FileStoreKey key) {
+            return getFileStoreHandlerFromContext();
+        }
+
+        private static IFileStoreHandler getFileStoreHandlerFromContext() {
+            return ((NativeNodeContainer)NodeContext.getContext().getNodeContainer()).getNode().getFileStoreHandler();
+        }
+
+        @Override
+        public void close() {
+            // Nothing to do
+        }
     }
 }

@@ -66,6 +66,9 @@ import java.util.stream.Stream;
 
 import org.knime.conda.CondaEnvironmentDirectory;
 import org.knime.core.data.DataTableSpec;
+import org.knime.core.data.filestore.FileStoreKey;
+import org.knime.core.data.filestore.internal.IFileStoreHandler;
+import org.knime.core.data.filestore.internal.IWriteFileStoreHandler;
 import org.knime.core.data.filestore.internal.NotInWorkflowWriteFileStoreHandler;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
@@ -76,6 +79,7 @@ import org.knime.core.node.port.flowvariable.FlowVariablePortObject;
 import org.knime.core.node.port.image.ImagePortObject;
 import org.knime.core.node.port.image.ImagePortObjectSpec;
 import org.knime.core.node.workflow.FlowVariable;
+import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.node.workflow.VariableType;
 import org.knime.core.webui.data.DataServiceContext;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
@@ -83,6 +87,7 @@ import org.knime.python2.port.PickledObjectPortObjectSpec;
 import org.knime.python3.scripting.nodes2.script.PythonScriptingService.ExecutableOption.ExecutableOptionType;
 import org.knime.python3.scripting.nodes2.script.PythonScriptingSession.ExecutionInfo;
 import org.knime.python3.scripting.nodes2.script.PythonScriptingSession.ExecutionStatus;
+import org.knime.python3.scripting.nodes2.script.PythonScriptingSession.FileStoreHandlerSupplier;
 import org.knime.scripting.editor.ScriptingService;
 
 /**
@@ -224,12 +229,10 @@ final class PythonScriptingService extends ScriptingService {
             final var pythonCommand =
                 ExecutableSelectionUtils.getPythonCommand(getExecutableOption(executableSelection));
 
-            // TODO do we need to do more with the NotInWorkflowWriteFileStoreHandler?
             // TODO report the progress of converting the tables using the ExecutionMonitor?
-            final var fileStoreHandler = NotInWorkflowWriteFileStoreHandler.create();
             try {
                 m_interactiveSession = new PythonScriptingSession(pythonCommand,
-                    PythonScriptingService.this::addConsoleOutputEvent, fileStoreHandler);
+                    PythonScriptingService.this::addConsoleOutputEvent, new DialogFileStoreHandlerSupplier());
                 m_interactiveSession.setupIO(workflowControl.getInputData(), getFlowVariables(),
                     m_ports.getNumOutTables(), m_ports.getNumOutImages(), m_ports.getNumOutObjects(),
                     new ExecutionMonitor());
@@ -618,6 +621,42 @@ final class PythonScriptingService extends ScriptingService {
                 }
                 default:
                     throw new IllegalArgumentException("Unexpected input object type: " + type);
+            }
+        }
+    }
+
+    private static final class DialogFileStoreHandlerSupplier implements FileStoreHandlerSupplier {
+
+        private IWriteFileStoreHandler m_temporaryWriteFileStoreHandler;
+
+        @Override
+        public IWriteFileStoreHandler getWriteFileStoreHandler() {
+            if (m_temporaryWriteFileStoreHandler == null) {
+                m_temporaryWriteFileStoreHandler = NotInWorkflowWriteFileStoreHandler.create();
+            }
+            return m_temporaryWriteFileStoreHandler;
+        }
+
+        @Override
+        public IFileStoreHandler getFileStoreHandler(final FileStoreKey key) {
+            // The file store can be coming from a previously written table -- then it is part of
+            // the WorkflowDataRepositoryor it could have been created during execution of the Python
+            // script, then it was using the NotInWorkflowWriteFileStoreHandler
+
+            var dataRepository = NodeContext.getContext().getWorkflowManager().getWorkflowDataRepository();
+            var handler = dataRepository.getHandler(key.getStoreUUID());
+
+            if (handler != null) {
+                return handler;
+            } else {
+                return m_temporaryWriteFileStoreHandler;
+            }
+        }
+
+        @Override
+        public void close() {
+            if (m_temporaryWriteFileStoreHandler != null) {
+                m_temporaryWriteFileStoreHandler.clearAndDispose();
             }
         }
     }

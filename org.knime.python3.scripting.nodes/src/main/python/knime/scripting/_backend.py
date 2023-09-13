@@ -59,6 +59,7 @@ import knime.scripting._deprecated._arrow_table as kat
 import knime.api.table as ktn
 import knime._arrow._table as katn
 import knime.api.views as kv
+from knime.api.types import FileStoreHandler
 
 import knime.scripting._io_containers as _ioc
 
@@ -85,7 +86,7 @@ class ScriptingBackend(ABC):
         pass
 
     @abstractmethod
-    def set_up_arrow(self, sink_factory):
+    def set_up_arrow(self, sink_factory, file_store_handler: FileStoreHandler):
         pass
 
     @abstractmethod
@@ -122,8 +123,9 @@ class ScriptingBackendV0(ScriptingBackend):
             )
         return write_table._sink._java_data_sink
 
-    def set_up_arrow(self, sink_factory):
+    def set_up_arrow(self, sink_factory, file_store_handler: FileStoreHandler):
         kt._backend = kat.ArrowBackend(sink_factory)
+        kt._backend.file_store_handler = file_store_handler
 
     def tear_down_arrow(self, flush: bool):
         # batch tables without batches have an invalid arrow file because no schema
@@ -160,8 +162,9 @@ class ScriptingBackendV1(ScriptingBackend):
     def get_output_table_sink(self, table_index: int):
         return _ioc._output_tables[table_index]
 
-    def set_up_arrow(self, sink_factory):
+    def set_up_arrow(self, sink_factory, file_store_handler: FileStoreHandler):
         ktn._backend = katn._ArrowBackend(sink_factory)
+        ktn._backend.file_store_handler = file_store_handler
 
     def _write_all_tables(self):
         for idx, table in enumerate(_ioc._output_tables):
@@ -330,9 +333,9 @@ class ScriptingBackendCollection:
                     f"variable. Please remove the flow variable or change its type to something that can be translated."
                 )
 
-    def set_up_arrow(self, sink_factory):
+    def set_up_arrow(self, sink_factory, file_store_handler: FileStoreHandler):
         for b in self._backends.values():
-            b.set_up_arrow(sink_factory)
+            b.set_up_arrow(sink_factory, file_store_handler)
 
     def tear_down_arrow(self, flush: bool):
         for b in self._backends.values():

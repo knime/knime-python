@@ -49,6 +49,8 @@
 package org.knime.python3.scripting.nodes2.script;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -59,20 +61,30 @@ import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.SystemUtils;
 import org.knime.core.columnar.arrow.ArrowColumnStoreFactory;
+import org.knime.core.data.filestore.FileStoreKey;
+import org.knime.core.data.filestore.FileStoreUtil;
+import org.knime.core.data.filestore.internal.IFileStoreHandler;
 import org.knime.core.data.filestore.internal.IWriteFileStoreHandler;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
+import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.port.PortObject;
+import org.knime.core.node.util.CheckUtils;
 import org.knime.core.node.workflow.FlowVariable;
+import org.knime.core.node.workflow.NodeContext;
+import org.knime.core.util.FileUtil;
 import org.knime.core.util.ThreadUtils;
 import org.knime.core.util.asynclose.AsynchronousCloseable;
+import org.knime.core.util.pathresolve.ResolverUtil;
 import org.knime.python3.Activator;
 import org.knime.python3.Python3SourceDirectory;
 import org.knime.python3.PythonCommand;
 import org.knime.python3.PythonEntryPointUtils;
+import org.knime.python3.PythonFileStoreUtils;
 import org.knime.python3.PythonGateway;
 import org.knime.python3.PythonGatewayFactory.EntryPointCustomizer;
 import org.knime.python3.PythonGatewayFactory.PythonGatewayDescription;
@@ -120,6 +132,8 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
 
     private final PythonArrowTableConverter m_tableConverter;
 
+    private final FileStoreHandlerSupplier m_fileStoreHandlerSupplier;
+
     private final Consumer<ConsoleText> m_consoleTextConsumer;
 
     private final AutoCloseable m_outputRedirector;
@@ -134,11 +148,13 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
     private int m_numOutObjects;
 
     PythonScriptingSession(final PythonCommand pythonCommand, final Consumer<ConsoleText> consoleTextConsumer,
-        final IWriteFileStoreHandler fileStoreHandler) throws IOException, InterruptedException {
+        final FileStoreHandlerSupplier fileStoreHandlerSupplier) throws IOException, InterruptedException {
         m_consoleTextConsumer = consoleTextConsumer;
+        m_fileStoreHandlerSupplier = fileStoreHandlerSupplier;
         m_gateway = createGateway(pythonCommand);
         m_entryPoint = m_gateway.getEntryPoint();
-        m_tableConverter = new PythonArrowTableConverter(EXECUTOR_SERVICE, ARROW_STORE_FACTORY, fileStoreHandler);
+        m_tableConverter = new PythonArrowTableConverter(EXECUTOR_SERVICE, ARROW_STORE_FACTORY,
+            fileStoreHandlerSupplier.getWriteFileStoreHandler());
         m_outputRedirector = PythonGatewayUtils.redirectGatewayOutput(m_gateway, LOGGER::info, LOGGER::info);
     }
 
@@ -151,28 +167,76 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
 
         final var sources = PythonIOUtils.createSources(inData, m_tableConverter, exec);
         final var flowVars = FlowVariableUtils.convertToMap(flowVariables);
-        final var callback = createCallback();
+        final var callback = new PythonScriptingCallback();
         m_entryPoint.setupIO(sources, flowVars, numOutTables, numOutImages, numOutObjects, callback);
     }
 
-    private PythonScriptingEntryPoint.Callback createCallback() {
-        return new PythonScriptingEntryPoint.Callback() {
-            @Override
-            public PythonArrowDataSink create_sink() throws IOException {
-                return m_tableConverter.createSink();
-            }
+    private final class PythonScriptingCallback implements PythonScriptingEntryPoint.Callback {
 
-            @Override
-            public void add_stdout(final String text) {
-                m_consoleTextConsumer.accept(new ConsoleText(text, false));
-            }
+        @Override
+        public PythonArrowDataSink create_sink() throws IOException {
+            return m_tableConverter.createSink();
+        }
 
-            @Override
-            public void add_stderr(final String text) {
-                m_consoleTextConsumer.accept(new ConsoleText(text, true));
-            }
+        @Override
+        public void add_stdout(final String text) {
+            m_consoleTextConsumer.accept(new ConsoleText(text, false));
+        }
 
-        };
+        @Override
+        public void add_stderr(final String text) {
+            m_consoleTextConsumer.accept(new ConsoleText(text, true));
+        }
+
+        @Override
+        public String resolve_knime_url(final String knimeUrl) throws IOException {
+            try {
+                var knimeUri = new URI(fixWindowsUrl(knimeUrl));
+                return ResolverUtil.resolveURItoLocalOrTempFile(knimeUri).getAbsolutePath();
+            } catch (URISyntaxException | InvalidSettingsException ex) {
+                throw new IOException(ex);
+            }
+        }
+
+        @Override
+        public String get_workflow_temp_dir() {
+            return FileUtil.getWorkflowTempDir().getAbsolutePath();
+        }
+
+        @Override
+        public String get_workflow_dir() {
+            return NodeContext.getContext().getWorkflowManager().getContextV2().getExecutorInfo().getLocalWorkflowPath()
+                .toFile().getAbsolutePath();
+        }
+
+        @Override
+        public String file_store_key_to_absolute_path(final String fileStoreKey) {
+            var key = FileStoreKey.load(fileStoreKey);
+            var fileStoreHandler = m_fileStoreHandlerSupplier.getFileStoreHandler(key);
+            return PythonFileStoreUtils.getAbsolutePathForKey(fileStoreHandler, key);
+        }
+
+        @Override
+        public String[] create_file_store() throws IOException {
+            final var fileStoreHandler = m_fileStoreHandlerSupplier.getWriteFileStoreHandler();
+            final var fileStore = PythonFileStoreUtils.createFileStore(fileStoreHandler);
+            return new String[]{fileStore.getFile().getAbsolutePath(),
+                FileStoreUtil.getFileStoreKey(fileStore).saveToString()};
+        }
+    }
+
+    private static String fixWindowsUrl(String knimeUrl) throws InvalidSettingsException {
+        try {
+            CheckUtils.checkSourceFile(knimeUrl);
+        } catch (final InvalidSettingsException ex) {
+            if (SystemUtils.IS_OS_WINDOWS && knimeUrl != null) {
+                knimeUrl = knimeUrl.replace("\\", "/");
+                CheckUtils.checkSourceFile(knimeUrl);
+            } else {
+                throw ex;
+            }
+        }
+        return knimeUrl;
     }
 
     /*
@@ -328,6 +392,26 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
         }
         m_tableConverter.close();
         m_gateway.close();
+        m_fileStoreHandlerSupplier.close();
     }
 
+    /** Supplies the correct file store handler */
+    public interface FileStoreHandlerSupplier extends AutoCloseable {
+
+        /**
+         * @return the write file store handler for new file stores in output tables
+         */
+        IWriteFileStoreHandler getWriteFileStoreHandler();
+
+        /**
+         * The file store handler that contains the given key
+         *
+         * @param key the key that must be present in this handler
+         * @return the handler that should be used to resolve the file store
+         */
+        IFileStoreHandler getFileStoreHandler(FileStoreKey key);
+
+        @Override
+        void close();
+    }
 }

@@ -186,6 +186,29 @@ documentation of ``view(obj)`` to understand how views are created from differen
 
 """
 
+
+def get_workflow_temp_dir() -> str:
+    """
+    Returns the local absolute path where temporary files for this workflow
+    should be stored. Files created in this folder are not automatically deleted
+    by KNIME.
+
+    By default, this folder is located in the operating system's
+    temporary folder. In that case, the contents will be cleaned by the OS.
+    """
+    return _ioc._get_workflow_temp_dir()
+
+
+def get_workflow_data_area_dir() -> str:
+    """
+    Returns the local absolute path to the current workflow's data area folder.
+    This folder is meant to be part of the workflow, so its contents are included
+    whenever the workflow is shared.
+    """
+    return _ioc._get_workflow_data_area_dir()
+
+
+# Note: Whenever changing this list, also update the docs!
 __all__ = [
     "flow_variables",
     "input_objects",
@@ -196,4 +219,6 @@ __all__ = [
     "output_view",
     "Table",
     "BatchOutputTable",
+    "get_workflow_temp_dir",
+    "get_workflow_data_area_dir",
 ]

@@ -134,7 +134,7 @@ class ScriptingEntryPoint(kg.EntryPoint):
             java_sink = java_callback.create_sink()
             return kg.data_sink_mapper(java_sink)
 
-        self._backends.set_up_arrow(create_python_sink)
+        self._backends.set_up_arrow(create_python_sink, self._java_callback)
         self.setFlowVariables(flow_var_sources)
 
         sources = [kg.data_source_mapper(d) for d in data_sources]
@@ -168,6 +168,7 @@ class ScriptingEntryPoint(kg.EntryPoint):
         ):
             try:
                 assert self._java_callback
+                _ioc._java_callback = self._java_callback
                 # TODO: If we want tear down arrow in check_outputs
                 #       then we also need to redo setupio
                 exec(script, self._workspace)
@@ -207,6 +208,8 @@ class ScriptingEntryPoint(kg.EntryPoint):
                         "data": self._getVariablesInWorkspace(),
                     }
                 )
+            finally:
+                _ioc._java_callback = None
 
     def check_outputs(self):
         self._backends.get_active_backend_or_raise()
