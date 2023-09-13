@@ -170,6 +170,22 @@ final class PythonScriptingService extends ScriptingService {
         return m_executableOptions;
     }
 
+    @Override
+    public void onDeactivate() {
+        // Call the parent to close the language server
+        super.onDeactivate();
+
+        // Close the interactive Python session
+        if (m_interactiveSession != null) {
+            try {
+                m_interactiveSession.close();
+            } catch (IOException ex) {
+                LOGGER.error("Failed to close interactive Python session.", ex);
+            }
+            m_interactiveSession = null;
+        }
+    }
+
     /**
      * An extension of the {@link org.knime.scripting.editor.ScriptingService.RpcService} that provides additional
      * methods to the frontend of the Python scripting node.
@@ -346,11 +362,9 @@ final class PythonScriptingService extends ScriptingService {
                 var inputName = String.format("%s %s %d", namePrefix, type, index + 1);
                 String codeAlias;
                 if (namePrefix.equals("Input")) {
-                    codeAlias =
-                        PythonCodeAliasProvider.getInputObjectCodeAlias(index, type, null);
+                    codeAlias = PythonCodeAliasProvider.getInputObjectCodeAlias(index, type, null);
                 } else {
-                    codeAlias =
-                        PythonCodeAliasProvider.getOutputObjectCodeAlias(index, type, null);
+                    codeAlias = PythonCodeAliasProvider.getOutputObjectCodeAlias(index, type, null);
                 }
                 return new InputOutputModel(inputName, codeAlias, null);
             }).toList();
@@ -358,11 +372,11 @@ final class PythonScriptingService extends ScriptingService {
 
         @SuppressWarnings("deprecation")
         private String portTypeToInputOutputType(final PortType portType) {
-            if(portType.acceptsPortObjectClass(BufferedDataTable.class)) {
+            if (portType.acceptsPortObjectClass(BufferedDataTable.class)) {
                 return INPUT_OUTPUT_TYPE_TABLE;
-            } else if(portType.acceptsPortObjectClass(PickledObjectFileStorePortObject.class)) {
+            } else if (portType.acceptsPortObjectClass(PickledObjectFileStorePortObject.class)) {
                 return INPUT_OUTPUT_TYPE_OBJECT;
-            } else if(portType.acceptsPortObjectClass(ImagePortObject.class)) {
+            } else if (portType.acceptsPortObjectClass(ImagePortObject.class)) {
                 return INPUT_OUTPUT_TYPE_IMAGE;
             } else {
                 throw new IllegalArgumentException("Unsupported port type: " + portType.getName());
