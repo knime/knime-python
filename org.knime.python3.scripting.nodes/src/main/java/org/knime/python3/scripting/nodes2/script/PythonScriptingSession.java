@@ -72,7 +72,9 @@ import org.knime.core.util.asynclose.AsynchronousCloseable;
 import org.knime.python3.Activator;
 import org.knime.python3.Python3SourceDirectory;
 import org.knime.python3.PythonCommand;
+import org.knime.python3.PythonEntryPointUtils;
 import org.knime.python3.PythonGateway;
+import org.knime.python3.PythonGatewayFactory.EntryPointCustomizer;
 import org.knime.python3.PythonGatewayFactory.PythonGatewayDescription;
 import org.knime.python3.PythonGatewayUtils;
 import org.knime.python3.arrow.Python3ArrowSourceDirectory;
@@ -109,6 +111,9 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
 
     private static final Path LAUNCHER = PythonScriptingSourceDirectory.getPath()//
         .resolve("_knime_scripting_launcher.py");
+
+    private static final EntryPointCustomizer<PythonScriptingEntryPoint> REGISTER_VALUE_FACTORIES_CUSTOMIZER =
+        PythonEntryPointUtils::registerPythonValueFactories;
 
     private final PythonGateway<PythonScriptingEntryPoint> m_gateway;
 
@@ -276,6 +281,7 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
             PythonGatewayDescription.builder(pythonCommand, LAUNCHER.toAbsolutePath(), PythonScriptingEntryPoint.class);
 
         gatewayDescriptionBuilder.withPreloaded(PythonArrowExtension.INSTANCE);
+        gatewayDescriptionBuilder.withCustomizer(REGISTER_VALUE_FACTORIES_CUSTOMIZER);
 
         getExtraPythonPaths().forEach(gatewayDescriptionBuilder::addToPythonPath);
         return Activator.GATEWAY_FACTORY.create(gatewayDescriptionBuilder.build());
