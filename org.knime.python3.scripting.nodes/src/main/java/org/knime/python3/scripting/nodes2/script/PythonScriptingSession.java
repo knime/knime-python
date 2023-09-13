@@ -82,7 +82,6 @@ import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.arrow.PythonArrowDataUtils;
 import org.knime.python3.arrow.PythonArrowExtension;
 import org.knime.python3.arrow.PythonArrowTableConverter;
-import org.knime.python3.scripting.Python3ScriptingSourceDirectory;
 import org.knime.python3.scripting.nodes2.PythonScriptingEntryPoint;
 import org.knime.python3.scripting.nodes2.PythonScriptingSourceDirectory;
 import org.knime.python3.types.PythonValueFactoryModule;
@@ -294,7 +293,7 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
         var paths = new ArrayList<Path>();
 
         // Paths to the common API
-        paths.add(Python3ScriptingSourceDirectory.getPath());
+        paths.add(PythonScriptingSourceDirectory.getPath());
         paths.add(Python3SourceDirectory.getPath());
         paths.add(Python3ArrowSourceDirectory.getPath());
         paths.add(Python3ViewsSourceDirectory.getPath());
