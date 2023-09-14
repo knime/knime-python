@@ -174,7 +174,7 @@ class ScriptingEntryPoint(kg.EntryPoint):
                 exec(script, self._workspace)
 
                 if check_outputs:
-                    self.check_outputs()
+                    self._backends.check_outputs()
 
                 return json.dumps(
                     {
@@ -210,38 +210,6 @@ class ScriptingEntryPoint(kg.EntryPoint):
                 )
             finally:
                 _ioc._java_callback = None
-
-    def check_outputs(self):
-        self._backends.get_active_backend_or_raise()
-        for i, o in enumerate(_ioc._output_tables):
-            self._backends.active_backend.check_output_table(i, o)
-
-        for i, o in enumerate(_ioc._output_images):
-            if o is None:
-                if i == 0 and self._backends._expect_view:
-                    # If we have an output view we will just try to render the view to the
-                    # first output image
-                    _ioc._output_images[0] = self._backends._render_view()
-                else:
-                    raise KnimeUserError(
-                        f"Expected an image in output_images[{i}], got None. knio.output_images[{i}] has not been populated."
-                    )
-            else:
-                try:
-                    import io
-
-                    io.BytesIO(o)
-                except TypeError:
-                    raise KnimeUserError(
-                        f"The image in output_images[{i}] (of type {type(o)}) can't be written into a file."
-                    )
-
-        for i, o in enumerate(_ioc._output_objects):
-            if o is None:
-                raise KnimeUserError(
-                    f"Expected an object in output_objects[{i}], got None. knio.output_objects[{i}] has not been populated."
-                )
-        self._backends._check_flow_variables()
 
     def getOutputTable(
         self,

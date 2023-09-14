@@ -265,7 +265,8 @@ class ScriptingBackendCollection:
         for i, o in enumerate(_ioc._output_objects):
             if o is None:
                 raise KnimeUserError(
-                    f"Expected an object in output_objects[{i}], got None. Did you assign the output object?"
+                    f"Expected an object in output_objects[{i}], got None. "
+                    f"knio.output_objects[{i}] has not been populated."
                 )
 
         for i, o in enumerate(_ioc._output_images):
@@ -276,7 +277,8 @@ class ScriptingBackendCollection:
                     _ioc._output_images[0] = self._render_view()
                 else:
                     raise KnimeUserError(
-                        f"Expected an image in output_images[{i}], got None. Did you assign the output image?"
+                        f"Expected an image in output_images[{i}], got None. "
+                        f"knio.output_images[{i}] has not been populated."
                     )
             else:
                 try:
@@ -294,7 +296,8 @@ class ScriptingBackendCollection:
             v = self.get_active_backend_or_raise().get_output_view()
             if v is None:
                 raise KnimeUserError(
-                    "Expected an output view in output_view, got None. Did you assign an output view?"
+                    "Expected an output view in output_view, got None. "
+                    f"knio.output_view has not been populated."
                 )
             elif not isinstance(v, kv.NodeView):
                 raise KnimeUserError(
