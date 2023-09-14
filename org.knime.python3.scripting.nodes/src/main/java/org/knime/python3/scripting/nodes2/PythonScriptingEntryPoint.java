@@ -65,6 +65,13 @@ import org.knime.python3.arrow.PythonArrowDataSource;
 public interface PythonScriptingEntryPoint extends PythonEntryPoint {
 
     /**
+     * Set the current working directory to the given directory and insert it at the first index of the path.
+     *
+     * @param workingDir the current working directory to use
+     */
+    void setCurrentWorkingDirectory(String workingDir);
+
+    /**
      * Setup input and output variables in knime_io.
      *
      * @param sources the sources for the inputs. Either {@link PythonArrowDataSource} or
@@ -161,7 +168,6 @@ public interface PythonScriptingEntryPoint extends PythonEntryPoint {
          * @param text the text
          */
         void add_stderr(String text); //NOSONAR
-
 
         /**
          * Resolves the given KNIME URL to a local path, potentially involving copying a remote file to a local

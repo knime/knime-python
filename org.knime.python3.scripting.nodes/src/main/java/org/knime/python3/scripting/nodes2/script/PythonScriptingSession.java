@@ -55,6 +55,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -156,6 +157,8 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
         m_tableConverter = new PythonArrowTableConverter(EXECUTOR_SERVICE, ARROW_STORE_FACTORY,
             fileStoreHandlerSupplier.getWriteFileStoreHandler());
         m_outputRedirector = PythonGatewayUtils.redirectGatewayOutput(m_gateway, LOGGER::info, LOGGER::info);
+
+        setCurrentWorkingDirectory();
     }
 
     void setupIO(final PortObject[] inData, final Collection<FlowVariable> flowVariables, final int numOutTables,
@@ -339,7 +342,6 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
 
     private static PythonGateway<PythonScriptingEntryPoint> createGateway(final PythonCommand pythonCommand)
         throws IOException, InterruptedException {
-        // TODO(AP-19430) set working directory to workflow dir
         final var gatewayDescriptionBuilder =
             PythonGatewayDescription.builder(pythonCommand, LAUNCHER.toAbsolutePath(), PythonScriptingEntryPoint.class);
 
@@ -393,6 +395,18 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
         m_tableConverter.close();
         m_gateway.close();
         m_fileStoreHandlerSupplier.close();
+    }
+
+    /** Set the current working directory to the workflow directory */
+    private void setCurrentWorkingDirectory() {
+        try {
+            var workflowDirRef = NodeContext.getContext().getWorkflowManager().getNodeContainerDirectory();
+            Optional.ofNullable(workflowDirRef).map(r -> r.getFile().toString())
+                .ifPresent(m_entryPoint::setCurrentWorkingDirectory);
+        } catch (Exception ex) { // NOSONAR: We want to catch any exception here
+            // Do not propagate exception since setting the CWD is merely for convenience.
+            LOGGER.warn("Python's current working directory could not be set to the workflow directory.", ex);
+        }
     }
 
     /** Supplies the correct file store handler */

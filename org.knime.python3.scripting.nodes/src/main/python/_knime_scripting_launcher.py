@@ -64,6 +64,7 @@ import knime._backend._gateway as kg
 from knime._backend._mainloop import MainLoop
 from knime.scripting._backend import KnimeUserError
 
+import os
 import traceback
 import json
 import sys
@@ -96,6 +97,10 @@ class ScriptingEntryPoint(kg.EntryPoint):
         )
         sys.stdout.reconfigure(encoding="utf-8")
         sys.stderr.reconfigure(encoding="utf-8")
+
+    def setCurrentWorkingDirectory(self, working_directory: str) -> None:
+        os.chdir(working_directory)
+        sys.path.insert(0, working_directory)
 
     def initializeJavaCallback(self, java_callback: JavaClass) -> None:
         if self._java_callback is not None:
