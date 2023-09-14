@@ -65,14 +65,11 @@ import knime.scripting._io_containers as _ioc
 
 import knime._backend._gateway as kg
 
-# from autocompletion_utils import disable_autocompletion
 
-
-def _format_table_type_msg(x, idx):
+def _wrong_table_type_error_msg(x, idx):
     return (
-        type(x)
-        if x is not None
-        else f"Output table '{idx}' must be of type knime.api.Table or knime.api.BatchOutputTable, but got None. knio.output_tables[{idx}] has not been populated."
+        f"Output table '{idx}' must be of type knime.api.Table or knime.api.BatchOutputTable,"
+        f" but got {type(x) if x is not None else f'None. knio.output_tables[{idx}] has not been populated'}."
     )
 
 
@@ -157,7 +154,7 @@ class ScriptingBackendV1(ScriptingBackend):
             and not isinstance(table, ktn._TabularView)
             and not isinstance(table, katn.ArrowBatchOutputTable)
         ):
-            raise KnimeUserError(_format_table_type_msg(table, idx))
+            raise KnimeUserError(_wrong_table_type_error_msg(table, idx))
 
     def get_output_table_sink(self, table_index: int):
         return _ioc._output_tables[table_index]
@@ -181,7 +178,7 @@ class ScriptingBackendV1(ScriptingBackend):
                     table._write_empty_batch()
                 _ioc._output_tables[idx] = table._sink._java_data_sink
             else:
-                raise KnimeUserError(_format_table_type_msg(table, idx))
+                raise KnimeUserError(_wrong_table_type_error_msg(table, idx))
 
     def tear_down_arrow(self, flush: bool):
         # we write all tables here and just read the sink in the get_output_table_sink method
