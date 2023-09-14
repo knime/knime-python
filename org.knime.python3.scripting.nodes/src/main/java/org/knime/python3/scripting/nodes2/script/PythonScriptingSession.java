@@ -348,18 +348,17 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
         gatewayDescriptionBuilder.withPreloaded(PythonArrowExtension.INSTANCE);
         gatewayDescriptionBuilder.withCustomizer(REGISTER_VALUE_FACTORIES_CUSTOMIZER);
 
-        getExtraPythonPaths().forEach(gatewayDescriptionBuilder::addToPythonPath);
+        getPythonPaths().forEach(gatewayDescriptionBuilder::addToPythonPath);
         return Activator.GATEWAY_FACTORY.create(gatewayDescriptionBuilder.build());
     }
 
-    /**
-     * @return a list of extra paths containing Python sources for KNIME plugins
-     */
-    public static List<Path> getExtraPythonPaths() {
+    private static List<Path> getPythonPaths() {
         var paths = new ArrayList<Path>();
 
+        // NB: We do not add the PythonScriptingSourceDirectory
+        // It is added automatically because the launcher is in this directory
+
         // Paths to the common API
-        paths.add(PythonScriptingSourceDirectory.getPath());
         paths.add(Python3SourceDirectory.getPath());
         paths.add(Python3ArrowSourceDirectory.getPath());
         paths.add(Python3ViewsSourceDirectory.getPath());
@@ -369,6 +368,15 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
             .map(PythonValueFactoryModule::getParentDirectory) //
             .forEach(paths::add);
 
+        return paths;
+    }
+
+    /**
+     * @return a list of extra paths containing Python sources for KNIME plugins
+     */
+    public static List<Path> getExtraPythonPaths() {
+        var paths = getPythonPaths();
+        paths.add(PythonScriptingSourceDirectory.getPath());
         return paths;
     }
 
