@@ -61,7 +61,7 @@ import org.knime.core.node.port.image.ImagePortObject;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
 import org.knime.python2.port.PickledObjectPortObjectSpec;
-import org.knime.scripting.editor.ai.HubConnectionUtils;
+import org.knime.scripting.editor.ai.HubConnection;
 
 /**
  * This class provides methods to generate Python code with the help of AI
@@ -100,7 +100,7 @@ public final class PythonCodeAssistant {
                 false)
         );
 
-        return HubConnectionUtils.sendRequest("/v1/code_generation/python", request);
+        return HubConnection.INSTANCE.sendRequest("/v1/code_generation/python", request);
     }
 
     private static NameAndType[] toColumnNameTypeList(final DataColumnSpec... dataColumnSpecs) {
