@@ -46,7 +46,7 @@
  * History
  *   Sep 21, 2022 (benjamin): created
  */
-package org.knime.python3.scripting.nodes2.script;
+package org.knime.python3.scripting.nodes2;
 
 import java.awt.image.BufferedImage;
 import java.io.BufferedInputStream;
@@ -84,8 +84,7 @@ import org.knime.python3.PythonDataSource;
 import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.arrow.PythonArrowDataSource;
 import org.knime.python3.arrow.PythonArrowTableConverter;
-import org.knime.python3.scripting.nodes2.PickledObjectDataSource;
-import org.knime.python3.scripting.nodes2.PythonScriptingEntryPoint;
+import org.knime.python3.views.PythonNodeViewSink;
 
 /**
  * Static utilities for getting KNIME port data to a Python process and back.
@@ -163,9 +162,9 @@ final class PythonIOUtils {
      * @throws IOException if any of the tables contains duplicate row keys
      * @throws CanceledExecutionException if the execution is cancelled by the user
      */
-    static BufferedDataTable[] getOutputTables(final int numOutTables,
-        final PythonScriptingEntryPoint pythonEntryPoint, final PythonArrowTableConverter tableConverter,
-        final ExecutionContext exec) throws IOException, CanceledExecutionException {
+    static BufferedDataTable[] getOutputTables(final int numOutTables, final PythonScriptingEntryPoint pythonEntryPoint,
+        final PythonArrowTableConverter tableConverter, final ExecutionContext exec)
+        throws IOException, CanceledExecutionException {
         final var sinks = new ArrayList<PythonArrowDataSink>();
         exec.setMessage("Retrieving output tables");
         for (int i = 0; i < numOutTables; i++) {
@@ -249,6 +248,18 @@ final class PythonIOUtils {
             exec.setProgress((i + 1) / (double)numOutObjects);
         }
         return objects.toArray(PickledObjectFileStorePortObject[]::new);
+    }
+
+    /**
+     * Write the output view to a new temporary file and return the path to the file. The caller must delete the file
+     * when it is not needed anymore
+     *
+     * @throws IOException if the temporary file could not be created
+     */
+    static Path getOutputView(final PythonScriptingEntryPoint pythonEntryPoint) throws IOException {
+        final var path = PathUtils.createTempFile("output_view", ".html");
+        pythonEntryPoint.getOutputView(new PythonNodeViewSink(path.toAbsolutePath().toString()));
+        return path;
     }
 
     /**

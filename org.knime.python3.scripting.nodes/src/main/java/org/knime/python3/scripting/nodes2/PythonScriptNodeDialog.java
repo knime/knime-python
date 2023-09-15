@@ -46,7 +46,7 @@
  * History
  *   Jun 30, 2022 (benjamin): created
  */
-package org.knime.python3.scripting.nodes2.script;
+package org.knime.python3.scripting.nodes2;
 
 import java.util.Optional;
 import java.util.Set;
@@ -57,12 +57,18 @@ import org.knime.core.webui.node.dialog.NodeSettingsService;
 import org.knime.core.webui.node.dialog.SettingsType;
 import org.knime.core.webui.page.Page;
 
+/**
+ * The node dialog implementation of the Python Scripting nodes.
+ *
+ * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
+ */
 @SuppressWarnings("restriction") // the UIExtension node dialog API is still restricted
-final class PythonScriptNodeDialog implements NodeDialog {
+public final class PythonScriptNodeDialog implements NodeDialog {
 
     private final PythonScriptingService m_scriptingService;
 
-    PythonScriptNodeDialog() {
+    /** Create a new scripting editor dialog */
+    public PythonScriptNodeDialog() {
         m_scriptingService = new PythonScriptingService();
     }
 

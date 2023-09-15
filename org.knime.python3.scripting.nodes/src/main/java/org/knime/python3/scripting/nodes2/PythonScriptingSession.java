@@ -46,7 +46,7 @@
  * History
  *   Aug 11, 2022 (benjamin): created
  */
-package org.knime.python3.scripting.nodes2.script;
+package org.knime.python3.scripting.nodes2;
 
 import java.io.IOException;
 import java.net.URI;
@@ -95,12 +95,11 @@ import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.arrow.PythonArrowDataUtils;
 import org.knime.python3.arrow.PythonArrowExtension;
 import org.knime.python3.arrow.PythonArrowTableConverter;
-import org.knime.python3.scripting.nodes2.PythonScriptingEntryPoint;
-import org.knime.python3.scripting.nodes2.PythonScriptingSourceDirectory;
 import org.knime.python3.types.PythonValueFactoryModule;
 import org.knime.python3.types.PythonValueFactoryRegistry;
 import org.knime.python3.utils.FlowVariableUtils;
 import org.knime.python3.views.Python3ViewsSourceDirectory;
+import org.knime.python3.views.PythonViewsExtension;
 import org.knime.scripting.editor.ScriptingService.ConsoleText;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -161,9 +160,15 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
         setCurrentWorkingDirectory();
     }
 
-    void setupIO(final PortObject[] inData, final Collection<FlowVariable> flowVariables, final int numOutTables,
-        final int numOutImages, final int numOutObjects, final ExecutionMonitor exec)
-        throws IOException, CanceledExecutionException {
+    void setupIO( //
+        final PortObject[] inData, //
+        final Collection<FlowVariable> flowVariables, //
+        final int numOutTables, //
+        final int numOutImages, //
+        final int numOutObjects, //
+        final boolean hasView, //
+        final ExecutionMonitor exec //
+    ) throws IOException, CanceledExecutionException {
         m_numOutTables = numOutTables;
         m_numOutImages = numOutImages;
         m_numOutObjects = numOutObjects;
@@ -171,7 +176,7 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
         final var sources = PythonIOUtils.createSources(inData, m_tableConverter, exec);
         final var flowVars = FlowVariableUtils.convertToMap(flowVariables);
         final var callback = new PythonScriptingCallback();
-        m_entryPoint.setupIO(sources, flowVars, numOutTables, numOutImages, numOutObjects, callback);
+        m_entryPoint.setupIO(sources, flowVars, numOutTables, numOutImages, numOutObjects, hasView, callback);
     }
 
     private final class PythonScriptingCallback implements PythonScriptingEntryPoint.Callback {
@@ -340,12 +345,23 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
             .toArray(PortObject[]::new);
     }
 
+    /**
+     * Write the output view to a new temporary file and return the path to the file. The caller must delete the file
+     * when it is not needed anymore
+     *
+     * @throws IOException if the temporary file could not be created
+     */
+    Path getOutputView() throws IOException {
+        return PythonIOUtils.getOutputView(m_entryPoint);
+    }
+
     private static PythonGateway<PythonScriptingEntryPoint> createGateway(final PythonCommand pythonCommand)
         throws IOException, InterruptedException {
         final var gatewayDescriptionBuilder =
             PythonGatewayDescription.builder(pythonCommand, LAUNCHER.toAbsolutePath(), PythonScriptingEntryPoint.class);
 
         gatewayDescriptionBuilder.withPreloaded(PythonArrowExtension.INSTANCE);
+        gatewayDescriptionBuilder.withPreloaded(PythonViewsExtension.INSTANCE);
         gatewayDescriptionBuilder.withCustomizer(REGISTER_VALUE_FACTORIES_CUSTOMIZER);
 
         getPythonPaths().forEach(gatewayDescriptionBuilder::addToPythonPath);

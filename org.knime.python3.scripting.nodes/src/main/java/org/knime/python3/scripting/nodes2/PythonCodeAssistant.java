@@ -46,7 +46,7 @@
  * History
  *   16 Aug 2023 (chaubold): created
  */
-package org.knime.python3.scripting.nodes2.script;
+package org.knime.python3.scripting.nodes2;
 
 import java.io.IOException;
 import java.util.Arrays;

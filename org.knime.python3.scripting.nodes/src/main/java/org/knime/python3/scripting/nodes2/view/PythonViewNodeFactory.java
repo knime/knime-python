@@ -44,40 +44,40 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Jun 30, 2022 (benjamin): created
+ *   Sep 15, 2023 (benjamin): created
  */
-package org.knime.python3.scripting.nodes2.script;
+package org.knime.python3.scripting.nodes2.view;
 
 import static org.knime.python3.scripting.nodes2.PythonScriptPortsConfiguration.PORTGR_ID_INP_OBJECT;
 import static org.knime.python3.scripting.nodes2.PythonScriptPortsConfiguration.PORTGR_ID_INP_TABLE;
 import static org.knime.python3.scripting.nodes2.PythonScriptPortsConfiguration.PORTGR_ID_OUT_IMAGE;
-import static org.knime.python3.scripting.nodes2.PythonScriptPortsConfiguration.PORTGR_ID_OUT_OBJECT;
-import static org.knime.python3.scripting.nodes2.PythonScriptPortsConfiguration.PORTGR_ID_OUT_TABLE;
 
 import java.util.Optional;
 
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.ConfigurableNodeFactory;
 import org.knime.core.node.NodeDialogPane;
-import org.knime.core.node.NodeView;
 import org.knime.core.node.context.NodeCreationConfiguration;
 import org.knime.core.node.port.PortType;
 import org.knime.core.node.port.image.ImagePortObject;
 import org.knime.core.webui.node.dialog.NodeDialog;
 import org.knime.core.webui.node.dialog.NodeDialogFactory;
 import org.knime.core.webui.node.dialog.NodeDialogManager;
+import org.knime.core.webui.node.view.NodeView;
+import org.knime.core.webui.node.view.NodeViewFactory;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
 import org.knime.python3.scripting.nodes2.PythonScriptNodeDialog;
 import org.knime.python3.scripting.nodes2.PythonScriptNodeModel;
+import org.knime.python3.views.HtmlFileNodeView;
 
 /**
- * The factory for the Python scripting node.
+ * The factory for the Python View node.
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
  */
-@SuppressWarnings("restriction") // the UIExtension node dialog API is still restricted
-public final class PythonScriptNodeFactory extends ConfigurableNodeFactory<PythonScriptNodeModel>
-    implements NodeDialogFactory {
+@SuppressWarnings("restriction") // the UIExtension API is still restricted
+public class PythonViewNodeFactory extends ConfigurableNodeFactory<PythonScriptNodeModel>
+    implements NodeDialogFactory, NodeViewFactory<PythonScriptNodeModel> {
 
     @Override
     public NodeDialog createNodeDialog() {
@@ -85,25 +85,31 @@ public final class PythonScriptNodeFactory extends ConfigurableNodeFactory<Pytho
     }
 
     @Override
-    protected int getNrNodeViews() {
-        return 0;
-    }
-
-    @Override
-    public NodeView<PythonScriptNodeModel> createNodeView(final int viewIndex, final PythonScriptNodeModel nodeModel) {
-        return null;
-    }
-
-    @Override
-    protected boolean hasDialog() {
-        return true;
+    public NodeView createNodeView(final PythonScriptNodeModel nodeModel) {
+        return new HtmlFileNodeView(nodeModel::getPathToHtmlView);
     }
 
     @Override
     protected PythonScriptNodeModel createNodeModel(final NodeCreationConfiguration creationConfig) {
         final var portsConfig = creationConfig.getPortConfig().orElseThrow(
             () -> new IllegalStateException("Ports configuration missing. This is an implementation error"));
-        return new PythonScriptNodeModel(portsConfig, false);
+        return new PythonScriptNodeModel(portsConfig, true);
+    }
+
+    @Override
+    protected int getNrNodeViews() {
+        return 1;
+    }
+
+    @Override
+    public org.knime.core.node.NodeView<PythonScriptNodeModel> createNodeView(final int viewIndex,
+        final PythonScriptNodeModel nodeModel) {
+        return new DummyNodeView(nodeModel);
+    }
+
+    @Override
+    protected boolean hasDialog() {
+        return true;
     }
 
     @Override
@@ -118,10 +124,31 @@ public final class PythonScriptNodeFactory extends ConfigurableNodeFactory<Pytho
         b.addExtendableInputPortGroup(PORTGR_ID_INP_OBJECT, PickledObjectFileStorePortObject.TYPE);
         b.addExtendableInputPortGroupWithDefault(PORTGR_ID_INP_TABLE, new PortType[0],
             new PortType[]{BufferedDataTable.TYPE}, BufferedDataTable.TYPE);
-        b.addExtendableOutputPortGroupWithDefault(PORTGR_ID_OUT_TABLE, new PortType[0],
-            new PortType[]{BufferedDataTable.TYPE}, BufferedDataTable.TYPE);
-        b.addExtendableOutputPortGroup(PORTGR_ID_OUT_IMAGE, ImagePortObject.TYPE);
-        b.addExtendableOutputPortGroup(PORTGR_ID_OUT_OBJECT, PickledObjectFileStorePortObject.TYPE);
+        b.addOptionalOutputPortGroup(PORTGR_ID_OUT_IMAGE, ImagePortObject.TYPE);
         return Optional.of(b);
+    }
+
+    /** A dummy node view that does nothing and that will only be opened by workflow tests. */
+    private static final class DummyNodeView extends org.knime.core.node.NodeView<PythonScriptNodeModel> {
+
+        protected DummyNodeView(final PythonScriptNodeModel nodeModel) {
+            super(nodeModel);
+        }
+
+        @Override
+        protected void onClose() {
+            // Dummy
+        }
+
+        @Override
+        protected void onOpen() {
+            // Dummy
+
+        }
+
+        @Override
+        protected void modelChanged() {
+            // Dummy
+        }
     }
 }

@@ -131,6 +131,7 @@ class ScriptingEntryPoint(kg.EntryPoint):
         num_out_tables,
         num_out_images,
         num_out_objects,
+        has_view,
         java_callback,
     ):
         self._java_callback = java_callback
@@ -164,6 +165,9 @@ class ScriptingEntryPoint(kg.EntryPoint):
         _ioc._pad_up_to_length(_ioc._output_tables, num_out_tables)
         _ioc._pad_up_to_length(_ioc._output_images, num_out_images)
         _ioc._pad_up_to_length(_ioc._output_objects, num_out_objects)
+
+        # Set if an output view is expected
+        self._backends._expect_view = has_view
 
     def execute(self, script, check_outputs):
         with redirect_stdout(
@@ -247,6 +251,9 @@ class ScriptingEntryPoint(kg.EntryPoint):
 
     def getOutputObjectType(self, idx: int) -> str:
         return type(_ioc._output_objects[idx]).__name__
+
+    def getOutputView(self, java_view_sink):
+        self._backends.get_output_view(kg.data_sink_mapper(java_view_sink))
 
     def getOutputObjectStringRepr(self, idx: int) -> str:
         object_as_string = str(_ioc._output_objects[idx])

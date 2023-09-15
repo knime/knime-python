@@ -344,6 +344,12 @@ class ScriptingBackendCollection:
             )
             b.tear_down_arrow(flush and is_active_backend)
 
+    def set_expected_output_view(self, expect_view: bool):
+        self._expect_view = expect_view
+
+    def get_output_view(self, view_sink):
+        view_sink.display(self.get_active_backend_or_raise().get_output_view())
+
 
 class KnimeUserError(Exception):
     """An error that indicates that there is an error in the user script."""

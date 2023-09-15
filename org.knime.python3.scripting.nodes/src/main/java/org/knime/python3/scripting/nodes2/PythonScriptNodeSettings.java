@@ -46,9 +46,9 @@
  * History
  *   Jun 30, 2022 (benjamin): created
  */
-package org.knime.python3.scripting.nodes2.script;
+package org.knime.python3.scripting.nodes2;
 
-import static org.knime.python3.scripting.nodes2.script.ExecutableSelectionUtils.EXEC_SELECTION_PREF_ID;
+import static org.knime.python3.scripting.nodes2.ExecutableSelectionUtils.EXEC_SELECTION_PREF_ID;
 
 import java.util.Map;
 

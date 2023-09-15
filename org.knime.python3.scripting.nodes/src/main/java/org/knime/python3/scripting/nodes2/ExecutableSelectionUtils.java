@@ -46,7 +46,7 @@
  * History
  *   Aug 17, 2022 (benjamin): created
  */
-package org.knime.python3.scripting.nodes2.script;
+package org.knime.python3.scripting.nodes2;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -64,10 +64,10 @@ import org.knime.python3.CondaPythonCommand;
 import org.knime.python3.PythonCommand;
 import org.knime.python3.SimplePythonCommand;
 import org.knime.python3.scripting.nodes.prefs.Python3ScriptingPreferences;
-import org.knime.python3.scripting.nodes2.script.PythonScriptingService.CondaPackageInfo;
-import org.knime.python3.scripting.nodes2.script.PythonScriptingService.ExecutableInfo;
-import org.knime.python3.scripting.nodes2.script.PythonScriptingService.ExecutableOption;
-import org.knime.python3.scripting.nodes2.script.PythonScriptingService.ExecutableOption.ExecutableOptionType;
+import org.knime.python3.scripting.nodes2.PythonScriptingService.CondaPackageInfo;
+import org.knime.python3.scripting.nodes2.PythonScriptingService.ExecutableInfo;
+import org.knime.python3.scripting.nodes2.PythonScriptingService.ExecutableOption;
+import org.knime.python3.scripting.nodes2.PythonScriptingService.ExecutableOption.ExecutableOptionType;
 
 final class ExecutableSelectionUtils {
 

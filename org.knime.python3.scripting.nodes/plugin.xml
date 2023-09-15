@@ -19,6 +19,9 @@
         <node
             category-path="/scripting/python"
             factory-class="org.knime.python3.scripting.nodes2.script.PythonScriptNodeFactory" />
+        <node
+            category-path="/scripting/python"
+            factory-class="org.knime.python3.scripting.nodes2.view.PythonViewNodeFactory" />
     </extension>
     <extension
           point="org.knime.python2.sourcecodetemplates">

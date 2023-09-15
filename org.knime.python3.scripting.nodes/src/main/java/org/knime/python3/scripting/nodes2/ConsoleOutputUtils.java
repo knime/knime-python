@@ -46,7 +46,7 @@
  * History
  *   Sep 9, 2022 (benjamin): created
  */
-package org.knime.python3.scripting.nodes2.script;
+package org.knime.python3.scripting.nodes2;
 
 import java.io.IOException;
 import java.nio.file.Files;

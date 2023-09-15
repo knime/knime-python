@@ -55,6 +55,7 @@ import org.knime.python3.PythonDataSource;
 import org.knime.python3.PythonEntryPoint;
 import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.arrow.PythonArrowDataSource;
+import org.knime.python3.views.PythonNodeViewSink;
 
 /**
  * The {@link PythonScriptingEntryPoint} defines methods that are implemented in a Python class to run scripts in
@@ -80,10 +81,11 @@ public interface PythonScriptingEntryPoint extends PythonEntryPoint {
      * @param numOutTables the number of output tables of the node
      * @param numOutImages the number of output images of the node
      * @param numOutObjects the number of output objects of the node
+     * @param hasView if an output view is expected
      * @param callback a callback for accessing Java functionality
      */
     void setupIO(PythonDataSource[] sources, Map<String, Object> flowVarSources, int numOutTables, int numOutImages,
-        int numOutObjects, Callback callback);
+        int numOutObjects, boolean hasView, Callback callback);
 
     /**
      * Execute the given script in Python.
@@ -145,6 +147,11 @@ public interface PythonScriptingEntryPoint extends PythonEntryPoint {
      * @return the string representation of the object
      */
     String getOutputObjectStringRepr(int idx);
+
+    /**
+     * @param sink The path to which to write the HTML file
+     */
+    void getOutputView(PythonNodeViewSink sink);
 
     /** A callback to call Java functions in Python code */
     interface Callback {

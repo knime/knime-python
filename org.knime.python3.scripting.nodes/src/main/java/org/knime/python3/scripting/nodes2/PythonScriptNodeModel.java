@@ -46,13 +46,16 @@
  * History
  *   Jun 30, 2022 (benjamin): created
  */
-package org.knime.python3.scripting.nodes2.script;
+package org.knime.python3.scripting.nodes2;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -79,12 +82,13 @@ import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.node.workflow.VariableType;
 import org.knime.core.node.workflow.VariableTypeRegistry;
+import org.knime.core.util.PathUtils;
 import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
 import org.knime.python3.PythonCommand;
-import org.knime.python3.scripting.nodes2.script.ConsoleOutputUtils.ConsoleOutputStorage;
-import org.knime.python3.scripting.nodes2.script.PythonScriptingSession.ExecutionInfo;
-import org.knime.python3.scripting.nodes2.script.PythonScriptingSession.ExecutionStatus;
-import org.knime.python3.scripting.nodes2.script.PythonScriptingSession.FileStoreHandlerSupplier;
+import org.knime.python3.scripting.nodes2.ConsoleOutputUtils.ConsoleOutputStorage;
+import org.knime.python3.scripting.nodes2.PythonScriptingSession.ExecutionInfo;
+import org.knime.python3.scripting.nodes2.PythonScriptingSession.ExecutionStatus;
+import org.knime.python3.scripting.nodes2.PythonScriptingSession.FileStoreHandlerSupplier;
 import org.knime.python3.utils.FlowVariableUtils;
 import org.knime.scripting.editor.ScriptingService.ConsoleText;
 
@@ -95,7 +99,7 @@ import py4j.Py4JException;
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
  */
-final class PythonScriptNodeModel extends NodeModel {
+public final class PythonScriptNodeModel extends NodeModel {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonScriptNodeModel.class);
 
@@ -105,6 +109,8 @@ final class PythonScriptNodeModel extends NodeModel {
     private static final String SEND_LAST_OUTPUT_SUFFIX =
         "\n\n------------- END - Console output of the last execution -------------\n\n";
 
+    private final boolean m_hasView;
+
     private final PythonScriptNodeSettings m_settings;
 
     private final PythonScriptPortsConfiguration m_ports;
@@ -113,6 +119,8 @@ final class PythonScriptNodeModel extends NodeModel {
         new AsynchronousCloseableTracker<>(t -> LOGGER.debug("Kernel shutdown failed.", t));
 
     private ConsoleOutputStorage m_consoleOutputStorage;
+
+    private Optional<Path> m_view;
 
     static final VariableType<?>[] KNOWN_FLOW_VARIABLE_TYPES = FlowVariableUtils.convertToFlowVariableTypes(Set.of( //
         Boolean.class, //
@@ -127,10 +135,25 @@ final class PythonScriptNodeModel extends NodeModel {
         String[].class //
     ));
 
-    PythonScriptNodeModel(final PortsConfiguration portsConfiguration) {
+    /**
+     * @param portsConfiguration the configured ports
+     * @param hasView if the node has a view
+     */
+    public PythonScriptNodeModel(final PortsConfiguration portsConfiguration, final boolean hasView) {
         super(portsConfiguration.getInputPorts(), portsConfiguration.getOutputPorts());
+        m_hasView = hasView;
         m_settings = new PythonScriptNodeSettings();
         m_ports = PythonScriptPortsConfiguration.fromPortsConfiguration(portsConfiguration);
+        m_view = Optional.empty();
+    }
+
+    /**
+     * @return the path to the HTML view file
+     * @throws IllegalStateException if no view is available
+     */
+    public Path getPathToHtmlView() {
+        return m_view
+            .orElseThrow(() -> new IllegalStateException("View is not present. This is an implementation error."));
     }
 
     @Override
@@ -150,7 +173,7 @@ final class PythonScriptNodeModel extends NodeModel {
             new PythonScriptingSession(pythonCommand, consoleConsumer, new ModelFileStoreHandlerSupplier())) {
             exec.setProgress(0.0, "Setting up inputs");
             session.setupIO(inObjects, getAvailableFlowVariables(KNOWN_FLOW_VARIABLE_TYPES).values(),
-                m_ports.getNumOutTables(), m_ports.getNumOutImages(), m_ports.getNumOutObjects(),
+                m_ports.getNumOutTables(), m_ports.getNumOutImages(), m_ports.getNumOutObjects(), m_hasView,
                 exec.createSubProgress(0.3));
             exec.setProgress(0.3, "Running script");
 
@@ -161,6 +184,7 @@ final class PythonScriptNodeModel extends NodeModel {
             final var outputs = session.getOutputs(exec.createSubExecutionContext(0.3));
             final var flowVars = session.getFlowVariables();
             addNewFlowVariables(flowVars);
+            collectViewFromSession(session);
 
             m_sessionShutdownTracker.closeAsynchronously(session);
             return outputs;
@@ -201,6 +225,17 @@ final class PythonScriptNodeModel extends NodeModel {
             variable.getValue(variable.getVariableType()));
     }
 
+    /** Get the output view from the session if the node has a view and remember the path */
+    private void collectViewFromSession(final PythonScriptingSession session) throws IOException {
+        if (m_hasView) {
+            // Delete the last view if it is still present
+            if (m_view.isPresent()) {
+                PathUtils.deleteFileIfExists(m_view.get());
+            }
+            m_view = Optional.of(session.getOutputView());
+        }
+    }
+
     @Override
     protected void saveSettingsTo(final NodeSettingsWO settings) {
         m_settings.saveSettingsTo(settings);
@@ -232,6 +267,7 @@ final class PythonScriptNodeModel extends NodeModel {
         m_consoleOutputStorage = null;
 
         m_sessionShutdownTracker.waitForAllToClose();
+        m_view = Optional.empty();
     }
 
     void sendLastConsoleOutputs(final Consumer<ConsoleText> consumer) throws IOException {
@@ -246,6 +282,10 @@ final class PythonScriptNodeModel extends NodeModel {
     protected void loadInternals(final File nodeInternDir, final ExecutionMonitor exec)
         throws IOException, CanceledExecutionException {
         m_consoleOutputStorage = ConsoleOutputUtils.openConsoleOutput(nodeInternDir.toPath());
+        final var viewPath = persistedViewPath(nodeInternDir);
+        if (Files.isReadable(viewPath)) {
+            m_view = Optional.of(viewPath);
+        }
     }
 
     @Override
@@ -256,6 +296,15 @@ final class PythonScriptNodeModel extends NodeModel {
             ConsoleOutputUtils.saveConsoleOutput(m_consoleOutputStorage, nodeInternPath);
             m_consoleOutputStorage = ConsoleOutputUtils.openConsoleOutput(nodeInternPath);
         }
+        if (m_view.isPresent()) {
+            // Copy the view from the temporary file to the persisted internals directory
+            Files.copy(m_view.get(), persistedViewPath(nodeInternDir));
+        }
+    }
+
+    /** Path to the persisted view inside the internals directory */
+    private static Path persistedViewPath(final File nodeInternDir) {
+        return nodeInternDir.toPath().resolve("view.html");
     }
 
     private static final class ModelFileStoreHandlerSupplier implements FileStoreHandlerSupplier {

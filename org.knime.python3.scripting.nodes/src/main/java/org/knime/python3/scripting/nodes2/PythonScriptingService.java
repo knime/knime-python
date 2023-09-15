@@ -46,7 +46,7 @@
  * History
  *   Jul 25, 2022 (benjamin): created
  */
-package org.knime.python3.scripting.nodes2.script;
+package org.knime.python3.scripting.nodes2;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -84,10 +84,10 @@ import org.knime.core.node.workflow.VariableType;
 import org.knime.core.webui.data.DataServiceContext;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
 import org.knime.python2.port.PickledObjectPortObjectSpec;
-import org.knime.python3.scripting.nodes2.script.PythonScriptingService.ExecutableOption.ExecutableOptionType;
-import org.knime.python3.scripting.nodes2.script.PythonScriptingSession.ExecutionInfo;
-import org.knime.python3.scripting.nodes2.script.PythonScriptingSession.ExecutionStatus;
-import org.knime.python3.scripting.nodes2.script.PythonScriptingSession.FileStoreHandlerSupplier;
+import org.knime.python3.scripting.nodes2.PythonScriptingService.ExecutableOption.ExecutableOptionType;
+import org.knime.python3.scripting.nodes2.PythonScriptingSession.ExecutionInfo;
+import org.knime.python3.scripting.nodes2.PythonScriptingSession.ExecutionStatus;
+import org.knime.python3.scripting.nodes2.PythonScriptingSession.FileStoreHandlerSupplier;
 import org.knime.scripting.editor.ScriptingService;
 
 /**
@@ -236,7 +236,7 @@ final class PythonScriptingService extends ScriptingService {
                 m_interactiveSession = new PythonScriptingSession(pythonCommand,
                     PythonScriptingService.this::addConsoleOutputEvent, new DialogFileStoreHandlerSupplier());
                 m_interactiveSession.setupIO(workflowControl.getInputData(), getFlowVariables(),
-                    m_ports.getNumOutTables(), m_ports.getNumOutImages(), m_ports.getNumOutObjects(),
+                    m_ports.getNumOutTables(), m_ports.getNumOutImages(), m_ports.getNumOutObjects(), false, // TODO support view
                     new ExecutionMonitor());
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();

@@ -46,7 +46,7 @@
  * History
  *   Sep 21, 2022 (benjamin): created
  */
-package org.knime.python3.scripting.nodes2.script;
+package org.knime.python3.scripting.nodes2;
 
 import java.util.Map;
 
@@ -62,17 +62,22 @@ import org.knime.python2.port.PickledObjectFileStorePortObject;
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
-final class PythonScriptPortsConfiguration {
+public final class PythonScriptPortsConfiguration {
 
-    static final String PORTGR_ID_INP_OBJECT = "Input object (pickled)";
+    /** Name of the object input port */
+    public static final String PORTGR_ID_INP_OBJECT = "Input object (pickled)";
 
-    static final String PORTGR_ID_INP_TABLE = "Input table";
+    /** Name of the table input port */
+    public static final String PORTGR_ID_INP_TABLE = "Input table";
 
-    static final String PORTGR_ID_OUT_TABLE = "Output table";
+    /** Name of the table output port */
+    public static final String PORTGR_ID_OUT_TABLE = "Output table";
 
-    static final String PORTGR_ID_OUT_IMAGE = "Output image";
+    /** Name of the image output port */
+    public static final String PORTGR_ID_OUT_IMAGE = "Output image";
 
-    static final String PORTGR_ID_OUT_OBJECT = "Output object (pickled)";
+    /** Name of the object output port */
+    public static final String PORTGR_ID_OUT_OBJECT = "Output object (pickled)";
 
     private final int m_numOutTables;
 
