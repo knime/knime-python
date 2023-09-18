@@ -68,6 +68,7 @@ print("Hello, I am a fake AI")
     },
   ],
   getFlowVariableInputs: () => {},
+  hasPreview: () => true,
 };
 
 const browserMockScriptingService: ScriptingServiceType = {
