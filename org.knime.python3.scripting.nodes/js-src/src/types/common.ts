@@ -1,11 +1,10 @@
-export enum ExecutableOptionType {
-  PREF_BUNDLED,
-  PREF_CONDA,
-  PREF_MANUAL,
-  CONDA_ENV_VAR,
-  STRING_VAR,
-  MISSING_VAR,
-}
+export type ExecutableOptionType =
+  | "PREF_BUNDLED"
+  | "PREF_CONDA"
+  | "PREF_MANUAL"
+  | "CONDA_ENV_VAR"
+  | "STRING_VAR"
+  | "MISSING_VAR";
 
 export type ExecutableOption = {
   type: ExecutableOptionType;
@@ -13,6 +12,11 @@ export type ExecutableOption = {
   pythonExecutable: string;
   condaEnvName: string;
   condaEnvDir: string;
+};
+
+export type PythonScriptingNodeSettings = {
+  script: string;
+  executableSelection: string;
 };
 
 export type InputPortInfo = {

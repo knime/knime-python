@@ -3,13 +3,13 @@ import { vi } from "vitest";
 
 vi.mock("@knime/scripting-editor", async () => {
   const mockScriptingService = {
-    sendToService: vi.fn(() => {
+    sendToService: vi.fn((args) => {
       // If this method is not mocked, the tests fail with a hard to debug
       // error otherwise, so we're really explicit here.
-      throw new Error("should have been mocked");
+      throw new Error(`should have been mocked ${args}`);
     }),
     getInitialSettings() {
-      return { script: "print('Hello World!')" };
+      return { script: "print('Hello World!')", executableSelection: "" };
     },
     saveSettings: vi.fn(() => {}),
     getScript() {
@@ -31,6 +31,7 @@ vi.mock("@knime/scripting-editor", async () => {
     supportsCodeAssistant: vi.fn(() => {
       return true;
     }),
+    closeDialog: vi.fn(),
   };
 
   const scriptEditorModule = await vi.importActual("@knime/scripting-editor");

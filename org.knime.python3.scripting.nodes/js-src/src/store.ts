@@ -10,3 +10,27 @@ const workspace: WorkspaceStore = reactive<WorkspaceStore>({});
 export const useWorkspaceStore = (): WorkspaceStore => {
   return workspace;
 };
+
+export type ExecutableStore = {
+  id: string;
+  isMissing: boolean;
+};
+
+const selectedExecutable: ExecutableStore = reactive<ExecutableStore>({
+  id: "",
+  isMissing: false,
+});
+
+export const useExecutableSelectionStore = (): ExecutableStore => {
+  return selectedExecutable;
+};
+
+export const setSelectedExecutable = (args: Partial<ExecutableStore>): void => {
+  if (typeof args.id !== "undefined") {
+    selectedExecutable.id = args.id;
+  }
+
+  if (typeof args.isMissing !== "undefined") {
+    selectedExecutable.isMissing = args.isMissing;
+  }
+};

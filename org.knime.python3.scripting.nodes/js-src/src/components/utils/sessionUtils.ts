@@ -70,3 +70,17 @@ export const handleExecutionInfo = (newExecutionInfo: ExecutionInfo) => {
   const store = useWorkspaceStore();
   store.workspace = workspace;
 };
+
+/**
+ * Kills and then restarts the current python session and resets the workspace
+ */
+export const restartPythonSession = async () => {
+  const workspaceStore = useWorkspaceStore();
+  handleSessionInfo(
+    await pythonScriptingService.killInteractivePythonSession(),
+  );
+  handleSessionInfo(
+    await pythonScriptingService.startInteractivePythonSession(),
+  );
+  workspaceStore.workspace = [];
+};

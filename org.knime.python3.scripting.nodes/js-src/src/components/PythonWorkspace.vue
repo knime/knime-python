@@ -4,22 +4,13 @@ import { pythonScriptingService } from "../python-scripting-service";
 import {
   handleSessionInfo,
   handleExecutionInfo,
-} from "./utils/handleSessionInfo";
+  restartPythonSession,
+} from "./utils/sessionUtils";
 import { useWorkspaceStore } from "@/store";
 import { getScriptingService } from "@knime/scripting-editor";
 import { onMounted, ref } from "vue";
 
 const workspaceStore = useWorkspaceStore();
-
-const restartPythonSession = async () => {
-  handleSessionInfo(
-    await pythonScriptingService.killInteractivePythonSession(),
-  );
-  handleSessionInfo(
-    await pythonScriptingService.startInteractivePythonSession(),
-  );
-  workspaceStore.workspace = [];
-};
 
 const handleClick = async (variableName: string) => {
   const executionInfo = await pythonScriptingService.runScript(
@@ -65,7 +56,7 @@ onMounted(async () => {
       :with-border="false"
       @click="restartPythonSession"
     >
-      <div>Reset temporary values</div>
+      Reset temporary values
     </Button>
   </div>
 </template>
@@ -138,7 +129,7 @@ th {
   position: absolute;
   bottom: 10px;
   right: 0;
-  overflow-x: hidden;
+  overflow: hidden;
   text-overflow: ellipsis;
 }
 </style>

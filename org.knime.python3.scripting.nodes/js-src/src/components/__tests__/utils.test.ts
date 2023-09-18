@@ -1,8 +1,5 @@
 import { beforeEach, describe, vi, it, type SpyInstance, expect } from "vitest";
-import {
-  handleExecutionInfo,
-  handleSessionInfo,
-} from "../utils/handleSessionInfo";
+import { handleExecutionInfo, handleSessionInfo } from "../utils/sessionUtils";
 import type {
   ExecutionInfoWithTraceback,
   ExecutionInfoWithWorkspace,

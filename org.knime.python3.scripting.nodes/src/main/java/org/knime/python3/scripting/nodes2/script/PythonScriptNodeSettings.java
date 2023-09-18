@@ -148,14 +148,12 @@ final class PythonScriptNodeSettings {
         public void toNodeSettings(final String settingsString,
             final Map<SettingsType, NodeAndVariableSettingsWO> settings) {
             var settingsObj = GSON.fromJson(settingsString, Settings.class);
-            if (!settingsObj.executableSelection.isEmpty()) {
-                try {
-                    settings.get(SettingsType.MODEL).addUsedVariable(EXECUTABLE_SELECTION_CFG_KEY,
-                        settingsObj.executableSelection);
-                } catch (final InvalidSettingsException e) {
-                    // Cannot happen because we have a setting with the key EXECUTABLE_SELECTION_CFG_KEY
-                    throw new IllegalStateException(e);
-                }
+            try {
+                settings.get(SettingsType.MODEL).addUsedVariable(EXECUTABLE_SELECTION_CFG_KEY,
+                    settingsObj.executableSelection);
+            } catch (final InvalidSettingsException e) {
+                // Cannot happen because we have a setting with the key EXECUTABLE_SELECTION_CFG_KEY
+                throw new IllegalStateException(e);
             }
             saveSettings(settingsObj, settings.get(SettingsType.MODEL));
         }
@@ -164,7 +162,9 @@ final class PythonScriptNodeSettings {
         public String fromNodeSettings(final Map<SettingsType, NodeAndVariableSettingsRO> settings,
             final PortObjectSpec[] specs) {
             try {
-                return GSON.toJson(loadSettings(settings.get(SettingsType.MODEL)));
+                var loadedSettings = loadSettings(settings.get(SettingsType.MODEL));
+                var executableSelection = settings.get(SettingsType.MODEL).getUsedVariable(EXECUTABLE_SELECTION_CFG_KEY);
+                return GSON.toJson(new Settings(loadedSettings.script, executableSelection));
             } catch (final InvalidSettingsException e) {
                 // This should not happen because we do not save invalid settings. We just forward the exception
                 throw new IllegalStateException(e.getMessage(), e);

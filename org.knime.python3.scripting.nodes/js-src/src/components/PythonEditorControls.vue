@@ -5,11 +5,10 @@ import { pythonScriptingService } from "../python-scripting-service";
 import PlayIcon from "webapps-common/ui/assets/img/icons/play.svg";
 import CancelIcon from "webapps-common/ui/assets/img/icons/circle-close.svg";
 import LoadingIcon from "webapps-common/ui/components/LoadingIcon.vue";
-import {
-  handleExecutionInfo,
-  handleSessionInfo,
-} from "./utils/handleSessionInfo";
+import { handleExecutionInfo, handleSessionInfo } from "./utils/sessionUtils";
 import { getScriptingService } from "@knime/scripting-editor";
+
+import { useExecutableSelectionStore } from "@/store";
 
 const isRunningSupported = ref(false);
 
@@ -40,6 +39,7 @@ const running = computed(() => {
 });
 const mouseOverRunAll = ref(false);
 const mouseOverRunSelected = ref(false);
+const executableSelection = useExecutableSelectionStore();
 
 const buttonText = (
   initialText: string,
@@ -123,7 +123,11 @@ const onHoverRunButton = (
     <Button
       compact
       with-border
-      :disabled="!isRunningSupported || (running && !runningSelected)"
+      :disabled="
+        !isRunningSupported ||
+        (running && !runningSelected) ||
+        executableSelection.isMissing
+      "
       class="run-selected-button"
       @click="
         runButtonClicked(
@@ -142,7 +146,11 @@ const onHoverRunButton = (
       </div>
     </Button>
     <Button
-      :disabled="!isRunningSupported || (running && !runningAll)"
+      :disabled="
+        !isRunningSupported ||
+        (running && !runningAll) ||
+        executableSelection.isMissing
+      "
       class="run-all-button"
       primary
       compact

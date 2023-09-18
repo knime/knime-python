@@ -10,10 +10,12 @@ import {
   type ExecutionInfo,
   type InputPortInfo,
   type KillSessionInfo,
+  type PythonScriptingNodeSettings,
   type StartSessionInfo,
 } from "./types/common";
 
 import sleep from "webapps-common/util/sleep";
+import { setSelectedExecutable, useExecutableSelectionStore } from "./store";
 
 /* eslint-disable no-console */
 
@@ -23,31 +25,66 @@ const editorService = new EditorService();
 
 const eventHandlers = new Map<string, (args: any) => void>();
 
-const browserMockScriptingService: ScriptingServiceType = {
-  async sendToService(methodName: string, options?: any[]) {
-    console.log(`Called KNIME ${methodName} with ${JSON.stringify(options)}`);
-    await sleep(SLEEP_TIME);
-    if (methodName === "suggestCode") {
-      const fn = eventHandlers.get("codeSuggestion");
-      if (typeof fn !== "undefined") {
-        fn({
-          status: "SUCCESS",
-          code: JSON.stringify({
-            code: `import knime.scripting.io as knio
+const sendToServiceMockResponses = {
+  suggestCode: () => {
+    const fn = eventHandlers.get("codeSuggestion");
+    if (typeof fn !== "undefined") {
+      fn({
+        status: "SUCCESS",
+        code: JSON.stringify({
+          code: `import knime.scripting.io as knio
 
 // this code does nothing yet
 print("Hello, I am a fake AI")
 `,
-          }),
-        });
-      }
-      return {};
+        }),
+      });
     }
-    return {
-      status: "SUCCESS",
-      description: "mocked execution info",
-      jsonFromExecution: null,
-    };
+    return {};
+  },
+  getLanguageServerConfig: () => JSON.stringify({}),
+  getInputObjects: () => [
+    {
+      name: "Input Table 1",
+      codeAlias: "knio.input_tables[0]",
+      subItems: [
+        {
+          name: "Column 1",
+          type: "Number",
+          codeAlias: 'knio.input_tables[0]["Column 1"]',
+        },
+        {
+          name: "Column 2",
+          type: "String",
+          codeAlias: 'knio.input_tables[0]["Column 2"]',
+        },
+      ],
+    },
+  ],
+  getOutputObjects: () => [
+    {
+      name: "Output Table 1",
+      codeAlias: "knio.output_tables[0]",
+    },
+  ],
+  getFlowVariableInputs: () => {},
+};
+
+const browserMockScriptingService: ScriptingServiceType = {
+  async sendToService(methodName: string, options?: any[]) {
+    console.log(`Called KNIME ${methodName} with ${JSON.stringify(options)}`);
+    await sleep(SLEEP_TIME);
+
+    if (Object.keys(sendToServiceMockResponses).includes(methodName)) {
+      // @ts-ignore
+      return sendToServiceMockResponses[methodName]();
+    } else {
+      return {
+        status: "SUCCESS",
+        description: "mocked execution info",
+        jsonFromExecution: null,
+      };
+    }
   },
   async getInitialSettings() {
     await sleep(SLEEP_TIME);
@@ -97,8 +134,8 @@ print("Hello, I am a fake AI")
     console.log(`Configuring Language Server: ${config}`);
     await sleep(SLEEP_TIME);
   },
-  pasteToEditor() {
-    // do nothing
+  pasteToEditor(text: string) {
+    editorService.pasteToEditor(text);
   },
   supportsCodeAssistant(): Promise<boolean> {
     console.log("Checking whether code assistance is available");
@@ -114,27 +151,42 @@ print("Hello, I am a fake AI")
   },
 };
 
+const executableSelection = useExecutableSelectionStore();
+
 const scriptingService =
   import.meta.env.VITE_SCRIPTING_API_MOCK === "true"
     ? getScriptingService(browserMockScriptingService)
     : getScriptingService();
 
 export const pythonScriptingService = {
+  initExecutableSelection: async (): Promise<void> => {
+    const settings =
+      (await scriptingService.getInitialSettings()) as PythonScriptingNodeSettings;
+    setSelectedExecutable({ id: settings.executableSelection ?? "" });
+    const executableInfo = (
+      await pythonScriptingService.getExecutableOptionsList()
+    ).find(({ id }) => id === executableSelection.id);
+    if (
+      typeof executableInfo === "undefined" ||
+      executableInfo.type === "MISSING_VAR"
+    ) {
+      scriptingService.sendToConsole({
+        text: `Flow variable "${executableSelection.id}" is missing, therefore no python executable could be started\n`,
+      });
+      setSelectedExecutable({ isMissing: true });
+    }
+  },
   saveSettings: (settings: NodeSettings) =>
     scriptingService.saveSettings(settings),
-  getExecutableOptions: async (
-    executableId: string = "",
-  ): Promise<ExecutableOption[]> => {
-    return (await scriptingService.sendToService("getExecutableOptions", [
-      executableId,
+  getExecutableOptionsList: async (): Promise<ExecutableOption[]> => {
+    return (await scriptingService.sendToService("getExecutableOptionsList", [
+      executableSelection.id,
     ])) as ExecutableOption[];
   },
-  startInteractivePythonSession: async (
-    executableId: string = "",
-  ): Promise<StartSessionInfo> => {
+  startInteractivePythonSession: async (): Promise<StartSessionInfo> => {
     const startSessionInfo = (await scriptingService.sendToService(
       "startInteractive",
-      [executableId],
+      [executableSelection.id],
     )) as StartSessionInfo;
     return startSessionInfo;
   },
@@ -180,5 +232,8 @@ export const pythonScriptingService = {
       await scriptingService.sendToService("getLanguageServerConfig", [""]),
     );
     await scriptingService.configureLanguageServer(config);
+  },
+  closeDialog: (): void => {
+    scriptingService.closeDialog();
   },
 };

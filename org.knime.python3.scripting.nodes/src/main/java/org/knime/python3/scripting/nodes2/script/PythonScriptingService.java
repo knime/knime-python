@@ -189,6 +189,8 @@ final class PythonScriptingService extends ScriptingService {
             }
             m_interactiveSession = null;
         }
+
+        m_executableOptions = null;
     }
 
     /**
