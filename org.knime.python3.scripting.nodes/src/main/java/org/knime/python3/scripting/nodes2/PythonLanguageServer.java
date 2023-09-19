@@ -67,11 +67,24 @@ final class PythonLanguageServer {
               "pylsp": {
                 "configurationSources": [],
                 "plugins": {
+                  "preload": {
+                    "enabled": true,
+                    "modules": ["numpy", "pandas"]
+                  },
                   "jedi": {
                     "environment": "%s",
                     "extra_paths": [ %s ]
                   },
                   "pycodestyle": {
+                    "enabled": false
+                  },
+                  "mccabe": {
+                    "enabled": false
+                  },
+                  "autopep8": {
+                    "enabled": false
+                  },
+                  "yapf": {
                     "enabled": false
                   }
                 }
