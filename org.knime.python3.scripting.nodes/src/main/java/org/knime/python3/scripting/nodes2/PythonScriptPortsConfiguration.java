@@ -79,11 +79,17 @@ public final class PythonScriptPortsConfiguration {
     /** Name of the object output port */
     public static final String PORTGR_ID_OUT_OBJECT = "Output object (pickled)";
 
+    private final int m_numInTables;
+
+    private final int m_numInObjects;
+
     private final int m_numOutTables;
 
     private final int m_numOutImages;
 
     private final int m_numOutObjects;
+
+    private final boolean m_hasView;
 
     /**
      * Create a new {@link PythonScriptPortsConfiguration} from the given {@link PortsConfiguration}.
@@ -91,13 +97,18 @@ public final class PythonScriptPortsConfiguration {
      * @param portsConfig
      * @return a new {@link PythonScriptPortsConfiguration}
      */
-    static PythonScriptPortsConfiguration fromPortsConfiguration(final PortsConfiguration portsConfig) {
+    static PythonScriptPortsConfiguration fromPortsConfiguration(final PortsConfiguration portsConfig, final boolean hasView) {
         // Get the number of different output ports from the ports configuration (ArrayUtils#getLength handles null)
+
+        final Map<String, int[]> inPortsLocation = portsConfig.getInputPortLocation();
+        final var numInTables = ArrayUtils.getLength(inPortsLocation.get(PORTGR_ID_INP_TABLE));
+        final var numInObjects = ArrayUtils.getLength(inPortsLocation.get(PORTGR_ID_INP_OBJECT));
+
         final Map<String, int[]> outPortsLocation = portsConfig.getOutputPortLocation();
         final var numOutTables = ArrayUtils.getLength(outPortsLocation.get(PORTGR_ID_OUT_TABLE));
         final var numOutImages = ArrayUtils.getLength(outPortsLocation.get(PORTGR_ID_OUT_IMAGE));
         final var numOutObjects = ArrayUtils.getLength(outPortsLocation.get(PORTGR_ID_OUT_OBJECT));
-        return new PythonScriptPortsConfiguration(numOutTables, numOutImages, numOutObjects);
+        return new PythonScriptPortsConfiguration(numInTables, numInObjects, numOutTables, numOutImages, numOutObjects, hasView);
     }
 
     /**
@@ -121,6 +132,19 @@ public final class PythonScriptPortsConfiguration {
         final var nodeContainer = nodeContext.getNodeContainer();
 
         // Count the number of the different ports (skip the flow var port)
+        var numInTables = 0;
+        var numInObjects = 0;
+        for (int i = 1; i < nodeContainer.getNrInPorts(); i++) {
+            var portType = nodeContainer.getInPort(i).getPortType();
+            if (BufferedDataTable.TYPE.equals(portType)) {
+                numInTables++;
+            } else if (PickledObjectFileStorePortObject.TYPE.equals(portType)) {
+                numInObjects++;
+            } else {
+                throw new IllegalStateException("Unsupported input port configured. This is an implementation error.");
+            }
+        }
+
         var numOutTables = 0;
         var numOutImages = 0;
         var numOutObjects = 0;
@@ -136,13 +160,33 @@ public final class PythonScriptPortsConfiguration {
                 throw new IllegalStateException("Unsupported output port configured. This is an implementation error.");
             }
         }
-        return new PythonScriptPortsConfiguration(numOutTables, numOutImages, numOutObjects);
+
+        var hasView = nodeContainer.getNrViews() > 0;
+        return new PythonScriptPortsConfiguration(numInTables, numInObjects, numOutTables, numOutImages, numOutObjects, hasView);
     }
 
-    private PythonScriptPortsConfiguration(final int numOutTables, final int numOutImages, final int numOutObjects) {
+    private PythonScriptPortsConfiguration(final int numInTables, final int numInObjects, final int numOutTables,
+        final int numOutImages, final int numOutObjects, final boolean hasView) {
+        m_numInTables = numInTables;
+        m_numInObjects = numInObjects;
         m_numOutTables = numOutTables;
         m_numOutImages = numOutImages;
         m_numOutObjects = numOutObjects;
+        m_hasView = hasView;
+    }
+
+    /**
+     * @return the number of input tables
+     */
+    public int getNumInTables() {
+        return m_numInTables;
+    }
+
+    /**
+     * @return the number of input objects
+     */
+    public int getNumInObjects() {
+        return m_numInObjects;
     }
 
     /**
@@ -165,4 +209,12 @@ public final class PythonScriptPortsConfiguration {
     public int getNumOutObjects() {
         return m_numOutObjects;
     }
+
+    /**
+     * @return whether the node has a view
+     */
+    public boolean hasView() {
+        return m_hasView;
+    }
+
 }

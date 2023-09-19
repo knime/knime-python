@@ -142,8 +142,8 @@ public final class PythonScriptNodeModel extends NodeModel {
     public PythonScriptNodeModel(final PortsConfiguration portsConfiguration, final boolean hasView) {
         super(portsConfiguration.getInputPorts(), portsConfiguration.getOutputPorts());
         m_hasView = hasView;
-        m_settings = new PythonScriptNodeSettings();
-        m_ports = PythonScriptPortsConfiguration.fromPortsConfiguration(portsConfiguration);
+        m_ports = PythonScriptPortsConfiguration.fromPortsConfiguration(portsConfiguration, hasView);
+        m_settings = new PythonScriptNodeSettings(m_ports);
         m_view = Optional.empty();
     }
 

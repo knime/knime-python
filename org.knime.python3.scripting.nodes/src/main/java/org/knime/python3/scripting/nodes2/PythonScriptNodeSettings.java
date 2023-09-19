@@ -78,8 +78,8 @@ final class PythonScriptNodeSettings {
 
     private Settings m_settings;
 
-    PythonScriptNodeSettings() {
-        m_settings = new Settings();
+    PythonScriptNodeSettings(final PythonScriptPortsConfiguration portsConfiguration) {
+        m_settings = new Settings(portsConfiguration);
     }
 
     String getScript() {
@@ -118,10 +118,9 @@ final class PythonScriptNodeSettings {
 
         private final String executableSelection; // NOSONAR
 
-        Settings() {
+        Settings(final PythonScriptPortsConfiguration portsConfiguration) {
             // Defaults are given here
-            // TODO(AP-19335) provide the template selection if the script is emtpy
-            script = "";
+            script = PythonScriptNodeDefaultScripts.getDefaultScript(portsConfiguration);
             executableSelection = EXEC_SELECTION_PREF_ID;
 
         }
@@ -141,7 +140,8 @@ final class PythonScriptNodeSettings {
         @Override
         public void getDefaultNodeSettings(final Map<SettingsType, NodeSettingsWO> settings,
             final PortObjectSpec[] specs) {
-            saveSettings(new Settings(), settings.get(SettingsType.MODEL));
+            saveSettings(new Settings(PythonScriptPortsConfiguration.fromCurrentNodeContext()),
+                settings.get(SettingsType.MODEL));
         }
 
         @Override
