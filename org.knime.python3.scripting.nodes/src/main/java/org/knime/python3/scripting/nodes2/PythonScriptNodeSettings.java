@@ -163,8 +163,13 @@ final class PythonScriptNodeSettings {
             final PortObjectSpec[] specs) {
             try {
                 var loadedSettings = loadSettings(settings.get(SettingsType.MODEL));
-                var executableSelection = settings.get(SettingsType.MODEL).getUsedVariable(EXECUTABLE_SELECTION_CFG_KEY);
-                return GSON.toJson(new Settings(loadedSettings.script, executableSelection));
+                if (settings.get(SettingsType.MODEL).isVariableSetting(EXECUTABLE_SELECTION_CFG_KEY)) {
+                    // Set the executableSelection to the variable name if one is set
+                    var executableSelection =
+                        settings.get(SettingsType.MODEL).getUsedVariable(EXECUTABLE_SELECTION_CFG_KEY);
+                    return GSON.toJson(new Settings(loadedSettings.script, executableSelection));
+                }
+                return GSON.toJson(loadedSettings);
             } catch (final InvalidSettingsException e) {
                 // This should not happen because we do not save invalid settings. We just forward the exception
                 throw new IllegalStateException(e.getMessage(), e);
