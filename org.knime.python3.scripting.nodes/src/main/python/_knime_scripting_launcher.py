@@ -253,7 +253,15 @@ class ScriptingEntryPoint(kg.EntryPoint):
         return type(_ioc._output_objects[idx]).__name__
 
     def getOutputView(self, java_view_sink):
-        self._backends.get_output_view(kg.data_sink_mapper(java_view_sink))
+        output_view = self._backends.get_output_view()
+        if self._backends.get_output_view() is not None:
+            try:
+                kg.data_sink_mapper(java_view_sink).display(output_view)
+                return True
+            except:
+                return False
+        else:
+            return False
 
     def getOutputObjectStringRepr(self, idx: int) -> str:
         object_as_string = str(_ioc._output_objects[idx])

@@ -81,7 +81,7 @@ public class PythonViewNodeFactory extends ConfigurableNodeFactory<PythonScriptN
 
     @Override
     public NodeDialog createNodeDialog() {
-        return new PythonScriptNodeDialog();
+        return new PythonScriptNodeDialog(true);
     }
 
     @Override

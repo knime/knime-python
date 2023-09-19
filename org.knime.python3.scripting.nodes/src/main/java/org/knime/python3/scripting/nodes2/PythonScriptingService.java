@@ -48,7 +48,11 @@
  */
 package org.knime.python3.scripting.nodes2;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -58,6 +62,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -81,6 +86,7 @@ import org.knime.core.node.port.image.ImagePortObjectSpec;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.node.workflow.VariableType;
+import org.knime.core.util.PathUtils;
 import org.knime.core.webui.data.DataServiceContext;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
 import org.knime.python2.port.PickledObjectPortObjectSpec;
@@ -111,6 +117,8 @@ final class PythonScriptingService extends ScriptingService {
     private static final Predicate<FlowVariable> FLOW_VARIABLE_FILTER =
         x -> KNOWN_FLOW_VARIABLE_SET.contains(x.getVariableType());
 
+    private final boolean m_hasView;
+
     private final PythonScriptPortsConfiguration m_ports;
 
     private Map<String, ExecutableOption> m_executableOptions = Collections.emptyMap();
@@ -118,12 +126,19 @@ final class PythonScriptingService extends ScriptingService {
     // indicates that killSession has been called
     private AtomicBoolean m_expectCancel;
 
-    // TODO(AP-19357) close the session when the dialog is closed
     private PythonScriptingSession m_interactiveSession;
 
-    /** Create a new {@link PythonScriptingService}. */
-    PythonScriptingService() {
+    private Optional<Path> m_view;
+
+    /**
+     * Create a new {@link PythonScriptingService}.
+     *
+     * @param hasView if the node has an output view
+     */
+    PythonScriptingService(final boolean hasView) {
         super(PythonLanguageServer::startLanguageServer, FLOW_VARIABLE_FILTER);
+        m_hasView = hasView;
+        m_view = Optional.empty();
         m_ports = PythonScriptPortsConfiguration.fromCurrentNodeContext();
         m_expectCancel = new AtomicBoolean(false);
     }
@@ -191,6 +206,36 @@ final class PythonScriptingService extends ScriptingService {
         }
 
         m_executableOptions = null;
+
+        // Clear the preview
+        clearView();
+    }
+
+    public InputStream openHtmlPreview() {
+        if (m_view.isPresent() && Files.exists(m_view.get())) {
+            try {
+                return Files.newInputStream(m_view.get());
+            } catch (IOException ex) {
+                LOGGER.error("Failed to open preview.", ex);
+                var message = "Opening the preview failed: " + ex.getMessage();
+                return new ByteArrayInputStream(message.getBytes(StandardCharsets.UTF_8));
+            }
+        }
+        // No preview available yet - show a placeholder
+        // TODO - Design a better placeholder (load it from a resource file if necessary)
+        return new ByteArrayInputStream(
+            "Execute the script and assign a view to the knio.output_view variable.".getBytes(StandardCharsets.UTF_8));
+    }
+
+    private void clearView() {
+        m_view.ifPresent(v -> {
+            try {
+                PathUtils.deleteFileIfExists(v);
+            } catch (IOException ex) {
+                LOGGER.error("Failed to delete the preview.", ex);
+            }
+        });
+        m_view = Optional.empty();
     }
 
     /**
@@ -200,6 +245,14 @@ final class PythonScriptingService extends ScriptingService {
      * NB: Must be public for the JSON-RPC server
      */
     public final class PythonRpcService extends RpcService {
+
+        /**
+         * @return true if the node has a node view which should be shown in a preview tab
+         */
+        public boolean hasPreview() {
+            return m_hasView;
+        }
+
         @SuppressWarnings("restriction") // the DataServiceContext is still restricted API
         public void sendLastConsoleOutput() {
             // Send the console output of the last execution to the dialog
@@ -236,7 +289,7 @@ final class PythonScriptingService extends ScriptingService {
                 m_interactiveSession = new PythonScriptingSession(pythonCommand,
                     PythonScriptingService.this::addConsoleOutputEvent, new DialogFileStoreHandlerSupplier());
                 m_interactiveSession.setupIO(workflowControl.getInputData(), getFlowVariables(),
-                    m_ports.getNumOutTables(), m_ports.getNumOutImages(), m_ports.getNumOutObjects(), false, // TODO support view
+                    m_ports.getNumOutTables(), m_ports.getNumOutImages(), m_ports.getNumOutObjects(), m_hasView,
                     new ExecutionMonitor());
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -284,7 +337,13 @@ final class PythonScriptingService extends ScriptingService {
             }
 
             try {
-                return m_interactiveSession.execute(script, checkOutputs);
+                var execInfo = m_interactiveSession.execute(script, checkOutputs);
+                if (m_hasView) {
+                    clearView();
+                    // NB: If no view is assigned in the current session m_view will be empty
+                    m_view = m_interactiveSession.getOutputView();
+                }
+                return execInfo;
             } catch (final Exception e) { // NOSONAR
                 if (m_expectCancel.get()) {
                     return new ExecutionInfo(ExecutionStatus.CANCELLED, "Script execution was cancelled by user");

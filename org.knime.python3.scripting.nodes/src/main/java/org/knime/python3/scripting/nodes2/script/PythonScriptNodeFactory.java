@@ -81,7 +81,7 @@ public final class PythonScriptNodeFactory extends ConfigurableNodeFactory<Pytho
 
     @Override
     public NodeDialog createNodeDialog() {
-        return new PythonScriptNodeDialog();
+        return new PythonScriptNodeDialog(false);
     }
 
     @Override

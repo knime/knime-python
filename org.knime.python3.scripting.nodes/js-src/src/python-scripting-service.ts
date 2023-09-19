@@ -236,4 +236,7 @@ export const pythonScriptingService = {
   closeDialog: (): void => {
     scriptingService.closeDialog();
   },
+  hasPreview: (): Promise<boolean> => {
+    return scriptingService.sendToService("hasPreview");
+  },
 };

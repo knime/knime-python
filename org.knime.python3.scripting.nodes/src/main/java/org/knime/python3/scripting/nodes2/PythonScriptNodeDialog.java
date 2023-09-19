@@ -67,9 +67,13 @@ public final class PythonScriptNodeDialog implements NodeDialog {
 
     private final PythonScriptingService m_scriptingService;
 
-    /** Create a new scripting editor dialog */
-    public PythonScriptNodeDialog() {
-        m_scriptingService = new PythonScriptingService();
+    /**
+     * Create a new scripting editor dialog
+     *
+     * @param hasView if the node has an output view
+     */
+    public PythonScriptNodeDialog(final boolean hasView) {
+        m_scriptingService = new PythonScriptingService(hasView);
     }
 
     @Override
@@ -83,6 +87,7 @@ public final class PythonScriptNodeDialog implements NodeDialog {
             .builder(PythonScriptNodeDialog.class, "js-src/dist", "index.html") //
             .addResourceDirectory("assets") //
             .addResourceDirectory("monacoeditorwork") //
+            .addResource(m_scriptingService::openHtmlPreview, "preview.html") //
             .build();
     }
 

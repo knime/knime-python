@@ -1,18 +1,20 @@
 <script setup lang="ts">
+import { pythonScriptingService } from "@/python-scripting-service";
+import { useExecutableSelectionStore } from "@/store";
 import {
   ScriptingEditor,
   type NodeSettings,
   type SettingsMenuItem,
 } from "@knime/scripting-editor";
-import SettingsIcon from "webapps-common/ui/assets/img/icons/cog.svg";
-import type { MenuItem } from "webapps-common/ui/components/MenuItems.vue";
-import PythonEditorControls from "./PythonEditorControls.vue";
-import PythonWorkspace from "./PythonWorkspace.vue";
-import { pythonScriptingService } from "@/python-scripting-service";
 import * as monaco from "monaco-editor";
 import { onMounted, ref, type Ref } from "vue";
+import SettingsIcon from "webapps-common/ui/assets/img/icons/cog.svg";
+import type { MenuItem } from "webapps-common/ui/components/MenuItems.vue";
+import TabBar from "webapps-common/ui/components/TabBar.vue";
 import EnvironmentSettings from "./EnvironmentSettings.vue";
-import { useExecutableSelectionStore } from "@/store";
+import PythonEditorControls from "./PythonEditorControls.vue";
+import PythonViewPreview from "./PythonViewPreview.vue";
+import PythonWorkspace from "./PythonWorkspace.vue";
 
 const menuItems: MenuItem[] = [
   {
@@ -60,8 +62,21 @@ const saveSettings = async (commonSettings: NodeSettings) => {
   pythonScriptingService.closeDialog();
 };
 
-onMounted(() => {
+// Right pane tab bar - only show if preview is available
+const hasPreview = ref<boolean>(false);
+type RightPaneTabValue = "workspace" | "preview";
+// NB: The TabBar always selects the first enabled tab on create -> We cannot select the preview
+const rightPaneActiveTab = ref<RightPaneTabValue>("workspace");
+const rightPaneOptions = [
+  { value: "workspace", label: "Temporary Values" },
+  { value: "preview", label: "Output Preview" },
+];
+
+onMounted(async () => {
   pythonScriptingService.initExecutableSelection();
+
+  // Check if the preview is available
+  hasPreview.value = await pythonScriptingService.hasPreview();
 });
 </script>
 
@@ -89,7 +104,18 @@ onMounted(() => {
         <PythonEditorControls />
       </template>
       <template #right-pane>
-        <PythonWorkspace />
+        <div v-if="hasPreview" id="right-pane">
+          <TabBar
+            v-model="rightPaneActiveTab"
+            :possible-values="rightPaneOptions"
+            :disabled="false"
+          />
+          <div id="right-pane-content">
+            <PythonWorkspace v-show="rightPaneActiveTab === 'workspace'" />
+            <PythonViewPreview v-show="rightPaneActiveTab === 'preview'" />
+          </div>
+        </div>
+        <PythonWorkspace v-if="!hasPreview" />
       </template>
     </ScriptingEditor>
   </main>
@@ -97,4 +123,16 @@ onMounted(() => {
 
 <style>
 @import url("webapps-common/ui/css");
+</style>
+
+<style scoped lang="postcss">
+#right-pane {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+#right-pane-content {
+  flex-grow: 1;
+}
 </style>

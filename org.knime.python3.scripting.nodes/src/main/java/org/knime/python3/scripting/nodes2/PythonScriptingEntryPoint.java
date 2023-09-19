@@ -150,8 +150,9 @@ public interface PythonScriptingEntryPoint extends PythonEntryPoint {
 
     /**
      * @param sink The path to which to write the HTML file
+     * @return true if a view was available and has been saved to the file
      */
-    void getOutputView(PythonNodeViewSink sink);
+    boolean getOutputView(PythonNodeViewSink sink);
 
     /** A callback to call Java functions in Python code */
     interface Callback {

@@ -1,41 +1,108 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { flushPromises, shallowMount } from "@vue/test-utils";
-import App from "../App.vue";
-import { ScriptingEditor, getScriptingService } from "@knime/scripting-editor";
-import { executableOptionsMock } from "../../__mocks__/executable-options";
 import { setSelectedExecutable, useExecutableSelectionStore } from "@/store";
+import { ScriptingEditor, getScriptingService } from "@knime/scripting-editor";
+import { VueWrapper, flushPromises, mount } from "@vue/test-utils";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { executableOptionsMock } from "../../__mocks__/executable-options";
+import App from "../App.vue";
 
 describe("App.vue", () => {
-  const executableOptions = executableOptionsMock;
-  const executableSelectionStore = useExecutableSelectionStore();
-
-  beforeEach(() => {
+  const doMount = async ({
+    viewAvailable = false,
+    executableOptions = executableOptionsMock,
+  }: {
+    viewAvailable?: boolean;
+    executableOptions?: any[];
+  } = {}) => {
     vi.mocked(getScriptingService().sendToService).mockImplementation(
-      vi.fn((methodName: string): any => {
-        if (methodName === "getExecutableOptionsList") {
+      (methodName: string): any => {
+        if (methodName === "hasPreview") {
+          return Promise.resolve(viewAvailable);
+        } else if (methodName === "getExecutableOptionsList") {
           return executableOptions;
         } else {
           throw Error(`Method ${methodName} was not mocked but called in test`);
         }
-      }),
+      },
     );
     setSelectedExecutable({ id: "", isMissing: false });
-  });
+    const wrapper = mount(App, {
+      global: {
+        stubs: {
+          TabBar: true,
+          OutputConsole: true,
+          PythonEditorControls: true,
+        },
+      },
+    });
+    await flushPromises(); // to wait for PythonEditorControls.onMounted to finish
+    return { wrapper };
+  };
 
   afterEach(() => {
-    vi.clearAllMocks();
+    vi.restoreAllMocks();
   });
 
-  it("renders the ScriptingEditor component with the correct language", () => {
-    const wrapper = shallowMount(App);
+  it("renders the ScriptingEditor component with the correct language", async () => {
+    const { wrapper } = await doMount();
     const scriptingComponent = wrapper.findComponent({
       name: "ScriptingEditor",
     });
     expect(scriptingComponent.exists()).toBeTruthy();
+    expect(scriptingComponent.props("language")).toBe("python");
+    expect(scriptingComponent.props("fileName")).toBe("main.py");
   });
 
-  it("saves settings", () => {
-    const wrapper = shallowMount(App);
+  describe("right panel", () => {
+    const findComponents = (wrapper: VueWrapper) => {
+      const tabbar = wrapper.findComponent({ name: "TabBar" });
+      const workspace = wrapper.findComponent({ name: "PythonWorkspace" });
+      const preview = wrapper.findComponent({ name: "PythonViewPreview" });
+      return { tabbar, workspace, preview };
+    };
+
+    it("renders only the workspace if no preview is available", async () => {
+      const { wrapper } = await doMount({ viewAvailable: false });
+      const { tabbar, workspace, preview } = findComponents(wrapper);
+      expect(tabbar.exists()).toBeFalsy();
+      expect(workspace.exists()).toBeTruthy();
+      expect(preview.exists()).toBeFalsy();
+    });
+
+    it("renders workspace and preview if preview is available", async () => {
+      const { wrapper } = await doMount({ viewAvailable: true });
+      const { tabbar, workspace, preview } = findComponents(wrapper);
+      expect(tabbar.exists()).toBeTruthy();
+      expect(workspace.exists()).toBeTruthy();
+      expect(preview.exists()).toBeTruthy();
+    });
+
+    it("shows workspace if active tab", async () => {
+      const { wrapper } = await doMount({ viewAvailable: true });
+      const { tabbar, workspace, preview } = findComponents(wrapper);
+
+      // Select the workspace tab
+      tabbar.vm.$emit("update:modelValue", "workspace");
+      await flushPromises();
+
+      expect(workspace.isVisible()).toBeTruthy();
+      expect(preview.isVisible()).toBeFalsy();
+    });
+
+    it("shows preview if active tab", async () => {
+      const { wrapper } = await doMount({ viewAvailable: true });
+      const { tabbar, workspace, preview } = findComponents(wrapper);
+
+      // Select the preview tab
+      tabbar.vm.$emit("update:modelValue", "preview");
+      await flushPromises();
+
+      expect(workspace.isVisible()).toBeFalsy();
+      expect(preview.isVisible()).toBeTruthy();
+    });
+  });
+
+  it("saves settings", async () => {
+    const { wrapper } = await doMount();
     const scriptingEditor = wrapper.findComponent(ScriptingEditor);
     scriptingEditor.vm.$emit("save-settings", { script: "myScript" });
     expect(getScriptingService().saveSettings).toHaveBeenCalledWith({
@@ -50,12 +117,13 @@ describe("App.vue", () => {
       executableSelection: "conda.environment1",
     };
     getScriptingService().getInitialSettings = vi.fn((): any => settingsMock);
-    shallowMount(App);
+    await doMount();
     await flushPromises();
     expect(getScriptingService().sendToService).toHaveBeenCalledWith(
       "getExecutableOptionsList",
       [settingsMock.executableSelection],
     );
+    const executableSelectionStore = useExecutableSelectionStore();
     expect(executableSelectionStore.id).toBe(settingsMock.executableSelection);
     expect(executableSelectionStore.isMissing).toBe(false);
     expect(getScriptingService().sendToConsole).not.toHaveBeenCalled();
@@ -67,7 +135,7 @@ describe("App.vue", () => {
       executableSelection: "unknown environment",
     };
     getScriptingService().getInitialSettings = vi.fn((): any => settingsMock);
-    shallowMount(App);
+    await doMount();
     await flushPromises();
     expect(getScriptingService().sendToService).toHaveBeenCalledWith(
       "getExecutableOptionsList",
@@ -82,14 +150,15 @@ describe("App.vue", () => {
       executableSelection: "conda.environment1",
     };
     getScriptingService().getInitialSettings = vi.fn((): any => settingsMock);
-    getScriptingService().sendToService = vi.fn((): any => [
-      executableOptionsMock[0],
-      {
-        type: "MISSING_VAR",
-        id: "conda.environment1",
-      },
-    ]);
-    shallowMount(App);
+    await doMount({
+      executableOptions: [
+        executableOptionsMock[0],
+        {
+          type: "MISSING_VAR",
+          id: "conda.environment1",
+        },
+      ],
+    });
     await flushPromises();
     expect(getScriptingService().sendToService).toHaveBeenCalledWith(
       "getExecutableOptionsList",

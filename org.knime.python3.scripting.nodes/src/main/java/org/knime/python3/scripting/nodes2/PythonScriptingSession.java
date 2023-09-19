@@ -346,12 +346,12 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
     }
 
     /**
-     * Write the output view to a new temporary file and return the path to the file. The caller must delete the file
-     * when it is not needed anymore
+     * Write the output view to a new temporary file and return the path to the file if an output view is available. The
+     * caller must delete the file when it is not needed anymore.
      *
      * @throws IOException if the temporary file could not be created
      */
-    Path getOutputView() throws IOException {
+    Optional<Path> getOutputView() throws IOException {
         return PythonIOUtils.getOutputView(m_entryPoint);
     }
 

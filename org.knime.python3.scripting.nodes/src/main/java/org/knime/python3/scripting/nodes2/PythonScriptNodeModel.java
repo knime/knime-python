@@ -226,13 +226,17 @@ public final class PythonScriptNodeModel extends NodeModel {
     }
 
     /** Get the output view from the session if the node has a view and remember the path */
-    private void collectViewFromSession(final PythonScriptingSession session) throws IOException {
+    private void collectViewFromSession(final PythonScriptingSession session) throws IOException, KNIMEException {
         if (m_hasView) {
             // Delete the last view if it is still present
             if (m_view.isPresent()) {
                 PathUtils.deleteFileIfExists(m_view.get());
             }
-            m_view = Optional.of(session.getOutputView());
+            m_view = session.getOutputView();
+            if (m_view.isEmpty()) {
+                // NB: This should not happen because this is checked before
+                throw new KNIMEException("No output view available.");
+            }
         }
     }
 

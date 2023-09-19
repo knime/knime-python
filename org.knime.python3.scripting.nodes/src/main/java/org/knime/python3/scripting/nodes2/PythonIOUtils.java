@@ -58,6 +58,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import javax.imageio.ImageIO;
@@ -251,15 +252,19 @@ final class PythonIOUtils {
     }
 
     /**
-     * Write the output view to a new temporary file and return the path to the file. The caller must delete the file
-     * when it is not needed anymore
+     * Write the output view to a new temporary file and return the path to the file if an output view is available. The
+     * caller must delete the file when it is not needed anymore.
      *
      * @throws IOException if the temporary file could not be created
      */
-    static Path getOutputView(final PythonScriptingEntryPoint pythonEntryPoint) throws IOException {
+    static Optional<Path> getOutputView(final PythonScriptingEntryPoint pythonEntryPoint) throws IOException {
         final var path = PathUtils.createTempFile("output_view", ".html");
-        pythonEntryPoint.getOutputView(new PythonNodeViewSink(path.toAbsolutePath().toString()));
-        return path;
+        if (pythonEntryPoint.getOutputView(new PythonNodeViewSink(path.toAbsolutePath().toString()))) {
+            return Optional.of(path);
+        } else {
+            PathUtils.deleteFileIfExists(path);
+            return Optional.empty();
+        }
     }
 
     /**
