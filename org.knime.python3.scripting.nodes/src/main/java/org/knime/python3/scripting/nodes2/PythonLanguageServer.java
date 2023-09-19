@@ -118,7 +118,13 @@ final class PythonLanguageServer {
             // NB: We do not respect parameters in quotes because if would be too complicated for a debug property
             return new LanguageServerProxy(new ProcessBuilder(LSP_SERVER_COMMAND_PROPERTY.split(" ")));
         }
-        var pylspProcessBuilder = Python3ScriptingPreferences.getBundledPythonCommand().createProcessBuilder();
+        final ProcessBuilder pylspProcessBuilder;
+        try {
+            pylspProcessBuilder = Python3ScriptingPreferences.getBundledPythonCommand().createProcessBuilder();
+        } catch (final IllegalStateException ex) {
+            // Thrown if no bundled environment is available
+            throw new IOException(ex);
+        }
         pylspProcessBuilder.command().addAll(List.of("-m", "pylsp"));
         return new LanguageServerProxy(pylspProcessBuilder);
     }
