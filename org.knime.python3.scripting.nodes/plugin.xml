@@ -12,12 +12,6 @@
     <extension point="org.knime.workbench.repository.nodes">
         <node
             category-path="/scripting/python"
-            factory-class="org.knime.python3.scripting.nodes.script.PythonScriptNodeFactory" />
-        <node
-            category-path="/scripting/python"
-            factory-class="org.knime.python3.scripting.nodes.view.PythonViewNodeFactory" />
-        <node
-            category-path="/scripting/python"
             factory-class="org.knime.python3.scripting.nodes2.script.PythonScriptNodeFactory" />
         <node
             category-path="/scripting/python"
@@ -48,5 +42,11 @@
         <FileExtensionMapping NodeFactory="org.knime.python3.scripting.nodes.script.PythonScriptNodeFactory">
             <FileExtension extension=".pkl"/>
         </FileExtensionMapping>
+    </extension>
+    <extension
+          point="org.knime.core.NodeFactoryClassMapper">
+       <NodeFactoryClassMapper
+             classMapper="org.knime.python3.scripting.nodes2.PythonNodeFactoryClassMapper">
+       </NodeFactoryClassMapper>
     </extension>
 </plugin>
