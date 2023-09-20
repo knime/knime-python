@@ -9,6 +9,7 @@ import {
 import * as monaco from "monaco-editor";
 import { onMounted, ref, type Ref } from "vue";
 import SettingsIcon from "webapps-common/ui/assets/img/icons/cog.svg";
+import HelpIcon from "webapps-common/ui/assets/img/icons/help.svg";
 import type { MenuItem } from "webapps-common/ui/components/MenuItems.vue";
 import TabBar from "webapps-common/ui/components/TabBar.vue";
 import EnvironmentSettings from "./EnvironmentSettings.vue";
@@ -18,11 +19,22 @@ import PythonWorkspace from "./PythonWorkspace.vue";
 
 const menuItems: MenuItem[] = [
   {
-    text: "Set python executable",
+    text: "Set Python executable",
     icon: SettingsIcon,
     showSettingsPage: true,
     title: "Select Environment",
+    separator: true,
   } as SettingsMenuItem,
+  {
+    text: "KNIME Python Integration Guide",
+    icon: HelpIcon,
+    href: "https://docs.knime.com/latest/python_installation_guide/index.html#_introduction",
+  } as MenuItem,
+  {
+    text: "KNIME Python Script API Documentation",
+    icon: HelpIcon,
+    href: "https://knime-python.readthedocs.io/en/stable/script-api.html",
+  } as MenuItem,
 ];
 
 const currentSettingsMenuItem: Ref<SettingsMenuItem | null> = ref(null);
