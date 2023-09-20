@@ -6,7 +6,6 @@ import Label from "webapps-common/ui/components/forms/Label.vue";
 import { setSelectedExecutable, useExecutableSelectionStore } from "@/store";
 import { pythonScriptingService } from "@/python-scripting-service";
 import type { ExecutableOption } from "@/types/common";
-import { restartPythonSession } from "./utils/sessionUtils";
 
 const executableSelection = useExecutableSelectionStore();
 const selectedEnv: Ref<string> = ref(
@@ -60,13 +59,17 @@ onUnmounted(() => {
   const executableSelectionChanged = executableSelection.id !== newSelection;
   if (executableSelectionChanged && !isMissingVarSelected.value) {
     setSelectedExecutable({ id: newSelection, isMissing: false });
+
+    // Notify the backend that the executable selection has changed
+    pythonScriptingService.updateExecutableSelection(newSelection);
+
+    // Print a message about the changed executable to the console
     const executable = getExecutableById(newSelection);
     if (executable) {
       pythonScriptingService.sendToConsole({
         text: `Changed python executable to ${executable.pythonExecutable}\n`,
       });
     }
-    restartPythonSession();
   }
 });
 </script>

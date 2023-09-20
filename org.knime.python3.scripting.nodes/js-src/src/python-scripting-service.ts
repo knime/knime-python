@@ -1,21 +1,25 @@
 import {
-  type NodeSettings,
-  type ScriptingServiceType,
   EditorService,
   getScriptingService,
+  type NodeSettings,
+  type ScriptingServiceType,
 } from "@knime/scripting-editor";
 
-import {
-  type ExecutableOption,
-  type ExecutionInfo,
-  type InputPortInfo,
-  type KillSessionInfo,
-  type PythonScriptingNodeSettings,
-  type StartSessionInfo,
+import type {
+  ExecutableOption,
+  ExecutionInfo,
+  InputPortInfo,
+  KillSessionInfo,
+  PythonScriptingNodeSettings,
 } from "./types/common";
 
 import sleep from "webapps-common/util/sleep";
-import { setSelectedExecutable, useExecutableSelectionStore } from "./store";
+import {
+  setSelectedExecutable,
+  useExecutableSelectionStore,
+  useSessionStatusStore,
+  useWorkspaceStore,
+} from "./store";
 
 /* eslint-disable no-console */
 
@@ -159,6 +163,47 @@ const scriptingService =
     ? getScriptingService(browserMockScriptingService)
     : getScriptingService();
 
+const sendErrorToConsole = ({
+  description,
+  traceback,
+}: {
+  description: string;
+  traceback?: string[];
+}) => {
+  if (
+    typeof traceback === "undefined" ||
+    traceback === null ||
+    traceback.length === 0
+  ) {
+    scriptingService.sendToConsole({ text: `${description}\n` });
+  } else {
+    scriptingService.sendToConsole({
+      text: `${description}\n${traceback?.join("\n")}\n`,
+    });
+  }
+};
+
+// Handle execution finished events
+scriptingService.registerEventHandler(
+  "python-execution-finished",
+  (info: ExecutionInfo) => {
+    // Update the workspace
+    useWorkspaceStore().workspace = info.data ?? [];
+
+    // Send errors to the console
+    if (
+      info.status === "FATAL_ERROR" ||
+      info.status === "EXECUTION_ERROR" ||
+      info.status === "KNIME_ERROR"
+    ) {
+      sendErrorToConsole(info);
+    }
+
+    // Update the session status
+    useSessionStatusStore().status = "IDLE";
+  },
+);
+
 export const pythonScriptingService = {
   initExecutableSelection: async (): Promise<void> => {
     const settings =
@@ -171,8 +216,8 @@ export const pythonScriptingService = {
       typeof executableInfo === "undefined" ||
       executableInfo.type === "MISSING_VAR"
     ) {
-      scriptingService.sendToConsole({
-        text: `Flow variable "${executableSelection.id}" is missing, therefore no python executable could be started\n`,
+      sendErrorToConsole({
+        description: `Flow variable "${executableSelection.id}" is missing, therefore no Python executable could be started\n`,
       });
       setSelectedExecutable({ isMissing: true });
     }
@@ -184,39 +229,45 @@ export const pythonScriptingService = {
       executableSelection.id,
     ])) as ExecutableOption[];
   },
-  startInteractivePythonSession: async (): Promise<StartSessionInfo> => {
-    const startSessionInfo = (await scriptingService.sendToService(
-      "startInteractive",
-      [executableSelection.id],
-    )) as StartSessionInfo;
-    return startSessionInfo;
+  runScript: () => {
+    scriptingService.sendToService("runScript", [scriptingService.getScript()]);
+    useSessionStatusStore().status = "RUNNING";
   },
-  runScript: async (
-    script: string,
-    checkOutput: boolean = false,
-  ): Promise<ExecutionInfo> => {
-    const executionInfo = (await scriptingService.sendToService(
-      "runInteractive",
-      [script, checkOutput],
-    )) as ExecutionInfo;
-    return executionInfo;
+  runSelectedLines: () => {
+    scriptingService.sendToService("runInExistingSession", [
+      scriptingService.getSelectedLines(),
+    ]);
+    useSessionStatusStore().status = "RUNNING";
+  },
+  printVariable: (variableName: string) => {
+    scriptingService.sendToService("runInExistingSession", [
+      `print(${variableName})`,
+    ]);
   },
   killInteractivePythonSession: async () => {
-    const killSessionInfo = (await scriptingService.sendToService(
-      "killSession",
-    )) as KillSessionInfo;
-    return killSessionInfo;
+    const killSessionInfo: KillSessionInfo =
+      await scriptingService.sendToService("killSession");
+
+    // If there was an error, send it to the console
+    if (killSessionInfo.status === "ERROR") {
+      sendErrorToConsole(killSessionInfo);
+    }
+
+    // Cleanup the workspace and session status
+    useWorkspaceStore().workspace = [];
+    useSessionStatusStore().status = "IDLE";
+  },
+  updateExecutableSelection: (id: string) => {
+    scriptingService.sendToService("updateExecutableSelection", [id]);
+
+    // Cleanup the workspace and session status
+    useWorkspaceStore().workspace = [];
+    useSessionStatusStore().status = "IDLE";
   },
   getInputObjects: async (): Promise<InputPortInfo[]> => {
     return (await scriptingService.sendToService(
       "getInputObjects",
     )) as InputPortInfo[];
-  },
-  getAllLines: (): string | null => {
-    return scriptingService.getScript();
-  },
-  getSelectedLines: (): string | null => {
-    return scriptingService.getSelectedLines();
   },
   registerConsoleEventHandler: (handler: any) => {
     scriptingService.registerConsoleEventHandler(handler);

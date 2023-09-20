@@ -1,11 +1,12 @@
-import { DOMWrapper, VueWrapper, flushPromises, mount } from "@vue/test-utils";
-import PythonEditorControls from "../PythonEditorControls.vue";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import Button from "webapps-common/ui/components/Button.vue";
-import PlayIcon from "webapps-common/ui/assets/img/icons/play.svg";
-import LoadingIcon from "webapps-common/ui/components/LoadingIcon.vue";
-import CancelIcon from "webapps-common/ui/assets/img/icons/circle-close.svg";
+import { useSessionStatusStore } from "@/store";
 import { getScriptingService } from "@knime/scripting-editor";
+import { DOMWrapper, VueWrapper, flushPromises, mount } from "@vue/test-utils";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import CancelIcon from "webapps-common/ui/assets/img/icons/circle-close.svg";
+import PlayIcon from "webapps-common/ui/assets/img/icons/play.svg";
+import Button from "webapps-common/ui/components/Button.vue";
+import LoadingIcon from "webapps-common/ui/components/LoadingIcon.vue";
+import PythonEditorControls from "../PythonEditorControls.vue";
 
 describe("PythonEditorControls", () => {
   const doMount = async ({ props } = { props: {} }) => {
@@ -22,6 +23,7 @@ describe("PythonEditorControls", () => {
 
   beforeEach(() => {
     vi.useFakeTimers();
+    useSessionStatusStore().status = "IDLE";
   });
 
   afterEach(() => {
@@ -35,24 +37,11 @@ describe("PythonEditorControls", () => {
     expect(wrapper.find(".run-selected-button").exists()).toBeTruthy();
   });
 
-  it("starts python session on mount", async () => {
-    await doMount();
-    expect(getScriptingService().sendToService).toHaveBeenCalledWith(
-      "startInteractive",
-      expect.anything(),
-    );
-  });
-
   describe("script execution", () => {
     let wrapper: VueWrapper;
 
     beforeEach(async () => {
       wrapper = (await doMount()).wrapper;
-      expect(getScriptingService().sendToService).toHaveBeenNthCalledWith(
-        1,
-        "startInteractive",
-        expect.anything(),
-      );
     });
 
     it("starts new python process and executes script when clicking on run all button", async () => {
@@ -61,15 +50,11 @@ describe("PythonEditorControls", () => {
       vi.runAllTimers();
       await flushPromises();
       expect(getScriptingService().sendToService).toHaveBeenNthCalledWith(
-        2,
-        "startInteractive",
-        expect.anything(),
+        1,
+        "runScript",
+        ["myScript"],
       );
-      expect(getScriptingService().sendToService).toHaveBeenNthCalledWith(
-        3,
-        "runInteractive",
-        ["myScript", false],
-      );
+      expect(useSessionStatusStore().status).toBe("RUNNING");
     });
 
     it("executes selected lines in current python session when clicking on run selected lines button", async () => {
@@ -78,10 +63,11 @@ describe("PythonEditorControls", () => {
       vi.runAllTimers();
       await flushPromises();
       expect(getScriptingService().sendToService).toHaveBeenNthCalledWith(
-        2,
-        "runInteractive",
-        ["mySelectedLines", false],
+        1,
+        "runInExistingSession",
+        ["mySelectedLines"],
       );
+      expect(useSessionStatusStore().status).toBe("RUNNING");
     });
 
     it("cancels script execution when clicking button during execution", async () => {
@@ -91,18 +77,13 @@ describe("PythonEditorControls", () => {
       vi.runAllTimers();
       await flushPromises();
       expect(getScriptingService().sendToService).toHaveBeenNthCalledWith(
+        1,
+        "runInExistingSession",
+        ["mySelectedLines"],
+      );
+      expect(getScriptingService().sendToService).toHaveBeenNthCalledWith(
         2,
-        "runInteractive",
-        ["mySelectedLines", false],
-      );
-      expect(getScriptingService().sendToService).toHaveBeenNthCalledWith(
-        3,
         "killSession",
-      );
-      expect(getScriptingService().sendToService).toHaveBeenNthCalledWith(
-        4,
-        "startInteractive",
-        expect.anything(),
       );
     });
   });

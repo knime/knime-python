@@ -16,7 +16,7 @@ describe("PythonWorkspace", () => {
     });
     const wrapper = mount(PythonWorkspace, { props });
     await flushPromises();
-    return { wrapper };
+    return { wrapper, resetButton: wrapper.find(".reset-button") };
   };
 
   beforeEach(() => {
@@ -30,39 +30,32 @@ describe("PythonWorkspace", () => {
     vi.clearAllTimers();
   });
 
-  it("renders restart button", async () => {
-    const { wrapper } = await doMount();
-    expect(wrapper.find(".restart-button").exists()).toBeTruthy();
+  it("renders reset button", async () => {
+    const { resetButton } = await doMount();
+    expect(resetButton.exists()).toBeTruthy();
   });
 
-  it("restarts python session when restart button is clicked", async () => {
-    const { wrapper } = await doMount();
-    await flushPromises();
+  it("reset python session when reset button is clicked", async () => {
+    const { resetButton } = await doMount();
     const sendToServiceSpy = vi.spyOn(getScriptingService(), "sendToService");
-    await wrapper.find(".restart-button").trigger("click");
+    await resetButton.trigger("click");
     vi.runAllTimers();
     await flushPromises();
     expect(sendToServiceSpy).toHaveBeenNthCalledWith(1, "killSession");
-    expect(sendToServiceSpy).toHaveBeenNthCalledWith(
-      2,
-      "startInteractive",
-      expect.anything(),
-    );
   });
 
   it("button click should reset store", async () => {
-    const { wrapper } = await doMount();
-    const button = wrapper.find(".restart-button");
+    const { resetButton } = await doMount();
     const store = useWorkspaceStore();
     expect(store.workspace).toBeUndefined();
     store.workspace = [{ name: "test", value: "test", type: "test" }];
     expect(store.workspace).toBeDefined();
-    button.trigger("click");
+    resetButton.trigger("click");
     await flushPromises();
     expect(store.workspace).toStrictEqual([]);
   });
 
-  it("button click on table calls runScript", async () => {
+  it("button click on table calls printVariable", async () => {
     const store = useWorkspaceStore();
     store.workspace = [{ name: "testName", value: "test", type: "test" }];
 
@@ -83,9 +76,9 @@ describe("PythonWorkspace", () => {
     expect(name).toBeDefined();
 
     // check click event
-    const runScript = vi.spyOn(pythonScriptingService, "runScript");
+    const runScript = vi.spyOn(pythonScriptingService, "printVariable");
     tableRow.trigger("click");
-    expect(runScript).toHaveBeenCalledWith(`print(${keyToFind})`);
+    expect(runScript).toHaveBeenCalledWith(keyToFind);
   });
 
   it("reset button enabled if inputs are available", async () => {

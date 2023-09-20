@@ -87,6 +87,7 @@ import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.node.workflow.VariableType;
 import org.knime.core.util.PathUtils;
+import org.knime.core.util.ThreadUtils;
 import org.knime.core.webui.data.DataServiceContext;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
 import org.knime.python2.port.PickledObjectPortObjectSpec;
@@ -125,6 +126,8 @@ final class PythonScriptingService extends ScriptingService {
 
     // indicates that killSession has been called
     private AtomicBoolean m_expectCancel;
+
+    private String m_executableSelection = "";
 
     private PythonScriptingSession m_interactiveSession;
 
@@ -196,16 +199,11 @@ final class PythonScriptingService extends ScriptingService {
         super.onDeactivate();
 
         // Close the interactive Python session
-        if (m_interactiveSession != null) {
-            try {
-                m_interactiveSession.close();
-            } catch (IOException ex) {
-                LOGGER.error("Failed to close interactive Python session.", ex);
-            }
-            m_interactiveSession = null;
-        }
+        clearSession();
 
+        // Reset the executable selection and options
         m_executableOptions = null;
+        m_executableSelection = "";
 
         // Clear the preview
         clearView();
@@ -238,6 +236,17 @@ final class PythonScriptingService extends ScriptingService {
         m_view = Optional.empty();
     }
 
+    private void clearSession() {
+        if (m_interactiveSession != null) {
+            try {
+                m_interactiveSession.close();
+            } catch (IOException ex) {
+                LOGGER.error("Failed to close interactive Python session.", ex);
+            }
+            m_interactiveSession = null;
+        }
+    }
+
     /**
      * An extension of the {@link org.knime.scripting.editor.ScriptingService.RpcService} that provides additional
      * methods to the frontend of the Python scripting node.
@@ -266,93 +275,117 @@ final class PythonScriptingService extends ScriptingService {
             }
         }
 
-        /**
-         * Start the interactive Python session.
-         *
-         * @param executableSelection the id of the selected executable option
-         * @return Information about the execution status
-         * @throws Exception
-         */
-        public StartSessionInfo startInteractive(final String executableSelection) throws Exception {
-            if (m_interactiveSession != null) {
-                m_interactiveSession.close();
-                m_interactiveSession = null;
-            }
+        private void startNewInteractiveSession() throws IOException, InterruptedException, CanceledExecutionException {
+            // Clear the last session if there is one
+            clearSession();
 
             // Start the interactive Python session and setup the IO
             final var workflowControl = getWorkflowControl();
             final var pythonCommand =
-                ExecutableSelectionUtils.getPythonCommand(getExecutableOption(executableSelection));
+                ExecutableSelectionUtils.getPythonCommand(getExecutableOption(m_executableSelection));
 
             // TODO report the progress of converting the tables using the ExecutionMonitor?
-            try {
-                m_interactiveSession = new PythonScriptingSession(pythonCommand,
-                    PythonScriptingService.this::addConsoleOutputEvent, new DialogFileStoreHandlerSupplier());
-                m_interactiveSession.setupIO(workflowControl.getInputData(), getFlowVariables(),
-                    m_ports.getNumOutTables(), m_ports.getNumOutImages(), m_ports.getNumOutObjects(), m_hasView,
-                    new ExecutionMonitor());
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return new StartSessionInfo(StartSessionStatus.ERROR, e.getMessage());
-            } catch (IOException | CanceledExecutionException | IllegalArgumentException e) { // NOSONAR
-                return new StartSessionInfo(StartSessionStatus.ERROR, e.getMessage());
-            }
-            return new StartSessionInfo(StartSessionStatus.SUCCESS, "Started new python session");
+            m_interactiveSession = new PythonScriptingSession(pythonCommand,
+                PythonScriptingService.this::addConsoleOutputEvent, new DialogFileStoreHandlerSupplier());
+            m_interactiveSession.setupIO(workflowControl.getInputData(), getFlowVariables(), m_ports.getNumOutTables(),
+                m_ports.getNumOutImages(), m_ports.getNumOutObjects(), m_hasView, new ExecutionMonitor());
         }
 
-        /**
-         * Called from frontend during execution. Stops execution and eventually throws py4j error in runInteractive.
-         *
-         * @return whether the session has been killed successfully or not
-         *
-         */
-        public KillSessionInfo killSession() {
-            if (m_interactiveSession == null) {
-                return new KillSessionInfo(KillSessionStatus.ERROR, "There is no active python session in progress");
-            }
+        private synchronized void executeScriptInternal(final String script, final boolean newSession,
+            final boolean checkOutputs) {
             try {
-                m_expectCancel.set(true);
-                m_interactiveSession.close();
-                return new KillSessionInfo(KillSessionStatus.SUCCESS, "Stopped execution of python session.");
-            } catch (final IOException e) {
-                LOGGER.error(e);
-                return new KillSessionInfo(KillSessionStatus.ERROR, String
-                    .format("An error occurred when stopping the execution of the python session: %s", e.getMessage()));
-            } finally {
-                m_interactiveSession = null;
-            }
-        }
+                // Restart the session if necessary
+                if (m_interactiveSession == null || newSession) {
+                    startNewInteractiveSession();
+                }
 
-        /**
-         * Run the given script in the running interactive session.
-         *
-         * @param script the Python script
-         * @param checkOutputs
-         * @return the workspace serialized as JSON
-         */
-        public ExecutionInfo runInteractive(final String script, final boolean checkOutputs) {
-
-            if (m_interactiveSession == null) {
-                return new ExecutionInfo(ExecutionStatus.FATAL_ERROR, "Session not available");
-            }
-
-            try {
+                // Run the script
                 var execInfo = m_interactiveSession.execute(script, checkOutputs);
                 if (m_hasView) {
                     clearView();
                     // NB: If no view is assigned in the current session m_view will be empty
                     m_view = m_interactiveSession.getOutputView();
                 }
-                return execInfo;
-            } catch (final Exception e) { // NOSONAR
+
+                // Done with executing
+                sendExecutionFinishedEvent(execInfo);
+            } catch (Exception ex) { // NOSONAR - we want to handle all exceptions
+                if (ex instanceof InterruptedException) {
+                    Thread.currentThread().interrupt(); // Re-interrupt
+                }
+
                 if (m_expectCancel.get()) {
-                    return new ExecutionInfo(ExecutionStatus.CANCELLED, "Script execution was cancelled by user");
+                    sendExecutionFinishedEvent(
+                        new ExecutionInfo(ExecutionStatus.CANCELLED, "Script execution was cancelled by user"));
                 } else {
-                    LOGGER.error(e);
-                    return new ExecutionInfo(ExecutionStatus.FATAL_ERROR, "Execution failed");
+                    var message = "Execution failed: " + ex.getMessage();
+                    LOGGER.error(message, ex);
+                    sendExecutionFinishedEvent(new ExecutionInfo(ExecutionStatus.FATAL_ERROR, message));
                 }
             } finally {
                 m_expectCancel.set(false);
+            }
+        }
+
+        void sendExecutionFinishedEvent(final ExecutionInfo info) {
+            sendEvent("python-execution-finished", info);
+        }
+
+        /**
+         * Runs the script in a new session and checks the output.
+         *
+         * @param script the user script
+         */
+        public void runScript(final String script) {
+            m_expectCancel.set(false);
+            ThreadUtils.threadWithContext(() -> executeScriptInternal(script, true, true), "python-execution").start();
+        }
+
+        /**
+         * Runs the script in the existing Python session. Does not check the output.
+         *
+         * @param script the user script
+         */
+        public void runInExistingSession(final String script) {
+            m_expectCancel.set(false);
+            ThreadUtils.threadWithContext(() -> executeScriptInternal(script, false, false), "python-execution")
+                .start();
+        }
+
+        /**
+         * Called from frontend during execution. Stops execution and eventually throws py4j error in runInteractive.
+         *
+         * @return whether the session has been killed successfully or not
+         */
+        public KillSessionInfo killSession() {
+            if (m_interactiveSession == null) {
+                // No session to kill
+                return new KillSessionInfo(KillSessionStatus.ERROR, "There is no active python session in progress");
+            }
+
+            try {
+                m_expectCancel.set(true);
+                m_interactiveSession.close();
+                return new KillSessionInfo(KillSessionStatus.SUCCESS, "Stopped execution of python session.");
+            } catch (Exception ex) { // NOSONAR - we want to handle all exceptions
+                var message = "Error while stopping the Python execution: " + ex.getMessage();
+                LOGGER.error(message, ex);
+                return new KillSessionInfo(KillSessionStatus.ERROR, message);
+            } finally {
+                m_interactiveSession = null;
+            }
+        }
+
+        /**
+         * Update the executable selection. If a session is running, it is cleared. The next session will use the new
+         * executable selection.
+         *
+         * @param executableSelection the identifier for the new executable
+         */
+        public void updateExecutableSelection(final String executableSelection) {
+            if (!m_executableSelection.equals(executableSelection)) {
+                m_executableSelection = executableSelection;
+                clearSession();
             }
         }
 
@@ -440,7 +473,6 @@ final class PythonScriptingService extends ScriptingService {
             }).toList();
         }
 
-        @SuppressWarnings("deprecation")
         private String portTypeToInputOutputType(final PortType portType) {
             if (portType.acceptsPortObjectClass(BufferedDataTable.class)) {
                 return INPUT_OUTPUT_TYPE_TABLE;

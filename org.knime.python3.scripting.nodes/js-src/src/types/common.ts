@@ -30,40 +30,19 @@ export type Workspace = {
   value: string;
 }[];
 
-export type ExecutionInfoWithTraceback = {
-  status: "EXECUTION_ERROR";
+export type ExecutionInfo = {
+  status:
+    | "SUCCESS"
+    | "EXECUTION_ERROR"
+    | "KNIME_ERROR"
+    | "FATAL_ERROR"
+    | "CANCELLED";
   description: string;
-  traceback: string[];
-  data: Workspace;
+  traceback?: string[];
+  data?: Workspace;
 };
-
-export type ExecutionInfoWithWorkspace = {
-  status: "SUCCESS";
-  description: string;
-  data: Workspace;
-};
-
-export type ExecutionInfo =
-  | ExecutionInfoWithTraceback
-  | ExecutionInfoWithWorkspace
-  | {
-      status: "RUNNING" | "CANCELLED" | "KNIME_ERROR" | "FATAL_ERROR";
-      description: string;
-    };
 
 export type KillSessionInfo = {
   status: "SUCCESS" | "ERROR";
   description: string;
 };
-
-export type StartSessionInfo = {
-  status: "SUCCESS" | "ERROR";
-  description: string;
-};
-
-export type SessionInfo = {
-  status: string;
-  description: string;
-};
-
-export const ERROR_STATES = ["KNIME_ERROR", "FATAL_ERROR", "EXECUTION_ERROR"];

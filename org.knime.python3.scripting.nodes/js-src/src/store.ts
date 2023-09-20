@@ -34,3 +34,16 @@ export const setSelectedExecutable = (args: Partial<ExecutableStore>): void => {
     selectedExecutable.isMissing = args.isMissing;
   }
 };
+
+export type SessionStatus = "IDLE" | "RUNNING";
+export type SessionStatusStore = {
+  status: SessionStatus;
+};
+
+const sessionStatus: SessionStatusStore = reactive<SessionStatusStore>({
+  status: "IDLE",
+});
+
+export const useSessionStatusStore = (): SessionStatusStore => {
+  return sessionStatus;
+};

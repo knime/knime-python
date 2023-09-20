@@ -1,11 +1,10 @@
-import { describe, it, beforeEach, afterEach, vi, expect } from "vitest";
-import EnvironmentSettings from "../EnvironmentSettings.vue";
-import { flushPromises, mount } from "@vue/test-utils";
+import { executableOptionsMock } from "@/__mocks__/executable-options";
 import { setSelectedExecutable } from "@/store";
 import { getScriptingService } from "@knime/scripting-editor";
-import { executableOptionsMock } from "@/__mocks__/executable-options";
+import { flushPromises, mount } from "@vue/test-utils";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Dropdown from "webapps-common/ui/components/forms/Dropdown.vue";
-import type { KillSessionInfo, StartSessionInfo } from "@/types/common";
+import EnvironmentSettings from "../EnvironmentSettings.vue";
 
 describe("EnvironmentSettings", () => {
   const executableOptions = executableOptionsMock;
@@ -16,17 +15,8 @@ describe("EnvironmentSettings", () => {
         if (methodName === "getExecutableOptionsList") {
           return executableOptions;
         }
-        if (methodName === "killSession") {
-          return {
-            status: "SUCCESS",
-            description: "",
-          } as KillSessionInfo;
-        }
-        if (methodName === "startInteractive") {
-          return {
-            status: "SUCCESS",
-            description: "",
-          } as StartSessionInfo;
+        if (methodName === "updateExecutableSelection") {
+          return Promise.resolve();
         }
         throw Error(`Method ${methodName} was not mocked but called in test`);
       }),
@@ -71,7 +61,7 @@ describe("EnvironmentSettings", () => {
     expect(wrapper.findComponent(Dropdown).exists()).toBeTruthy();
   });
 
-  it("restarts python session if executable was changed", async () => {
+  it("notifies backend if executable was changed", async () => {
     const wrapper = mount(EnvironmentSettings);
     await flushPromises();
     expect(getScriptingService().sendToService).toHaveBeenNthCalledWith(
@@ -85,16 +75,12 @@ describe("EnvironmentSettings", () => {
     await wrapper.vm.$nextTick();
     wrapper.unmount();
     await flushPromises();
+    expect(getScriptingService().sendToConsole).toHaveBeenCalled();
     expect(getScriptingService().sendToService).toHaveBeenNthCalledWith(
       2,
-      "killSession",
-    );
-    expect(getScriptingService().sendToService).toHaveBeenNthCalledWith(
-      3,
-      "startInteractive",
+      "updateExecutableSelection",
       ["conda.environment1"],
     );
-    expect(getScriptingService().sendToConsole).toHaveBeenCalled();
   });
 
   it("does not restart session if executable didn't change", async () => {

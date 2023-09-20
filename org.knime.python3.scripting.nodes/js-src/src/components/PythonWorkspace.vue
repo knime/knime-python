@@ -1,24 +1,11 @@
 <script setup lang="ts">
-import Button from "webapps-common/ui/components/Button.vue";
-import { pythonScriptingService } from "../python-scripting-service";
-import {
-  handleSessionInfo,
-  handleExecutionInfo,
-  restartPythonSession,
-} from "./utils/sessionUtils";
 import { useWorkspaceStore } from "@/store";
 import { getScriptingService } from "@knime/scripting-editor";
 import { onMounted, ref } from "vue";
+import Button from "webapps-common/ui/components/Button.vue";
+import { pythonScriptingService } from "../python-scripting-service";
 
 const workspaceStore = useWorkspaceStore();
-
-const handleClick = async (variableName: string) => {
-  const executionInfo = await pythonScriptingService.runScript(
-    `print(${variableName})`,
-  );
-  handleSessionInfo(executionInfo);
-  handleExecutionInfo(executionInfo);
-};
 
 const resetButtonEnabled = ref<boolean>(false);
 
@@ -41,7 +28,7 @@ onMounted(async () => {
         <tr
           v-for="variable in workspaceStore.workspace"
           :key="variable.name"
-          @click="handleClick(variable.name)"
+          @click="pythonScriptingService.printVariable(variable.name)"
         >
           <td>{{ variable.name }}</td>
           <td>{{ variable.type }}</td>
@@ -50,11 +37,11 @@ onMounted(async () => {
       </tbody>
     </table>
     <Button
-      class="restart-button"
+      class="reset-button"
       compact
       :disabled="!resetButtonEnabled"
       :with-border="false"
-      @click="restartPythonSession"
+      @click="pythonScriptingService.killInteractivePythonSession"
     >
       Reset temporary values
     </Button>
@@ -122,7 +109,7 @@ th {
   text-align: left;
 }
 
-.restart-button {
+.reset-button {
   min-width: 80px;
   height: 25px;
   margin: 0;
