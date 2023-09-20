@@ -8,23 +8,23 @@
 	</shortDescription>
 	<fullDescription>
 		<intro>
-			This node allows executing a Python script in a local Python 3 environment. The script can read data from
-			the input ports and must provide values for all output ports.
+			<p>This node allows executing a Python script in a local Python 3 environment. The script can read data from
+			the input ports and must provide values for all output ports.</p>
 			
-			Use the settings menu in the top right of the editor window to configure which Python environment to use. 
+			<p>Use the settings menu in the top right of the editor window to configure which Python environment to use. 
 			This environment can either be the one configured in the KNIME preferences under <i>File → Preferences → KNIME → Python</i> 
 			or be specified via a flow variable, as described in the <a href="https://docs.knime.com/latest/python_installation_guide/">
 			KNIME Python Integration Guide</a>. By default, the Python environment that is bundled with
-			KNIME will be used so that you can get started right away.
+			KNIME will be used so that you can get started right away.</p>
 			
-			Multiple input and output ports of various types can dynamically be added to the node and used in the
+			<p>Multiple input and output ports of various types can dynamically be added to the node and used in the
 			script. See sections <i>Ports</i> and <i>Options → Script → Editor</i> below for a description of all available inputs and outputs, 
 			and how they can be accessed in the Python script.
 			Furthermore, the node allows to import Jupyter notebooks as Python modules via the
 			<a href="https://docs.knime.com/latest/python_installation_guide/#jupyter-notebooks">
 			knime.scripting.jupyter</a> module that can be imported in the script.
 			See the <a href="https://knime-python.readthedocs.io/en/stable/content/content.html#python-script-api">
-			API Documentation</a> for a detailed description of the full API.
+			API Documentation</a> for a detailed description of the full API.</p>
 
 			<p>The node brings significant performance improvements over the nodes of the legacy KNIME Python Integration
 			and enables working with larger-than-memory data. More details on how to transition to the node's new
@@ -32,6 +32,14 @@
 			There are also example workflows that further illustrate its use
 			<a href="https://kni.me/s/1_0f6fdjqeLPCfPY">here</a> as well as
 			example templates on the <i>Templates</i> tab of the node.</p>
+			
+			<b>AI Code Assistance (Labs):</b>
+			<p>If the KNIME AI Assistant (Labs) extension is installed, the button on the lower left of the code editor provides
+			access to AI assisted code generation and modification. Here you can enter commands in natural language and our 
+			code assistant will replace or modify your current code according to your prompt. The more precisely you describe
+			what results you expect, the better the results will be. The AI will suggest modifications and show them to you
+			in a <i>diff-view</i> (differences between your current code on the left and the suggested code on the right) which
+			you can apply or query another response by entering a new or refined prompt.</p>
 
 			<p><b>Please consider the following prerequisites before using this node:</b>
 			<ul>
