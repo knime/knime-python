@@ -413,7 +413,13 @@ final class PythonScriptingService extends ScriptingService {
         }
 
         private List<InputOutputModel> getDefaultOutputPortInfo() {
-            return getDefaultPortInfo("Output", getWorkflowControl().getOutputPortTypes());
+            var outputPortInfos = getDefaultPortInfo("Output", getWorkflowControl().getOutputPortTypes());
+            if (m_hasView) {
+                outputPortInfos = new ArrayList<>(outputPortInfos);
+                outputPortInfos
+                    .add(new InputOutputModel("Output View", PythonCodeAliasProvider.getOutputViewCodeAlias(), null));
+            }
+            return outputPortInfos;
         }
 
         private List<InputOutputModel> getDefaultPortInfo(final String namePrefix, final PortType... portTypes) {
@@ -632,6 +638,10 @@ final class PythonScriptingService extends ScriptingService {
 
     private static final class PythonCodeAliasProvider {
         private PythonCodeAliasProvider() {
+        }
+
+        private static String getOutputViewCodeAlias() {
+            return "knio.output_view"; // NOSONAR: we use a method for consistency
         }
 
         private static String appendStringSuffix(final String prefix, final String variableName) {
