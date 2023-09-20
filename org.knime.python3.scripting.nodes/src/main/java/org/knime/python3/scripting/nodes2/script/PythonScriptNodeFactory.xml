@@ -8,9 +8,95 @@
 	</shortDescription>
 	<fullDescription>
 		<intro>
-			Allows executing a Python script in a local Python environment.
-			TODO
+			This node allows executing a Python script in a local Python 3 environment. The script can read data from
+			the input ports and must provide values for all output ports.
+			
+			Use the settings menu in the top right of the editor window to configure which Python environment to use. 
+			This environment can either be the one configured in the KNIME preferences under <i>File → Preferences → KNIME → Python</i> 
+			or be specified via a flow variable, as described in the <a href="https://docs.knime.com/latest/python_installation_guide/">
+			KNIME Python Integration Guide</a>. By default, the Python environment that is bundled with
+			KNIME will be used so that you can get started right away.
+			
+			Multiple input and output ports of various types can dynamically be added to the node and used in the
+			script. See sections <i>Ports</i> and <i>Options → Script → Editor</i> below for a description of all available inputs and outputs, 
+			and how they can be accessed in the Python script.
+			Furthermore, the node allows to import Jupyter notebooks as Python modules via the
+			<a href="https://docs.knime.com/latest/python_installation_guide/#jupyter-notebooks">
+			knime.scripting.jupyter</a> module that can be imported in the script.
+			See the <a href="https://knime-python.readthedocs.io/en/stable/content/content.html#python-script-api">
+			API Documentation</a> for a detailed description of the full API.
+
+			<p>The node brings significant performance improvements over the nodes of the legacy KNIME Python Integration
+			and enables working with larger-than-memory data. More details on how to transition to the node's new
+			scripting API can be found <a href="https://docs.knime.com/latest/python_installation_guide/">here</a>.
+			There are also example workflows that further illustrate its use
+			<a href="https://kni.me/s/1_0f6fdjqeLPCfPY">here</a> as well as
+			example templates on the <i>Templates</i> tab of the node.</p>
+
+			<p><b>Please consider the following prerequisites before using this node:</b>
+			<ul>
+			<li>The packages <i>py4j</i> and <i>pyarrow</i>, are required to be installed in your Python
+			3 environment in specific versions. We recommend to 
+			<a href="https://docs.knime.com/latest/python_installation_guide/index.html#configure-the-python-environment">
+			create a new Conda environment</a> that contains these packages by running <tt>conda create -n new_environment 
+			-c knime -c conda-forge knime-python-scripting</tt> or via File → Preferences → KNIME → Python.</li>
+			<li>The <a href="https://www.knime.com/blog/improved-performance-with-new-table-backend">Columnar Backend</a>
+			should be enabled for best performance.</li>
+			</ul></p>
 		</intro>
+		<tab name="Script">
+			<option name="Editor">
+				The editor allows to configure the Python script that will later be run when this node is executed.
+				In the script, use the <tt>knime.scripting.io</tt> module (imported as <tt>knio</tt> by default) to access the
+				node's input data and populate its output ports as described in the <i>Ports</i> section below. Use the
+				<tt>knio.flow_variables</tt> dictionary to access input flow variables by name and to add new output
+				flow variables by name.<br/>
+				<br/>
+				The buttons <i>Run all</i> and <i>Run selected lines</i> allow to execute the script, or selected parts
+				of it, right in the dialog without having to execute the entire node. The outputs of an execution can be
+				inspected via the temporary variables view on the right side of the editor. Please note that while <i>Run all</i>
+				always runs the script from scratch, clicking <i>Run selected lines</i>
+				uses status of the last run as starting point and thus the temporary variables are accessible when running the
+				selected lines. You can use <i>Reset temporary variables</i> to reset the current state before an execution 
+				if you want to make it independent of all previous executions. Executions
+				of the entire node, outside of the dialog, are always independent of one another.
+			</option>
+			<option name="Temporary Variables">
+				The pane on the right side of the editor panel lists the currently defined
+				identifiers in the running Python instance. <i>Reset temporary variables</i> removes the outputs of all previous
+				script executions.
+			</option>
+			<option name="Console">
+				The console below the editor panel displays the standard output and standard error of the running Python
+				instance as well as other information.
+			</option>
+		</tab>
+		<tab name="Settings Menu">
+			<option name="Set Python executable">
+				Allows to choose whether to obtain the Python 3 executable from the KNIME Preferences or from flow
+				variable.
+				<ul>
+					<li>Python environment selected in KNIME preferences: use the Python executable configured under File → Preferences →
+					KNIME → Python to execute the node.</li>
+					<li>Conda environment with Conda Environment Propagation node: use the Conda environment propagated by the selected Conda flow
+					variable to execute the node. The propagated environment must be a Python 3 environment.</li>
+				</ul>
+			</option>
+		</tab>
+		<tab name="Flow Variables">
+			<option name="script">
+				Controls the Python script executed by this node.
+			</option>
+			<option name="python3_command">
+				Controls which Python 3 executable is employed by this node. The flow variable accepts the path to a
+				Python executable, start script, or Conda environment as described in the
+				<a href="https://docs.knime.com/latest/python_installation_guide/#manual_configuration_environments_per_node">
+					KNIME Python Integration Installation Guide
+				</a>.
+			</option>
+		</tab>
+		<link href="https://knime-python.readthedocs.io/en/stable/content/content.html#python-script-api">API Documentation</link>
+		<link href="https://kni.me/s/1_0f6fdjqeLPCfPY">Examples in the "Python Script Space" on the KNIME Hub</link>
 	</fullDescription>
 	<ports>
 		<dynInPort name="Pickled object" group-identifier="Input object (pickled)" insert-before="0">
@@ -21,7 +107,7 @@
 		<dynInPort name="Table" group-identifier="Input table" insert-before="0">
 			An input table. You can access input tables via <tt>knio.input_tables</tt>. For example, the first input
 			table can be accessed like this: <tt>knio.input_tables[0]</tt>. Each table is an instance of type
-			<tt>knime_table.ReadTable</tt>. Before being able to work with the table, you have to convert it into, for
+			<tt>knio.Table</tt>. Before being able to work with the table, you have to convert it into, for
 			example, a <tt>pandas.DataFrame</tt> or a <tt>pyarrow.Table</tt>. Please refer to the
 			<a href="https://docs.knime.com/latest/python_installation_guide/">KNIME Python Integration Guide</a> to
 			learn how to do this, or take a look at one of the templates on the <i>Templates</i> tab of the node.
@@ -29,7 +115,7 @@
 		<dynOutPort name="Table" group-identifier="Output table" insert-before="0">
 			An output table. The table has to be populated via <tt>knio.output_tables</tt> in your script. For example,
 			to populate the first output table, assign it a value like this: <tt>knio.ouput_tables[0] =
-			&lt;value&gt;</tt>. The assigned value must be an instance of type <tt>knime_table.WriteTable</tt> which can
+			&lt;value&gt;</tt>. The assigned value must be an instance of type <tt>knio.Table</tt> which can
 			be created from, for example, a <tt>pandas.DataFrame</tt> or a <tt>pyarrow.Table</tt>. Please refer to the
 			<a href="https://docs.knime.com/latest/python_installation_guide/">KNIME Python Integration Guide</a> to
 			learn how to do this, or take a look at one of the templates on the <i>Templates</i> tab of the node.
@@ -37,8 +123,7 @@
 		<dynOutPort name="Image" group-identifier="Output image" insert-before="0">
 			An output image. The image has to be populated via <tt>knio.output_images</tt> in your script. For example,
 			to populate the first output image, assign it a value like this <tt>knio.output_images[0] =
-			&lt;value&gt;</tt>. The assigned value must be either a string describing an SVG image or a byte array
-			encoding a PNG image.
+			&lt;value&gt;</tt>. The assigned value must be a bytes-like object encoding a PNG or SVG image.
 		</dynOutPort>
 		<dynOutPort name="Pickled object" group-identifier="Output object (pickled)" insert-before="0">
 			An output object. The object has to be populated via <tt>knio.output_objects</tt>. For example, to
