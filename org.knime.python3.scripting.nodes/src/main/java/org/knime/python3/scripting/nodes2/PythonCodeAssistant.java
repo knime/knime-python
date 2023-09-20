@@ -69,7 +69,8 @@ import org.knime.scripting.editor.ai.HubConnection;
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
 public final class PythonCodeAssistant {
-    private PythonCodeAssistant() {}
+    private PythonCodeAssistant() {
+    }
 
     /**
      * Query the AI to generate Python code for the given prompt
@@ -79,6 +80,7 @@ public final class PythonCodeAssistant {
      * @param inputPortSpecs The input port configuration of the node
      * @param outputPortTypes The output port types of the node
      * @param flowVariables The incoming flow variables
+     * @param hasView Whether a view should be populated
      * @return The newly generated code
      * @throws IOException
      */
@@ -87,7 +89,8 @@ public final class PythonCodeAssistant {
         final String oldCode, //
         final PortObjectSpec[] inputPortSpecs, //
         final PortType[] outputPortTypes, //
-        final Collection<FlowVariable> flowVariables //
+        final Collection<FlowVariable> flowVariables, //
+        final boolean hasView //
     ) throws IOException {
         var request = new CodeGenerationRequest(//
             oldCode, //
@@ -97,8 +100,7 @@ public final class PythonCodeAssistant {
                 toFlowVariableList(flowVariables) //
             ), //
             new Outputs(getNumTables(outputPortTypes), getNumObjects(outputPortTypes), getNumImages(outputPortTypes),
-                false)
-        );
+                hasView));
 
         return HubConnection.INSTANCE.sendRequest("/v1/code_generation/python", request);
     }

@@ -514,7 +514,8 @@ final class PythonScriptingService extends ScriptingService {
                     currentCode, //
                     getWorkflowControl().getInputSpec(), //
                     getWorkflowControl().getOutputPortTypes(), //
-                    getFlowVariables());
+                    getFlowVariables(), //
+                    m_hasView);
                 sendEvent("codeSuggestion", new CodeSuggestion(CodeSuggestionStatus.SUCCESS, response, null));
             } catch (IOException ex) { // NOSONAR
                 sendEvent("codeSuggestion", new CodeSuggestion(CodeSuggestionStatus.ERROR, null, ex.getMessage()));
