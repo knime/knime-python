@@ -91,18 +91,6 @@
 				</ul>
 			</option>
 		</tab>
-		<tab name="Flow Variables">
-			<option name="script">
-				Controls the Python script executed by this node.
-			</option>
-			<option name="python3_command">
-				Controls which Python 3 executable is employed by this node. The flow variable accepts the path to a
-				Python executable, start script, or Conda environment as described in the
-				<a href="https://docs.knime.com/latest/python_installation_guide/#manual_configuration_environments_per_node">
-					KNIME Python Integration Installation Guide
-				</a>.
-			</option>
-		</tab>
 		<link href="https://knime-python.readthedocs.io/en/stable/content/content.html#python-script-api">API Documentation</link>
 		<link href="https://kni.me/s/1_0f6fdjqeLPCfPY">Examples in the "Python Script Space" on the KNIME Hub</link>
 	</fullDescription>
