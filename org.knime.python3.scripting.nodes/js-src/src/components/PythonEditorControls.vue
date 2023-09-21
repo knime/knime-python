@@ -17,6 +17,7 @@ onMounted(async () => {
   } else {
     getScriptingService().sendToConsole({
       text: "Missing input data. Connect all input ports and execute preceeding nodes to enable script execution.",
+      highlightMode: "WARNING",
     });
   }
 });
