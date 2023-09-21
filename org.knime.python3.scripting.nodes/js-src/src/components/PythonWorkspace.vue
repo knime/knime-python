@@ -36,20 +36,24 @@ onMounted(async () => {
         </tr>
       </tbody>
     </table>
-    <Button
-      class="reset-button"
-      compact
-      :disabled="!resetButtonEnabled"
-      :with-border="false"
-      @click="pythonScriptingService.killInteractivePythonSession"
-    >
-      Reset temporary values
-    </Button>
+    <div class="controls">
+      <Button
+        class="reset-button"
+        with-border
+        compact
+        :disabled="!resetButtonEnabled"
+        @click="pythonScriptingService.killInteractivePythonSession"
+      >
+        Reset temporary values
+      </Button>
+    </div>
   </div>
 </template>
 
 <style scoped lang="postcss">
 .workspace {
+  --controls-height: 40px;
+
   position: relative;
   width: 100%;
   min-width: 120px;
@@ -57,11 +61,22 @@ onMounted(async () => {
 
   & table {
     width: 100%;
-    height: calc(100% - 50px);
+    height: calc(100% - var(--controls-height));
     border-collapse: collapse;
     font-size: 12px;
     line-height: 24px;
   }
+}
+
+.controls {
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: space-between;
+  align-content: center;
+  min-height: var(--controls-height);
+  max-height: var(--controls-height);
+  background-color: var(--knime-gray-light-semi);
+  border-top: 1px solid var(--knime-silver-sand);
 }
 
 thead {
@@ -102,7 +117,7 @@ tbody {
   overflow-y: scroll;
   overflow-x: hidden;
   text-overflow: ellipsis;
-  height: calc(100% - 30px);
+  height: calc(100% - var(--controls-height) + 4px);
 }
 
 th {
@@ -110,13 +125,9 @@ th {
 }
 
 .reset-button {
-  min-width: 80px;
-  height: 25px;
-  margin: 0;
-  position: absolute;
-  bottom: 10px;
-  right: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  height: 30px;
+  margin-top: 5px;
+  margin-bottom: 5px;
+  margin-right: 10px;
 }
 </style>
