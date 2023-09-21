@@ -46,10 +46,11 @@
 			<p><b>Please consider the following prerequisites before using this node:</b>
 			<ul>
 			<li>The packages <i>py4j</i> and <i>pyarrow</i>, are required to be installed in your Python
-			3 environment in specific versions. We recommend to 
+			3 environment in specific versions. We recommend to
+			create a new Conda environment that contains these packages by running <tt>conda create -n new_environment
+			-c knime -c conda-forge knime-python-scripting</tt> or via File → Preferences → KNIME → Python as described in
 			<a href="https://docs.knime.com/latest/python_installation_guide/index.html#configure-the-python-environment">
-			create a new Conda environment</a> that contains these packages by running <tt>conda create -n new_environment 
-			-c knime -c conda-forge knime-python-scripting</tt> or via File → Preferences → KNIME → Python.</li>
+			the KNIME Python Integration Guide</a>.</li>
 			<li>The <a href="https://www.knime.com/blog/improved-performance-with-new-table-backend">Columnar Backend</a>
 			should be enabled for best performance.</li>
 			</ul></p>
