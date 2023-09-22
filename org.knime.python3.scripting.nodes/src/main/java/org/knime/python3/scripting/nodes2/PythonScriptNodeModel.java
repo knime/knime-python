@@ -57,6 +57,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -69,6 +70,7 @@ import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.KNIMEConstants;
 import org.knime.core.node.KNIMEException;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.NodeModel;
@@ -171,14 +173,14 @@ public final class PythonScriptNodeModel extends NodeModel {
         final var consoleConsumer = ConsoleOutputUtils.createConsoleConsumer();
         try (final var session =
             new PythonScriptingSession(pythonCommand, consoleConsumer, new ModelFileStoreHandlerSupplier())) {
+
             exec.setProgress(0.0, "Setting up inputs");
             session.setupIO(inObjects, getAvailableFlowVariables(KNOWN_FLOW_VARIABLE_TYPES).values(),
                 m_ports.getNumOutTables(), m_ports.getNumOutImages(), m_ports.getNumOutObjects(), m_hasView,
                 exec.createSubProgress(0.3));
             exec.setProgress(0.3, "Running script");
 
-            var ans = session.execute(m_settings.getScript(), true);
-            checkExecutionAnswer(ans);
+            runUserScript(session);
 
             exec.setProgress(0.7, "Processing output");
             final var outputs = session.getOutputs(exec.createSubExecutionContext(0.3));
@@ -194,6 +196,24 @@ public final class PythonScriptNodeModel extends NodeModel {
         } finally {
             m_consoleOutputStorage = consoleConsumer.finish();
         }
+    }
+
+    private void runUserScript(final PythonScriptingSession session)
+        throws Py4JException, InterruptedException, KNIMEException {
+        ExecutionInfo ans;
+        try {
+            ans = KNIMEConstants.GLOBAL_THREAD_POOL.enqueue(() -> session.execute(m_settings.getScript(), true)).get();
+        } catch (ExecutionException ex) { // NOSONAR - we either log or re-throw the cause
+            // We only expect Py4J exceptions to happen
+            // everything else we just unwrap from the ExecutionException and wrap in a KNIMEException
+            var cause = ex.getCause();
+            if (cause instanceof Py4JException py4jException) {
+                throw py4jException;
+            } else {
+                throw new KNIMEException(cause.getMessage(), cause);
+            }
+        }
+        checkExecutionAnswer(ans);
     }
 
     private static void checkExecutionAnswer(final ExecutionInfo ans) throws KNIMEException {
