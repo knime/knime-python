@@ -257,7 +257,7 @@ export const pythonScriptingService = {
   },
   printVariable: (variableName: string) => {
     scriptingService.sendToService("runInExistingSession", [
-      `print(${variableName})`,
+      `print(""">>> print(${variableName})\n""" + str(${variableName}))`,
     ]);
   },
   killInteractivePythonSession: async () => {

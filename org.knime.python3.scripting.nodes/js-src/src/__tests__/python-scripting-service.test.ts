@@ -65,7 +65,7 @@ describe("python-scripting-service", () => {
       pythonScriptingService.printVariable("myVariable");
       expect(getScriptingService().sendToService).toHaveBeenCalledWith(
         "runInExistingSession",
-        ["print(myVariable)"],
+        ['print(""">>> print(myVariable)\n""" + str(myVariable))'],
       );
     });
 

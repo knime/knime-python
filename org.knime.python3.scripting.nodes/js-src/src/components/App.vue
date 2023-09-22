@@ -123,9 +123,11 @@ onMounted(async () => {
       <template #right-pane>
         <div v-if="hasPreview" id="right-pane">
           <TabBar
+            ref="rightTabBar"
             v-model="rightPaneActiveTab"
             :possible-values="rightPaneOptions"
             :disabled="false"
+            name="rightTabBar"
           />
           <div id="right-pane-content">
             <PythonWorkspace v-show="rightPaneActiveTab === 'workspace'" />

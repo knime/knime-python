@@ -21,6 +21,8 @@ describe("App.vue", () => {
           return executableOptions;
         } else if (methodName === "sendLastConsoleOutput") {
           // do nothing
+        } else if (methodName === "getLanguageServerConfig") {
+          return JSON.stringify({ test: "" });
         } else {
           throw Error(`Method ${methodName} was not mocked but called in test`);
         }
@@ -56,7 +58,7 @@ describe("App.vue", () => {
 
   describe("right panel", () => {
     const findComponents = (wrapper: VueWrapper) => {
-      const tabbar = wrapper.findComponent({ name: "TabBar" });
+      const tabbar = wrapper.findComponent({ ref: "rightTabBar" });
       const workspace = wrapper.findComponent({ name: "PythonWorkspace" });
       const preview = wrapper.findComponent({ name: "PythonViewPreview" });
       return { tabbar, workspace, preview };
@@ -65,6 +67,7 @@ describe("App.vue", () => {
     it("renders only the workspace if no preview is available", async () => {
       const { wrapper } = await doMount({ viewAvailable: false });
       const { tabbar, workspace, preview } = findComponents(wrapper);
+
       expect(tabbar.exists()).toBeFalsy();
       expect(workspace.exists()).toBeTruthy();
       expect(preview.exists()).toBeFalsy();
@@ -110,6 +113,76 @@ describe("App.vue", () => {
     expect(getScriptingService().saveSettings).toHaveBeenCalledWith({
       script: "myScript",
       executableSelection: "",
+    });
+  });
+
+  describe("test on monaco created", () => {
+    it("test editor", async () => {
+      const { wrapper } = await doMount();
+      const scriptingEditor = wrapper.findComponent(ScriptingEditor);
+      const editor = {
+        onDidPaste: vi.fn(),
+      };
+      const editorModel = {
+        updateOptions: vi.fn(),
+      };
+      getScriptingService().connectToLanguageServer = vi.fn();
+      getScriptingService().getInputObjects = vi
+        .fn()
+        .mockImplementationOnce(() => []);
+      getScriptingService().getFlowVariableInputs = vi
+        .fn()
+        .mockImplementationOnce(() => []);
+
+      scriptingEditor.vm.$emit("monaco-created", { editor, editorModel });
+      expect(editor.onDidPaste).toHaveBeenCalledOnce();
+      expect(
+        getScriptingService().connectToLanguageServer,
+      ).toHaveBeenCalledOnce();
+    });
+
+    it("test connectToLanguageServer", async () => {
+      const { wrapper } = await doMount();
+      const scriptingEditor = wrapper.findComponent(ScriptingEditor);
+      const editor = {
+        onDidPaste: vi.fn(),
+      };
+      const editorModel = {
+        updateOptions: vi.fn(),
+      };
+      getScriptingService().connectToLanguageServer = vi.fn();
+
+      getScriptingService().getInputObjects = vi
+        .fn()
+        .mockImplementationOnce(() => []);
+      getScriptingService().getFlowVariableInputs = vi
+        .fn()
+        .mockImplementationOnce(() => []);
+      scriptingEditor.vm.$emit("monaco-created", { editor, editorModel });
+      expect(
+        getScriptingService().connectToLanguageServer,
+      ).toHaveBeenCalledOnce();
+    });
+
+    it("test editorModel", async () => {
+      const { wrapper } = await doMount();
+      const scriptingEditor = wrapper.findComponent(ScriptingEditor);
+      const editor = {
+        onDidPaste: vi.fn(),
+      };
+      const editorModel = {
+        updateOptions: vi.fn(),
+      };
+      getScriptingService().connectToLanguageServer = vi.fn();
+      getScriptingService().getInputObjects = vi
+        .fn()
+        .mockImplementationOnce(() => []);
+      getScriptingService().getFlowVariableInputs = vi
+        .fn()
+        .mockImplementationOnce(() => []);
+
+      scriptingEditor.vm.$emit("monaco-created", { editor, editorModel });
+      expect(editorModel.updateOptions).toHaveBeenCalledOnce();
     });
   });
 
