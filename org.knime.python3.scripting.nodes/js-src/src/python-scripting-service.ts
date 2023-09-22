@@ -170,20 +170,17 @@ const sendErrorToConsole = ({
   description: string;
   traceback?: string[];
 }) => {
-  const highlightMode = "ERROR";
   if (
     typeof traceback === "undefined" ||
     traceback === null ||
     traceback.length === 0
   ) {
     scriptingService.sendToConsole({
-      text: `${description}\n`,
-      highlightMode,
+      error: `${description}\n`,
     });
   } else {
     scriptingService.sendToConsole({
-      text: `${description}\n${traceback?.join("\n")}\n`,
-      highlightMode,
+      error: `${description}\n${traceback?.join("\n")}\n`,
     });
   }
 };

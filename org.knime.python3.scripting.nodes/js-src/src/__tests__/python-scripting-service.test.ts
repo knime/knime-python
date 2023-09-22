@@ -121,8 +121,7 @@ describe("python-scripting-service", () => {
           "killSession",
         );
         expect(getScriptingService().sendToConsole).toHaveBeenCalledWith({
-          text: "My descriptive error message\n",
-          highlightMode: "ERROR",
+          error: "My descriptive error message\n",
         });
         expect(useSessionStatusStore().status).toBe("IDLE");
         expect(useWorkspaceStore().workspace).toEqual([]);
@@ -159,8 +158,7 @@ describe("python-scripting-service", () => {
           description: "KNIME error",
         });
         expect(getScriptingService().sendToConsole).toHaveBeenCalledWith({
-          text: "KNIME error\n",
-          highlightMode: "ERROR",
+          error: "KNIME error\n",
         });
         expect(useSessionStatusStore().status).toBe("IDLE");
         expect(useWorkspaceStore().workspace).toEqual([]);
@@ -173,8 +171,7 @@ describe("python-scripting-service", () => {
           traceback: ["line 1", "line 2"],
         });
         expect(getScriptingService().sendToConsole).toHaveBeenCalledWith({
-          text: "Execution Error\nline 1\nline 2\n",
-          highlightMode: "ERROR",
+          error: "Execution Error\nline 1\nline 2\n",
         });
         expect(useSessionStatusStore().status).toBe("IDLE");
         expect(useWorkspaceStore().workspace).toEqual([]);
@@ -186,8 +183,7 @@ describe("python-scripting-service", () => {
           description: "My fatal Error",
         });
         expect(getScriptingService().sendToConsole).toHaveBeenCalledWith({
-          text: "My fatal Error\n",
-          highlightMode: "ERROR",
+          error: "My fatal Error\n",
         });
         expect(useSessionStatusStore().status).toBe("IDLE");
         expect(useWorkspaceStore().workspace).toEqual([]);
