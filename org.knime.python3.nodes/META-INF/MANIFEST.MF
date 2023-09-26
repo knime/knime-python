@@ -32,6 +32,8 @@ Require-Bundle:
  org.eclipse.ui;bundle-version="[3.201.0,4.0.0)",
  org.apache.batik.anim;bundle-version="[1.14.0,2.0.0)",
  org.knime.ext.svg;bundle-version="[5.2.0,6.0.0)"
+ org.knime.credentials.base;bundle-version="[5.2.0,6.0.0)",
+ org.knime.credentials.base.oauth
 Automatic-Module-Name: org.knime.python3.nodes
 Eclipse-RegisterBuddy: org.knime.ext.py4j
 Eclipse-BundleShape: dir

@@ -211,6 +211,7 @@ PortType.BINARY = "PortType.BINARY"
 PortType.CONNECTION = "PortType.CONNECTION"
 PortType.TABLE = "PortType.TABLE"
 PortType.IMAGE = "PortType.IMAGE"
+PortType.CREDENTIAL = "PortType.CREDENTIAL"
 
 
 class ImageFormat(Enum):

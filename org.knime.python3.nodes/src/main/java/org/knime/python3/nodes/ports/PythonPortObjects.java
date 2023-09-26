@@ -53,6 +53,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -70,6 +72,12 @@ import org.knime.core.node.port.PortType;
 import org.knime.core.node.port.image.ImagePortObject;
 import org.knime.core.node.port.image.ImagePortObjectSpec;
 import org.knime.core.table.virtual.serialization.AnnotatedColumnarSchemaSerializer;
+import org.knime.credentials.base.Credential;
+import org.knime.credentials.base.CredentialPortObject;
+import org.knime.credentials.base.CredentialPortObjectSpec;
+import org.knime.credentials.base.CredentialType;
+import org.knime.credentials.base.CredentialTypeRegistry;
+import org.knime.credentials.base.oauth.api.HttpAuthorizationHeaderCredentialValue;
 import org.knime.python3.PythonDataSource;
 import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.arrow.PythonArrowDataSource;
@@ -160,6 +168,19 @@ public final class PythonPortObjects {
          */
         String getImageBytes();
 
+    }
+
+    /**
+     * When connection info is passed to KNIME from Python, it will be packaged as
+     * {@link PurePythonCredentialPortObject}
+     *
+     * @author Tobias Koetter, KNIME GmbH, Konstanz, Germany
+     */
+    public interface PurePythonCredentialPortObject extends PythonPortObject {
+        /**
+         * @return the spec
+         */
+        PythonCredentialPortObjectSpec getSpec();
     }
 
     /**
@@ -500,6 +521,59 @@ public final class PythonPortObjects {
     }
 
     /**
+     * {@link PythonPortObject} implementation for {@link PythonImagePortObject}s used and populated on the Java side.
+     */
+    public static final class PythonCredentialPortObject implements PythonPortObject, PortObjectProvider {
+
+        private final PythonCredentialPortObjectSpec m_spec;
+
+        /**
+         * Constructor for creating a PythonImagePortObject.
+         *
+         * @param spec the spec containing the image format
+         */
+        public PythonCredentialPortObject(final CredentialPortObjectSpec spec) {
+            m_spec = new PythonCredentialPortObjectSpec(spec);
+        }
+
+
+        /**
+         * @return the spec of this {@link PythonCredentialPortObjectSpec}
+         */
+        public PythonCredentialPortObjectSpec getSpec() {
+            return m_spec;
+        }
+
+        /**
+         * Create a PythonImagePortObject from a PurePythonImagePortObject.
+         *
+         * @param portObject The {@link PurePythonImagePortObject} coming from Python
+         * @param fileStoresByKey Not currently used by this port object type but required due to reflection
+         * @param tableConverter Not needed for this port object type but required due to reflection
+         * @param execContext The current {@link ExecutionContext}
+         * @return new {@link PythonImagePortObject} containing the image data
+         */
+        public static PythonCredentialPortObject fromPurePython(//
+            final PurePythonCredentialPortObject portObject, //
+            final Map<String, FileStore> fileStoresByKey, // NOSONAR
+            final PythonArrowTableConverter tableConverter, // NOSONAR
+            final ExecutionContext execContext) { // NOSONAR
+            return new PythonCredentialPortObject(portObject.getSpec().m_spec);
+        }
+
+
+        @Override
+        public PortObject getPortObject() {
+            return new CredentialPortObject(m_spec.m_spec);
+        }
+
+        @Override
+        public String getJavaClassName() {
+            return PythonCredentialPortObject.class.getName();
+        }
+    }
+
+    /**
      * A {@link PortObjectSpec} variant that is used to communicate between Python and KNIME
      */
     public interface PythonPortObjectSpec {
@@ -765,6 +839,84 @@ public final class PythonPortObjects {
         }
 
     }
+
+   public static final class PythonCredentialPortObjectSpec implements PythonPortObjectSpec, PortObjectSpecProvider {
+       private final CredentialPortObjectSpec m_spec;
+
+       /**
+        * @param spec a {@link ImagePortObjectSpec} that contains the data type (PNG or SVG) used during serialization
+        *            to JSON.
+        */
+       public PythonCredentialPortObjectSpec(final CredentialPortObjectSpec spec) {
+           m_spec = spec;
+       }
+
+       @Override
+       public PortObjectSpec getPortObjectSpec() {
+           return m_spec;
+       }
+
+       public String getAuthScheme() throws IOException {
+           Optional<Credential> credential = m_spec.getCredential(Credential.class);
+           final Credential cred = credential.orElseThrow();
+           if (cred instanceof HttpAuthorizationHeaderCredentialValue val) {
+               return val.getAuthScheme();
+           }
+           throw new IOException("Not logged in");
+       }
+
+       public String getAuthParameters() throws IOException {
+           Optional<Credential> credential = m_spec.getCredential(Credential.class);
+           final Credential cred = credential.orElseThrow();
+           if (cred instanceof HttpAuthorizationHeaderCredentialValue val) {
+               return val.getAuthParameters();
+           }
+           throw new IOException("Not logged in");
+       }
+
+       @Override
+       public String getJavaClassName() {
+           return CredentialPortObjectSpec.class.getName();
+       }
+
+       @Override
+       public String toJsonString() {
+           final var om = new ObjectMapper();
+           final var rootNode = om.createObjectNode();
+           Optional<CredentialType> type = m_spec.getCredentialType();
+           if (type.isPresent()) {
+               rootNode.put("typeId", type.get().getId());
+           }
+           rootNode.put("cacheId", m_spec.getCacheId().toString());
+           try {
+               return om.writeValueAsString(rootNode);
+           } catch (JsonProcessingException ex) {
+               throw new IllegalStateException("Could not generate JSON data for PythonImagePortObjectSpec", ex);
+           }
+       }
+
+       /**
+        * @param jsonData the spec serialized as JSON
+        * @return the corresponding ImagePortObjectSpec for either PNG or SVG
+        * @throws IllegalStateException if either an unsupported image format is detected or a problem is encountered
+        *             during the parsing of the JSON data
+        */
+       public static PythonCredentialPortObjectSpec fromJsonString(final String jsonData) {
+           final var om = new ObjectMapper();
+           try {
+               final var rootNode = om.readTree(jsonData);
+               final String typeId = rootNode.get("typeId").asText("");
+               final CredentialType type = CredentialTypeRegistry.getCredentialType(typeId);
+               final String cacheId = rootNode.get("cacheId").asText();
+               return new PythonCredentialPortObjectSpec(new CredentialPortObjectSpec(type, UUID.fromString(cacheId)));
+           } catch (JsonMappingException ex) {
+               throw new IllegalStateException("Could not parse PythonImagePortObjectSpec from given JSON data", ex);
+           } catch (JsonProcessingException ex) { // NOSONAR: Eclipse requires explicit handling of this exception
+               throw new IllegalStateException("Could not parse PythonImagePortObjectSpec from given Json data", ex);
+           }
+       }
+
+   }
 
     /**
      * Convert port type encoded as string to a {@link PortType}. Possible values are TABLE and BINARY, where BINARY is

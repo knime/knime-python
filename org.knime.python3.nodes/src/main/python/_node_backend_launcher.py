@@ -221,6 +221,18 @@ class _PythonImagePortObject:
             "org.knime.python3.nodes.ports.PythonPortObjects$PurePythonImagePortObject"
         ]
 
+class _PythonCredentialPortObject:
+    def __init__(self, java_class_name, data):
+        self._java_class_name = java_class_name
+
+    def getJavaClassName(self) -> str:  # NOSONAR
+        return self._java_class_name
+
+    class Java:
+        implements = [
+            "org.knime.python3.nodes.ports.PythonPortObjects$PurePythonCredentialPortObject"
+        ]
+
 
 class _FlowVariablesDict(collections.UserDict):
     def __init__(self):
@@ -326,6 +338,9 @@ class _PortTypeRegistry:
             assert port.type not in [kn.PortType.TABLE, kn.PortType.BINARY]
             assert issubclass(port.type.object_class, kn.ConnectionPortObject)
             return deserialize_custom_spec()
+        elif class_name == "org.knime.credentials.base.CredentialPortObjectSpec":
+            assert port.type == kn.PortType.CREDENTIAL
+            return ks.CredentialPortObjectSpec.deserialize(data)
 
         raise TypeError("Unsupported PortObjectSpec found in Python, got " + class_name)
 
@@ -370,6 +385,10 @@ class _PortTypeRegistry:
 
             data = spec.serialize()
             class_name = "org.knime.core.node.port.image.ImagePortObjectSpec"
+        elif port.type == kn.PortType.CREDENTIAL:
+            assert isinstance(spec, ks.CredentialPortObjectSpec)
+            data = spec.serialize()
+            class_name = "org.knime.credentials.base.CredentialPortObjectSpec"
         else:  # custom spec
             assert (
                 port.type.id in self._port_types_by_id
