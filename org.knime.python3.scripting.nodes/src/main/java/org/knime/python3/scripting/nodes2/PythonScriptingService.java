@@ -532,32 +532,15 @@ final class PythonScriptingService extends ScriptingService {
             return PythonLanguageServer.getConfig(executablePath, extraPaths);
         }
 
-        /**
-         * Ask the AI assistant to generate new code based on the user prompt and the current code.
-         *
-         * The result will be sent to JS as event with identifier "codeSuggestion".
-         *
-         * @param userPrompt Description of what the user wants the code to do
-         * @param currentCode The current code
-         */
-        public void suggestCode(final String userPrompt, final String currentCode) {
-            new Thread(() -> suggestCodeAsync(userPrompt, currentCode)).start();
-
-        }
-
-        private void suggestCodeAsync(final String userPrompt, final String currentCode) {
-            try {
-                var response = PythonCodeAssistant.generateCode(//
-                    userPrompt, //
-                    currentCode, //
-                    getWorkflowControl().getInputSpec(), //
-                    getWorkflowControl().getOutputPortTypes(), //
-                    getFlowVariables(), //
-                    m_hasView);
-                sendEvent("codeSuggestion", new CodeSuggestion(CodeSuggestionStatus.SUCCESS, response, null));
-            } catch (IOException ex) { // NOSONAR
-                sendEvent("codeSuggestion", new CodeSuggestion(CodeSuggestionStatus.ERROR, null, ex.getMessage()));
-            }
+        @Override
+        protected String getCodeSuggestion(final String userPrompt, final String currentCode) throws IOException {
+            return PythonCodeAssistant.generateCode(//
+                userPrompt, //
+                currentCode, //
+                getWorkflowControl().getInputSpec(), //
+                getWorkflowControl().getOutputPortTypes(), //
+                getFlowVariables(), //
+                m_hasView);
         }
 
         private InputOutputModel createFromPortSpec(final int index, final String displayName) {
@@ -656,16 +639,6 @@ final class PythonScriptingService extends ScriptingService {
                 /** A variable of any type that is missing now */
                 MISSING_VAR,
         }
-    }
-
-    /** Information about a table input port */
-
-    enum CodeSuggestionStatus {
-            SUCCESS, ERROR
-    }
-
-    /** Information about a code suggestion */
-    static record CodeSuggestion(CodeSuggestionStatus status, String code, String error) {
     }
 
     private static final class PythonCodeAliasProvider {
