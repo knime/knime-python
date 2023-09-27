@@ -221,17 +221,21 @@ class _PythonImagePortObject:
             "org.knime.python3.nodes.ports.PythonPortObjects$PurePythonImagePortObject"
         ]
 
+
 class _PythonCredentialPortObject:
-    def __init__(self, java_class_name, data):
-        self._java_class_name = java_class_name
+    def __init__(self, spec: ks.CredentialPortObjectSpec, java_callback):
+        spec._get_auth_schema = lambda: java_callback.get_auth_schema(
+            spec._cache_id, spec._type_id
+        )
+        spec._get_auth_parameters = lambda: java_callback.get_auth_parameters(
+            spec._cache_id, spec._type_id
+        )
 
-    def getJavaClassName(self) -> str:  # NOSONAR
-        return self._java_class_name
+        self._spec = spec
 
-    class Java:
-        implements = [
-            "org.knime.python3.nodes.ports.PythonPortObjects$PurePythonCredentialPortObject"
-        ]
+    @property
+    def spec(self) -> ks.CredentialPortObjectSpec:
+        return self._spec
 
 
 class _FlowVariablesDict(collections.UserDict):
@@ -309,7 +313,7 @@ class _PortTypeRegistry:
             return self._port_types_by_id[id]
         raise KeyError(f"No PortType for id '{id}' registered.")
 
-    def spec_to_python(self, spec: _PythonPortObjectSpec, port: kn.Port):
+    def spec_to_python(self, spec: _PythonPortObjectSpec, port: kn.Port, java_callback):
         class_name = spec.getJavaClassName()
         data = json.loads(spec.toJsonString())
 
@@ -409,7 +413,9 @@ class _PortTypeRegistry:
 
         return _PythonPortObjectSpec(class_name, data)
 
-    def port_object_to_python(self, port_object: _PythonPortObject, port: kn.Port):
+    def port_object_to_python(
+        self, port_object: _PythonPortObject, port: kn.Port, java_callback
+    ):
         class_name = port_object.getJavaClassName()
 
         def read_port_object_data() -> Union[Any, kn.PortObject]:
@@ -429,7 +435,7 @@ class _PortTypeRegistry:
                 return read_port_object_data()
             else:
                 java_spec = port_object.getSpec()
-                spec = self.spec_to_python(java_spec, port)
+                spec = self.spec_to_python(java_spec, port, java_callback)
                 incoming_port_type = self._extract_port_type_from_spec_data(
                     json.loads(java_spec.toJsonString()), port
                 )
@@ -446,7 +452,7 @@ class _PortTypeRegistry:
             assert issubclass(
                 port.type.object_class, kn.ConnectionPortObject
             ), f"unexpected port type {port.type}"
-            spec = self.spec_to_python(port_object.getSpec(), port)
+            spec = self.spec_to_python(port_object.getSpec(), port, java_callback)
 
             data = json.loads(port_object.getSpec().toJsonString())
             key = f'{data["node_id"]}:{data["port_idx"]}'
@@ -458,8 +464,14 @@ class _PortTypeRegistry:
 
             connection_data = _PortTypeRegistry._connection_port_data[key]
             return port.type.object_class.from_connection_data(spec, connection_data)
+        elif (
+            class_name
+            == "org.knime.python3.nodes.ports.PythonPortObjects$PythonCredentialPortObject"
+        ):
+            spec = self.spec_to_python(port_object.getSpec(), port, java_callback)
+            return _PythonCredentialPortObject(spec, java_callback)
 
-        raise TypeError("Unsupported PortObjectSpec found in Python, got " + class_name)
+        raise TypeError("Unsupported PortObject found in Python, got " + class_name)
 
     def port_object_from_python(
         self, obj, file_creator, port: kn.Port, node_id: str, port_idx: int
@@ -597,7 +609,7 @@ class _PythonNodeProxy:
 
     def _specs_to_python(self, specs):
         return [
-            self._port_type_registry.spec_to_python(spec, port)
+            self._port_type_registry.spec_to_python(spec, port, self._java_callback)
             if spec is not None
             else None
             for port, spec in zip(self._node.input_ports, specs)
@@ -650,7 +662,7 @@ class _PythonNodeProxy:
         try:
             inputs = [
                 self._port_type_registry.port_object_to_python(
-                    po, self._node.input_ports[idx]
+                    po, self._node.input_ports[idx], self._java_callback
                 )
                 for idx, po in enumerate(input_objects)
             ]

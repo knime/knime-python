@@ -88,6 +88,9 @@ import org.knime.core.util.FileUtil;
 import org.knime.core.util.PathUtils;
 import org.knime.core.util.ThreadUtils;
 import org.knime.core.util.asynclose.AsynchronousCloseable;
+import org.knime.credentials.base.Credential;
+import org.knime.credentials.base.CredentialCache;
+import org.knime.credentials.base.oauth.api.HttpAuthorizationHeaderCredentialValue;
 import org.knime.python3.PythonFileStoreUtils;
 import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.arrow.PythonArrowDataUtils;
@@ -346,6 +349,28 @@ final class CloseablePythonNodeProxy
             public String file_store_key_to_absolute_path(final String fileStoreKey) { // NOSONAR
                 return PythonFileStoreUtils.getAbsolutePathForKey(getFileStoreHandler(),
                     FileStoreKey.load(fileStoreKey));
+            }
+
+            public String get_auth_schema(final String cacheId, final String typeId) {
+                var credential = CredentialCache.get(UUID.fromString(cacheId));
+                final Credential cred = credential.orElseThrow();
+                if (cred instanceof HttpAuthorizationHeaderCredentialValue val) {
+                    return val.getAuthScheme();
+                }
+                return null;
+            }
+
+            public String get_auth_parameters(final String cacheId, final String typeId) {
+                var credential = CredentialCache.get(UUID.fromString(cacheId));
+                final Credential cred = credential.orElseThrow();
+                if (cred instanceof HttpAuthorizationHeaderCredentialValue val) {
+                    try {
+                        return val.getAuthParameters();
+                    } catch (IOException ex) {
+                        return null;
+                    }
+                }
+                return null;
             }
 
         };

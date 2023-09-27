@@ -127,6 +127,7 @@ supported_value_types = _ks.LogicalType.supported_value_types
 PortObjectSpec = _ks.PortObjectSpec
 BinaryPortObjectSpec = _ks.BinaryPortObjectSpec
 ImagePortObjectSpec = _ks.ImagePortObjectSpec
+CredentialPortObjectSpec = _ks.CredentialPortObjectSpec
 Column = _ks.Column
 Schema = _ks.Schema
 

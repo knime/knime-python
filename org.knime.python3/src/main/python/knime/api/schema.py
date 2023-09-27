@@ -676,6 +676,7 @@ class ImagePortObjectSpec(PortObjectSpec):
         # spec is optional therefore we use get instead of __get_item__
         return cls(data["format"])
 
+
 class CredentialPortObjectSpec(PortObjectSpec):
     """
     Port object spec for credential port objects.
@@ -683,7 +684,7 @@ class CredentialPortObjectSpec(PortObjectSpec):
     #TODO
     """
 
-    def __init__(self, cache_id:str, type_id:Optional[str]) -> None:
+    def __init__(self, cache_id: str, type_id: Optional[str]) -> None:
         """
         Create a CredentialPortObjectSpec
 
@@ -691,11 +692,13 @@ class CredentialPortObjectSpec(PortObjectSpec):
         self._cache_id = cache_id
         self._type_id = type_id
 
-    def get_auth_scheme(self, exec: "ExecutionContext") -> str:
-        return exec.get_auth_scheme(self._cache_id, self._type_id)
+    @property
+    def auth_schema(self) -> str:
+        return self._get_auth_schema()
 
-    def auth_parameters(self, exec: "ExecutionContext") -> str:
-        return exec.get_auth_param(self._cache_id, self._type_id)
+    @property
+    def auth_parameters(self) -> str:
+        return self._get_auth_parameters()
 
     def serialize(self) -> dict:
         return {"cacheId": self._cache_id, "typeId": self._type_id}

@@ -374,8 +374,7 @@ public final class PythonPortObjects {
             final ExecutionContext execContext) {
             var spec = PythonConnectionPortObjectSpec.fromJsonString(portObject.getSpec().toJsonString()).m_spec;
             final var pid = portObject.getPid();
-            return new PythonConnectionPortObject(
-                PythonTransientConnectionPortObject.create(spec, pid), null);
+            return new PythonConnectionPortObject(PythonTransientConnectionPortObject.create(spec, pid), null);
         }
 
         @Override
@@ -414,7 +413,6 @@ public final class PythonPortObjects {
             m_bytes = imgBytes;
             m_spec = new PythonImagePortObjectSpec(spec);
         }
-
 
         /**
          * @return the spec of this {@link PythonImagePortObject}
@@ -465,7 +463,6 @@ public final class PythonPortObjects {
             return true;
         }
 
-
         private static boolean isSvgBytes(final byte[] bytes) {
             try {
                 ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
@@ -477,7 +474,6 @@ public final class PythonPortObjects {
                 return false;
             }
         }
-
 
         @Override
         public PortObject getPortObject() {
@@ -532,10 +528,21 @@ public final class PythonPortObjects {
          *
          * @param spec the spec containing the image format
          */
-        public PythonCredentialPortObject(final CredentialPortObjectSpec spec) {
-            m_spec = new PythonCredentialPortObjectSpec(spec);
+        public PythonCredentialPortObject( //
+            final CredentialPortObject credentialPortObject, //
+            final PythonArrowTableConverter tableConverter) { // NOSONAR
+            var cpos = (CredentialPortObjectSpec)credentialPortObject.getSpec();
+            m_spec = new PythonCredentialPortObjectSpec(cpos);
         }
 
+        /**
+         * Constructor for creating a PythonImagePortObject.
+         *
+         * @param spec the spec containing the image format
+         */
+        private PythonCredentialPortObject(final CredentialPortObjectSpec spec) {
+            m_spec = new PythonCredentialPortObjectSpec(spec);
+        }
 
         /**
          * @return the spec of this {@link PythonCredentialPortObjectSpec}
@@ -560,7 +567,6 @@ public final class PythonPortObjects {
             final ExecutionContext execContext) { // NOSONAR
             return new PythonCredentialPortObject(portObject.getSpec().m_spec);
         }
-
 
         @Override
         public PortObject getPortObject() {
@@ -840,83 +846,83 @@ public final class PythonPortObjects {
 
     }
 
-   public static final class PythonCredentialPortObjectSpec implements PythonPortObjectSpec, PortObjectSpecProvider {
-       private final CredentialPortObjectSpec m_spec;
+    public static final class PythonCredentialPortObjectSpec implements PythonPortObjectSpec, PortObjectSpecProvider {
+        private final CredentialPortObjectSpec m_spec;
 
-       /**
-        * @param spec a {@link ImagePortObjectSpec} that contains the data type (PNG or SVG) used during serialization
-        *            to JSON.
-        */
-       public PythonCredentialPortObjectSpec(final CredentialPortObjectSpec spec) {
-           m_spec = spec;
-       }
+        /**
+         * @param spec a {@link ImagePortObjectSpec} that contains the data type (PNG or SVG) used during serialization
+         *            to JSON.
+         */
+        public PythonCredentialPortObjectSpec(final CredentialPortObjectSpec spec) {
+            m_spec = spec;
+        }
 
-       @Override
-       public PortObjectSpec getPortObjectSpec() {
-           return m_spec;
-       }
+        @Override
+        public PortObjectSpec getPortObjectSpec() {
+            return m_spec;
+        }
 
-       public String getAuthScheme() throws IOException {
-           Optional<Credential> credential = m_spec.getCredential(Credential.class);
-           final Credential cred = credential.orElseThrow();
-           if (cred instanceof HttpAuthorizationHeaderCredentialValue val) {
-               return val.getAuthScheme();
-           }
-           throw new IOException("Not logged in");
-       }
+        public String getAuthSchema() throws IOException {
+            Optional<Credential> credential = m_spec.getCredential(Credential.class);
+            final Credential cred = credential.orElseThrow();
+            if (cred instanceof HttpAuthorizationHeaderCredentialValue val) {
+                return val.getAuthScheme();
+            }
+            throw new IOException("Not logged in");
+        }
 
-       public String getAuthParameters() throws IOException {
-           Optional<Credential> credential = m_spec.getCredential(Credential.class);
-           final Credential cred = credential.orElseThrow();
-           if (cred instanceof HttpAuthorizationHeaderCredentialValue val) {
-               return val.getAuthParameters();
-           }
-           throw new IOException("Not logged in");
-       }
+        public String getAuthParameters() throws IOException {
+            Optional<Credential> credential = m_spec.getCredential(Credential.class);
+            final Credential cred = credential.orElseThrow();
+            if (cred instanceof HttpAuthorizationHeaderCredentialValue val) {
+                return val.getAuthParameters();
+            }
+            throw new IOException("Not logged in");
+        }
 
-       @Override
-       public String getJavaClassName() {
-           return CredentialPortObjectSpec.class.getName();
-       }
+        @Override
+        public String getJavaClassName() {
+            return CredentialPortObjectSpec.class.getName();
+        }
 
-       @Override
-       public String toJsonString() {
-           final var om = new ObjectMapper();
-           final var rootNode = om.createObjectNode();
-           Optional<CredentialType> type = m_spec.getCredentialType();
-           if (type.isPresent()) {
-               rootNode.put("typeId", type.get().getId());
-           }
-           rootNode.put("cacheId", m_spec.getCacheId().toString());
-           try {
-               return om.writeValueAsString(rootNode);
-           } catch (JsonProcessingException ex) {
-               throw new IllegalStateException("Could not generate JSON data for PythonImagePortObjectSpec", ex);
-           }
-       }
+        @Override
+        public String toJsonString() {
+            final var om = new ObjectMapper();
+            final var rootNode = om.createObjectNode();
+            Optional<CredentialType> type = m_spec.getCredentialType();
+            if (type.isPresent()) {
+                rootNode.put("typeId", type.get().getId());
+            }
+            rootNode.put("cacheId", m_spec.getCacheId().toString());
+            try {
+                return om.writeValueAsString(rootNode);
+            } catch (JsonProcessingException ex) {
+                throw new IllegalStateException("Could not generate JSON data for PythonImagePortObjectSpec", ex);
+            }
+        }
 
-       /**
-        * @param jsonData the spec serialized as JSON
-        * @return the corresponding ImagePortObjectSpec for either PNG or SVG
-        * @throws IllegalStateException if either an unsupported image format is detected or a problem is encountered
-        *             during the parsing of the JSON data
-        */
-       public static PythonCredentialPortObjectSpec fromJsonString(final String jsonData) {
-           final var om = new ObjectMapper();
-           try {
-               final var rootNode = om.readTree(jsonData);
-               final String typeId = rootNode.get("typeId").asText("");
-               final CredentialType type = CredentialTypeRegistry.getCredentialType(typeId);
-               final String cacheId = rootNode.get("cacheId").asText();
-               return new PythonCredentialPortObjectSpec(new CredentialPortObjectSpec(type, UUID.fromString(cacheId)));
-           } catch (JsonMappingException ex) {
-               throw new IllegalStateException("Could not parse PythonImagePortObjectSpec from given JSON data", ex);
-           } catch (JsonProcessingException ex) { // NOSONAR: Eclipse requires explicit handling of this exception
-               throw new IllegalStateException("Could not parse PythonImagePortObjectSpec from given Json data", ex);
-           }
-       }
+        /**
+         * @param jsonData the spec serialized as JSON
+         * @return the corresponding ImagePortObjectSpec for either PNG or SVG
+         * @throws IllegalStateException if either an unsupported image format is detected or a problem is encountered
+         *             during the parsing of the JSON data
+         */
+        public static PythonCredentialPortObjectSpec fromJsonString(final String jsonData) {
+            final var om = new ObjectMapper();
+            try {
+                final var rootNode = om.readTree(jsonData);
+                final String typeId = rootNode.get("typeId").asText("");
+                final CredentialType type = CredentialTypeRegistry.getCredentialType(typeId);
+                final String cacheId = rootNode.get("cacheId").asText();
+                return new PythonCredentialPortObjectSpec(new CredentialPortObjectSpec(type, UUID.fromString(cacheId)));
+            } catch (JsonMappingException ex) {
+                throw new IllegalStateException("Could not parse PythonImagePortObjectSpec from given JSON data", ex);
+            } catch (JsonProcessingException ex) { // NOSONAR: Eclipse requires explicit handling of this exception
+                throw new IllegalStateException("Could not parse PythonImagePortObjectSpec from given Json data", ex);
+            }
+        }
 
-   }
+    }
 
     /**
      * Convert port type encoded as string to a {@link PortType}. Possible values are TABLE and BINARY, where BINARY is
@@ -935,6 +941,8 @@ public final class PythonPortObjects {
             return PythonTransientConnectionPortObject.TYPE;
         } else if (identifier.startsWith("PortType.IMAGE")) {
             return ImagePortObject.TYPE;
+        } else if (identifier.startsWith("PortType.CREDENTIAL")) {
+            return CredentialPortObject.TYPE;
         } else {
             // for other custom ports
             return PythonBinaryBlobFileStorePortObject.TYPE;
