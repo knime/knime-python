@@ -19,6 +19,8 @@ describe("App.vue", () => {
           return Promise.resolve(viewAvailable);
         } else if (methodName === "getExecutableOptionsList") {
           return executableOptions;
+        } else if (methodName === "sendLastConsoleOutput") {
+          // do nothing
         } else {
           throw Error(`Method ${methodName} was not mocked but called in test`);
         }
@@ -127,6 +129,14 @@ describe("App.vue", () => {
     expect(executableSelectionStore.id).toBe(settingsMock.executableSelection);
     expect(executableSelectionStore.isMissing).toBe(false);
     expect(getScriptingService().sendToConsole).not.toHaveBeenCalled();
+  });
+
+  it("sends output of last execution on mount", async () => {
+    await doMount();
+    await flushPromises();
+    expect(getScriptingService().sendToService).toHaveBeenCalledWith(
+      "sendLastConsoleOutput",
+    );
   });
 
   it("sends error to console if executable is not in executable list", async () => {

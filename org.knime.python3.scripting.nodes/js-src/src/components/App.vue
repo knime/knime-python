@@ -85,6 +85,8 @@ const rightPaneOptions = [
 ];
 
 onMounted(async () => {
+  pythonScriptingService.sendLastConsoleOutput();
+
   pythonScriptingService.initExecutableSelection();
 
   // Check if the preview is available

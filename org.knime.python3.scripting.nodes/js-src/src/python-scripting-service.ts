@@ -222,6 +222,9 @@ export const pythonScriptingService = {
       setSelectedExecutable({ isMissing: true });
     }
   },
+  sendLastConsoleOutput: () => {
+    scriptingService.sendToService("sendLastConsoleOutput");
+  },
   saveSettings: (settings: NodeSettings) =>
     scriptingService.saveSettings(settings),
   getExecutableOptionsList: async (): Promise<ExecutableOption[]> => {
