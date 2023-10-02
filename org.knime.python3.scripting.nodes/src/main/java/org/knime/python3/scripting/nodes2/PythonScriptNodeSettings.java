@@ -148,6 +148,7 @@ final class PythonScriptNodeSettings {
         public void toNodeSettings(final String settingsString,
             final Map<SettingsType, NodeAndVariableSettingsWO> settings) {
             var settingsObj = GSON.fromJson(settingsString, Settings.class);
+            saveSettings(settingsObj, settings.get(SettingsType.MODEL));
             try {
                 settings.get(SettingsType.MODEL).addUsedVariable(EXECUTABLE_SELECTION_CFG_KEY,
                     settingsObj.executableSelection, false);
@@ -155,7 +156,6 @@ final class PythonScriptNodeSettings {
                 // Cannot happen because we have a setting with the key EXECUTABLE_SELECTION_CFG_KEY
                 throw new IllegalStateException(e);
             }
-            saveSettings(settingsObj, settings.get(SettingsType.MODEL));
         }
 
         @Override
