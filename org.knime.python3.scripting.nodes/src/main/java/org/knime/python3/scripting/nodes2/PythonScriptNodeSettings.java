@@ -150,7 +150,7 @@ final class PythonScriptNodeSettings {
             var settingsObj = GSON.fromJson(settingsString, Settings.class);
             try {
                 settings.get(SettingsType.MODEL).addUsedVariable(EXECUTABLE_SELECTION_CFG_KEY,
-                    settingsObj.executableSelection);
+                    settingsObj.executableSelection, false);
             } catch (final InvalidSettingsException e) {
                 // Cannot happen because we have a setting with the key EXECUTABLE_SELECTION_CFG_KEY
                 throw new IllegalStateException(e);
