@@ -97,7 +97,7 @@ onMounted(async () => {
 <template>
   <main>
     <ScriptingEditor
-      title="Python Script (Labs)"
+      :title="`Python ${hasPreview ? 'View' : 'Script'}`"
       :menu-items="menuItems"
       :show-run-buttons="true"
       language="python"
