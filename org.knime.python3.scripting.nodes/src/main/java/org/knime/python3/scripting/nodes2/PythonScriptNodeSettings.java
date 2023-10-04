@@ -151,7 +151,7 @@ final class PythonScriptNodeSettings {
             saveSettings(settingsObj, settings.get(SettingsType.MODEL));
             try {
                 settings.get(SettingsType.MODEL).addUsedVariable(EXECUTABLE_SELECTION_CFG_KEY,
-                    settingsObj.executableSelection, false);
+                    settingsObj.executableSelection);
             } catch (final InvalidSettingsException e) {
                 // Cannot happen because we have a setting with the key EXECUTABLE_SELECTION_CFG_KEY
                 throw new IllegalStateException(e);
