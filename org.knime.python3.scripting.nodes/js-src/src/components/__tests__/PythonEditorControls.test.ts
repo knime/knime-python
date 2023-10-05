@@ -199,7 +199,7 @@ describe("PythonEditorControls", () => {
       await doMount();
       expect(getScriptingService().sendToConsole).toHaveBeenCalledWith({
         warning:
-          "Missing input data. Connect all input ports and execute preceeding nodes to enable script execution.",
+          "Missing input data. Connect all input ports and execute preceding nodes to enable script execution.",
       });
     });
   });

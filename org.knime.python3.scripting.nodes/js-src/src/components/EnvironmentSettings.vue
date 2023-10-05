@@ -8,7 +8,7 @@ import { pythonScriptingService } from "@/python-scripting-service";
 import type { ExecutableOption } from "@/types/common";
 
 const executableSelection = useExecutableSelectionStore();
-const selectedEnv: Ref<string> = ref(
+const selectedEnv: Ref<"default" | "conda"> = ref(
   executableSelection.id === "" ? "default" : "conda",
 );
 const selectedExecutableOption = ref("");
@@ -57,19 +57,25 @@ onUnmounted(() => {
   const newSelection =
     selectedEnv.value === "default" ? "" : selectedExecutableOption.value ?? "";
   const executableSelectionChanged = executableSelection.id !== newSelection;
-  if (executableSelectionChanged && !isMissingVarSelected.value) {
-    setSelectedExecutable({ id: newSelection, isMissing: false });
 
-    // Notify the backend that the executable selection has changed
-    pythonScriptingService.updateExecutableSelection(newSelection);
+  if (!executableSelectionChanged) {
+    return;
+  }
+  if (isMissingVarSelected.value && selectedEnv.value === "conda") {
+    return;
+  }
 
-    // Print a message about the changed executable to the console
-    const executable = getExecutableById(newSelection);
-    if (executable) {
-      pythonScriptingService.sendToConsole({
-        text: `Changed python executable to ${executable.pythonExecutable}\n`,
-      });
-    }
+  setSelectedExecutable({ id: newSelection, isMissing: false });
+
+  // Notify the backend that the executable selection has changed
+  pythonScriptingService.updateExecutableSelection(newSelection);
+
+  // Print a message about the changed executable to the console
+  const executable = getExecutableById(newSelection);
+  if (executable) {
+    pythonScriptingService.sendToConsole({
+      text: `Changed python executable to ${executable.pythonExecutable}\n`,
+    });
   }
 });
 </script>
@@ -139,5 +145,9 @@ onUnmounted(() => {
       margin-top: 8px;
     }
   }
+}
+
+.radio-buttons {
+  --radio-button-margin: 0 0 30px 0;
 }
 </style>
