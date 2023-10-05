@@ -1,13 +1,33 @@
 <script setup lang="ts">
-import { usePythonPreviewStatusStore, useWorkspaceStore } from "@/store";
+import { usePythonPreviewStatusStore } from "@/store";
 import { getScriptingService } from "@knime/scripting-editor";
-import { onMounted, ref } from "vue";
+import { onMounted, onUnmounted, ref, type Ref, reactive } from "vue";
 import Button from "webapps-common/ui/components/Button.vue";
-import { pythonScriptingService } from "../python-scripting-service";
+import { pythonScriptingService } from "@/python-scripting-service";
+import { useDebounceFn } from "@vueuse/core/index.mjs";
+import TableHeader from "./TableHeader.vue";
+import type { ColumnSizes } from "./TableHeader.vue";
+import TableBody from "./TableBody.vue";
+import { useResizeObserver } from "@vueuse/core";
 
-const workspaceStore = useWorkspaceStore();
+const resizeContainer = ref<HTMLElement | null>(null);
+const totalWidth: Ref<number> = ref(0);
+const headerWidths = reactive<ColumnSizes>([100, 100, 100]);
+const resetButtonEnabled: Ref<boolean> = ref(false);
 
-const resetButtonEnabled = ref<boolean>(false);
+const useTotalWidth = () => {
+  const rootResizeCallback = useDebounceFn((entries) => {
+    const rect = entries[0].contentRect;
+    totalWidth.value = rect.width;
+  });
+  const resizeObserver = useResizeObserver(resizeContainer, rootResizeCallback);
+
+  onUnmounted(() => {
+    resizeObserver.stop();
+  });
+
+  return { totalWidth, headerWidths };
+};
 const pythonPreviewStatus = usePythonPreviewStatusStore();
 
 const resetWorkspace = () => {
@@ -18,6 +38,7 @@ const resetWorkspace = () => {
 };
 
 onMounted(async () => {
+  useTotalWidth();
   if (await getScriptingService().inputsAvailable()) {
     resetButtonEnabled.value = true;
   }
@@ -25,111 +46,74 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="workspace">
-    <table aria-label="Current python workspace variables.">
-      <thead>
-        <th>Name</th>
-        <th>Type</th>
-        <th>Value</th>
-      </thead>
-      <tbody>
-        <tr
-          v-for="variable in workspaceStore.workspace"
-          :key="variable.name"
-          @click="pythonScriptingService.printVariable(variable.name)"
-        >
-          <td>{{ variable.name }}</td>
-          <td>{{ variable.type }}</td>
-          <td>{{ variable.value }}</td>
-        </tr>
-      </tbody>
-    </table>
+  <div ref="resizeContainer" class="container">
+    <div ref="workspaceRef" class="workspace">
+      <table>
+        <TableHeader
+          :container-width="totalWidth"
+          @update-header-widths="
+            (e: ColumnSizes) => {
+              headerWidths = e;
+            }
+          "
+        />
+        <TableBody :column-widths="headerWidths" />
+      </table>
+    </div>
     <div class="controls">
       <Button
         class="reset-button"
-        with-border
         compact
         :disabled="!resetButtonEnabled"
         @click="resetWorkspace"
       >
-        Reset temporary values
+        Reset values
       </Button>
     </div>
   </div>
 </template>
 
 <style scoped lang="postcss">
+.container {
+  background-color: var(--knime-gray-ultra-light);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
 .workspace {
   --controls-height: 40px;
 
   position: relative;
-  width: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
   min-width: 120px;
-  height: 100%;
+  margin-top: 0;
 
   & table {
-    width: 100%;
-    height: calc(100% - var(--controls-height));
     border-collapse: collapse;
-    font-size: 12px;
+    font-family: "Roboto Mono", sans-serif;
+    font-size: 13px;
+    text-align: left;
     line-height: 24px;
+    flex: 1;
+    color: var(--knime-masala);
+    height: calc(100% - var(--controls-height));
   }
 }
 
 .controls {
   display: flex;
+  overflow: hidden;
   flex-direction: row-reverse;
   justify-content: space-between;
   align-content: center;
   min-height: var(--controls-height);
   max-height: var(--controls-height);
+  height: var(--controls-height);
   background-color: var(--knime-gray-light-semi);
   border-top: 1px solid var(--knime-silver-sand);
-}
-
-thead {
-  background-color: var(--knime-porcelain);
-  font-family: Roboto, sans-serif;
-  position: sticky;
-  height: 24px;
-  top: 0;
-  display: table;
-  width: 100%;
-  table-layout: fixed;
-  backface-visibility: hidden;
-}
-
-tr {
-  border-bottom: 1px solid var(--knime-porcelain);
-  display: table;
-  width: 100%;
-  table-layout: fixed;
-
-  &:hover {
-    background-color: var(--knime-cornflower-semi);
-    cursor: pointer;
-  }
-}
-
-th,
-td {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  padding: 6px;
-}
-
-tbody {
-  font-family: "Roboto Mono", sans-serif;
-  display: block;
-  overflow-y: scroll;
-  overflow-x: hidden;
-  text-overflow: ellipsis;
-  height: calc(100% - var(--controls-height) + 4px);
-}
-
-th {
-  text-align: left;
 }
 
 .reset-button {

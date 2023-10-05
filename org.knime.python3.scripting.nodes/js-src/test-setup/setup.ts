@@ -7,7 +7,9 @@ vi.mock("@knime/scripting-editor", async () => {
     sendToService: vi.fn((args) => {
       // If this method is not mocked, the tests fail with a hard to debug
       // error otherwise, so we're really explicit here.
-      throw new Error(`should have been mocked ${args}`);
+      throw new Error(
+        `ScriptingService.sendToService should have been mocked for method ${args}`,
+      );
     }),
     getInitialSettings() {
       return { script: "print('Hello World!')", executableSelection: "" };

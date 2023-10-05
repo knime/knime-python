@@ -26,6 +26,7 @@
   "dependencies": {
     "@knime/scripting-editor": "0.0.40",
     "@knime/ui-extension-service": "0.18.0",
+    "@vueuse/core": "10.4.1",
     "consola": "2.15.3",
     "pinia": "2.1.4",
     "vue": "3.3.4",
