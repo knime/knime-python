@@ -59,6 +59,9 @@ import inspect
 import sys
 from dataclasses import dataclass
 from functools import lru_cache
+import datetime
+import pytz
+from dateutil import parser
 
 from knime.extension.version import Version
 
@@ -531,7 +534,7 @@ class _BaseParameter(ABC):
         return value
 
     def _from_dict(self, value):
-        """Subclasses can overwrite this method to convert dictionaires to value types."""
+        """Subclasses can overwrite this method to convert dictionaries to value types."""
         return value
 
     def _extract_value(self, obj, name, for_dialog=None):
@@ -1789,6 +1792,172 @@ class BoolParameter(_BaseParameter):
 
     def _get_options(self, dialog_creation_context) -> dict:
         return {"format": "boolean"}
+
+
+class DateTimeParameter(_BaseParameter):
+    def __init__(
+        self,
+        label: Optional[str] = None,
+        description: Optional[str] = None,
+        default_value: Union[str, datetime.date] = None,
+        validator=None,
+        min_value: Union[str, datetime.date] = None,
+        max_value: Union[str, datetime.date] = None,
+        since_version=None,
+        is_advanced=False,
+        show_date=True,
+        show_time=False,
+        show_seconds=False,
+        show_milliseconds=False,
+        timezone: str = None,
+        date_format: str = None,
+    ):
+        """Parameter class for datetime types.
+
+        Args:
+            label:  The label of the parameter in the dialog
+            description:  The description of the parameter in the node description and dialog
+            default_value (str or datetime):  The default value of the parameter
+            validator:  A function which validates the value of the parameter
+            min_value (str or datetime):  The minimum value of the parameter
+            max_value (str or datetime):  The maximum value of the parameter
+            since_version:  The version at which this parameter was introduced. Can be omitted if the parameter is part
+                            of the first version of the node.
+            is_advanced:  Whether the parameter is advanced
+            show_time:  Whether to show the time
+            show_seconds:  Whether to show the seconds, ignored if show_time is False
+            show_milliseconds:  Whether to show the milliseconds, ignored if show_time is False
+            timezone:  The timezone in a string format
+            date_format:  The date format to parse the default value
+        """
+
+        self.show_date = show_date
+        self.show_time = show_time
+        self.show_seconds = show_seconds
+        self.show_milliseconds = show_milliseconds
+        self.timezone = timezone
+        self.date_format = date_format
+
+        # convert allowed values to datetime
+        self.min_value = self._to_datetime(min_value)
+        self.max_value = self._to_datetime(max_value)
+
+        if validator is None:
+            validator = self.default_validator
+        default_value = self._parse_date_time_default_value(default_value)
+
+        super().__init__(
+            label,
+            description,
+            default_value,
+            validator,
+            since_version,
+            is_advanced,
+        )
+
+    def default_validator(self, value: str):
+        if not value:
+            return
+
+        # convert to dt
+        value = self._to_datetime(value)
+        self.check_type(value)
+        self.check_range(value)
+
+    def check_range(self, value):
+        if self.min_value is not None and value < self.min_value:
+            raise ValueError(
+                f"{value} is smaller than the minimal value {self.min_value}"
+            )
+        if self.max_value is not None and value > self.max_value:
+            raise ValueError(f"{value} is bigger than the max value {self.max_value}")
+
+    def check_type(self, value):
+        dt_type = datetime.datetime if self.show_time else datetime.date
+        if value and not (isinstance(value, str) or isinstance(value, dt_type)):
+            raise TypeError(
+                f"{value} is of type {type(value)}, but should be of type date or datetime."
+            )
+
+    def _to_dict(self, value: datetime.datetime) -> Optional[str]:
+        if not value:
+            return None
+        return value.isoformat()
+
+    def _from_dict(self, value) -> Optional[datetime.date]:
+        """Parses the value to a datetime object.
+
+        The value can be a string or a datetime object.
+        """
+
+        return self._to_datetime(value)
+
+    def _to_datetime(self, value) -> Optional[datetime.datetime]:
+        if not value:
+            return None
+        if isinstance(value, str):
+            if str.endswith(value, "Z"):  # Java ISO 8601 format ends with Z
+                value = value.replace("Z", "")
+
+            value = datetime.datetime.fromisoformat(value)
+
+            if not self.show_time:
+                value = value.date()
+
+        if self.timezone is not None:
+            value = value.astimezone(pytz.timezone(self.timezone))
+        return value
+
+    def _extract_schema(self, extension_version=None, dialog_creation_context=None):
+        prop = super()._extract_schema(dialog_creation_context=dialog_creation_context)
+        prop["type"] = "string"
+        prop["format"] = "date-time"
+        return prop
+
+    def _get_options(self, dialog_creation_context) -> dict:
+        return {
+            "format": "date-time",
+            "showDate": self.show_date,
+            "showTime": self.show_time,
+            "showSeconds": self.show_seconds,
+            "showMilliseconds": self.show_milliseconds,
+            "timezone": self.timezone,
+        }
+
+    def _parse_date_time_default_value(self, default_value: Union[str, datetime.date]):
+        """Parses the default value to a datetime object.
+
+        The parsing is done differently as in _to_datetime, because if the default value is a string, it is not always in
+        the ISO 8601 format.
+
+        Args:
+            default_value:  Can be a string or a datetime object. If the default value is a string, the date_format
+                            parameter is used to parse the string. If the date format is not set, the default value is
+                            parsed automatically. This can lead to unexpected results, if the default value is ambiguous
+                            (e.g. 01/02/03 can be parsed as 2001-02-03 or 2003-01-02).
+        """
+        if not default_value:
+            # we either return the borders or the current date
+            if self.max_value is not None:
+                return self.max_value
+            if self.min_value is not None:
+                return self.min_value
+            return datetime.datetime.now().date()
+
+        if isinstance(default_value, datetime.date):
+            return default_value
+
+        elif isinstance(default_value, str):
+            # try to parse the default value with the given date format
+            if self.date_format:
+                return datetime.datetime.strptime(default_value, self.date_format)
+            # try to parse the default value as datetime automatically
+            return parser.parse(default_value)
+        else:
+            raise ValueError(
+                f"Cannot parse default value {default_value}. Please provide a string or datetime object."
+                f"If you provide a string, please also provide a date format."
+            )
 
 
 def _flatten(lst: list) -> list:
