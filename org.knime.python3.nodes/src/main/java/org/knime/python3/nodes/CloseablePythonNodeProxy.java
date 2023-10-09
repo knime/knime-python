@@ -77,6 +77,7 @@ import org.knime.core.node.Node;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
+import org.knime.core.node.port.PortType;
 import org.knime.core.node.util.CheckUtils;
 import org.knime.core.node.workflow.CredentialsProvider;
 import org.knime.core.node.workflow.ICredentials;
@@ -279,7 +280,7 @@ final class CloseablePythonNodeProxy
     }
 
     @Override
-    public ExecutionResult execute(final PortObject[] inData, final ExecutionContext exec,
+    public ExecutionResult execute(final PortObject[] inData, final PortType[] outputPortTypes, final ExecutionContext exec,
         final FlowVariablesProxy flowVariablesProxy, final CredentialsProviderProxy credentialsProviderProxy,
         final WorkflowPropertiesProxy workflowPropertiesProxy, final WarningConsumer warningConsumer) throws Exception {
         initTableManager();
@@ -419,6 +420,14 @@ final class CloseablePythonNodeProxy
 
         };
 
+        // Configure before execution whether the gateway should be left open, otherwise an exception thrown in Python
+        // will always close the gateway.
+        var connectionType = determineConnectionType(inData, outputPortTypes);
+        m_closeableGateway.setLeaveGatewayOpen(connectionType != ConnectionType.INDEPENDENT);
+        if (connectionType == ConnectionType.SOURCE) {
+            m_closeableGateway.retainGateway();
+        }
+
         final var pythonOutputs = m_proxy.execute(pythonInputs, pythonExecContext);
         failure.throwIfFailure();
 
@@ -427,12 +436,6 @@ final class CloseablePythonNodeProxy
             .map(ppo -> PythonPortObjectTypeRegistry.convertFromPythonPortObject(ppo, fileStoresByKey, m_tableManager,
                 outputExec))//
             .toArray(PortObject[]::new);
-
-        var connectionType = determineConnectionType(inData, executionResult.m_portObjects);
-        m_closeableGateway.setLeaveGatewayOpen(connectionType != ConnectionType.INDEPENDENT);
-        if (connectionType == ConnectionType.SOURCE) {
-            m_closeableGateway.retainGateway();
-        }
 
         return executionResult;
     }
@@ -446,14 +449,14 @@ final class CloseablePythonNodeProxy
      * @param outData
      * @return
      */
-    private static ConnectionType determineConnectionType(final PortObject[] inData, final PortObject[] outData) {
+    private static ConnectionType determineConnectionType(final PortObject[] inData, final PortType[] outputPortTypes) {
         for (var inputPort : inData) {
             if (inputPort instanceof PythonTransientConnectionPortObject) {
                 return ConnectionType.CONNECTED;
             }
         }
-        for (var outputPort : outData) {
-            if (outputPort instanceof PythonTransientConnectionPortObject) {
+        for (var outputPort : outputPortTypes) {
+            if (outputPort.acceptsPortObjectClass(PythonTransientConnectionPortObject.class)) {
                 return ConnectionType.SOURCE;
             }
         }
