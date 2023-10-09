@@ -104,6 +104,8 @@ public final class DelegatingNodeModel extends NodeModel
 
     private String m_extensionVersion;
 
+    private final PortType[] m_outputPorts;
+
     private final AsynchronousCloseableTracker<RuntimeException> m_proxyShutdownTracker =
         new AsynchronousCloseableTracker<>(t -> LOGGER.debug("Exception during proxy shutdown.", t));
 
@@ -123,6 +125,7 @@ public final class DelegatingNodeModel extends NodeModel
         m_settings = initialSettings;
         m_view = Optional.empty();
         m_extensionVersion = extensionVersion;
+        m_outputPorts = outputPorts;
     }
 
     @Override
@@ -145,7 +148,7 @@ public final class DelegatingNodeModel extends NodeModel
 
         return runWithProxy(() -> m_proxyProvider.getExecutionProxy(inData), node -> {
             node.loadValidatedSettings(m_settings);
-            var result = node.execute(inData, exec, this, this, this, this);
+            var result = node.execute(inData, m_outputPorts, exec, this, this, this, this);
             m_settings = node.getSettings(m_extensionVersion);
             m_view = result.getView();
             return result.getPortObjects();
@@ -164,27 +167,25 @@ public final class DelegatingNodeModel extends NodeModel
 
     @Override
     protected void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
-        runWithProxyConsumer(m_proxyProvider::getConfigurationProxy,
-            node -> {
-                var savedVersion = JsonNodeSettingsSchema.readVersion(settings);
-                var jsonSettings = node.getSettingsSchema(savedVersion).createFromSettings(settings);
-                node.validateSettings(jsonSettings);
-            });
+        runWithProxyConsumer(m_proxyProvider::getConfigurationProxy, node -> {
+            var savedVersion = JsonNodeSettingsSchema.readVersion(settings);
+            var jsonSettings = node.getSettingsSchema(savedVersion).createFromSettings(settings);
+            node.validateSettings(jsonSettings);
+        });
     }
 
     @Override
     protected void loadValidatedSettingsFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
-        runWithProxyConsumer(m_proxyProvider::getConfigurationProxy,
-            node -> {
-                var savedVersion = JsonNodeSettingsSchema.readVersion(settings);
-                m_settings = node.getSettingsSchema(savedVersion).createFromSettings(settings);
+        runWithProxyConsumer(m_proxyProvider::getConfigurationProxy, node -> {
+            var savedVersion = JsonNodeSettingsSchema.readVersion(settings);
+            m_settings = node.getSettingsSchema(savedVersion).createFromSettings(settings);
 
-                // if the extension version the settings were saved with is different from
-                // the installed extension version, we need to let the user know
-                if (!savedVersion.equals(m_extensionVersion)) {
-                    node.determineCompatibility(savedVersion, m_extensionVersion, m_settings.getParameters());
-                }
-            });
+            // if the extension version the settings were saved with is different from
+            // the installed extension version, we need to let the user know
+            if (!savedVersion.equals(m_extensionVersion)) {
+                node.determineCompatibility(savedVersion, m_extensionVersion, m_settings.getParameters());
+            }
+        });
     }
 
     private interface ThrowingFunction<S, T, X extends Exception> {

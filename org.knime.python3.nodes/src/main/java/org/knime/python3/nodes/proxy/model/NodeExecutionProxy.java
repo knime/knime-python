@@ -55,6 +55,7 @@ import java.util.Optional;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.port.PortObject;
+import org.knime.core.node.port.PortType;
 
 /**
  *
@@ -64,6 +65,7 @@ public interface NodeExecutionProxy extends NodeModelProxy {
 
     /**
      * @param inData the input data of the node
+     * @param outputPorts which ports should be populated during execute
      * @param exec the execution context
      * @param flowVarProxy for access to flow variables
      * @param credentialsProviderProxy for access to credentials
@@ -74,9 +76,9 @@ public interface NodeExecutionProxy extends NodeModelProxy {
      * @throws CanceledExecutionException if the node execution is canceled
      * @throws Exception if the node execution failed
      */
-    ExecutionResult execute(final PortObject[] inData, final ExecutionContext exec, FlowVariablesProxy flowVarProxy,
-        CredentialsProviderProxy credentialsProviderProxy, WorkflowPropertiesProxy workflowPropertiesProxy,
-        WarningConsumer warningConsumer) throws Exception;
+    ExecutionResult execute(final PortObject[] inData, final PortType[] outputPorts, final ExecutionContext exec,
+        FlowVariablesProxy flowVarProxy, CredentialsProviderProxy credentialsProviderProxy,
+        WorkflowPropertiesProxy workflowPropertiesProxy, WarningConsumer warningConsumer) throws Exception;
 
     /**
      * Encapsulates the result of an execute call.
