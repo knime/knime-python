@@ -48,14 +48,15 @@ Type system and schema definition for KNIME tables.
 @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
 """
 
-import logging
-
 # --------------------------------------------------------------------
 # Types
 # --------------------------------------------------------------------
 from abc import ABC, abstractmethod
-from enum import Enum, unique
+from typing import Dict, Iterable, Iterator, List, Optional, Sequence, Type, Union, Any
 from typing import Dict, Iterable, Iterator, List, Optional, Sequence, Type, Union
+
+import logging
+from enum import Enum, unique
 
 import knime.api.types as kt
 
@@ -680,11 +681,9 @@ class ImagePortObjectSpec(PortObjectSpec):
 class CredentialPortObjectSpec(PortObjectSpec):
     """
     Port object spec for credential port objects.
-
-    #TODO
     """
 
-    def __init__(self, cache_id: str, type_id: Optional[str]) -> None:
+    def __init__(self, cache_id: Optional[str], type_id: Optional[str]) -> None:
         """
         Create a CredentialPortObjectSpec
 
@@ -694,11 +693,51 @@ class CredentialPortObjectSpec(PortObjectSpec):
 
     @property
     def auth_schema(self) -> str:
-        return self._get_auth_schema()
+        """
+
+        Returns:
+            str: the auth scheme to use, e.g. "Basic" or "Bearer".
+
+        Raises:
+            ValueError: if the credentials are not valid or accessible.
+            NotImplementedError: if the method is called outside the execute method of a node.
+
+        """
+        from py4j.protocol import Py4JJavaError
+
+        try:
+            return self._get_auth_schema()
+        except Py4JJavaError as ex:
+            raise ValueError(
+                f"Could not get auth schema from {self.__class__.__name__}. Check if the credentials are valid and "
+                f"accessible."
+            ) from ex
+        except NotImplementedError:
+            raise ValueError("Credential Port Objects can only be used in the execute method of a node.")
 
     @property
     def auth_parameters(self) -> str:
-        return self._get_auth_parameters()
+        """
+
+        Returns:
+            str: the parameter(s) to use, e.g. an access token.
+
+        Raises:
+            ValueError: if the credentials are not valid or accessible.
+            NotImplementedError: if the method is called outside the execute method of a node.
+
+        """
+        from py4j.protocol import Py4JJavaError
+
+        try:
+            return self._get_auth_parameters()
+        except Py4JJavaError as ex:
+            raise ValueError(
+                f"Could not get auth parameters from {self.__class__.__name__}. Check if the credentials are valid and "
+                f"accessible."
+            ) from ex
+        except NotImplementedError:
+            raise ValueError("Credential Port Objects can only be used in the execute method of a node.")
 
     def serialize(self) -> dict:
         return {"cacheId": self._cache_id, "typeId": self._type_id}
@@ -706,7 +745,9 @@ class CredentialPortObjectSpec(PortObjectSpec):
     @classmethod
     def deserialize(cls, data):
         # spec is optional therefore we use get instead of __get_item__
-        return cls(data["cacheId"], data["typeId"] if "typeId" in data else None)
+        cache_id = data.get("cacheId")
+        type_id = data.get("typeId")
+        return cls(cache_id, type_id)
 
 
 # --------------------------------------------------------------------

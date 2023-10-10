@@ -88,6 +88,7 @@ import org.knime.core.util.FileUtil;
 import org.knime.core.util.PathUtils;
 import org.knime.core.util.ThreadUtils;
 import org.knime.core.util.asynclose.AsynchronousCloseable;
+import org.knime.core.util.auth.CouldNotAuthorizeException;
 import org.knime.credentials.base.Credential;
 import org.knime.credentials.base.CredentialCache;
 import org.knime.credentials.base.oauth.api.HttpAuthorizationHeaderCredentialValue;
@@ -351,16 +352,17 @@ final class CloseablePythonNodeProxy
                     FileStoreKey.load(fileStoreKey));
             }
 
-            public String get_auth_schema(final String cacheId, final String typeId) {
+            public String get_auth_schema(final String cacheId, final String typeId) throws CouldNotAuthorizeException { // NOSONAR
                 var credential = CredentialCache.get(UUID.fromString(cacheId));
                 final Credential cred = credential.orElseThrow();
+
                 if (cred instanceof HttpAuthorizationHeaderCredentialValue val) {
                     return val.getAuthScheme();
                 }
                 return null;
             }
 
-            public String get_auth_parameters(final String cacheId, final String typeId) {
+            public String get_auth_parameters(final String cacheId, final String typeId) { // NOSONAR
                 var credential = CredentialCache.get(UUID.fromString(cacheId));
                 final Credential cred = credential.orElseThrow();
                 if (cred instanceof HttpAuthorizationHeaderCredentialValue val) {

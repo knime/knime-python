@@ -313,7 +313,7 @@ class _PortTypeRegistry:
             return self._port_types_by_id[id]
         raise KeyError(f"No PortType for id '{id}' registered.")
 
-    def spec_to_python(self, spec: _PythonPortObjectSpec, port: kn.Port, java_callback):
+    def spec_to_python(self, spec: _PythonPortObjectSpec, port: kn.Port):
         class_name = spec.getJavaClassName()
         data = json.loads(spec.toJsonString())
 
@@ -435,7 +435,7 @@ class _PortTypeRegistry:
                 return read_port_object_data()
             else:
                 java_spec = port_object.getSpec()
-                spec = self.spec_to_python(java_spec, port, java_callback)
+                spec = self.spec_to_python(java_spec, port)
                 incoming_port_type = self._extract_port_type_from_spec_data(
                     json.loads(java_spec.toJsonString()), port
                 )
@@ -452,7 +452,7 @@ class _PortTypeRegistry:
             assert issubclass(
                 port.type.object_class, kn.ConnectionPortObject
             ), f"unexpected port type {port.type}"
-            spec = self.spec_to_python(port_object.getSpec(), port, java_callback)
+            spec = self.spec_to_python(port_object.getSpec(), port)
 
             data = json.loads(port_object.getSpec().toJsonString())
             key = f'{data["node_id"]}:{data["port_idx"]}'
@@ -468,7 +468,7 @@ class _PortTypeRegistry:
             class_name
             == "org.knime.python3.nodes.ports.PythonPortObjects$PythonCredentialPortObject"
         ):
-            spec = self.spec_to_python(port_object.getSpec(), port, java_callback)
+            spec = self.spec_to_python(port_object.getSpec(), port)
             return _PythonCredentialPortObject(spec, java_callback)
 
         raise TypeError("Unsupported PortObject found in Python, got " + class_name)
@@ -609,7 +609,7 @@ class _PythonNodeProxy:
 
     def _specs_to_python(self, specs):
         return [
-            self._port_type_registry.spec_to_python(spec, port, self._java_callback)
+            self._port_type_registry.spec_to_python(spec, port)
             if spec is not None
             else None
             for port, spec in zip(self._node.input_ports, specs)

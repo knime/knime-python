@@ -1,18 +1,15 @@
-<?xml version="1.0" encoding="UTF-8"?><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-
 	<parent>
 		<groupId>org.knime.maven</groupId>
 		<artifactId>ap.parent</artifactId>
 		<version>5.2.0</version>
 	</parent>
-
 	<groupId>org.knime</groupId>
 	<artifactId>knime-python</artifactId>
 	<version>${revision}${changelist}</version>
 	<packaging>pom</packaging>
-
 	<properties>
 		<revision>5.2.0</revision>
 		<changelist>-SNAPSHOT</changelist>
@@ -23,7 +20,6 @@
 		<sonar.python.coverage.reportPaths>coverage-*.xml</sonar.python.coverage.reportPaths>
 		<sonar.nodejs.executable>${project.build.directory}/node/node</sonar.nodejs.executable>
 	</properties>
-
 	<modules>
 		<module>org.knime.ext.py4j</module>
 		<module>org.knime.python3</module>
@@ -47,7 +43,6 @@
 		<module>org.knime.features.python3.nodes</module>
 		<module>org.knime.update.python</module>
 	</modules>
-
 	<!-- List all required repositories here. The variables are defined in knime-maven-parent/pom.xml. -->
 	<repositories>
 		<repository>
@@ -129,6 +124,11 @@
 			<id>p2-knime-python-types</id>
 			<layout>p2</layout>
 			<url>${knime.python.types.p2}</url>
+		</repository>
+		<repository>
+			<id>p2-knime-credentials-base</id>
+			<layout>p2</layout>
+			<url>${knime.credentials.base.p2}</url>
 		</repository>
 	</repositories>
 </project>
