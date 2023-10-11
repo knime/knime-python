@@ -90,7 +90,7 @@ import org.knime.core.util.ThreadUtils;
 import org.knime.core.util.asynclose.AsynchronousCloseable;
 import org.knime.core.util.auth.CouldNotAuthorizeException;
 import org.knime.credentials.base.Credential;
-import org.knime.credentials.base.CredentialCache;
+import org.knime.credentials.base.CredentialPortObjectSpec;
 import org.knime.credentials.base.oauth.api.HttpAuthorizationHeaderCredentialValue;
 import org.knime.python3.PythonFileStoreUtils;
 import org.knime.python3.arrow.PythonArrowDataSink;
@@ -99,6 +99,7 @@ import org.knime.python3.arrow.PythonArrowTableConverter;
 import org.knime.python3.nodes.CloseablePythonNodeProxyFactory.CloseableGatewayWithAttachments;
 import org.knime.python3.nodes.extension.ExtensionNode;
 import org.knime.python3.nodes.ports.PythonPortObjectTypeRegistry;
+import org.knime.python3.nodes.ports.PythonPortObjects.PythonCredentialPortObjectSpec;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
 import org.knime.python3.nodes.ports.PythonTransientConnectionPortObject;
@@ -284,9 +285,10 @@ final class CloseablePythonNodeProxy
     }
 
     @Override
-    public ExecutionResult execute(final PortObject[] inData, final PortType[] outputPortTypes, final ExecutionContext exec,
-        final FlowVariablesProxy flowVariablesProxy, final CredentialsProviderProxy credentialsProviderProxy,
-        final WorkflowPropertiesProxy workflowPropertiesProxy, final WarningConsumer warningConsumer) throws Exception {
+    public ExecutionResult execute(final PortObject[] inData, final PortType[] outputPortTypes,
+        final ExecutionContext exec, final FlowVariablesProxy flowVariablesProxy,
+        final CredentialsProviderProxy credentialsProviderProxy, final WorkflowPropertiesProxy workflowPropertiesProxy,
+        final WarningConsumer warningConsumer) throws Exception {
         initTableManager();
         Map<String, FileStore> fileStoresByKey = new HashMap<>();
         final var executionResult = new PythonExecutionResult();
@@ -341,34 +343,50 @@ final class CloseablePythonNodeProxy
                 return TableSpecSerializationUtils.getPreferredValueTypesForSerializedSchema(tableSchemaJson);
             }
 
+            @SuppressWarnings("unused")
             public String[] create_file_store() throws IOException { // NOSONAR
                 final var fileStore = PythonFileStoreUtils.createFileStore(getWriteFileStoreHandler());
                 return new String[]{fileStore.getFile().getAbsolutePath(),
                     FileStoreUtil.getFileStoreKey(fileStore).saveToString()};
             }
 
+            @SuppressWarnings("unused")
             public String file_store_key_to_absolute_path(final String fileStoreKey) { // NOSONAR
                 return PythonFileStoreUtils.getAbsolutePathForKey(getFileStoreHandler(),
                     FileStoreKey.load(fileStoreKey));
             }
 
-            public String get_auth_schema(final String cacheId, final String typeId) throws CouldNotAuthorizeException { // NOSONAR
-                var credential = CredentialCache.get(UUID.fromString(cacheId));
-                final Credential cred = credential.orElseThrow();
+            @SuppressWarnings("unused")
+            public String get_auth_schema(final String serializedXMLString) throws CouldNotAuthorizeException, // NOSONAR
+                ClassNotFoundException, InstantiationException, IllegalAccessException, IOException { // NOSONAR
 
+                CredentialPortObjectSpec credentialPortObjectSpec =
+                    PythonCredentialPortObjectSpec.loadFromXMLCredentialPortObjectSpecString(serializedXMLString);
+
+                var credential = credentialPortObjectSpec.getCredential(Credential.class);
+
+                final Credential cred = credential.orElseThrow();
                 if (cred instanceof HttpAuthorizationHeaderCredentialValue val) {
                     return val.getAuthScheme();
                 }
                 return null;
+
             }
 
-            public String get_auth_parameters(final String cacheId, final String typeId) { // NOSONAR
-                var credential = CredentialCache.get(UUID.fromString(cacheId));
+            @SuppressWarnings("unused")
+            public String get_auth_parameters(final String serializedXMLString) throws CouldNotAuthorizeException, // NOSONAR
+                ClassNotFoundException, InstantiationException, IllegalAccessException, IOException { // NOSONAR
+
+                CredentialPortObjectSpec credentialPortObjectSpec =
+                    PythonCredentialPortObjectSpec.loadFromXMLCredentialPortObjectSpecString(serializedXMLString);
+
+                var credential = credentialPortObjectSpec.getCredential(Credential.class);
+
                 final Credential cred = credential.orElseThrow();
                 if (cred instanceof HttpAuthorizationHeaderCredentialValue val) {
                     try {
                         return val.getAuthParameters();
-                    } catch (IOException ex) {
+                    } catch (IOException ex) { // NOSONAR
                         return null;
                     }
                 }

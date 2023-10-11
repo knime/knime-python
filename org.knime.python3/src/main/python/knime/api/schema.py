@@ -683,17 +683,18 @@ class CredentialPortObjectSpec(PortObjectSpec):
     Port object spec for credential port objects.
     """
 
-    def __init__(self, cache_id: Optional[str], type_id: Optional[str]) -> None:
+    def __init__(self, xml_data: Optional[str]) -> None:
         """
         Create a CredentialPortObjectSpec
 
+        Args:
+            xml_data (str): The xml data of the credentials.
         """
-        self._cache_id = cache_id
-        self._type_id = type_id
+        self._xml_data = xml_data
 
     @property
     def auth_schema(self) -> str:
-        """
+        """Get the auth scheme to use, e.g. "Basic" or "Bearer".
 
         Returns:
             str: the auth scheme to use, e.g. "Basic" or "Bearer".
@@ -713,11 +714,13 @@ class CredentialPortObjectSpec(PortObjectSpec):
                 f"accessible."
             ) from ex
         except NotImplementedError:
-            raise ValueError("Credential Port Objects can only be used in the execute method of a node.")
+            raise ValueError(
+                "Credential Port Objects can only be used in the execute method of a node."
+            )
 
     @property
     def auth_parameters(self) -> str:
-        """
+        """Get the auth parameters to use, e.g. an access token.
 
         Returns:
             str: the parameter(s) to use, e.g. an access token.
@@ -737,17 +740,27 @@ class CredentialPortObjectSpec(PortObjectSpec):
                 f"accessible."
             ) from ex
         except NotImplementedError:
-            raise ValueError("Credential Port Objects can only be used in the execute method of a node.")
+            raise ValueError(
+                "Credential Port Objects can only be used in the execute method of a node."
+            )
 
     def serialize(self) -> dict:
-        return {"cacheId": self._cache_id, "typeId": self._type_id}
+        return {"data": self._xml_data}
 
     @classmethod
-    def deserialize(cls, data):
+    def deserialize(cls, data: dict):
+        """Deserialize the CredentialPortObjectSpec from the data.
+
+        Args:
+            data(dict): must contain key 'data' which maps to a xml string with the necessary information to get the
+                        credentials from java.
+
+        Returns:
+            CredentialPortObjectSpec: containing the xml_data
+        """
         # spec is optional therefore we use get instead of __get_item__
-        cache_id = data.get("cacheId")
-        type_id = data.get("typeId")
-        return cls(cache_id, type_id)
+        xml_data = data.get("data")
+        return cls(xml_data)
 
 
 # --------------------------------------------------------------------

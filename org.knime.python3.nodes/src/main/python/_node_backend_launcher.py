@@ -224,11 +224,9 @@ class _PythonImagePortObject:
 
 class _PythonCredentialPortObject:
     def __init__(self, spec: ks.CredentialPortObjectSpec, java_callback):
-        spec._get_auth_schema = lambda: java_callback.get_auth_schema(
-            spec._cache_id, spec._type_id
-        )
+        spec._get_auth_schema = lambda: java_callback.get_auth_schema(spec._xml_data)
         spec._get_auth_parameters = lambda: java_callback.get_auth_parameters(
-            spec._cache_id, spec._type_id
+            spec._xml_data
         )
 
         self._spec = spec
@@ -514,6 +512,11 @@ class _PortTypeRegistry:
         elif port.type == kn.PortType.IMAGE:
             class_name = "org.knime.core.node.port.image.ImagePortObject"
             return _PythonImagePortObject(class_name, obj)
+        elif port.type == kn.PortType.CREDENTIAL:
+            raise NotImplementedError(
+                "Credential port objects are not yet supported as output ports. This is because, for now, we only "
+                "support querying existing credentials from KNIME, but do not create new ones in Python."
+            )
         else:
             assert (
                 port.type.id in self._port_types_by_id

@@ -49,12 +49,13 @@
 package org.knime.python3.nodes.ports;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -66,6 +67,9 @@ import org.knime.core.data.image.ImageContent;
 import org.knime.core.data.image.png.PNGImageContent;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.ExecutionContext;
+import org.knime.core.node.ModelContent;
+import org.knime.core.node.ModelContentRO;
+import org.knime.core.node.port.AbstractSimplePortObjectSpec.AbstractSimplePortObjectSpecSerializer;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.PortType;
@@ -75,8 +79,6 @@ import org.knime.core.table.virtual.serialization.AnnotatedColumnarSchemaSeriali
 import org.knime.credentials.base.Credential;
 import org.knime.credentials.base.CredentialPortObject;
 import org.knime.credentials.base.CredentialPortObjectSpec;
-import org.knime.credentials.base.CredentialType;
-import org.knime.credentials.base.CredentialTypeRegistry;
 import org.knime.credentials.base.oauth.api.HttpAuthorizationHeaderCredentialValue;
 import org.knime.python3.PythonDataSource;
 import org.knime.python3.arrow.PythonArrowDataSink;
@@ -903,13 +905,16 @@ public final class PythonPortObjects {
         public String toJsonString() {
             final var om = new ObjectMapper();
             final var rootNode = om.createObjectNode();
-            Optional<CredentialType> type = m_spec.getCredentialType();
-            if (type.isPresent()) {
-                rootNode.put("typeId", type.get().getId());
-            }
-            UUID cacheID = m_spec.getCacheId();
-            if (cacheID != null) {
-                rootNode.put("cacheId", cacheID.toString());
+            ModelContent fakeConfig = new ModelContent("fakeConfig");
+
+            AbstractSimplePortObjectSpecSerializer.savePortObjectSpecToModelSettings(m_spec, fakeConfig);
+            try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
+                fakeConfig.saveToXML(byteArrayOutputStream);
+                byteArrayOutputStream.close(); // NOSONAR we have to close here
+                rootNode.put("data", byteArrayOutputStream.toString(StandardCharsets.UTF_8));
+
+            } catch (IOException ex) {
+                throw new IllegalStateException("Could not parse the PythonCredentialPortObjectSpec to XML.", ex);
             }
 
             try {
@@ -925,18 +930,43 @@ public final class PythonPortObjects {
          * @throws IllegalStateException if a problem is encountered during the parsing of the JSON data
          */
         public static PythonCredentialPortObjectSpec fromJsonString(final String jsonData) {
+
             final var om = new ObjectMapper();
             try {
                 final var rootNode = om.readTree(jsonData);
-                final String typeId = rootNode.get("typeId").asText("");
-                final CredentialType type = CredentialTypeRegistry.getCredentialType(typeId);
-                final String cacheId = rootNode.get("cacheId").asText();
-                return new PythonCredentialPortObjectSpec(new CredentialPortObjectSpec(type, UUID.fromString(cacheId)));
-            } catch (JsonMappingException ex) {
+                final String serializedXMLString = rootNode.get("data").asText("");
+
+                CredentialPortObjectSpec credentialPortObjectSpec =
+                    loadFromXMLCredentialPortObjectSpecString(serializedXMLString);
+                return new PythonCredentialPortObjectSpec(credentialPortObjectSpec);
+
+            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | IOException ex) {
                 throw new IllegalStateException("Could not parse PythonCredentialPortObject from given JSON data", ex);
-            } catch (JsonProcessingException ex) { // NOSONAR: Eclipse requires explicit handling of this exception
-                throw new IllegalStateException("Could not parse PythonCredentialPortObject from given Json data", ex);
             }
+        }
+
+        /**
+         * Loads a CredentialPortObjectSpec from a serialized XML string.
+         *
+         * This method deserializes the provided XML string to create a CredentialPortObjectSpec.
+         *
+         * @param serializedXMLString The serialized XML string representing the CredentialPortObjectSpec.
+         * @return The loaded CredentialPortObjectSpec.
+         * @throws ClassNotFoundException If a required class is not found during deserialization.
+         * @throws InstantiationException If an error occurs during object instantiation during deserialization.
+         * @throws IllegalAccessException If there is illegal access during deserialization.
+         * @throws IOException If an I/O error occurs during deserialization.
+         */
+        public static CredentialPortObjectSpec
+            loadFromXMLCredentialPortObjectSpecString(final String serializedXMLString)
+                throws ClassNotFoundException, InstantiationException, IllegalAccessException, IOException {
+
+            ByteArrayInputStream dataArrayInputStream =
+                new ByteArrayInputStream(serializedXMLString.getBytes(StandardCharsets.UTF_8));
+            ModelContentRO fakeConfig = ModelContent.loadFromXML(dataArrayInputStream);
+
+            return AbstractSimplePortObjectSpecSerializer.loadPortObjectSpecFromModelSettings(fakeConfig);
+
         }
 
     }
@@ -976,4 +1006,5 @@ public final class PythonPortObjects {
     public static PortType[] getPortTypesForIdentifiers(final String[] identifiers) {
         return Arrays.stream(identifiers).map(PythonPortObjects::getPortTypeForIdentifier).toArray(PortType[]::new);
     }
+
 }
