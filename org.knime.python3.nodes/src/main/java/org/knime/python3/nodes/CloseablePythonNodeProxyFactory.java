@@ -51,6 +51,7 @@ package org.knime.python3.nodes;
 import java.io.IOException;
 
 import org.knime.core.node.NodeLogger;
+import org.knime.core.util.proxy.GlobalProxyConfigProvider;
 import org.knime.python3.PythonGateway;
 import org.knime.python3.PythonGatewayUtils;
 import org.knime.python3.nodes.PurePythonNodeSetFactory.ResolvedPythonExtension;
@@ -146,6 +147,33 @@ final class CloseablePythonNodeProxyFactory {
             @Override
             public void log(final String message, final String severity) {
                 m_logCallback.log(message, severity);
+            }
+
+            @SuppressWarnings("unused")
+            public String[] get_proxy_server_strings() { // NOSONAR
+
+                final var maybeProxyConfig = GlobalProxyConfigProvider.getCurrent();
+                String[] proxySettingStrings = new String[6];
+
+                if (maybeProxyConfig.isPresent()) {
+                    final var proxyConfig = maybeProxyConfig.get();
+
+                    proxySettingStrings[0] = proxyConfig.protocol().name();
+                    proxySettingStrings[1] =  proxyConfig.host();
+                    proxySettingStrings[2]  = proxyConfig.port();
+
+                    if (proxyConfig.useExcludedHosts()) {
+                        proxySettingStrings[3] = proxyConfig.excludedHosts();
+                    }
+
+                    if (proxyConfig.useAuthentication()) {
+                        proxySettingStrings[4] = proxyConfig.username();
+                        proxySettingStrings[5]  = proxyConfig.password();
+                    }
+
+                }
+
+                return proxySettingStrings;
             }
         };
         backend.initializeJavaCallback(callback);

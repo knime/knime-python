@@ -53,6 +53,7 @@ import knime.extension.nodes as _kn
 import knime.api.schema as _ks
 import knime.api.views as _kv
 import knime.extension.parameter as _kp
+import knime.extension.env as _ke
 
 # re-exporting symbols so that "import knime.extension" allows the user to conduct every KAP-facing call via this interface
 
@@ -139,3 +140,7 @@ view_jpeg = _kv.view_jpeg
 view_plotly = _kv.view_plotly
 view_matplotlib = _kv.view_matplotlib
 view_seaborn = _kv.view_seaborn
+
+## knime.extension.env
+ProxySettings = _ke.ProxySettings
+get_proxy_settings = _ke.get_proxy_settings

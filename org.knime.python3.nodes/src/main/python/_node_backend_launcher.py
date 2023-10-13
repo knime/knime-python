@@ -55,10 +55,10 @@ from knime._backend._mainloop import MainLoop
 import knime._backend._gateway as kg
 import knime.extension.nodes as kn
 import knime.extension.parameter as kp
+
 import knime.api.schema as ks
 
 import knime._arrow._table as kat
-import knime._views  # to register the NodeViewSink
 import knime.api.table as kt
 import importlib
 import json
@@ -70,6 +70,9 @@ import collections
 from py4j.java_gateway import JavaClass
 from py4j.java_collections import ListConverter
 import py4j.clientserver
+
+from knime.extension.env import _set_proxy_settings
+
 
 # TODO: register extension types
 
@@ -844,6 +847,7 @@ class _KnimeNodeBackend(kg.EntryPoint, kn._KnimeNodeBackend):
 
     def initializeJavaCallback(self, callback):
         _push_log_callback(lambda msg, sev: callback.log(msg, sev))
+        _set_proxy_settings(callback)
 
     def retrieveCategoriesAsJson(self) -> str:
         category_dicts = [category.to_dict() for category in kn._categories]
