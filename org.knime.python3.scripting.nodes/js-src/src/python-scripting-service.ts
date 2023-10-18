@@ -23,7 +23,7 @@ import { registerInputCompletions } from "./input-completions";
 
 /* eslint-disable no-console */
 
-const SLEEP_TIME = 500;
+const SLEEP_TIME = 100;
 
 const editorService = new EditorService();
 
@@ -50,17 +50,61 @@ print("Hello, I am a fake AI")
   getInputObjects: () => [
     {
       name: "Input Table 1",
-      codeAlias: "knio.input_tables[0]",
+      codeAlias: "knio.input_tables[0].to_pandas()",
+      requiredImport: "import knio.scripting.io as knio",
+      multiSelection: true,
+      subItemCodeAliasTemplate: `knio.input_tables[0][
+        {{~#if subItems.[1]~}}
+          [{{#each subItems}}"{{this}}"{{#unless @last}},{{/unless}}{{/each}}]
+        {{~else~}}
+          "{{subItems.[0]}}"
+          {{~/if~}}
+      ].to_pandas()`,
       subItems: [
         {
           name: "Column 1",
           type: "Number",
-          codeAlias: 'knio.input_tables[0]["Column 1"]',
+          codeAlias: 'knio.input_tables[0]["Column 1"].to_pandas()',
         },
         {
           name: "Column 2",
           type: "String",
-          codeAlias: 'knio.input_tables[0]["Column 2"]',
+          codeAlias: 'knio.input_tables[0]["Column 2"].to_pandas()',
+        },
+        {
+          name: "Column 3",
+          type: "String",
+          codeAlias: 'knio.input_tables[0]["Column 3"].to_pandas()',
+        },
+      ],
+    },
+    {
+      name: "Input Table 2",
+      codeAlias: "knio.input_tables[1].to_pandas()",
+      requiredImport: "import knio.scripting.io as knio",
+      multiSelection: true,
+      subItemCodeAliasTemplate: `knio.input_tables[1][
+        {{~#if subItems.[1]~}}
+          [{{#each subItems}}"{{this}}"{{#unless @last}},{{/unless}}{{/each}}]
+        {{~else~}}
+          "{{subItems.[0]}}"
+          {{~/if~}}
+      ].to_pandas()`,
+      subItems: [
+        {
+          name: "Column 1",
+          type: "Number",
+          codeAlias: 'knio.input_tables[1]["Column 1"].to_pandas()',
+        },
+        {
+          name: "Column 2",
+          type: "String",
+          codeAlias: 'knio.input_tables[1]["Column 2"].to_pandas()',
+        },
+        {
+          name: "Column 3",
+          type: "String",
+          codeAlias: 'knio.input_tables[1]["Column 3"].to_pandas()',
         },
       ],
     },
@@ -69,10 +113,37 @@ print("Hello, I am a fake AI")
     {
       name: "Output Table 1",
       codeAlias: "knio.output_tables[0]",
+      requiredImport: "import knio.scripting.io as knio",
     },
   ],
-  getFlowVariableInputs: () => {},
+  getFlowVariableInputs: () => {
+    return {
+      name: "Flow Variables",
+      codeAlias: "knio.flow_variables",
+      requiredImport: "import knio.scripting.io as knio",
+      multiSelection: false,
+      subItemCodeAliasTemplate: 'knio.flow_variables["{{subItems.[0]}}"]',
+      subItems: [
+        {
+          name: "flowVar1",
+          type: "Number",
+          codeAlias: 'knio.input_tables[1]["Column 1"].to_pandas()',
+        },
+        {
+          name: "flowVar2",
+          type: "String",
+          codeAlias: 'knio.input_tables[1]["Column 2"].to_pandas()',
+        },
+        {
+          name: "flowVar3",
+          type: "String",
+          codeAlias: 'knio.input_tables[1]["Column 3"].to_pandas()',
+        },
+      ],
+    };
+  },
   hasPreview: () => true,
+  getExecutableOptionsList: () => [],
 };
 
 const browserMockScriptingService: ScriptingServiceType = {
@@ -93,7 +164,10 @@ const browserMockScriptingService: ScriptingServiceType = {
   },
   async getInitialSettings() {
     await sleep(SLEEP_TIME);
-    return { script: "print('Hello World!')" };
+    return {
+      script:
+        "print('Hello World!')\n\nprint('Hello World!')\n\nprint('Hello World!')\n",
+    };
   },
   async saveSettings(settings: NodeSettings) {
     console.log(`Saved settings ${JSON.stringify(settings)}`);
@@ -120,7 +194,7 @@ const browserMockScriptingService: ScriptingServiceType = {
     console.log(`initEditorService called with ${{ editor, editorModel }}`);
   },
   getScript() {
-    console.log("getSelectedLines called");
+    console.log("getScript called", editorService.getScript());
     return editorService.getScript();
   },
   getSelectedLines() {
@@ -141,6 +215,9 @@ const browserMockScriptingService: ScriptingServiceType = {
   },
   pasteToEditor(text: string) {
     editorService.pasteToEditor(text);
+  },
+  setOnDidChangeContentListener(callback: Function) {
+    return editorService.setOnDidChangeContentListener(callback);
   },
   supportsCodeAssistant(): Promise<boolean> {
     console.log("Checking whether code assistance is available");
