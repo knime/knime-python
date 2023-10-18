@@ -397,7 +397,11 @@ final class PythonScriptingService extends ScriptingService {
                     f.getVariableType().toString(), //
                     PythonCodeAliasProvider.getFlowVariableCodeAlias(f.getName()));
             }).toArray(InputOutputModelSubItem[]::new);
-            return new InputOutputModel("Flow Variables", PythonCodeAliasProvider.getFlowVariableCodeAlias(null),
+            return new InputOutputModel("Flow Variables", //
+                PythonCodeAliasProvider.getFlowVariableCodeAlias(null), //
+                PythonCodeAliasProvider.getFlowVariableSubItemCodeAliasTemplate(), //
+                PythonCodeAliasProvider.getRequiredImport(), //
+                false, //
                 subItems);
         }
 
@@ -425,8 +429,13 @@ final class PythonScriptingService extends ScriptingService {
             for (int i = 0; i < inputSpec.length; i++) {
                 final var spec = inputSpec[i];
                 if (spec instanceof DataTableSpec dataTableSpec) {
-                    inputInfos.add(createFromTableSpec(tableIdx, dataTableSpec,
-                        PythonCodeAliasProvider::getInputObjectCodeAlias, INPUT_OUTPUT_TYPE_TABLE));
+                    inputInfos.add( //
+                        createFromTableSpec(tableIdx, //
+                            dataTableSpec, //
+                            PythonCodeAliasProvider::getInputObjectCodeAlias, //
+                            PythonCodeAliasProvider.getSubItemCodeAliasTemplate(i, INPUT_OUTPUT_TYPE_TABLE), //
+                            PythonCodeAliasProvider.getRequiredImport(), //
+                            INPUT_OUTPUT_TYPE_TABLE));
                     tableIdx++;
                 } else if (spec instanceof PickledObjectPortObjectSpec) {
                     inputInfos.add(createFromPortSpec(objectIdx, INPUT_OUTPUT_TYPE_OBJECT));
@@ -449,8 +458,12 @@ final class PythonScriptingService extends ScriptingService {
             var outputPortInfos = getDefaultPortInfo("Output", getWorkflowControl().getOutputPortTypes());
             if (m_hasView) {
                 outputPortInfos = new ArrayList<>(outputPortInfos);
-                outputPortInfos
-                    .add(new InputOutputModel("Output View", PythonCodeAliasProvider.getOutputViewCodeAlias(), null));
+                outputPortInfos.add(new InputOutputModel("Output View", //
+                    PythonCodeAliasProvider.getOutputViewCodeAlias(), //
+                    null, //
+                    PythonCodeAliasProvider.getRequiredImport(), //
+                    false, //
+                    null));
             }
             return outputPortInfos;
         }
@@ -469,7 +482,12 @@ final class PythonScriptingService extends ScriptingService {
                 } else {
                     codeAlias = PythonCodeAliasProvider.getOutputObjectCodeAlias(index, type, null);
                 }
-                return new InputOutputModel(inputName, codeAlias, null);
+                return new InputOutputModel(inputName, //
+                    codeAlias, //
+                    null, //
+                    PythonCodeAliasProvider.getRequiredImport(), //
+                    false, //
+                    null);
             }).toList();
         }
 
@@ -545,8 +563,10 @@ final class PythonScriptingService extends ScriptingService {
 
         private InputOutputModel createFromPortSpec(final int index, final String displayName) {
             var name = String.format("Input %s %d", displayName, index + 1);
-            return new InputOutputModel(name, PythonCodeAliasProvider.getInputObjectCodeAlias(index, displayName, null),
-                null);
+            return new InputOutputModel(name, //
+                PythonCodeAliasProvider.getInputObjectCodeAlias(index, displayName, null), //
+                PythonCodeAliasProvider.getSubItemCodeAliasTemplate(index, displayName),
+                PythonCodeAliasProvider.getRequiredImport(), true, null);
         }
     }
 
@@ -662,6 +682,35 @@ final class PythonScriptingService extends ScriptingService {
                 return "knio.flow_variables";
             }
             return appendStringSuffix("knio.flow_variables", flowVariableName);
+        }
+
+        public static String getFlowVariableSubItemCodeAliasTemplate() {
+            return "knio.flow_variables[\"{{subItems.[0]}}\"]";
+        }
+
+        public static String getRequiredImport() {
+            return "import knime.scripting.io as knio";
+        }
+
+        public static String getSubItemCodeAliasTemplate(final int index, final String type) {
+            var templateString = """
+                    knio.input_%s[%d][
+                        {{~#if subItems.[1]~}}
+                            [{{#each subItems}}\"{{this}}\"{{#unless @last}},{{/unless}}{{/each}}]
+                        {{~else~}}
+                            \"{{subItems.[0]}}\"
+                        {{~/if~}}
+                    ].to_pandas()""";
+            switch (type) {
+                case INPUT_OUTPUT_TYPE_TABLE: {
+                    return String.format(templateString, "tables", index);
+                }
+                case INPUT_OUTPUT_TYPE_OBJECT: {
+                    return String.format(templateString, "objects", index);
+                }
+                default:
+                    throw new IllegalArgumentException("Unexpected input object type: " + type);
+            }
         }
 
         public static String getInputObjectCodeAlias(final int index, final String type, final String subItemName) {
