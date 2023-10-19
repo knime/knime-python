@@ -48,13 +48,14 @@ Type system and schema definition for KNIME tables.
 @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
 """
 
+import logging
+
 # --------------------------------------------------------------------
 # Types
 # --------------------------------------------------------------------
 from abc import ABC, abstractmethod
-from typing import Dict, Iterable, Iterator, List, Optional, Sequence, Type, Union
-import logging
 from enum import Enum, unique
+from typing import Dict, Iterable, Iterator, List, Optional, Sequence, Type, Union
 
 import knime.api.types as kt
 
@@ -248,8 +249,20 @@ class LogicalType(KnimeType):
     """
 
     def __init__(
-        self, logical_type, storage_type: KnimeType, proxy_type_converter=None
+        self,
+        logical_type,
+        storage_type: KnimeType,
+        proxy_type_converter: Optional = None,
     ):
+        """
+        Construct a LogicalType from a logical_type, a storage_type and an optional proxy_type_converter.
+
+        Args:
+            logical_type: The JSON encoded definition of the type in KNIME
+            storage_type: The KnimeType that is actually used to store the data of this extension type
+            proxy_type_converter (Optional): a proxy type that can be used on the Python side to read or write
+                the values which are internally treated like the original logical type.
+        """
         self._logical_type = logical_type
         self._storage_type = storage_type
         self._proxy_type_converter = proxy_type_converter
@@ -515,6 +528,75 @@ def logical(value_type) -> LogicalType:
             """,
             e,
         )
+
+
+def datetime(
+    date: Optional[bool] = True,
+    time: Optional[bool] = True,
+    timezone: Optional[bool] = False,
+) -> LogicalType:
+    """
+
+    Currently, KNIME supports the following date/time formats:
+        - Local DateTime (date=True, time=True, timezone=False)
+        - Local Date (date=True, time=False, timezone=False)
+        - Local Time (date=False, time=True, timezone=False)
+        - Zoned DateTime (date=True, time=True, timezone=True)
+
+    Args:
+        date(Optional[bool]): Whether the column contains a date
+        time(Optional[bool]): Whether the column contains a time
+        timezone(Optional[bool]): Whether the column contains a timezone
+
+    Returns:
+        A LogicalType representing the given date/time format.
+
+    Raises:
+        ValueError: If the combination of date, time and timezone is not supported or
+                    the datetime types are not registered in KNIME.
+
+    """
+    if not date and not time:
+        raise ValueError("Either date or time must be True")
+    if timezone and not time:
+        raise ValueError("Timezone is only supported if time is True")
+
+    if date and time and not timezone:
+        value_factory_string = "LocalDateTimeValueFactory"
+    elif date and time and timezone:
+        value_factory_string = "ZonedDateTimeValueFactory2"
+    elif date and not time:
+        value_factory_string = "LocalDateValueFactory"
+    else:
+        value_factory_string = "LocalTimeValueFactory"
+
+    logical_type_string = _knime_datetime_type(value_factory_string)
+    storage_type = _knime_datetime_logical_to_ktype[logical_type_string]
+
+    if logical_type_string not in kt._java_value_factory_to_bundle:
+        raise ValueError(
+            f"""
+            Could not find registered KNIME extension type for datetime format {logical_type_string}. 
+            Call knime.api.schema.LogicalType.supported_value_types() to get a list of supported types.
+            """
+        )
+
+    return LogicalType(logical_type=logical_type_string, storage_type=storage_type)
+
+
+def _knime_datetime_type(name):
+    return '{"value_factory_class":"org.knime.core.data.v2.time.' + name + '"}'
+
+
+_knime_datetime_logical_to_ktype = {
+    _knime_datetime_type("LocalTimeValueFactory"): int64(),
+    _knime_datetime_type("LocalDateValueFactory"): int64(),
+    _knime_datetime_type("LocalDateTimeValueFactory"): StructType([int64(), int64()]),
+    _knime_datetime_type("DurationValueFactory"): StructType([int64(), int32()]),
+    _knime_datetime_type("ZonedDateTimeValueFactory2"): StructType(
+        [int64(), int64(), int32(), string()]
+    ),
+}
 
 
 class PortObjectSpec(ABC):
@@ -1191,7 +1273,6 @@ def _wrap_primitive_type(dtype: KnimeType) -> KnimeType:
     If the type is unknown, it will be returned unmodified.
     """
     # no need to wrap extension types -> happens in logical(value_type)
-    import knime.api.types as kt
 
     if dtype in _knime_type_to_logical_type:
         dtype = LogicalType(_knime_type_to_logical_type[dtype], dtype)
