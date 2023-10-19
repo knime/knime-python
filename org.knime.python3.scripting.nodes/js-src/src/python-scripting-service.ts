@@ -8,7 +8,6 @@ import {
 import type {
   ExecutableOption,
   ExecutionInfo,
-  InputPortInfo,
   KillSessionInfo,
   PythonScriptingNodeSettings,
 } from "./types/common";
@@ -268,11 +267,6 @@ export const pythonScriptingService = {
     // Cleanup the workspace and session status
     useWorkspaceStore().workspace = [];
     useSessionStatusStore().status = "IDLE";
-  },
-  getInputObjects: async (): Promise<InputPortInfo[]> => {
-    return (await scriptingService.sendToService(
-      "getInputObjects",
-    )) as InputPortInfo[];
   },
   registerConsoleEventHandler: (handler: any) => {
     scriptingService.registerConsoleEventHandler(handler);

@@ -19,11 +19,6 @@ export type PythonScriptingNodeSettings = {
   executableSelection: string;
 };
 
-export type InputPortInfo = {
-  type: string;
-  variableName: string;
-};
-
 export type Workspace = {
   name: string;
   type: string;
