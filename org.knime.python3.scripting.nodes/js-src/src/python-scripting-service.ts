@@ -19,6 +19,7 @@ import {
   useSessionStatusStore,
   useWorkspaceStore,
 } from "./store";
+import { registerInputCompletions } from "./input-completions";
 
 /* eslint-disable no-console */
 
@@ -152,6 +153,17 @@ const browserMockScriptingService: ScriptingServiceType = {
   closeDialog() {
     console.log("Closing dialog");
     return Promise.resolve();
+  },
+  getFlowVariableInputs() {
+    return Promise.resolve({
+      name: "Flow Variables",
+    });
+  },
+  getInputObjects() {
+    return Promise.resolve([{ name: "Input Table 1" }]);
+  },
+  getOutputObjects() {
+    return Promise.resolve([{ name: "Output Table 1" }]);
   },
 };
 
@@ -289,5 +301,23 @@ export const pythonScriptingService = {
   },
   hasPreview: (): Promise<boolean> => {
     return scriptingService.sendToService("hasPreview");
+  },
+  registerInputCompletions: async () => {
+    const inpObjects = await scriptingService.getInputObjects();
+    const inpFlowVars = await scriptingService.getFlowVariableInputs();
+
+    registerInputCompletions([
+      ...inpObjects.flatMap(
+        (inp, inpIdx) =>
+          inp.subItems?.map((subItem) => ({
+            label: subItem.name,
+            detail: `input ${inpIdx} - column : ${subItem.type}`,
+          })) ?? [],
+      ),
+      ...(inpFlowVars.subItems?.map((subItem) => ({
+        label: subItem.name,
+        detail: `flow variable : ${subItem.type}`,
+      })) ?? []),
+    ]);
   },
 };

@@ -63,6 +63,9 @@ const onMonacoCreated = ({
 
   // Connect to the language server
   pythonScriptingService.connectToLanguageServer();
+
+  // Register the completion items for the inputs
+  pythonScriptingService.registerInputCompletions();
 };
 
 const saveSettings = async (commonSettings: NodeSettings) => {
