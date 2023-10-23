@@ -75,7 +75,7 @@ class ProxySettings:
         user_name: Optional[str] = None,
         password: Optional[str] = None,
     ):
-        self.protocol_name = protocol_name.lower()
+        self.protocol_name = protocol_name.lower() if protocol_name else None
 
         self.host_name = host_name
         self.port_number = port_number
@@ -87,6 +87,9 @@ class ProxySettings:
 
     def __str__(self):
         """Create the proxy environment variable string"""
+
+        if not self.protocol_name:
+            return ""
 
         if self.protocol_name not in supported_proxy_protocols:
             logging.warning(
