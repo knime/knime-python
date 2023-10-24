@@ -47,6 +47,14 @@ class ClientServerMock:
         return mock
 
 
+class JavaCallbackMock:
+    def get_auth_schema(self, xml_data):
+        return "None"
+
+    def get_auth_parameters(self, xml_data):
+        return "None"
+
+
 def _get_flow_variables(self):
     return {}
 

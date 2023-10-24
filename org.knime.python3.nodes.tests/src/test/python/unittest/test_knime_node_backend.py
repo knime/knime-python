@@ -41,6 +41,9 @@ def _binary_spec_from_java(id: str, data: dict = None, **kwargs):
     )
 
 
+callback_mock = test_utilities.JavaCallbackMock()
+
+
 class PortTypeRegistryTest(unittest.TestCase):
     class TestPortObjectSpec(knext.PortObjectSpec):
         def __init__(self, data: str) -> None:
@@ -259,7 +262,7 @@ class PortTypeRegistryTest(unittest.TestCase):
                 file.write(b"furball")
                 file.flush()
                 java_obj = self.MockFromJavaObject(java_spec, file.name)
-                obj = self.registry.port_object_to_python(java_obj, port)
+                obj = self.registry.port_object_to_python(java_obj, port, callback_mock)
                 self.assertEqual("furball", obj.data)
                 self.assertEqual("badabummm", obj.spec.data)
             finally:
@@ -276,7 +279,7 @@ class PortTypeRegistryTest(unittest.TestCase):
                 file.flush()
                 java_obj = self.MockFromJavaObject(java_spec, file.name)
                 with self.assertRaises(AssertionError):
-                    self.registry.port_object_to_python(java_obj, port)
+                    self.registry.port_object_to_python(java_obj, port, callback_mock)
             finally:
                 file.close()
                 os.remove(file.name)
@@ -294,7 +297,7 @@ class PortTypeRegistryTest(unittest.TestCase):
                 file.flush()
                 java_obj = self.MockFromJavaObject(java_spec, file.name)
                 with self.assertRaises(AssertionError):
-                    self.registry.port_object_to_python(java_obj, port)
+                    self.registry.port_object_to_python(java_obj, port, callback_mock)
             finally:
                 file.close()
                 os.remove(file.name)
@@ -421,7 +424,7 @@ class PortTypeRegistryTest(unittest.TestCase):
             "no filename needed",
             class_name="org.knime.python3.nodes.ports.PythonTransientConnectionPortObject",
         )
-        obj = self.registry.port_object_to_python(java_obj, port)
+        obj = self.registry.port_object_to_python(java_obj, port, callback_mock)
         self.assertEqual("furball", obj.data)
         self.assertEqual("badabummm", obj.spec.data)
         self.assertEqual("this data is not serialized", obj._transient_data)
