@@ -223,6 +223,44 @@ final class CloseablePythonNodeProxy
                     .getAvailableFlowVariables(getCompatibleFlowVariableTypes()).values());
             }
 
+
+            @SuppressWarnings("unused")
+            public String get_auth_schema(final String serializedXMLString) throws CouldNotAuthorizeException, // NOSONAR
+                ClassNotFoundException, InstantiationException, IllegalAccessException, IOException { // NOSONAR
+
+                CredentialPortObjectSpec credentialPortObjectSpec =
+                    PythonCredentialPortObjectSpec.loadFromXMLCredentialPortObjectSpecString(serializedXMLString);
+
+                var credential = credentialPortObjectSpec.getCredential(Credential.class);
+
+                final Credential cred = credential.orElseThrow();
+                if (cred instanceof HttpAuthorizationHeaderCredentialValue val) {
+                    return val.getAuthScheme();
+                }
+                return null;
+
+            }
+
+            @SuppressWarnings("unused")
+            public String get_auth_parameters(final String serializedXMLString) throws CouldNotAuthorizeException, // NOSONAR
+                ClassNotFoundException, InstantiationException, IllegalAccessException, IOException { // NOSONAR
+
+                CredentialPortObjectSpec credentialPortObjectSpec =
+                    PythonCredentialPortObjectSpec.loadFromXMLCredentialPortObjectSpecString(serializedXMLString);
+
+                var credential = credentialPortObjectSpec.getCredential(Credential.class);
+
+                final Credential cred = credential.orElseThrow();
+                if (cred instanceof HttpAuthorizationHeaderCredentialValue val) {
+                    try {
+                        return val.getAuthParameters();
+                    } catch (IOException ex) { // NOSONAR
+                        return null;
+                    }
+                }
+                return null;
+            }
+
         };
         m_proxy.initializeJavaCallback(dialogCallback);
 
@@ -572,6 +610,43 @@ final class CloseablePythonNodeProxy
             @Override
             public String get_preferred_value_types_as_json(final String tableSchemaJson) {
                 return TableSpecSerializationUtils.getPreferredValueTypesForSerializedSchema(tableSchemaJson);
+            }
+
+            @SuppressWarnings("unused")
+            public String get_auth_schema(final String serializedXMLString) throws CouldNotAuthorizeException, // NOSONAR
+                ClassNotFoundException, InstantiationException, IllegalAccessException, IOException { // NOSONAR
+
+                CredentialPortObjectSpec credentialPortObjectSpec =
+                    PythonCredentialPortObjectSpec.loadFromXMLCredentialPortObjectSpecString(serializedXMLString);
+
+                var credential = credentialPortObjectSpec.getCredential(Credential.class);
+
+                final Credential cred = credential.orElseThrow();
+                if (cred instanceof HttpAuthorizationHeaderCredentialValue val) {
+                    return val.getAuthScheme();
+                }
+                return null;
+
+            }
+
+            @SuppressWarnings("unused")
+            public String get_auth_parameters(final String serializedXMLString) throws CouldNotAuthorizeException, // NOSONAR
+                ClassNotFoundException, InstantiationException, IllegalAccessException, IOException { // NOSONAR
+
+                CredentialPortObjectSpec credentialPortObjectSpec =
+                    PythonCredentialPortObjectSpec.loadFromXMLCredentialPortObjectSpecString(serializedXMLString);
+
+                var credential = credentialPortObjectSpec.getCredential(Credential.class);
+
+                final Credential cred = credential.orElseThrow();
+                if (cred instanceof HttpAuthorizationHeaderCredentialValue val) {
+                    try {
+                        return val.getAuthParameters();
+                    } catch (IOException ex) { // NOSONAR
+                        return null;
+                    }
+                }
+                return null;
             }
         };
         m_proxy.initializeJavaCallback(callback);

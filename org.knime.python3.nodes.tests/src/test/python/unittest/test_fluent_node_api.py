@@ -82,6 +82,7 @@ class NodeApiTest(unittest.TestCase):
 
     def test_configure(self):
         node_proxy = self.backend.createNodeFromExtension(NodeApiTest.node_id)
+        node_proxy._java_callback = util.JavaCallbackMock()
 
         json_string_data = '{"schema": {"specs": ["string", "double"], "traits": [{"traits": {"logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.value.DefaultRowKeyValueFactory\\"}"}, "type": "simple"}, {"traits": {"logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.value.DoubleValueFactory\\"}"}, "type": "simple"}]}, "columnNames": ["RowKey", "column423"], "columnMetaData": [null, null]}'
         TABLE_SPEC_JAVA_CLASS = "org.knime.core.data.DataTableSpec"

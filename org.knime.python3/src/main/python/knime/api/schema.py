@@ -683,7 +683,7 @@ class CredentialPortObjectSpec(PortObjectSpec):
     Port object spec for credential port objects.
     """
 
-    def __init__(self, xml_data: Optional[str]) -> None:
+    def __init__(self, xml_data: Optional[str], java_callback) -> None:
         """
         Create a CredentialPortObjectSpec
 
@@ -691,6 +691,13 @@ class CredentialPortObjectSpec(PortObjectSpec):
             xml_data (str): The xml data of the credentials.
         """
         self._xml_data = xml_data
+        self._java_callback = java_callback
+
+    def _get_auth_schema(self) -> str:
+        return self._java_callback.get_auth_schema(self._xml_data)
+
+    def _get_auth_parameters(self) -> str:
+        return self._java_callback.get_auth_parameters(self._xml_data)
 
     @property
     def auth_schema(self) -> str:
@@ -711,12 +718,8 @@ class CredentialPortObjectSpec(PortObjectSpec):
         except Py4JJavaError as ex:
             raise ValueError(
                 f"Could not get auth schema from {self.__class__.__name__}. Check if the credentials are valid and "
-                f"accessible."
+                f"accessible. Maybe execute the upstream nodes?"
             ) from ex
-        except NotImplementedError:
-            raise ValueError(
-                "Credential Port Objects can only be used in the execute method of a node."
-            )
 
     @property
     def auth_parameters(self) -> str:
@@ -737,18 +740,14 @@ class CredentialPortObjectSpec(PortObjectSpec):
         except Py4JJavaError as ex:
             raise ValueError(
                 f"Could not get auth parameters from {self.__class__.__name__}. Check if the credentials are valid and "
-                f"accessible."
+                f"accessible. Maybe execute the upstream nodes?"
             ) from ex
-        except NotImplementedError:
-            raise ValueError(
-                "Credential Port Objects can only be used in the execute method of a node."
-            )
 
     def serialize(self) -> dict:
         return {"data": self._xml_data}
 
     @classmethod
-    def deserialize(cls, data: dict):
+    def deserialize(cls, data: dict, java_callback=None):
         """Deserialize the CredentialPortObjectSpec from the data.
 
         Args:
@@ -760,7 +759,7 @@ class CredentialPortObjectSpec(PortObjectSpec):
         """
         # spec is optional therefore we use get instead of __get_item__
         xml_data = data.get("data")
-        return cls(xml_data)
+        return cls(xml_data, java_callback)
 
 
 # --------------------------------------------------------------------

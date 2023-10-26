@@ -54,6 +54,7 @@ import java.util.Map;
 
 import org.knime.core.data.filestore.FileStore;
 import org.knime.core.table.schema.AnnotatedColumnarSchema;
+import org.knime.core.util.auth.CouldNotAuthorizeException;
 import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.nodes.LogCallback;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
@@ -207,13 +208,49 @@ public interface PythonNodeModelProxy {
         void set_failure(String message, String details, boolean invalidSettings); // NOSONAR
 
         /**
-         * Given a JSON-serialized {@link AnnotatedColumnarSchema}, this method will return
-         * a string-serialized JSON array of elements with "preferred_value_type" and "display_column_type"s
-         * which are needed for the UI schema generation of all column selection UI elements.
+         * Given a JSON-serialized {@link AnnotatedColumnarSchema}, this method will return a string-serialized JSON
+         * array of elements with "preferred_value_type" and "display_column_type"s which are needed for the UI schema
+         * generation of all column selection UI elements.
+         *
          * @param tableSchemaJson A JSON-serialized {@link AnnotatedColumnarSchema}
          * @return A JSON array of elements with "preferred_value_type"s, serialized to string
          */
         String get_preferred_value_types_as_json(final String tableSchemaJson); // NOSONAR
+
+        /**
+         * Retrieves the authentication schema from a serialized XML representation of a credential.
+         *
+         * This method parses the input XML string and extracts the authentication schema from it,
+         * assuming that the XML represents a valid CredentialPortObjectSpec.
+         *
+         * @param serializedXMLString The serialized XML string containing credential information.
+         * @return The authentication schema extracted from the credential, or null if the schema is not found.
+         * @throws CouldNotAuthorizeException If there is an issue with the authorization process.
+         * @throws ClassNotFoundException If the required class is not found during deserialization.
+         * @throws InstantiationException If an error occurs while instantiating an object during deserialization.
+         * @throws IllegalAccessException If there is an illegal access operation during deserialization.
+         * @throws IOException If an I/O error occurs during deserialization.
+         */
+        public String get_auth_schema(final String serializedXMLString) throws CouldNotAuthorizeException, // NOSONAR
+            ClassNotFoundException, InstantiationException, IllegalAccessException, IOException;
+
+
+        /**
+         * Retrieves the authentication parameters from a serialized XML representation of a credential.
+         *
+         * This method parses the input XML string and extracts the authentication parameters from it,
+         * assuming that the XML represents a valid CredentialPortObjectSpec.
+         *
+         * @param serializedXMLString The serialized XML string containing credential information.
+         * @return The authentication parameters extracted from the credential, or null if not found.
+         * @throws CouldNotAuthorizeException If there is an issue with the authorization process.
+         * @throws ClassNotFoundException If the required class is not found during deserialization.
+         * @throws InstantiationException If an error occurs while instantiating an object during deserialization.
+         * @throws IllegalAccessException If there is an illegal access operation during deserialization.
+         * @throws IOException If an I/O error occurs during deserialization or when retrieving parameters.
+         */
+        public String get_auth_parameters(final String serializedXMLString) throws CouldNotAuthorizeException, // NOSONAR
+            ClassNotFoundException, InstantiationException, IllegalAccessException, IOException;
     }
 
     /**
@@ -251,6 +288,9 @@ public interface PythonNodeModelProxy {
          **/
         String[] get_credentials(final String identifier); // NOSONAR
 
+
+
+
     }
 
     /**
@@ -267,7 +307,6 @@ public interface PythonNodeModelProxy {
          */
         void set_warning(final String message);//NOSONAR
 
-
         /**
          * @return A unique string identifying this node in the workflow
          */
@@ -280,7 +319,6 @@ public interface PythonNodeModelProxy {
      * @author Jonas Klotz, KNIME GmbH, Berlin, Germany
      */
     interface PythonDialogCreationContext extends PythonBaseContext {
-
 
         /**
          *

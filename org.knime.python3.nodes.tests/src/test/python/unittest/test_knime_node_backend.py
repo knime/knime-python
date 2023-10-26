@@ -209,7 +209,7 @@ class PortTypeRegistryTest(unittest.TestCase):
         port = knext.Port(test_port_type, "Test port", "Test_port")
         java_spec = _binary_spec_from_java(other_port_type.id, {})
         with self.assertRaises(kn.InvalidParametersError):
-            self.registry.spec_to_python(java_spec, port)
+            self.registry.spec_to_python(java_spec, port, callback_mock)
 
     def test_custom_spec_to_python_unknown_id(self):
         # can happen if the developer doesn't register the port type via knext.port_type
@@ -219,13 +219,13 @@ class PortTypeRegistryTest(unittest.TestCase):
         port = knext.Port(unknown_port_type, "", "")
         java_spec = _binary_spec_from_java(unknown_port_type.id, {})
         with self.assertRaises(AssertionError):
-            self.registry.spec_to_python(java_spec, port)
+            self.registry.spec_to_python(java_spec, port, callback_mock)
 
     def test_custom_spec_to_python(self):
         test_port_type = self.get_port_type()
         port = knext.Port(test_port_type, "Test port", "Test_port")
         java_spec = _binary_spec_from_java(test_port_type.id, {"test_data": "bar"})
-        spec = self.registry.spec_to_python(java_spec, port)
+        spec = self.registry.spec_to_python(java_spec, port, callback_mock)
         self.assertEqual("bar", spec.data)
 
     class MockFromJavaObject:
