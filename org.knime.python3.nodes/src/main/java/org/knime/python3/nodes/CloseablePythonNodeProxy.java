@@ -223,42 +223,17 @@ final class CloseablePythonNodeProxy
                     .getAvailableFlowVariables(getCompatibleFlowVariableTypes()).values());
             }
 
-
             @SuppressWarnings("unused")
             public String get_auth_schema(final String serializedXMLString) throws CouldNotAuthorizeException, // NOSONAR
                 ClassNotFoundException, InstantiationException, IllegalAccessException, IOException { // NOSONAR
-
-                CredentialPortObjectSpec credentialPortObjectSpec =
-                    PythonCredentialPortObjectSpec.loadFromXMLCredentialPortObjectSpecString(serializedXMLString);
-
-                var credential = credentialPortObjectSpec.getCredential(Credential.class);
-
-                final Credential cred = credential.orElseThrow();
-                if (cred instanceof HttpAuthorizationHeaderCredentialValue val) {
-                    return val.getAuthScheme();
-                }
-                return null;
+                return getAuthSchema(serializedXMLString);
 
             }
 
             @SuppressWarnings("unused")
             public String get_auth_parameters(final String serializedXMLString) throws CouldNotAuthorizeException, // NOSONAR
                 ClassNotFoundException, InstantiationException, IllegalAccessException, IOException { // NOSONAR
-
-                CredentialPortObjectSpec credentialPortObjectSpec =
-                    PythonCredentialPortObjectSpec.loadFromXMLCredentialPortObjectSpecString(serializedXMLString);
-
-                var credential = credentialPortObjectSpec.getCredential(Credential.class);
-
-                final Credential cred = credential.orElseThrow();
-                if (cred instanceof HttpAuthorizationHeaderCredentialValue val) {
-                    try {
-                        return val.getAuthParameters();
-                    } catch (IOException ex) { // NOSONAR
-                        return null;
-                    }
-                }
-                return null;
+                return getAuthParameters(serializedXMLString);
             }
 
         };
@@ -296,6 +271,44 @@ final class CloseablePythonNodeProxy
      **/
     public static Node getNode() {
         return ((NativeNodeContainer)NodeContext.getContext().getNodeContainer()).getNode();
+    }
+
+    public static String getAuthSchema(final String serializedXMLString) throws CouldNotAuthorizeException, // NOSONAR
+        ClassNotFoundException, InstantiationException, IllegalAccessException, IOException { // NOSONAR
+
+        final HttpAuthorizationHeaderCredentialValue cred = getCredentialfromXMLString(serializedXMLString);
+        if (cred != null) {
+            return cred.getAuthScheme();
+        }
+
+        return null;
+
+    }
+
+    public static String getAuthParameters(final String serializedXMLString) throws CouldNotAuthorizeException, // NOSONAR
+        ClassNotFoundException, InstantiationException, IllegalAccessException, IOException { // NOSONAR
+
+        final HttpAuthorizationHeaderCredentialValue cred = getCredentialfromXMLString(serializedXMLString);
+        if (cred != null) {
+            return cred.getAuthParameters();
+        }
+
+        return null;
+    }
+
+    public static HttpAuthorizationHeaderCredentialValue getCredentialfromXMLString(final String serializedXMLString)
+        throws ClassNotFoundException, InstantiationException, IllegalAccessException, IOException {
+
+        CredentialPortObjectSpec credentialPortObjectSpec =
+            PythonCredentialPortObjectSpec.loadFromXMLCredentialPortObjectSpecString(serializedXMLString);
+
+        var credential = credentialPortObjectSpec.getCredential(Credential.class);
+
+        final Credential cred = credential.orElseThrow();
+        if (cred instanceof HttpAuthorizationHeaderCredentialValue val) {
+            return val;
+        }
+        return null;
     }
 
     @Override
@@ -394,41 +407,19 @@ final class CloseablePythonNodeProxy
                     FileStoreKey.load(fileStoreKey));
             }
 
+            @Override
             @SuppressWarnings("unused")
             public String get_auth_schema(final String serializedXMLString) throws CouldNotAuthorizeException, // NOSONAR
                 ClassNotFoundException, InstantiationException, IllegalAccessException, IOException { // NOSONAR
-
-                CredentialPortObjectSpec credentialPortObjectSpec =
-                    PythonCredentialPortObjectSpec.loadFromXMLCredentialPortObjectSpecString(serializedXMLString);
-
-                var credential = credentialPortObjectSpec.getCredential(Credential.class);
-
-                final Credential cred = credential.orElseThrow();
-                if (cred instanceof HttpAuthorizationHeaderCredentialValue val) {
-                    return val.getAuthScheme();
-                }
-                return null;
+                return getAuthSchema(serializedXMLString);
 
             }
 
+            @Override
             @SuppressWarnings("unused")
             public String get_auth_parameters(final String serializedXMLString) throws CouldNotAuthorizeException, // NOSONAR
                 ClassNotFoundException, InstantiationException, IllegalAccessException, IOException { // NOSONAR
-
-                CredentialPortObjectSpec credentialPortObjectSpec =
-                    PythonCredentialPortObjectSpec.loadFromXMLCredentialPortObjectSpecString(serializedXMLString);
-
-                var credential = credentialPortObjectSpec.getCredential(Credential.class);
-
-                final Credential cred = credential.orElseThrow();
-                if (cred instanceof HttpAuthorizationHeaderCredentialValue val) {
-                    try {
-                        return val.getAuthParameters();
-                    } catch (IOException ex) { // NOSONAR
-                        return null;
-                    }
-                }
-                return null;
+                return getAuthParameters(serializedXMLString);
             }
 
         };
@@ -612,41 +603,19 @@ final class CloseablePythonNodeProxy
                 return TableSpecSerializationUtils.getPreferredValueTypesForSerializedSchema(tableSchemaJson);
             }
 
+            @Override
             @SuppressWarnings("unused")
             public String get_auth_schema(final String serializedXMLString) throws CouldNotAuthorizeException, // NOSONAR
                 ClassNotFoundException, InstantiationException, IllegalAccessException, IOException { // NOSONAR
-
-                CredentialPortObjectSpec credentialPortObjectSpec =
-                    PythonCredentialPortObjectSpec.loadFromXMLCredentialPortObjectSpecString(serializedXMLString);
-
-                var credential = credentialPortObjectSpec.getCredential(Credential.class);
-
-                final Credential cred = credential.orElseThrow();
-                if (cred instanceof HttpAuthorizationHeaderCredentialValue val) {
-                    return val.getAuthScheme();
-                }
-                return null;
+                return getAuthSchema(serializedXMLString);
 
             }
 
+            @Override
             @SuppressWarnings("unused")
             public String get_auth_parameters(final String serializedXMLString) throws CouldNotAuthorizeException, // NOSONAR
                 ClassNotFoundException, InstantiationException, IllegalAccessException, IOException { // NOSONAR
-
-                CredentialPortObjectSpec credentialPortObjectSpec =
-                    PythonCredentialPortObjectSpec.loadFromXMLCredentialPortObjectSpecString(serializedXMLString);
-
-                var credential = credentialPortObjectSpec.getCredential(Credential.class);
-
-                final Credential cred = credential.orElseThrow();
-                if (cred instanceof HttpAuthorizationHeaderCredentialValue val) {
-                    try {
-                        return val.getAuthParameters();
-                    } catch (IOException ex) { // NOSONAR
-                        return null;
-                    }
-                }
-                return null;
+                return getAuthParameters(serializedXMLString);
             }
         };
         m_proxy.initializeJavaCallback(callback);

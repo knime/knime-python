@@ -133,6 +133,7 @@ def runPython3MultiversionWorkflowTestConfig(String environmentFile, String base
                         'knime-base-views',
                         'knime-scripting-editor',
                         'knime-gateway',
+                        'knime-credentials-base',
                     ],
                     ius: [
                         'org.knime.features.chem.types.feature.group',
