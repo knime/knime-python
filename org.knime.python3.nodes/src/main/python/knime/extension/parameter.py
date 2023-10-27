@@ -1882,27 +1882,49 @@ class DateTimeParameter(_BaseParameter):
     def _to_dict(self, value: datetime.datetime) -> Optional[str]:
         if not value:
             return None
-        return value.isoformat()
+
+        iso_string = value.isoformat()
+        if not self.timezone:
+            # append Z to indicate UTC as it is necessary for the ISO 8601 format in java
+            iso_string = iso_string + "Z"
+        return iso_string
 
     def _from_dict(self, value) -> Optional[datetime.date]:
         """Parses the value to a datetime object.
 
         The value can be a string or a datetime object.
         """
-
         return self._to_datetime(value)
 
-    def _to_datetime(self, value) -> Optional[datetime.datetime]:
+    def _to_datetime(self, value) -> Optional[datetime.date]:
         if not value:
             return None
+        if isinstance(value, datetime.date):
+            return value
+
+        # parse the value to a datetime object
         if isinstance(value, str):
-            if str.endswith(value, "Z"):  # Java ISO 8601 format ends with Z
-                value = value.replace("Z", "")
+            try:
+                # we only get ISO strings from java side
+                if str.endswith(value, "Z"):  # Java ISO 8601 format ends with Z
+                    value = value.replace("Z", "")
+                value = datetime.datetime.fromisoformat(value)
+            except:  # NOSONAR
+                # if the value is not in ISO format, we try to parse it with the given date format or automatically
+                try:
+                    if self.date_format:
+                        value = datetime.datetime.strptime(value, self.date_format)
+                    else:
+                        value = parser.parse(value)
+                except Exception as e:
+                    raise ValueError(
+                        f"Could not parse {value} to a datetime object. Please provide a string in ISO format or a "
+                        f"datetime object. If you don't provide the string in ISO format, please also provide a date "
+                        f"format."
+                    ) from e
 
-            value = datetime.datetime.fromisoformat(value)
-
-            if not self.show_time:
-                value = value.date()
+        if not self.show_time:
+            value = value.date()
 
         if self.timezone is not None:
             value = value.astimezone(pytz.timezone(self.timezone))
@@ -1944,20 +1966,15 @@ class DateTimeParameter(_BaseParameter):
                 return self.min_value
             return datetime.datetime.now().date()
 
-        if isinstance(default_value, datetime.date):
-            return default_value
-
-        elif isinstance(default_value, str):
-            # try to parse the default value with the given date format
-            if self.date_format:
-                return datetime.datetime.strptime(default_value, self.date_format)
-            # try to parse the default value as datetime automatically
-            return parser.parse(default_value)
-        else:
+        if not (
+            isinstance(default_value, datetime.date) or isinstance(default_value, str)
+        ):
             raise ValueError(
                 f"Cannot parse default value {default_value}. Please provide a string or datetime object."
                 f"If you provide a string, please also provide a date format."
             )
+
+        return self._to_datetime(default_value)
 
 
 def _flatten(lst: list) -> list:
