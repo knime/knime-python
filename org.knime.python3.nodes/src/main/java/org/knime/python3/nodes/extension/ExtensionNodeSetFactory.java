@@ -184,6 +184,8 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
 
         private String m_extensionVersion;
 
+        private String m_factoryIdUniquifier;
+
         @SuppressWarnings("null")
         @Override
         public void loadAdditionalFactorySettings(final ConfigRO config) throws InvalidSettingsException {
@@ -201,7 +203,13 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
             m_proxyProvider = proxyProvider;
             m_dialogSettingsService = new DefaultNodeSettingsServiceWithVariables(
                 new DelegatingJsonSettingsDataService(m_proxyProvider::getNodeDialogProxy, m_extensionVersion));
+            m_factoryIdUniquifier = new NodeId(extensionId, nodeId).getCombinedId();
             super.loadAdditionalFactorySettings(config);
+        }
+
+        @Override
+        public String getFactoryIdUniquifier() {
+            return m_factoryIdUniquifier;
         }
 
         @Override
