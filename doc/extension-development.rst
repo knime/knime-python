@@ -153,6 +153,12 @@ the following parameter types. For a more detailed description see
    :noindex:
    :inherited-members:
 
+
+.. autoclass:: knime.extension.DateTimeParameter
+   :members:
+   :noindex:
+   :inherited-members:
+
 Validation
 ++++++++++
 
@@ -241,6 +247,9 @@ These are helper functions to create KNIME compatible datatypes. For instance, i
    :noindex:
 
 .. autofunction:: knime.extension.logical
+   :noindex:
+
+.. autofunction:: knime.extension.datetime
    :noindex:
 
 
