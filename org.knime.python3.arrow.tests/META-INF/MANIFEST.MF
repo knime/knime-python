@@ -6,11 +6,11 @@ Bundle-Version: 5.2.0.qualifier
 Bundle-ClassPath: .
 Bundle-Vendor: KNIME AG, Zurich, Switzerland
 Bundle-RequiredExecutionEnvironment: JavaSE-17
-Fragment-Host: org.knime.python3.arrow;bundle-version="[5.0.0,6.0.0)"
+Fragment-Host: org.knime.python3.arrow;bundle-version="[5.2.0,6.0.0)"
 Require-Bundle: org.junit;bundle-version="[4.13.0,5.0.0)",
  io.netty.all;bundle-version="[4.1.68,4.2.0)",
  org.apache.commons.lang3;bundle-version="[3.9.0,4.0.0)",
- org.knime.core.columnar;bundle-version="[5.0.0,6.0.0)",
- org.knime.core.data.columnar;bundle-version="[5.0.0,6.0.0)",
+ org.knime.core.columnar;bundle-version="[5.2.0,6.0.0)",
+ org.knime.core.data.columnar;bundle-version="[5.2.0,6.0.0)",
  org.knime.python3.testing;bundle-version="[5.1.0,6.0.0)"
 Automatic-Module-Name: org.knime.python3.arrow.tests
