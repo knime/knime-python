@@ -161,9 +161,22 @@ final class ExecutableSelectionUtils {
     }
 
     private static ExecutableOption getPreferenceOption() {
-        // TODO(AP-19391) Get the information from the preferences
-        return new ExecutableOption(ExecutableOptionType.PREF_BUNDLED, EXEC_SELECTION_PREF_ID, "/foo/bar/python", null,
-            null);
+        return new ExecutableOption(getPreferenceOptionType(), EXEC_SELECTION_PREF_ID,
+            commandForPreferences().getPythonExecutablePath().toString(), null, null);
+    }
+
+    private static ExecutableOptionType getPreferenceOptionType() {
+        var prefEnvType = Python3ScriptingPreferences.getEnvironmentTypePreference();
+        switch (prefEnvType) {
+            case BUNDLED:
+                return ExecutableOptionType.PREF_BUNDLED;
+            case CONDA:
+                return ExecutableOptionType.PREF_CONDA;
+            case MANUAL:
+                return ExecutableOptionType.PREF_MANUAL;
+        }
+        // Cannot happen
+        throw new IllegalStateException("Unexpected environment type from preferences: " + prefEnvType);
     }
 
     private static Stream<ExecutableOption> getCondaFlowVariableOptions(final FlowObjectStack flowVarStack) {
