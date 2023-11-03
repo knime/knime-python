@@ -78,7 +78,6 @@ import org.knime.core.node.util.CheckUtils;
 import org.knime.core.webui.node.dialog.NodeDialog;
 import org.knime.core.webui.node.dialog.NodeDialogFactory;
 import org.knime.core.webui.node.dialog.NodeDialogManager;
-import org.knime.core.webui.node.dialog.NodeSettingsService;
 import org.knime.core.webui.node.dialog.SettingsType;
 import org.knime.core.webui.node.dialog.defaultdialog.DefaultNodeSettingsServiceWithVariables;
 import org.knime.core.webui.node.view.NodeView;
@@ -172,7 +171,7 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
 
         private ConfigRO m_nodeFactoryConfig;
 
-        private NodeSettingsService m_dialogSettingsService;
+        private DelegatingJsonSettingsDataService m_dialogSettingsService;
 
         private NodeDescription m_nodeDescription;
 
@@ -201,8 +200,8 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
             m_extensionVersion = extension.getVersion();
             var proxyProvider = extension.createProxyProvider(nodeId);
             m_proxyProvider = proxyProvider;
-            m_dialogSettingsService = new DefaultNodeSettingsServiceWithVariables(
-                new DelegatingJsonSettingsDataService(m_proxyProvider::getNodeDialogProxy, m_extensionVersion));
+            m_dialogSettingsService =
+                new DelegatingJsonSettingsDataService(m_proxyProvider::getNodeDialogProxy, m_extensionVersion);
             m_factoryIdUniquifier = new NodeId(extensionId, nodeId).getCombinedId();
             super.loadAdditionalFactorySettings(config);
         }
@@ -265,7 +264,8 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
 
         @Override
         public NodeDialog createNodeDialog() {
-            return new JsonFormsNodeDialog(SettingsType.MODEL, m_dialogSettingsService);
+            return new JsonFormsNodeDialog(SettingsType.MODEL,
+                new DefaultNodeSettingsServiceWithVariables(m_dialogSettingsService), m_dialogSettingsService);
         }
 
         @Override

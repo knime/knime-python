@@ -56,12 +56,12 @@ import org.knime.core.webui.node.dialog.NodeDialog;
 import org.knime.core.webui.node.dialog.NodeSettingsService;
 import org.knime.core.webui.node.dialog.SettingsType;
 import org.knime.core.webui.node.dialog.defaultdialog.DefaultNodeDialog;
+import org.knime.core.webui.node.dialog.defaultdialog.dataservice.DefaultDialogDataConverter;
+import org.knime.core.webui.node.dialog.defaultdialog.dataservice.FlowVariableDataServiceImpl;
 import org.knime.core.webui.page.Page;
 
 /**
  * JSON Forms based dialog. Not exposed as API.
- *
- * TODO to be removed once UIEXT-161 is implemented
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
@@ -72,15 +72,20 @@ public final class JsonFormsNodeDialog implements NodeDialog {
 
     private final NodeSettingsService m_settingsService;
 
+    private final DefaultDialogDataConverter m_dialogDataConverter;
+
     /**
      * Constructor.
      *
      * @param settingsType the type of settings this dialog is for
      * @param settingsService providing settings to the dialog
+     * @param dialogDataConverter converter between Json settings data to NodeSettings for flow variable settings
      */
-    public JsonFormsNodeDialog(final SettingsType settingsType, final NodeSettingsService settingsService) {
+    public JsonFormsNodeDialog(final SettingsType settingsType, final NodeSettingsService settingsService,
+        final DefaultDialogDataConverter dialogDataConverter) {
         m_settingsType = settingsType;
         m_settingsService = settingsService;
+        m_dialogDataConverter = dialogDataConverter;
     }
 
     @Override
@@ -90,7 +95,10 @@ public final class JsonFormsNodeDialog implements NodeDialog {
 
     @Override
     public Optional<RpcDataService> createRpcDataService() {
-        return Optional.empty();
+        var flowVariableDataService = new FlowVariableDataServiceImpl(m_dialogDataConverter);
+        return Optional.of(RpcDataService.builder() //
+            .addService("flowVariables", flowVariableDataService) //
+            .build());
     }
 
     @Override

@@ -51,6 +51,8 @@ package org.knime.python3.nodes.dialog;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NodeSettings;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.port.PortObjectSpec;
@@ -58,11 +60,17 @@ import org.knime.core.webui.node.dialog.NodeAndVariableSettingsRO;
 import org.knime.core.webui.node.dialog.NodeAndVariableSettingsWO;
 import org.knime.core.webui.node.dialog.NodeSettingsService;
 import org.knime.core.webui.node.dialog.SettingsType;
+import org.knime.core.webui.node.dialog.defaultdialog.DefaultNodeSettings.DefaultNodeSettingsContext;
+import org.knime.core.webui.node.dialog.defaultdialog.dataservice.DefaultDialogDataConverter;
 import org.knime.core.webui.node.dialog.defaultdialog.jsonforms.JsonFormsConsts;
+import org.knime.core.webui.node.dialog.defaultdialog.jsonforms.JsonFormsDataUtil;
 import org.knime.core.webui.node.dialog.defaultdialog.jsonforms.JsonNodeSettingsMapperUtil;
 import org.knime.python3.nodes.proxy.NodeDialogProxy;
 import org.knime.python3.nodes.settings.JsonNodeSettings;
 import org.knime.python3.nodes.settings.JsonNodeSettingsSchema;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 
 /**
  * Delegates methods to a proxy object that can e.g. be implemented in Python.
@@ -70,7 +78,7 @@ import org.knime.python3.nodes.settings.JsonNodeSettingsSchema;
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
 @SuppressWarnings("restriction")
-public final class DelegatingJsonSettingsDataService implements NodeSettingsService {
+public final class DelegatingJsonSettingsDataService implements NodeSettingsService, DefaultDialogDataConverter {
 
     private final Supplier<NodeDialogProxy> m_proxyProvider;
 
@@ -84,8 +92,7 @@ public final class DelegatingJsonSettingsDataService implements NodeSettingsServ
      * @param proxyProvider provides proxy objects
      * @param extensionVersion the version of the extension
      */
-    public DelegatingJsonSettingsDataService(
-        final Supplier<NodeDialogProxy> proxyProvider,
+    public DelegatingJsonSettingsDataService(final Supplier<NodeDialogProxy> proxyProvider,
         final String extensionVersion) {
         m_proxyProvider = proxyProvider;
         m_extensionVersion = extensionVersion;
@@ -118,11 +125,31 @@ public final class DelegatingJsonSettingsDataService implements NodeSettingsServ
     }
 
     @Override
-    public void getDefaultNodeSettings(final Map<SettingsType, NodeSettingsWO> settings,
-        final PortObjectSpec[] specs) {
+    public void getDefaultNodeSettings(final Map<SettingsType, NodeSettingsWO> settings, final PortObjectSpec[] specs) {
         try (var proxy = m_proxyProvider.get()) {
             proxy.getSettings(m_extensionVersion).saveTo(settings.get(SettingsType.MODEL));
         }
     }
 
+    @Override
+    public NodeSettings dataJsonToNodeSettings(final JsonNode dataJson, final SettingsType type) {
+        var jsonSettings = m_lastSettingsSchema.createFromJson(dataJson.toString());
+        var settings = new NodeSettings(type.getConfigKey());
+        jsonSettings.saveTo(settings);
+        return settings;
+    }
+
+    @Override
+    public JsonNode nodeSettingsToDataJson(final SettingsType type, final NodeSettingsRO nodeSettings,
+        final DefaultNodeSettingsContext context) throws InvalidSettingsException {
+        var jsonSettings = m_lastSettingsSchema.createFromSettings(nodeSettings);
+        var params = jsonSettings.getParameters();
+
+        try {
+            return JsonFormsDataUtil.getMapper().readTree(params);
+        } catch (JsonProcessingException ex) {
+            // NB: This cannot happen because params is valid JSON
+            throw new IllegalStateException("failed to parse json parameters", ex);
+        }
+    }
 }
