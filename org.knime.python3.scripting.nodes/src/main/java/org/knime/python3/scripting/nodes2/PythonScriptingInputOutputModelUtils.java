@@ -71,7 +71,7 @@ import org.knime.scripting.editor.WorkflowControl.InputPortInfo;
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
-public final class PythonScriptingInputOutputModelUtils {
+final class PythonScriptingInputOutputModelUtils {
 
     private static final String INPUT_OUTPUT_TYPE_TABLE = "Table";
 
@@ -91,7 +91,7 @@ public final class PythonScriptingInputOutputModelUtils {
         // utility class
     }
 
-    public static InputOutputModel getFlowVariableInputs(final Collection<FlowVariable> flowVariables) {
+    static InputOutputModel getFlowVariableInputs(final Collection<FlowVariable> flowVariables) {
         var subItems = flowVariables.stream() //
             .map(f -> new InputOutputModelSubItem(f.getName(), f.getVariableType().toString())) //
             .toArray(InputOutputModelSubItem[]::new);
@@ -103,7 +103,7 @@ public final class PythonScriptingInputOutputModelUtils {
             subItems);
     }
 
-    public static List<InputOutputModel> getInputObjects(final InputPortInfo[] inputPorts) {
+    static List<InputOutputModel> getInputObjects(final InputPortInfo[] inputPorts) {
         final var inputInfos = new ArrayList<InputOutputModel>();
 
         var tableIdx = 0;
@@ -136,7 +136,7 @@ public final class PythonScriptingInputOutputModelUtils {
         return inputInfos;
     }
 
-    public static List<InputOutputModel> getOutputObjects(final PortType[] portTypes, final boolean hasView) {
+    static List<InputOutputModel> getOutputObjects(final PortType[] portTypes, final boolean hasView) {
         var relevantPortTypes =
             Stream.of(portTypes).filter(PythonScriptingInputOutputModelUtils::isNoFlowVariablePort).toList();
         var portTypeCounter = new HashMap<String, Integer>();
@@ -219,7 +219,7 @@ public final class PythonScriptingInputOutputModelUtils {
     private static String getInputObjectCodeAlias(final int index, final String type) {
         switch (type) {
             case INPUT_OUTPUT_TYPE_TABLE: {
-                return appendIndexSuffix("knio.input_tables", index);
+                return appendIndexSuffix("knio.input_tables", index) + ".to_pandas()";
             }
             case INPUT_OUTPUT_TYPE_OBJECT: {
                 return appendIndexSuffix("knio.input_objects", index);

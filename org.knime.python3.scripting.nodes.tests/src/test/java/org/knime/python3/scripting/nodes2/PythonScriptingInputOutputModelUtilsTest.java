@@ -122,7 +122,7 @@ public final class PythonScriptingInputOutputModelUtilsTest {
         // table 0 - with columns
         var table0 = models.get(0);
         assertEquals("name", "Input Table 1", table0.name());
-        assertEquals("codeAlias", "knio.input_tables[0]", table0.codeAlias());
+        assertEquals("codeAlias", "knio.input_tables[0].to_pandas()", table0.codeAlias());
         assertNotNull("subItemCodeAliasTemplate", table0.subItemCodeAliasTemplate());
         assertEquals("requiredImport", "import knime.scripting.io as knio", table0.requiredImport());
         assertTrue("multiSelection should be true", table0.multiSelection());
@@ -144,14 +144,14 @@ public final class PythonScriptingInputOutputModelUtilsTest {
         // table 1 - no columns
         var table1 = models.get(2);
         assertEquals("name", "Input Table 2", table1.name());
-        assertEquals("codeAlias", "knio.input_tables[1]", table1.codeAlias());
+        assertEquals("codeAlias", "knio.input_tables[1].to_pandas()", table1.codeAlias());
         assertEquals("requiredImport", "import knime.scripting.io as knio", table1.requiredImport());
         assertNull("no subitems", table1.subItems());
 
         // table 2 - no columns
         var table2 = models.get(3);
         assertEquals("name", "Input Table 3", table2.name());
-        assertEquals("codeAlias", "knio.input_tables[2]", table2.codeAlias());
+        assertEquals("codeAlias", "knio.input_tables[2].to_pandas()", table2.codeAlias());
         assertEquals("requiredImport", "import knime.scripting.io as knio", table2.requiredImport());
         assertNull("no subitems", table2.subItems());
 
