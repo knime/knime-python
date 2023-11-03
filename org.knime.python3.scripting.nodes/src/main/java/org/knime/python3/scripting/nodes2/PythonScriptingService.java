@@ -410,14 +410,6 @@ final class PythonScriptingService extends ScriptingService {
         }
 
         /**
-         * @param id the identifier of the executable option
-         * @return information about the executable
-         */
-        public ExecutableInfo getExecutableInfo(final String id) {
-            return ExecutableSelectionUtils.getExecutableInfo(getExecutableOption(id));
-        }
-
-        /**
          * @param executableSelection the identifier of the active executable option
          * @return the path to the Python executable. Only to be used for configuring the LSP server.
          */
@@ -455,19 +447,6 @@ final class PythonScriptingService extends ScriptingService {
     }
 
     static record KillSessionInfo(KillSessionStatus status, String description) {
-    }
-
-    /** Information about an Python executable */
-    public static class ExecutableInfo {
-        public final String pythonVersion; // NOSONAR
-
-        public final List<CondaPackageInfo> packages; // NOSONAR
-
-        @SuppressWarnings("hiding")
-        ExecutableInfo(final String pythonVersion, final List<CondaPackageInfo> packages) {
-            this.pythonVersion = pythonVersion;
-            this.packages = packages;
-        }
     }
 
     /** Information about an installed Conda package */

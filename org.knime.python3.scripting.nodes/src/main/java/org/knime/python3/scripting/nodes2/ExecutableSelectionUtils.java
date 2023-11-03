@@ -50,7 +50,6 @@ package org.knime.python3.scripting.nodes2;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -64,8 +63,6 @@ import org.knime.python3.CondaPythonCommand;
 import org.knime.python3.PythonCommand;
 import org.knime.python3.SimplePythonCommand;
 import org.knime.python3.scripting.nodes.prefs.Python3ScriptingPreferences;
-import org.knime.python3.scripting.nodes2.PythonScriptingService.CondaPackageInfo;
-import org.knime.python3.scripting.nodes2.PythonScriptingService.ExecutableInfo;
 import org.knime.python3.scripting.nodes2.PythonScriptingService.ExecutableOption;
 import org.knime.python3.scripting.nodes2.PythonScriptingService.ExecutableOption.ExecutableOptionType;
 
@@ -83,39 +80,6 @@ final class ExecutableSelectionUtils {
             Stream.of(getPreferenceOption()), //
             getCondaFlowVariableOptions(flowVarStack) //
         ).collect(Collectors.toMap(o -> o.id, Function.identity()));
-    }
-
-    static ExecutableInfo getExecutableInfo(final ExecutableOption option) {
-        final ExecutableInfo specs;
-
-        // TODO(AP-19432) Get the real data from the flow variable or by calling Conda
-        if (EXEC_SELECTION_PREF_ID.equals(option.id)) {
-            specs = new ExecutableInfo( //
-                "3.18.0", //
-                List.of( //
-                    new CondaPackageInfo("conda", "4.13.0", "py39h06a4308_0", ""), //
-                    new CondaPackageInfo("conda-build", "3.21.9", "py39hf3d152e_0", "conda-forge"), //
-                    new CondaPackageInfo("conda-package-handling", "1.8.1", "py39h7f8727e_0", ""), //
-                    new CondaPackageInfo("cryptography", "37.0.1", "py39h9ce1e76_0", ""), //
-                    new CondaPackageInfo("filelock", "3.6.0", "pyhd3eb1b0_0", "") //
-                ));
-        } else {
-            specs = new ExecutableInfo(//
-                null, //
-                List.of( //
-                    new CondaPackageInfo("conda", "4.13.0", "py39h06a4308_0", "") //
-                ));
-        }
-
-        // TODO(AP-19432) remove this
-        try {
-            // Wait for 1s to simulate that it takes time to get the specs
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
-        return specs;
     }
 
     /** Get the PythonCommand from the selected option */
