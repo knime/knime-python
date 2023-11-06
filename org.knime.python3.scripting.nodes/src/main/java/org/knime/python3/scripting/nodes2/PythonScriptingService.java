@@ -48,10 +48,8 @@
  */
 package org.knime.python3.scripting.nodes2;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -198,14 +196,12 @@ final class PythonScriptingService extends ScriptingService {
                 return Files.newInputStream(m_view.get());
             } catch (IOException ex) {
                 LOGGER.error("Failed to open preview.", ex);
-                var message = "Opening the preview failed: " + ex.getMessage();
-                return new ByteArrayInputStream(message.getBytes(StandardCharsets.UTF_8));
+                return InputStream.nullInputStream();
             }
         }
         // No preview available yet - show a placeholder
-        // TODO - Design a better placeholder (load it from a resource file if necessary)
-        return new ByteArrayInputStream(
-            "Execute the script and assign a view to the knio.output_view variable.".getBytes(StandardCharsets.UTF_8));
+        // NB: This page will not be shown in frontend, instead a placeholder will be shown
+        return InputStream.nullInputStream();
     }
 
     private void clearView() {
@@ -289,6 +285,9 @@ final class PythonScriptingService extends ScriptingService {
                     // NB: If no view is assigned in the current session m_view will be empty
                     m_view = m_interactiveSession.getOutputView();
                 }
+
+                // if view is present, update preview
+                execInfo.setHasValidView(m_view.isPresent());
 
                 // Done with executing
                 sendExecutionFinishedEvent(execInfo);

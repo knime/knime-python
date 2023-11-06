@@ -269,6 +269,9 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
 
         private final Object data; // NOSONAR
 
+        // if set to true, the iframe containing the view will be re-loaded; defaults to false
+        private boolean hasValidView; // NOSONAR
+
         @SuppressWarnings("hiding")
         ExecutionInfo(final ExecutionStatus status, final String description, final String[] traceback,
             final Object data) {
@@ -276,6 +279,7 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
             this.description = description;
             this.traceback = traceback;
             this.data = data;
+            this.hasValidView = false;
         }
 
         @SuppressWarnings("hiding")
@@ -309,6 +313,20 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
          */
         public String getDescription() {
             return description;
+        }
+
+        /**
+         * @return the hasValidView
+         */
+        public boolean getHasValidView() {
+            return hasValidView;
+        }
+
+        /**
+         * @param hasValidView the hasValidView to set
+         */
+        public void setHasValidView(@SuppressWarnings("hiding") final boolean hasValidView) {
+            this.hasValidView = hasValidView;
         }
 
     }

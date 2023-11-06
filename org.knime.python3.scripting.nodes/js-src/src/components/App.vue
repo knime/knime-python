@@ -7,7 +7,7 @@ import {
   type SettingsMenuItem,
 } from "@knime/scripting-editor";
 import * as monaco from "monaco-editor";
-import { onMounted, ref, type Ref } from "vue";
+import { nextTick, onMounted, ref, type Ref } from "vue";
 import SettingsIcon from "webapps-common/ui/assets/img/icons/cog.svg";
 import HelpIcon from "webapps-common/ui/assets/img/icons/help.svg";
 import type { MenuItem } from "webapps-common/ui/components/MenuItems.vue";
@@ -80,7 +80,6 @@ const saveSettings = async (commonSettings: NodeSettings) => {
 // Right pane tab bar - only show if preview is available
 const hasPreview = ref<boolean>(false);
 type RightPaneTabValue = "workspace" | "preview";
-// NB: The TabBar always selects the first enabled tab on create -> We cannot select the preview
 const rightPaneActiveTab = ref<RightPaneTabValue>("workspace");
 const rightPaneOptions = [
   { value: "workspace", label: "Temporary Values" },
@@ -94,6 +93,12 @@ onMounted(async () => {
 
   // Check if the preview is available
   hasPreview.value = await pythonScriptingService.hasPreview();
+
+  if (hasPreview.value) {
+    // wait until preview is mounted to DOM
+    await nextTick();
+    rightPaneActiveTab.value = "preview";
+  }
 });
 </script>
 

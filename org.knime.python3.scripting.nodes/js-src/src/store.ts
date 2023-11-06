@@ -47,3 +47,17 @@ const sessionStatus: SessionStatusStore = reactive<SessionStatusStore>({
 export const useSessionStatusStore = (): SessionStatusStore => {
   return sessionStatus;
 };
+
+export type PythonViewStatus = {
+  hasValidView: boolean;
+  isExecutedOnce: boolean;
+  updateViewCallback?: () => void;
+};
+
+const pythonPreviewStatus: PythonViewStatus = reactive<PythonViewStatus>({
+  hasValidView: false,
+  isExecutedOnce: false,
+});
+
+export const usePythonPreviewStatusStore = (): PythonViewStatus =>
+  pythonPreviewStatus;

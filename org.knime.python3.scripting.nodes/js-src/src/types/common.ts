@@ -35,6 +35,7 @@ export type ExecutionInfo = {
   description: string;
   traceback?: string[];
   data?: Workspace;
+  hasValidView?: boolean;
 };
 
 export type KillSessionInfo = {

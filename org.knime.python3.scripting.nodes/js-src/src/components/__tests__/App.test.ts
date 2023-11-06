@@ -4,6 +4,7 @@ import { VueWrapper, flushPromises, mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { executableOptionsMock } from "../../__mocks__/executable-options";
 import App from "../App.vue";
+import { nextTick } from "vue";
 
 describe("App.vue", () => {
   const doMount = async ({
@@ -87,7 +88,7 @@ describe("App.vue", () => {
 
       // Select the workspace tab
       tabbar.vm.$emit("update:modelValue", "workspace");
-      await flushPromises();
+      await nextTick();
 
       expect(workspace.isVisible()).toBeTruthy();
       expect(preview.isVisible()).toBeFalsy();
@@ -99,7 +100,7 @@ describe("App.vue", () => {
 
       // Select the preview tab
       tabbar.vm.$emit("update:modelValue", "preview");
-      await flushPromises();
+      await nextTick();
 
       expect(workspace.isVisible()).toBeFalsy();
       expect(preview.isVisible()).toBeTruthy();

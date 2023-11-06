@@ -14,6 +14,7 @@ import { registerInputCompletions } from "./input-completions";
 import {
   setSelectedExecutable,
   useExecutableSelectionStore,
+  usePythonPreviewStatusStore,
   useSessionStatusStore,
   useWorkspaceStore,
 } from "./store";
@@ -67,6 +68,17 @@ scriptingService.registerEventHandler(
 
     // Update the session status
     useSessionStatusStore().status = "IDLE";
+
+    // update view status
+    const pythonPreviewStatus = usePythonPreviewStatusStore();
+    pythonPreviewStatus.hasValidView = Boolean(info.hasValidView);
+    pythonPreviewStatus.isExecutedOnce = true;
+    if (
+      pythonPreviewStatus.hasValidView &&
+      pythonPreviewStatus.updateViewCallback
+    ) {
+      pythonPreviewStatus.updateViewCallback();
+    }
   },
 );
 
