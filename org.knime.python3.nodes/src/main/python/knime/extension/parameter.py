@@ -1839,8 +1839,8 @@ class DateTimeParameter(_BaseParameter):
         self.date_format = date_format
 
         # convert allowed values to datetime
-        self.min_value = self._to_datetime(min_value)
-        self.max_value = self._to_datetime(max_value)
+        self.min_value = self._to_datetime(min_value, user_input=True)
+        self.max_value = self._to_datetime(max_value, user_input=True)
 
         if validator is None:
             validator = self.default_validator
@@ -1896,7 +1896,23 @@ class DateTimeParameter(_BaseParameter):
         """
         return self._to_datetime(value)
 
-    def _to_datetime(self, value) -> Optional[datetime.date]:
+    def _to_datetime(
+        self, value, user_input: bool = False
+    ) -> Optional[Union[datetime.date, datetime.datetime]]:
+        """Converts the value to a datetime object.
+
+        Args:
+            value:  Can be a string or a datetime object. If the value is a string and it's a user input, the
+                    date_format parameter is used
+                    to parse the string. If the date format is not set, the value is parsed automatically. This can lead
+                    to unexpected results, if the value is ambiguous (e.g. 01/02/03 can be parsed as 2001-02-03 or
+                    2003-01-02).
+            user_input: Whether the value is a user input or not. If the value is a user input, the date_format
+                        parameter is used to parse the string.
+
+        Returns:
+                None if the value is None, otherwise a date or datetime object
+        """
         if not value:
             return None
         if isinstance(value, datetime.date):
@@ -1904,30 +1920,40 @@ class DateTimeParameter(_BaseParameter):
 
         # parse the value to a datetime object
         if isinstance(value, str):
-            try:
-                # we only get ISO strings from java side
-                if str.endswith(value, "Z"):  # Java ISO 8601 format ends with Z
-                    value = value.replace("Z", "")
-                value = datetime.datetime.fromisoformat(value)
-            except:  # NOSONAR
-                # if the value is not in ISO format, we try to parse it with the given date format or automatically
-                try:
-                    if self.date_format:
-                        value = datetime.datetime.strptime(value, self.date_format)
-                    else:
-                        value = parser.parse(value)
-                except Exception as e:
-                    raise ValueError(
-                        f"Could not parse {value} to a datetime object. Please provide a string in ISO format or a "
-                        f"datetime object. If you don't provide the string in ISO format, please also provide a date "
-                        f"format."
-                    ) from e
+            value = self._parse_dt_string(value, user_input)
 
         if not self.show_time:
             value = value.date()
 
         if self.timezone is not None:
             value = value.astimezone(pytz.timezone(self.timezone))
+        return value
+
+    def _parse_dt_string(self, value: str, user_input: bool):
+        """Parses the string value to a datetime object."""
+        # we only want to use the date format when we have the input from the user, as we only get ISO strings from java
+        if self.date_format and user_input:
+            try:
+                return datetime.datetime.strptime(value, self.date_format)
+            except Exception as e:
+                raise ValueError(
+                    f"Could not parse {value} to a datetime object. Please provide a string or a "
+                    f"datetime object. If you provide a string please also provide a date format."
+                ) from e
+        try:
+            if str.endswith(value, "Z"):  # Java ISO 8601 format ends with Z
+                value = value.replace("Z", "")
+            value = datetime.datetime.fromisoformat(value)
+        except:  # NOSONAR
+            # if the value is not in ISO format, we try to parse it automatically
+            try:
+                value = parser.parse(value)
+            except Exception as e:
+                raise ValueError(
+                    f"Could not parse {value} to a datetime object. Please provide a string in ISO format or a "
+                    f"datetime object. If you don't provide the string in ISO format, please also provide a date "
+                    f"format."
+                ) from e
         return value
 
     def _extract_schema(self, extension_version=None, dialog_creation_context=None):
@@ -1974,7 +2000,7 @@ class DateTimeParameter(_BaseParameter):
                 f"If you provide a string, please also provide a date format."
             )
 
-        return self._to_datetime(default_value)
+        return self._to_datetime(default_value, user_input=True)
 
 
 def _flatten(lst: list) -> list:

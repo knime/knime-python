@@ -1,7 +1,8 @@
 import unittest
-import knime.extension.parameter as kp
+
 import knime.api.schema as ks
 import knime.extension.nodes as kn
+import knime.extension.parameter as kp
 
 test_schema = ks.Schema.from_columns(
     [
@@ -2438,6 +2439,46 @@ class FullColumnSelectionTest(unittest.TestCase):
         )
         filtered = selection.apply(schema)
         self.assertEqual(["foo"], filtered.column_names)
+
+
+class DateTimeParameterTest(unittest.TestCase):
+    def test_wrong_default_value(self):
+        with self.assertRaises(ValueError):
+            kp.DateTimeParameter(
+                label="Wrong datetime",
+                default_value="This is not a datetime",
+                description="A datetime parameter",
+            )
+        with self.assertRaises(ValueError):
+            kp.DateTimeParameter(
+                label="Wrong datetime",
+                default_value=12345,
+                description="A datetime parameter",
+            )
+
+    def test_date_format(self):
+        import datetime
+
+        # test that date format is correctly handled
+        date_format = "%Y-%m-%d"
+        param = kp.DateTimeParameter(
+            label="Date format",
+            default_value="2023-02-01",
+            description="A datetime parameter",
+            show_time=False,
+            date_format=date_format,
+        )
+        self.assertEqual(param._default_value, datetime.date(2023, 2, 1))
+        date_format = "%Y-%d-%m"
+
+        param = kp.DateTimeParameter(
+            label="Date format",
+            default_value="2023-01-02",
+            description="A datetime parameter",
+            show_time=False,
+            date_format=date_format,
+        )
+        self.assertEqual(param._default_value, datetime.date(2023, 2, 1))
 
 
 if __name__ == "__main__":
