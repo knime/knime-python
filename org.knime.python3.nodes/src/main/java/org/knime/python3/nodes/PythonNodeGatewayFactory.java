@@ -64,9 +64,11 @@ import org.knime.python3.PythonGatewayFactory;
 import org.knime.python3.PythonGatewayFactory.EntryPointCustomizer;
 import org.knime.python3.PythonGatewayFactory.PythonGatewayDescription;
 import org.knime.python3.arrow.Python3ArrowSourceDirectory;
+import org.knime.python3.arrow.PythonArrowExtension;
 import org.knime.python3.types.PythonValueFactoryModule;
 import org.knime.python3.types.PythonValueFactoryRegistry;
 import org.knime.python3.views.Python3ViewsSourceDirectory;
+import org.knime.python3.views.PythonViewsExtension;
 
 /**
  * Creates {@link PythonGateway PythonGateways} for nodes written purely in Python.
@@ -122,6 +124,8 @@ public final class PythonNodeGatewayFactory {
             .addToPythonPath(Python3ArrowSourceDirectory.getPath()) //
             .addToPythonPath(Python3ViewsSourceDirectory.getPath())//
             .addToPythonPath(m_modulePath)//
+            .withPreloaded(PythonArrowExtension.INSTANCE)//
+            .withPreloaded(PythonViewsExtension.INSTANCE)//
             .withCustomizer(new KnimeNodeBackendCustomizer(m_extensionId, m_module, m_extensionVersion));
         PythonValueFactoryRegistry.getModules().stream().map(PythonValueFactoryModule::getParentDirectory)
             .forEach(gatewayDescriptionBuilder::addToPythonPath);
