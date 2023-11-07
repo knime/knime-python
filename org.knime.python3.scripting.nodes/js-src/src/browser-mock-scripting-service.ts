@@ -189,9 +189,6 @@ const browserMockScriptingService: Partial<ScriptingServiceType> = {
   pasteToEditor(text: string) {
     editorService.pasteToEditor(text);
   },
-  setOnDidChangeContentListener(callback: Function) {
-    return editorService.setOnDidChangeContentListener(callback);
-  },
   supportsCodeAssistant(): Promise<boolean> {
     console.log("Checking whether code assistance is available");
     return Promise.resolve(true);
@@ -212,6 +209,9 @@ const browserMockScriptingService: Partial<ScriptingServiceType> = {
   },
   getOutputObjects() {
     return Promise.resolve(OUTPUT_OBJECTS);
+  },
+  clearConsole() {
+    console.log("clearConsole was called");
   },
 };
 

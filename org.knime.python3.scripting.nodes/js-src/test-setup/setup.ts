@@ -1,3 +1,4 @@
+import { editorStoreMock } from "../src/__mocks__/editorStore";
 import "vitest-canvas-mock";
 import { vi } from "vitest";
 
@@ -39,10 +40,13 @@ vi.mock("@knime/scripting-editor", async () => {
 
   const scriptEditorModule = await vi.importActual("@knime/scripting-editor");
 
+  const useEditorStore = vi.fn(() => editorStoreMock);
+
   return {
     ...scriptEditorModule,
     getScriptingService: () => {
       return mockScriptingService;
     },
+    useEditorStore,
   };
 });

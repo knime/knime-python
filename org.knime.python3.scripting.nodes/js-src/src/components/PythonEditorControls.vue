@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { getScriptingService } from "@knime/scripting-editor";
+import { getScriptingService, useEditorStore } from "@knime/scripting-editor";
 import { computed, onMounted, onUnmounted, ref, type Ref } from "vue";
 import CancelIcon from "webapps-common/ui/assets/img/icons/circle-close.svg";
 import PlayIcon from "webapps-common/ui/assets/img/icons/play.svg";
 import Button from "webapps-common/ui/components/Button.vue";
 import LoadingIcon from "webapps-common/ui/components/LoadingIcon.vue";
 import { pythonScriptingService } from "../python-scripting-service";
-
 import { useExecutableSelectionStore, useSessionStatusStore } from "@/store";
+
+const editorStore = useEditorStore();
+const hasSelection = computed(() => editorStore.selection !== "");
 
 const isRunningSupported = ref(false);
 
@@ -103,7 +105,8 @@ const onHoverRunButton = (
       :disabled="
         !isRunningSupported ||
         (running && !runningSelected) ||
-        executableSelection.isMissing
+        executableSelection.isMissing ||
+        !hasSelection
       "
       class="run-selected-button"
       @click="runButtonClicked('runSelected')"
