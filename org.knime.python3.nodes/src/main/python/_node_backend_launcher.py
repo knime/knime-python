@@ -236,6 +236,28 @@ class _PythonCredentialPortObject:
     def get_auth_parameters(self) -> str:
         return self._spec.auth_parameters
 
+    def getSpec(self) -> _PythonPortObjectSpec:  # NOSONAR - Java naming conventions
+        # wrap as a PythonPortObjectSpec
+        java_class_name = (
+            "org.knime.python3.nodes.ports.PythonPortObjects$PythonPortObjectSpec"
+        )
+        spec = _PythonPortObjectSpec(
+            java_class_name,
+            self._spec.serialize(),
+        )
+        return spec
+
+    def getJavaClassName(self) -> str:  # NOSONAR - Java naming conventions
+        return "org.knime.credentials.base.CredentialPortObject"
+
+    class Java:
+        implements = [
+            "org.knime.python3.nodes.ports.PythonPortObjects$PurePythonCredentialPortObject"
+        ]
+
+    def toString(self):  # NOSONAR - Java naming conventions
+        return f"PythonCredentialPortObject[spec={self._spec.serialize()}]"
+
 
 class _FlowVariablesDict(collections.UserDict):
     def __init__(self):
@@ -474,7 +496,12 @@ class _PortTypeRegistry:
 
     def port_object_from_python(
         self, obj, file_creator, port: kn.Port, node_id: str, port_idx: int
-    ) -> _PythonPortObject:
+    ) -> Union[
+        _PythonPortObject,
+        _PythonBinaryPortObject,
+        _PythonImagePortObject,
+        _PythonCredentialPortObject,
+    ]:
         if port.type == kn.PortType.TABLE:
             if isinstance(obj, kt._TabularView):
                 obj = obj.get()
@@ -514,10 +541,7 @@ class _PortTypeRegistry:
             class_name = "org.knime.core.node.port.image.ImagePortObject"
             return _PythonImagePortObject(class_name, obj)
         elif port.type == kn.PortType.CREDENTIAL:
-            raise NotImplementedError(
-                "Credential port objects are not yet supported as output ports. This is because, for now, we only "
-                "support querying existing credentials from KNIME, but do not create new ones in Python."
-            )
+            return _PythonCredentialPortObject(obj.spec)
         else:
             assert (
                 port.type.id in self._port_types_by_id

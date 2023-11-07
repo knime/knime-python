@@ -276,7 +276,7 @@ final class CloseablePythonNodeProxy
     public static String getAuthSchema(final String serializedXMLString) throws CouldNotAuthorizeException, // NOSONAR
         ClassNotFoundException, InstantiationException, IllegalAccessException, IOException { // NOSONAR
 
-        final HttpAuthorizationHeaderCredentialValue cred = getCredentialfromXMLString(serializedXMLString);
+        final HttpAuthorizationHeaderCredentialValue cred = getCredentialFromXMLString(serializedXMLString);
         if (cred != null) {
             return cred.getAuthScheme();
         }
@@ -288,7 +288,7 @@ final class CloseablePythonNodeProxy
     public static String getAuthParameters(final String serializedXMLString) throws CouldNotAuthorizeException, // NOSONAR
         ClassNotFoundException, InstantiationException, IllegalAccessException, IOException { // NOSONAR
 
-        final HttpAuthorizationHeaderCredentialValue cred = getCredentialfromXMLString(serializedXMLString);
+        final HttpAuthorizationHeaderCredentialValue cred = getCredentialFromXMLString(serializedXMLString);
         if (cred != null) {
             return cred.getAuthParameters();
         }
@@ -296,7 +296,7 @@ final class CloseablePythonNodeProxy
         return null;
     }
 
-    public static HttpAuthorizationHeaderCredentialValue getCredentialfromXMLString(final String serializedXMLString)
+    public static HttpAuthorizationHeaderCredentialValue getCredentialFromXMLString(final String serializedXMLString)
         throws ClassNotFoundException, InstantiationException, IllegalAccessException, IOException {
 
         CredentialPortObjectSpec credentialPortObjectSpec =

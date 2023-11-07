@@ -182,7 +182,7 @@ public final class PythonPortObjects {
         /**
          * @return the spec
          */
-        PythonCredentialPortObjectSpec getSpec();
+        PythonPortObjectSpec getSpec();
     }
 
     /**
@@ -569,7 +569,9 @@ public final class PythonPortObjects {
             final Map<String, FileStore> fileStoresByKey, // NOSONAR
             final PythonArrowTableConverter tableConverter, // NOSONAR
             final ExecutionContext execContext) { // NOSONAR
-            return new PythonCredentialPortObject(portObject.getSpec().m_spec);
+
+            var spec = PythonCredentialPortObjectSpec.fromJsonString(portObject.getSpec().toJsonString()).m_spec;
+            return new PythonCredentialPortObject(spec);
         }
 
         @Override
@@ -914,7 +916,7 @@ public final class PythonPortObjects {
                 rootNode.put("data", byteArrayOutputStream.toString(StandardCharsets.UTF_8));
 
             } catch (IOException ex) {
-                throw new IllegalStateException("Could not parse the PythonCredentialPortObjectSpec to XML.", ex);
+                throw new IllegalStateException("Could not save the PythonCredentialPortObjectSpec to XML.", ex);
             }
 
             try {
@@ -934,13 +936,14 @@ public final class PythonPortObjects {
             final var om = new ObjectMapper();
             try {
                 final var rootNode = om.readTree(jsonData);
-                final String serializedXMLString = rootNode.get("data").asText("");
+                final String serializedXMLString = rootNode.get("data").asText();
 
                 CredentialPortObjectSpec credentialPortObjectSpec =
                     loadFromXMLCredentialPortObjectSpecString(serializedXMLString);
                 return new PythonCredentialPortObjectSpec(credentialPortObjectSpec);
 
-            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | IOException ex) {
+            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException
+                    | IOException ex) {
                 throw new IllegalStateException("Could not parse PythonCredentialPortObject from given JSON data", ex);
             }
         }

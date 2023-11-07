@@ -609,7 +609,7 @@ class PortObjectSpec(ABC):
     """
 
     @abstractmethod
-    def serialize() -> dict:
+    def serialize(self) -> dict:
         pass
 
     @classmethod
