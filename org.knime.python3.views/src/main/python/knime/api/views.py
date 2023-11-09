@@ -118,7 +118,11 @@ file.
 
 
 class NodeView:
-    """A view of a KNIME node that can be displayed for the user.
+    """
+    A view of a KNIME node that can be displayed for the user.
+
+    Notes
+    -----
 
     Do not create a NodeView directly but use the utility functions
     view, view_html, view_svg, view_png, and view_jpeg.
@@ -170,11 +174,15 @@ def view(obj) -> NodeView:
     - Matplotlib: The obj must be a matplotlib.figure.Figure
     - Plotly: The obj must be a plotly.graph_objects.Figure
 
-    Args:
-        obj: The object which should be displayed
+    Parameters
+    ----------
+    obj : Any
+        The object which should be displayed
 
-    Raises:
-        ValueError: If no view could be created for the given object
+    Raises
+    ------
+    ValueError
+        If no view could be created for the given object
     """
 
     if type(obj) is str:
@@ -227,35 +235,48 @@ def view(obj) -> NodeView:
 
 
 def view_ipy_repr(obj) -> NodeView:
-    """Create a NodeView by using the IPython _repr_*_ function of the object.
+    """
+    Create a NodeView by using the IPython `_repr_*_` function of the object.
 
-    Tries to use
-    * _repr_html_
-    * _repr_svg_
-    * _repr_png_
-    * _repr_jpeg_
+    Tries to use:
+
+    1. `_repr_html_`
+    2. `_repr_svg_`
+    3. `_repr_png_`
+    4. `_repr_jpeg_`
+
     in this order.
 
-    Args:
-        obj: The object which should be displayed
+    Parameters
+    ----------
+    obj : object
+        The object which should be displayed.
 
-    Raises:
-        ValueError: If no view could be created for the given object
+    Raises
+    ------
+    ValueError
+        If no view could be created for the given object.
     """
 
     def rm_md(data):
-        """Split data from metadata if necessary"""
+        """
+        Split data from metadata if necessary.
+        """
         if isinstance(data, tuple) and len(data) == 2:
             return data[0]
         else:
             return data
 
     def hasrepr(type):
-        """Check if the object has a representation of the given type"""
+        """
+        Check if the object has a representation of the given type.
+        """
         return hasattr(obj, f"_repr_{type}_")
 
     def find_render_fn():
-        """Find the best render function for the object"""
+        """
+        Find the best render function for the object.
+        """
         if hasrepr("svg"):
             return obj._repr_svg_, view_svg
         if hasrepr("png"):
@@ -283,44 +304,58 @@ def view_html(
     svg_or_png: Optional[Union[str, bytes]] = None,
     render_fn: Optional[Callable[[], Union[str, bytes]]] = None,
 ) -> NodeView:
-    """Create a NodeView that displays the given HTML document.
+    """
+    Create a NodeView that displays the given HTML document.
 
     The document must be self-contained and must not reference external resources. Links
     to external resources will be opened in an external browser.
 
-    Args:
-        html: A string containing the HTML document.
-        svg_or_png: A rendered representation of the HTML page. Either a string
-            containing an SVG or a bytes object containing an PNG image
-        render_fn: A callable that returns an SVG or PNG representation of the page
+    Parameters
+    ----------
+    html : str
+        A string containing the HTML document.
+    svg_or_png : str or bytes
+        A rendered representation of the HTML page. Either a string containing an SVG or
+        a bytes object containing a PNG image.
+    render_fn : callable
+        A callable that returns an SVG or PNG representation of the page.
     """
     return NodeView(html, svg_or_png=svg_or_png, render_fn=render_fn)
 
 
 def view_svg(svg: str) -> NodeView:
-    """Create a NodeView that displays the given SVG.
+    """
+    Create a NodeView that displays the given SVG.
 
-    Args:
-        svg: A string containing the SVG.
+    Parameters
+    ----------
+    svg : str
+        A string containing the SVG.
     """
     return NodeView(_SVG_HTML_BODY.format(svg=svg), svg_or_png=svg)
 
 
 def view_png(png: bytes) -> NodeView:
-    """Create a NodeView that displays the given PNG image.
+    """
+    Create a NodeView that displays the given PNG image.
 
-    Args:
-        png: The bytes of the PNG image
+    Parameters
+    ----------
+    png : bytes
+        The bytes of the PNG image
     """
     b64 = base64.b64encode(png).decode("ascii")
     return NodeView(_PNG_HTML_BODY.format(png_b64=b64), svg_or_png=png)
 
 
 def view_jpeg(jpeg: bytes) -> NodeView:
-    """Create a NodeView that displays the given JPEG image.
+    """
+    Create a NodeView that displays the given JPEG image.
 
-    Args:
-        jpeg: The bytes of the JPEG image
+    Parameters
+    ----------
+    jpeg : bytes
+        The bytes of the JPEG image
     """
     b64 = base64.b64encode(jpeg).decode("ascii")
     return NodeView(_JPEG_HTML_BODY.format(jpeg_b64=b64), svg_or_png=jpeg)
@@ -345,19 +380,26 @@ except ImportError:
 
 
 def view_matplotlib(fig=None, format="png") -> NodeView:
-    """Create a view showing the given matplotlib figure.
+    """
+    Create a view showing the given matplotlib figure.
 
     The figure is displayed by exporting it as an SVG. If no figure is given
     the current active figure is displayed. Note that the figure is closed and
     should not be used after calling this method.
 
-    Args:
-        fig: A matplotlib.figure.Figure which should be displayed.
-        format: Format of the view inside the HTML document. Either "png" or "svg".
+    Parameters
+    ----------
+    fig : matplotlib.figure.Figure
+        A matplotlib figure which should be displayed.
+    format : str
+        The format of the view inside the HTML document. Either "png" or "svg".
 
-    Raises:
-        ImportError: If matplotlib is not available.
-        TypeError: If the figure is not a matplotlib figure.
+    Raises
+    ------
+    ImportError
+        If matplotlib is not available.
+    TypeError
+        If the figure is not a matplotlib figure.
     """
     import matplotlib.figure
 
@@ -390,13 +432,16 @@ def view_matplotlib(fig=None, format="png") -> NodeView:
 
 
 def view_seaborn() -> NodeView:
-    """Create a view showing the current active seaborn figure.
+    """
+    Create a view showing the current active seaborn figure.
 
-    This fuction just calls view_matplotlib() because seaborn plots are just
+    This function just calls view_matplotlib() because seaborn plots are just
     matplotlib figures under the hood.
 
-    Raises:
-        ImportError: If matplotlib is not available.
+    Raises
+    ------
+    ImportError
+        If matplotlib is not available.
     """
     return view_matplotlib()
 
@@ -409,25 +454,32 @@ PLOTLY_POST_JS = KNIME_UI_EXT_SERVICE_JS + _read_js_file("plotly-post-script.js"
 
 
 def view_plotly(fig) -> NodeView:
-    """Create a view showing the given plotly figure.
+    """
+    Create a view showing the given plotly figure.
 
     The figure is displayed by exporting it as an HTML document.
 
     To be able to synchronize the selection between the view and other KNIME views the
     customdata of the figure traces must be set to the RowID.
 
-    **Example**::
+    Parameters
+    ----------
+    fig : plotly.graph_objects.Figure
+        A plotly figure object which should be displayed.
 
-        fig = px.scatter(df, x="my_x_col", y="my_y_col", color="my_label_col",
-                         custom_data=[df.index])
-        node_view = view_plotly(fig)
+    Raises
+    ------
+    ImportError
+        If plotly is not available.
+    TypeError
+        If the figure is not a plotly figure.
 
-    Args:
-        fig: A plotly.graph_objects.Figure object which should be displayed.
+    Examples
+    ---------
 
-    Raises:
-        ImportError: If plotly is not available.
-        TypeError: If the figure is not a plotly figure.
+    >>> fig = px.scatter(df, x="my_x_col", y="my_y_col", color="my_label_col",
+    ...                 custom_data=[df.index])
+    ... node_view = view_plotly(fig)
     """
     import plotly
     import plotly.graph_objects

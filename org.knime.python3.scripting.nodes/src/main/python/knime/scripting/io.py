@@ -127,10 +127,11 @@ output_tables: List[Union[Table, BatchOutputTable]] = _ioc._FixedSizeListView(
 The output tables of this script node. This list has a fixed size, which is determined by the number of output table 
 ports configured for this node.  You should assign a ``Table`` or ``BatchOutputTable`` to each output port of this node. 
 
-**Example**::
+Examples
+--------
 
-    import knime.scripting.io as knio
-    knio.output_tables[0] = knio.Table.from_pandas(my_pandas_df)
+    >>> import knime.scripting.io as knio
+    >>> knio.output_tables[0] = knio.Table.from_pandas(my_pandas_df)
 
 """
 
@@ -139,18 +140,19 @@ output_images: List = _ioc._FixedSizeListView(_ioc._output_images, "output_image
 The output images of this script node. This list has a fixed size, which is determined by the number of output images
 configured for this node. The value passed to the output port should be a bytes-like object encoding an SVG or PNG image.
 
-**Example**::
+Examples
+--------
 
-    import knime.scripting.io as knio
+    >>> import knime.scripting.io as knio
 
-    data = knio.input_tables[0].to_pandas()
-    buffer = io.BytesIO()
+    >>> data = knio.input_tables[0].to_pandas()
+    >>> buffer = io.BytesIO()
 
-    pyplot.figure()
-    pyplot.plot('x', 'y', data=data)
-    pyplot.savefig(buffer, format='svg')
+    >>> pyplot.figure()
+    >>> pyplot.plot('x', 'y', data=data)
+    >>> pyplot.savefig(buffer, format='svg')
 
-    knio.output_images[0] = buffer.getvalue()
+    >>> knio.output_images[0] = buffer.getvalue()
 
 """
 
@@ -160,13 +162,13 @@ The output objects of this script node. This list has a fixed size, which is det
 ports configured for this node. Each output object can be an arbitrary Python object as long as it can be *pickled*. 
 Use this to, for example, pass a trained model to another Python script node.
 
-**Example**::
-
-    model = torchvision.models.resnet18()
-    ...
-    # train/finetune model
-    ...
-    knime.scripting.io.output_objects[0] = model
+Examples
+--------
+    >>> model = torchvision.models.resnet18()
+    >>> ...
+    >>> # train/finetune model
+    >>> ...
+    >>> knime.scripting.io.output_objects[0] = model
 
 """
 
@@ -176,13 +178,14 @@ The output view of the script node. This variable must be populated with a ``Nod
 View node. Views can be created by calling the ``view(obj)`` method with a viewable object. See the
 documentation of ``view(obj)`` to understand how views are created from different kinds of objects.
 
-**Example**::
+Examples
+--------
 
-    import knime.scripting.io as knio
-    import plotly.express as px
+    >>> import knime.scripting.io as knio
+    >>> import plotly.express as px
 
-    fig = px.scatter(x=data_x, y=data_y)
-    knio.output_view = knio.view(fig)
+    >>> fig = px.scatter(x=data_x, y=data_y)
+    >>> knio.output_view = knio.view(fig)
 
 """
 
@@ -202,6 +205,7 @@ def get_workflow_temp_dir() -> str:
 def get_workflow_data_area_dir() -> str:
     """
     Returns the local absolute path to the current workflow's data area folder.
+
     This folder is meant to be part of the workflow, so its contents are included
     whenever the workflow is shared.
     """

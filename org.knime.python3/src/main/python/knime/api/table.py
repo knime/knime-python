@@ -90,24 +90,28 @@ class _Tabular(ks._Columnar):
         Creates a view of this Table by slicing rows and columns. The slicing syntax is similar to that of numpy arrays,
         but columns can also be addressed as index lists or via a list of column names.
 
+        Notes
+        -----
         The syntax is `[column_slice, row_slice]`. Note that this is the exact opposite order than in the deprecated scripting
         API's ReadTable.
 
-        Args:
-            column_slice:
+        Parameters
+        ----------
+            column_slice : int, str, slice, list
                 A column index, a column name, a slice object, a list of column indices, or a list of column names.
-            row_slice:
-                Optional: A slice object describing which rows to use.
+            row_slice : slice, optional
+                A slice object describing which rows to use.
 
-        Returns:
-            A _TabularView representing a slice of the original Table
+        Returns
+        -------
+            TabularView
+                A _TabularView representing a slice of the original Table.
 
-        **Example**::
-
-            row_sliced_table = table[:, :100] # Get the first 100 rows
-            column_sliced_table = table[["name", "age"]] # Get all rows of the columns "name" and "age"
-            row_and_column_sliced_table = table[1:5, :100] # Get the first 100 rows of columns 1,2,3,4
-
+        Examples
+        ---------
+        >>> row_sliced_table = table[:, :100] # Get the first 100 rows
+        ... column_sliced_table = table[["name", "age"]] # Get all rows of the columns "name" and "age"
+        ... row_and_column_sliced_table = table[1:5, :100] # Get the first 100 rows of columns 1,2,3,4
         """
         # we need to return IndexError already here if slicing is an int to end for-loops,
         # otherwise `for i in table` will run forever
@@ -128,9 +132,11 @@ class _Tabular(ks._Columnar):
         """
         Access this table as a pandas.DataFrame.
 
-        Args:
-            sentinel:
-                Replace missing values in integral columns by the given value, one of:
+        Parameters
+        ----------
+        sentinel : str or int
+            Replace missing values in integral columns by the given value.
+            It can be one of the following:
 
                 * ``"min"`` min int32 or min int64 depending on the type of the column
                 * ``"max"`` max int32 or max int64 depending on the type of the column
@@ -142,19 +148,22 @@ class _Tabular(ks._Columnar):
         """
         Access this table as a pyarrow.Table.
 
-        Args:
-            sentinel:
-                Replace missing values in integral columns by the given value, one of:
+        Parameters
+        ----------
+        sentinel : str or int
+            Replace missing values in integral columns by the given value, which can be one of the following:
 
-                * ``"min"`` min int32 or min int64 depending on the type of the column
-                * ``"max"`` max int32 or max int64 depending on the type of the column
-                * An integer value that should be inserted for each missing value
+            - "min": minimum value of int32 or int64 depending on the type of the column
+            - "max": maximum value of int32 or int64 depending on the type of the column
+            - An integer value that should be inserted for each missing value
         """
         return self.get().to_pyarrow()
 
     @abstractmethod
     def _select_rows(self, selection):
-        """Implement row slicing here"""
+        """
+        Implement row slicing here.
+        """
         pass
 
     @property
@@ -174,7 +183,7 @@ class _TabularView(_Tabular, ks._ColumnarView):
     Those operations are performed lazily, because especially on tables they can
     involve allocating and copying large amounts of memory and copying.
 
-    If you need the materialized result of the operation, call the `.get()` method.
+    If you need the materialized result of the operation, call the `get()` method.
     """
 
     def __init__(self, delegate: _Tabular, operation: ks._ColumnarOperation):
@@ -183,11 +192,15 @@ class _TabularView(_Tabular, ks._ColumnarView):
     def to_pandas(
         self, sentinel: Optional[Union[str, int]] = None
     ) -> "pandas.DataFrame":
-        """See _Tabular.to_pandas"""
+        """
+        See :meth:`~_Tabular.to_pandas`
+        """
         return self.get().to_pandas(sentinel)
 
     def to_pyarrow(self, sentinel: Optional[Union[str, int]] = None) -> "pyarrow.Table":
-        """See _Tabular.to_pyarrow"""
+        """
+        See :meth:`_Tabular.to_pyarrow`
+        """
         return self.get().to_pyarrow(sentinel)
 
     @property
@@ -262,6 +275,14 @@ class Table(_Tabular):
     :func:`~knime.api.Table.from_pandas()`"""
 
     def __init__(self):
+        """
+        Do not use this constructor directly, use the from_ methods instead.
+
+        Raises
+        ------
+        RuntimeError
+            Always raises a RuntimeError.
+        """
         raise RuntimeError(
             "Do not use this constructor directly, use the from_ methods instead"
         )
@@ -278,34 +299,41 @@ class Table(_Tabular):
         All batches of the table must have the same number of rows. Only the last batch
         can have less rows than the other batches.
 
-        **Example**::
+        Examples
+        --------
 
-            Table.from_pyarrow(my_pyarrow_table, sentinel="min")
+        >>> Table.from_pyarrow(my_pyarrow_table, sentinel="min")
 
-        Args:
-            data:
-                A pyarrow.Table
-            sentinel:
-                Interpret the following values in integral columns as missing value:
+        Parameters
+        ----------
+        data : pyarrow.Table
+            A pyarrow.Table
+        sentinel : str
+            Interpret the following values in integral columns as missing value:
 
-                * ``"min"`` min int32 or min int64 depending on the type of the column
-                * ``"max"`` max int32 or max int64 depending on the type of the column
-                * a special integer value that should be interpreted as missing value
-            row_ids:
-                Defines what RowID should be used. Must be one of the following values:
+            * ``"min"`` min int32 or min int64 depending on the type of the column
+            * ``"max"`` max int32 or max int64 depending on the type of the column
+            * a special integer value that should be interpreted as missing value
+        row_ids : str
+            Defines what RowID should be used. Must be one of the following values:
 
-                * ``"keep"``: Use the first column of the table as RowID. The first
-                  column must be of type string.
-                * ``"generate"``: Generate new RowIDs of the format ``f"Row{i}"``
-                  where ``i`` is the position of the row (from ``0`` to ``length-1``).
-                * ``"auto"``: Use the first column of the table if it has the name
-                  "<RowID>" and is of type string or integer.
+            * ``"keep"``: Use the first column of the table as RowID. The first
+              column must be of type string.
+            * ``"generate"``: Generate new RowIDs of the format ``f"Row{i}"``
+              where ``i`` is the position of the row (from ``0`` to ``length-1``).
+            * ``"auto"``: Use the first column of the table if it has the name
+              "<RowID>" and is of type string or integer.
 
-                  * If the "<RowID>" column is of type string, use it directly
-                  * If the "<RowID>" column is of an integer type use ``f"Row{n}``
-                    where ``n`` is the value of the integer column.
-                  * Generate new RowIDs (``"generate"``) if the first column has
-                    another type or name.
+              * If the "<RowID>" column is of type string, use it directly
+              * If the "<RowID>" column is of an integer type use ``f"Row{n}``
+                where ``n`` is the value of the integer column.
+              * Generate new RowIDs (``"generate"``) if the first column has
+                another type or name.
+
+        Returns
+        -------
+        pyarrow.Table
+            The created Table instance.
         """
         # TODO(AP-20353) remove note from docs that table must have constant batch size
         return _backend.create_table_from_pyarrow(data, sentinel, row_ids=row_ids)
@@ -320,35 +348,41 @@ class Table(_Tabular):
         Factory method to create a Table given a pandas.DataFrame.
         The index of the data frame will be used as RowKey by KNIME.
 
-        **Example**::
+        Examples
+        --------
 
-            Table.from_pandas(my_pandas_df, sentinel="min")
+        >>> Table.from_pandas(my_pandas_df, sentinel="min")
 
-        Args:
-            data:
-                A pandas.DataFrame
-            sentinel:
-                Interpret the following values in integral columns as missing value:
+        Parameters
+        ----------
+        data : pandas.DataFrame
+            A pandas DataFrame.
+        sentinel : str, optional
+            Interpret the following values in integral columns as missing value:
 
-                * ``"min"`` min int32 or min int64 depending on the type of the column
-                * ``"max"`` max int32 or max int64 depending on the type of the column
-                * a special integer value that should be interpreted as missing value
-            row_ids:
-                Defines what RowID should be used. Must be one of the following values:
+            - ``"min"``: min int32 or min int64 depending on the type of the column
+            - ``"max"``: max int32 or max int64 depending on the type of the column
+            - a special integer value that should be interpreted as missing value
+        row_ids : {'keep', 'generate', 'auto'}, optional
+            Defines what RowID should be used. Must be one of the following values:
 
-                * ``"keep"``: Keep the ``DataFrame.index`` as the RowID. Convert the
-                  index to strings if necessary.
-                * ``"generate"``: Generate new RowIDs of the format ``f"Row{i}"``
-                  where ``i`` is the position of the row (from ``0`` to ``length-1``).
-                * ``"auto"``: If the ``DataFrame.index`` is of type int or unsigned int,
-                  use ``f"Row{n}"`` where ``n`` is the index of the row. Else, use
-                  "keep".
+            - ``"keep"``: Keep the ``DataFrame.index`` as the RowID. Convert the
+              index to strings if necessary.
+            - ``"generate"``: Generate new RowIDs of the format ``f"Row{i}"``
+              where ``i`` is the position of the row (from ``0`` to ``length-1``).
+            - ``"auto"``: If the ``DataFrame.index`` is of type int or unsigned int,
+              use ``f"Row{n}"`` where ``n`` is the index of the row. Else, use "keep".
+
+        Returns
+        -------
+        Table
+            The created Table object.
         """
         return _backend.create_table_from_pandas(data, sentinel, row_ids=row_ids)
 
     def to_batches(self) -> Iterator["Table"]:
         """
-        Alias for ``Table.batches()``
+        Alias for `Table.batches()`
         """
         return self.batches()
 
@@ -359,13 +393,18 @@ class Table(_Tabular):
         memory (max size currently 64mb). The table being passed to execute() is already
         present in batches, so accessing the data this way is very efficient.
 
-        **Example**::
+        Returns
+        -------
+        generator
+            A generator object that yields batches of the table.
 
-            output_table = BatchOutputTable.create()
-            for batch in my_table.batches():
-                input_batch = batch.to_pandas()
-                # process the batch
-                output_table.append(Table.from_pandas(input_batch))
+        Examples
+        --------
+        >>> output_table = BatchOutputTable.create()
+        ... for batch in my_table.batches():
+        ...     input_batch = batch.to_pandas()
+        ...     # process the batch
+        ...     output_table.append(Table.from_pandas(input_batch))
         """
         raise RuntimeError(
             "Retrieving batches is only allowed for unmodified tables, as they are passed to execute()"
@@ -376,13 +415,13 @@ class BatchOutputTable:
     """
     An output table generated by combining smaller tables (also called batches).
 
-    All batches must have the same number, names and types of columns.
 
-    All batches except the last batch must have the same number of rows. The last batch
-    can have less rows than the other batches.
-
-    Does not provide means to continue to work with the data but is meant to be used
-    as a return value of a Node's execute() method.
+    Notes
+    -----
+    - All batches must have the same number, names and types of columns.
+    - All batches except the last batch must have the same number of rows.
+    - The last batch can have fewer rows than the other batches.
+    - This object does not provide means to continue to work with the data but is meant to be used as a return value of a Node's execute() method.
     """
 
     def __init__(self):
@@ -395,17 +434,19 @@ class BatchOutputTable:
         """
         Create an empty BatchOutputTable
 
-        Args:
-            row_ids:
-                Defines what RowID should be used. Must be one of the following values:
+        Parameters
+        ----------
+        row_ids : str
+            Defines what RowID should be used. Must be one of the following values:
 
-                * ``"keep"``:
+            - "keep":
 
-                  * For appending DataFrames: Keep the ``DataFrame.index`` as the RowID.
-                    Convert the index to strings if necessary.
-                  * For appending Arrow tables or record batches: Use the first column
-                    of the table as RowID. The first column must be of type string.
-                * ``"generate"``: Generate new RowIDs of the format ``f"Row{i}"``
+                - For appending DataFrames: Keep the DataFrame.index as the RowID.
+                  Convert the index to strings if necessary.
+                - For appending Arrow tables or record batches: Use the first column
+                  of the table as RowID. The first column must be of type string.
+
+            - "generate": Generate new RowIDs of the format "Row{i}"
         """
         return _backend.create_batch_output_table(row_ids=row_ids)
 
@@ -414,8 +455,10 @@ class BatchOutputTable:
         """
         Create output table where each batch is provided by a generator
 
-        Args:
-            row_ids: See ``BatchOutputTable.create``.
+        Parameters:
+        ----------
+        row_ids : object
+            See `BatchOutputTable.create`.
         """
         out = _backend.create_batch_output_table(row_ids=row_ids)
         for b in generator:
@@ -431,16 +474,16 @@ class BatchOutputTable:
         Append a batch to this output table. The first batch defines the structure of the table,
         and all subsequent batches must have the same number of columns, column names and column types.
 
-        Note:
+        Notes:
+        ------
           Keep in mind that the RowID will be handled according to the "row_ids"
-          mode chosen in ``BatchOutputTable.create``.
+          mode chosen in `BatchOutputTable.create`.
         """
         raise RuntimeError("Not implemented")
 
     @property
     @abstractmethod
     def num_batches(self) -> int:
-        """
-        The number of batches written to this output table
+        """ The number of batches written to this output table.
         """
         raise RuntimeError("Not implemented")

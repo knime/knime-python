@@ -327,3 +327,18 @@ Custom Port Object Types
    :noindex:
    :exclude-members: serialize, deserialize
    :inherited-members:
+
+
+Environment Variables
+---------------------
+This module provides access to the different environment variables that are available in KNIME.
+
+.. autoclass:: knime.extension.ProxySettings
+   :members:
+   :noindex:
+   :inherited-members:
+
+.. autoclass:: knime.extension.get_proxy_settings
+   :members:
+   :noindex:
+   :inherited-members:

@@ -66,14 +66,24 @@ DATA_SINKS = {}
 
 
 class EntryPoint:
-    """The base class for all entry points.
+    """
+    The base class for all entry points.
 
+    Notes
+    -----
     Methods in this class and subclasses are called by a Java process and are therefore
     entry points into the Python process.
     """
 
     def getPid(self):  # NOSONAR: Method name defined in Java interface
-        """Get the process identifier of this Python process."""
+        """
+        Get the process identifier of this Python process.
+
+        Returns
+        -------
+        int
+            The process identifier of this Python process.
+        """
         return os.getpid()
 
     def enableDebugging(
@@ -83,6 +93,21 @@ class EntryPoint:
         debug_log_to_stderr: bool = False,
         port: int = 5678,
     ):
+        """
+        Enable debugging with specified options.
+
+        Parameters
+        ----------
+        enable_breakpoints : bool, optional
+            Whether to enable breakpoints. Default is True.
+        enable_debug_log : bool, optional
+            Whether to enable debug logging. Default is True.
+        debug_log_to_stderr : bool, optional
+            Whether to log debug messages to stderr. Default is False.
+        port : int, optional
+            The port number for debugging. Default is 5678.
+
+        """
         import debug_util
 
         debug_util.init_debug(
@@ -92,13 +117,15 @@ class EntryPoint:
     def registerExtensions(  # NOSONAR: Method name defined in Java interface
         self, extensions
     ):
-        """Register a list of extensions that are imported into the process.
+        """
+        Register a list of extensions that are imported into the process.
 
-        Args:
-            extensions: An iterable of strings. The strings must be module names that
-                can will imported via `importlib.import_module(s)`. Modules are allowed
-                to execute initialization/registration code on import but should keep
-                import time to a minimum.
+        Parameters
+        ----------
+        extensions : iterable
+            An iterable of strings. The strings must be module names that can will imported
+            via `importlib.import_module(s)`. Modules are allowed to execute initialization/
+            registration code on import but should keep import time to a minimum.
         """
         # Note: Import errors are given back to the Java caller
         for ext in extensions:
@@ -113,6 +140,33 @@ class EntryPoint:
         python_value_type_name,
         is_default_python_representation,
     ):
+        """
+        Register a Python value factory in KNIME.
+
+        Parameters
+        ----------
+        self : object
+            Reference to the current object.
+
+        python_module : str
+            The name of the Python module to register.
+
+        python_value_factory_name : str
+            The name of the Python value factory.
+
+        data_spec : object
+            The data specification of the factory.
+
+        data_traits : object
+            The data traits of the factory.
+
+        python_value_type_name : str
+            The name of the Python value type.
+
+        is_default_python_representation : bool
+            Whether the Python representation is the default.
+
+        """
         import knime.api.types as types
 
         types.register_python_value_factory(
@@ -130,6 +184,23 @@ class EntryPoint:
         python_class_name,
         python_value_type_name,
     ):
+        """
+        Register a converter for a Python value type to a Pandas column.
+
+        Parameters
+        ----------
+        python_module : str
+            The Python module where the converter is defined.
+        python_class_name : str
+            The name of the Python class that implements the converter.
+        python_value_type_name : str
+            The name of the Python value type that the converter converts.
+
+        Side Effects
+        ------------
+        This function modifies the `_to_pandas_column_converters` dictionary in the `types` module of the KNIME API.
+
+        """
         import knime.api.types as types
 
         types._to_pandas_column_converters[python_value_type_name] = (
@@ -143,6 +214,32 @@ class EntryPoint:
         python_class_name,
         python_value_type_name,
     ):
+        """
+        Register a converter function for converting a Pandas column to a specific data type.
+
+        Parameters
+        ----------
+        self : object
+            The class object.
+        python_module : str
+            The name of the Python module containing the converter function.
+        python_class_name : str
+            The name of the Python class containing the converter function.
+        python_value_type_name : str
+            The name of the data type to convert the Pandas column to.
+
+
+        Notes
+        -----
+        This function is used to register custom converter functions for converting specific Pandas column types to Knime data types.
+
+        Examples
+        --------
+
+        >>> registerFromPandasColumnConverter(Object, "pandas_module", "pandas_class", "data_type")
+
+        This example registers a converter function to convert a Pandas column of type "data_type" using the "pandas_module" and "pandas_class".
+        """
         import knime.api.types as types
 
         types._from_pandas_column_converters[python_value_type_name] = (
@@ -155,14 +252,17 @@ class EntryPoint:
 
 
 def connect_to_knime(entry_point: EntryPoint):
-    """Connect to the KNIME instance that started this Python process.
+    """
+    Connect to the KNIME instance that started this Python process.
 
     This function expects the Python process to have been created by the `PythonGateway`
     Java class. After this function returns `knime._backend._gateway.client_server` will be populated
     and can be used to communicate with the JVM.
 
-    Args:
-        entry_point: A class implementing methods that can be called from Java.
+    Parameters
+    ----------
+    entry_point : class
+        A class implementing methods that can be called from Java.
     """
     java_port = int(sys.argv[1])
     java_params = JavaParameters(port=java_port, auto_convert=True)
@@ -189,12 +289,14 @@ def connect_to_knime(entry_point: EntryPoint):
 
 
 def data_source(identifier: str):
-    """Creates a function registering a function as a data source mapper.
+    """
+    Creates a function registering a function as a data source mapper.
 
     If `data_source_mapper(obj)` will be called with an obj with the given identifier the
     function will be called with `obj`.
 
-    Example:
+    Examples
+    --------
 
     obj is a Java data source with the method `get(int): string`.
     >>> obj.getIdentifier()
@@ -210,12 +312,31 @@ def data_source(identifier: str):
     >>> type(l)
     <class 'list'>
 
-    Args:
-        identifier: A string identifier that uniquely identifies the data source type.
-            The same identifier as returned by the Java object `getIdentifier()`.
+    Parameters
+    ----------
+    identifier : str
+        A string identifier that uniquely identifies the data source type.
+        The same identifier as returned by the Java object `getIdentifier()`.
     """
 
     def f(mapper):
+        """
+        Set a mapper function for the DATA_SOURCES dictionary.
+
+        Parameters
+        ----------
+        mapper : function
+            The mapping function to be set for the DATA_SOURCES dictionary.
+
+        Returns
+        -------
+        function
+            The input mapper function.
+
+        Notes
+        -----
+        - The DATA_SOURCES dictionary is modified with the new mapper function.
+        """
         DATA_SOURCES[identifier] = mapper
         return mapper
 
@@ -223,17 +344,37 @@ def data_source(identifier: str):
 
 
 def data_sink(identifier: str):
-    """Creates a function registering a function as a data sink mapper.
+    """
+    Creates a function registering a function as a data sink mapper.
 
     If `data_sink_mapper(obj)` will be called with an obj with the given identifier the
     function will be called with `obj`.
 
-    Args:
-        identifier: A string identifier that uniquely identifies the data sink type.
-            The same identifier as returned by the Java object `getIdentifier()`.
+    Parameters
+    ----------
+    identifier : str
+        A string identifier that uniquely identifies the data sink type.
+        The same identifier as returned by the Java object `getIdentifier()`.
     """
 
     def f(mapper):
+        """
+        Set a mapper function for a data sink.
+
+        Parameters
+        ----------
+        mapper : function
+            The mapper function to be set for the data sink.
+
+        Returns
+        -------
+        function
+            The mapper function that was set.
+
+        Notes
+        -----
+        - The DATA_SINKS dictionary is modified with the new mapper function.
+        """
         DATA_SINKS[identifier] = mapper
         return mapper
 
@@ -241,20 +382,27 @@ def data_sink(identifier: str):
 
 
 def data_source_mapper(java_data_source):
-    """Map a Java object which provides data to an Python object which gives access to the data
+    """
+    Map a Java object which provides data to a Python object which gives access to the data
     using a Pythonic API.
 
-    The mapper for a type of data must be decorated with the decorator `@knime._backend._gateway.data_source(identifier)`.
+    The mapper for a type of data must be decorated with the decorator `@knime._backend._gateway.data_sink(identifier)`.
 
-    Args:
-        java_data_source: The Java object providing data. The object must implement the method `getIdentifier`
-            which must return the indentifer of the decorated mapper.
+    Parameters
+    ----------
+    java_data_source : object
+        The Java object providing data. The object must implement the method `getIdentifier`
+        which must return the identifier of the decorated mapper.
 
-    Returns:
+    Returns
+    -------
+    object
         A Python object which provides the data.
 
-    Raises:
-        ValueError: If no mapper is registered for the type of data source.
+    Raises
+    ------
+    ValueError
+        If no mapper is registered for the type of data source.
     """
     identifier = java_data_source.getIdentifier()
     if identifier not in DATA_SOURCES:
@@ -268,19 +416,24 @@ def data_source_mapper(java_data_source):
 
 
 def data_sink_mapper(java_data_sink):
-    """Map a Java object which collects data to an Python object with a Pythonic API.
+    """
+    Map a Java object which collects data to a Python object with a Pythonic API.
 
-    The mapper for a type of data must be decorated with the decorator `@knime._backend._gateway.data_sink(identifier)`.
+    Parameters
+    ----------
+    java_data_sink : object
+        The Java object collecting data. The object must implement the method `getIdentifier`
+        which must return the identifier of the decorated mapper.
 
-    Args:
-        java_data_sink: The Java object collecting data. The object must implement the method `getIdentifier`
-            which must return the indentifer of the decorated mapper.
-
-    Returns:
+    Returns
+    -------
+    python_data_sink : object
         A Python object which collects the data.
 
-    Raises:
-        ValueError: If no mapper is registered for the type of data sink.
+    Raises
+    ------
+    ValueError
+        If no mapper is registered for the type of data sink.
     """
     identifier = java_data_sink.getIdentifier()
     if identifier not in DATA_SINKS:
@@ -294,26 +447,32 @@ def data_sink_mapper(java_data_sink):
 
 
 class SequenceContextManager(Sequence):
-    """A sequence of context managers.
+    """
+    A sequence of context managers.
 
     When a SequenceContextManager enters a context all values enter a context and when it leaves
     the context all values will leave the context. To access the values the context
     must be entered.
 
-    Example:
+    Parameters
+    ----------
+    context_managers : list
+        A list of context managers.
 
+    Example
+    -------
     >>> from contextlib import contextmanager
-    >>> @contextmanager
+    ... @contextmanager
     ... def resource(name):
     ...     print(f"Entering {name}")
     ...     try:
     ...             yield None
     ...     finally:
     ...             print(f"Exiting {name}")
-    >>> context_managers = [resource(i) for i in range(3)]
-    >>> with kg.SequenceContextManager(context_managers) as context_list:
+    ... context_managers = [resource(i) for i in range(3)]
+    ... with kg.SequenceContextManager(context_managers) as context_list:
     ...     # Do something with the resources
-    ...     print("Doing something inside of the context")
+    >>>     print("Doing something inside of the context")
     Entering 0
     Entering 1
     Entering 2
@@ -321,13 +480,22 @@ class SequenceContextManager(Sequence):
     Exiting 2
     Exiting 1
     Exiting 0
+
+    Notes
+    --------
+    When a `SequenceContextManager` enters a context, all values enter a context, and
+    when it leaves the context, all values will leave the context. To access the values,
+    the context must be entered.
     """
 
     def __init__(self, context_managers):
-        """Create a new SequenceContextManager.
+        """
+        Create a new SequenceContextManager.
 
-        Args:
-            context_managers: A list of context managers.
+        Parameters
+        ----------
+        context_managers : list
+            A list of context managers.
         """
         # In the docstring we ask for a list (because this is easy to understand)
         # but a Sequence is alright
@@ -348,6 +516,18 @@ class SequenceContextManager(Sequence):
         return len(self.values)
 
     def __enter__(self):
+        """
+        Enter the context manager and initialize necessary resources.
+
+        Returns
+        -------
+        self
+            The instance of the context manager.
+
+        Raises
+        ------
+        Any exception raised by the context managers.
+        """
         with ExitStack() as stack:
             # Enter the context of all values
             self.entered = [stack.enter_context(v) for v in self.values]
@@ -356,5 +536,27 @@ class SequenceContextManager(Sequence):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        """
+        Exit the context and close the object.
+
+        Parameters
+        ----------
+        exc_type : type
+            Type of the exception that occurred.
+        exc_val : exception
+            The actual exception that occurred.
+        exc_tb : traceback
+            The traceback object associated with the exception.
+
+        Returns
+        -------
+        bool
+            Always returns False.
+
+        Notes
+        -----
+        This method is used as a context manager exit method.
+
+        """
         self.close()
         return False

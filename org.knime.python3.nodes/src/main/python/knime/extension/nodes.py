@@ -60,8 +60,8 @@ from knime.api.schema import PortObjectSpec
 
 class PortObject(ABC):
     """
-    Base class for custom port objects. The must have a corresponding
-    ``PortObjectSpec`` and support serialization from and to bytes.
+    Base class for custom port objects. They must have a corresponding
+    `PortObjectSpec` and support serialization from and to bytes.
     """
 
     def __init__(self, spec: PortObjectSpec) -> None:
@@ -69,18 +69,24 @@ class PortObject(ABC):
 
     @property
     def spec(self) -> PortObjectSpec:
-        """Provides access to the spec of the PortObject."""
+        """
+        Provides access to the spec of the PortObject.
+        """
         return self._spec
 
     @abstractmethod
     def serialize(self) -> bytes:
-        """Serializes the object to bytes."""
+        """
+        Serialize the object to bytes.
+        """
         pass
 
     @classmethod
     @abstractmethod
     def deserialize(cls, spec: PortObjectSpec, storage: bytes) -> "PortObject":
-        """Creates the port object from its spec and storage."""
+        """
+        Creates the port object from its spec and storage.
+        """
         pass
 
 
@@ -92,8 +98,8 @@ class ConnectionPortObject(PortObject):
 
     Connection port objects are passed downstream by ensuring that the same Python
     process is used to execute subsequent nodes. ConnectionPortObjects must provide the
-    data in the ``to_connection_data`` and create new instances from the same data in
-    ``from_connection_data``. A reference to the data Python object is maintained and
+    data in the `to_connection_data` and create new instances from the same data in
+    `from_connection_data`. A reference to the data Python object is maintained and
     handed to downstream nodes. So the data does not need to be serializable/picklable.
     """
 
@@ -111,7 +117,7 @@ class ConnectionPortObject(PortObject):
     def to_connection_data(self) -> Any:
         """
         Provide the data that makes up this ConnectionPortObject such that it can be used
-        by downstream nodes in the ``from_connection_data`` method.
+        by downstream nodes in the `from_connection_data` method.
         """
         pass
 
@@ -122,7 +128,7 @@ class ConnectionPortObject(PortObject):
     ) -> "ConnectionPortObject":
         """
         Construct a ConnectionPortObject from spec and data. The data is the data that has
-        been returned by the ``to_connection_data`` method of the ConnectionPortObject
+        been returned by the `to_connection_data` method of the ConnectionPortObject
         by the upstream node.
 
         The data should not be tempered with, as it is a Python object that is handed to
@@ -150,6 +156,11 @@ class FilestorePortObject(PortObject):
     def write_to(self, file_path: str) -> None:
         """
         Write the object into the given file_path.
+
+        Parameters
+        ----------
+        file_path : str
+            The path to the file where the object will be written.
         """
 
     @classmethod
@@ -200,6 +211,16 @@ class PortType:
         Returns True if this PortType is the same or a super-type of the provided PortType.
         One PortType is a supertype of another PortType if both its spec_class and object_class
         are a super-classes of the other PortTypes spec_class and object_class.
+
+        Parameters
+        ----------
+        other : PortType
+            The PortType to compare with.
+
+        Returns
+        -------
+        bool
+            True if this PortType is the same or a super-type of the provided PortType, False otherwise.
         """
         return issubclass(port_type.spec_class, self.spec_class) and issubclass(
             port_type.object_class, self.object_class
@@ -215,7 +236,9 @@ PortType.CREDENTIAL = "PortType.CREDENTIAL"
 
 
 class ImageFormat(Enum):
-    """The image formats available for image ports."""
+    """
+    The image formats available for image ports.
+    """
 
     PNG = "png"
     """The PNG format."""
@@ -238,6 +261,11 @@ class _KnimeNodeBackend(ABC):
     def get_port_type_for_spec_type(self, spec_type: Type[PortObjectSpec]) -> PortType:
         """
         Returns the port type that corresponds to a particular type of PortObjectSpec.
+
+        Returns
+        -------
+        PortType
+            The port type that corresponds to the given PortObjectSpec.
         """
 
     @abstractmethod
@@ -245,7 +273,14 @@ class _KnimeNodeBackend(ABC):
         """
         Returns the port type that corresponds to a particular id.
 
-        Experimental API. Might change without warning in future releases.
+        Note
+        ----
+        This is an experimental API and might change without warning in future releases.
+
+        Returns
+        -------
+        PortType
+            The port type that corresponds to the given ID.
         """
 
 
@@ -261,10 +296,14 @@ def port_type(
     """
     Use this decorator to annotate a PortObject class that should correspond to a PortType in KNIME.
 
-    Args:
-        name: A human readable name for the PortType
-        spec_class: The class of PortObjectSpec used by the PortType
-        id: A unique id for the PortType. If None is provided an id is generated by concatenate the module and class name separated by a '.'
+    Parameters
+    ----------
+    name : str
+        A human readable name for the PortType
+    spec_class : Type[PortObjectSpec]
+        The class of PortObjectSpec used by the PortType
+    id : str, optional
+        A unique id for the PortType. If None is provided an id is generated by concatenating the module and class name separated by a '.'.
     """
     return _backend.register_port_type(name, object_class, spec_class, id)
 
@@ -273,7 +312,7 @@ def get_port_type_for_spec_type(spec_type: Type[PortObjectSpec]) -> PortType:
     """
     Returns the port type that corresponds to a particular type of PortObjectSpec.
 
-    Experimental API. Might change without warning in future releases.
+    Experimental API: Might change without warning in future releases.
     """
     return _backend.get_port_type_for_spec_type(spec_type)
 
@@ -289,6 +328,27 @@ def get_port_type_for_id(id: str) -> PortType:
 
 @dataclass
 class Port:
+    """
+    A class representing a port.
+
+    Parameters
+    ----------
+    type : PortType
+        The type of the port.
+    name : str
+        The name of the port.
+    description : str
+        The description of the port.
+    id : Optional[str], default=None
+        The unique identifier for the port. Required for ports of type BINARY or CONNECTION.
+
+    Raises
+    ------
+    TypeError
+        If the port type is BINARY or CONNECTION and the 'id' is not provided.
+
+    """
+
     type: PortType
     name: str
     description: str
@@ -298,7 +358,7 @@ class Port:
 
     def __post_init__(self):
         """
-        Perform validation after __init__
+        Perform validation after ``__init__``
         """
         if self.type in [PortType.BINARY, PortType.CONNECTION] and self.id is None:
             raise TypeError(
@@ -308,6 +368,28 @@ class Port:
 
 @dataclass
 class ViewDeclaration:
+    """
+    A data class representing a view declaration.
+
+    Parameters
+    ----------
+    name : str
+        The name of the view.
+    description : str
+        The description of the view.
+    static_resources : str, optional
+        The static resources associated with the view.
+
+    Attributes
+    ----------
+    name : str
+        The name of the view.
+    description : str
+        The description of the view.
+    static_resources : str or None
+        The static resources associated with the view, or None if not specified.
+    """
+
     name: str
     description: str
     static_resources: Optional[str] = None
@@ -315,6 +397,19 @@ class ViewDeclaration:
 
 @dataclass(frozen=True)
 class Credential:
+    """
+    A class representing a credential.
+
+    Parameters
+    ----------
+    username : str
+        The username for the credential.
+    password : str
+        The password for the credential.
+    credential_name : str
+        The name of the credential.
+    """
+
     username: str
     password: str
     credential_name: str
@@ -343,25 +438,30 @@ class _BaseContext:
     def flow_variables(self) -> Dict[str, Any]:
         """
         The flow variables coming in from KNIME as a dictionary with string keys.
+
+        Notes
+        -----
         The dictionary can be edited and supports flow variables of the following types:
 
-        * bool
-        * list(bool)
-        * float
-        * list(float)
-        * int
-        * list(int)
-        * str
-        * list(str)
-
+        - bool
+        - list[bool]
+        - float
+        - list[float]
+        - int
+        - list[int]
+        - str
+        - list[str]
         """
         return self._flow_variables
 
     def get_credential_names(self):
         """
+        Returns the identifier (flow variable name) for each credential.
 
-        Returns the identifier (flow variable name) for each credential
-
+        Returns
+        -------
+        list
+            A list of credential names.
         """
         credential_names = list(self._java_ctx.get_credential_names())
         return credential_names
@@ -370,8 +470,15 @@ class _BaseContext:
         """
         Returns the credentials dataclass for the given identifier.
 
-        Args:
-            identifier: the identifier of the credentials to retrieve
+        Parameters
+        ----------
+            identifier : str
+                The identifier of the credentials to retrieve.
+
+        Returns
+        -------
+        Credential
+            A dataclass containing the credentials.
         """
         from py4j.protocol import Py4JJavaError
 
@@ -389,41 +496,67 @@ class DialogCreationContext(_BaseContext):
     It enables access to the flow variables, the specs of the input tables and the credentials. These can be used to
     create the dialog elements, by passing the respective method as lambda function to the constructor of the
     string parameter class. The lambdas will receive the dialog creation context as parameter which should be passed
-    as first parameter to the fully qualified method calls of ``DialogCreationContext`` as below:
+    as first parameter to the fully qualified method calls of `DialogCreationContext` as below:
 
-    **Example**::
 
-        class ExampleNode:
-            # This dialog element displays a dropdown with all available credentials
-            string_param = knext.StringParameter(label="Credential parameter", description="Choices is a callable",
-                                         choices=lambda a: knext.DialogCreationContext.get_credential_names(a))
+    Examples
+    -------
+    >>> class ExampleNode:
+    ...     # This dialog element displays a dropdown with all available credentials
+    ...     string_param = knext.StringParameter(label="Credential parameter", description="Choices is a callable",
+    ...                                 choices=lambda a: knext.DialogCreationContext.get_credential_names(a))
 
     """
 
     def __init__(self, java_ctx, flow_variables, specs_to_python_converter) -> None:
+        """
+        Initialize the object.
+
+        Parameters
+        ----------
+        java_ctx : JavaContext
+            The JavaContext object.
+        flow_variables : list
+            The list of flow variables.
+        specs_to_python_converter : function
+            The function to convert Java specifications to Python.
+
+        """
         super().__init__(java_ctx, flow_variables)
         self._python_specs = specs_to_python_converter(self._java_ctx.get_input_specs())
 
     def get_input_specs(self) -> List[PortObjectSpec]:
         """
         Returns the specs for all input ports of the node.
+
+        Returns
+        -------
+        List
+            A list of specs for all input ports.
         """
         return self._python_specs
 
     def get_flow_variables(self):
         """
         Returns the flow variables coming in from KNIME as a dictionary with string keys.
-        The dictionary cannot be edited and supports flow variables of the following types:
+        The dictionary cannot be edited.
 
-        * bool
-        * list(bool)
-        * float
-        * list(float)
-        * int
-        * list(int)
-        * str
-        * list(str)
+        Returns
+        -------
+        dict
+            The flow variables dictionary with string keys.
 
+        Notes
+        -----
+        The supported flow variable types are:
+        - bool
+        - list(bool)
+        - float
+        - list(float)
+        - int
+        - list(int)
+        - str
+        - list(str)
         """
         return self._flow_variables
 
@@ -438,28 +571,34 @@ class ConfigurationContext(_BaseContext):
         """
         Sets a warning on the node.
 
-        Args:
-            message: the warning message to display on the node
+        Parameters
+        ----------
+        message : str
+            The warning message to display on the node.
         """
         self._java_ctx.set_warning(str(message))
 
 
 class ExecutionContext(ConfigurationContext):
     """
-    The ExecutionContext provides utilities to communicate with KNIME during a
-    node's execute() method.
+    The `ExecutionContext` provides utilities to communicate with KNIME during a
+    node's `execute()` method.
     """
 
     def set_progress(self, progress: float, message: str = None):
-        """Set the progress of the execution.
+        """
+        Set the progress of the execution.
 
         Note that the progress that can be set here is 80% of the total progress
         of a node execution. The first and last 10% are reserved for data
         transfer and will be set by the framework.
 
-        Args:
-            progress: a floating point number between 0.0 and 1.0
-            message: an optional message to display in KNIME with the progress
+        Parameters
+        ----------
+        progress : float
+            A floating point number between 0.0 and 1.0.
+        message : str, optional
+            An optional message to display in KNIME with the progress.
         """
         if isinstance(progress, int):
             progress = float(progress)
@@ -508,6 +647,11 @@ class ExecutionContext(ConfigurationContext):
         """
         Returns the local absolute path to the directory in which KNIME stores its
         configuration as well as log files.
+
+        Returns
+        -------
+        str
+            The local absolute path to the KNIME directory.
         """
         return self._java_ctx.get_knime_home_dir()
 
@@ -524,27 +668,28 @@ class PythonNode(ABC):
     write warnings and errors to the KNIME console. ``.info`` and ``.debug`` will only
     show up in the KNIME console if the log level in KNIME is configured to show these.
 
-    **Example**::
+    Examples
+    -------
 
-            import logging
-            import knime.extension as knext
-
-            LOGGER = logging.getLogger(__name__)
-
-            category = knext.category("/community", "mycategory", "My Category", "My category described", icon="icons/category.png")
-
-            @knext.node(name="Pure Python Node", node_type=knext.NodeType.LEARNER, icon_path="icons/icon.png", category=category)
-            @knext.input_table(name="Input Data", description="We read data from here")
-            @knext.output_table(name="Output Data", description="Whatever the node has produced")
-            class TemplateNode(knext.PythonNode):
-                # A Python node has a description.
-
-                def configure(self, configure_context, table_schema):
-                    LOGGER.info(f"Configuring node")
-                    return table_schema
-
-                def execute(self, exec_context, table):
-                    return table
+    >>> import logging
+    ... import knime.extension as knext
+    ...
+    ... LOGGER = logging.getLogger(__name__)
+    ...
+    ... category = knext.category("/community", "mycategory", "My Category", "My category described", icon="icons/category.png")
+    ...
+    ... @knext.node(name="Pure Python Node", node_type=knext.NodeType.LEARNER, icon_path="icons/icon.png", category=category)
+    ... @knext.input_table(name="Input Data", description="We read data from here")
+    ... @knext.output_table(name="Output Data", description="Whatever the node has produced")
+    ... class TemplateNode(knext.PythonNode):
+    ...     # A Python node has a description.
+    ...
+    ...     def configure(self, configure_context, table_schema):
+    ...         LOGGER.info(f"Configuring node")
+    ...         return table_schema
+    ...
+    ...     def execute(self, exec_context, table):
+    ...         return table
 
     """
 
@@ -557,22 +702,26 @@ class PythonNode(ABC):
         """
         Configure this Python node.
 
-        Args:
-            config_context:
-                The ConfigurationContext providing KNIME utilities during execution
-            *inputs:
-                Each input table spec or binary port spec will be added as parameter,
-                in the same order that the ports were defined.
+        Parameters
+        ----------
+        config_context : ConfigurationContext
+            The ConfigurationContext providing KNIME utilities during execution
+        *inputs :
+            Each input table spec or binary port spec will be added as parameter,
+            in the same order that the ports were defined.
 
-        Returns:
+        Returns
+        -------
+        Union[Spec, List[Spec], Tuple[Spec, ...], Column]
             Either a single spec, or a tuple or list of specs. The number of specs
             must match the number of defined output ports, and they must be returned in this order.
             Alternatively, instead of a spec, a knext.Column can be returned (if the spec shall
             only consist of one column).
 
-        Raise:
-            InvalidParametersError:
-                If the current input parameters do not satisfy this node's requirements.
+        Raises
+        ------
+        InvalidParametersError
+            If the current input parameters do not satisfy this node's requirements.
         """
         pass
 
@@ -581,16 +730,17 @@ class PythonNode(ABC):
         """
         Execute this Python node.
 
-        Args:
-            exec_context:
-                The ExecutionContext providing KNIME utilities during execution
-            *inputs:
-                Each input table or binary port object will be added as parameter,
-                in the same order that the ports were defined.
-                Tables will be provided as a `kn.Table`, while binary data will be a plain
-                Python `bytes` object.
+        Parameters
+        ----------
+        exec_context : ExecutionContext
+            The ExecutionContext providing KNIME utilities during execution.
+        *inputs : tuple
+            Each input table or binary port object will be added as a parameter, in the same order that the ports were defined.
+            Tables will be provided as a `kn.Table`, while binary data will be a plain Python `bytes` object.
 
-        Returns:
+        Returns
+        -------
+        object or tuple/list of objects
             Either a single output object (table or binary), or a tuple or list of objects.
             The number of output objects must match the number of defined output ports,
             and they must be returned in this order.
@@ -643,32 +793,33 @@ def category(
     after: str = "",
     locked: bool = True,
 ):
-    """Register a new node category.
+    """
+    Register a new node category.
 
     A node category must only be created once. Use a string encoding the
     absolute category path to add nodes to an existing category.
 
-    Args:
-        path (Union[str, Category]): The absolute "path" that lead to this
-            category e.g. "/io/read". The segments are the category
-            level-IDs, separated by a slash ("/"). Categories that contain community
-            nodes should be placed in the "/community" category.
-        level_id (str): The identifier of the level which is used as a
-            path-segment and must be unique at the level specified by
-            "path".
-        name (str): The name of this category e.g. "File readers".
-        description (str): A short description of the category.
-        icon (str): File path to 16x16 pixel PNG icon for this category. The
-            path must be relative to the root of the extension.
-        after (str, optional): Specifies the level-id of the category after
-            which this category should be sorted in. Defaults to "".
-        locked (bool, optional): Set this to False to allow extensions from
-            other vendors to add sub-categories or nodes to this category.
-            Defaults to True.
+    Parameters
+    ----------
+    path : Union[str, Category]
+        The absolute "path" that lead to this category e.g. "/io/read". The segments are the category level-IDs, separated by a slash ("/"). Categories that contain community nodes should be placed in the "/community" category.
+    level_id : str
+        The identifier of the level which is used as a path-segment and must be unique at the level specified by "path".
+    name : str
+        The name of this category e.g. "File readers".
+    description : str
+        A short description of the category.
+    icon : str
+        File path to 16x16 pixel PNG icon for this category. The path must be relative to the root of the extension.
+    after : str, optional
+        Specifies the level-id of the category after which this category should be sorted in. Defaults to "".
+    locked : bool, optional
+        Set this to False to allow extensions from other vendors to add sub-categories or nodes to this category. Defaults to True.
 
-    Returns:
-        str: The full path of the category which can be used to create nodes
-        inside this category.
+    Returns
+    -------
+    str
+        The full path of the category which can be used to create nodes inside this category.
     """
     _categories.append(
         _Category(path, level_id, name, description, icon, after, locked)
@@ -679,7 +830,9 @@ def category(
 
 
 class _Node:
-    """Class representing an actual node in KNIME AP."""
+    """
+    Class representing an actual node in KNIME AP.
+    """
 
     node_factory: Callable
     id: str
@@ -849,13 +1002,37 @@ def node(
 
 
 class InvalidParametersError(Exception):
-    """Error that should be raised if the values of the configured parameters are invalid."""
+    """
+    Error that should be raised if the values of the configured parameters are invalid.
+    """
 
     def __init__(self, message) -> None:
         super().__init__(message)
 
 
 def _add_port(node_factory, port_slot: str, port: Port):
+    """
+    Add a port to a node factory object.
+
+    Parameters
+    ----------
+    node_factory : object
+        The node factory object to add the port to.
+    port_slot : str
+        The name of the attribute in the node factory object to add the port to.
+    port : Port
+        The port to be added to the node factory.
+
+    Returns
+    -------
+    object
+        The updated node factory object.
+
+    Raises
+    ------
+    ValueError
+        If the attribute specified by `port_slot` already exists in the node factory object and is not decorated.
+    """
     if not hasattr(node_factory, port_slot) or getattr(node_factory, port_slot) is None:
         setattr(node_factory, port_slot, [])
         # We insert a tiny marker to know whether the port slot was created by us,
@@ -904,12 +1081,14 @@ def input_binary(name: str, description: str, id: str):
     """
     Use this decorator to define a bytes-serialized port object input of a node.
 
-    Args:
-        name: The name of the input port
-        description: A description of the input port.
-        id:
-            A unique ID identifying the type of the Port. Only Ports with equal ID
-            can be connected in KNIME
+    Parameters
+    ----------
+    name: str
+        The name of the input port.
+    description: str
+        A description of the input port.
+    id: str
+        A unique ID identifying the type of the Port. Only Ports with equal ID can be connected in KNIME.
     """
     return lambda node_factory: _add_port(
         node_factory, "input_ports", Port(PortType.BINARY, name, description, id)
@@ -919,6 +1098,13 @@ def input_binary(name: str, description: str, id: str):
 def input_table(name: str, description: str):
     """
     Use this decorator to define an input port of type "Table" of a node.
+
+    Parameters
+    ----------
+        name : str
+            The name of the input port.
+        description : str
+            A description of the input port.
     """
     return lambda node_factory: _add_port(
         node_factory, "input_ports", Port(PortType.TABLE, name, description)
@@ -929,10 +1115,14 @@ def input_port(name: str, description: str, port_type: PortType):
     """
     Use this decorator to add an input port of the provided type to a node.
 
-    Args:
-        name: The name of the input port
-        description: A description of the input port
-        port_type: The type of the input port
+    Parameters
+    ----------
+        name : str
+            The name of the input port.
+        description : str
+            A description of the input port.
+        port_type : PortType
+            The type of the input port.
     """
     return lambda node_factory: _add_port(
         node_factory, "input_ports", Port(port_type, name, description)
@@ -943,12 +1133,14 @@ def output_binary(name: str, description: str, id: str):
     """
     Use this decorator to define a bytes-serialized port object output of a node.
 
-    Args:
-        name:
-        description:
-        id:
-            A unique ID identifying the type of the Port. Only Ports with equal ID
-            can be connected in KNIME
+    Parameters
+    ----------
+    name : str
+        The name of the port.
+    description : str
+        The description of the port.
+    id : str
+        A unique ID identifying the type of the Port. Only Ports with equal ID can be connected in KNIME.
     """
     return lambda node_factory: _add_port(
         node_factory, "output_ports", Port(PortType.BINARY, name, description, id)
@@ -958,6 +1150,13 @@ def output_binary(name: str, description: str, id: str):
 def output_table(name: str, description: str):
     """
     Use this decorator to define an output port of type "Table" of a node.
+
+    Parameters
+    ----------
+    name : str
+        The name of the port.
+    description : str
+        Description of what the port is used for.
     """
     return lambda node_factory: _add_port(
         node_factory, "output_ports", Port(PortType.TABLE, name, description)
@@ -968,10 +1167,14 @@ def output_port(name: str, description: str, port_type: PortType):
     """
     Use this decorator to add an output port of the provided type to a node.
 
-    Args:
-        name: The name of the port
-        description: Description of what the port is used for
-        port_type: The type of the port to add
+    Parameters
+    ----------
+    name : str
+        The name of the port.
+    description : str
+        Description of what the port is used for.
+    port_type : type
+        The type of the port to add.
     """
     return lambda node_factory: _add_port(
         node_factory, "output_ports", Port(port_type, name, description)
@@ -980,15 +1183,18 @@ def output_port(name: str, description: str, port_type: PortType):
 
 def output_view(name: str, description: str, static_resources: Optional[str] = None):
     """
-    Use this decorator to specify that this node produces a view
+    Use this decorator to specify that this node produces a view.
 
-    Args:
-        name: The name of the view
-        description: Description of the view
-        static_resources: The path to a folder of resources that will be available to
-            the HTML page. The path given here must be relative to the root of the
-            extension.  The resources can be accessed by the same relative file path
-            (e.g. "{static_resources}/{filename}").
+    Parameters
+    ----------
+    name : str
+        The name of the view.
+    description : str
+        Description of the view.
+    static_resources : str
+        The path to a folder of resources that will be available to the HTML page. The
+        path given here must be relative to the root of the extension. The resources
+        can be accessed by the same relative file path (e.g. "{static_resources}/{filename}").
     """
 
     def add_view(node_factory):
@@ -1006,40 +1212,46 @@ def output_image(name: str, description: str):
     """
     Use this decorator to define an output port of the type "Image" of a node.
 
-    The ``configure`` method must return specs of the type ``ImagePortObjectSpec``. The
-    ``execute`` method must return a ``bytes`` object containing the image data. Note
-    that the image data must be valid for the format defined in ``configure``.
+    The `configure` method must return specs of the type `ImagePortObjectSpec`. The
+    `execute` method must return a `bytes` object containing the image data. Note
+    that the image data must be valid for the format defined in `configure`.
 
-    Args:
-        name: The name of the image output port
-        description: Description of the image output port
+    Parameters
+    ----------
+        name : str
+            The name of the image output port
+        description : str
+            Description of the image output port
 
-    **Example**::
+    Examples
+    --------
 
-        @knext.node(...)
-        @knext.output_image(name="PNG Output Image", description="An example PNG output image")
-        @knext.output_image(name="SVG Output Image", description="An example SVG output image")
-        class ImageNode:
-
-            def configure(self, config_context):
-                return (
-                    knext.ImagePortObjectSpec(knext.ImageFormat.PNG),
-                    knext.ImagePortObjectSpec(knext.ImageFormat.SVG),
-                )
-
-            def execute(self, exec_context):
-                # create a plot ...
-
-                buffer_png = io.BytesIO()
-                plt.savefig(buffer_png, format="png")
-
-                buffer_svg = io.BytesIO()
-                plt.savefig(buffer_svg, format="svg")
-
-                return (
-                    buffer_png.getvalue(),
-                    buffer_svg.getvalue(),
-                )
+    >>> @knext.node(...)
+    ... @knext.output_image(
+    ...     name="PNG Output Image",
+    ...     description="An example PNG output image")
+    ... @knext.output_image(
+    ...     name="SVG Output Image",
+    ...     description="An example SVG output image")
+    ... class ImageNode:
+    ...     def configure(self, config_context):
+    ...         return (
+    ...             knext.ImagePortObjectSpec(knext.ImageFormat.PNG),
+    ...             knext.ImagePortObjectSpec(knext.ImageFormat.SVG),
+    ...         )
+    ...
+    ...     def execute(self, exec_context):
+    ...         # create a plot ...
+    ...         buffer_png = io.BytesIO()
+    ...         plt.savefig(buffer_png, format="png")
+    ...
+    ...         buffer_svg = io.BytesIO()
+    ...         plt.savefig(buffer_svg, format="svg")
+    ...
+    ...         return (
+    ...             buffer_png.getvalue(),
+    ...             buffer_svg.getvalue(),
+    ...         )
     """
     return lambda node_factory: _add_port(
         node_factory,

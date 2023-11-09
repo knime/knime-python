@@ -87,19 +87,31 @@ def load_notebook(
 ) -> ModuleType:
     """
     Loads the Jupyter notebook located in the given directory and of the given file name and returns it as Python
-    module. The module contains the content of each code cell of the notebook. In particular, top-level definitions
-    (e.g., of classes or functions) and global variables can be accessed as with regular Python modules.
-    :param notebook_directory: The path to the directory in which the notebook file is located.
-                               The KNIME URL protocol (knime://) is supported. Should be a string.
-    :param notebook_name: The name of the notebook file, including the file extension. Should be a string.
-    :param notebook_version: The Jupyter notebook format version. Defaults to 'None' in which case the version is read
-                             from file. Only use this option if you experience compatibility issues (e.g., if KNIME
-                             doesn't understand the notebook format). Should be an integer.
-    :param only_include_tag: Only load cells that are annotated with the given custom cell tag (since Jupyter 5.0.0).
-                             This is useful to mark cells that are intended to be used in a Python module and
-                             exclude other, unmarked, cells, e.g., ones that do visualization or contain demo code.
-                             Defaults to 'None' in which case all code cells are included. Should be a string.
-    :return: The Jupyter notebook as Python module.
+    module.
+
+    Parameters
+    ----------
+    notebook_directory : str
+        The path to the directory in which the notebook file is located.
+        The KNIME URL protocol (knime://) is supported.
+
+    notebook_name : str
+        The name of the notebook file, including the file extension.
+
+    notebook_version : int, optional
+        The Jupyter notebook format version. Defaults to 'None' in which case the version is read from file.
+        Only use this option if you experience compatibility issues (e.g., if KNIME doesn't understand the notebook format).
+
+    only_include_tag : str, optional
+        Only load cells that are annotated with the given custom cell tag (since Jupyter 5.0.0).
+        This is useful to mark cells that are intended to be used in a Python module and exclude other, unmarked, cells,
+        e.g., ones that do visualization or contain demo code.
+        Defaults to 'None' in which case all code cells are included.
+
+    Returns
+    -------
+    module
+        The Jupyter notebook as Python module.
     """
     _check_availability()
     # User-facing; standardize input.
@@ -120,15 +132,24 @@ def print_notebook(
     """
     Prints the type and textual content of each cell of the Jupyter notebook in the given directory and of the given
     file name to the console.
-    :param notebook_directory: The path to the directory in which the notebook file is located.
-                               The KNIME URL protocol (knime://) is supported. Should be a string.
-    :param notebook_name: The name of the notebook file, including the file extension. Should be a string.
-    :param notebook_version: The Jupyter notebook format version. Defaults to 'None' in which case the version is read
-                             from file. Only use this option if you experience compatibility issues (e.g., if KNIME
-                             doesn't understand the notebook format). Should be an integer.
-    :param only_include_tag: Only print cells that are annotated with the given custom cell tag (since Jupyter 5.0.0).
-                             Defaults to 'None' in which case all cells are included. Should be a string.
-    :return: The string that was printed to the console.
+
+    Parameters
+    ----------
+    notebook_directory : str
+        The path to the directory in which the notebook file is located. The KNIME URL protocol (knime://) is supported.
+    notebook_name : str
+        The name of the notebook file, including the file extension.
+    notebook_version : int, optional
+        The Jupyter notebook format version. Defaults to 'None' in which case the version is read from file.
+        Only use this option if you experience compatibility issues (e.g., if KNIME doesn't understand the notebook format).
+    only_include_tag : str, optional
+        Only print cells that are annotated with the given custom cell tag (since Jupyter 5.0.0). Defaults to 'None'
+        in which case all cells are included.
+
+    Returns
+    -------
+    str
+        The string that was printed to the console.
     """
     _check_availability()
     # User-facing; standardize input.

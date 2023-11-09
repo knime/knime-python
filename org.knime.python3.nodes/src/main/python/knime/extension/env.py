@@ -57,7 +57,55 @@ supported_proxy_protocols = ["http", "https"]
 
 @dataclass
 class ProxySettings:
-    """Proxy settings for a KNIME node"""
+    """
+    Proxy settings for a KNIME node
+
+    The proxy settings are used to set the proxy environment variables for the KNIME Python integration.
+
+    Attributes
+    ----------
+        protocol_name : str or None
+            The lowercase protocol name.
+        host_name : str or None
+            The host name.
+        port_number : str or None
+            The port number.
+        exclude_hosts : str or None
+            List of hosts to exclude.
+        user_name : str or None
+            The username.
+        _password : str or None
+            The password.
+        _has_credentials : bool
+            True if both username and password are provided, False otherwise.
+
+    Parameters
+    ----------
+        protocol_name : str, optional
+            The name of the protocol. Default is None.
+        host_name : str, optional
+            The name of the host. Default is None.
+        port_number : str, optional
+            The port number. Default is None.
+        exclude_hosts : str, optional
+            List of hosts to exclude. Default is None.
+        user_name : str, optional
+            The username. Default is None.
+        password : str, optional
+            The password. Default is None.
+
+    Methods
+    -------
+        create_proxy_environment_key_value_pair()
+            Create the proxy environment variable strings.
+        set_as_environment_variable()
+            Set the proxy settings as environment variables.
+        from_string(proxy_string, exclude_hosts=None)
+            Parse the proxy settings from a string.
+        supported_proxy_protocols()
+            Return the supported proxy protocols for KNIME proxy settings in Python.
+
+    """
 
     protocol_name: Optional[str]
     host_name: Optional[str]
@@ -75,6 +123,9 @@ class ProxySettings:
         user_name: Optional[str] = None,
         password: Optional[str] = None,
     ):
+        """
+        Initialize a connection object with optional parameters.
+        """
         self.protocol_name = protocol_name.lower() if protocol_name else None
 
         self.host_name = host_name
@@ -86,7 +137,9 @@ class ProxySettings:
         self._has_credentials = user_name and password
 
     def __str__(self):
-        """Create the proxy environment variable string"""
+        """
+        Create the proxy environment variable string.
+        """
 
         if not self.protocol_name:
             return ""
@@ -112,9 +165,11 @@ class ProxySettings:
         return proxy_env_string
 
     def create_proxy_environment_key_value_pair(self) -> Tuple[str, str]:
-        """Create the proxy environment variable strings
+        """
+        Create the proxy environment variable strings.
 
-        Returns:
+        Returns
+        -------
             Tuple[str, str]: The proxy environment variable name and value
         """
         if not (self.protocol_name and self.host_name):
@@ -122,7 +177,9 @@ class ProxySettings:
         return f"{self.protocol_name}_proxy", str(self)
 
     def set_as_environment_variable(self):
-        """Set the proxy settings as environment variables"""
+        """
+        Set the proxy settings as environment variables.
+        """
         (
             proxy_env_variable,
             proxy_env_string,
@@ -134,19 +191,25 @@ class ProxySettings:
 
     @classmethod
     def from_string(cls, proxy_string, exclude_hosts: Optional[str] = None):
-        """Parse the proxy settings from a string
-
-        Args:
-            proxy_string: The string is in the format of:
-                        protocol://user:password@host:port or protocol://host:port
-                        e.g. http://user:password@localhost:8080 or http://localhost:8080
-            exclude_hosts: The hosts that should be excluded from the proxy, e.g. localhost,
-                            separated by a comma
-
-        Returns:
-            ProxySettings: The proxy settings object
         """
+        Parse the proxy settings from a string
 
+        Parameters
+        ----------
+        proxy_string : str
+            The string is in the format of:
+            protocol://user:password@host:port or protocol://host:port
+            e.g. http://user:password@localhost:8080 or http://localhost:8080
+
+        exclude_hosts : str
+            The hosts that should be excluded from the proxy, e.g. localhost,
+            separated by a comma
+
+        Returns
+        -------
+        ProxySettings
+            The proxy settings object
+        """
         # Parse the protocol
         protocol_name, proxy_string = proxy_string.split("://", 1)
         protocol_name = protocol_name.lower()
@@ -181,6 +244,15 @@ class ProxySettings:
 
     @staticmethod
     def supported_proxy_protocols() -> str:
+        """
+        Return the supported proxy protocols for KNIME proxy settings in Python.
+
+        Returns
+        -------
+        str
+            A string containing the list of supported proxy protocols.
+
+        """
         return f"""
         The KNIME proxy settings for python currently only support the following protocols:
         {supported_proxy_protocols}
@@ -188,18 +260,23 @@ class ProxySettings:
 
 
 def get_proxy_settings(protocol_name: Optional[str] = None) -> Optional[ProxySettings]:
-    """Get the proxy settings from the environment variables
+    """
+    Get the proxy settings from the environment variables.
 
     Get the proxy settings as configured either in KNIME’s preferences or via environment variables.
     Even if the proxy settings were configured in KNIME’s preferences only, they are already set as
     environment variables for this Python process, so they are in effect for everything you do.
 
-    Args:
-        protocol_name(str): The protocol name, e.g. 'http' or 'https'. To see all supported protocols,
-                            call ProxySettings.supported_proxy_protocols().
+    Parameters
+    ----------
+    protocol_name : str
+        The protocol name, e.g. 'http' or 'https'. To see all supported protocols,
+        call ProxySettings.supported_proxy_protocols().
 
-    Returns:
-        ProxySettings: The proxy settings object
+    Returns
+    -------
+    ProxySettings
+        The proxy settings object.
     """
     if not protocol_name:
         for p_name in supported_proxy_protocols:
@@ -226,11 +303,14 @@ def get_proxy_settings(protocol_name: Optional[str] = None) -> Optional[ProxySet
 
 
 def _set_proxy_settings(java_callback):
-    """Set proxy settings to environment variable from Java callback
+    """
+    Set proxy settings to environment variable from Java callback.
 
-    Args:
-        java_callback: The Java callback object. Must have the following methods:
-                        - get_proxy_server_strings() -> JavaArray[str]
+    Parameters
+    ----------
+    java_callback : object
+        The Java callback object. Must have the following methods:
+        - get_proxy_server_strings() -> JavaArray[str]
     """
     proxy_settings = ProxySettings(*list(java_callback.get_proxy_server_strings()))
     proxy_settings.set_as_environment_variable()

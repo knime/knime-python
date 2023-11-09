@@ -62,6 +62,12 @@ class MainLoop:
         self._main_loop_stopped = False
 
     def enter(self) -> None:
+        """
+        Enter the main loop and process tasks from the queue.
+
+        This method runs in an infinite loop, continuously retrieving tasks from the queue and executing them until a None task is encountered.
+
+        """
         queue = self._main_loop_queue
         while True:
             task = queue.get()
@@ -75,6 +81,12 @@ class MainLoop:
                 return
 
     def exit(self) -> None:
+        """
+        Exit the main loop and stop further execution.
+
+        This method is used to gracefully exit the main loop and stop any further execution. It empties the queue and puts a `None` value to the queue to signal the completion of all tasks. If the queue is full, it will continue to try until it can successfully put the `None` value into the queue.
+
+        """
         with self._main_loop_lock:
             self._main_loop_stopped = True
             queue = self._main_loop_queue
@@ -92,7 +104,7 @@ class MainLoop:
 
     def execute(self, func, *args, **kwargs):
         """
-        Run the given function on the main thread, wait for its results and return those
+        Run the given function on the main thread, wait for its results and return those.
         """
         with self._main_loop_lock:
             if self._main_loop_stopped:
@@ -119,6 +131,14 @@ class _ExecuteTask:
         self._exception = None
 
     def run(self):
+        """
+        Run the function and handle any exceptions.
+
+        This method executes the stored function with the provided arguments and keyword arguments. If an exception occurs during execution, it is stored in the `_exception` attribute. The `_result` attribute is updated with the result of the function execution, or `None` if an exception occurs.
+
+        Upon completion, the `_execute_finished` event is set.
+
+        """
         try:
             self._result = self._execute_func(*self._args, **self._kwargs)
         except Exception as ex:
@@ -127,6 +147,22 @@ class _ExecuteTask:
             self._execute_finished.set()
 
     def result(self) -> List[str]:
+        """
+        Get the result of a function execution.
+
+        This method waits for the execution to finish and returns the result.
+        If the execution raised an exception, it re-raises the exception.
+
+        Returns
+        -------
+        List[str]
+            The result of the function execution.
+
+        Raises
+        ------
+        AnyException
+            If the execution of the function raised an exception.
+        """
         self._execute_finished.wait()
         if self._exception is not None:
             try:

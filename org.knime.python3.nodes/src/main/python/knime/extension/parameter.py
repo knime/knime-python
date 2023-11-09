@@ -72,6 +72,16 @@ def _get_parameters(obj) -> Dict[str, "_BaseParameter"]:
     """
     Get all top-level parameter objects from obj, which can be the root parameterized
     object or a parameter group.
+
+    Parameters
+    ----------
+    obj : object
+        The root parameterized object or a parameter group.
+
+    Returns
+    -------
+    list
+        A list of top-level parameter objects.
     """
     class_params = {}
     instance_params = {}
@@ -134,9 +144,17 @@ def _inject_parameters(
 
 def validate_parameters(obj, parameters: dict, saved_version: str = None) -> None:
     """
-    Perform validation on the individual parameters of obj, which can be a node or a parameter group.
+    Perform validation on the individual parameters.
 
-    This method will raise a ValueError if a parameter violates its validator.
+    Parameters
+    ----------
+    obj : object
+        The object to perform validation on, which can be a node or a parameter group.
+
+    Raises
+    ------
+    ValueError
+        If a parameter violates its validator.
     """
     saved_version = Version.parse_version(saved_version)
     _validate_parameters(obj, parameters["model"], saved_version)
@@ -156,6 +174,18 @@ def _validate_parameters(obj, parameters: dict, saved_version: Version) -> None:
 def validate_specs(obj, specs) -> None:
     """
     Checks if the provided specs are compatible with the parameter of obj.
+
+    Parameters
+    ----------
+    obj : object
+        The object whose parameter compatibility is being checked.
+    specs : any
+        The specifications that need to be compatible with the parameter.
+
+    Returns
+    -------
+    bool
+        True if the specs are compatible with the parameter, False otherwise.
     """
     for param in _get_parameters(obj).values():
         param._validate_specs(specs)
@@ -164,6 +194,24 @@ def validate_specs(obj, specs) -> None:
 def extract_schema(
     obj, extension_version: str = None, dialog_creation_context=None
 ) -> dict:
+    """
+    Extracts the schema of an object.
+
+    Parameters
+    ----------
+    obj : object
+        The object from which to extract the schema.
+    extension_version : str, optional
+        The version of the extension. Default is None.
+    dialog_creation_context : object, optional
+        The context of the dialog creation. Default is None.
+
+    Returns
+    -------
+    dict
+        A dictionary representing the schema of the input object.
+
+    """
     extension_version = Version.parse_version(extension_version)
     return {
         "type": "object",
@@ -195,6 +243,35 @@ def extract_ui_schema(obj, dialog_creation_context) -> dict:
 
 
 def extract_parameter_descriptions(obj) -> dict:
+    """
+    Extract parameter descriptions from an object.
+
+    Parameters
+    ----------
+    obj : object
+        The object from which to extract the parameter descriptions.
+
+    Returns
+    -------
+    tuple
+        A tuple containing a list of parameter descriptions and a boolean value indicating if there are group options present.
+
+    Raises
+    ------
+    None
+
+    Notes
+    -----
+    The `obj` parameter should be a dictionary-like object.
+
+    Examples
+    --------
+    >>> obj = {'param1': {'name': 'Parameter 1', 'description': 'Description 1'},
+               'param2': {'name': 'Parameter 2', 'description': 'Description 2', 'options': {...}}}
+    >>> extract_parameter_descriptions(obj)
+    ([{'name': 'Options', 'description': '', 'options': [{'name': 'Parameter 2', 'description': 'Description 2', 'options': {...}}]},
+      {'name': 'Parameter 1', 'description': 'Description 1'}], True)
+    """
     descriptions = _extract_parameter_descriptions(obj, _Scope("#/properties"))
     if any(map(_is_group, _get_parameters(obj).values())):
         # a top-level parameter_group is represented as tab in the dialog
@@ -230,8 +307,9 @@ def determine_compatability(
     obj, saved_version: str, current_version: str, saved_parameters: dict
 ) -> None:
     """
-    Determine if backward/forward compatibility is taking place based on the saved and current version
-    of the extension, and provide appropriate feedback to the user.
+    Determine if backward/forward compatibility is taking place based on the
+    saved and current version of the extension, and provide appropriate feedback
+    to the user.
 
     When this function is called, the saved and current versions are already known to be different.
     """
@@ -491,12 +569,18 @@ class _BaseParameter(ABC):
         is_advanced: bool = False,
     ):
         """
-        Args:
-            label: The label to display for the parameter in the dialog
-            description: The description of the parameter that is shown in the node description and the dialog
-            default_value: Either the default value for the parameter or a function that given a Version provides the default value for that version.
-            validator: Optional validation function
-            since_version: The version at which this parameter was introduced. Can be omitted for the first version of a node
+        Parameters
+        ----------
+        label : str
+            The label to display for the parameter in the dialog.
+        description : str
+            The description of the parameter that is shown in the node description and the dialog.
+        default_value : Union[object, Callable]
+            Either the default value for the parameter or a function that given a Version provides the default value for that version.
+        validator : Optional[Callable]
+            Optional validation function.
+        since_version : Optional[str]
+            The version at which this parameter was introduced. Can be omitted for the first version of a node.
         """
         self._label = label
         self._default_value = default_value
@@ -596,25 +680,26 @@ class _BaseParameter(ABC):
         To be used as a decorator for setting a validator function for a parameter.
         Note that 'func' will be encapsulated in '_validator' and will not be available in the namespace of the class.
 
-        **Example**::
+        Examples
+        --------
 
-                @knext.node(args)
-                class MyNode:
-                    num_repetitions = knext.IntParameter(
-                        label="Number of repetitions",
-                        description="How often to repeat an action",
-                        default_value=42
-                    )
-                    @num_repetitions.validator
-                    def validate_reps(value):
-                        if value > 100:
-                            raise ValueError("Too many repetitions!")
-
-                    def configure(args):
-                        pass
-
-                    def execute(args):
-                        pass
+        >>> @knext.node(args)
+        ... class MyNode:
+        ...     num_repetitions = knext.IntParameter(
+        ...         label="Number of repetitions",
+        ...         description="How often to repeat an action",
+        ...         default_value=42
+        ...     )
+        ...     @num_repetitions.validator
+        ...     def validate_reps(value):
+        ...         if value > 100:
+        ...             raise ValueError("Too many repetitions!")
+        ...
+        ...     def configure(args):
+        ...         pass
+        ...
+        ...     def execute(args):
+        ...         pass
         """
         self._validator = func
 
@@ -655,7 +740,9 @@ class _BaseParameter(ABC):
 
 class _NumericParameter(_BaseParameter):
     """
-    Note: subclasses of this class must implement the check_type method for the default_validator.
+    Note
+    ------
+    Subclasses of this class must implement the `check_type` method for the `default_validator`.
     """
 
     def default_validator(self, value):
@@ -973,12 +1060,13 @@ class EnumParameterOptions(Enum):
     - label: the label of the option, displayed in the configuration dialogue of the node;
     - description: the description of the option, used along with the label to generate a list of the available options in the Node Description and in the configuration dialogue of the node.
 
-    **Example**::
+    Examples
+    --------
 
-        class CoffeeOptions(EnumParameterOptions):
-            CLASSIC = ("Classic", "The classic chocolatey taste, with notes of bitterness and wood.")
-            FRUITY = ("Fruity", "A fruity taste, with notes of berries and citrus.")
-            WATERY = ("Watery", "A watery taste, with notes of water and wetness.")
+    >>> class CoffeeOptions(EnumParameterOptions):
+    ...     CLASSIC = ("Classic", "The classic chocolatey taste, with notes of bitterness and wood.")
+    ...     FRUITY = ("Fruity", "A fruity taste, with notes of berries and citrus.")
+    ...     WATERY = ("Watery", "A watery taste, with notes of water and wetness.")
     """
 
     def __init__(self, label, description):
@@ -1028,29 +1116,30 @@ class EnumParameterOptions(Enum):
 class EnumParameter(_BaseMultiChoiceParameter):
     """
     Parameter class for multiple-choice parameter types. Replicates and extends the enum functionality
-    previously implemented as part of ``StringParameter``.
+    previously implemented as part of `StringParameter`.
 
-    A subclass of EnumParameterOptions should be provided as the enum parameter, which should contain
-    class attributes of the form ``OPTION_NAME = (OPTION_LABEL, OPTION_DESCRIPTION)``. The corresponding
-    option attributes can be accessed via ``MyOptions.OPTION_NAME.name``, ``.label``, and ``.description``
+    A subclass of `EnumParameterOptions` should be provided as the enum parameter, which should contain
+    class attributes of the form `OPTION_NAME = (OPTION_LABEL, OPTION_DESCRIPTION)`. The corresponding
+    option attributes can be accessed via `MyOptions.OPTION_NAME.name`, `.label`, and `.description`
     respectively.
 
-    The ``.name`` attribute of each option is used as the selection constant, e.g.
-    ``MyOptions.OPTION_NAME.name == "OPTION_NAME"``.
+    The `.name` attribute of each option is used as the selection constant, e.g.
+    `MyOptions.OPTION_NAME.name == "OPTION_NAME"`.
 
-    **Example**::
+    Examples
+    --------
 
-        class CoffeeOptions(EnumParameterOptions):
-            CLASSIC = ("Classic", "The classic chocolatey taste, with notes of bitterness and wood.")
-            FRUITY = ("Fruity", "A fruity taste, with notes of berries and citrus.")
-            WATERY = ("Watery", "A watery taste, with notes of water and wetness.")
-
-        coffee_selection_param = knext.EnumParameter(
-            label="Coffee Selection",
-            description="Select the type of coffee you like to drink.",
-            default_value=CoffeeOptions.CLASSIC.name,
-            enum=CoffeeOptions,
-        )
+    >>> class CoffeeOptions(EnumParameterOptions):
+    ...     CLASSIC = ("Classic", "The classic chocolatey taste, with notes of bitterness and wood.")
+    ...     FRUITY = ("Fruity", "A fruity taste, with notes of berries and citrus.")
+    ...     WATERY = ("Watery", "A watery taste, with notes of water and wetness.")
+    ...
+    ... coffee_selection_param = knext.EnumParameter(
+    ...     label="Coffee Selection",
+    ...     description="Select the type of coffee you like to drink.",
+    ...     default_value=CoffeeOptions.CLASSIC.name,
+    ...     enum=CoffeeOptions,
+    ... )
     """
 
     class Style(Enum):
@@ -1146,12 +1235,18 @@ class _BaseColumnParameter(_BaseParameter):
         is_advanced=False,
     ):
         """
-        Args:
-            label: Label of the parameter in the dialog
-            description: Description of the parameter in the node description and dialog
-            port_index: The input port to select columns from
-            column_filter: A function for prefiltering columns
-            since_version: The version at which this parameter was introduced. Can be omitted if the parameter is part of the first version of the node.
+        Parameters
+        ----------
+        label : str
+            Label of the parameter in the dialog
+        description : str
+            Description of the parameter in the node description and dialog
+        port_index : int
+            The input port to select columns from
+        column_filter : function
+            A function for prefiltering columns
+        since_version : str, optional
+            The version at which this parameter was introduced. Can be omitted if the parameter is part of the first version of the node.
         """
         super().__init__(
             label,
@@ -1193,14 +1288,22 @@ class ColumnParameter(_BaseColumnParameter):
         is_advanced: bool = False,
     ):
         """
-        Args:
-            label: Label of the parameter in the dialog
-            description: Description of the parameter in the node description and dialog
-            port_index: The input port to select columns from
-            column_filter: A function for prefiltering columns
-            include_row_key: Whether to include the row keys as selectable column
-            include_none_column: Whether to allow to select no column
-            since_version: The version at which this parameter was introduced. Can be omitted if the parameter is part of the first version of the node.
+        Parameters
+        ----------
+        label : str
+            Label of the parameter in the dialog
+        description : str
+            Description of the parameter in the node description and dialog
+        port_index : int
+            The input port to select columns from
+        column_filter : function
+            A function for prefiltering columns
+        include_row_key : bool
+            Whether to include the row keys as selectable column
+        include_none_column : bool
+            Whether to allow to select no column
+        since_version : str, optional
+            The version at which this parameter was introduced. Can be omitted if the parameter is part of the first version of the node.
         """
         super().__init__(
             label,
@@ -1258,6 +1361,24 @@ class MultiColumnParameter(_BaseColumnParameter):
         since_version: Optional[Union[str, Version]] = None,
         is_advanced: bool = False,
     ):
+        """
+
+        Parameters
+        ----------
+        label : str, optional
+            A string label for the object (default is None).
+        description : str, optional
+            A string description of the object (default is None).
+        port_index : int, optional
+            An integer representing the port index (default is 0).
+        column_filter : callable, optional
+            A function that takes a ks.Column object and returns a boolean value (default is None).
+        since_version : Union[str, Version], optional
+            A string or Version object representing the version since when the object is available (default is None).
+        is_advanced : bool, optional
+            A boolean indicating if the object is advanced (default is False).
+
+        """
         super().__init__(
             label,
             description,
@@ -1357,7 +1478,7 @@ def _possible_values(
 
 class ColumnFilterMode(Enum):
     """
-    The modes that can be selected in the ColumnFilterParameter
+    The modes that can be selected in the ColumnFilterParameter.
     """
 
     MANUAL = "Manual"
@@ -1368,7 +1489,7 @@ class ColumnFilterMode(Enum):
 
 class PatternFilterConfig:
     """
-    The pattern configuration for the ColumnFilterParameter, used for both, regex and wildcard patterns
+    The pattern configuration for the ColumnFilterParameter, used for both, regex and wildcard patterns.
     """
 
     def __init__(self, pattern="", case_sensitive=True, inverted=False):
@@ -1430,7 +1551,7 @@ class PatternFilterConfig:
 
 class TypeFilterConfig:
     """
-    The type filter configuration for the ColumnFilterParameter
+    The type filter configuration for the ColumnFilterParameter.
     """
 
     def __init__(self, selected_types=None, type_displays=None):
@@ -1562,29 +1683,30 @@ class ManualFilterConfig:
 
 class ColumnFilterConfig:
     """
-    The value of a ``ColumnFilterParameter`` is a ``ColumnFilterConfig`` instance with a mode as well
+    The value of a `ColumnFilterParameter` is a `ColumnFilterConfig` instance with a mode as well
     as configuration for the different modes.
 
-    Use the ``apply`` method to filter schemas and tables according to this filter config
+    Use the `apply` method to filter schemas and tables according to this filter config
 
-    **Example**::
+    Examples
+    ---------
 
-        @knext.node(
-            name="Python Column Filter",
-            node_type=knext.NodeType.MANIPULATOR,
-            icon_path=...,
-            category=...,
-        )
-        @knext.input_table("Input Table", "Input table.")
-        @knext.output_table("Output Table", "Output table.")
-        class ColumnFilterNode:
-            column_filter = knext.ColumnFilterParameter("Column Filter", "Column Filter")
-
-            def configure(self, config_context, input_schema: knext.Schema):
-                return self.column_filter.apply(input_schema)
-
-            def execute(self, exec_context, input_table):
-                return self.column_filter.apply(input_table)
+    >>> @knext.node(
+    ...     name="Python Column Filter",
+    ...     node_type=knext.NodeType.MANIPULATOR,
+    ...     icon_path=...,
+    ...     category=...,
+    ... )
+    ... @knext.input_table("Input Table", "Input table.")
+    ... @knext.output_table("Output Table", "Output table.")
+    ... class ColumnFilterNode:
+    ...     column_filter = knext.ColumnFilterParameter("Column Filter", "Column Filter")
+    ...
+    ...     def configure(self, config_context, input_schema: knext.Schema):
+    ...         return self.column_filter.apply(input_schema)
+    ...
+    ...     def execute(self, exec_context, input_table):
+    ...         return self.column_filter.apply(input_table)
     """
 
     def __init__(
@@ -1597,10 +1719,10 @@ class ColumnFilterConfig:
         pre_filter: Callable[[ks.Column], bool] = None,
     ):
         """
-        Construct a ``ColumnFilterConfig`` with given ``mode``, ``pattern_filter``, ``type_filter`` and ``manual_filter``.
+        Construct a `ColumnFilterConfig` with given `mode`, `pattern_filter`, `type_filter`, and `manual_filter`.
 
-        If ``included_column_names`` are provided, ``manual_filter`` and ``mode`` will be ignored and will be configured
-        such that only the explicitly ``included_column_names`` (and unknown columns) are selected.
+        If `included_column_names` are provided, `manual_filter` and `mode` will be ignored and will be configured
+        such that only the explicitly `included_column_names` (and unknown columns) are selected.
         """
         self.pattern_filter = (
             pattern_filter if pattern_filter is not None else PatternFilterConfig()
@@ -1812,23 +1934,37 @@ class DateTimeParameter(_BaseParameter):
         timezone: str = None,
         date_format: str = None,
     ):
-        """Parameter class for datetime types.
+        """
+        Parameter class for datetime types.
 
-        Args:
-            label:  The label of the parameter in the dialog
-            description:  The description of the parameter in the node description and dialog
-            default_value (str or datetime):  The default value of the parameter
-            validator:  A function which validates the value of the parameter
-            min_value (str or datetime):  The minimum value of the parameter
-            max_value (str or datetime):  The maximum value of the parameter
-            since_version:  The version at which this parameter was introduced. Can be omitted if the parameter is part
-                            of the first version of the node.
-            is_advanced:  Whether the parameter is advanced
-            show_time:  Whether to show the time
-            show_seconds:  Whether to show the seconds, ignored if show_time is False
-            show_milliseconds:  Whether to show the milliseconds, ignored if show_time is False
-            timezone:  The timezone in a string format
-            date_format:  The date format to parse the default value
+        Parameters
+        ----------
+        label : str
+            The label of the parameter in the dialog.
+        description : str
+            The description of the parameter in the node description and dialog.
+        default_value : str or datetime
+            The default value of the parameter.
+        validator : function
+            A function which validates the value of the parameter.
+        min_value : str or datetime
+            The minimum value of the parameter.
+        max_value : str or datetime
+            The maximum value of the parameter.
+        since_version : str, optional
+            The version at which this parameter was introduced. Can be omitted if the parameter is part of the first version of the node.
+        is_advanced : bool
+            Whether the parameter is advanced.
+        show_time : bool
+            Whether to show the time.
+        show_seconds : bool
+            Whether to show the seconds, ignored if show_time is False.
+        show_milliseconds : bool
+            Whether to show the milliseconds, ignored if show_time is False.
+        timezone : str
+            The timezone in a string format.
+        date_format : str
+            The date format to parse the default value.
         """
 
         self.show_date = show_date
@@ -1899,19 +2035,24 @@ class DateTimeParameter(_BaseParameter):
     def _to_datetime(
         self, value, user_input: bool = False
     ) -> Optional[Union[datetime.date, datetime.datetime]]:
-        """Converts the value to a datetime object.
+        """
+        Converts the value to a datetime object.
 
-        Args:
-            value:  Can be a string or a datetime object. If the value is a string and it's a user input, the
-                    date_format parameter is used
-                    to parse the string. If the date format is not set, the value is parsed automatically. This can lead
-                    to unexpected results, if the value is ambiguous (e.g. 01/02/03 can be parsed as 2001-02-03 or
-                    2003-01-02).
-            user_input: Whether the value is a user input or not. If the value is a user input, the date_format
-                        parameter is used to parse the string.
+        Parameters
+        ----------
+        value : str or datetime
+            Can be a string or a datetime object. If the value is a string and it's a user input, the date_format
+            parameter is used to parse the string. If the date format is not set, the value is parsed automatically.
+            This can lead to unexpected results, if the value is ambiguous (e.g. 01/02/03 can be parsed as 2001-02-03
+            or 2003-01-02).
+        user_input : bool
+            Whether the value is a user input or not. If the value is a user input, the date_format parameter is used
+            to parse the string.
 
-        Returns:
-                None if the value is None, otherwise a date or datetime object
+        Returns
+        -------
+        None or datetime
+            None if the value is None, otherwise a date or datetime object
         """
         if not value:
             return None
@@ -1930,7 +2071,9 @@ class DateTimeParameter(_BaseParameter):
         return value
 
     def _parse_dt_string(self, value: str, user_input: bool):
-        """Parses the string value to a datetime object."""
+        """
+        Parses the string value to a datetime object.
+        """
         # we only want to use the date format when we have the input from the user, as we only get ISO strings from java
         if self.date_format and user_input:
             try:
@@ -1973,16 +2116,21 @@ class DateTimeParameter(_BaseParameter):
         }
 
     def _parse_date_time_default_value(self, default_value: Union[str, datetime.date]):
-        """Parses the default value to a datetime object.
+        """
+        Parses the default value to a datetime object.
 
         The parsing is done differently as in _to_datetime, because if the default value is a string, it is not always in
         the ISO 8601 format.
 
-        Args:
-            default_value:  Can be a string or a datetime object. If the default value is a string, the date_format
-                            parameter is used to parse the string. If the date format is not set, the default value is
-                            parsed automatically. This can lead to unexpected results, if the default value is ambiguous
-                            (e.g. 01/02/03 can be parsed as 2001-02-03 or 2003-01-02).
+
+
+        Parameters
+        ----------
+        default_value : str or datetime
+            Can be a string or a datetime object. If the default value is a string, the date_format
+            parameter is used to parse the string. If the date format is not set, the default value is
+            parsed automatically. This can lead to unexpected results, if the default value is ambiguous
+            (e.g. 01/02/03 can be parsed as 2001-02-03 or 2003-01-02).
         """
         if not default_value:
             # we either return the borders or the current date
@@ -2029,8 +2177,8 @@ class GetSetBase:
     """
     This base class is needed primarily to allow composition of parameters and parameter groups.
 
-    Since in the case of composition the __set__ and __get__ methods don't get automatically called, we
-    resort to calling them manually by catching the appropriate object type (e.g. _BaseParameter).
+    Since in the case of composition the `__set__` and `__get__` methods don't get automatically called, we
+    resort to calling them manually by catching the appropriate object type (e.g. `_BaseParameter`).
     """
 
     def __getattribute__(self, name):
@@ -2073,41 +2221,41 @@ def parameter_group(
 
     - By implementing the "validate(self, values)" method inside the class definition of the group.
 
-    **Example**::
+    Examples
+    ---------
 
-        def validate(self, values):
-            assert values['first_param'] + values['second_param'] < 100
+    >>> def validate(self, values):
+    ...     assert values['first_param'] + values['second_param'] < 100
 
     - By using the "@group_name.validator" decorator notation inside the class definition of the "parent" of the group.
       The decorator has an optional 'override' parameter, set to True by default, which overrides the "validate" method.
       If 'override' is set to False, the "validate" method, if defined, will be called first.
 
-    **Example**::
 
-        @hyperparameters.validator(override=False)
-        def validate_hyperparams(values):
-            assert values['first_param'] + values['second_param'] < 100
+    >>> @hyperparameters.validator(override=False)
+    ... def validate_hyperparams(values):
+    ...     assert values['first_param'] + values['second_param'] < 100
 
-    **Example**::
+    or
 
-        @knext.parameter_group(label="My Settings")
-        class MySettings:
-            name = knext.StringParameter("Name", "The name of the person", "Bario")
-            num_repetitions = knext.IntParameter("NumReps", "How often do we repeat?", 1, min_value=1)
-
-            @num_repetitions.validator
-            def reps_validator(value):
-                if value == 2:
-                    raise ValueError("I don't like the number 2")
-
-        @knext.node(args)
-        class MyNodeWithSettings:
-            settings = MySettings()
-            def configure(args):
-                pass
-
-            def execute(args):
-                pass
+    >>> @knext.parameter_group(label="My Settings")
+    ... class MySettings:
+    ...     name = knext.StringParameter("Name", "The name of the person", "Bario")
+    ...     num_repetitions = knext.IntParameter("NumReps", "How often do we repeat?", 1, min_value=1)
+    ...
+    ...     @num_repetitions.validator
+    ...     def reps_validator(value):
+    ...         if value == 2:
+    ...             raise ValueError("I don't like the number 2")
+    ...
+    ... @knext.node(args)
+    ... class MyNodeWithSettings:
+    ...     settings = MySettings()
+    ...     def configure(args):
+    ...         pass
+    ...
+    ...     def execute(args):
+    ...         pass
     """
 
     def decorate_class(original_class):

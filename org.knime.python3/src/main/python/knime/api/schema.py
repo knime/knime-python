@@ -52,7 +52,6 @@ Type system and schema definition for KNIME tables.
 # Types
 # --------------------------------------------------------------------
 from abc import ABC, abstractmethod
-from typing import Dict, Iterable, Iterator, List, Optional, Sequence, Type, Union, Any
 from typing import Dict, Iterable, Iterator, List, Optional, Sequence, Type, Union
 
 import logging
@@ -64,7 +63,19 @@ LOGGER = logging.getLogger(__name__)
 
 
 class KnimeType:
+    """
+    A base class representing a KnimeType.
+    """
+
     def __init__(self):
+        """
+        Initialize a KnimeType object.
+
+        Raises
+        ------
+        TypeError
+            If the object is created directly instead of being subclassed.
+        """
         if type(self) == KnimeType:
             raise TypeError(f"{type(self)} is not supposed to be created directly")
 
@@ -91,7 +102,7 @@ class PrimitiveTypeId(Enum):
 @unique
 class DictEncodingKeyType(Enum):
     """
-    Key types that can be used for dictionary encoding
+    Key types that can be used for dictionary encoding.
     """
 
     INT = "INT_KEY"
@@ -101,7 +112,7 @@ class DictEncodingKeyType(Enum):
 
 class _PrimitiveTypeSingletonsMetaclass(type):
     """
-    The metaclass for PrimitiveType makes sure that we only ever create a single instance per type
+    The metaclass for PrimitiveType ensures that only a single instance is created per type.
     """
 
     _instances_per_type = {}
@@ -125,12 +136,12 @@ class _PrimitiveTypeSingletonsMetaclass(type):
 
 class PrimitiveType(KnimeType, metaclass=_PrimitiveTypeSingletonsMetaclass):
     """
-    Each data type is an instance of PrimitiveType. Due to the metaclass, we only
+    Each data type is an instance of `PrimitiveType`. Due to the metaclass, we only
     ever create a single instance per type, so each data type is also a singleton.
 
-    Primitive types have a type id (INT, LONG, BOOL, ...) and a dictionary encoding key
-    type which is not None if the type is stored using dictionary encoding. This is currently
-    only allowed for STRING and BLOB types.
+    Primitive types have a type id (`INT`, `LONG`, `BOOL`, ...) and a dictionary encoding key
+    type which is not `None` if the type is stored using dictionary encoding. This is currently
+    only allowed for `STRING` and `BLOB` types.
     """
 
     def __init__(self, type_id: PrimitiveTypeId, key_type: DictEncodingKeyType = None):
@@ -139,9 +150,12 @@ class PrimitiveType(KnimeType, metaclass=_PrimitiveTypeSingletonsMetaclass):
         Multiple invocations of this constructor with the same arguments will return the
         same instance instead of a new object with the same configuration.
 
-        Args:
-            type_id: A primitive type identifier
-            key_type: The key_type for dictionary encoding or None to disable dict encoding
+        Parameters
+        ----------
+        type_id : any
+            A primitive type identifier.
+        key_type : Any, optional
+            The key_type for dictionary encoding or None to disable dict encoding.
         """
         if not isinstance(type_id, PrimitiveTypeId):
             raise TypeError(
@@ -164,6 +178,14 @@ class PrimitiveType(KnimeType, metaclass=_PrimitiveTypeSingletonsMetaclass):
 
     @property
     def dict_encoding_key_type(self) -> Optional[DictEncodingKeyType]:
+        """
+        Get the encoding key type of a dictionary.
+
+        Returns
+        -------
+        Optional[DictEncodingKeyType]
+            The encoding key type of the dictionary, or None if not set.
+        """
         return self._key_type
 
     def __str__(self) -> str:
@@ -175,13 +197,32 @@ class PrimitiveType(KnimeType, metaclass=_PrimitiveTypeSingletonsMetaclass):
     @property
     def plain_type(self) -> "PrimitiveType":
         """
-        Returns a PrimitiveType with disabled dict encoding
+        Returns a PrimitiveType with disabled dict encoding.
+
+        Returns
+        -------
+        PrimitiveType
+            A PrimitiveType object with disabled dict encoding.
         """
         return PrimitiveType(self._type_id)
 
 
 class ListType(KnimeType):
     def __init__(self, inner_type: KnimeType):
+        """
+        Initialize a ListType object.
+
+        Parameters
+        ----------
+        inner_type : KnimeType
+            The inner type of the ListType object.
+
+        Raises
+        ------
+        TypeError
+            If the input inner_type is not of type KnimeType.
+
+        """
         if not isinstance(inner_type, KnimeType):
             raise TypeError(
                 f"Cannot create list type with inner type {inner_type}, must be a KnimeType"
@@ -206,6 +247,20 @@ class ListType(KnimeType):
 
 class StructType(KnimeType):
     def __init__(self, inner_types: Iterable[KnimeType]):
+        """
+        Initialize a struct type with inner types.
+
+        Parameters
+        ----------
+        inner_types : Iterable[KnimeType]
+            An iterable of KnimeType objects representing the inner types of the struct.
+
+        Raises
+        ------
+        TypeError
+            If any of the inner types is not a KnimeType.
+
+        """
         for t in inner_types:
             if not isinstance(t, KnimeType):
                 raise TypeError(
@@ -258,11 +313,13 @@ class LogicalType(KnimeType):
         """
         Construct a LogicalType from a logical_type, a storage_type and an optional proxy_type_converter.
 
-        Args:
-            logical_type: The JSON encoded definition of the type in KNIME
-            storage_type: The KnimeType that is actually used to store the data of this extension type
-            proxy_type_converter (Optional): a proxy type that can be used on the Python side to read or write
-                the values which are internally treated like the original logical type.
+        Parameters:
+            logical_type : str
+                The JSON encoded definition of the type in KNIME.
+            storage_type : str
+                The KnimeType that is actually used to store the data of this extension type.
+            proxy_type_converter : Optional
+                A proxy type that can be used on the Python side to read or write the values which are internally treated like the original logical type.
         """
         self._logical_type = logical_type
         self._storage_type = storage_type
@@ -271,14 +328,14 @@ class LogicalType(KnimeType):
     @property
     def logical_type(self):
         """
-        The JSON encoded definition of the type in KNIME
+        The JSON encoded definition of the type in KNIME.
         """
         return self._logical_type
 
     @property
     def storage_type(self) -> KnimeType:
         """
-        The KnimeType that is actually used to store the data of this extension type
+        The KnimeType that is actually used to store the data of this extension type.
         """
         return self._storage_type
 
@@ -287,8 +344,15 @@ class LogicalType(KnimeType):
         """
         String representation of the type of the values as they are represented in Python.
 
-        Raises:
-            ValueError if no PythonValueFactory has been registered for this logical type
+        Returns
+        -------
+        str
+            The string representation of the type.
+
+        Raises
+        ------
+        ValueError
+            If no PythonValueFactory has been registered for this logical type.
         """
         return kt.get_value_factory_bundle_for_java_value_factory(
             self.logical_type
@@ -332,6 +396,33 @@ class LogicalType(KnimeType):
         return hash(str(self))
 
     def to_pyarrow(self):
+        """
+        Convert the logical type to PyArrow format.
+
+        This function converts the logical type of a value to PyArrow format. It uses the Knime library for accessing the logical type's value factory bundle and data specification. If the logical type is not recognized or an error occurs while retrieving the data specification, a ValueError is raised.
+
+        Returns
+        -------
+        Kat.ProxyExtensionType or Kat.LogicalTypeExtensionType
+            The converted logical type in PyArrow format.
+
+        Raises
+        ------
+        ValueError
+            If the logical type is unknown or an error occurs while retrieving the data specification.
+
+
+        Parameters
+        ----------
+        self : object
+            The instance of the class containing the logical type.
+
+        Returns
+        -------
+        Kat.ProxyExtensionType or Kat.LogicalTypeExtensionType
+            The converted logical type.
+
+        """
         import knime._arrow._types as kat
 
         try:
@@ -358,6 +449,10 @@ class LogicalType(KnimeType):
             )
 
     def to_pandas(self):
+        """
+        Convert the logical type to a Pandas readable datatype.
+
+        """
         return self.to_pyarrow().to_pandas_dtype()
 
     @staticmethod
@@ -397,7 +492,7 @@ class LogicalType(KnimeType):
 # --------------------------------------------------------------------
 def int32():
     """
-    Create a KNIME integer type with 32 bits
+    Create a KNIME integer type with 32 bits.
     """
     return PrimitiveType(PrimitiveTypeId.INT)
 
@@ -411,29 +506,25 @@ def int64():
 
 def double():
     """
-    Create a KNIME floating point type with double precision (64 bits)
+    Create a KNIME floating point type with double precision (64 bits).
     """
     return PrimitiveType(PrimitiveTypeId.DOUBLE)
 
 
 def bool_():
     """
-    Create a KNIME boolean type
+    Create a KNIME boolean type.
     """
     return PrimitiveType(PrimitiveTypeId.BOOL)
 
 
 def null():
     """
-    Create a KNIME null (=void) type.
+    Create a KNIME null (void) type.
 
-    Note:
-        Tables coming from KNIME into a pure-Python node's configure method
-        will never have a "null" column data type, as they are represented in
-        KNIME using the most general data type.
-
-        However, a table can have a column with type "null" in the execute method
-        of a pure-Python node and in a Python script node, because there the data is available.
+    Notes
+    -----
+    Tables coming from KNIME into a pure-Python node's configure method will never have a "null" column data type, as they are represented in KNIME using the most general data type. However, a table can have a column with type "null" in the execute method of a pure-Python node and in a Python script node, because there the data is available.
     """
     return PrimitiveType(PrimitiveTypeId.NULL)
 
@@ -442,26 +533,28 @@ def string(dict_encoding_key_type: DictEncodingKeyType = None):
     """
     Create a KNIME string type.
 
-    Args:
-        dict_encoding_key_type:
-            The key type to use for dictionary encoding. If this is
-            None (the default), no dictionary encoding will be used.
-            Dictionary encoding helps to reduce storage space and read/write
-            performance for columns with repeating values such as categorical data.
+    Parameters
+    ----------
+    dict_encoding_key_type : DictEncodingKeyType, optional
+        The key type to use for dictionary encoding. If this is
+        None (the default), no dictionary encoding will be used.
+        Dictionary encoding helps to reduce storage space and read/write
+        performance for columns with repeating values such as categorical data.
     """
     return PrimitiveType(PrimitiveTypeId.STRING, dict_encoding_key_type)
 
 
 def blob(dict_encoding_key_type: DictEncodingKeyType = None):
     """
-    Create a KNIME blob type for binary data of variable length
+    Create a KNIME blob type for binary data of variable length.
 
-    Args:
-        dict_encoding_key_type:
-            The key type to use for dictionary encoding. If this is
-            None (the default), no dictionary encoding will be used.
-            Dictionary encoding helps to reduce storage space and read/write
-            performance for columns with repeating values such as categorical data.
+    Parameters
+    ----------
+    dict_encoding_key_type : DictEncodingKeyType, optional
+        The key type to use for dictionary encoding. If this is
+        None (the default), no dictionary encoding will be used.
+        Dictionary encoding helps to reduce storage space and read/write
+        performance for columns with repeating values such as categorical data.
     """
     return PrimitiveType(PrimitiveTypeId.BLOB, dict_encoding_key_type)
 
@@ -470,8 +563,10 @@ def list_(inner_type: KnimeType):
     """
     Create a KNIME type that is a list of the given inner types
 
-    Args:
-        inner_type: The type of the elements in the list. Must be a KnimeType
+    Parameters
+    ----------
+    inner_type : KnimeType
+        The type of the elements in the list. Must be a KnimeType.
     """
     return ListType(inner_type)
 
@@ -481,11 +576,12 @@ def struct(*inner_types):
     Create a KNIME structured data type where each given argument represents
     a field of the struct.
 
-    Args:
-        inner_types:
-            The argument list of this method defines the fields
-            in this structured data type. Each inner type must be a
-            KNIME type
+    Parameters
+    ----------
+    inner_types : list
+        The argument list of this method defines the fields
+        in this structured data type. Each inner type must be a
+        KNIME type
     """
     return StructType(inner_types)
 
@@ -494,15 +590,17 @@ def logical(value_type) -> LogicalType:
     """
     Create a KNIME logical data type of the given Python value type.
 
-    Args:
-        value_type:
-            The type of the values inside this column. A knime.api.types.PythonValueFactory
-            must be registered for this type.
+    Parameters
+    ----------
+    value_type : type
+        The type of the values inside this column. A knime.api.types.PythonValueFactory
+        must be registered for this type.
 
-    Raise:
-        TypeError:
-            if no PythonValueFactory has been registered for this value type
-            with `knime.api.types.register_python_value_factory`
+    Raises
+    ------
+    TypeError
+        If no PythonValueFactory has been registered for this value type
+        with `knime.api.types.register_python_value_factory`.
     """
     try:
         proxy_type = value_type
@@ -537,25 +635,30 @@ def datetime(
     timezone: Optional[bool] = False,
 ) -> LogicalType:
     """
-
     Currently, KNIME supports the following date/time formats:
         - Local DateTime (date=True, time=True, timezone=False)
         - Local Date (date=True, time=False, timezone=False)
         - Local Time (date=False, time=True, timezone=False)
         - Zoned DateTime (date=True, time=True, timezone=True)
 
-    Args:
-        date(Optional[bool]): Whether the column contains a date
-        time(Optional[bool]): Whether the column contains a time
-        timezone(Optional[bool]): Whether the column contains a timezone
+    Parameters
+    ----------
+    date : Optional[bool]
+        Whether the column contains a date.
+    time : Optional[bool]
+        Whether the column contains a time.
+    timezone : Optional[bool]
+        Whether the column contains a timezone.
 
-    Returns:
+    Returns
+    -------
+    LogicalType
         A LogicalType representing the given date/time format.
 
-    Raises:
-        ValueError: If the combination of date, time and timezone is not supported or
-                    the datetime types are not registered in KNIME.
-
+    Raises
+    ------
+    ValueError
+        If the combination of date, time and timezone is not supported or the datetime types are not registered in KNIME.
     """
     if not date and not time:
         raise ValueError("Either date or time must be True")
@@ -586,6 +689,19 @@ def datetime(
 
 
 def _knime_datetime_type(name):
+    """
+    Return a JSON string representing the factory class for a KNIME datetime type.
+
+    Parameters
+    ----------
+    name : str
+        The name of the datetime type.
+
+    Returns
+    -------
+    str
+        A JSON string representing the factory class for the datetime type.
+    """
     return '{"value_factory_class":"org.knime.core.data.v2.time.' + name + '"}'
 
 
@@ -604,7 +720,7 @@ class PortObjectSpec(ABC):
     """
     Base protocol for port object specs.
 
-    A ``PortObjectSpec`` must support conversion from/to a dictionary which is then
+    A `PortObjectSpec` must support conversion from/to a dictionary which is then
     encoded as JSON and sent to/from KNIME.
     """
 
@@ -622,16 +738,18 @@ class BinaryPortObjectSpec(PortObjectSpec):
     """
     Port object spec for simple binary port objects.
 
-    ``BinaryPortObjectSpecs`` have an ID that is used to ensure
+    BinaryPortObjectSpecs have an ID that is used to ensure
     that only ports with equal ID can be connected.
     """
 
     def __init__(self, id: str) -> None:
         """
-        Create a BinaryPortObjectSpec
+        Create a BinaryPortObjectSpec.
 
-        Args:
-            id: The id of this binary port.
+        Parameters
+        ----------
+        id : str
+            The id of this binary port.
         """
         self._id = id
 
@@ -652,16 +770,18 @@ class ImagePortObjectSpec(PortObjectSpec):
     """
     Port object spec for image port objects.
 
-    ``ImagePortObjectSpec`` objects require the format specified via
-    ``knext.ImageFormat.PNG`` or ``knext.ImageFormat.SVG``.
+    ImagePortObjectSpec objects require the format specified via
+    `knext.ImageFormat.PNG` or `knext.ImageFormat.SVG`.
     """
 
     def __init__(self, format: Union[str, Enum]) -> None:
         """
         Create an ImagePortObjectSpec
 
-        Args:
-            format: The format of the image expected to pass through the port.
+        Parameters
+        ----------
+        format : Union[str, Enum]
+            The format of the image expected to pass through the port.
         """
         self._format = format if isinstance(format, str) else format.value
 
@@ -685,30 +805,60 @@ class CredentialPortObjectSpec(PortObjectSpec):
 
     def __init__(self, xml_data: Optional[str], java_callback) -> None:
         """
-        Create a CredentialPortObjectSpec
+        Create a CredentialPortObjectSpec.
 
-        Args:
-            xml_data (str): The xml data of the credentials.
+        Parameters
+        ----------
+        xml_data : Optional[str]
+            The xml data of the credentials.
         """
         self._xml_data = xml_data
         self._java_callback = java_callback
 
     def _get_auth_schema(self) -> str:
+        """
+        Returns the authentication schema associated with the XML data.
+
+        Returns
+        -------
+        str
+            The authentication schema.
+
+        Notes
+        -----
+        This method should only be called internally.
+        """
         return self._java_callback.get_auth_schema(self._xml_data)
 
     def _get_auth_parameters(self) -> str:
+        """
+        Get the authentication parameters.
+
+        Returns
+        -------
+        str
+            The authentication parameters.
+        """
         return self._java_callback.get_auth_parameters(self._xml_data)
 
     @property
     def auth_schema(self) -> str:
-        """Get the auth scheme to use, e.g. "Basic" or "Bearer".
+        """
+        Get the auth scheme to use, e.g. "Basic" or "Bearer".
 
-        Returns:
-            str: the auth scheme to use, e.g. "Basic" or "Bearer".
+        Parameters
+        ----------
+        None
 
-        Raises:
-            ValueError: if the credentials are not valid or accessible.
-            NotImplementedError: if the method is called outside the execute method of a node.
+        Returns
+        -------
+        str
+            The auth scheme to use, e.g. "Basic" or "Bearer".
+
+        Raises
+        ------
+        ValueError
+            If the credentials are not valid or accessible.
 
         """
         from py4j.protocol import Py4JJavaError
@@ -723,14 +873,18 @@ class CredentialPortObjectSpec(PortObjectSpec):
 
     @property
     def auth_parameters(self) -> str:
-        """Get the auth parameters to use, e.g. an access token.
+        """
+        Get the auth parameters to use, e.g. an access token.
 
-        Returns:
-            str: the parameter(s) to use, e.g. an access token.
+        Returns
+        -------
+        str
+            The parameter(s) to use, e.g. an access token.
 
-        Raises:
-            ValueError: if the credentials are not valid or accessible.
-            NotImplementedError: if the method is called outside the execute method of a node.
+        Raises
+        ------
+        ValueError
+            If the credentials are not valid or accessible.
 
         """
         from py4j.protocol import Py4JJavaError
@@ -748,14 +902,19 @@ class CredentialPortObjectSpec(PortObjectSpec):
 
     @classmethod
     def deserialize(cls, data: dict, java_callback=None):
-        """Deserialize the CredentialPortObjectSpec from the data.
+        """
+        Deserialize the CredentialPortObjectSpec from the data.
 
-        Args:
-            data(dict): must contain key 'data' which maps to a xml string with the necessary information to get the
-                        credentials from java.
+        Parameters
+        ----------
+        data : dict
+            Must contain key 'data' which maps to a xml string with the necessary information to get the credentials
+            from java.
 
-        Returns:
-            CredentialPortObjectSpec: containing the xml_data
+        Returns
+        -------
+        CredentialPortObjectSpec
+            Containing the xml_data
         """
         # spec is optional therefore we use get instead of __get_item__
         xml_data = data.get("data")
@@ -767,7 +926,7 @@ class CredentialPortObjectSpec(PortObjectSpec):
 # --------------------------------------------------------------------
 class Column:
     """
-    A column inside a table schema consists of the knime datatype, a column name
+    A column inside a table schema consists of the KNIME datatype, a column name,
     and optional metadata.
     """
 
@@ -775,18 +934,31 @@ class Column:
     name: str
     metadata: Dict
 
-    def __init__(self, ktype: Union[KnimeType, Type], name: str, metadata=None):
+    def __init__(self, ktype: Union[KnimeType, Type], name: str, metadata: dict = None):
         """
         Construct a Column from type, name and optional metadata.
 
-        Args:
-            ktype: The KNIME type of the column or a type which can be converted via knime.api.schema.logical(ktype) to a KNIME type
-            name: The name of the column. May not be empty.
-            metadata: Metadata of this column as dictionary
+        Parameters
+        ----------
+        ktype : Union[KnimeType, Type]
+            The KNIME type of the column or a type which can be converted via knime.api.schema.logical(ktype) to a KNIME type.
+            Raises a TypeError if the type is not a KNIME type or cannot be converted to a KNIME type.
+        name : str
+            The name of the column. May not be empty. Raises a ValueError if the name is empty.
+        metadata : dict, optional
+            Metadata of this column.
 
-        Raises:
-            TypeError: if the type is no KNIME type or cannot be converted to a KNIME type
-            ValueError: if the name is empty
+        Returns
+        -------
+        Column
+            The constructed column.
+
+        Raises
+        ------
+        TypeError
+            If the type is not a KNIME type or cannot be converted to a KNIME type.
+        ValueError
+            If the name is empty.
         """
         if not isinstance(ktype, KnimeType):
             try:
@@ -829,15 +1001,45 @@ class _Columnar(ABC):
 
     @property
     @abstractmethod
-    def num_columns(self):
+    def num_columns(self) -> int:
+        """Get the number of columns in the dataset.
+        """
         pass
 
     @property
     @abstractmethod
-    def column_names(self):
+    def column_names(self) -> list:
+        """Get the names of the columns in a dataset.
+        """
         pass
 
     def insert(self, other: "_Columnar", at: int) -> "_Columnar":
+        """
+        Insert a column or another `_Columnar` object (e.g. Table, Schema) into the current `_Columnar` object
+        at a specific position.
+
+        Parameters
+        ----------
+        other : `_Columnar` or `Column`
+            The column or `_Columnar` object to be inserted.
+        at : int
+            The index at which the insertion should occur.
+
+        Returns
+        -------
+        `_Columnar`
+            The `_Columnar` object after the insertion.
+
+        Raises
+        ------
+        TypeError
+            If `other` is not of type `_Columnar` or `Column`.
+
+        Notes
+        -----
+        The insertion is done in-place, meaning the current `_Columnar` object is modified.
+
+        """
         n = self.num_columns
         permuted_indices = list(range(n))
         new_columns = 1 if isinstance(other, Column) else other.num_columns
@@ -853,19 +1055,19 @@ class _Columnar(ABC):
         If it is a column name, then the first column with matching name is removed.
         Passing a list of column names will filter out all (including duplicate) columns with matching names.
 
-        Args:
-            slicing:
+        Parameters:
+            slicing : int | list | str
                 Can be of type integer representing the index in column_names to remove.
                 Or a list of strings removing every column matching from that list.
-                Or a string of which first occurence is removed from the column_names.
+                Or a string of which first occurrence is removed from the column_names.
 
         Returns:
-            A View missing the columns to be removed.
+            _ColumnarView: A View missing the columns to be removed.
 
         Raises:
-            ValueError if no matching column is found given a list or str
-            IndexError if column is accessed by integer and is out of bounds
-            TypeError if the key is neither a integer nor a string or list of strings.
+            ValueError: If no matching column is found given a list or str.
+            IndexError: If column is accessed by integer and is out of bounds.
+            TypeError: If the key is neither an integer nor a string or list of strings.
         """
 
         if isinstance(slicing, List):
@@ -899,22 +1101,25 @@ class _Columnar(ABC):
         Creates a view of this Table or Schema by slicing columns. The slicing syntax is similar to that of numpy arrays,
         but columns can also be addressed as index lists or via a list of column names.
 
-        Args:
-            column_slice:
+        Parameters
+        ----------
+            column_slice : int, str, slice, list
                 A column index, a column name, a slice object, a list of column indices, or a list of column names.
                 For single indices, the view will create a "Column" object. For slices or lists of indices,
                 a new Schema will be returned.
 
-        Returns:
-            A _ColumnarView representing a slice of the original Schema or Table.
+        Returns
+        --------
+            _ColumnarView
+                A representation of a slice of the original Schema or Table.
 
-        **Examples:**
+        Examples
+        --------
+        >>> # Get columns 1,2,3,4
+        ... sliced_schema = schema[1:5]
 
-        Get columns 1,2,3,4:
-        ``sliced_schema = schema[1:5]``
-
-        Get the columns "name" and "age":
-        ``sliced_schema = schema[["name", "age"]]``
+        >>> # Get the columns "name" and "age"
+        ... sliced_schema = schema[["name", "age"]]
         """
         # we need to return IndexError already here if slicing is an int to end for-loops,
         # otherwise `for i in columnar_obj` will run forever
@@ -932,19 +1137,23 @@ class _Columnar(ABC):
 
     @abstractmethod
     def _select_columns(self, selection):
-        """Implement column slicing here"""
+        """
+        Implement column slicing here.
+        """
         pass
 
     @abstractmethod
     def _append(self, other: "_Columnar") -> "_Columnar":
-        """Implement append here"""
+        """
+        Implement append here
+        """
         pass
 
 
 class _ColumnarView(_Columnar):
     """
-    A _ColumnarView is created whenever operations such as slicing or appending
-    are applied to an object that implements _Columnar, which are Schema and Table.
+    A `_ColumnarView` is created whenever operations such as slicing or appending
+    are applied to an object that implements `_Columnar`, which are `Schema` and `Table`.
 
     Those operations are performed lazily, because especially on tables they can
     involve allocating and copying large amounts of memory and copying.
@@ -1066,7 +1275,19 @@ class Schema(_Columnar, PortObjectSpec):
 
     @classmethod
     def from_columns(cls, columns: Union[Sequence[Column], Column]):
-        """Create a schema from a single column or a list of columns"""
+        """
+        Create a schema from a single column or a list of columns.
+
+        Parameters
+        ----------
+        columns : Union[Sequence[Column], Column]
+            A single column or a list of columns.
+
+        Returns
+        -------
+        Schema
+            The constructed schema.
+        """
 
         if isinstance(columns, Column):  # single column is wrapped in a list
             columns = [columns]
@@ -1097,7 +1318,22 @@ class Schema(_Columnar, PortObjectSpec):
         names: List[str],
         metadata: List = None,
     ):
-        """Create a schema from a list of column data types, names and metadata"""
+        """
+        Create a schema from a list of column data types, names and metadata.
+
+        Parameters
+        ----------
+        ktypes : List[Union[KnimeType, Type]]
+            A list of KNIME types or types known to KNIME.
+        names : List[str]
+            A list of column names.
+        metadata : List, optional
+
+        Returns
+        -------
+        Schema
+            The constructed schema.
+        """
         return cls(ktypes, names, metadata)
 
     def __init__(
@@ -1106,7 +1342,9 @@ class Schema(_Columnar, PortObjectSpec):
         names: List[str],
         metadata: List = None,
     ):
-        """Create a schema from a list of column data types, names and metadata"""
+        """
+        Create a schema from a list of column data types, names and metadata.
+        """
         if not isinstance(ktypes, Sequence) or not all(
             isinstance(t, KnimeType) or issubclass(t, KnimeType) for t in ktypes
         ):
@@ -1160,16 +1398,13 @@ class Schema(_Columnar, PortObjectSpec):
 
     @property
     def column_names(self) -> List[str]:
-        """Return the list of column names"""
         return [c.name for c in self._columns]
 
     @property
     def num_columns(self):
-        """The number of columns in this schema"""
         return len(self._columns)
 
     def __iter__(self) -> Iterator[Column]:
-        """Allow iteration over columns"""
         yield from self._columns
 
     def _select_columns(self, index) -> Union[Column, "Schema"]:
@@ -1256,12 +1491,13 @@ class Schema(_Columnar, PortObjectSpec):
         """
         Convert this Schema into dict which can then be JSON encoded and sent to KNIME
         as result of a node's configure() method.
-
         Because KNIME expects a row key column as first column of the schema, but we don't
         include this in the KNIME Python table schema, we insert a row key column here.
 
-        Raises:
+        Raises
+        ------
             RuntimeError: if duplicate column names are detected
+
         """
         col_names = self.column_names
         if len(col_names) != len(set(col_names)):
@@ -1281,9 +1517,9 @@ class Schema(_Columnar, PortObjectSpec):
         """
         Construct a Schema from a dict that was retrieved from KNIME in JSON encoded form
         as the input to a node's configure() method.
-
         KNIME provides table information with a RowKey column at the beginning, which we drop before
         returning the created schema.
+
         """
         specs = table_schema["schema"]["specs"]
         traits = table_schema["schema"]["traits"]
@@ -1383,7 +1619,7 @@ def _unwrap_primitive_types(schema: Schema) -> Schema:
 
 def _wrap_primitive_types(schema: Schema) -> Schema:
     """
-    Given a schema with primitive types we wrap all columns - with types that
+    Given a schema with primitive types, we wrap all columns - with types that
     we understand - in logical types to attach a "java_value_factory"
     to them. This is needed to be able to read the Schema on the KNIME side.
     """
@@ -1398,7 +1634,10 @@ def _wrap_primitive_types(schema: Schema) -> Schema:
 # Serialization helpers
 
 
-def _create_knime_type_from_id(type_id):
+def _create_knime_type_from_id(type_id: str) -> KnimeType:
+    """
+    Create a KNIME type object based on a given type ID.
+    """
     if type_id == "string":
         return string()
     elif type_id == "int":
@@ -1416,6 +1655,9 @@ def _create_knime_type_from_id(type_id):
 
 
 def _dict_to_knime_type(spec, traits) -> KnimeType:
+    """
+    Convert a dictionary specification and traits into a KnimeType.
+    """
     if traits["type"] == "simple":
         if "traits" in traits and "dict_encoding" in traits["traits"]:
             key = DictEncodingKeyType(traits["traits"]["dict_encoding"])
@@ -1455,7 +1697,10 @@ _knime_to_type_str = {
 }
 
 
-def _knime_type_to_dict(ktype):
+def _knime_type_to_dict(ktype) -> tuple:
+    """
+    Converts a KNIME type to a dictionary representation.
+    """
     traits = {}
 
     if isinstance(ktype, LogicalType):
@@ -1500,6 +1745,10 @@ def _knime_type_to_dict(ktype):
 
 
 def _schema_to_knime_dict(schema):
+    """
+    Converts a schema to a KNIME dictionary format.
+
+    """
     specs, traits = zip(*[_knime_type_to_dict(c.ktype) for c in schema])
     return {
         "schema": {"specs": specs, "traits": traits},

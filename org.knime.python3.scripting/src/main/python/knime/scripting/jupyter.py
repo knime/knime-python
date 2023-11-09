@@ -86,20 +86,26 @@ def load_notebook(
     only_include_tag: Optional[str] = None,
 ) -> ModuleType:
     """
-    Loads the Jupyter notebook located in the given directory and of the given file name and returns it as Python
-    module. The module contains the content of each code cell of the notebook. In particular, top-level definitions
-    (e.g., of classes or functions) and global variables can be accessed as with regular Python modules.
-    :param notebook_directory: The path to the directory in which the notebook file is located.
-                               The KNIME URL protocol (knime://) is supported. Should be a string.
-    :param notebook_name: The name of the notebook file, including the file extension. Should be a string.
-    :param notebook_version: The Jupyter notebook format version. Defaults to 'None' in which case the version is read
-                             from file. Only use this option if you experience compatibility issues (e.g., if KNIME
-                             doesn't understand the notebook format). Should be an integer.
-    :param only_include_tag: Only load cells that are annotated with the given custom cell tag (since Jupyter 5.0.0).
-                             This is useful to mark cells that are intended to be used in a Python module and
-                             exclude other, unmarked, cells, e.g., ones that do visualization or contain demo code.
-                             Defaults to 'None' in which case all code cells are included. Should be a string.
-    :return: The Jupyter notebook as Python module.
+    Loads the Jupyter notebook located in the given directory and of the given file name and returns it as a Python module.
+
+    Parameters
+    ----------
+    notebook_directory : str
+        The path to the directory in which the notebook file is located. The KNIME URL protocol (knime://) is supported.
+    notebook_name : str
+        The name of the notebook file, including the file extension.
+    notebook_version : int, optional
+        The Jupyter notebook format version. Defaults to 'None' in which case the version is read from the file.
+        Only use this option if you experience compatibility issues (e.g., if KNIME doesn't understand the notebook format).
+    only_include_tag : str, optional
+        Only load cells that are annotated with the given custom cell tag (since Jupyter 5.0.0).
+        This is useful to mark cells that are intended to be used in a Python module and exclude other, unmarked, cells,
+        e.g., ones that do visualization or contain demo code. Defaults to 'None' in which case all code cells are included.
+
+    Returns
+    -------
+    module
+        The Jupyter notebook as a Python module.
     """
     _check_availability()
     # User-facing; standardize input.
@@ -120,15 +126,27 @@ def print_notebook(
     """
     Prints the type and textual content of each cell of the Jupyter notebook in the given directory and of the given
     file name to the console.
-    :param notebook_directory: The path to the directory in which the notebook file is located.
-                               The KNIME URL protocol (knime://) is supported. Should be a string.
-    :param notebook_name: The name of the notebook file, including the file extension. Should be a string.
-    :param notebook_version: The Jupyter notebook format version. Defaults to 'None' in which case the version is read
-                             from file. Only use this option if you experience compatibility issues (e.g., if KNIME
-                             doesn't understand the notebook format). Should be an integer.
-    :param only_include_tag: Only print cells that are annotated with the given custom cell tag (since Jupyter 5.0.0).
-                             Defaults to 'None' in which case all cells are included. Should be a string.
-    :return: The string that was printed to the console.
+
+    Parameters
+    ----------
+    notebook_directory: str
+        The path to the directory in which the notebook file is located. The KNIME URL protocol (knime://) is supported.
+
+    notebook_name: str
+        The name of the notebook file, including the file extension.
+
+    notebook_version: int, optional
+        The Jupyter notebook format version. Defaults to 'None' in which case the version is read from file. Only use this
+        option if you experience compatibility issues (e.g., if KNIME doesn't understand the notebook format).
+
+    only_include_tag: str, optional
+        Only print cells that are annotated with the given custom cell tag (since Jupyter 5.0.0). Defaults to 'None' in
+        which case all cells are included.
+
+    Returns
+    -------
+    str
+        The string that was printed to the console.
     """
     _check_availability()
     # User-facing; standardize input.
@@ -155,6 +173,18 @@ def print_notebook(
 
 
 def _check_availability():
+    """
+    Check the availability of Jupyter notebook support.
+
+    Raises
+    ------
+    ValueError
+        If Jupyter notebook support is not available due to missing dependencies.
+
+    Notes
+    -----
+    Jupyter notebook support depends on the 'IPython' and 'nbformat' packages. Make sure these packages are installed in your local Python environment before using this function.
+    """
     if len(_dependencies_import_errors) > 0:
         raise ValueError(
             "Jupyter notebook support is not available due to missing dependencies.\nPlease make sure "
@@ -167,6 +197,30 @@ def _check_availability():
 def _standardize_input(
     notebook_directory, notebook_name, notebook_version, only_include_tag
 ):
+    """
+    Standardize and validate input parameters for a notebook.
+
+    Parameters
+    ----------
+    notebook_directory : str
+        The directory containing the notebook file. If the directory starts with 'knime:', it will be treated as a KNIME URL.
+    notebook_name : str
+        The name of the notebook file.
+    notebook_version : int, optional
+        The version of the notebook file. If not provided, the default value is `NO_CONVERT`.
+    only_include_tag : str, optional
+        A tag to filter the notebook based on. Only notebooks with this tag will be included.
+
+    Returns
+    -------
+    tuple
+        A tuple containing the standardized and validated notebook path, notebook version, and only_include_tag.
+
+    Raises
+    ------
+    ValueError
+        If the notebook directory or name is None, or if the notebook path does not point to an existing file.
+    """
     if notebook_directory is None:
         raise ValueError("Notebook directory must not be None.")
     if notebook_name is None:
@@ -214,17 +268,67 @@ def _standardize_input(
 
 
 def _resolve_knime_url(knime_url):
+    """
+    Resolve a KNIME URL.
+
+    Parameters
+    ----------
+    knime_url : str
+        The KNIME URL to resolve.
+
+    Returns
+    -------
+    str
+        The resolved KNIME URL.
+
+    Note
+    ----
+    This function relies on an internal Java callback method to resolve the KNIME URL.
+    """
     return _gateway.client_server.python_server_entry_point.java_callback.resolve_knime_url(
         knime_url
     )
 
 
 def _load_notebook_from_path(notebook_path, notebook_version):
+    """
+    Load a Jupyter notebook from a file path.
+
+    Parameters
+    ----------
+    notebook_path : str
+        The file path of the notebook to load.
+    notebook_version : int
+        The version of the notebook format to use.
+
+    Returns
+    -------
+    nbformat.NotebookNode
+        The loaded notebook.
+    """
     with io.open(notebook_path, "r", encoding="utf-8") as f:
         return read(f, notebook_version)
 
 
 def _get_notebook_cells(notebook):
+    """
+    Get the cells from a notebook object.
+
+    Parameters
+    ----------
+    notebook : object
+        A notebook object.
+
+    Returns
+    -------
+    list
+        A list of cells from the notebook object.
+
+    Raises
+    ------
+    TypeError
+        If the input notebook object does not have a 'cells' or 'worksheets' attribute.
+    """
     if hasattr(notebook, "cells"):
         return notebook.cells
     elif hasattr(notebook, "worksheets"):
@@ -237,6 +341,21 @@ def _get_notebook_cells(notebook):
 
 
 def _include_cell(cell, only_include_tag):
+    """
+    Check if a Jupyter notebook cell should be included based on its metadata.
+
+    Parameters
+    ----------
+    cell : dict
+        The cell object representing a Jupyter notebook cell.
+    only_include_tag : str or None
+        The tag to filter cells by. If specified, only cells with this tag in their metadata will be included.
+
+    Returns
+    -------
+    bool
+        True if the cell should be included, False otherwise.
+    """
     return not (
         only_include_tag is not None
         and (
@@ -246,6 +365,24 @@ def _include_cell(cell, only_include_tag):
 
 
 def _get_notebook_cell_source(cell):
+    """
+    Get the source code of a notebook cell.
+
+    Parameters
+    ----------
+    cell : object
+        The notebook cell object.
+
+    Returns
+    -------
+    str
+        The source code of the cell.
+
+    Raises
+    ------
+    NotebookFormatNotUnderstood
+        If the notebook format is not understood.
+    """
     if hasattr(cell, "source"):
         return cell.source
     elif hasattr(cell, "input"):
@@ -255,6 +392,14 @@ def _get_notebook_cell_source(cell):
 
 
 def _raise_notebook_format_not_understood():
+    """
+    Raise a RuntimeError with a message about a not understood notebook format.
+
+    Raises
+    ------
+    RuntimeError
+        With a message indicating that the notebook format is not understood.
+    """
     raise RuntimeError(
         "Notebook format not understood. Please upgrade your Jupyter notebook to a more recent format version."
     )
@@ -266,7 +411,11 @@ class _NotebookLoader(object):
 
     The code of this class is modified from:
     http://jupyter-notebook.readthedocs.io/en/stable/examples/Notebook/Importing%20Notebooks.html
-    © Copyright 2015, Jupyter Team, https://jupyter.org. Revision 7674331e
+
+    Copyright
+    ---------
+    Copyright 2015, Jupyter Team, https://jupyter.org.
+    Revision 7674331e
     """
 
     def __init__(self, notebook_path, notebook_version):
@@ -277,6 +426,26 @@ class _NotebookLoader(object):
         self._notebook_version = notebook_version
 
     def load_notebook_module(self, only_include_tag=None):
+        """
+        Load a Jupyter notebook and return it as a Python module.
+
+        Parameters
+        ----------
+        self : object
+            The current instance of the class.
+        only_include_tag : str, optional
+            A tag indicating which cells to include in the module.
+
+        Returns
+        -------
+        module
+            The loaded Jupyter notebook as a Python module.
+
+        Raises
+        ------
+        Exception
+            If there is an error while executing the code cells in the notebook.
+        """
         notebook = _load_notebook_from_path(self._notebook_path, self._notebook_version)
 
         # Create the module and add it to sys.modules.

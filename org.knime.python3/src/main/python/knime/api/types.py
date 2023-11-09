@@ -64,9 +64,10 @@ class PythonValueFactory:
         Create a PythonValueFactory that can perform special encoding/
         decoding for the values represented by this ValueFactory.
 
-        Args:
-            compatible_type:
-                The class of the value, for which this factory is created.
+        Parameters
+        ----------
+        compatible_type : class
+            The class of the value, for which this factory is created.
         """
         self._compatible_type = compatible_type
 
@@ -86,25 +87,35 @@ class PythonValueFactory:
 
 class FileStoreHandler:
     """
-    Interface for a file store handler that must be provided from the Java side
+    Interface for a file store handler that must be provided from the Java side.
     """
 
     def file_store_key_to_absolute_path(self, file_store_key: str) -> str:
         """
-        Returns the absolute path of the file addressed by the file_store_key
+        Returns the absolute path of the file addressed by the file_store_key.
+
+        Parameters
+        ----------
+        file_store_key : str
+            The key of the file in the file store.
+
+        Returns
+        -------
+        str
+            The absolute path of the file.
         """
         pass
 
     def create_file_store(self) -> Tuple[str, str]:
         """
-        Returns a tuple (absolute_file_name, file_store_key)
+        Returns a tuple of the absolute file name and file store key.
         """
         pass
 
 
 class FileStorePythonValueFactory(PythonValueFactory):
     """
-    A PythonValueFactory that stores big data in separate files
+    A PythonValueFactory that stores big data in separate files.
 
     A FileStorePythonValueFactory reads from files (so called file stores) while
     decoding values and writes to files when encoding values. This is useful for values
@@ -112,9 +123,10 @@ class FileStorePythonValueFactory(PythonValueFactory):
 
     Subclasses should implement read() and write().
 
-    Args:
-        compatible_type:
-            The class of the value, for which this factory is created.
+    Parameters
+    ----------
+    compatible_type : class
+        The class of the value, for which this factory is created.
     """
 
     def __init__(self, compatible_type):
@@ -125,12 +137,17 @@ class FileStorePythonValueFactory(PythonValueFactory):
         """
         Reads the value at the given file paths locations.
 
-        Args:
-            file_paths: list of file paths for the file stores of this value
-            table_data: additional data that was stored in the table
+        Parameters
+        ----------
+        file_paths : list
+            A list of file paths for the file stores of this value
+        table_data : any
+            Additional data that was stored in the table
 
-        Returns:
-            the read value
+        Returns
+        -------
+        any
+            The read value
         """
         pass
 
@@ -143,17 +160,43 @@ class FileStorePythonValueFactory(PythonValueFactory):
         create new file stores in which the value can be stored. The method can return
         additional data that should be stored in the table.
 
-        Args:
-            file_store_creator: callable that can be called without arguments and
-                returns a file path that the caller should write to
-            value: value that should be written
+        Parameters
+        ----------
+        file_store_creator : callable
+            A callable that can be called without arguments and returns a file path
+            that the caller should write to.
+        value : object
+            The value that should be written.
 
-        Returns:
-            object with additional data
+        Returns
+        -------
+        object
+            An object with additional data.
         """
         pass
 
     def decode(self, storage):
+        """
+        Decode the storage data using the provided file paths.
+
+        Parameters
+        ----------
+        storage : dict or None
+            The storage data to decode.
+
+        Returns
+        -------
+        object or None
+            The decoded data, or None if the storage is None.
+
+        Raises
+        ------
+        TypeError
+            If the file_store_keys in the storage are not of the expected type.
+        ValueError
+            If the file_paths cannot be generated from the file_store_keys.
+
+        """
         if storage is None:
             return None
 
@@ -173,6 +216,21 @@ class FileStorePythonValueFactory(PythonValueFactory):
         return self.read(file_paths, storage["1"])
 
     def encode(self, value):
+        """
+        Encode a value and return the encoded data and file store keys.
+
+        Parameters
+        ----------
+        value : any
+            The value to be encoded.
+
+        Returns
+        -------
+        dict
+            A dictionary containing the encoded data and file store keys.
+            - '0': A semicolon-separated string of file store keys. If there are no keys, None is returned.
+            - '1': The encoded data.
+        """
         if value is None:
             return None
 
@@ -183,6 +241,14 @@ class FileStorePythonValueFactory(PythonValueFactory):
         file_store_keys = []
 
         def file_store_creator():
+            """
+            Create a file store and return the path.
+
+            Returns
+            -------
+            str
+                The path of the created file store.
+            """
             path, key = file_store_handler.create_file_store()
             file_store_keys.append(key)
             return path
@@ -197,16 +263,12 @@ class FileStorePythonValueFactory(PythonValueFactory):
 
 class TableOrFileStorePythonValueFactory(FileStorePythonValueFactory):
     """
-    A FileStorePythonValueFactory that stores the same data in the table or in a file
+    A FileStorePythonValueFactory that stores the same data in the table or in a file.
 
     When encoding, subclasses can decide if a value should be stored in the table or in
     a file by implementing ``should_be_stored_in_filestore()``. The subclass only has
     to implement on kind of serialization in ``serialize()`` and ``deserialize()``.
     These methods are used for both cases.
-
-    Args:
-        compatible_type:
-            The class of the value, for which this factory is created.
     """
 
     def __init__(self, compatible_type):
@@ -218,8 +280,10 @@ class TableOrFileStorePythonValueFactory(FileStorePythonValueFactory):
         Deserialize a value from the given BytesIO which can be in memory bytes or
         stored on disk.
 
-        Return:
+        Returns
+        -------
             The deserialized value
+
         """
         pass
 
@@ -230,6 +294,7 @@ class TableOrFileStorePythonValueFactory(FileStorePythonValueFactory):
         in the same way by the corresponding ``deserialize()`` method.
 
         Do NOT close the output, this will be done externally.
+
         """
         pass
 
@@ -237,6 +302,32 @@ class TableOrFileStorePythonValueFactory(FileStorePythonValueFactory):
         return True
 
     def write(self, file_store_creator, value):
+        """
+        Write a value to a file or return it as bytes.
+
+        Parameters
+        ----------
+        self : object
+            The object calling the method.
+        file_store_creator : callable
+            A function that creates a file name for storing the value in a file store.
+        value : object
+            The value to be written or serialized.
+
+        Returns
+        -------
+        None or bytes
+            If the value should be stored in a file, None is returned. If the value
+            should be returned as bytes, the serialized bytes of the value are returned.
+
+
+        Notes
+        -----
+        This method first checks if the value should be stored in a file. If it should,
+        it creates a file name using the provided file store creator function and then
+        serializes and writes the value to that file. If the value should not be stored
+        in a file, it is serialized into bytes and returned.
+        """
         if self.should_be_stored_in_filestore(value):
             # Store in file store
             file_name = file_store_creator()
@@ -254,6 +345,26 @@ class TableOrFileStorePythonValueFactory(FileStorePythonValueFactory):
                 return bytes_io.getvalue()
 
     def read(self, file_paths, table_data):
+        """
+        Read and deserialize data from a file or table.
+
+        Parameters
+        ----------
+        file_paths : list
+            A list of file paths. If not empty, the first file will be read.
+        table_data : bytes
+            The binary data from the table.
+
+        Returns
+        -------
+        object
+            The deserialized value read from the file or table.
+
+        Raises
+        ------
+        TypeError
+            If table_data is not of type bytes.
+        """
         if len(file_paths) > 0:
             # Data is stored in file store
             bytes_io = open(file_paths[0], "rb")
@@ -269,6 +380,10 @@ class TableOrFileStorePythonValueFactory(FileStorePythonValueFactory):
 
 
 class FallbackPythonValueFactory(PythonValueFactory):
+    """
+    A class representing a fallback Python value factory.
+    """
+
     def __init__(self):
         super().__init__(None)
 
@@ -278,7 +393,7 @@ class FallbackPythonValueFactory(PythonValueFactory):
 
 def encode_inner_elements(value):
     """
-    Encodes the elements of a list or set by using the encode method of the converter of the first notnull element.
+    Encodes the elements of a list or set by using the `encode` method of the converter of the first `notnull` element.
     """
     # get first notnull element
     elem = next((item for item in value if item is not None), None)
@@ -335,20 +450,40 @@ class PythonValueFactoryBundle:
 
     @property
     def java_value_factory(self) -> str:
-        """Also called 'logical type'."""
+        """
+        Also called 'logical type'.
+        """
         return self._java_value_factory
 
     @property
     def logical_type(self) -> str:
-        """Also called 'java value factory'."""
+        """
+        Also called 'java value factory'.
+        """
         return self.java_value_factory
 
     @property
     def data_spec_json(self) -> dict:
+        """
+        Return the JSON representation of the data specification.
+
+        Returns
+        -------
+        dict
+            A dictionary containing the JSON representation of the data specification.
+        """
         return self._data_spec_json
 
     @property
     def value_factory(self) -> PythonValueFactory:
+        """
+        Get the value factory for the Python module.
+
+        Returns
+        -------
+        PythonValueFactory
+            The value factory object.
+        """
         if self._value_factory == None:
             value_factory = _get_converter_or_value_factory(
                 _get_module(self._python_module), self._python_value_factory_name
@@ -358,15 +493,38 @@ class PythonValueFactoryBundle:
 
     @property
     def data_traits(self) -> dict:
+        """
+        Data traits of the value factory.
+        """
         return self._data_traits
 
     @property
     def python_type(self):
-        """String representation of the python type."""
+        """
+        String representation of the Python type.
+        """
         return self._python_value_type_name
 
 
 def _get_module(module_name):
+    """
+    Get the specified module.
+
+    Parameters
+    ----------
+    module_name : str or module
+        The name of the module to import, or the module object itself.
+
+    Returns
+    -------
+    ModuleType
+        The imported module.
+
+    Raises
+    ------
+    ValueError
+        If the specified module does not exist or the necessary extensions are not installed.
+    """
     try:
         return importlib.import_module(module_name)
     except AttributeError:
@@ -378,12 +536,18 @@ def _get_module(module_name):
 
 
 def get_python_type_from_name(name):
-    """Returns the python type for the given name.
-    Args:
-        name: String in the format module.qualname
+    """
+    Returns the python type for the given name.
 
-    Returns: python type
+    Parameters
+    ----------
+    name : str
+        String in the format module.qualname
 
+    Returns
+    -------
+    type
+        Python type
     """
     module_name, type_name = name.rsplit(".", 1)
     module = _get_module(module_name)
@@ -391,6 +555,33 @@ def get_python_type_from_name(name):
 
 
 def _get_converter_or_value_factory(module, class_name):
+    """
+    Get a converter or value factory object from a module.
+
+    Parameters
+    ----------
+    module : module
+        The module containing the converter or value factory.
+    class_name : str
+        The name of the converter or value factory class to retrieve.
+
+    Returns
+    -------
+    object
+        An instance of the converter or value factory class.
+
+    Raises
+    ------
+    ValueError
+        If the module does not have a converter or value factory with the specified name.
+    ValueError
+        If the converter or value factory class is not compatible.
+
+    Notes
+    -----
+    The converter or value factory must be a subclass of `knime.api.types.PythonValueFactory`,
+    `knime.api.types.ToPandasColumnConverter`, or `knime.api.types.FromPandasColumnConverter`.
+    """
     try:
         clazz = getattr(module, class_name)
     except AttributeError:
@@ -423,6 +614,24 @@ _python_proxy_type_to_factory_info = {}
 def get_proxy_by_python_type(
     python_type: Type,
 ) -> Tuple[PythonValueFactory, Type]:
+    """
+    Get the proxy value factory and original type for a given Python type.
+
+    Parameters
+    ----------
+    python_type : type
+        The Python type for which to retrieve the proxy value factory and original type.
+
+    Returns
+    -------
+    Tuple[PythonValueFactory, type]
+        A tuple containing the proxy value factory and the original type.
+
+    Raises
+    ------
+    TypeError
+        If the input python_type is not a valid Python type or is not registered in the available types.
+    """
     if not isinstance(python_type, type):
         raise TypeError(f" The Python type '{python_type}' is not a type.")
     complete_type = str(python_type.__module__) + "." + str(python_type.__qualname__)
@@ -448,6 +657,14 @@ def get_proxy_by_python_type(
 
 
 def get_python_type_list():
+    """
+    Return a list of Python types supported by the bundled library.
+
+    Returns
+    -------
+    list
+        A list of Python types supported by the bundled library.
+    """
     return _python_type_to_bundle.keys()
 
 
@@ -461,23 +678,26 @@ def register_python_value_factory(
 ):
     """
     Creates a bundle containing python value factory (e.g. SmilesValueFactory),
-    java value factory (a.k.a. logical type), python type name  (e.g. 'knime.types.chemistry.SmilesValue'),
+    java value factory (a.k.a. logical type), python type name (e.g. 'knime.types.chemistry.SmilesValue'),
     as well as data_traits and data_spec_json.
 
-    Args:
-        python_module: The module containing the factory
-        python_value_factory_name: The factory to be registered
-        data_spec_json: A dict used to create a PythonValueFactoryBundle
-        data_traits: A dict used to get the logical_type,
-            e.g. '{"value_factory_class":"org.knime.chem.types.SmilesCellValueFactory"}'
-            (holds information on where to find the Java pendant to the
-            Python value factory)
-        python_value_type_name: The name of the value type, which is handled by the
-            factory; the name is taken from the plugin.xml of the module containing
-            the factory
-        is_default_python_representation: only false, if an alternative representation
-            is provided; note that we assume that a default (i.e. normal) Python
-            representation is already given
+    Parameters
+    ----------
+    python_module : str
+        The module containing the factory.
+    python_value_factory_name : str
+        The factory to be registered.
+    data_spec_json : dict
+        A dict used to create a PythonValueFactoryBundle.
+    data_traits : dict
+        A dict used to get the logical_type, e.g. '{"value_factory_class":"org.knime.chem.types.SmilesCellValueFactory"}'
+        (holds information on where to find the Java pendant to the Python value factory).
+    python_value_type_name : str
+        The name of the value type, which is handled by the factory;
+        the name is taken from the plugin.xml of the module containing the factory.
+    is_default_python_representation : bool
+        True if the default Python representation is used,
+        False if an alternative representation is provided.
     """
     unpacked_data_traits = json.loads(data_traits)["traits"]
     logical_type = unpacked_data_traits["logical_type"]
@@ -510,6 +730,29 @@ _fallback_value_factory = FallbackPythonValueFactory()
 
 
 def get_converter(logical_type):
+    """
+    Get a converter function for a specified logical type.
+
+    Parameters
+    ----------
+    logical_type : str
+        The logical type for which the converter function is needed.
+
+    Returns
+    -------
+    function
+        The converter for the specified logical type.
+
+    Raises
+    ------
+    ValueError
+        If the specified logical type does not have a registered converter function.
+
+    Notes
+    -----
+    If the specified logical type does not have a registered converter function, the function will
+    log a debug message and return the fallback converter function.
+    """
     try:
         return get_value_factory_bundle_for_java_value_factory(
             logical_type
@@ -576,8 +819,8 @@ class FromPandasColumnConverter(ABC):
     Convert a column inside a Pandas DataFrame before it gets converted
     into a pyarrow Table or RecordBatch with pyarrows "from_pandas" method.
 
-    Note: additional module imports should only occur in the convert_column method,
-          as each module import leads to slower startup time of the Python process.
+    Additional module imports should only occur in the convert_column method,
+    as each module import leads to slower startup time of the Python process.
     """
 
     # to suppress specific warnings while converting the data, overwrite this list in the converter's implementation
@@ -596,12 +839,11 @@ class FromPandasColumnConverter(ABC):
     @contextmanager
     def warning_manager(self):
         """
-        The contextlib.contextmanager decorates a function which yields exactly once.
-        Everything before yield is considered to be __enter__ section and everything after,
-        to be __exit__ section.
-        To suppress specific warnings while converting the data, overwrite the suppress_warnings list
-        in the converter's implementation
-
+        The `contextlib.contextmanager` decorates a function which yields exactly once.
+        Everything before the `yield` is considered to be the `__enter__` section and everything after,
+        to be the `__exit__` section.
+        To suppress specific warnings while converting the data, overwrite the `suppress_warnings` list
+        in the converter's implementation.
         """
         if self.warnings_to_suppress is not None:
             for warning in self.warnings_to_suppress:
@@ -617,8 +859,9 @@ class ToPandasColumnConverter(ABC):
     Convert a column inside a Pandas DataFrame right after it was converted from
     a pyarrow Table or RecordBatch, before it gets returned from knime.scripting._deprecated._table's to_pandas().
 
-    Note: additional module imports should only occur in the convert_column method,
-          as each module import leads to slower startup time of the Python process.
+    Note
+    ----
+    Additional module imports should only occur in the convert_column method, as each module import leads to slower startup time of the Python process.
     """
 
     # to suppress specific warnings while converting the data, overwrite this list in the converter's implementation
@@ -637,12 +880,11 @@ class ToPandasColumnConverter(ABC):
     @contextmanager
     def warning_manager(self):
         """
-        The contextlib.contextmanager decorates a function which yields exactly once.
-        Everything before yield is considered to be __enter__ section and everything after,
-        to be __exit__ section.
-        To suppress specific warnings while converting the data, overwrite the suppress_warnings list
-        in the converter's implementation
-
+        The `contextlib.contextmanager` decorates a function which yields exactly once.
+        Everything before the `yield` is considered to be the `__enter__` section and everything after,
+        to be the `__exit__` section.
+        To suppress specific warnings while converting the data, overwrite the `suppress_warnings` list
+        in the converter's implementation.
         """
         if self.warnings_to_suppress is not None:
             for warning in self.warnings_to_suppress:
@@ -659,6 +901,19 @@ _to_pandas_column_converters = {}
 
 def get_first_matching_from_pandas_col_converter(dtype):
     # find matching column converter and load if needed
+    """
+    Get the first matching converter from the pandas column converter dictionary.
+
+    Parameters
+    ----------
+    dtype : pandas dtype
+        The data type of the input column.
+
+    Returns
+    -------
+    converter : callable or None
+        The converter function or value factory corresponding to the input dtype. Returns None if no matching converter is found.
+    """
     try:
         type_str = json.loads(dtype._logical_type)["value_factory_class"]
     except AttributeError:  # dtype is not a kap.PandasLogicalTypeExtensionType
@@ -673,7 +928,19 @@ def get_first_matching_from_pandas_col_converter(dtype):
 
 
 def get_first_matching_to_pandas_col_converter(dtype):
-    # find matching column converter and load if needed
+    """
+    Find the first matching converter for a pandas column in a given dtype.
+
+    Parameters
+    ----------
+    dtype : object
+        The dtype to check for a matching converter.
+
+    Returns
+    -------
+    object or None
+        The converter for pandas column if found, otherwise None.
+    """
     import knime._arrow._types as kat
 
     if not isinstance(dtype, kat.LogicalTypeExtensionType):
