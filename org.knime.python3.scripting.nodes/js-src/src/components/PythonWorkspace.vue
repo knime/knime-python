@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useWorkspaceStore } from "@/store";
+import { usePythonPreviewStatusStore, useWorkspaceStore } from "@/store";
 import { getScriptingService } from "@knime/scripting-editor";
 import { onMounted, ref } from "vue";
 import Button from "webapps-common/ui/components/Button.vue";
@@ -8,6 +8,14 @@ import { pythonScriptingService } from "../python-scripting-service";
 const workspaceStore = useWorkspaceStore();
 
 const resetButtonEnabled = ref<boolean>(false);
+const pythonPreviewStatus = usePythonPreviewStatusStore();
+
+const resetWorkspace = () => {
+  pythonScriptingService.killInteractivePythonSession();
+
+  // reset view
+  pythonPreviewStatus.clearView();
+};
 
 onMounted(async () => {
   if (await getScriptingService().inputsAvailable()) {
@@ -42,7 +50,7 @@ onMounted(async () => {
         with-border
         compact
         :disabled="!resetButtonEnabled"
-        @click="pythonScriptingService.killInteractivePythonSession"
+        @click="resetWorkspace"
       >
         Reset temporary values
       </Button>

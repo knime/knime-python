@@ -318,7 +318,8 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
         /**
          * @return the hasValidView
          */
-        public boolean getHasValidView() {
+        public boolean getHasValidView() { // NOSONAR
+            // "get" prefix is required by mapper to work correctly
             return hasValidView;
         }
 

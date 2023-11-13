@@ -52,11 +52,16 @@ export type PythonViewStatus = {
   hasValidView: boolean;
   isExecutedOnce: boolean;
   updateViewCallback?: () => void;
+  clearView: () => void;
 };
 
 const pythonPreviewStatus: PythonViewStatus = reactive<PythonViewStatus>({
   hasValidView: false,
   isExecutedOnce: false,
+  clearView() {
+    this.hasValidView = false;
+    this.isExecutedOnce = false;
+  },
 });
 
 export const usePythonPreviewStatusStore = (): PythonViewStatus =>

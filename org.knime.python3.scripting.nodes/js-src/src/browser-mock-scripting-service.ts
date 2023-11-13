@@ -119,7 +119,7 @@ print("Hello, I am a fake AI")
   getExecutableOptionsList: () => [],
 };
 
-const browserMockScriptingService: ScriptingServiceType = {
+const browserMockScriptingService: Partial<ScriptingServiceType> = {
   async sendToService(methodName: string, options?: any[]) {
     console.log(`Called KNIME ${methodName} with ${JSON.stringify(options)}`);
     await sleep(SLEEP_TIME);

@@ -30,6 +30,7 @@ onUnmounted(() => {
 
 const sessionStatus = useSessionStatusStore();
 
+// TODO: show button text on correct button when running from view placeholder AP-21485
 const cancelOnButton = ref<"runAll" | "runSelected">("runAll");
 const running = computed(() => sessionStatus.status === "RUNNING");
 const runningSelected = computed(
