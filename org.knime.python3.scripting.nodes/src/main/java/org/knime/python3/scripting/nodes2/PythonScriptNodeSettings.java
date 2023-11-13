@@ -137,12 +137,6 @@ final class PythonScriptNodeSettings {
     }
 
     private static final class NodeSettingsService implements org.knime.core.webui.node.dialog.NodeSettingsService {
-        @Override
-        public void getDefaultNodeSettings(final Map<SettingsType, NodeSettingsWO> settings,
-            final PortObjectSpec[] specs) {
-            saveSettings(new Settings(PythonScriptPortsConfiguration.fromCurrentNodeContext()),
-                settings.get(SettingsType.MODEL));
-        }
 
         @Override
         public void toNodeSettings(final String settingsString,
