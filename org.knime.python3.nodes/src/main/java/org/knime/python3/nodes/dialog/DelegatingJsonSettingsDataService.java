@@ -54,7 +54,6 @@ import java.util.function.Supplier;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettings;
 import org.knime.core.node.NodeSettingsRO;
-import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.webui.node.dialog.NodeAndVariableSettingsRO;
 import org.knime.core.webui.node.dialog.NodeAndVariableSettingsWO;
@@ -122,13 +121,6 @@ public final class DelegatingJsonSettingsDataService implements NodeSettingsServ
         // the jsonSettings received from the frontend are wrapped into a 'data' object
         var unwrapped = JsonNodeSettingsMapperUtil.getNestedJsonObject(jsonSettings, JsonFormsConsts.FIELD_NAME_DATA);
         m_lastSettingsSchema.createFromJson(unwrapped).saveTo(settings.get(SettingsType.MODEL));
-    }
-
-    @Override
-    public void getDefaultNodeSettings(final Map<SettingsType, NodeSettingsWO> settings, final PortObjectSpec[] specs) {
-        try (var proxy = m_proxyProvider.get()) {
-            proxy.getSettings(m_extensionVersion).saveTo(settings.get(SettingsType.MODEL));
-        }
     }
 
     @Override
