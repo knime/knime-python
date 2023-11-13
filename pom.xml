@@ -70,6 +70,11 @@
 			<layout>p2</layout>
 			<url>${knime.base.p2}</url>
 		</repository>
+        <repository>
+            <id>p2-knime-filehandling-core</id>
+            <layout>p2</layout>
+            <url>${knime.filehandling.core.p2}</url>
+        </repository>
 		<repository>
 			<id>p2-knime-conda</id>
 			<layout>p2</layout>
