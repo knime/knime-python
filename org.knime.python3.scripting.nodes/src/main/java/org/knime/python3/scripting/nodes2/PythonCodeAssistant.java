@@ -102,7 +102,7 @@ public final class PythonCodeAssistant {
             new Outputs(getNumTables(outputPortTypes), getNumObjects(outputPortTypes), getNumImages(outputPortTypes),
                 hasView));
 
-        return HubConnection.INSTANCE.sendRequest("/v1/code_generation/python", request);
+        return HubConnection.INSTANCE.sendRequest("/code_generation/python", request);
     }
 
     private static NameAndType[] toColumnNameTypeList(final DataColumnSpec... dataColumnSpecs) {
