@@ -1,19 +1,18 @@
 <script setup lang="ts">
+import { useDebounceFn, useResizeObserver } from "@vueuse/core";
+import { onMounted, onUnmounted, reactive, ref, type Ref } from "vue";
+import Button from "webapps-common/ui/components/Button.vue";
+
+import { pythonScriptingService } from "@/python-scripting-service";
 import { usePythonPreviewStatusStore } from "@/store";
 import { getScriptingService } from "@knime/scripting-editor";
-import { onMounted, onUnmounted, ref, type Ref, reactive } from "vue";
-import Button from "webapps-common/ui/components/Button.vue";
-import { pythonScriptingService } from "@/python-scripting-service";
-import { useDebounceFn } from "@vueuse/core/index.mjs";
-import TableHeader from "./TableHeader.vue";
-import type { ColumnSizes } from "./TableHeader.vue";
 import TableBody from "./TableBody.vue";
-import { useResizeObserver } from "@vueuse/core";
+import type { ColumnSizes } from "./TableHeader.vue";
+import TableHeader from "./TableHeader.vue";
 
 const resizeContainer = ref<HTMLElement | null>(null);
 const totalWidth: Ref<number> = ref(0);
 const headerWidths = reactive<ColumnSizes>([100, 100, 100]);
-const resetButtonEnabled: Ref<boolean> = ref(false);
 
 const useTotalWidth = () => {
   const rootResizeCallback = useDebounceFn((entries) => {
@@ -28,8 +27,9 @@ const useTotalWidth = () => {
 
   return { totalWidth, headerWidths };
 };
-const pythonPreviewStatus = usePythonPreviewStatusStore();
 
+const resetButtonEnabled: Ref<boolean> = ref(false);
+const pythonPreviewStatus = usePythonPreviewStatusStore();
 const resetWorkspace = () => {
   pythonScriptingService.killInteractivePythonSession();
 

@@ -4,7 +4,7 @@ import PythonWorkspace from "../PythonWorkspace.vue";
 import { getScriptingService } from "@knime/scripting-editor";
 import Button from "webapps-common/ui/components/Button.vue";
 import { useWorkspaceStore } from "@/store";
-import TableHeader, { type ColumnSizes } from "../TableHeader.vue";
+import { type ColumnSizes } from "../TableHeader.vue";
 import { type Ref } from "vue";
 
 type WorkspaceState = {
@@ -42,14 +42,12 @@ describe("PythonWorkspace", () => {
     expect(resetButton.exists()).toBeTruthy();
   });
 
-  it("emit resize", async () => {
+  it("should update table header widths on resize", async () => {
     const { wrapper } = await doMount();
 
-    const header = wrapper.findComponent(TableHeader);
     expect((wrapper.vm as WorkspaceState).resizeContainer).not.toBeNull();
     (wrapper.vm as WorkspaceState).totalWidth = 510;
     await flushPromises();
-    await header.vm.$emit("resize");
     expect((wrapper.vm as WorkspaceState).headerWidths).toStrictEqual([
       170, 170, 170,
     ]);

@@ -1,9 +1,9 @@
 import { mount } from "@vue/test-utils";
-import { describe, expect, it, vi, beforeAll } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import TableHeader, {
+  type ColumnSizes,
   type ColumnState,
   type MouseTracker,
-  type ColumnSizes,
 } from "../TableHeader.vue";
 
 type TableHeaderState = {
@@ -13,20 +13,19 @@ type TableHeaderState = {
 };
 
 describe("TableHeader.vue", () => {
-  const doMount = (props: any) => {
-    const wrapper = mount(TableHeader, { propsData: props });
+  const doMount = (containerWidth = 60) => {
+    const wrapper = mount(TableHeader, { propsData: { containerWidth } });
     return { wrapper, state: wrapper.vm as any as TableHeaderState };
   };
 
   beforeAll(() => {
-    // @ts-ignore
-    window.PointerEvent = class PointerEvent extends Event {};
+    window.PointerEvent = {} as any;
     window.HTMLElement.prototype.releasePointerCapture = vi.fn();
     window.HTMLElement.prototype.setPointerCapture = vi.fn();
   });
 
-  it("pointermove", async () => {
-    const { wrapper, state } = doMount({ containerWidth: 60 });
+  it("should update mouseState on pointermove", async () => {
+    const { wrapper, state } = doMount();
     state.columnState.dragIndex = 0;
 
     const handle = wrapper.find({ ref: "dragHandle-0" });
@@ -34,8 +33,8 @@ describe("TableHeader.vue", () => {
     expect(state.mouseState.currentX).toBe(100);
   });
 
-  it("pointerover", async () => {
-    const { wrapper, state } = doMount({ containerWidth: 60 });
+  it("should update mouseState on pointerover", async () => {
+    const { wrapper, state } = doMount();
     const handle = wrapper.find({ ref: "dragHandle-1" });
     state.columnState.dragIndex = null;
     await handle.trigger("pointerover");
@@ -47,9 +46,8 @@ describe("TableHeader.vue", () => {
     expect(state.mouseState.hoverIndex).toBeNull();
   });
 
-  it("pointerleave", async () => {
-    //
-    const { wrapper, state } = doMount({ containerWidth: 60 });
+  it("should update mouseState on pointerleave", async () => {
+    const { wrapper, state } = doMount();
     const handle = wrapper.find({ ref: "dragHandle-1" });
     state.mouseState.hoverIndex = 1;
 
@@ -58,9 +56,8 @@ describe("TableHeader.vue", () => {
     expect(state.mouseState.hoverIndex).toBeNull();
   });
 
-  it("pointerdown", async () => {
-    //
-    const { wrapper, state } = doMount({ containerWidth: 60 });
+  it("should start dragging on pointerdown", async () => {
+    const { wrapper, state } = doMount();
     const handle = wrapper.find({ ref: "dragHandle-1" });
     const columnIndex = 1;
     const clientX = 100;
@@ -75,8 +72,8 @@ describe("TableHeader.vue", () => {
     expect(state.columnState.pageXOnDragStart).toBe(clientX);
   });
 
-  it("pointerup", async () => {
-    const { wrapper, state } = doMount({ containerWidth: 60 });
+  it("should stop dragging on pointerup", async () => {
+    const { wrapper, state } = doMount();
     const handle = wrapper.find({ ref: "dragHandle-1" });
 
     state.columnState.dragIndex = 1;
@@ -90,8 +87,8 @@ describe("TableHeader.vue", () => {
     ).toHaveBeenCalledWith(0);
   });
 
-  it("lostpointercapture", async () => {
-    const { wrapper, state } = doMount({ containerWidth: 60 });
+  it("should stop dragging on lostpointercapture", async () => {
+    const { wrapper, state } = doMount();
 
     const handle = wrapper.find({ ref: "dragHandle-1" });
 
@@ -106,114 +103,78 @@ describe("TableHeader.vue", () => {
     ).toHaveBeenCalledWith(0);
   });
 
-  it("column Resize delta 50", async () => {
-    const { wrapper, state } = doMount({ containerWidth: 120 });
-    const handle = wrapper.find({ ref: "dragHandle-1" });
-    state.columnState.dragIndex = 1;
-    state.mouseState.currentX = 30;
-    await handle.trigger("pointermove", { clientX: 40 });
+  describe("column size computation", () => {
+    it("should update sizes when dragging second handle to the right", async () => {
+      const { wrapper, state } = doMount(120);
+      const handle = wrapper.find({ ref: "dragHandle-1" });
+      state.columnState.dragIndex = 1;
+      state.mouseState.currentX = 30;
 
-    expect((wrapper.vm as any as TableHeaderState).columnSizes).toStrictEqual([
-      40, 50, 30,
-    ]);
-  });
-
-  it("column Resize delta -50", async () => {
-    const { wrapper, state } = doMount({ containerWidth: 120 });
-    const handle = wrapper.find({ ref: "dragHandle-1" });
-    state.columnState.dragIndex = 1;
-    state.mouseState.currentX = 80;
-    await handle.trigger("pointermove", { clientX: 40 });
-
-    expect((wrapper.vm as any as TableHeaderState).columnSizes).toStrictEqual([
-      30, 30, 60,
-    ]);
-
-    await wrapper.setProps({ containerWidth: 99 });
-    expect((wrapper.vm as any as TableHeaderState).columnSizes).toStrictEqual([
-      33, 33, 33,
-    ]);
-
-    // Less than minimal size
-    await wrapper.setProps({ containerWidth: 210 });
-
-    expect(
-      (wrapper.vm as any as TableHeaderState).columnSizes as any,
-    ).toStrictEqual([70, 70, 70]);
-
-    state.mouseState.currentX = 80;
-    await handle.trigger("pointermove", { clientX: 40 });
-
-    expect(
-      (wrapper.vm as any as TableHeaderState).columnSizes as any,
-    ).toStrictEqual([70, 30, 110]);
-    await wrapper.setProps({ containerWidth: 40 });
-
-    expect(
-      (wrapper.vm as any as TableHeaderState).columnSizes as any,
-    ).toStrictEqual([30, 30, 30]);
-  });
-
-  it("column Resize first dragging handle", async () => {
-    const { wrapper, state } = doMount({ containerWidth: 120 });
-    const handle = wrapper.find({ ref: "dragHandle-0" });
-    state.columnState.dragIndex = 0;
-    state.mouseState.currentX = 80;
-    await handle.trigger("pointermove", { clientX: 40 });
-
-    expect(
-      (wrapper.vm as any as TableHeaderState).columnSizes as any,
-    ).toStrictEqual([30, 50, 40]);
-
-    await wrapper.setProps({ containerWidth: 99 });
-
-    expect(
-      (wrapper.vm as any as TableHeaderState).columnSizes as any,
-    ).toStrictEqual([33, 33, 33]);
-
-    // Less than minimal size
-    await wrapper.setProps({ containerWidth: 210 });
-
-    expect(
-      (wrapper.vm as any as TableHeaderState).columnSizes as any,
-    ).toStrictEqual([70, 70, 70]);
-
-    state.mouseState.currentX = 80;
-    await wrapper.setProps({ containerWidth: 210 });
-    await handle.trigger("pointermove", { clientX: 200 });
-
-    expect(
-      (wrapper.vm as any as TableHeaderState).columnSizes as any,
-    ).toStrictEqual([150, 30, 30]);
-
-    state.mouseState.currentX = 80;
-    await wrapper.setProps({ containerWidth: 210 });
-    await handle.trigger("pointermove", { clientX: 120 });
-
-    expect(
-      (wrapper.vm as any as TableHeaderState).columnSizes as any,
-    ).toStrictEqual([150, 30, 30]);
-
-    // Less than minimal size
-    await wrapper.setProps({ containerWidth: 40 });
-
-    expect(
-      (wrapper.vm as any as TableHeaderState).columnSizes as any,
-    ).toStrictEqual([30, 30, 30]);
-  });
-
-  it("column increase width", async () => {
-    const wrapper = mount(TableHeader, {
-      propsData: { containerWidth: 120 },
+      await handle.trigger("pointermove", { clientX: 40 });
+      expect(state.columnSizes).toStrictEqual([40, 50, 30]);
     });
 
-    expect(
-      (wrapper.vm as any as TableHeaderState).columnSizes as any,
-    ).toStrictEqual([40, 40, 40]);
-    await wrapper.setProps({ containerWidth: 150 });
+    it("should update sizes when dragging second handle to the left", async () => {
+      const { wrapper, state } = doMount(120);
+      const handle = wrapper.find({ ref: "dragHandle-1" });
+      state.columnState.dragIndex = 1;
+      state.mouseState.currentX = 80;
 
-    expect(
-      (wrapper.vm as any as TableHeaderState).columnSizes as any,
-    ).toStrictEqual([50, 50, 50]);
+      await handle.trigger("pointermove", { clientX: 40 });
+      expect(state.columnSizes).toStrictEqual([30, 30, 60]);
+
+      await wrapper.setProps({ containerWidth: 99 });
+      expect(state.columnSizes).toStrictEqual([33, 33, 33]);
+
+      // Less than minimal size
+      await wrapper.setProps({ containerWidth: 210 });
+      expect(state.columnSizes).toStrictEqual([70, 70, 70]);
+
+      state.mouseState.currentX = 80;
+      await handle.trigger("pointermove", { clientX: 40 });
+      expect(state.columnSizes).toStrictEqual([70, 30, 110]);
+
+      await wrapper.setProps({ containerWidth: 40 });
+      expect(state.columnSizes).toStrictEqual([30, 30, 30]);
+    });
+
+    it("should update sizes when dragging first handle", async () => {
+      const { wrapper, state } = doMount(120);
+      const handle = wrapper.find({ ref: "dragHandle-0" });
+      state.columnState.dragIndex = 0;
+      state.mouseState.currentX = 80;
+
+      await handle.trigger("pointermove", { clientX: 40 });
+      expect(state.columnSizes).toStrictEqual([30, 50, 40]);
+
+      await wrapper.setProps({ containerWidth: 99 });
+      expect(state.columnSizes).toStrictEqual([33, 33, 33]);
+
+      // Less than minimal size
+      await wrapper.setProps({ containerWidth: 210 });
+      expect(state.columnSizes).toStrictEqual([70, 70, 70]);
+
+      state.mouseState.currentX = 80;
+      await wrapper.setProps({ containerWidth: 210 });
+      await handle.trigger("pointermove", { clientX: 200 });
+      expect(state.columnSizes).toStrictEqual([150, 30, 30]);
+
+      state.mouseState.currentX = 80;
+      await wrapper.setProps({ containerWidth: 210 });
+      await handle.trigger("pointermove", { clientX: 120 });
+      expect(state.columnSizes).toStrictEqual([150, 30, 30]);
+
+      // Less than minimal size
+      await wrapper.setProps({ containerWidth: 40 });
+      expect(state.columnSizes).toStrictEqual([30, 30, 30]);
+    });
+
+    it("should resize all columns on increased container width", async () => {
+      const { wrapper, state } = doMount(120);
+      expect(state.columnSizes).toStrictEqual([40, 40, 40]);
+
+      await wrapper.setProps({ containerWidth: 150 });
+      expect(state.columnSizes).toStrictEqual([50, 50, 50]);
+    });
   });
 });

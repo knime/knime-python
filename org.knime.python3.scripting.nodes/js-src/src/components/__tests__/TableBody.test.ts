@@ -1,57 +1,77 @@
-import { describe, expect, it, vi } from "vitest";
-import { mount } from "@vue/test-utils";
-import { useWorkspaceStore, type WorkspaceStore } from "@/store";
 import { pythonScriptingService } from "@/python-scripting-service";
+import { useWorkspaceStore, type WorkspaceStore } from "@/store";
 import { getScriptingService } from "@knime/scripting-editor";
+import { mount } from "@vue/test-utils";
+import { describe, expect, it, vi } from "vitest";
+import TableBody from "../TableBody.vue";
 
 const mockStore = {
   workspace: [
     {
       name: "Hallo",
-      value: "1",
       type: "Int",
+      value: "1",
+    },
+    {
+      name: "Foo",
+      type: "String",
+      value: "bar",
     },
   ],
 } as WorkspaceStore;
 
 vi.mock("@/store");
-import TableBody from "../TableBody.vue";
 
 describe("TableBody.vue", () => {
-  it("test default props", () => {
-    vi.mocked(useWorkspaceStore).mockReturnValueOnce(mockStore);
-    const body = mount(TableBody, {
-      propsData: {},
+  const doMount = (columnWidths?: [number, number, number]) => {
+    return mount(TableBody, {
+      propsData: { columnWidths: columnWidths ?? [100, 100, 100] },
     });
-    expect(body.props().columnWidths).toStrictEqual([100, 100, 100]);
-    expect(body.find("tbody")).toBeTruthy();
-    const firstRow = body.find("tr");
-    expect(firstRow.exists()).toBeTruthy();
+  };
+
+  it("should apply column widths", () => {
+    vi.mocked(useWorkspaceStore).mockReturnValueOnce(mockStore);
+    const body = doMount([110, 120, 130]);
+    const tableCells = body.findAll("td");
+    expect(tableCells.length).toBe(6);
+    expect(tableCells[0].element.style.width).toBe("110px");
+    expect(tableCells[1].element.style.width).toBe("120px");
+    expect(tableCells[2].element.style.width).toBe("130px");
   });
 
-  it("test none empty store", () => {
+  it("should render temporary values from store", () => {
     vi.mocked(useWorkspaceStore).mockReturnValueOnce(mockStore);
-    const body = mount(TableBody, {
-      propsData: { columnWidths: [101, 100, 101] },
-    });
-    expect(body.props().columnWidths).toStrictEqual([101, 100, 101]);
+    const body = doMount();
     expect(body.find("tbody")).toBeTruthy();
-    const firstRow = body.find("tr");
+    const tableRows = body.findAll("tr");
+    expect(tableRows.length).toBe(2);
+
+    const firstRow = tableRows[0];
     expect(firstRow.exists()).toBeTruthy();
+    const tableCells0 = firstRow.findAll("td");
+    expect(tableCells0.length).toBe(3);
+    expect(tableCells0[0].text()).toBe("Hallo");
+    expect(tableCells0[1].text()).toBe("Int");
+    expect(tableCells0[2].text()).toBe("1");
+
+    const secondRow = tableRows[1];
+    expect(secondRow.exists()).toBeTruthy();
+    const tableCells1 = secondRow.findAll("td");
+    expect(tableCells1.length).toBe(3);
+    expect(tableCells1[0].text()).toBe("Foo");
+    expect(tableCells1[1].text()).toBe("String");
+    expect(tableCells1[2].text()).toBe("bar");
   });
 
-  it("test empty store", () => {
+  it("should not render any rows if no temporary values", () => {
     vi.mocked(useWorkspaceStore).mockReturnValueOnce({});
-    const body = mount(TableBody, {
-      propsData: { columnWidths: [100, 100, 100] },
-    });
-    expect(body.props().columnWidths).toStrictEqual([100, 100, 100]);
+    const body = doMount();
     expect(body.find("tbody")).toBeTruthy();
     const firstRow = body.find("tr");
     expect(firstRow.exists()).toBeFalsy();
   });
 
-  it("button click on table calls printVariable", () => {
+  it("should call printVariable on table row click", () => {
     const name = "testName";
 
     vi.mocked(useWorkspaceStore).mockReturnValueOnce({
@@ -66,14 +86,8 @@ describe("TableBody.vue", () => {
       });
     });
 
-    const body = mount(TableBody);
-
-    // check table is added
-    const tableRows = body.findAll("tr");
-    expect(tableRows.length).toBe(1);
-
-    // find table row
-    const tableRow = tableRows[0];
+    const body = doMount();
+    const tableRow = body.find("tr");
     expect(tableRow).toBeDefined();
 
     // check click event

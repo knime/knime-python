@@ -9,6 +9,7 @@ const columnSizes = reactive<ColumnSizes>([0, 0, 0]);
 const props = defineProps({
   containerWidth: {
     type: Number,
+    // eslint-disable-next-line no-magic-numbers
     default: () => 120,
   },
 });
@@ -20,7 +21,7 @@ const emit = defineEmits<{
 }>();
 
 export type MouseTracker = {
-  hoverIndex: number | null; //
+  hoverIndex: number | null;
   currentX: number | null;
 };
 
@@ -160,7 +161,6 @@ const onPointerDown = (
   columnState.pageXOnDragStart = event.clientX;
 };
 
-// event:
 const onPointerMove = (event: { clientX: number }) => {
   let delta = event.clientX - (mouseState.currentX ?? event.clientX);
   if (typeof columnState.dragIndex === "number") {
@@ -176,7 +176,6 @@ const onPointerMove = (event: { clientX: number }) => {
       <th
         v-for="(header, ind) in columnHeaders"
         :key="ind"
-        :ref="`columnHeader-${ind}`"
         :style="{ width: `${columnSizes[ind]}px` }"
         class="column-header"
       >
