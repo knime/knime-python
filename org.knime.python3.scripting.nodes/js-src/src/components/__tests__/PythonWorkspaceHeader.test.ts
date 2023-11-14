@@ -1,10 +1,10 @@
 import { mount } from "@vue/test-utils";
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import TableHeader, {
+import PythonWorkspaceHeader, {
   type ColumnSizes,
   type ColumnState,
   type MouseTracker,
-} from "../TableHeader.vue";
+} from "../PythonWorkspaceHeader.vue";
 
 type TableHeaderState = {
   columnState: ColumnState;
@@ -12,9 +12,11 @@ type TableHeaderState = {
   columnSizes?: ColumnSizes;
 };
 
-describe("TableHeader.vue", () => {
+describe("PythonWorkspaceHeader.vue", () => {
   const doMount = (containerWidth = 60) => {
-    const wrapper = mount(TableHeader, { propsData: { containerWidth } });
+    const wrapper = mount(PythonWorkspaceHeader, {
+      propsData: { containerWidth },
+    });
     return { wrapper, state: wrapper.vm as any as TableHeaderState };
   };
 

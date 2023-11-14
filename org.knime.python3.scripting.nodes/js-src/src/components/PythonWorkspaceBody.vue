@@ -2,7 +2,7 @@
 import { computed } from "vue";
 import { useWorkspaceStore } from "@/store";
 import { pythonScriptingService } from "../python-scripting-service";
-import type { ColumnSizes } from "./TableHeader.vue";
+import type { ColumnSizes } from "./PythonWorkspaceHeader.vue";
 
 const workspaceStore = useWorkspaceStore();
 

@@ -1,11 +1,11 @@
+import { useWorkspaceStore } from "@/store";
+import { getScriptingService } from "@knime/scripting-editor";
 import { flushPromises, mount } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import PythonWorkspace from "../PythonWorkspace.vue";
-import { getScriptingService } from "@knime/scripting-editor";
-import Button from "webapps-common/ui/components/Button.vue";
-import { useWorkspaceStore } from "@/store";
-import { type ColumnSizes } from "../TableHeader.vue";
 import { type Ref } from "vue";
+import Button from "webapps-common/ui/components/Button.vue";
+import PythonWorkspace from "../PythonWorkspace.vue";
+import { type ColumnSizes } from "../PythonWorkspaceHeader.vue";
 
 type WorkspaceState = {
   headerWidths?: ColumnSizes;

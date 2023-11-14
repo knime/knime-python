@@ -3,7 +3,7 @@ import { useWorkspaceStore, type WorkspaceStore } from "@/store";
 import { getScriptingService } from "@knime/scripting-editor";
 import { mount } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vitest";
-import TableBody from "../TableBody.vue";
+import PythonWorkspaceBody from "../PythonWorkspaceBody.vue";
 
 const mockStore = {
   workspace: [
@@ -22,9 +22,9 @@ const mockStore = {
 
 vi.mock("@/store");
 
-describe("TableBody.vue", () => {
+describe("PythonWorkspaceBody.vue", () => {
   const doMount = (columnWidths?: [number, number, number]) => {
-    return mount(TableBody, {
+    return mount(PythonWorkspaceBody, {
       propsData: { columnWidths: columnWidths ?? [100, 100, 100] },
     });
   };

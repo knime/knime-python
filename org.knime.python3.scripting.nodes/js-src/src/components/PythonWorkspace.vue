@@ -1,18 +1,19 @@
 <script setup lang="ts">
 import { useDebounceFn, useResizeObserver } from "@vueuse/core";
-import { onMounted, onUnmounted, reactive, ref, type Ref } from "vue";
+import { onMounted, onUnmounted, ref, type Ref } from "vue";
 import Button from "webapps-common/ui/components/Button.vue";
 
 import { pythonScriptingService } from "@/python-scripting-service";
 import { usePythonPreviewStatusStore } from "@/store";
 import { getScriptingService } from "@knime/scripting-editor";
-import TableBody from "./TableBody.vue";
-import type { ColumnSizes } from "./TableHeader.vue";
-import TableHeader from "./TableHeader.vue";
+import PythonWorkspaceBody from "./PythonWorkspaceBody.vue";
+import PythonWorkspaceHeader, {
+  type ColumnSizes,
+} from "./PythonWorkspaceHeader.vue";
 
 const resizeContainer = ref<HTMLElement | null>(null);
 const totalWidth: Ref<number> = ref(0);
-const headerWidths = reactive<ColumnSizes>([100, 100, 100]);
+const headerWidths = ref<ColumnSizes>([100, 100, 100]);
 
 const useTotalWidth = () => {
   const rootResizeCallback = useDebounceFn((entries) => {
@@ -49,7 +50,7 @@ onMounted(async () => {
   <div ref="resizeContainer" class="container">
     <div ref="workspaceRef" class="workspace">
       <table>
-        <TableHeader
+        <PythonWorkspaceHeader
           :container-width="totalWidth"
           @update-header-widths="
             (e: ColumnSizes) => {
@@ -57,7 +58,7 @@ onMounted(async () => {
             }
           "
         />
-        <TableBody :column-widths="headerWidths" />
+        <PythonWorkspaceBody :column-widths="headerWidths" />
       </table>
     </div>
     <div class="controls">
