@@ -64,6 +64,7 @@ onMounted(async () => {
     <div class="controls">
       <Button
         class="reset-button"
+        :with-border="false"
         compact
         :disabled="!resetButtonEnabled"
         @click="resetWorkspace"
