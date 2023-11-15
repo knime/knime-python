@@ -1,6 +1,13 @@
 import { editorStoreMock } from "../src/__mocks__/editorStore";
 import "vitest-canvas-mock";
 import { vi } from "vitest";
+import { Consola, LogLevel } from "consola";
+
+export const consola = new Consola({
+  level: LogLevel.Log,
+});
+
+window.consola = consola;
 
 vi.mock("@knime/scripting-editor", async () => {
   const mockScriptingService = {
