@@ -5,13 +5,13 @@ import {
   ScriptingEditor,
   type NodeSettings,
   type SettingsMenuItem,
+  CompactTabBar,
 } from "@knime/scripting-editor";
 import * as monaco from "monaco-editor";
 import { nextTick, onMounted, ref, type Ref } from "vue";
 import SettingsIcon from "webapps-common/ui/assets/img/icons/cog.svg";
 import HelpIcon from "webapps-common/ui/assets/img/icons/help.svg";
 import type { MenuItem } from "webapps-common/ui/components/MenuItems.vue";
-import TabBar from "webapps-common/ui/components/TabBar.vue";
 import EnvironmentSettings from "./EnvironmentSettings.vue";
 import PythonEditorControls from "./PythonEditorControls.vue";
 import PythonViewPreview from "./PythonViewPreview.vue";
@@ -127,7 +127,7 @@ onMounted(async () => {
       </template>
       <template #right-pane>
         <div v-if="hasPreview" id="right-pane">
-          <TabBar
+          <CompactTabBar
             ref="rightTabBar"
             v-model="rightPaneActiveTab"
             :possible-values="rightPaneOptions"

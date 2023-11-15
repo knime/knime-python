@@ -113,8 +113,6 @@ onMounted(async () => {
   align-content: center;
   min-height: var(--controls-height);
   max-height: var(--controls-height);
-  height: var(--controls-height);
-  background-color: var(--knime-gray-light-semi);
   border-top: 1px solid var(--knime-silver-sand);
 }
 
