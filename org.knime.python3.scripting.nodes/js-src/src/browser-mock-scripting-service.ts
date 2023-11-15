@@ -98,7 +98,8 @@ const FLOW_VARIABLE_INPUTS = {
 };
 
 const sendToServiceMockResponses = {
-  suggestCode: () => {
+  suggestCode: async () => {
+    await sleep(2000);
     const fn = eventHandlers.get("codeSuggestion");
     if (typeof fn !== "undefined") {
       fn({
