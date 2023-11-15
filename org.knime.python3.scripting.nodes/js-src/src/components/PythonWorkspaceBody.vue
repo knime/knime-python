@@ -24,6 +24,7 @@ const totalWidth = computed(() =>
     <tr
       v-for="variable in workspaceStore?.workspace"
       :key="variable.name"
+      title="Print to console"
       :style="{ width: totalWidth + 'px' }"
       @click="pythonScriptingService.printVariable(variable.name)"
     >
