@@ -455,7 +455,7 @@ class BatchOutputTable:
         """
         Create output table where each batch is provided by a generator
 
-        Parameters:
+        Parameters
         ----------
         row_ids : object
             See `BatchOutputTable.create`.
@@ -474,8 +474,8 @@ class BatchOutputTable:
         Append a batch to this output table. The first batch defines the structure of the table,
         and all subsequent batches must have the same number of columns, column names and column types.
 
-        Notes:
-        ------
+        Notes
+        -----
           Keep in mind that the RowID will be handled according to the "row_ids"
           mode chosen in `BatchOutputTable.create`.
         """
