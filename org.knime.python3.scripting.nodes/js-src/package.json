@@ -24,7 +24,7 @@
     "prepare": "cd ../.. && husky install ./org.knime.python3.scripting.nodes/js-src/.husky"
   },
   "dependencies": {
-    "@knime/scripting-editor": "0.0.42",
+    "@knime/scripting-editor": "0.0.43",
     "@knime/ui-extension-service": "0.21.0",
     "@vueuse/core": "10.4.1",
     "consola": "2.15.3",
