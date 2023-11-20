@@ -1002,15 +1002,13 @@ class _Columnar(ABC):
     @property
     @abstractmethod
     def num_columns(self) -> int:
-        """Get the number of columns in the dataset.
-        """
+        """Get the number of columns in the dataset."""
         pass
 
     @property
     @abstractmethod
     def column_names(self) -> list:
-        """Get the names of the columns in a dataset.
-        """
+        """Get the names of the columns in a dataset."""
         pass
 
     def insert(self, other: "_Columnar", at: int) -> "_Columnar":

@@ -484,6 +484,5 @@ class BatchOutputTable:
     @property
     @abstractmethod
     def num_batches(self) -> int:
-        """ The number of batches written to this output table.
-        """
+        """The number of batches written to this output table."""
         raise RuntimeError("Not implemented")
