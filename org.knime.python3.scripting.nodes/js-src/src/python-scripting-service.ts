@@ -18,6 +18,7 @@ import {
   useSessionStatusStore,
   useWorkspaceStore,
 } from "./store";
+import { watch } from "vue";
 
 const executableSelection = useExecutableSelectionStore();
 
@@ -155,11 +156,21 @@ export const pythonScriptingService = {
     await scriptingService.connectToLanguageServer();
 
     // Configure the LSP server
-    // TODO(AP-19349) get the current executable option id
-    const config = JSON.parse(
-      await scriptingService.sendToService("getLanguageServerConfig", [""]),
+    const configureLanguageServer = async (id: string) => {
+      const config = JSON.parse(
+        await scriptingService.sendToService("getLanguageServerConfig", [id]),
+      );
+      await scriptingService.configureLanguageServer(config);
+    };
+    await configureLanguageServer(executableSelection.id);
+
+    // Watch the executable selection and re-configure on every change
+    watch(
+      () => executableSelection.id,
+      (newId) => {
+        configureLanguageServer(newId);
+      },
     );
-    await scriptingService.configureLanguageServer(config);
   },
   closeDialog: (): void => {
     scriptingService.closeDialog();
