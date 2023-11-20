@@ -50,10 +50,11 @@ package org.knime.python3.scripting.nodes2;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.knime.python3.scripting.nodes.prefs.Python3ScriptingPreferences;
 import org.knime.scripting.editor.lsp.LanguageServerProxy;
+
+import com.google.gson.Gson;
 
 /**
  * Utility for the LSP Server implementation for Python.
@@ -61,6 +62,8 @@ import org.knime.scripting.editor.lsp.LanguageServerProxy;
  * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
  */
 final class PythonLanguageServer {
+
+    private static final Gson GSON = new Gson();
 
     private static final String LSP_CONFIG = """
             {
@@ -72,8 +75,8 @@ final class PythonLanguageServer {
                     "modules": ["numpy", "pandas"]
                   },
                   "jedi": {
-                    "environment": "%s",
-                    "extra_paths": [ %s ]
+                    "environment": %s,
+                    "extra_paths": %s
                   },
                   "pycodestyle": {
                     "enabled": false
@@ -133,7 +136,6 @@ final class PythonLanguageServer {
      * @return the configuration for the LSP server as a JSON string
      */
     static String getConfig(final String executablePath, final List<String> extraPaths) {
-        var extraPathsJoined = extraPaths.stream().map(p -> '"' + p + '"').collect(Collectors.joining(","));
-        return LSP_CONFIG_PROPERTY.formatted(executablePath, extraPathsJoined);
+        return LSP_CONFIG_PROPERTY.formatted(GSON.toJson(executablePath), GSON.toJson(extraPaths));
     }
 }
