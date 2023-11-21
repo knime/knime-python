@@ -190,8 +190,12 @@ const browserMockScriptingService: Partial<ScriptingServiceType> = {
   pasteToEditor(text: string) {
     editorService.pasteToEditor(text);
   },
-  supportsCodeAssistant(): Promise<boolean> {
-    console.log("Checking whether code assistance is available");
+  isCodeAssistantEnabled() {
+    console.log("Checking whether code assistance is enabled");
+    return Promise.resolve(true);
+  },
+  isCodeAssistantInstalled() {
+    console.log("Checking whether code assistance is installed");
     return Promise.resolve(true);
   },
   inputsAvailable(): Promise<boolean> {
