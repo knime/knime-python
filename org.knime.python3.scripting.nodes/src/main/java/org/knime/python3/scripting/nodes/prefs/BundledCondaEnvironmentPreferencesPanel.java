@@ -59,7 +59,7 @@ import org.eclipse.swt.widgets.Label;
  *
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
-public final class BundledCondaEnvironmentPreferencesPanel
+final class BundledCondaEnvironmentPreferencesPanel
     extends AbstractPythonConfigPanel<BundledCondaEnvironmentConfig, Composite> {
 
     private static final String BUNDLED_ENV_DESCRIPTION = """

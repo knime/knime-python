@@ -62,11 +62,9 @@ import org.knime.core.node.defaultnodesettings.SettingsModelString;
  * This is an adaptation of the {@link org.knime.python2.prefs.PythonEnvironmentTypePreferencePanel} that also adds the
  * option to select a bundled conda environment - if it is available.
  *
- * NOTE: this class is public API because it is also used by Redfield's Spacy nodes.
- *
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
-public final class PythonBundledEnvironmentTypePreferencePanel
+final class PythonBundledEnvironmentTypePreferencePanel
     extends AbstractPythonConfigPanel<PythonEnvironmentTypeConfig, Composite> {
 
     /**

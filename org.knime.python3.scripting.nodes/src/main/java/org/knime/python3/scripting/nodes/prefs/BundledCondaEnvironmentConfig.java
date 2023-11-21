@@ -57,12 +57,9 @@ import org.knime.python3.BundledPythonCommand;
  * The BundledCondaEnvironmentConfig is a PythonEnvironmentConfig that points to a bundled conda environment which is
  * identified by the string passed into the constructor.
  *
- * NOTE: this class is public API because it is also used by Redfield's Spacy nodes.
- *
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
-public final class BundledCondaEnvironmentConfig extends AbstractPythonEnvironmentConfig
-    implements PythonEnvironmentsConfig {
+final class BundledCondaEnvironmentConfig extends AbstractPythonEnvironmentConfig implements PythonEnvironmentsConfig {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(BundledCondaEnvironmentConfig.class);
 
