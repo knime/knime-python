@@ -49,7 +49,7 @@ describe("python-scripting-service", () => {
         "runScript",
         ["myScript"],
       );
-      expect(useSessionStatusStore().status).toBe("RUNNING");
+      expect(useSessionStatusStore().status).toBe("RUNNING_ALL");
     });
 
     it("should run selected lines", () => {
@@ -58,7 +58,7 @@ describe("python-scripting-service", () => {
         "runInExistingSession",
         ["mySelectedLines"],
       );
-      expect(useSessionStatusStore().status).toBe("RUNNING");
+      expect(useSessionStatusStore().status).toBe("RUNNING_SELECTED");
     });
 
     it("should print variable", () => {
@@ -70,7 +70,7 @@ describe("python-scripting-service", () => {
     });
 
     it("should update executable selection", () => {
-      useSessionStatusStore().status = "RUNNING";
+      useSessionStatusStore().status = "RUNNING_ALL";
       useWorkspaceStore().workspace = [
         { name: "myVariable", type: "str", value: "Hello" },
       ];
@@ -86,7 +86,7 @@ describe("python-scripting-service", () => {
     describe("kill session", () => {
       beforeEach(() => {
         // Assume that a session is running for killing it
-        useSessionStatusStore().status = "RUNNING";
+        useSessionStatusStore().status = "RUNNING_ALL";
         useWorkspaceStore().workspace = [
           { name: "myVariable", type: "str", value: "Hello" },
         ];
@@ -130,7 +130,7 @@ describe("python-scripting-service", () => {
 
     describe("execution finished event handling", () => {
       beforeEach(() => {
-        useSessionStatusStore().status = "RUNNING";
+        useSessionStatusStore().status = "RUNNING_ALL";
         useWorkspaceStore().workspace = [
           { name: "myVariable", type: "str", value: "Hello" },
         ];

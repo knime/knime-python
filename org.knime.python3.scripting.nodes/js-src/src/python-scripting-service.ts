@@ -113,13 +113,13 @@ export const pythonScriptingService = {
   },
   runScript: () => {
     scriptingService.sendToService("runScript", [scriptingService.getScript()]);
-    useSessionStatusStore().status = "RUNNING";
+    useSessionStatusStore().status = "RUNNING_ALL";
   },
   runSelectedLines: () => {
     scriptingService.sendToService("runInExistingSession", [
       scriptingService.getSelectedLines(),
     ]);
-    useSessionStatusStore().status = "RUNNING";
+    useSessionStatusStore().status = "RUNNING_SELECTED";
   },
   printVariable: (variableName: string) => {
     scriptingService.sendToService("runInExistingSession", [

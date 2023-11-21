@@ -78,7 +78,7 @@ describe("PythonEditorControls", () => {
         "runScript",
         ["myScript"],
       );
-      expect(useSessionStatusStore().status).toBe("RUNNING");
+      expect(useSessionStatusStore().status).toBe("RUNNING_ALL");
     });
 
     it("executes selected lines in current python session when clicking on run selected lines button", async () => {
@@ -91,7 +91,7 @@ describe("PythonEditorControls", () => {
         "runInExistingSession",
         ["mySelectedLines"],
       );
-      expect(useSessionStatusStore().status).toBe("RUNNING");
+      expect(useSessionStatusStore().status).toBe("RUNNING_SELECTED");
     });
 
     it("cancels script execution when clicking button during execution", async () => {

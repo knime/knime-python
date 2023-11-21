@@ -35,7 +35,7 @@ export const setSelectedExecutable = (args: Partial<ExecutableStore>): void => {
   }
 };
 
-export type SessionStatus = "IDLE" | "RUNNING";
+export type SessionStatus = "IDLE" | "RUNNING_ALL" | "RUNNING_SELECTED";
 export type SessionStatusStore = {
   status: SessionStatus;
 };

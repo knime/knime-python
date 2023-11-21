@@ -32,15 +32,11 @@ onUnmounted(() => {
 
 const sessionStatus = useSessionStatusStore();
 
-// TODO: show button text on correct button when running from view placeholder AP-21485
-const cancelOnButton = ref<"runAll" | "runSelected">("runAll");
-const running = computed(() => sessionStatus.status === "RUNNING");
 const runningSelected = computed(
-  () => running.value && cancelOnButton.value === "runSelected",
+  () => sessionStatus.status === "RUNNING_SELECTED",
 );
-const runningAll = computed(
-  () => running.value && cancelOnButton.value === "runAll",
-);
+const runningAll = computed(() => sessionStatus.status === "RUNNING_ALL");
+const running = computed(() => runningAll.value || runningSelected.value);
 const mouseOverRunAll = ref(false);
 const mouseOverRunSelected = ref(false);
 const executableSelection = useExecutableSelectionStore();
@@ -76,14 +72,10 @@ const runButtonClicked = (runningAllOrSelected: "runAll" | "runSelected") => {
   if (running.value) {
     // NB: The service will change the session status and handle errors
     pythonScriptingService.killInteractivePythonSession();
+  } else if (runningAllOrSelected === "runAll") {
+    pythonScriptingService.runScript();
   } else {
-    // Remember which button was clicked - to show the Cancel text there
-    cancelOnButton.value = runningAllOrSelected;
-    if (runningAllOrSelected === "runAll") {
-      pythonScriptingService.runScript();
-    } else {
-      pythonScriptingService.runSelectedLines();
-    }
+    pythonScriptingService.runSelectedLines();
   }
 };
 
