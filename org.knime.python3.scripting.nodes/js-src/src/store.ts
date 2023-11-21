@@ -1,4 +1,4 @@
-import type { Workspace } from "./types/common";
+import type { ExecutionResult, Workspace } from "./types/common";
 import { reactive } from "vue";
 
 export type WorkspaceStore = {
@@ -38,6 +38,7 @@ export const setSelectedExecutable = (args: Partial<ExecutableStore>): void => {
 export type SessionStatus = "IDLE" | "RUNNING_ALL" | "RUNNING_SELECTED";
 export type SessionStatusStore = {
   status: SessionStatus;
+  lastResult?: ExecutionResult;
 };
 
 const sessionStatus: SessionStatusStore = reactive<SessionStatusStore>({

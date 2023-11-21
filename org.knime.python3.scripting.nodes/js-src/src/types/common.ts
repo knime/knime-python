@@ -25,13 +25,14 @@ export type Workspace = {
   value: string;
 }[];
 
+export type ExecutionResult =
+  | "SUCCESS"
+  | "EXECUTION_ERROR"
+  | "KNIME_ERROR"
+  | "FATAL_ERROR"
+  | "CANCELLED";
 export type ExecutionInfo = {
-  status:
-    | "SUCCESS"
-    | "EXECUTION_ERROR"
-    | "KNIME_ERROR"
-    | "FATAL_ERROR"
-    | "CANCELLED";
+  status: ExecutionResult;
   description: string;
   traceback?: string[];
   data?: Workspace;

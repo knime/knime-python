@@ -21,6 +21,7 @@ import {
 import { watch } from "vue";
 
 const executableSelection = useExecutableSelectionStore();
+const sessionStatus = useSessionStatusStore();
 
 const scriptingService =
   import.meta.env.VITE_SCRIPTING_API_MOCK === "true"
@@ -68,7 +69,10 @@ scriptingService.registerEventHandler(
     }
 
     // Update the session status
-    useSessionStatusStore().status = "IDLE";
+    sessionStatus.status = "IDLE";
+
+    // Update the last execution result
+    sessionStatus.lastResult = info.status;
 
     // update view status
     const pythonPreviewStatus = usePythonPreviewStatusStore();
@@ -113,13 +117,13 @@ export const pythonScriptingService = {
   },
   runScript: () => {
     scriptingService.sendToService("runScript", [scriptingService.getScript()]);
-    useSessionStatusStore().status = "RUNNING_ALL";
+    sessionStatus.status = "RUNNING_ALL";
   },
   runSelectedLines: () => {
     scriptingService.sendToService("runInExistingSession", [
       scriptingService.getSelectedLines(),
     ]);
-    useSessionStatusStore().status = "RUNNING_SELECTED";
+    sessionStatus.status = "RUNNING_SELECTED";
   },
   printVariable: (variableName: string) => {
     scriptingService.sendToService("runInExistingSession", [
@@ -137,14 +141,14 @@ export const pythonScriptingService = {
 
     // Cleanup the workspace and session status
     useWorkspaceStore().workspace = [];
-    useSessionStatusStore().status = "IDLE";
+    sessionStatus.status = "IDLE";
   },
   updateExecutableSelection: (id: string) => {
     scriptingService.sendToService("updateExecutableSelection", [id]);
 
     // Cleanup the workspace and session status
     useWorkspaceStore().workspace = [];
-    useSessionStatusStore().status = "IDLE";
+    sessionStatus.status = "IDLE";
   },
   registerConsoleEventHandler: (handler: any) => {
     scriptingService.registerConsoleEventHandler(handler);
