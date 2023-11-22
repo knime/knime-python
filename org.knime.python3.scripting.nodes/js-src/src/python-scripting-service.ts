@@ -72,7 +72,7 @@ scriptingService.registerEventHandler(
     sessionStatus.status = "IDLE";
 
     // Update the last execution result
-    sessionStatus.lastResult = info.status;
+    sessionStatus.lastActionResult = info.status;
 
     // update view status
     const pythonPreviewStatus = usePythonPreviewStatusStore();
@@ -142,6 +142,7 @@ export const pythonScriptingService = {
     // Cleanup the workspace and session status
     useWorkspaceStore().workspace = [];
     sessionStatus.status = "IDLE";
+    return killSessionInfo.status === "SUCCESS";
   },
   updateExecutableSelection: (id: string) => {
     scriptingService.sendToService("updateExecutableSelection", [id]);

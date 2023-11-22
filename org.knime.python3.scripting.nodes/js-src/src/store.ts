@@ -36,9 +36,10 @@ export const setSelectedExecutable = (args: Partial<ExecutableStore>): void => {
 };
 
 export type SessionStatus = "IDLE" | "RUNNING_ALL" | "RUNNING_SELECTED";
+type LastActionStatus = ExecutionResult | "RESET" | "RESET_FAILED";
 export type SessionStatusStore = {
   status: SessionStatus;
-  lastResult?: ExecutionResult;
+  lastActionResult?: LastActionStatus;
 };
 
 const sessionStatus: SessionStatusStore = reactive<SessionStatusStore>({

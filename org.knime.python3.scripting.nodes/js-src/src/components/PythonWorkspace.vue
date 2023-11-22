@@ -4,7 +4,7 @@ import { onMounted, onUnmounted, ref, type Ref } from "vue";
 import Button from "webapps-common/ui/components/Button.vue";
 
 import { pythonScriptingService } from "@/python-scripting-service";
-import { usePythonPreviewStatusStore } from "@/store";
+import { usePythonPreviewStatusStore, useSessionStatusStore } from "@/store";
 import { getScriptingService } from "@knime/scripting-editor";
 import PythonWorkspaceBody from "./PythonWorkspaceBody.vue";
 import PythonWorkspaceHeader, {
@@ -31,11 +31,14 @@ const useTotalWidth = () => {
 
 const resetButtonEnabled: Ref<boolean> = ref(false);
 const pythonPreviewStatus = usePythonPreviewStatusStore();
-const resetWorkspace = () => {
-  pythonScriptingService.killInteractivePythonSession();
+const resetWorkspace = async () => {
+  const success = await pythonScriptingService.killInteractivePythonSession();
 
   // reset view
   pythonPreviewStatus.clearView();
+
+  // set python execution status
+  useSessionStatusStore().lastActionResult = success ? "RESET" : "RESET_FAILED";
 };
 
 onMounted(async () => {

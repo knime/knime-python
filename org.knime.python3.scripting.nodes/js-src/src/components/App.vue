@@ -17,6 +17,7 @@ import EnvironmentSettings from "./EnvironmentSettings.vue";
 import PythonEditorControls from "./PythonEditorControls.vue";
 import PythonViewPreview from "./PythonViewPreview.vue";
 import PythonWorkspace from "./PythonWorkspace.vue";
+import type LastActionStatus from "./LastActionStatus.vue";
 
 const menuItems: MenuItem[] = [
   {
@@ -141,6 +142,9 @@ onMounted(async () => {
           </div>
         </div>
         <PythonWorkspace v-if="!hasPreview" />
+      </template>
+      <template #console-status>
+        <LastActionStatus />
       </template>
     </ScriptingEditor>
   </main>
