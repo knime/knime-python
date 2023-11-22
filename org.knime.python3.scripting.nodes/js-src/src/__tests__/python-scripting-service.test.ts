@@ -149,6 +149,7 @@ describe("python-scripting-service", () => {
         });
         expect(getScriptingService().sendToConsole).not.toHaveBeenCalled();
         expect(useSessionStatusStore().status).toBe("IDLE");
+        expect(useSessionStatusStore().lastActionResult).toBe("SUCCESS");
         expect(useWorkspaceStore().workspace).toEqual(expectedWorkspace);
       });
 
@@ -161,6 +162,7 @@ describe("python-scripting-service", () => {
           error: "KNIME error\n",
         });
         expect(useSessionStatusStore().status).toBe("IDLE");
+        expect(useSessionStatusStore().lastActionResult).toBe("KNIME_ERROR");
         expect(useWorkspaceStore().workspace).toEqual([]);
       });
 
@@ -174,6 +176,9 @@ describe("python-scripting-service", () => {
           error: "Execution Error\nline 1\nline 2\n",
         });
         expect(useSessionStatusStore().status).toBe("IDLE");
+        expect(useSessionStatusStore().lastActionResult).toBe(
+          "EXECUTION_ERROR",
+        );
         expect(useWorkspaceStore().workspace).toEqual([]);
       });
 
@@ -186,6 +191,7 @@ describe("python-scripting-service", () => {
           error: "My fatal Error\n",
         });
         expect(useSessionStatusStore().status).toBe("IDLE");
+        expect(useSessionStatusStore().lastActionResult).toBe("FATAL_ERROR");
         expect(useWorkspaceStore().workspace).toEqual([]);
       });
 
@@ -196,6 +202,7 @@ describe("python-scripting-service", () => {
         });
         expect(getScriptingService().sendToConsole).not.toHaveBeenCalled();
         expect(useSessionStatusStore().status).toBe("IDLE");
+        expect(useSessionStatusStore().lastActionResult).toBe("CANCELLED");
         expect(useWorkspaceStore().workspace).toEqual([]);
       });
     });

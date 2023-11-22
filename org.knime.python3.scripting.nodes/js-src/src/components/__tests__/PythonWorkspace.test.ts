@@ -1,4 +1,4 @@
-import { useWorkspaceStore } from "@/store";
+import { useSessionStatusStore, useWorkspaceStore } from "@/store";
 import { getScriptingService } from "@knime/scripting-editor";
 import { flushPromises, mount } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -23,7 +23,12 @@ describe("PythonWorkspace", () => {
     });
     const wrapper = mount(PythonWorkspace, { props });
     await flushPromises();
-    return { wrapper, resetButton: wrapper.find(".reset-button") };
+    const sessionStatus = useSessionStatusStore();
+    return {
+      wrapper,
+      resetButton: wrapper.find(".reset-button"),
+      sessionStatus,
+    };
   };
 
   beforeEach(() => {
@@ -60,6 +65,36 @@ describe("PythonWorkspace", () => {
     vi.runAllTimers();
     await flushPromises();
     expect(sendToServiceSpy).toHaveBeenNthCalledWith(1, "killSession");
+  });
+
+  describe("updates session status when reset values is clicked", () => {
+    beforeEach(() => {
+      const sessionStatus = useSessionStatusStore();
+      sessionStatus.status = "IDLE";
+      delete sessionStatus.lastActionResult;
+    });
+
+    it("on success", async () => {
+      const { resetButton, sessionStatus } = await doMount();
+      getScriptingService().sendToService = vi.fn(() => {
+        return Promise.resolve({ status: "SUCCESS", description: "" });
+      });
+      await resetButton.trigger("click");
+      vi.runAllTimers();
+      await flushPromises();
+      expect(sessionStatus.lastActionResult).toBe("RESET");
+    });
+
+    it("on failure", async () => {
+      const { resetButton, sessionStatus } = await doMount();
+      getScriptingService().sendToService = vi.fn(() => {
+        return Promise.resolve({ status: "FAILURE", description: "" });
+      });
+      await resetButton.trigger("click");
+      vi.runAllTimers();
+      await flushPromises();
+      expect(sessionStatus.lastActionResult).toBe("RESET_FAILED");
+    });
   });
 
   it("button click should reset store", async () => {

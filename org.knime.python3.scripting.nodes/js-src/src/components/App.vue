@@ -17,7 +17,7 @@ import EnvironmentSettings from "./EnvironmentSettings.vue";
 import PythonEditorControls from "./PythonEditorControls.vue";
 import PythonViewPreview from "./PythonViewPreview.vue";
 import PythonWorkspace from "./PythonWorkspace.vue";
-import type LastActionStatus from "./LastActionStatus.vue";
+import LastActionStatus from "./LastActionStatus.vue";
 
 const menuItems: MenuItem[] = [
   {
