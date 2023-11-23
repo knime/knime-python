@@ -29,6 +29,10 @@ from markdown.inlinepatterns import (
     STRONG_EM3_RE,
 )
 
+# Disable MARKDOWN debug events to appear in root logger
+import logging
+logging.getLogger("MARKDOWN").setLevel(logging.ERROR)
+
 
 class _HeadingPreprocessor(Preprocessor):
     """
