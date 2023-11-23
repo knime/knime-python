@@ -1,8 +1,9 @@
 import { mount } from "@vue/test-utils";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import PythonViewPreview from "../PythonViewPreview.vue";
-import { usePythonPreviewStatusStore } from "@/store";
+import { usePythonPreviewStatusStore, useSessionStatusStore } from "@/store";
 import { getScriptingService } from "@knime/scripting-editor";
+import Button from "webapps-common/ui/components/Button.vue";
 
 describe("PythonViewPreview", () => {
   const previewStatusStore = usePythonPreviewStatusStore();
@@ -63,36 +64,71 @@ describe("PythonViewPreview", () => {
     expect(wrapper.find(".placeholder-container").isVisible()).toBeFalsy();
   });
 
-  it("shows placeholder if valid view does not exist", () => {
-    const wrapper = mount(PythonViewPreview);
-    expect(wrapper.find(".iframe-container").isVisible()).toBeFalsy();
-    expect(wrapper.find(".placeholder-container").isVisible()).toBeTruthy();
-    expect(wrapper.find("#preview-img").isVisible()).toBeTruthy();
-  });
+  describe("placeholder", () => {
+    it("shows placeholder if valid view does not exist", () => {
+      const wrapper = mount(PythonViewPreview);
+      expect(wrapper.find(".iframe-container").isVisible()).toBeFalsy();
+      expect(wrapper.find(".placeholder-container").isVisible()).toBeTruthy();
+      expect(wrapper.find("#preview-img").isVisible()).toBeTruthy();
+    });
 
-  it("shows placeholder text before first execution", () => {
-    const wrapper = mount(PythonViewPreview);
-    expect(wrapper.find(".iframe-container").isVisible()).toBeFalsy();
-    expect(wrapper.find(".placeholder-container").isVisible()).toBeTruthy();
-    expect(wrapper.find(".placeholder-text").text()).toContain(
-      "Please run the code to see the preview.",
-    );
-  });
+    it("shows placeholder text before first execution", () => {
+      const wrapper = mount(PythonViewPreview);
+      expect(wrapper.find(".iframe-container").isVisible()).toBeFalsy();
+      expect(wrapper.find(".placeholder-container").isVisible()).toBeTruthy();
+      expect(wrapper.find(".placeholder-text").text()).toContain(
+        "Please run the code to see the preview.",
+      );
+    });
 
-  it("shows error text after first execution", () => {
-    previewStatusStore.isExecutedOnce = true;
-    const wrapper = mount(PythonViewPreview);
-    expect(wrapper.find(".iframe-container").isVisible()).toBeFalsy();
-    expect(wrapper.find(".placeholder-container").isVisible()).toBeTruthy();
-    expect(wrapper.find(".placeholder-text").text()).toContain(
-      "The view cannot be displayed.",
-    );
-  });
+    it("shows error text after first execution", () => {
+      previewStatusStore.isExecutedOnce = true;
+      const wrapper = mount(PythonViewPreview);
+      expect(wrapper.find(".iframe-container").isVisible()).toBeFalsy();
+      expect(wrapper.find(".placeholder-container").isVisible()).toBeTruthy();
+      expect(wrapper.find(".placeholder-text").text()).toContain(
+        "The view cannot be displayed.",
+      );
+    });
 
-  it("placholder button executes script", () => {
-    previewStatusStore.hasValidView = false;
-    const wrapper = mount(PythonViewPreview);
-    wrapper.find("button").trigger("click");
-    expect(sendToServiceMock).toHaveBeenCalledWith("runScript", ["myScript"]);
+    it("placholder button executes script", () => {
+      previewStatusStore.hasValidView = false;
+      const wrapper = mount(PythonViewPreview);
+      wrapper.find("button").trigger("click");
+      expect(sendToServiceMock).toHaveBeenCalledWith("runScript", ["myScript"]);
+    });
+
+    it("shows placeholder button", () => {
+      useSessionStatusStore().status = "IDLE";
+      useSessionStatusStore().isRunningSupported = true;
+      const wrapper = mount(PythonViewPreview);
+      const button = wrapper.findComponent(Button);
+      expect(button.exists()).toBeTruthy();
+      expect(button.props().disabled).toBeFalsy();
+    });
+
+    it("disables placeholder button if no inputs available", () => {
+      useSessionStatusStore().status = "IDLE";
+      useSessionStatusStore().isRunningSupported = false;
+      const wrapper = mount(PythonViewPreview);
+      const button = wrapper.findComponent(Button);
+      expect(button.props().disabled).toBeTruthy();
+    });
+
+    it("disables placeholder button if running all", () => {
+      useSessionStatusStore().status = "RUNNING_ALL";
+      useSessionStatusStore().isRunningSupported = true;
+      const wrapper = mount(PythonViewPreview);
+      const button = wrapper.findComponent(Button);
+      expect(button.props().disabled).toBeTruthy();
+    });
+
+    it("disables placeholder button if running selected lines", () => {
+      useSessionStatusStore().status = "RUNNING_SELECTED";
+      useSessionStatusStore().isRunningSupported = true;
+      const wrapper = mount(PythonViewPreview);
+      const button = wrapper.findComponent(Button);
+      expect(button.props().disabled).toBeTruthy();
+    });
   });
 });

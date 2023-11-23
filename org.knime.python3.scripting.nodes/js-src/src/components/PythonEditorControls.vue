@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { getScriptingService, useEditorStore } from "@knime/scripting-editor";
-import { computed, onMounted, onUnmounted, ref, type Ref } from "vue";
+import { useEditorStore } from "@knime/scripting-editor";
+import { computed, onUnmounted, ref, type Ref } from "vue";
 import CancelIcon from "webapps-common/ui/assets/img/icons/circle-close.svg";
 import PlayIcon from "webapps-common/ui/assets/img/icons/play.svg";
 import Button from "webapps-common/ui/components/Button.vue";
@@ -11,26 +11,13 @@ import { useExecutableSelectionStore, useSessionStatusStore } from "@/store";
 const editorStore = useEditorStore();
 const hasSelection = computed(() => editorStore.selection !== "");
 
-const isRunningSupported = ref(false);
-
-onMounted(async () => {
-  if (await getScriptingService().inputsAvailable()) {
-    isRunningSupported.value = true;
-  } else {
-    getScriptingService().sendToConsole({
-      warning:
-        "Missing input data. Connect all input ports and execute preceding nodes to enable script execution.",
-    });
-  }
-});
+const sessionStatus = useSessionStatusStore();
 
 onUnmounted(() => {
-  if (isRunningSupported.value) {
+  if (sessionStatus.isRunningSupported) {
     pythonScriptingService.killInteractivePythonSession();
   }
 });
-
-const sessionStatus = useSessionStatusStore();
 
 const runningSelected = computed(
   () => sessionStatus.status === "RUNNING_SELECTED",
@@ -95,7 +82,7 @@ const onHoverRunButton = (
       compact
       with-border
       :disabled="
-        !isRunningSupported ||
+        !sessionStatus.isRunningSupported ||
         (running && !runningSelected) ||
         executableSelection.isMissing ||
         !hasSelection
@@ -114,7 +101,7 @@ const onHoverRunButton = (
     </Button>
     <Button
       :disabled="
-        !isRunningSupported ||
+        !sessionStatus.isRunningSupported ||
         (running && !runningAll) ||
         executableSelection.isMissing
       "

@@ -183,11 +183,7 @@ describe("PythonEditorControls", () => {
 
   describe("input availability", () => {
     it("run buttons are enabled when inputs are available", async () => {
-      vi.mocked(getScriptingService().inputsAvailable).mockImplementation(
-        () => {
-          return Promise.resolve(true);
-        },
-      );
+      useSessionStatusStore().isRunningSupported = true;
       const { runAllButton, runSelectedButton } = await doMountAndGetButtons();
 
       await setValidEditorSelection();
@@ -198,37 +194,16 @@ describe("PythonEditorControls", () => {
     });
 
     it("run buttons are disabled when inputs are missing", async () => {
-      vi.mocked(getScriptingService().inputsAvailable).mockImplementation(
-        () => {
-          return Promise.resolve(false);
-        },
-      );
+      useSessionStatusStore().isRunningSupported = false;
       const { runAllButton, runSelectedButton } = await doMountAndGetButtons();
       expect(runAllButton.props().disabled).toBeTruthy();
       expect(runSelectedButton.props().disabled).toBeTruthy();
-    });
-
-    it("warning logged to console if inputs are missing", async () => {
-      vi.mocked(getScriptingService().inputsAvailable).mockImplementation(
-        () => {
-          return Promise.resolve(false);
-        },
-      );
-      await doMount();
-      expect(getScriptingService().sendToConsole).toHaveBeenCalledWith({
-        warning:
-          "Missing input data. Connect all input ports and execute preceding nodes to enable script execution.",
-      });
     });
   });
 
   describe("run selected lines button", () => {
     beforeEach(() => {
-      vi.mocked(getScriptingService().inputsAvailable).mockImplementation(
-        () => {
-          return Promise.resolve(true);
-        },
-      );
+      useSessionStatusStore().isRunningSupported = true;
       clearEditorSelection();
     });
 

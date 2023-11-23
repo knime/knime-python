@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { pythonScriptingService } from "@/python-scripting-service";
-import { usePythonPreviewStatusStore } from "@/store";
+import { usePythonPreviewStatusStore, useSessionStatusStore } from "@/store";
 import { onMounted, ref } from "vue";
 import Button from "webapps-common/ui/components/Button.vue";
 
 const iframe = ref<HTMLIFrameElement | null>(null);
 const pythonPreviewStatus = usePythonPreviewStatusStore();
+const sessionStatus = useSessionStatusStore();
 
 onMounted(() => {
   pythonPreviewStatus.updateViewCallback = () => {
@@ -36,7 +37,14 @@ onMounted(() => {
         re-execute the script.
       </div>
       <img id="preview-img" src="/assets/plot-placeholder.svg" />
-      <Button :with-border="true" @click="pythonScriptingService.runScript()"
+      <Button
+        :with-border="true"
+        :disabled="
+          !sessionStatus.isRunningSupported ||
+          sessionStatus.status === 'RUNNING_ALL' ||
+          sessionStatus.status === 'RUNNING_SELECTED'
+        "
+        @click="pythonScriptingService.runScript()"
         >Run code</Button
       >
     </div>
