@@ -943,10 +943,10 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         # the type is not used yet anywhere else but in this test
 
         df = _generate_test_data_frame("DictEncString.zip", columns=["Name"])
-        self.assertEqual(df["Name"][0], "LINESTRING (30 10, 10 30, 40 40)")
-        self.assertEqual(df["Name"][4], "POINT (30 10)")
-        self.assertEqual(df["Name"][5], "LINESTRING (40 20, 10 30, 35 40)")
-        self.assertEqual(df["Name"][6], "LINESTRING (30 10, 10 30, 40 40)")
+        self.assertEqual(df["Name"].iloc[0], "LINESTRING (30 10, 10 30, 40 40)")
+        self.assertEqual(df["Name"].iloc[4], "POINT (30 10)")
+        self.assertEqual(df["Name"].iloc[5], "LINESTRING (40 20, 10 30, 35 40)")
+        self.assertEqual(df["Name"].iloc[6], "LINESTRING (30 10, 10 30, 40 40)")
 
     def test_chunk_calculation(self):
         def _get_chunked_array_for_start_indices(chunk_start_indices):
