@@ -374,9 +374,9 @@ class SentinelReplacementTest(unittest.TestCase):
             elif s == "max":
                 expected = 9223372036854775807
 
-            self.assertTrue(np.isfinite(out["0"][0]), f"sentinel={s}")
-            self.assertEqual(expected, out["0"][0], f"sentinel={s}")
-            self.assertFalse(np.isfinite(out["1"][2]), f"sentinel={s}")
+            self.assertTrue(np.isfinite(out["0"].iloc[0]), f"sentinel={s}")
+            self.assertEqual(expected, out["0"].iloc[0], f"sentinel={s}")
+            self.assertFalse(np.isfinite(out["1"].iloc[2]), f"sentinel={s}")
 
             roundtrip_batch = kat.ArrowBatch(out, sentinel=s)
             roundtrip_batch_pa = roundtrip_batch.to_pyarrow()

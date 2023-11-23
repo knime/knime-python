@@ -2537,7 +2537,7 @@ def parameter_group(
                 return {"type": "object", "properties": properties}
 
         if hasattr(ParameterGroupHolder, "rule"):
-            LOGGER.warn(
+            LOGGER.warning(
                 f"Can't add the rule method to the parameter group {original_class} because it already has an attribute named 'rule'."
             )
         else:

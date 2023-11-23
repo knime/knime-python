@@ -197,7 +197,7 @@ class ChemistryExtensionTypeTest(unittest.TestCase):
             value_type = type(df.iloc[2, col_index])
             knime_type = ks.logical(value_type)
             pandas_type = knime_type.to_pandas()
-            col_type = df.dtypes[col_index]
+            col_type = df.dtypes.iloc[col_index]
             self.assertEqual(pandas_type, col_type)
 
     def test_setting_in_chemistry_extension_array(self):
@@ -242,16 +242,16 @@ class ChemistryExtensionTypeTest(unittest.TestCase):
         import knime.types.builtin as ktb
 
         orig_type = ks.logical(ktb.DenseByteVectorValue).to_pandas()
-        self.assertEqual(orig_type, df.dtypes[2])
+        self.assertEqual(orig_type, df.dtypes.iloc[2])
 
         fp_type = ks.logical(Fingerprint).to_pandas()
         casted = df["countFingerprint"].astype(fp_type)
         self.assertEqual(fp_type, casted.dtype)
 
         fp = Fingerprint(42, {1: 1, 2: 2, 12: 12})
-        casted[2] = fp
-        self.assertEqual(fp, casted[2])
-        self.assertEqual(str(fp), str(casted[2]))
+        casted.iloc[2] = fp
+        self.assertEqual(fp, casted.iloc[2])
+        self.assertEqual(str(fp), str(casted.iloc[2]))
 
         roundtrip = casted.astype(orig_type)
         self.assertFalse(all(roundtrip == df["countFingerprint"]))
