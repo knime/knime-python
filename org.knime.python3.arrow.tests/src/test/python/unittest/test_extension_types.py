@@ -190,7 +190,7 @@ class TimeExtensionTypeTest(unittest.TestCase):
 
             df = pd.concat(content, axis=1)
             empty_series = pd.Series([pd.NA] * len(df.columns), index=df.columns)
-            df = df.append(empty_series, ignore_index=True)
+            pd.concat([df, empty_series], ignore_index=True)
             arrow_table = test_backends.deprecated_arrow_backend.write_table(df)
 
             # Actually this is not the real schema of the written table, as the schema updating happens before the type
@@ -291,7 +291,7 @@ class TimeExtensionTypeTest(unittest.TestCase):
             )
             df = tz_timestamp_series.to_frame()
             empty_series = pd.Series([pd.NA] * len(df.columns), index=df.columns)
-            df = df.append(empty_series, ignore_index=True)
+            df = pd.concat([df, empty_series], ignore_index=True)
             arrow_table = test_backends.deprecated_arrow_backend.write_table(df)
             schema = (
                 "<RowID>: string\n"
