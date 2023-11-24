@@ -24,6 +24,8 @@ describe("App.vue", () => {
           // do nothing
         } else if (methodName === "getLanguageServerConfig") {
           return JSON.stringify({ test: "" });
+        } else if (methodName === "updateExecutableSelection") {
+          // do nothing
         } else {
           throw Error(`Method ${methodName} was not mocked but called in test`);
         }
@@ -195,6 +197,10 @@ describe("App.vue", () => {
     getScriptingService().getInitialSettings = vi.fn((): any => settingsMock);
     await doMount();
     await flushPromises();
+    expect(getScriptingService().sendToService).toHaveBeenCalledWith(
+      "updateExecutableSelection",
+      [settingsMock.executableSelection],
+    );
     expect(getScriptingService().sendToService).toHaveBeenCalledWith(
       "getExecutableOptionsList",
       [settingsMock.executableSelection],

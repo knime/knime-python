@@ -92,6 +92,7 @@ export const pythonScriptingService = {
     const settings =
       (await scriptingService.getInitialSettings()) as PythonScriptingNodeSettings;
     setSelectedExecutable({ id: settings.executableSelection ?? "" });
+    pythonScriptingService.updateExecutableSelection(executableSelection.id);
     const executableInfo = (
       await pythonScriptingService.getExecutableOptionsList()
     ).find(({ id }) => id === executableSelection.id);
