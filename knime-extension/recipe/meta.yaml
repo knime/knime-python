@@ -1,22 +1,51 @@
-package:
-  name: "knime-extension"
-  version: "5.1.0"
+{% set version =  "5.3.0" %}
 
+package:
+  name: knime-extension
+  version: {{ version }}
+
+# https://github.com/conda/conda-build/pull/5112
 source:
   path: ..
 
 requirements:
   build:
-    - python
+    - python=3.9
+    - pip
+    - knime-python-base
+    - setuptools
+    - build
+    - wheel
   run:
-    - python
+    - knime-python-base
+    - python>=3.9
 
 build:
   noarch: python
-  script: python setup.py install
+  string: py{{ python | replace(".", "") }}_{{time.strftime("%Y%m%d%H%M").strip()}}
+
+test:
+  imports:
+    - knime
+    - knime.api
+    - knime.api.schema
+    - knime.api.table
+    - knime.api.types
+    - knime.api.views
+    - knime.extension
+    - knime.extension.nodes
+    - knime.extension.parameter
+    - knime.extension.version
+    - knime_extension
 
 about:
   home: https://knime.com
-  license: GPL-3.0
-  license_file: LICENSE.TXT
+  author: KNIME GmbH, Germany
+  license: GPLv3
+  license_file: ../LICENSE.TXT
   summary: API for KNIME Python extension development to facilitate autocompletion
+  description: API for KNIME Python extension development to facilitate autocompletion
+
+extra:
+  maintainers:
+   - Team Rakete (team-rakete@knime.com)

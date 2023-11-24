@@ -57,9 +57,9 @@ PREFIX_NODES = Path("../org.knime.python3.nodes/src/main/python")
 PREFIX_VIEWS = Path("../org.knime.python3.views/src/main/python")
 
 
-def copy_files_to_package(source_prefix, files):
+def copy_files_to_package(target, source_prefix, files):
     for file in files:
-        target_file = TARGET / file
+        target_file = target / file
         os.makedirs(target_file.parent, exist_ok=True)
         shutil.copy(source_prefix / file, target_file)
 
@@ -77,14 +77,29 @@ def find_files(prefix, pattern):
     ]
 
 
+# Create knime-extension
+MODULE_TARGET = TARGET / "knime-extension"
+os.makedirs(MODULE_TARGET, exist_ok=True)
+
 # Copy the knime_extension file
-knime_extension_folder = TARGET / "knime_extension"
-os.makedirs(knime_extension_folder, exist_ok=True)
-shutil.copy(PREFIX_NODES / "knime_extension.py", knime_extension_folder / "__init__.py")
+legacy_knime_extension_folder = MODULE_TARGET / "knime_extension"
+
+os.makedirs(legacy_knime_extension_folder, exist_ok=True)
+shutil.copy(PREFIX_NODES / "knime_extension.py", legacy_knime_extension_folder / "__init__.py")
 
 # Copy the files from knime.extension
-copy_files_to_package(PREFIX_NODES, find_files(PREFIX_NODES, "knime/extension/*.py"))
+copy_files_to_package(
+    MODULE_TARGET, PREFIX_NODES, find_files(PREFIX_NODES, "knime/extension/*.py")
+)
 
 # Copy the files from knime.api
-copy_files_to_package(PREFIX_CORE, find_files(PREFIX_CORE, "knime/api/*.py"))
-copy_files_to_package(PREFIX_VIEWS, find_files(PREFIX_VIEWS, "knime/api/*.py"))
+copy_files_to_package(
+    MODULE_TARGET, PREFIX_CORE, find_files(PREFIX_CORE, "knime/api/*.py")
+)
+copy_files_to_package(
+    MODULE_TARGET, PREFIX_VIEWS, find_files(PREFIX_VIEWS, "knime/api/*.py")
+)
+
+# Sprinkle __init__.py
+open(MODULE_TARGET / "knime/__init__.py", "w+")
+open(MODULE_TARGET / "knime/api/__init__.py", "w+")

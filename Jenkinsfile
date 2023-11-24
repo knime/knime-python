@@ -38,7 +38,11 @@ properties([
             "knime-python-nodes-testing/${BRANCH_NAME.replaceAll('/', '%2F')}, " +
             "knime-core-ui/${BRANCH_NAME.replaceAll('/', '%2F')}")
     ]),
-    parameters(workflowTests.getConfigurationsAsParameters() + getWFTestsPythonEnvParameters()),
+    parameters(
+        workflowTests.getConfigurationsAsParameters() + \
+        getWFTestsPythonEnvParameters() + \
+        booleanParam(defaultValue: false, description: 'Upload conda package despite tests being unstable or being on master.', name: 'UPLOAD_ANYWAY')
+    ),
     buildDiscarder(logRotator(numToKeepStr: '5')),
     disableConcurrentBuilds()
 ])
@@ -96,6 +100,40 @@ try {
     }
 
     parallel(parallelConfigs)
+
+    // Only build if on master and tests pass
+    if (params.UPLOAD_ANYWAY || BN == 'master' && currentBuild.result == 'STABLE') {
+        node('ubuntu22.04') {
+
+            stage('Build and Deploy knime-extension ') {
+
+                env.lastStage = env.STAGE_NAME
+                checkout scm
+
+                String envName = "test_knime_extension"
+                String recipePath = "${env.WORKSPACE}/knime-extension/recipe"
+                String prefixPath = "${env.WORKSPACE}/${envName}"
+                String[] packageNames = [
+                    "conda-build",
+                    "anaconda-client"
+                ]
+
+                condaHelpers.createCondaEnv(prefixPath: prefixPath, packageNames: packageNames)
+
+                sh(
+                    label: "Collect Files",
+                    script: """#!/bin/sh
+                        cd knime-extension
+                        micromamba run -p ${prefixPath} python ${env.WORKSPACE}/knime-extension/collect_files.py
+                    """
+                )
+
+                condaHelpers.buildCondaPackage(recipePath, prefixPath, true)
+
+            }
+        }
+    }
+
 
     stage('Sonarqube analysis') {
         env.lastStage = env.STAGE_NAME
