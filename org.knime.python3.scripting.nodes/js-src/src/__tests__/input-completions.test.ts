@@ -33,19 +33,24 @@ describe("registerInputCompletions", () => {
       .provideCompletionItems;
   };
 
-  const editorModelMock = (beginningValue: string, endingValue?: string) => {
-    const endVal =
-      typeof endingValue === "undefined" ? beginningValue : endingValue;
+  const editorModelMock = (args?: {
+    begVal?: string;
+    endVal?: string;
+    word?: string;
+  }) => {
+    const begVal = args?.begVal ?? "";
+    const endVal = args?.endVal ?? begVal;
+    const word = args?.word ?? "";
     return {
-      getWordUntilPosition: () => ({ word: "", startColumn: 0, endColumn: 0 }),
+      getWordUntilPosition: () => ({ word, startColumn: 0, endColumn: 0 }),
       getValueInRange: ({ startColumn }: { startColumn: number }) =>
-        startColumn === -1 ? beginningValue : endVal,
+        startColumn === -1 ? begVal : endVal,
     };
   };
 
   it("provides input completions with quotes", () => {
     const provideCompletionsItems = getProvideCompletionItemsFn(simpleInputs);
-    const items = provideCompletionsItems(editorModelMock(""), position);
+    const items = provideCompletionsItems(editorModelMock(), position);
     expect(items.suggestions[0]).toEqual({
       label: "input1",
       detail: "string",
@@ -88,7 +93,7 @@ describe("registerInputCompletions", () => {
     ])("start: $begVal, end: $endVal", ({ begVal, endVal, expBeg, expEnd }) => {
       const provideCompletionsItems = getProvideCompletionItemsFn(simpleInputs);
       const items = provideCompletionsItems(
-        editorModelMock(begVal, endVal),
+        editorModelMock({ begVal, endVal }),
         position,
       );
       expect(items.suggestions[0]).toEqual(
@@ -111,7 +116,7 @@ describe("registerInputCompletions", () => {
     }));
     const provideCompletionsItems = getProvideCompletionItemsFn(inputs);
 
-    const items = provideCompletionsItems(editorModelMock('"'), position);
+    const items = provideCompletionsItems(editorModelMock(), position);
     for (let i = 0; i < 100; i++) {
       expect(items.suggestions[i]).toEqual(
         expect.objectContaining({
@@ -119,5 +124,21 @@ describe("registerInputCompletions", () => {
         }),
       );
     }
+  });
+
+  it("matches suggestions case-insensitive", () => {
+    const inputs = [
+      { label: "In1 and more text", detail: "string" },
+      { label: "in2 and more text", detail: "number" },
+    ];
+    const provideCompletionsItems = getProvideCompletionItemsFn(inputs);
+
+    const items = provideCompletionsItems(editorModelMock({ word: "in1" }), {
+      lineNumber: 1,
+      column: 2,
+    });
+    expect(items.suggestions[0]).toEqual(
+      expect.objectContaining({ label: "In1 and more text" }),
+    );
   });
 });

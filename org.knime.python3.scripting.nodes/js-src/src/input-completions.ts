@@ -39,7 +39,7 @@ export const registerInputCompletions = (inputs: InputStringCompletion[]) => {
       // Get the matching column names
       const word = model.getWordUntilPosition(position);
       const matchingInputs = inputs.filter((inp) =>
-        inp.label.startsWith(word.word),
+        inp.label.toLocaleLowerCase().startsWith(word.word.toLocaleLowerCase()),
       );
 
       // Quote the insert text if the user has no quotes already
