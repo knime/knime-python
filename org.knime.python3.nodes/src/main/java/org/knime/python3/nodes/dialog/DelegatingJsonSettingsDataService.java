@@ -65,7 +65,6 @@ import org.knime.core.webui.node.dialog.defaultdialog.jsonforms.JsonFormsConsts;
 import org.knime.core.webui.node.dialog.defaultdialog.jsonforms.JsonFormsDataUtil;
 import org.knime.core.webui.node.dialog.defaultdialog.jsonforms.JsonNodeSettingsMapperUtil;
 import org.knime.python3.nodes.proxy.NodeDialogProxy;
-import org.knime.python3.nodes.settings.JsonNodeSettings;
 import org.knime.python3.nodes.settings.JsonNodeSettingsSchema;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -104,16 +103,14 @@ public final class DelegatingJsonSettingsDataService implements NodeSettingsServ
 
             // this is assigned here to accommodate changing the set of parameters during development
             var modelSettings = settings.get(SettingsType.MODEL);
-            m_lastSettingsSchema = proxy.getSettingsSchema(JsonNodeSettingsSchema.readVersion(modelSettings));
-            var jsonSettings = loadSettings(modelSettings);
+            // load the old settings with the old schema
+            var jsonSettings = proxy.getSettingsSchema(JsonNodeSettingsSchema.readVersion(modelSettings)).createFromSettings(modelSettings);
+            // keep the current settings schema for saving the settings when the dialog is closed
+            m_lastSettingsSchema = proxy.getSettingsSchema(m_extensionVersion);
             // the Python side needs the version of the settings to properly load the settings
             // the schema extraction then uses the current version of the extension which is already known on the Python side
             return proxy.getDialogRepresentation(jsonSettings, specs, jsonSettings.getCreationVersion());
         }
-    }
-
-    private JsonNodeSettings loadSettings(final NodeSettingsRO settings) {
-        return m_lastSettingsSchema.createFromSettings(settings);
     }
 
     @Override
