@@ -90,6 +90,8 @@ describe("registerInputCompletions", () => {
       { begVal: "", endVal: "'", expBeg: "'", expEnd: "" }, // ending single quote
       { begVal: '"', endVal: "'", expBeg: "", expEnd: '"' }, // beginning double, ending single
       { begVal: "'", endVal: '"', expBeg: "", expEnd: "'" }, // beginning single, ending double
+      { begVal: ".", endVal: "", expBeg: "", expEnd: "" }, // beginning dot
+      { begVal: ".", endVal: "'", expBeg: "", expEnd: "" }, // beginning dot
     ])("start: $begVal, end: $endVal", ({ begVal, endVal, expBeg, expEnd }) => {
       const provideCompletionsItems = getProvideCompletionItemsFn(simpleInputs);
       const items = provideCompletionsItems(

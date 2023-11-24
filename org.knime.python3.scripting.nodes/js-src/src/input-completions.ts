@@ -8,14 +8,19 @@ type InputStringCompletion = {
 };
 
 const getQuoteFn = (
-  beginningQuote: '"' | "'" | false,
-  endingQuote: '"' | "'" | false,
+  beginningChar: '"' | "'" | "." | false,
+  endingChar: '"' | "'" | "." | false,
 ) => {
+  if (beginningChar === ".") {
+    // Do not add any quotes if we have a dot
+    return (text: string) => text;
+  }
+
   let addBeginningQuote = "";
-  if (!beginningQuote) {
-    if (endingQuote) {
+  if (!beginningChar) {
+    if (endingChar) {
       // add the same quote as we already have at the end
-      addBeginningQuote = endingQuote;
+      addBeginningQuote = endingChar;
     } else {
       // add a double quote if we have no quotes
       addBeginningQuote = '"';
@@ -23,12 +28,13 @@ const getQuoteFn = (
   }
 
   let addEndingQuote = "";
-  if (addBeginningQuote && addBeginningQuote !== endingQuote) {
+  if (addBeginningQuote && addBeginningQuote !== endingChar) {
     // add the same quote as we add at the beginning
     addEndingQuote = addBeginningQuote;
-  } else if (beginningQuote && beginningQuote !== endingQuote) {
+  } else if (beginningChar && beginningChar !== endingChar) {
     // add the same quote as we already have at the beginning
-    addEndingQuote = beginningQuote;
+    // do not do anything if we have a dot
+    addEndingQuote = beginningChar;
   }
   return (text: string) => `${addBeginningQuote}${text}${addEndingQuote}`;
 };
@@ -43,18 +49,18 @@ export const registerInputCompletions = (inputs: InputStringCompletion[]) => {
       );
 
       // Quote the insert text if the user has no quotes already
-      const getQuotationMark = (before: boolean) => {
+      const getAdjacentChar = (before: boolean) => {
         const char = model.getValueInRange({
           startLineNumber: position.lineNumber,
           endLineNumber: position.lineNumber,
           startColumn: before ? word.startColumn - 1 : word.endColumn,
           endColumn: before ? word.startColumn : word.endColumn + 1,
         });
-        return char === '"' || char === "'" ? char : false;
+        return char === '"' || char === "'" || char === "." ? char : false;
       };
       const quoteInsertText = getQuoteFn(
-        getQuotationMark(true),
-        getQuotationMark(false),
+        getAdjacentChar(true),
+        getAdjacentChar(false),
       );
 
       const range = {
