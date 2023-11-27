@@ -65,14 +65,20 @@ class TypeTest(ABC):
     def isinstance(self, o):
         pass
 
+    def is_singleton(self):
+        return True
+
     def test_type(self):
         self.assertTrue(self.isinstance(self.create_type()))
         self.assertIsInstance(self.create_type(), k.KnimeType)
 
     def test_equals(self):
-        self.assertEqual(self.create_type(), self.create_type())
-        self.assertFalse(self.create_type() != self.create_type())
-        self.assertEqual(id(self.create_type()), id(self.create_type()))
+        a = self.create_type()
+        b = self.create_type()
+        self.assertEqual(a, b)
+        self.assertFalse(a != b)
+        if self.is_singleton():
+            self.assertTrue(a is b)
 
 
 class IntTest(TypeTest, unittest.TestCase):
@@ -142,6 +148,9 @@ class IntListTest(TypeTest, unittest.TestCase):
             and o.inner_type._type_id == k.PrimitiveTypeId.INT
         )
 
+    def is_singleton(self):
+        return False
+
 
 class IntStringStructTest(TypeTest, unittest.TestCase):
     def create_type(self):
@@ -155,6 +164,9 @@ class IntStringStructTest(TypeTest, unittest.TestCase):
             and isinstance(o.inner_types[1], k.PrimitiveType)
             and o.inner_types[1]._type_id == k.PrimitiveTypeId.STRING
         )
+
+    def is_singleton(self):
+        return False
 
 
 class LogicalStringTest(TypeTest, unittest.TestCase):
@@ -172,6 +184,9 @@ class LogicalStringTest(TypeTest, unittest.TestCase):
         with self.assertRaises(ValueError):
             t = self.create_type()
             print(t.value_type)
+
+    def is_singleton(self):
+        return False
 
 
 class LogicalTimeTest(TypeTest, unittest.TestCase):
@@ -194,6 +209,9 @@ class LogicalTimeTest(TypeTest, unittest.TestCase):
         self.assertEqual(
             str(dt.date.__module__) + "." + str(dt.date.__name__), t.value_type
         )
+
+    def is_singleton(self):
+        return False
 
 
 class UnknownLogicalTest(unittest.TestCase):
