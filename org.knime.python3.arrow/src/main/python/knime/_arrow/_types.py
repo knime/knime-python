@@ -166,12 +166,12 @@ def _get_arrow_storage_to_ext_fn(dtype):
             return _identity
 
         value_fn = _get_arrow_storage_to_ext_fn(dtype.value_type) or _identity
-        # We have to cast the returned list to the expected type because
-        # otherwise some internal field will have a different name (item != $data$)
-        # and make PyArrow's type conversion state that the types differ...
+        # We have to set the expected type because otherwise some internal field will
+        # have a different name (item != $data$) and make PyArrow's type conversion
+        # state that the types differ...
         return lambda a: _create_list_array(
-            _get_offsets_with_nulls(a), value_fn(a.values)
-        ).cast(dtype)
+            _get_offsets_with_nulls(a), value_fn(a.values), dtype
+        )
 
     elif pat.is_struct(dtype):  # if dtype is pa.struct
         if not contains_knime_extension_type(dtype):
@@ -190,12 +190,22 @@ def _identity(x):
     return x
 
 
-def _create_list_array(offsets, values):
+def _create_list_array(offsets, values, type=None):
     offset_type = offsets.type
     if pat.is_int64(offset_type):
-        return pa.LargeListArray.from_arrays(offsets, values)
+        from_arrays = pa.LargeListArray.from_arrays
     elif pat.is_int32(offset_type):
-        return pa.ListArray.from_arrays(offsets, values)
+        from_arrays = pa.ListArray.from_arrays
+
+    if int(pa.__version__.split(".")[0]) >= 8:
+        return from_arrays(offsets, values, type=type)
+    else:
+        # pyarrow <=7 does not support type argument - we need to cast the result
+        list_array = from_arrays(offsets, values)
+        if type is not None:
+            return list_array.cast(type)
+        else:
+            return list_array
 
 
 def _to_storage_array(
