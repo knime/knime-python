@@ -1053,19 +1053,23 @@ class _Columnar(ABC):
         If it is a column name, then the first column with matching name is removed.
         Passing a list of column names will filter out all (including duplicate) columns with matching names.
 
-        Parameters:
-            slicing : int | list | str
-                Can be of type integer representing the index in column_names to remove.
-                Or a list of strings removing every column matching from that list.
-                Or a string of which first occurrence is removed from the column_names.
+        Parameters
+        -----------
 
-        Returns:
-            _ColumnarView: A View missing the columns to be removed.
+        slicing : int | list | str
+            Can be of type integer representing the index in column_names to remove.
+            Or a list of strings removing every column matching from that list.
+            Or a string of which first occurrence is removed from the column_names.
 
-        Raises:
-            ValueError: If no matching column is found given a list or str.
-            IndexError: If column is accessed by integer and is out of bounds.
-            TypeError: If the key is neither an integer nor a string or list of strings.
+        Returns
+        --------
+        _ColumnarView: A View missing the columns to be removed.
+
+        Raises
+        -------
+        ValueError: If no matching column is found given a list or str.
+        IndexError: If column is accessed by integer and is out of bounds.
+        TypeError: If the key is neither an integer nor a string or list of strings.
         """
 
         if isinstance(slicing, List):
@@ -1101,15 +1105,15 @@ class _Columnar(ABC):
 
         Parameters
         ----------
-            column_slice : int, str, slice, list
-                A column index, a column name, a slice object, a list of column indices, or a list of column names.
-                For single indices, the view will create a "Column" object. For slices or lists of indices,
-                a new Schema will be returned.
+        slicing : int, str, slice, list
+            A column index, a column name, a slice object, a list of column indices, or a list of column names.
+            For single indices, the view will create a "Column" object. For slices or lists of indices,
+            a new Schema will be returned.
 
         Returns
         --------
-            _ColumnarView
-                A representation of a slice of the original Schema or Table.
+        _ColumnarView
+            A representation of a slice of the original Schema or Table.
 
         Examples
         --------
@@ -1131,6 +1135,21 @@ class _Columnar(ABC):
     def append(
         self, other: Union["_Columnar", Sequence["_Columnar"]]
     ) -> "_ColumnarView":
+        """
+        Append another `_Columnar` object (e.g. Table, Schema) or a sequence of `_Columnar` objects to the current
+        `_Columnar` object.
+
+        Parameters
+        ----------
+        other : Union["_Columnar", Sequence["_Columnar"]]
+            The `_Columnar` object or a sequence of `_Columnar` objects to be appended.
+
+        Returns
+        -------
+        _ColumnarView
+            A `_ColumnarView` object representing the current `_Columnar` object after the append operation.
+
+        """
         return _ColumnarView(delegate=self, operation=_AppendOperation(other))
 
     @abstractmethod
