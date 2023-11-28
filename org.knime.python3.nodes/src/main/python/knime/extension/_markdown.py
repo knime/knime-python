@@ -31,6 +31,7 @@ from markdown.inlinepatterns import (
 
 # Disable MARKDOWN debug events to appear in root logger
 import logging
+
 logging.getLogger("MARKDOWN").setLevel(logging.ERROR)
 
 
