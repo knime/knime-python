@@ -14,7 +14,7 @@ const lastActionStatus = {
   EXECUTION_ERROR: errorState,
   RESET_FAILED: errorState,
   RESET: { text: "Values reset successfully", class: "success" },
-  IDLE: { text: "Execution status", class: "default" },
+  IDLE: { text: "", class: "hidden" },
 };
 
 const executionStatusText = computed(() => {
@@ -48,6 +48,10 @@ const executionStatusText = computed(() => {
 .error,
 .cancel {
   --status-color: var(--knime-coral-dark);
+}
+
+.hidden {
+  display: none;
 }
 
 .status-wrapper {
