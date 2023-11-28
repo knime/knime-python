@@ -425,6 +425,8 @@ def _get_extension_version() -> Version:
 
 
 class Condition(ABC):
+    """Abstract base class for all condition types of parameter visibility rules."""
+
     @abstractmethod
     def to_dict(self):
         """Converts the Condition into a dict that is JSON serializable."""
@@ -439,10 +441,12 @@ class Condition(ABC):
 
 class OneOf(Condition):
     """
-    A Condition that checks that a value is one of a number of values provided in the constructor.
+    A Condition that evaluates to true if the value of the ``subject`` parameter is
+    equal to one of the expected ``values``.
     """
 
     def __init__(self, subject: Any, values: List[Any]) -> None:
+        """ """
         super().__init__()
         self._values = values
         self._subject = subject
@@ -461,9 +465,16 @@ class Effect(Enum):
     """
 
     SHOW = "SHOW"
+    """Show the parameter if the condition is true"""
+
     HIDE = "HIDE"
+    """Hide the parameter if the condition is true"""
+
     ENABLE = "ENABLE"
+    """Enable the parameter if the condition is true"""
+
     DISABLE = "DISABLE"
+    """Disable the parameter if the condition is true"""
 
 
 @dataclass
@@ -704,6 +715,33 @@ class _BaseParameter(ABC):
         self._validator = func
 
     def rule(self, condition: Condition, effect: Effect):
+        """
+        Add a rule that conditionally sets whether this parameter is visible or enabled in the dialog.
+        This can be useful if this parameter should only be accessible if another parameter has a certain
+        value.
+
+        Note
+        ----
+        Currently this only supports conditions where another parameter exactly matches a value. Rules
+        can only depend on parameters on the same level, not in a child or parent parameter group.
+
+        Examples
+        --------
+
+        >>> @knext.node(args)
+        ... class MyNode:
+        ...     string_param = knext.StringParameter(
+        ...         "String Param Title",
+        ...         "String Param Title Description",
+        ...         "default value"
+        ...     )
+        ...
+        ...     # this parameter gets disabled if string_param is "foo" or "bar"
+        ...     int_param = knext.IntParameter(
+        ...         "Int Param Title",
+        ...         "Int Param Description",
+        ...     ).rule(knext.OneOf(string_param, ["foo", "bar"]), kp.Effect.DISABLE)
+        """
         self._rule = Rule(condition, effect)
         return self
 

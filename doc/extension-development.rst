@@ -94,47 +94,47 @@ the following parameter types. For a more detailed description see
    :members:
    :noindex:
    :inherited-members:
-   :exclude-members: validator
+   :exclude-members: validator, rule
 
 .. autoclass:: knime.extension.DoubleParameter
    :members:
    :noindex:
    :inherited-members:
-   :exclude-members: validator
+   :exclude-members: validator, rule
 
 
 .. autoclass:: knime.extension.BoolParameter
    :members:
    :noindex:
    :inherited-members:
-   :exclude-members: validator
+   :exclude-members: validator, rule
 
 
 .. autoclass:: knime.extension.StringParameter
    :members:
    :noindex:
    :inherited-members:
-   :exclude-members: validator
+   :exclude-members: validator, rule
 
 
 .. autoclass:: knime.extension.ColumnParameter
    :members:
    :noindex:
    :inherited-members:
-   :exclude-members: validator
+   :exclude-members: validator, rule
 
 
 .. autoclass:: knime.extension.MultiColumnParameter
    :members:
    :noindex:
    :inherited-members:
-   :exclude-members: validator
+   :exclude-members: validator, rule
 
 .. autoclass:: knime.extension.ColumnFilterParameter
    :members:
    :noindex:
    :inherited-members:
-   :exclude-members: validator
+   :exclude-members: validator, rule
 
 .. autoclass:: knime.extension.ColumnFilterConfig
    :members:
@@ -145,7 +145,7 @@ the following parameter types. For a more detailed description see
    :members:
    :noindex:
    :inherited-members:
-   :exclude-members: validator
+   :exclude-members: validator, rule
 
 
 .. autoclass:: knime.extension.EnumParameterOptions
@@ -158,6 +158,7 @@ the following parameter types. For a more detailed description see
    :members:
    :noindex:
    :inherited-members:
+   :exclude-members: validator, rule
 
 Validation
 ++++++++++
@@ -168,6 +169,42 @@ the parameter value matches a certain criteria (see example below). The validato
 the corresponding parameter.
 
 .. autoclass:: knime.extension.IntParameter
+   :members:
+   :noindex:
+   :inherited-members:
+   :exclude-members: rule
+
+Parameter Visibility Rules
+++++++++++++++++++++++++++
+
+By default, each parameter of a node is visible in the node's configuration dialog. Parameters can be 
+marked as advanced by setting ``is_advanced=True``, which will only show them once the user has clicked
+"Show advanced settings" in the configuration dialog.
+
+Sometimes a parameter should only be visible to the user if another parameter has a certain value. For this,
+each parameter type listed above has a method ``rule``. In this method, one can specify a condition based on
+another parameter, which we call ``subject``, and the effect that should be applied to this parameter when 
+the condition becomes true.
+
+.. autoclass:: knime.extension.IntParameter
+   :members:
+   :noindex:
+   :inherited-members:
+   :exclude-members: validator
+
+.. autoclass:: knime.extension.Condition
+   :members:
+   :noindex:
+   :inherited-members:
+   :exclude-members: to_dict, subjects
+
+.. autoclass:: knime.extension.OneOf
+   :members:
+   :noindex:
+   :inherited-members:
+   :exclude-members: to_dict, subjects
+
+.. autoclass:: knime.extension.Effect
    :members:
    :noindex:
    :inherited-members:

@@ -74,6 +74,7 @@ DateTimeParameter = _kp.DateTimeParameter
 Version = _kp.Version
 Effect = _kp.Effect
 OneOf = _kp.OneOf
+Condition = _kp.Condition
 
 ## knime.extension.nodes
 PortType = _kn.PortType
