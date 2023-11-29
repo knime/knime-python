@@ -2,10 +2,15 @@
 def BN = (BRANCH_NAME == 'master' || BRANCH_NAME.startsWith('releases/')) ? BRANCH_NAME : 'releases/2023-12'
 
 @groovy.transform.Field
-static final String[] WF_TESTS_PYTHON_ENVS = ['env_py36_pa5.yml', 'env_py38_pa7.yml', 'env_py39_kn47.yml']
+static final String[] WF_TESTS_PYTHON_ENVS = [
+    'bundled',
+    'env_py36_pa5.yml',
+    'env_py38_pa7.yml',
+    'env_py39_kn47.yml',
+]
 
 @groovy.transform.Field
-static final String DEFAULT_WF_TESTS_PYTHON_ENV = 'env_py39_kn47.yml'
+static final String DEFAULT_WF_TESTS_PYTHON_ENV = 'bundled'
 
 @groovy.transform.Field
 static final List<String> PYTEST_PYTHON_ENVS = ['env_py38_legacy', 'env_py38', 'env_py39']
