@@ -1,4 +1,9 @@
-# ![Image](https://www.knime.com/files/knime_logo_github_40x40_4layers.png) KNIME® - Python
+# KNIME® Python
+
+[![Jenkins](https://jenkins.knime.com/buildStatus/icon?job=knime-python%2Fmaster)](https://jenkins.knime.com/job/knime-python/job/master/)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=KNIME_knime-python&metric=alert_status&token=55129ac721eacd76417f57921368ed587ad8339d)](https://sonarcloud.io/summary/new_code?id=KNIME_knime-python)
+
+This repository is maintained by the [KNIME Team Rakete](mailto:team-rakete@knime.com).
 
 The KNIME Python Integration closes the gap between KNIME Analytics Platform and Python.
 It provides nodes to write and execute Python scripts and functionality to make use of Python in other parts of KNIME Analytics Platform.
