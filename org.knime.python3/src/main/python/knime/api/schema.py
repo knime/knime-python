@@ -57,8 +57,6 @@ from typing import Dict, Iterable, Iterator, List, Optional, Sequence, Type, Uni
 import logging
 from enum import Enum, unique
 
-import knime.api.types as kt
-
 LOGGER = logging.getLogger(__name__)
 
 
@@ -354,6 +352,8 @@ class LogicalType(KnimeType):
         ValueError
             If no PythonValueFactory has been registered for this logical type.
         """
+        import knime.api.types as kt
+
         return kt.get_value_factory_bundle_for_java_value_factory(
             self.logical_type
         ).python_type
@@ -379,6 +379,8 @@ class LogicalType(KnimeType):
 
     def __str__(self) -> str:
         try:
+            import knime.api.types as kt
+
             bundle = kt.get_value_factory_bundle_for_java_value_factory(
                 self.logical_type
             )
@@ -423,6 +425,7 @@ class LogicalType(KnimeType):
             The converted logical type.
 
         """
+        import knime.api.types as kt
         import knime._arrow._types as kat
 
         try:
@@ -460,6 +463,8 @@ class LogicalType(KnimeType):
         """
         Returns a string with all possible value types in your current environment and tips and examples how to get them.
         """
+        import knime.api.types as kt
+
         return f"""
             The value types, which are currently available in your environment.
             If you lack some value type, it might not have been installed and imported yet.
@@ -602,7 +607,8 @@ def logical(value_type) -> LogicalType:
         If no PythonValueFactory has been registered for this value type
         with `knime.api.types.register_python_value_factory`.
     """
-    try:
+    import knime.api.types as kt
+    try:        
         proxy_type = value_type
         proxy_value_factory, value_type = kt.get_proxy_by_python_type(proxy_type)
     except KeyError:
@@ -660,6 +666,8 @@ def datetime(
     ValueError
         If the combination of date, time and timezone is not supported or the datetime types are not registered in KNIME.
     """
+    import knime.api.types as kt
+    
     if not date and not time:
         raise ValueError("Either date or time must be True")
     if timezone and not time:
