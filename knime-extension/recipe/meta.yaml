@@ -34,11 +34,20 @@ test:
     - knime.extension.nodes
     - knime.extension.parameter
     - knime.extension.version
+    - knime.extension.testing
     - knime_extension
   requires:
     - pandas
     - python-dateutil
     - pytz
+    - requests
+    - pytest
+  commands:
+    - pytest .
+  source_files:
+    - recipe/node_with_test.py
+    - recipe/test/plugin.xml
+    - recipe/test/knime/types/chemistry.py
 
 about:
   home: https://knime.com
