@@ -608,7 +608,8 @@ def logical(value_type) -> LogicalType:
         with `knime.api.types.register_python_value_factory`.
     """
     import knime.api.types as kt
-    try:        
+
+    try:
         proxy_type = value_type
         proxy_value_factory, value_type = kt.get_proxy_by_python_type(proxy_type)
     except KeyError:
@@ -667,7 +668,7 @@ def datetime(
         If the combination of date, time and timezone is not supported or the datetime types are not registered in KNIME.
     """
     import knime.api.types as kt
-    
+
     if not date and not time:
         raise ValueError("Either date or time must be True")
     if timezone and not time:
@@ -1473,6 +1474,9 @@ class Schema(_Columnar, PortObjectSpec):
 
     def __eq__(self, other) -> bool:
         if not other.__class__ == self.__class__:
+            return False
+
+        if len(self._columns) != len(other._columns):
             return False
 
         return all(a == b for a, b in zip(self._columns, other._columns))
