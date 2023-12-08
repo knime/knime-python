@@ -55,7 +55,7 @@ import os.path
 
 import knime.extension.parameter as kp
 import knime.api.table as kt
-from knime.api.schema import PortObjectSpec
+from knime.api.schema import PortObjectSpec, _ColumnarView
 
 
 class PortObject(ABC):
@@ -669,7 +669,7 @@ class PythonNode(ABC):
     show up in the KNIME console if the log level in KNIME is configured to show these.
 
     Examples
-    -------
+    --------
 
     >>> import logging
     ... import knime.extension as knext
@@ -883,6 +883,9 @@ class _Node:
             node.input_ports = self.input_ports
             node.output_ports = self.output_ports
             node.output_view = self.views[0]
+            node.execute = _unwrap_results(node.execute)
+            node.configure = _unwrap_results(node.configure)
+
             return node
 
         self.node_factory = port_injector
@@ -1008,6 +1011,34 @@ class InvalidParametersError(Exception):
 
     def __init__(self, message) -> None:
         super().__init__(message)
+
+
+def _unwrap_results(func: Callable) -> Callable:
+    """
+    Configure and view can both return _ColumnarView or _TabularView respectively, which have a virtual
+    stack of operations that haven't been executed yet. But when we use the results, we always want the
+    executed version, so we're calling .get() on each result of func() whenever needed.
+    """
+
+    def wrapper(*args, **kwargs):
+        results = func(*args, **kwargs)
+
+        if results is None:
+            return None
+        elif isinstance(results, list) or isinstance(results, tuple):
+            unwrapped_results = []
+            for r in results:
+                if isinstance(r, _ColumnarView):
+                    unwrapped_results.append(r.get())
+                else:
+                    unwrapped_results.append(r)
+            return unwrapped_results
+        elif isinstance(results, _ColumnarView):
+            return results.get()
+        else:
+            return results
+
+    return wrapper
 
 
 def _add_port(node_factory, port_slot: str, port: Port):

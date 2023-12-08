@@ -387,8 +387,6 @@ class _PortTypeRegistry:
         self, spec, port: kn.Port, node_id: str, port_idx: int
     ) -> _PythonPortObjectSpec:
         if port.type == kn.PortType.TABLE:
-            if isinstance(spec, ks._ColumnarView):
-                spec = spec.get()
             if isinstance(spec, ks.Column):
                 spec = ks.Schema.from_columns(spec)
             assert isinstance(spec, ks.Schema)
@@ -503,8 +501,6 @@ class _PortTypeRegistry:
         _PythonCredentialPortObject,
     ]:
         if port.type == kn.PortType.TABLE:
-            if isinstance(obj, kt._TabularView):
-                obj = obj.get()
             class_name = "org.knime.core.node.BufferedDataTable"
 
             java_data_sink = None

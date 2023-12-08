@@ -89,8 +89,11 @@ TEST_DESCR = "We read data from here"
     id="My Node Without Ports",
 )
 class NodeWithoutPorts:
-    pass
-    # no config and execute needed for this test class
+    def configure(self, config_ctx, *inputs):
+        pass  # no implementation needed for this test class
+
+    def execute(self, exec_context, *inputs):
+        pass  # no implementation needed for this test class
 
 
 # test case where the init method adds a port
@@ -128,7 +131,11 @@ class MyPropertyOverridingNode:
             )
         ]
 
-    # no config and execute needed for this test class
+    def configure(self, config_ctx, *inputs):
+        pass  # no implementation needed for this test class
+
+    def execute(self, exec_context, *inputs):
+        pass  # no implementation needed for this test class
 
 
 @knext.node(
