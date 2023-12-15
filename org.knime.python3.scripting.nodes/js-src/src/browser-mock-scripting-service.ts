@@ -1,14 +1,11 @@
 /* eslint-disable no-console */
 import {
-  EditorService,
   type NodeSettings,
   type ScriptingServiceType,
 } from "@knime/scripting-editor";
 import sleep from "webapps-common/util/sleep";
 
 const SLEEP_TIME = 100;
-
-const editorService = new EditorService();
 
 const eventHandlers = new Map<string, (args: any) => void>();
 
@@ -163,22 +160,6 @@ const browserMockScriptingService: Partial<ScriptingServiceType> = {
   sendToConsole(text: { text: string }) {
     console.log(`sending text to console: ${text}`);
   },
-  initEditorService(editor: any, editorModel: any) {
-    editorService.initEditorService({ editor, editorModel });
-    console.log(`initEditorService called with ${{ editor, editorModel }}`);
-  },
-  getScript() {
-    console.log("getScript called", editorService.getScript());
-    return editorService.getScript();
-  },
-  getSelectedLines() {
-    console.log("getSelectedLines called");
-    return editorService.getSelectedLines();
-  },
-  setScript(newScript: string) {
-    console.log(`Setting new script ${newScript}`);
-    editorService.setScript(newScript);
-  },
   async connectToLanguageServer() {
     console.log("Connecting to Language Server");
     await sleep(SLEEP_TIME);
@@ -186,9 +167,6 @@ const browserMockScriptingService: Partial<ScriptingServiceType> = {
   async configureLanguageServer(config: any) {
     console.log(`Configuring Language Server: ${config}`);
     await sleep(SLEEP_TIME);
-  },
-  pasteToEditor(text: string) {
-    editorService.pasteToEditor(text);
   },
   isCodeAssistantEnabled() {
     console.log("Checking whether code assistance is enabled");

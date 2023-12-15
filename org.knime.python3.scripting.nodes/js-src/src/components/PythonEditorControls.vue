@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useEditorStore } from "@knime/scripting-editor";
 import { computed, onUnmounted, ref, type Ref } from "vue";
 import CancelIcon from "webapps-common/ui/assets/img/icons/circle-close.svg";
 import PlayIcon from "webapps-common/ui/assets/img/icons/play.svg";
@@ -7,9 +6,12 @@ import Button from "webapps-common/ui/components/Button.vue";
 import LoadingIcon from "webapps-common/ui/components/LoadingIcon.vue";
 import { pythonScriptingService } from "../python-scripting-service";
 import { useExecutableSelectionStore, useSessionStatusStore } from "@/store";
+import { editor } from "@knime/scripting-editor";
 
-const editorStore = useEditorStore();
-const hasSelection = computed(() => editorStore.selection !== "");
+const mainEditorState = editor.useMainCodeEditorStore();
+const hasSelection = computed(
+  () => mainEditorState.value?.selection.value !== "",
+);
 
 const sessionStatus = useSessionStatusStore();
 

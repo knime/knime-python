@@ -19,6 +19,7 @@ import {
   useWorkspaceStore,
 } from "./store";
 import { watch } from "vue";
+import { editor } from "@knime/scripting-editor";
 
 const executableSelection = useExecutableSelectionStore();
 const sessionStatus = useSessionStatusStore();
@@ -87,6 +88,8 @@ scriptingService.registerEventHandler(
   },
 );
 
+const mainEditorState = editor.useMainCodeEditorStore();
+
 export const pythonScriptingService = {
   initExecutableSelection: async (): Promise<void> => {
     const settings =
@@ -117,12 +120,14 @@ export const pythonScriptingService = {
     ])) as ExecutableOption[];
   },
   runScript: () => {
-    scriptingService.sendToService("runScript", [scriptingService.getScript()]);
+    scriptingService.sendToService("runScript", [
+      mainEditorState.value?.text.value,
+    ]);
     sessionStatus.status = "RUNNING_ALL";
   },
   runSelectedLines: () => {
     scriptingService.sendToService("runInExistingSession", [
-      scriptingService.getSelectedLines(),
+      mainEditorState.value?.selectedLines.value,
     ]);
     sessionStatus.status = "RUNNING_SELECTED";
   },

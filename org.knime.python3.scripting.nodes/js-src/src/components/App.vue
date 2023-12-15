@@ -2,22 +2,22 @@
 import { pythonScriptingService } from "@/python-scripting-service";
 import { useExecutableSelectionStore } from "@/store";
 import {
+  CompactTabBar,
   ScriptingEditor,
+  editor,
   type NodeSettings,
   type SettingsMenuItem,
-  CompactTabBar,
 } from "@knime/scripting-editor";
-import * as monaco from "monaco-editor";
-import { nextTick, onMounted, ref, type Ref } from "vue";
+import { nextTick, onMounted, ref, watch, type Ref } from "vue";
 import SettingsIcon from "webapps-common/ui/assets/img/icons/cog.svg";
-import FileTextIcon from "webapps-common/ui/assets/img/icons/file-text.svg";
 import FileCogIcon from "webapps-common/ui/assets/img/icons/file-cog.svg";
+import FileTextIcon from "webapps-common/ui/assets/img/icons/file-text.svg";
 import type { MenuItem } from "webapps-common/ui/components/MenuItems.vue";
 import EnvironmentSettings from "./EnvironmentSettings.vue";
+import LastActionStatus from "./LastActionStatus.vue";
 import PythonEditorControls from "./PythonEditorControls.vue";
 import PythonViewPreview from "./PythonViewPreview.vue";
 import PythonWorkspace from "./PythonWorkspace.vue";
-import LastActionStatus from "./LastActionStatus.vue";
 
 const menuItems: MenuItem[] = [
   {
@@ -45,30 +45,37 @@ const onMenuItemClicked = ({ item }: { item: SettingsMenuItem }) => {
   currentSettingsMenuItem.value = item;
 };
 
-const onMonacoCreated = ({
-  editor,
-  editorModel,
-}: {
-  editor: monaco.editor.IStandaloneCodeEditor;
-  editorModel: monaco.editor.ITextModel;
-}) => {
-  // Use 4 spaces instead of tabs
-  editorModel.updateOptions({
-    tabSize: 4,
-    insertSpaces: true,
-  });
+const mainEditorState = editor.useMainCodeEditorStore();
 
-  // Replace tabs by spaces on paste
-  editor.onDidPaste(() => {
-    editor.getAction("editor.action.indentationToSpaces")?.run();
-  });
+// Use 4 spaces instead of tabs
+watch(
+  () => mainEditorState.value?.editorModel,
+  (newEditorModel) => {
+    newEditorModel?.updateOptions({
+      tabSize: 4,
+      insertSpaces: true,
+    });
+  },
+);
 
-  // Connect to the language server
-  pythonScriptingService.connectToLanguageServer();
+// Replace tabs by spaces on paste
+watch(
+  () => mainEditorState.value?.editor.value,
+  (newEditor) => {
+    newEditor?.onDidPaste(() => {
+      newEditor?.getAction("editor.action.indentationToSpaces")?.run();
+    });
+  },
+);
 
-  // Register the completion items for the inputs
-  pythonScriptingService.registerInputCompletions();
-};
+// Connect to the language server
+watch(
+  () => mainEditorState.value?.editorModel,
+  () => pythonScriptingService.connectToLanguageServer(),
+);
+
+// Register the completion items for the inputs
+pythonScriptingService.registerInputCompletions();
 
 const saveSettings = async (commonSettings: NodeSettings) => {
   const settings = {
@@ -112,7 +119,6 @@ onMounted(async () => {
       :show-run-buttons="true"
       language="python"
       file-name="main.py"
-      @monaco-created="onMonacoCreated"
       @menu-item-clicked="onMenuItemClicked"
       @save-settings="saveSettings"
     >

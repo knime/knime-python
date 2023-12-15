@@ -1,4 +1,3 @@
-import { editorStoreMock } from "../src/__mocks__/editorStore";
 import "vitest-canvas-mock";
 import { vi } from "vitest";
 import { Consola, LogLevel } from "consola";
@@ -22,13 +21,6 @@ vi.mock("@knime/scripting-editor", async () => {
       return { script: "print('Hello World!')", executableSelection: "" };
     },
     saveSettings: vi.fn(() => {}),
-    getScript() {
-      return "myScript";
-    },
-    getSelectedLines() {
-      return "mySelectedLines";
-    },
-    setScript: vi.fn(),
     registerEventHandler: vi.fn(),
     registerLanguageServerEventHandler: vi.fn(),
     registerConsoleEventHandler: vi.fn(),
@@ -37,7 +29,6 @@ vi.mock("@knime/scripting-editor", async () => {
     configureLanguageServer: vi.fn(),
     stopEventPoller: vi.fn(),
     sendToConsole: vi.fn(),
-    initEditorService: vi.fn(),
     inputsAvailable: vi.fn(() => {
       return true;
     }),
@@ -49,13 +40,10 @@ vi.mock("@knime/scripting-editor", async () => {
 
   const scriptEditorModule = await vi.importActual("@knime/scripting-editor");
 
-  const useEditorStore = vi.fn(() => editorStoreMock);
-
   return {
     ...scriptEditorModule,
     getScriptingService: () => {
       return mockScriptingService;
     },
-    useEditorStore,
   };
 });
