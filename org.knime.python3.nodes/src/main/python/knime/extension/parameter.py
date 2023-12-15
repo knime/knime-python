@@ -740,7 +740,7 @@ class _BaseParameter(ABC):
         ...     int_param = knext.IntParameter(
         ...         "Int Param Title",
         ...         "Int Param Description",
-        ...     ).rule(knext.OneOf(string_param, ["foo", "bar"]), kp.Effect.DISABLE)
+        ...     ).rule(knext.OneOf(string_param, ["foo", "bar"]), knext.Effect.DISABLE)
         """
         self._rule = Rule(condition, effect)
         return self
