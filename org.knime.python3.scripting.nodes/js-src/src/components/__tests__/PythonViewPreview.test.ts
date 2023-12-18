@@ -2,8 +2,9 @@ import { mount } from "@vue/test-utils";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import PythonViewPreview from "../PythonViewPreview.vue";
 import { usePythonPreviewStatusStore, useSessionStatusStore } from "@/store";
-import { getScriptingService } from "@knime/scripting-editor";
+import { editor, getScriptingService } from "@knime/scripting-editor";
 import Button from "webapps-common/ui/components/Button.vue";
+import { ref } from "vue";
 
 describe("PythonViewPreview", () => {
   const previewStatusStore = usePythonPreviewStatusStore();
@@ -92,6 +93,7 @@ describe("PythonViewPreview", () => {
     });
 
     it("placholder button executes script", () => {
+      editor.useMainCodeEditorStore().value = { text: ref("myScript") } as any;
       previewStatusStore.hasValidView = false;
       const wrapper = mount(PythonViewPreview);
       wrapper.find("button").trigger("click");

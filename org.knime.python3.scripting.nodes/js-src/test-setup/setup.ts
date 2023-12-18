@@ -25,7 +25,7 @@ vi.mock("@knime/scripting-editor", async () => {
     registerLanguageServerEventHandler: vi.fn(),
     registerConsoleEventHandler: vi.fn(),
     getLanguageServerConfig: vi.fn(),
-    connectToLangaugeServer: vi.fn(),
+    connectToLanguageServer: vi.fn(),
     configureLanguageServer: vi.fn(),
     stopEventPoller: vi.fn(),
     sendToConsole: vi.fn(),
@@ -36,6 +36,8 @@ vi.mock("@knime/scripting-editor", async () => {
       return true;
     }),
     closeDialog: vi.fn(),
+    getInputObjects: vi.fn(() => []),
+    getFlowVariableInputs: vi.fn(() => ({})),
   };
 
   const scriptEditorModule = await vi.importActual("@knime/scripting-editor");

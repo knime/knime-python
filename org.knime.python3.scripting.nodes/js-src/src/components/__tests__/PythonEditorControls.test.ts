@@ -1,5 +1,5 @@
 import { useSessionStatusStore } from "@/store";
-import { getScriptingService } from "@knime/scripting-editor";
+import { editor, getScriptingService } from "@knime/scripting-editor";
 import { DOMWrapper, VueWrapper, flushPromises, mount } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import CancelIcon from "webapps-common/ui/assets/img/icons/circle-close.svg";
@@ -7,8 +7,7 @@ import PlayIcon from "webapps-common/ui/assets/img/icons/play.svg";
 import Button from "webapps-common/ui/components/Button.vue";
 import LoadingIcon from "webapps-common/ui/components/LoadingIcon.vue";
 import PythonEditorControls from "../PythonEditorControls.vue";
-import { nextTick } from "vue";
-import { editorStoreMock } from "@/__mocks__/editorStore";
+import { nextTick, ref } from "vue";
 
 describe("PythonEditorControls", () => {
   const doMount = async ({ props } = { props: {} }) => {
@@ -18,6 +17,13 @@ describe("PythonEditorControls", () => {
         description: "mocked execution info",
       });
     });
+
+    editor.useMainCodeEditorStore().value = {
+      text: ref("myScript"),
+      selection: ref(""),
+      selectedLines: ref("mySelectedLines"),
+    } as any;
+
     const wrapper = mount(PythonEditorControls, { props });
     await flushPromises(); // to wait for PythonEditorControls.onMounted to finish
     return { wrapper };
@@ -34,13 +40,16 @@ describe("PythonEditorControls", () => {
 
   const setValidEditorSelection = async () => {
     // simulate valid selection for run selected lines button
-    editorStoreMock.selection = "this is a valid, non-empty selection";
+    // @ts-ignore (selection is not readonly in the test)
+    editor.useMainCodeEditorStore().value!.selection.value =
+      "this is a valid, non-empty selection";
     await nextTick();
   };
 
   const clearEditorSelection = async () => {
     // simulate valid selection for run selected lines button
-    editorStoreMock.selection = "";
+    // @ts-ignore (selection is not readonly in the test)
+    editor.useMainCodeEditorStore().value!.selection.value = "";
     await nextTick();
   };
 

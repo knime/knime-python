@@ -1,12 +1,24 @@
 import { setSelectedExecutable, useExecutableSelectionStore } from "@/store";
-import { ScriptingEditor, getScriptingService } from "@knime/scripting-editor";
-import { VueWrapper, flushPromises, mount } from "@vue/test-utils";
+import {
+  ScriptingEditor,
+  getScriptingService,
+  editor,
+} from "@knime/scripting-editor";
+import {
+  VueWrapper,
+  enableAutoUnmount,
+  flushPromises,
+  mount,
+} from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { executableOptionsMock } from "../../__mocks__/executable-options";
 import App from "../App.vue";
 import { nextTick } from "vue";
+import { pythonScriptingService } from "@/python-scripting-service";
 
 describe("App.vue", () => {
+  enableAutoUnmount(afterEach);
+
   const doMount = async ({
     viewAvailable = false,
     executableOptions = executableOptionsMock,
@@ -22,13 +34,14 @@ describe("App.vue", () => {
           return executableOptions;
         } else if (methodName === "sendLastConsoleOutput") {
           // do nothing
+          return Promise.resolve();
         } else if (methodName === "getLanguageServerConfig") {
           return JSON.stringify({ test: "" });
         } else if (methodName === "updateExecutableSelection") {
           // do nothing
-        } else {
-          throw Error(`Method ${methodName} was not mocked but called in test`);
+          return Promise.resolve();
         }
+        throw Error(`Method ${methodName} was not mocked but called in test`);
       },
     );
     setSelectedExecutable({ id: "", isMissing: false });
@@ -41,7 +54,7 @@ describe("App.vue", () => {
         },
       },
     });
-    await flushPromises(); // to wait for PythonEditorControls.onMounted to finish
+    await flushPromises();
     return { wrapper };
   };
 
@@ -119,74 +132,61 @@ describe("App.vue", () => {
     });
   });
 
-  describe("test on monaco created", () => {
-    it("test editor", async () => {
-      const { wrapper } = await doMount();
-      const scriptingEditor = wrapper.findComponent(ScriptingEditor);
-      const editor = {
-        onDidPaste: vi.fn(),
-      };
-      const editorModel = {
-        updateOptions: vi.fn(),
-      };
-      getScriptingService().connectToLanguageServer = vi.fn();
-      getScriptingService().getInputObjects = vi
-        .fn()
-        .mockImplementationOnce(() => []);
-      getScriptingService().getFlowVariableInputs = vi
-        .fn()
-        .mockImplementationOnce(() => []);
-
-      scriptingEditor.vm.$emit("monaco-created", { editor, editorModel });
-      expect(editor.onDidPaste).toHaveBeenCalledOnce();
-      expect(
-        getScriptingService().connectToLanguageServer,
-      ).toHaveBeenCalledOnce();
+  it("should update editor model options", async () => {
+    await doMount();
+    const mainEditorStore = editor.useMainCodeEditorStore();
+    expect(
+      mainEditorStore.value?.editorModel.updateOptions,
+    ).toHaveBeenCalledWith({
+      tabSize: 4,
+      insertSpaces: true,
     });
+  });
 
-    it("test connectToLanguageServer", async () => {
-      const { wrapper } = await doMount();
-      const scriptingEditor = wrapper.findComponent(ScriptingEditor);
-      const editor = {
-        onDidPaste: vi.fn(),
-      };
-      const editorModel = {
-        updateOptions: vi.fn(),
-      };
-      getScriptingService().connectToLanguageServer = vi.fn();
+  it("should replace tabs on paste", async () => {
+    await doMount();
+    const mainEditorStore = editor.useMainCodeEditorStore();
+    expect(
+      mainEditorStore.value?.editor.value?.onDidPaste,
+    ).toHaveBeenCalledOnce();
 
-      getScriptingService().getInputObjects = vi
-        .fn()
-        .mockImplementationOnce(() => []);
-      getScriptingService().getFlowVariableInputs = vi
-        .fn()
-        .mockImplementationOnce(() => []);
-      scriptingEditor.vm.$emit("monaco-created", { editor, editorModel });
-      expect(
-        getScriptingService().connectToLanguageServer,
-      ).toHaveBeenCalledOnce();
-    });
+    // Mock the action function
+    const actionFn = vi.fn();
+    const getActionFn = vi.fn(() => ({
+      run: actionFn,
+    }));
+    mainEditorStore.value!.editor.value!.getAction = getActionFn as any;
 
-    it("test editorModel", async () => {
-      const { wrapper } = await doMount();
-      const scriptingEditor = wrapper.findComponent(ScriptingEditor);
-      const editor = {
-        onDidPaste: vi.fn(),
-      };
-      const editorModel = {
-        updateOptions: vi.fn(),
-      };
-      getScriptingService().connectToLanguageServer = vi.fn();
-      getScriptingService().getInputObjects = vi
-        .fn()
-        .mockImplementationOnce(() => []);
-      getScriptingService().getFlowVariableInputs = vi
-        .fn()
-        .mockImplementationOnce(() => []);
+    const onDidChangeFn = vi.mocked(mainEditorStore.value!.editor.value!)
+      .onDidPaste.mock.calls[0][0];
+    onDidChangeFn({} as any);
 
-      scriptingEditor.vm.$emit("monaco-created", { editor, editorModel });
-      expect(editorModel.updateOptions).toHaveBeenCalledOnce();
-    });
+    expect(getActionFn).toHaveBeenCalledOnce();
+    expect(getActionFn).toHaveBeenCalledWith(
+      "editor.action.indentationToSpaces",
+    );
+    expect(actionFn).toHaveBeenCalledOnce();
+    expect(actionFn).toHaveBeenCalledWith();
+  });
+
+  it("should connect editor to language server", async () => {
+    const connectToLanguageServerSpy = vi.spyOn(
+      pythonScriptingService,
+      "connectToLanguageServer",
+    );
+    await doMount();
+    expect(connectToLanguageServerSpy).toHaveBeenCalledOnce();
+    expect(connectToLanguageServerSpy).toHaveBeenCalledWith();
+  });
+
+  it("should register input completions", async () => {
+    const registerInputCompletionsSpy = vi.spyOn(
+      pythonScriptingService,
+      "registerInputCompletions",
+    );
+    await doMount();
+    expect(registerInputCompletionsSpy).toHaveBeenCalledOnce();
+    expect(registerInputCompletionsSpy).toHaveBeenCalledWith();
   });
 
   it("initializes executable selection with initial settings", async () => {

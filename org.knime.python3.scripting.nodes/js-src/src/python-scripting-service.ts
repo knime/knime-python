@@ -1,15 +1,10 @@
+import { watch } from "vue";
+
 import {
+  editor,
   getScriptingService,
   type NodeSettings,
 } from "@knime/scripting-editor";
-
-import type {
-  ExecutableOption,
-  ExecutionInfo,
-  KillSessionInfo,
-  PythonScriptingNodeSettings,
-} from "./types/common";
-
 import { registerInputCompletions } from "./input-completions";
 import {
   setSelectedExecutable,
@@ -18,8 +13,12 @@ import {
   useSessionStatusStore,
   useWorkspaceStore,
 } from "./store";
-import { watch } from "vue";
-import { editor } from "@knime/scripting-editor";
+import type {
+  ExecutableOption,
+  ExecutionInfo,
+  KillSessionInfo,
+  PythonScriptingNodeSettings,
+} from "./types/common";
 
 const executableSelection = useExecutableSelectionStore();
 const sessionStatus = useSessionStatusStore();

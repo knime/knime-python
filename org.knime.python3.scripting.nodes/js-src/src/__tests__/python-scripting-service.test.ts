@@ -8,10 +8,11 @@ import {
   beforeAll,
 } from "vitest";
 
-import { getScriptingService } from "@knime/scripting-editor";
+import { getScriptingService, editor } from "@knime/scripting-editor";
 import { pythonScriptingService } from "@/python-scripting-service";
 import { useSessionStatusStore, useWorkspaceStore } from "@/store";
 import type { ExecutionInfo, KillSessionInfo } from "@/types/common";
+import { ref } from "vue";
 
 describe("python-scripting-service", () => {
   let eventHandler: (info: ExecutionInfo) => void;
@@ -44,6 +45,8 @@ describe("python-scripting-service", () => {
     });
 
     it("should run script", () => {
+      editor.useMainCodeEditorStore().value = { text: ref("myScript") } as any;
+
       pythonScriptingService.runScript();
       expect(getScriptingService().sendToService).toHaveBeenCalledWith(
         "runScript",
@@ -53,6 +56,10 @@ describe("python-scripting-service", () => {
     });
 
     it("should run selected lines", () => {
+      editor.useMainCodeEditorStore().value = {
+        selectedLines: ref("mySelectedLines"),
+      } as any;
+
       pythonScriptingService.runSelectedLines();
       expect(getScriptingService().sendToService).toHaveBeenCalledWith(
         "runInExistingSession",
