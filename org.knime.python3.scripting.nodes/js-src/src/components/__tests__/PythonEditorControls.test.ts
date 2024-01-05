@@ -31,10 +31,8 @@ describe("PythonEditorControls", () => {
 
   const doMountAndGetButtons = async () => {
     const wrapper = (await doMount()).wrapper;
-    const runSelectedButton = wrapper
-      .findAllComponents(Button)
-      .at(0) as VueWrapper;
-    const runAllButton = wrapper.findAllComponents(Button).at(1) as VueWrapper;
+    const runSelectedButton = wrapper.findAllComponents(Button).at(0)!;
+    const runAllButton = wrapper.findAllComponents(Button).at(1)!;
     return { wrapper, runSelectedButton, runAllButton };
   };
 

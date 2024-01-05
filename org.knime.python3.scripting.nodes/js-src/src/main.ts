@@ -1,20 +1,21 @@
 import { createApp } from "vue";
-import { createPinia } from "pinia";
 import App from "./components/App.vue";
 import "./python-scripting-service"; // to make sure that the scripting-service is initialized
-import { Consola, LogLevel } from "consola";
+import { Consola, BrowserReporter, LogLevel } from "consola";
 
-export const consola = new Consola({
-  level:
-    import.meta.env.VITE_SCRIPTING_API_MOCK === "true"
-      ? LogLevel.Log
-      : LogLevel.Silent,
-});
+const setupConsola = () => {
+  const consola = new Consola({
+    level: import.meta.env.DEV ? LogLevel.Trace : LogLevel.Error,
+    reporters: [new BrowserReporter()],
+  });
+  const globalObject = typeof global === "object" ? global : window;
 
-window.consola = consola;
+  // @ts-expect-error
+  globalObject.consola = consola;
+};
+
+setupConsola();
 
 const app = createApp(App);
-
-app.use(createPinia());
 
 app.mount("#app");

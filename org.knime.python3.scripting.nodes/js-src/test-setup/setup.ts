@@ -6,6 +6,7 @@ export const consola = new Consola({
   level: LogLevel.Log,
 });
 
+// @ts-expect-error
 window.consola = consola;
 
 vi.mock("@knime/scripting-editor", async () => {
