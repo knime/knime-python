@@ -12,12 +12,10 @@ requirements:
   build:
     - python=3.9
     - pip
-    - knime-python-base
     - setuptools
     - build
     - wheel
   run:
-    - knime-python-base
     - python>=3.9
 
 build:
