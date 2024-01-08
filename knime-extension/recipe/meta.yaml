@@ -35,6 +35,10 @@ test:
     - knime.extension.parameter
     - knime.extension.version
     - knime_extension
+  requires:
+    - pandas
+    - python-dateutil
+    - pytz
 
 about:
   home: https://knime.com
