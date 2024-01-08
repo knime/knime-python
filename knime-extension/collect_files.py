@@ -85,7 +85,9 @@ os.makedirs(MODULE_TARGET, exist_ok=True)
 legacy_knime_extension_folder = MODULE_TARGET / "knime_extension"
 
 os.makedirs(legacy_knime_extension_folder, exist_ok=True)
-shutil.copy(PREFIX_NODES / "knime_extension.py", legacy_knime_extension_folder / "__init__.py")
+shutil.copy(
+    PREFIX_NODES / "knime_extension.py", legacy_knime_extension_folder / "__init__.py"
+)
 
 # Copy the files from knime.extension
 copy_files_to_package(
@@ -99,7 +101,3 @@ copy_files_to_package(
 copy_files_to_package(
     MODULE_TARGET, PREFIX_VIEWS, find_files(PREFIX_VIEWS, "knime/api/*.py")
 )
-
-# Sprinkle __init__.py
-open(MODULE_TARGET / "knime/__init__.py", "w+")
-open(MODULE_TARGET / "knime/api/__init__.py", "w+")

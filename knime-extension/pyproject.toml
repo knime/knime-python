@@ -7,4 +7,3 @@ requires = ["setuptools"]
 
 [tool.setuptools.packages.find]
 where = ["knime-extension"]
-namespaces = false
