@@ -4,14 +4,22 @@ import { fileURLToPath, URL } from "node:url";
 
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
-import monacoEditorPlugin from "vite-plugin-monaco-editor";
+import monacoEditorPlugin, {
+  type IMonacoEditorOpts,
+} from "vite-plugin-monaco-editor";
 import svgLoader from "vite-svg-loader";
+
+// Hack because default export of vite-plugin-monaco-editor is wrong (and does not fit types)
+// https://github.com/vdesjs/vite-plugin-monaco-editor/issues/21
+const monacoEditorPluginDefault = (monacoEditorPlugin as any).default as (
+  options: IMonacoEditorOpts,
+) => any;
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     vue(),
-    monacoEditorPlugin({
+    monacoEditorPluginDefault({
       languageWorkers: ["editorWorkerService"],
     }),
     svgLoader(),
@@ -37,9 +45,6 @@ export default defineConfig({
     environment: "jsdom",
     reporters: ["default"],
     root: fileURLToPath(new URL("./", import.meta.url)),
-    deps: {
-      registerNodeLoader: true, // TODO: This option is deprecated. Replace it with a proper solution
-    },
     coverage: {
       provider: "v8",
       all: true,
