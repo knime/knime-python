@@ -91,8 +91,7 @@ onMounted(async () => {
   --controls-height: 40px;
 
   position: relative;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden auto;
   min-width: 120px;
   margin-top: 0;
 
@@ -112,8 +111,7 @@ onMounted(async () => {
   display: flex;
   overflow: hidden;
   flex-direction: row-reverse;
-  justify-content: space-between;
-  align-content: center;
+  place-content: center space-between;
   min-height: var(--controls-height);
   max-height: var(--controls-height);
   border-top: 1px solid var(--knime-silver-sand);

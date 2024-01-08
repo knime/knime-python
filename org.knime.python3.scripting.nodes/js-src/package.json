@@ -33,7 +33,7 @@
     "webapps-common": "file:webapps-common"
   },
   "devDependencies": {
-    "@knime/eslint-config": "8.0.9",
+    "@knime/eslint-config": "8.0.10",
     "@rushstack/eslint-patch": "1.6.1",
     "@tsconfig/node18": "18.2.2",
     "@types/jsdom": "21.1.6",
@@ -50,7 +50,7 @@
     "jsdom": "23.2.0",
     "npm-run-all": "4.1.5",
     "prettier": "3.1.1",
-    "stylelint": "15.11.0",
+    "stylelint": "16.1.0",
     "typescript": "5.3.3",
     "vite": "5.0.11",
     "vite-plugin-monaco-editor": "1.1.0",
