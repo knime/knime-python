@@ -3,6 +3,7 @@ import {
   ScriptingEditor,
   getScriptingService,
   editor,
+  consoleHandler,
 } from "@knime/scripting-editor";
 import {
   VueWrapper,
@@ -190,6 +191,7 @@ describe("App.vue", () => {
   });
 
   it("initializes executable selection with initial settings", async () => {
+    const consoleSpy = vi.spyOn(consoleHandler, "writeln");
     const settingsMock = {
       script: "",
       executableSelection: "conda.environment1",
@@ -208,7 +210,7 @@ describe("App.vue", () => {
     const executableSelectionStore = useExecutableSelectionStore();
     expect(executableSelectionStore.id).toBe(settingsMock.executableSelection);
     expect(executableSelectionStore.isMissing).toBe(false);
-    expect(getScriptingService().sendToConsole).not.toHaveBeenCalled();
+    expect(consoleSpy).not.toHaveBeenCalled();
   });
 
   it("sends output of last execution on mount", async () => {
@@ -220,6 +222,7 @@ describe("App.vue", () => {
   });
 
   it("sends error to console if executable is not in executable list", async () => {
+    const consoleSpy = vi.spyOn(consoleHandler, "writeln");
     const settingsMock = {
       script: "",
       executableSelection: "unknown environment",
@@ -231,10 +234,14 @@ describe("App.vue", () => {
       "getExecutableOptionsList",
       [settingsMock.executableSelection],
     );
-    expect(getScriptingService().sendToConsole).toHaveBeenCalled();
+    expect(consoleSpy).toHaveBeenCalledWith({
+      error:
+        'Flow variable "unknown environment" is missing, therefore no Python executable could be started',
+    });
   });
 
   it("sends error to console if executable is missing", async () => {
+    const consoleSpy = vi.spyOn(consoleHandler, "writeln");
     const settingsMock = {
       script: "",
       executableSelection: "conda.environment1",
@@ -254,6 +261,9 @@ describe("App.vue", () => {
       "getExecutableOptionsList",
       [settingsMock.executableSelection],
     );
-    expect(getScriptingService().sendToConsole).toHaveBeenCalled();
+    expect(consoleSpy).toHaveBeenCalledWith({
+      error:
+        'Flow variable "conda.environment1" is missing, therefore no Python executable could be started',
+    });
   });
 });

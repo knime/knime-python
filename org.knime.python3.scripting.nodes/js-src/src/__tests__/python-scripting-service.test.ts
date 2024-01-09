@@ -8,7 +8,11 @@ import {
   beforeAll,
 } from "vitest";
 
-import { getScriptingService, editor } from "@knime/scripting-editor";
+import {
+  getScriptingService,
+  editor,
+  consoleHandler,
+} from "@knime/scripting-editor";
 import { pythonScriptingService } from "@/python-scripting-service";
 import { useSessionStatusStore, useWorkspaceStore } from "@/store";
 import type { ExecutionInfo, KillSessionInfo } from "@/types/common";
@@ -16,6 +20,7 @@ import { ref } from "vue";
 
 describe("python-scripting-service", () => {
   let eventHandler: (info: ExecutionInfo) => void;
+  const getConsoleSpy = () => vi.spyOn(consoleHandler, "writeln");
 
   beforeAll(() => {
     eventHandler = vi.mocked(getScriptingService().registerEventHandler).mock
@@ -123,12 +128,13 @@ describe("python-scripting-service", () => {
               description: "My descriptive error message",
             }),
         );
+        const consoleSpy = getConsoleSpy();
         await pythonScriptingService.killInteractivePythonSession();
         expect(getScriptingService().sendToService).toHaveBeenCalledWith(
           "killSession",
         );
-        expect(getScriptingService().sendToConsole).toHaveBeenCalledWith({
-          error: "My descriptive error message\n",
+        expect(consoleSpy).toHaveBeenCalledWith({
+          error: "My descriptive error message",
         });
         expect(useSessionStatusStore().status).toBe("IDLE");
         expect(useWorkspaceStore().workspace).toEqual([]);
@@ -148,25 +154,26 @@ describe("python-scripting-service", () => {
           { name: "myVariable", type: "str", value: "Hello" },
           { name: "myVariable2", type: "str", value: "World" },
         ];
-        // const eventHandler = await getEventHandler();
+        const consoleSpy = getConsoleSpy();
         eventHandler({
           status: "SUCCESS",
           description: "Execution finished",
           data: expectedWorkspace,
         });
-        expect(getScriptingService().sendToConsole).not.toHaveBeenCalled();
+        expect(consoleSpy).not.toHaveBeenCalled();
         expect(useSessionStatusStore().status).toBe("IDLE");
         expect(useSessionStatusStore().lastActionResult).toBe("SUCCESS");
         expect(useWorkspaceStore().workspace).toEqual(expectedWorkspace);
       });
 
       it("should handle KNIME_ERROR", () => {
+        const consoleSpy = getConsoleSpy();
         eventHandler({
           status: "KNIME_ERROR",
           description: "KNIME error",
         });
-        expect(getScriptingService().sendToConsole).toHaveBeenCalledWith({
-          error: "KNIME error\n",
+        expect(consoleSpy).toHaveBeenCalledWith({
+          error: "KNIME error",
         });
         expect(useSessionStatusStore().status).toBe("IDLE");
         expect(useSessionStatusStore().lastActionResult).toBe("KNIME_ERROR");
@@ -174,13 +181,14 @@ describe("python-scripting-service", () => {
       });
 
       it("should handle EXECUTION_ERROR", () => {
+        const consoleSpy = getConsoleSpy();
         eventHandler({
           status: "EXECUTION_ERROR",
           description: "Execution Error",
           traceback: ["line 1", "line 2"],
         });
-        expect(getScriptingService().sendToConsole).toHaveBeenCalledWith({
-          error: "Execution Error\nline 1\nline 2\n",
+        expect(consoleSpy).toHaveBeenCalledWith({
+          error: "Execution Error\nline 1\nline 2",
         });
         expect(useSessionStatusStore().status).toBe("IDLE");
         expect(useSessionStatusStore().lastActionResult).toBe(
@@ -190,12 +198,13 @@ describe("python-scripting-service", () => {
       });
 
       it("should handle FATAL_ERROR", () => {
+        const consoleSpy = getConsoleSpy();
         eventHandler({
           status: "FATAL_ERROR",
           description: "My fatal Error",
         });
-        expect(getScriptingService().sendToConsole).toHaveBeenCalledWith({
-          error: "My fatal Error\n",
+        expect(consoleSpy).toHaveBeenCalledWith({
+          error: "My fatal Error",
         });
         expect(useSessionStatusStore().status).toBe("IDLE");
         expect(useSessionStatusStore().lastActionResult).toBe("FATAL_ERROR");
@@ -203,11 +212,12 @@ describe("python-scripting-service", () => {
       });
 
       it("should handle CANCELLED", () => {
+        const consoleSpy = getConsoleSpy();
         eventHandler({
           status: "CANCELLED",
           description: "Execution cancelled",
         });
-        expect(getScriptingService().sendToConsole).not.toHaveBeenCalled();
+        expect(consoleSpy).not.toHaveBeenCalled();
         expect(useSessionStatusStore().status).toBe("IDLE");
         expect(useSessionStatusStore().lastActionResult).toBe("CANCELLED");
         expect(useWorkspaceStore().workspace).toEqual([]);

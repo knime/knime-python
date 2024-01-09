@@ -74,7 +74,7 @@ onUnmounted(() => {
   const executable = getExecutableById(newSelection);
   if (executable) {
     pythonScriptingService.sendToConsole({
-      text: `Changed python executable to ${executable.pythonExecutable}\n`,
+      text: `Changed python executable to ${executable.pythonExecutable}`,
     });
   }
 });

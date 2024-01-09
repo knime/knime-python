@@ -3,6 +3,7 @@ import { watch } from "vue";
 import {
   editor,
   getScriptingService,
+  consoleHandler,
   type NodeSettings,
 } from "@knime/scripting-editor";
 import { registerInputCompletions } from "./input-completions";
@@ -42,12 +43,12 @@ const sendErrorToConsole = ({
     traceback === null ||
     traceback.length === 0
   ) {
-    scriptingService.sendToConsole({
-      error: `${description}\n`,
+    consoleHandler.writeln({
+      error: description,
     });
   } else {
-    scriptingService.sendToConsole({
-      error: `${description}\n${traceback?.join("\n")}\n`,
+    consoleHandler.writeln({
+      error: `${description}\n${traceback?.join("\n")}`,
     });
   }
 };
@@ -103,7 +104,7 @@ export const pythonScriptingService = {
       executableInfo.type === "MISSING_VAR"
     ) {
       sendErrorToConsole({
-        description: `Flow variable "${executableSelection.id}" is missing, therefore no Python executable could be started\n`,
+        description: `Flow variable "${executableSelection.id}" is missing, therefore no Python executable could be started`,
       });
       setSelectedExecutable({ isMissing: true });
     }
@@ -160,7 +161,7 @@ export const pythonScriptingService = {
     scriptingService.registerConsoleEventHandler(handler);
   },
   sendToConsole: (text: { text: string }) => {
-    scriptingService.sendToConsole(text);
+    consoleHandler.writeln(text);
   },
   connectToLanguageServer: async () => {
     await scriptingService.connectToLanguageServer();

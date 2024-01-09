@@ -1,4 +1,4 @@
-import { getScriptingService } from "@knime/scripting-editor";
+import { getScriptingService, consoleHandler } from "@knime/scripting-editor";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 describe("store.ts", () => {
@@ -29,12 +29,13 @@ describe("store.ts", () => {
 
     it("should log warning if no inputs are available", async () => {
       const scriptingService = getScriptingService();
+      const consoleSpy = vi.spyOn(consoleHandler, "writeln");
       vi.mocked(scriptingService.inputsAvailable).mockReturnValueOnce(
         Promise.resolve(false),
       );
       await importSessionStatusStore();
-      expect(scriptingService.sendToConsole).toHaveBeenCalledOnce();
-      expect(scriptingService.sendToConsole).toHaveBeenCalledWith({
+      expect(consoleSpy).toHaveBeenCalledOnce();
+      expect(consoleSpy).toHaveBeenCalledWith({
         warning:
           "Missing input data. Connect all input ports and execute preceding nodes to enable script execution.",
       });

@@ -197,7 +197,6 @@ describe("PythonEditorControls", () => {
 
       expect(runAllButton.props().disabled).toBeFalsy();
       expect(runSelectedButton.props().disabled).toBeFalsy();
-      expect(getScriptingService().sendToConsole).not.toHaveBeenCalled();
     });
 
     it("run buttons are disabled when inputs are missing", async () => {

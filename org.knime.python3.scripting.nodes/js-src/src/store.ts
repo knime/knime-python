@@ -1,4 +1,4 @@
-import { getScriptingService } from "@knime/scripting-editor";
+import { getScriptingService, consoleHandler } from "@knime/scripting-editor";
 import type { ExecutionResult, Workspace } from "./types/common";
 import { reactive } from "vue";
 
@@ -60,7 +60,7 @@ export const useSessionStatusStore = (): SessionStatusStore => {
     sessionStatus.isRunningSupported = true;
   } else {
     sessionStatus.isRunningSupported = false;
-    scriptingService.sendToConsole({
+    consoleHandler.writeln({
       warning:
         "Missing input data. Connect all input ports and execute preceding nodes to enable script execution.",
     });

@@ -1,6 +1,6 @@
 import { executableOptionsMock } from "@/__mocks__/executable-options";
 import { setSelectedExecutable } from "@/store";
-import { getScriptingService } from "@knime/scripting-editor";
+import { getScriptingService, consoleHandler } from "@knime/scripting-editor";
 import { flushPromises, mount } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Dropdown from "webapps-common/ui/components/forms/Dropdown.vue";
@@ -62,6 +62,7 @@ describe("EnvironmentSettings", () => {
   });
 
   it("notifies backend if executable was changed", async () => {
+    const consoleSpy = vi.spyOn(consoleHandler, "writeln");
     const wrapper = mount(EnvironmentSettings);
     await flushPromises();
     expect(getScriptingService().sendToService).toHaveBeenNthCalledWith(
@@ -75,7 +76,9 @@ describe("EnvironmentSettings", () => {
     await wrapper.vm.$nextTick();
     wrapper.unmount();
     await flushPromises();
-    expect(getScriptingService().sendToConsole).toHaveBeenCalled();
+    expect(consoleSpy).toHaveBeenCalledWith({
+      text: "Changed python executable to /opt/homebrew/Caskroom/miniconda/base/envs/conda_environment1/bin/python",
+    });
     expect(getScriptingService().sendToService).toHaveBeenNthCalledWith(
       2,
       "updateExecutableSelection",
@@ -84,6 +87,7 @@ describe("EnvironmentSettings", () => {
   });
 
   it("does not restart session if executable didn't change", async () => {
+    const consoleSpy = vi.spyOn(consoleHandler, "writeln");
     const wrapper = mount(EnvironmentSettings);
     await flushPromises();
     expect(getScriptingService().sendToService).toHaveBeenNthCalledWith(
@@ -94,7 +98,7 @@ describe("EnvironmentSettings", () => {
     wrapper.unmount();
     await flushPromises();
     expect(getScriptingService().sendToService).toHaveBeenCalledOnce();
-    expect(getScriptingService().sendToConsole).not.toHaveBeenCalled();
+    expect(consoleSpy).not.toHaveBeenCalled();
   });
 
   describe("error handling", () => {
