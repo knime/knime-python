@@ -1,7 +1,6 @@
+import { BrowserReporter, Consola, LogLevel } from "consola";
 import { createApp } from "vue";
 import App from "./components/App.vue";
-import "./python-scripting-service"; // to make sure that the scripting-service is initialized
-import { Consola, BrowserReporter, LogLevel } from "consola";
 
 const setupConsola = () => {
   const consola = new Consola({
