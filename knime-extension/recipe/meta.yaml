@@ -21,6 +21,7 @@ requirements:
 build:
   noarch: python
   string: py{{ python | replace(".", "") }}_{{time.strftime("%Y%m%d%H%M").strip()}}
+  script: python -m pip install . --no-build-isolation
 
 test:
   imports:
