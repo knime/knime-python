@@ -33,6 +33,15 @@ export default defineConfig({
               new URL("./src/__mocks__/monaco-editor", import.meta.url),
             )
           : "monaco-editor", // We mock monaco in the test environment
+      "./scripting-service-instance.js":
+        process.env.APP_ENV === "browser"
+          ? fileURLToPath(
+              new URL(
+                "./src/__mocks__/scripting-service-instance",
+                import.meta.url,
+              ),
+            )
+          : "./scripting-service-instance.js",
     },
   },
   base: "./",

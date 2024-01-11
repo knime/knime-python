@@ -21,15 +21,9 @@ import type {
   PythonScriptingNodeSettings,
 } from "./types/common";
 
+const scriptingService = getScriptingService();
 const executableSelection = useExecutableSelectionStore();
 const sessionStatus = useSessionStatusStore();
-
-const scriptingService =
-  import.meta.env.VITE_SCRIPTING_API_MOCK === "true"
-    ? getScriptingService(
-        (await import("./browser-mock-scripting-service")).default,
-      )
-    : getScriptingService();
 
 const sendErrorToConsole = ({
   description,

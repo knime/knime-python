@@ -1,6 +1,10 @@
-import { scriptingServiceBrowserMock } from "@knime/scripting-editor";
+import {
+  createScriptingServiceMock,
+  DEFAULT_FLOW_VARIABLE_INPUTS,
+  DEFAULT_INPUT_OBJECTS,
+} from "@knime/scripting-editor/scripting-service-browser-mock";
 
-export default scriptingServiceBrowserMock.createScriptingServiceMock({
+const scriptingService = createScriptingServiceMock({
   sendToServiceMockResponses: {
     getLanguageServerConfig: () => Promise.resolve(JSON.stringify({})),
     hasPreview: () => Promise.resolve(true),
@@ -12,7 +16,7 @@ export default scriptingServiceBrowserMock.createScriptingServiceMock({
   },
   inputObjects: [
     {
-      ...scriptingServiceBrowserMock.DEFAULT_INPUT_OBJECTS[0],
+      ...DEFAULT_INPUT_OBJECTS[0],
       codeAlias: "knio.input_tables[0].to_pandas()",
       requiredImport: "import knio.scripting.io as knio",
       multiSelection: true,
@@ -56,10 +60,13 @@ export default scriptingServiceBrowserMock.createScriptingServiceMock({
     },
   ],
   flowVariableInputs: {
-    ...scriptingServiceBrowserMock.DEFAULT_FLOW_VARIABLE_INPUTS,
+    ...DEFAULT_FLOW_VARIABLE_INPUTS,
     codeAlias: "knio.flow_variables",
     requiredImport: "import knio.scripting.io as knio",
     multiSelection: false,
     subItemCodeAliasTemplate: 'knio.flow_variables["{{subItems.[0]}}"]',
   },
 });
+
+export const getScriptingServiceInstance = () => scriptingService;
+export const setScriptingServiceInstance = () => {};
