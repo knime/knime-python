@@ -23,8 +23,8 @@
 		<sonar.exclusions>node_modules/**/*,dist/**/*,src/dev/**/*,.nyc_output/**/*,coverage/**/*,*.log,config/**/*,**/config.js,**/*.config.js,buildtools/**,webapps-common/**</sonar.exclusions>
 		<sonar.css.stylelint.reportPaths>target/stylelint.json</sonar.css.stylelint.reportPaths>
 		<sonar.eslint.reportPaths>target/eslint.json</sonar.eslint.reportPaths>
-		<node.version>v18.17.0</node.version>
-		<npm.version>9.6.7</npm.version>
+		<node.version>v18.19.0</node.version>
+		<npm.version>10.2.3</npm.version>
 	</properties>
 
 	<build>
