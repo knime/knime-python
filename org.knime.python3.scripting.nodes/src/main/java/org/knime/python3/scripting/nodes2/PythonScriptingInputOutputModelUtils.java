@@ -71,6 +71,7 @@ import org.knime.scripting.editor.WorkflowControl.InputPortInfo;
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
+@SuppressWarnings("restriction") // scripting editor API is still restricted
 final class PythonScriptingInputOutputModelUtils {
 
     private static final String INPUT_OUTPUT_TYPE_TABLE = "Table";
@@ -114,12 +115,13 @@ final class PythonScriptingInputOutputModelUtils {
             if (spec instanceof DataTableSpec dataTableSpec) {
                 // Table with specs available
                 inputInfos.add( //
-                    InputOutputModel.createFromTableSpec(tableIdx, //
+                    InputOutputModel.createFromTableSpec( //
+                        inputName(tableIdx, INPUT_OUTPUT_TYPE_TABLE), //
                         dataTableSpec, //
                         getInputObjectCodeAlias(tableIdx, INPUT_OUTPUT_TYPE_TABLE), //
                         getSubItemCodeAliasTemplate(tableIdx, INPUT_OUTPUT_TYPE_TABLE), //
-                        REQUIRED_IMPORT, //
-                        INPUT_OUTPUT_TYPE_TABLE));
+                        REQUIRED_IMPORT //
+                    ));
                 tableIdx++;
             } else if (type.acceptsPortObjectClass(BufferedDataTable.class)) {
                 // Table but no spec available
@@ -144,8 +146,8 @@ final class PythonScriptingInputOutputModelUtils {
             var type = portTypeToInputOutputType(relevantPortTypes.get(i));
             var index = portTypeCounter.computeIfAbsent(type, t -> 0);
             portTypeCounter.put(type, index + 1);
-            var inputName = String.format("%s %s %d", "Output", type, index + 1);
-            return new InputOutputModel(inputName, //
+            return new InputOutputModel( //
+                outputName(index, type), //
                 getOutputObjectCodeAlias(index, type), //
                 null, //
                 REQUIRED_IMPORT, //
@@ -164,9 +166,17 @@ final class PythonScriptingInputOutputModelUtils {
         return outputPortInfos;
     }
 
+    private static String inputName(final int index, final String displayName) {
+        return String.format("Input %s %d", displayName, index + 1);
+    }
+
+    private static String outputName(final int index, final String displayName) {
+        return String.format("Output %s %d", displayName, index + 1);
+    }
+
     private static InputOutputModel createInputModel(final int index, final String displayName) {
-        var name = String.format("Input %s %d", displayName, index + 1);
-        return new InputOutputModel(name, //
+        return new InputOutputModel( //
+            inputName(index, displayName), //
             getInputObjectCodeAlias(index, displayName), //
             getSubItemCodeAliasTemplate(index, displayName), //
             REQUIRED_IMPORT, //
