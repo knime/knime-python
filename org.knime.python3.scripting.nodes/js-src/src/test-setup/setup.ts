@@ -1,13 +1,8 @@
 import "vitest-canvas-mock";
 import { vi } from "vitest";
-import { Consola, LogLevel } from "consola";
+import { LogLevel } from "consola";
 
-export const consola = new Consola({
-  level: LogLevel.Log,
-});
-
-// @ts-expect-error
-window.consola = consola;
+consola.level = LogLevel.Debug;
 
 vi.mock("@knime/scripting-editor", async () => {
   const mockScriptingService = {
