@@ -23,8 +23,6 @@ vi.mock("@knime/scripting-editor", async () => {
     },
     saveSettings: vi.fn(() => {}),
     registerEventHandler: vi.fn(),
-    registerLanguageServerEventHandler: vi.fn(),
-    registerConsoleEventHandler: vi.fn(),
     getLanguageServerConfig: vi.fn(),
     connectToLanguageServer: vi.fn(),
     configureLanguageServer: vi.fn(),

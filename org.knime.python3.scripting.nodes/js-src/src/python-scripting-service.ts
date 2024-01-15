@@ -151,9 +151,6 @@ export const pythonScriptingService = {
     useWorkspaceStore().workspace = [];
     sessionStatus.status = "IDLE";
   },
-  registerConsoleEventHandler: (handler: any) => {
-    scriptingService.registerConsoleEventHandler(handler);
-  },
   sendToConsole: (text: { text: string }) => {
     consoleHandler.writeln(text);
   },
