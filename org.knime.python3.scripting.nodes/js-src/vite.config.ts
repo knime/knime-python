@@ -27,12 +27,6 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
-      "monaco-editor":
-        process.env.NODE_ENV === "test"
-          ? fileURLToPath(
-              new URL("./src/__mocks__/monaco-editor", import.meta.url),
-            )
-          : "monaco-editor", // We mock monaco in the test environment
       "./scripting-service-instance.js":
         process.env.APP_ENV === "browser"
           ? fileURLToPath(
@@ -54,6 +48,12 @@ export default defineConfig({
     environment: "jsdom",
     reporters: ["default"],
     root: fileURLToPath(new URL("./", import.meta.url)),
+    server: { deps: { inline: ["@knime/scripting-editor"] } },
+    alias: {
+      "monaco-editor": fileURLToPath(
+        new URL("./src/__mocks__/monaco-editor", import.meta.url),
+      ),
+    },
     coverage: {
       provider: "v8",
       all: true,
