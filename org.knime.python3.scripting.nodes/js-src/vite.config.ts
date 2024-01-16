@@ -38,6 +38,7 @@ export default defineConfig({
           : "./scripting-service-instance.js",
     },
   },
+  optimizeDeps: { exclude: ["@knime/scripting-editor"] },
   base: "./",
   test: {
     setupFiles: [
