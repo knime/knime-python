@@ -124,9 +124,8 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
 
     @Override
     public final Collection<String> getNodeFactoryIds() {
-        return m_allNodes.keySet().stream()//
-            .map(NodeId::getCombinedId)//
-            .collect(Collectors.toList());
+        return m_allNodes.entrySet().stream().filter(entry -> !entry.getValue().isHidden())
+            .map(entry -> entry.getKey().getCombinedId()).collect(Collectors.toList());
     }
 
     @Override
