@@ -102,6 +102,11 @@ public interface ExtensionNode {
     boolean isDeprecated();
 
     /**
+     * @return true if the node is hidden from repo
+     */
+    boolean isHidden();
+
+    /**
      * @return the paths to the resources for each view
      */
     ViewResources[] getViewResources();

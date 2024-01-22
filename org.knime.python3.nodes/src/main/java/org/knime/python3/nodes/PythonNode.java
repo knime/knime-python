@@ -77,6 +77,8 @@ public final class PythonNode implements ExtensionNode {
 
     private final boolean m_isDeprecated;
 
+    private final boolean m_isHidden;
+
     private final ViewResources[] m_viewResources;
 
     /**
@@ -90,6 +92,7 @@ public final class PythonNode implements ExtensionNode {
      * @param outputPortTypes
      * @param numViews
      * @param isDeprecated whether the node is deprecated
+     * @param isHidden whether the node is hidden from node repository
      */
     public PythonNode(
         final String id, //
@@ -100,6 +103,7 @@ public final class PythonNode implements ExtensionNode {
         final String[] outputPortTypes, //
         final int numViews, //
         final boolean isDeprecated, //
+        final boolean isHidden, //
         final ViewResources[] viewResources) {
         m_id = id;
         m_categoryPath = categoryPath;
@@ -109,6 +113,7 @@ public final class PythonNode implements ExtensionNode {
         m_outputPortTypes = PythonPortObjects.getPortTypesForIdentifiers(outputPortTypes);
         m_numViews = numViews;
         m_isDeprecated = isDeprecated;
+        m_isHidden = isHidden;
         m_viewResources = viewResources;
     }
 
@@ -172,6 +177,11 @@ public final class PythonNode implements ExtensionNode {
     @Override
     public boolean isDeprecated() {
         return m_isDeprecated;
+    }
+
+    @Override
+    public boolean isHidden() {
+        return m_isHidden;
     }
 
     @Override

@@ -170,6 +170,8 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
 
         private boolean is_deprecated;
 
+        private boolean is_hidden;
+
         private String node_type;
 
         private String icon_path;
@@ -200,7 +202,7 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
             var descriptionBuilder = createDescriptionBuilder();
             descriptionBuilder.withIcon(modulePath.resolve(icon_path));
             return new PythonNode(id, category, after, descriptionBuilder.build(), input_port_types, output_port_types,
-                views.length, is_deprecated, getViewResources(modulePath));
+                views.length, is_deprecated, is_hidden, getViewResources(modulePath));
         }
 
         private NodeDescriptionBuilder createDescriptionBuilder() {
