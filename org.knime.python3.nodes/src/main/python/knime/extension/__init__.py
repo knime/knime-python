@@ -71,6 +71,7 @@ ColumnFilterConfig = _kp.ColumnFilterConfig
 EnumParameter = _kp.EnumParameter
 EnumParameterOptions = _kp.EnumParameterOptions
 DateTimeParameter = _kp.DateTimeParameter
+FilePathParameter = _kp.FilePathParameter
 Version = _kp.Version
 Effect = _kp.Effect
 OneOf = _kp.OneOf

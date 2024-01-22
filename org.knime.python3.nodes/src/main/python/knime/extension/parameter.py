@@ -48,21 +48,24 @@ Contains the implementation of the Parameter Dialogue API for building native Py
 @author Ivan Prigarin, KNIME GmbH, Konstanz, Germany
 @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
 """
-import numbers
-from abc import ABC, abstractmethod
-from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, TypeVar, Union
-from copy import deepcopy
-import knime.api.schema as ks
-import logging
-import inspect
-import sys
-from dataclasses import dataclass
-from functools import lru_cache
 import datetime
+import inspect
+import logging
+import numbers
+import sys
+import os
+
+from abc import ABC, abstractmethod
+from copy import deepcopy
+from dataclasses import dataclass
+from enum import Enum
+from functools import lru_cache
+from typing import Any, Callable, Dict, List, Optional, TypeVar, Union
+
 import pytz
 from dateutil import parser
 
+import knime.api.schema as ks
 from knime.extension.version import Version
 
 LOGGER = logging.getLogger("Python backend")
@@ -1014,6 +1017,55 @@ class StringParameter(_BaseMultiChoiceParameter):
         else:
             schema["oneOf"] = [{"const": e, "title": e} for e in self._enum]
         return schema
+
+
+class FilePathParameter(StringParameter):
+    """
+    Parameter class for file path types.
+    """
+
+    def __init__(
+        self,
+        label: Optional[str] = None,
+        description: Optional[str] = None,
+        default_value: Union[str, DefaultValueProvider[str]] = "",
+        validator: Optional[Callable[[str], None]] = None,
+        since_version: Optional[Union[Version, str]] = None,
+        is_advanced: bool = False,
+    ):
+        super().__init__(
+            label=label,
+            description=description,
+            default_value=default_value,
+            validator=validator,
+            since_version=since_version,
+            is_advanced=is_advanced,
+        )
+
+    def default_validator(self, value):
+        if not isinstance(value, str):
+            raise TypeError(
+                f"{value} is of type {type(value)}, but should be of type string."
+            )
+        # check if value is a local path
+        if not os.path.exists(value):
+            raise ValueError(f"{value} is not a valid file path.")
+
+    def _extract_schema(self, extension_version=None, dialog_creation_context=None):
+        schema = super()._extract_schema(
+            dialog_creation_context=dialog_creation_context
+        )
+        schema["type"] = "string"
+
+        return schema
+
+    def _get_options(self, dialog_creation_context) -> dict:
+        options = {
+            "format": "localFileChooser",
+            "placeholder": self._default_value,
+        }
+
+        return options
 
 
 class MultilineStringParameter(_BaseParameter):
