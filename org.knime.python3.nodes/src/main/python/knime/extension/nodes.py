@@ -843,6 +843,7 @@ class _Node:
     icon_path: str
     category: str
     after: str
+    keywords: Optional[List[str]]
     input_ports: List[Port]
     output_ports: List[Port]
     views: List[
@@ -860,6 +861,7 @@ class _Node:
         icon_path: str,
         category: str,
         after: str,
+        keywords: Optional[List[str]],
     ) -> None:
         self.id = id
         self.name = name
@@ -869,6 +871,7 @@ class _Node:
         self.icon_path = icon_path
         self.category = category
         self.after = after
+        self.keywords = keywords
         self.input_ports = _get_ports(node_factory, "input_ports")
         self.output_ports = _get_ports(node_factory, "output_ports")
         self.views = [_get_view(node_factory)]
@@ -930,6 +933,7 @@ class _Node:
             "icon_path": self.icon_path,
             "category": self.category,
             "after": self.after,
+            "keywords": self.keywords if self.keywords is not None else [],
             "input_port_types": [port_to_str(p) for p in self.input_ports],
             "output_port_types": [port_to_str(p) for p in self.output_ports],
             "input_ports": [
@@ -966,7 +970,6 @@ class NodeType(Enum):
     OTHER = "Other"
     """A node that doesn't fit one of the other node types."""
 
-
 # TODO allow to pass in other nodes as after?
 def node(
     name: str,
@@ -974,6 +977,7 @@ def node(
     icon_path: str,
     category: str,
     after: str = None,
+    keywords: Optional[List[str]] = None,
     id: str = None,
     is_deprecated: bool = False,
     is_hidden: bool = False,
@@ -981,6 +985,32 @@ def node(
     """
     Use this decorator to annotate a PythonNode class or function that creates a PythonNode
     instance that should correspond to a node in KNIME.
+
+    Parameters
+    ----------
+    name: str
+        The name of the node
+    node_type: NodeType
+        Type can be Source, Sink, Learner, Predictor, Manipulator, Visualizer or Other.
+    icon_path: str
+        String to icon if no path is given it has no icon.
+    category: str
+        Category to which the node will belongs to. The node will appear under this category. E.g. `community`.
+    after: Optional[str]
+        If given the node will be listed after the specified node. 
+    keywords: Optional[List[str]]
+        Keywords describing your node which will help finding the node during search.
+    id: str
+        Id of your node.
+    is_deprecated: bool
+        Default is false. 
+    is_hidden: bool
+        Default is false. If true your node will not shown during search and not be listed in it's category.
+
+    Returns
+    -------
+    Callable
+        Returns a function which will decorate your node implementation with the set parameters.
     """
 
     def register(node_factory):
@@ -1001,6 +1031,7 @@ def node(
             icon_path=icon_path,
             category=category,
             after=after,
+            keywords=keywords
         )
         _nodes[node_id] = n
 

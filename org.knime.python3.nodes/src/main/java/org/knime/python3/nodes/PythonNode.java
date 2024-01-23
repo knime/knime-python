@@ -67,6 +67,8 @@ public final class PythonNode implements ExtensionNode {
 
     private final String m_afterId;
 
+    private final String[] m_keywords;
+
     private final PortType[] m_inputPortTypes;
 
     private final PortType[] m_outputPortTypes;
@@ -81,23 +83,27 @@ public final class PythonNode implements ExtensionNode {
 
     private final ViewResources[] m_viewResources;
 
+
     /**
      * Constructor.
      *
      * @param id of the node
      * @param categoryPath path to the category the node is contained in in the node repository
      * @param afterId id of the node after which to insert this node
+     * @param keywords
      * @param description the node's description
      * @param inputPortTypes
      * @param outputPortTypes
      * @param numViews
      * @param isDeprecated whether the node is deprecated
      * @param isHidden whether the node is hidden from node repository
+     * @param viewResources
      */
     public PythonNode(
         final String id, //
         final String categoryPath, //
         final String afterId, //
+        final String[] keywords, //
         final NodeDescription description, //
         final String[] inputPortTypes, //
         final String[] outputPortTypes, //
@@ -108,6 +114,7 @@ public final class PythonNode implements ExtensionNode {
         m_id = id;
         m_categoryPath = categoryPath;
         m_afterId = afterId;
+        m_keywords = keywords;
         m_description = description;
         m_inputPortTypes = PythonPortObjects.getPortTypesForIdentifiers(inputPortTypes);
         m_outputPortTypes = PythonPortObjects.getPortTypesForIdentifiers(outputPortTypes);
@@ -139,6 +146,14 @@ public final class PythonNode implements ExtensionNode {
     @Override
     public String getAfterId() {
         return m_afterId;
+    }
+
+    /**
+     * @return keywords
+     */
+    @Override
+    public String[] getKeywords() {
+        return m_keywords;
     }
 
     /**

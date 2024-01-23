@@ -180,6 +180,8 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
 
         private String after;
 
+        private String[] keywords;
+
         private String short_description;
 
         private String full_description;
@@ -201,14 +203,16 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
         PythonNode toPythonNode(final Path modulePath) {
             var descriptionBuilder = createDescriptionBuilder();
             descriptionBuilder.withIcon(modulePath.resolve(icon_path));
-            return new PythonNode(id, category, after, descriptionBuilder.build(), input_port_types, output_port_types,
-                views.length, is_deprecated, is_hidden, getViewResources(modulePath));
+            return new PythonNode(id, category, after, keywords, descriptionBuilder.build(), input_port_types,
+                output_port_types, views.length, is_deprecated, is_hidden, getViewResources(modulePath));
         }
 
         private NodeDescriptionBuilder createDescriptionBuilder() {
             var builder = new NodeDescriptionBuilder(name, node_type, is_deprecated)//
                 .withShortDescription(short_description)//
-                .withIntro(full_description);
+                .withIntro(full_description)//
+                .withKeywords(keywords);
+
             consumeIfPresent(tabs, t -> builder.withTab(t.toTab()));
             consumeIfPresent(options, o -> o.enter(builder::withOption));
             consumeIfPresent(input_ports, p -> p.enter(builder::withInputPort));

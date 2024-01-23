@@ -77,6 +77,13 @@ public interface ExtensionNode {
     String getAfterId();
 
     /**
+     * keywords are used to find nodes in the node repository
+     *
+     * @return list of keywords
+     */
+    String[] getKeywords();
+
+    /**
      * @return the description of the node as it is displayed in the KNIME AP
      */
     NodeDescription getNodeDescription();

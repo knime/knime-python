@@ -52,6 +52,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -100,6 +101,8 @@ public final class NodeDescriptionBuilder {
 
     private final List<View> m_views = new ArrayList<>();
 
+    private final List<String> m_keywords = new ArrayList<>();
+
     private final boolean m_isDeprecated;
 
     /**
@@ -139,14 +142,13 @@ public final class NodeDescriptionBuilder {
         name.setTextContent(m_name);
         node.appendChild(name);
 
-
         // short description
         var shortDesc = doc.createElement("shortDescription");
         shortDesc.appendChild(buildHelper.parseDocumentFragment(getShortDescription()));
         node.appendChild(shortDesc);
 
         // intro
-        var fullDesc  = doc.createElement("fullDescription");
+        var fullDesc = doc.createElement("fullDescription");
         var intro = doc.createElement("intro");
         intro.appendChild(buildHelper.parseDocumentFragment(getIntro()));
         fullDesc.appendChild(intro);
@@ -192,6 +194,16 @@ public final class NodeDescriptionBuilder {
             node.appendChild(views);
         }
 
+        if (!m_keywords.isEmpty()) {
+            var keywords = doc.createElement("keywords");
+            for (String keyword : m_keywords) {
+                var child = doc.createElement("keyword");
+                child.setTextContent(keyword);
+                keywords.appendChild(child);
+            }
+            node.appendChild(keywords);
+        }
+
         doc.appendChild(node);
 
         try {
@@ -216,7 +228,7 @@ public final class NodeDescriptionBuilder {
 
         Stream<Element> createElements(final String elementType, final List<? extends Described> describeds) {
             return IntStream.range(0, describeds.size())//
-                    .mapToObj(i -> createIndexedDescribed(elementType, describeds.get(i), i));
+                .mapToObj(i -> createIndexedDescribed(elementType, describeds.get(i), i));
         }
 
         Element createIndexedDescribed(final String elementType, final Described described, final int idx) {
@@ -255,7 +267,6 @@ public final class NodeDescriptionBuilder {
         }
     }
 
-
     private static DocumentBuilder createDocBuilder(final DocumentBuilderFactory fac) {
         try {
             return fac.newDocumentBuilder(); //NOSONAR
@@ -283,7 +294,6 @@ public final class NodeDescriptionBuilder {
             return m_shortDescription;
         }
     }
-
 
     /**
      * Sets a new icon.
@@ -362,6 +372,17 @@ public final class NodeDescriptionBuilder {
      */
     public NodeDescriptionBuilder withTab(final Tab tab) {
         m_tabs.add(tab);
+        return this;
+    }
+
+    /**
+     * Adds a keyword to xml.
+     *
+     * @param keywords a list of keywords
+     * @return this builder
+     */
+    public NodeDescriptionBuilder withKeywords(final String[] keywords) {
+        Collections.addAll(m_keywords, keywords);
         return this;
     }
 
