@@ -160,6 +160,12 @@ the following parameter types. For a more detailed description see
    :inherited-members:
    :exclude-members: validator, rule
 
+.. autoclass:: knime.extension.LocalPathParameter
+   :members:
+   :noindex:
+   :inherited-members:
+
+
 Validation
 ++++++++++
 

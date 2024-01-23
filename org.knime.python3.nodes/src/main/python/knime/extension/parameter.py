@@ -52,9 +52,8 @@ import datetime
 import inspect
 import logging
 import numbers
-import sys
 import os
-
+import sys
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass
@@ -1019,16 +1018,24 @@ class StringParameter(_BaseMultiChoiceParameter):
         return schema
 
 
-class FilePathParameter(StringParameter):
+class LocalPathParameter(StringParameter):
     """
-    Parameter class for file path types.
+    Parameter class for local file path types. The path is represented as string.
+
+    Raises
+    ------
+    TypeError
+        If the value is not a string.
+    ValueError
+        If the value is not a valid file path.
+
     """
 
     def __init__(
         self,
         label: Optional[str] = None,
         description: Optional[str] = None,
-        default_value: Union[str, DefaultValueProvider[str]] = "",
+        placeholder_text: str = "",
         validator: Optional[Callable[[str], None]] = None,
         since_version: Optional[Union[Version, str]] = None,
         is_advanced: bool = False,
@@ -1036,19 +1043,19 @@ class FilePathParameter(StringParameter):
         super().__init__(
             label=label,
             description=description,
-            default_value=default_value,
             validator=validator,
             since_version=since_version,
             is_advanced=is_advanced,
         )
+        self.placeholder_text = placeholder_text
 
     def default_validator(self, value):
-        if not isinstance(value, str):
+        if value and not isinstance(value, str):
             raise TypeError(
                 f"{value} is of type {type(value)}, but should be of type string."
             )
         # check if value is a local path
-        if not os.path.exists(value):
+        if value and not os.path.exists(value):
             raise ValueError(f"{value} is not a valid file path.")
 
     def _extract_schema(self, extension_version=None, dialog_creation_context=None):
@@ -1062,7 +1069,7 @@ class FilePathParameter(StringParameter):
     def _get_options(self, dialog_creation_context) -> dict:
         options = {
             "format": "localFileChooser",
-            "placeholder": self._default_value,
+            "placeholder": self.placeholder_text,
         }
 
         return options
