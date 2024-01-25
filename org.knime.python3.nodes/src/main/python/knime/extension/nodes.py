@@ -970,6 +970,7 @@ class NodeType(Enum):
     OTHER = "Other"
     """A node that doesn't fit one of the other node types."""
 
+
 # TODO allow to pass in other nodes as after?
 def node(
     name: str,
@@ -997,13 +998,13 @@ def node(
     category: str
         Category to which the node will belongs to. The node will appear under this category. E.g. `community`.
     after: Optional[str]
-        If given the node will be listed after the specified node. 
+        If given the node will be listed after the specified node.
     keywords: Optional[List[str]]
         Keywords describing your node which will help finding the node during search.
     id: str
         Id of your node.
     is_deprecated: bool
-        Default is false. 
+        Default is false.
     is_hidden: bool
         Default is false. If true your node will not shown during search and not be listed in it's category.
 
@@ -1031,7 +1032,7 @@ def node(
             icon_path=icon_path,
             category=category,
             after=after,
-            keywords=keywords
+            keywords=keywords,
         )
         _nodes[node_id] = n
 
