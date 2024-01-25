@@ -896,6 +896,7 @@ class _Node:
 
         self.node_factory = port_injector
 
+
     def assert_no_composed_parameters(self, node_instance):
         """
         Node-level parameter composition is not supported, hence we check that none of the
@@ -1327,3 +1328,73 @@ def output_image(name: str, description: str):
         "output_ports",
         Port(PortType.IMAGE, name, description),
     )
+
+
+def input_table_group(name: str, description: str):
+    """
+    Use this decorator to define an input port of type "Table" of a node.
+
+    Parameters
+    ----------
+        name : str
+            The name of the input port.
+        description : str
+            A description of the input port.
+        group : str
+            The name of the group this port belongs to.
+    """
+    return lambda node_factory: _add_port(
+        node_factory,
+        "input_ports",
+        PortGroup(PortType.TABLE, name, description),
+    )
+
+
+def output_table_group(name: str, description: str):
+    """
+    Use this decorator to define an output port of type "Table" of a node.
+
+    Parameters
+    ----------
+        name : str
+            The name of the output port.
+        description : str
+            A description of the output port.
+        group : str
+            The name of the group this port belongs to.
+    """
+    return lambda node_factory: _add_port(
+        node_factory,
+        "output_ports",
+        PortGroup(PortType.TABLE, name, description),
+    )
+
+@dataclass
+class PortGroup:
+    """
+    A class representing a port group.
+
+    Parameters
+    ----------
+    type : PortType
+        The type of the port group.
+    name : str
+        The name of the port group.
+    description : str
+        The description of the port group.
+    """
+    type: PortType
+    name: str
+    description: str
+
+    def __post_init__(self):
+        """
+        Perform validation after ``__init__``
+        """
+        if not isinstance(self.name, str):
+            raise TypeError(f"name must be of type str. Got {type(self.name)}.")
+
+        if not isinstance(self.description, str):
+            raise TypeError(
+                f"description must be of type str. Got {type(self.description)}."
+            )

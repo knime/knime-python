@@ -38,3 +38,4 @@ Automatic-Module-Name: org.knime.python3.nodes
 Eclipse-RegisterBuddy: org.knime.ext.py4j
 Eclipse-BundleShape: dir
 Bundle-Activator: org.knime.python3.nodes.Activator
+Import-Package: org.knime.python2.port

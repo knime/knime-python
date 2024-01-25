@@ -62,7 +62,9 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.knime.core.node.ConfigurableNodeFactory;
 import org.knime.core.node.DynamicNodeFactory;
+import org.knime.core.node.IDynamicNodeFactory;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeDescription;
 import org.knime.core.node.NodeDialogPane;
@@ -72,6 +74,7 @@ import org.knime.core.node.NodeSetFactory;
 import org.knime.core.node.NodeSettings;
 import org.knime.core.node.config.ConfigRO;
 import org.knime.core.node.config.ConfigWO;
+import org.knime.core.node.context.NodeCreationConfiguration;
 import org.knime.core.node.extension.CategoryExtension;
 import org.knime.core.node.extension.CategorySetFactory;
 import org.knime.core.node.util.CheckUtils;
@@ -130,7 +133,7 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
 
     @Override
     public final Class<? extends NodeFactory<? extends NodeModel>> getNodeFactory(final String id) {
-        return DynamicExtensionNodeFactory.class;
+        return InternConfigurableExtensionNodeFactory.class;
     }
 
     @Override
@@ -163,8 +166,8 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
      *
      * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
      */
-    public static final class DynamicExtensionNodeFactory extends DynamicNodeFactory<DelegatingNodeModel>
-        implements NodeDialogFactory, NodeViewFactory<DelegatingNodeModel> {
+    public static final class InternConfigurableExtensionNodeFactory extends ConfigurableNodeFactory<DelegatingNodeModel>
+        implements NodeDialogFactory, NodeViewFactory<DelegatingNodeModel>, IDynamicNodeFactory {
 
         private NodeProxyProvider m_proxyProvider;
 
@@ -183,6 +186,15 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
         private String m_extensionVersion;
 
         private String m_factoryIdUniquifier;
+
+        /**
+         * InternConfigurableExtensionNodeFactory Lazy Init
+         */
+        public InternConfigurableExtensionNodeFactory() {
+            super(true);
+
+        }
+
 
         @SuppressWarnings("null")
         @Override
@@ -207,16 +219,18 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
 
         @Override
         public String getFactoryIdUniquifier() {
+            // TODO Get Logic From new interface in ConfigurableNodeFactory
             return m_factoryIdUniquifier;
         }
 
-        @Override
         protected boolean isDeprecatedInternal() {
+            // TODO Get Logic From new interface in ConfigurableNodeFactory
             return m_node.isDeprecated();
         }
 
         @Override
-        protected Optional<String> getBundleName() {
+        public Optional<String> getBundleName() {
+            // TODO Get Logic From new interface in ConfigurableNodeFactory
             return m_bundleName;
         }
 
@@ -311,5 +325,33 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
                 // Dummy
             }
         }
+
+        @Override
+        protected Optional<PortsConfigurationBuilder> createPortsConfigBuilder() {
+            // TODO Use python node for port infos
+
+            final var b = new PortsConfigurationBuilder();
+            b.addFixedInputPortGroup("Input Table Group", m_node.getInputPortTypes());
+            b.addFixedOutputPortGroup("Output Table Group", m_node.getOutputPortTypes());
+
+
+            return Optional.of(b);
+        }
+
+
+        @Override
+        protected DelegatingNodeModel createNodeModel(final NodeCreationConfiguration creationConfig) {
+            // TODO what with the context?
+            return createNodeModel();
+        }
+
+
+        @Override
+        protected NodeDialogPane createNodeDialogPane(final NodeCreationConfiguration creationConfig) {
+            // TODO Auto-generated method stub
+            return null;
+        }
+
+
     }
 }
