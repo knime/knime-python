@@ -3,6 +3,7 @@
 Run this script and open the html files that were created in the working directory
 using your browser.
 """
+
 import os
 import pythonpath
 

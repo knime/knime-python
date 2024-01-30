@@ -1,6 +1,7 @@
 """
 To run: python -m unittest discover
 """
+
 import unittest
 
 from autocompletion_utils import disable_autocompletion
