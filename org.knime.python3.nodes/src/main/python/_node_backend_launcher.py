@@ -637,9 +637,11 @@ class _PythonNodeProxy:
 
     def _specs_to_python(self, specs):
         return [
-            self._port_type_registry.spec_to_python(spec, port, self._java_callback)
-            if spec is not None
-            else None
+            (
+                self._port_type_registry.spec_to_python(spec, port, self._java_callback)
+                if spec is not None
+                else None
+            )
             for port, spec in zip(self._node.input_ports, specs)
         ]
 
@@ -791,11 +793,16 @@ class _PythonNodeProxy:
             outputs = [outputs]
 
         output_specs = [
-            self._port_type_registry.spec_from_python(
-                spec, self._node.output_ports[i], java_config_context.get_node_id(), i
+            (
+                self._port_type_registry.spec_from_python(
+                    spec,
+                    self._node.output_ports[i],
+                    java_config_context.get_node_id(),
+                    i,
+                )
+                if spec is not None
+                else None
             )
-            if spec is not None
-            else None
             for i, spec in enumerate(outputs)
         ]
         _pop_log_callback()
