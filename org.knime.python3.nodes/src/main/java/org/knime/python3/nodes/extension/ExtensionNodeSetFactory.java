@@ -77,6 +77,7 @@ import org.knime.core.node.config.ConfigWO;
 import org.knime.core.node.context.NodeCreationConfiguration;
 import org.knime.core.node.extension.CategoryExtension;
 import org.knime.core.node.extension.CategorySetFactory;
+import org.knime.core.node.port.PortType;
 import org.knime.core.node.util.CheckUtils;
 import org.knime.core.webui.node.dialog.NodeDialog;
 import org.knime.core.webui.node.dialog.NodeDialogFactory;
@@ -328,11 +329,73 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
 
         @Override
         protected Optional<PortsConfigurationBuilder> createPortsConfigBuilder() {
-            // TODO Use python node for port infos
+            // TODO Info stet getinputporttypes
+            // wir müssen dise liste parsen und entsprechende fixed und group ports hinzufügen
 
             final var b = new PortsConfigurationBuilder();
-            b.addFixedInputPortGroup("Input Table Group", m_node.getInputPortTypes());
-            b.addFixedOutputPortGroup("Output Table Group", m_node.getOutputPortTypes());
+            // TODO ordered hashmap
+            /* mit {identifier: porttype}
+             * for each
+             *  b.addExtendableOutputPortGroup(identifier, porttype);
+             *  oder addExtendableInputPortGroupWithDefault
+             *  oder  addFixedInputPortGroup QUESTOIN: Kann man mehrere machen mit einem????
+             *
+             */
+
+            /*
+             * Dictionary
+             * {
+             *      FixedPortGroup: Type: InputTable, ->  b.addFixedInputPortGroup("Input Table", inputPortTypes)
+             *      How to trenn?
+             *      ExtendablePortGroup: Type InputTable, ->  b.addExtendableInputPortGroup("Input Table Dynamisch", inputGroupPortTypes);
+             *      ExtendablePortGroupDefault: ...
+             *
+             */
+
+            /*
+             * Bei unterschiedlichen Fixed Ports:
+             *  Wollen wir eine Gruppe für jeden individuellen Port, eine für jeden PortType oder eine Gruppe für alle?
+             *  1:
+             *      + Ordnung klar
+             *      - Wie sehen die Ports dann aus?
+             *      - Geht das überhaupt?
+             *  2.
+             *      - Ordnung unklar
+             *  3.
+             *      - Ordnung unklar
+             *      - Geht das überhaupt?
+             */
+            // -> [InputTable, BinaryObject, InputTable, BinaryObject] -> Problem mit Group ID
+            //   b.addFixedInputPortGroup("Input Table", inputPortTypes);
+            // Problem EXECUTE( wie kommen die sacen rein??????)
+            // Oder für jeden fixed input port eine group mit anderer ID oder einfach eine ID für alle falls geht lol
+            // b.addFixedInputPortGroup("All fixed input ports", inputPortTypes);
+//            PortType[] inputPortTypes = m_node.getInputPortTypes(); //Fixed
+//            PortType[] outputPortTypes = m_node.getOutputPortTypes();
+
+            PortType[] inputGroupPortTypes = m_node.getInputPortTypesGroups(); //dynamic
+            //PortType[] outputGroupPortTypes = m_node.getOutputPortTypesGroups();
+
+
+//            b.addFixedInputPortGroup("Input Table", inputPortTypes);
+//
+//            b.addFixedOutputPortGroup("Output Table", outputPortTypes);
+
+            //b.addFixedInputPortGroup("Input Binary", inputBinaryPortTypes);
+            //b.addFixedOutputPortGroup("Output Binary", outputBinaryPortTypes);
+
+            // This has a default that can be removed by user
+            //b.addExtendableInputPortGroupWithDefault(m_extensionVersion, inputGroupPortTypes, outputPortTypes, outputGroupPortTypes);
+
+            //TODO was macht group ID,
+            //b.addExtendableOutputPortGroup(m_extensionVersion, fixed, dynamisch);
+
+
+            b.addExtendableInputPortGroup("Input Table Dynamisch", inputGroupPortTypes);
+            //b.addExtendableOutputPortGroup("Output Table Dynamisch", outputGroupPortTypes);
+
+
+
 
 
             return Optional.of(b);

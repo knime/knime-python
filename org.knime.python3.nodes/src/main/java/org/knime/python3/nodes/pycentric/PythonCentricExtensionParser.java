@@ -201,6 +201,7 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
         private JsonView[] views;
 
         PythonNode toPythonNode(final Path modulePath) {
+            //TODO: How do we set dynamic ports in description
             var descriptionBuilder = createDescriptionBuilder();
             descriptionBuilder.withIcon(modulePath.resolve(icon_path));
             return new PythonNode(id, category, after, keywords, descriptionBuilder.build(), input_port_types,
@@ -217,6 +218,7 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
             consumeIfPresent(options, o -> o.enter(builder::withOption));
             consumeIfPresent(input_ports, p -> p.enter(builder::withInputPort));
             consumeIfPresent(output_ports, p -> p.enter(builder::withOutputPort));
+            //TODO: we need to set groups here if we want to write groups in description
             consumeIfPresent(views, v -> v.enter(builder::withView));
             return builder;
         }

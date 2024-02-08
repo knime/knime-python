@@ -117,4 +117,14 @@ public interface ExtensionNode {
      * @return the paths to the resources for each view
      */
     ViewResources[] getViewResources();
+
+    /**
+     * @return Input port type identifiers
+     */
+    public PortType[] getInputPortTypesGroups();
+
+    /**
+     * @return Output port type identifiers
+     */
+    public PortType[] getOutputPortTypesGroups();
 }

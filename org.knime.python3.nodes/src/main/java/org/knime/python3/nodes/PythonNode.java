@@ -69,6 +69,10 @@ public final class PythonNode implements ExtensionNode {
 
     private final String[] m_keywords;
 
+    private final PortType[] m_inputPortTypesGroups;
+
+    private final PortType[] m_outputPortTypesGroups;
+
     private final PortType[] m_inputPortTypes;
 
     private final PortType[] m_outputPortTypes;
@@ -116,6 +120,10 @@ public final class PythonNode implements ExtensionNode {
         m_afterId = afterId;
         m_keywords = keywords;
         m_description = description;
+
+        m_inputPortTypesGroups = PythonPortObjects.getGroupPortTypesForIdentifiers(inputPortTypes);
+        m_outputPortTypesGroups = PythonPortObjects.getGroupPortTypesForIdentifiers(outputPortTypes);
+
         m_inputPortTypes = PythonPortObjects.getPortTypesForIdentifiers(inputPortTypes);
         m_outputPortTypes = PythonPortObjects.getPortTypesForIdentifiers(outputPortTypes);
         m_numViews = numViews;
@@ -162,6 +170,22 @@ public final class PythonNode implements ExtensionNode {
     @Override
     public NodeDescription getNodeDescription() {
         return m_description;
+    }
+
+    /**
+     * @return Input port type identifiers
+     */
+    @Override
+    public PortType[] getInputPortTypesGroups() {
+        return m_inputPortTypesGroups;
+    }
+
+    /**
+     * @return Output port type identifiers
+     */
+    @Override
+    public PortType[] getOutputPortTypesGroups() {
+        return m_outputPortTypesGroups;
     }
 
 

@@ -916,14 +916,21 @@ class _Node:
 
     def to_dict(self):
         def port_to_str(port):
-            if port.type == PortType.BINARY:
-                return f"{port.type}={port.id}"
-            elif hasattr(port.type, "object_class") and issubclass(
-                port.type.object_class, ConnectionPortObject
-            ):
-                return "Connection" + str(port.type)
-            else:
-                return str(port.type)
+            #todo better name
+            def single_port_to_str(port):
+                if port.type == PortType.BINARY:
+                    return f"{port.type}={port.id}"
+                elif hasattr(port.type, "object_class") and issubclass(
+                    port.type.object_class, ConnectionPortObject
+                ):
+                    return "Connection" + str(port.type)
+                else:
+                    return str(port.type)
+
+            if isinstance(port, PortGroup):
+                return f"PortGroup.{single_port_to_str(port)}"
+
+            return single_port_to_str(port)
 
         return {
             "id": self.id,
@@ -1343,6 +1350,9 @@ def input_table_group(name: str, description: str):
         group : str
             The name of the group this port belongs to.
     """
+    # import pydevd_pycharm
+    # pydevd_pycharm.settrace('localhost', port=12345, stdoutToServer=True, stderrToServer=True)
+
     return lambda node_factory: _add_port(
         node_factory,
         "input_ports",
