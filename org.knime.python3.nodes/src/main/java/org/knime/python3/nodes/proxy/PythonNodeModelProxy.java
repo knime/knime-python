@@ -106,6 +106,16 @@ public interface PythonNodeModelProxy {
     List<PythonPortObjectSpec> configure(PythonPortObjectSpec[] inputs, PythonConfigurationContext context);
 
     /**
+     * Performs the node configuration. Given the input table schemas, provide the schemas of the resulting tables.
+     *
+     * @param inputs input specs
+     * @param context The {@link PythonConfigurationContext} used during configure
+     * @return The output specs
+     */
+    // List<PythonPortObjectSpec> configure(PythonPortObjectSpec[] inputs, PythonPortGroupSpec[] groups, PythonConfigurationContext context);
+
+
+    /**
      * Initializes the Python node's Java callback that provides it with Java-backed functionality (e.g. resolving KNIME
      * URLs to local file paths).
      *

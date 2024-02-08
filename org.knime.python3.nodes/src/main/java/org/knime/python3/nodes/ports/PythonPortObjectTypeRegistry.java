@@ -122,6 +122,7 @@ public final class PythonPortObjectTypeRegistry {
     private final Map<String, Class<? extends PythonPortObjectSpec>> m_pythonPortObjectSpecMap;
 
     private PythonPortObjectTypeRegistry() {
+        // TODO: PortGroup <?>
         // TODO: actually make this a registry. See https://knime-com.atlassian.net/browse/AP-18368
         m_pythonPortObjectMap = new HashMap<>();
         m_pythonPortObjectInterfaceMap = new HashMap<>();

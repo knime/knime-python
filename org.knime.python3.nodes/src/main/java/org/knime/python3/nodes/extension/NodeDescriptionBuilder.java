@@ -386,6 +386,17 @@ public final class NodeDescriptionBuilder {
         return this;
     }
 
+    /*
+     * NOTE: Bei benny abschauen
+     *
+     *     public NodeDescriptionBuild withDynamicPorts(final )
+     */
+    public NodeDescriptionBuild withDynamicPorts(final String identifier, final String description, final String name) {
+        //
+
+
+    }
+
     /**
      * Adds a view.
      *
