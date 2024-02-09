@@ -61,6 +61,7 @@ import java.util.stream.Stream;
 
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.extension.CategoryExtension;
+import org.knime.python3.PythonGatewayTracker;
 import org.knime.python3.PythonGatewayUtils;
 import org.knime.python3.nodes.KnimeNodeBackend;
 import org.knime.python3.nodes.PurePythonNodeSetFactory.PythonExtensionParser;
@@ -126,7 +127,7 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
         throws IOException {
         var gatewayFactory = new PythonNodeGatewayFactory(staticInfo.m_id, staticInfo.m_environmentName,
             staticInfo.m_version, staticInfo.m_modulePath);
-        try (var gateway = gatewayFactory.create();
+        try (var gateway = PythonGatewayTracker.INSTANCE.createTrackedGateway(gatewayFactory.create());
                 var outputConsumer = PythonGatewayUtils.redirectGatewayOutput(gateway, LOGGER::debug, LOGGER::debug)) {
             return createNodeExtension(gateway.getEntryPoint(), staticInfo, gatewayFactory);
         } catch (InterruptedException ex) {
