@@ -75,6 +75,7 @@ import org.knime.core.node.NodeSettings;
 import org.knime.core.node.config.ConfigRO;
 import org.knime.core.node.config.ConfigWO;
 import org.knime.core.node.context.NodeCreationConfiguration;
+import org.knime.core.node.context.ports.PortsConfiguration;
 import org.knime.core.node.extension.CategoryExtension;
 import org.knime.core.node.extension.CategorySetFactory;
 import org.knime.core.node.port.PortType;
@@ -86,6 +87,9 @@ import org.knime.core.webui.node.dialog.SettingsType;
 import org.knime.core.webui.node.dialog.defaultdialog.DefaultNodeSettingsServiceWithVariables;
 import org.knime.core.webui.node.view.NodeView;
 import org.knime.core.webui.node.view.NodeViewFactory;
+import org.knime.python2.ports.DataTableInputPort;
+import org.knime.python2.ports.InputPort;
+import org.knime.python2.ports.Port;
 import org.knime.python3.nodes.DelegatingNodeModel;
 import org.knime.python3.nodes.dialog.DelegatingJsonSettingsDataService;
 import org.knime.python3.nodes.dialog.JsonFormsNodeDialog;
@@ -245,7 +249,8 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
             try (var proxy = m_proxyProvider.getNodeFactoryProxy()) {
                 // happens here to speed up the population of the node repository
                 var initialSettings = proxy.getSettings(m_extensionVersion);
-                return new DelegatingNodeModel(m_proxyProvider, m_node.getInputPortTypes(), m_node.getOutputPortTypes(),
+
+                return new DelegatingNodeModel(m_proxyProvider, m_node.getInputPortTypesGroups(), m_node.getOutputPortTypes(),
                     initialSettings, m_extensionVersion);
             }
         }
@@ -327,6 +332,20 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
             }
         }
 
+        public static Port[] createInputPorts(final PortsConfiguration config) {
+            final PortType[] inTypes = config.getInputPorts();
+
+            final var inPorts = new InputPort[inTypes.length];
+            for (int i = 0; i < inTypes.length; i++) {
+                final PortType inType = inTypes[i];
+                final InputPort inPort;
+
+                inPorts[i] = new DataTableInputPort("Input Table");
+            }
+            return inPorts;
+        }
+
+
         @Override
         protected Optional<PortsConfigurationBuilder> createPortsConfigBuilder() {
             // TODO Info stet getinputporttypes
@@ -340,9 +359,6 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
              *  oder addExtendableInputPortGroupWithDefault
              *  oder  addFixedInputPortGroup QUESTOIN: Kann man mehrere machen mit einem????
              *
-             */
-
-            /*
              * Dictionary
              * {
              *      FixedPortGroup: Type: InputTable, ->  b.addFixedInputPortGroup("Input Table", inputPortTypes)
@@ -350,9 +366,6 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
              *      ExtendablePortGroup: Type InputTable, ->  b.addExtendableInputPortGroup("Input Table Dynamisch", inputGroupPortTypes);
              *      ExtendablePortGroupDefault: ...
              *
-             */
-
-            /*
              * Bei unterschiedlichen Fixed Ports:
              *  Wollen wir eine Gruppe für jeden individuellen Port, eine für jeden PortType oder eine Gruppe für alle?
              *  1:
@@ -394,11 +407,6 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
             // --> NodeDescriptionBuilder.dynamicInputPorts.setAttribute("group-identifier", "Input Table");
             b.addExtendableInputPortGroup("Input Table", inputGroupPortTypes);
             //b.addExtendableOutputPortGroup("Output Table Dynamisch", outputGroupPortTypes);
-
-
-
-
-
             return Optional.of(b);
         }
 
@@ -406,7 +414,23 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
         @Override
         protected DelegatingNodeModel createNodeModel(final NodeCreationConfiguration creationConfig) {
             // TODO what with the context?
-            return createNodeModel();
+            // final var config = creationConfig.getPortConfig().get(); // NOSONAR
+            // inal NodeModelProxyProvider proxyProvider, final PortType[] inputPorts,
+            // final PortType[] outputPorts, final JsonNodeSettings initialSettings, final String extensionVersion)
+            // if new
+
+            final var config = creationConfig.getPortConfig().get(); // NOSONAR
+            var inputPorts = config.getInputPorts();
+            // var inputPorts = config.getInputPorts();
+            // createInputPorts(config);
+            // return new PythonViewNodeModel(createInputPorts(config), createOutputPorts(config));
+            try (var proxy = m_proxyProvider.getNodeFactoryProxy()) {
+                // happens here to speed up the population of the node repository
+                var initialSettings = proxy.getSettings(m_extensionVersion);
+
+                return new DelegatingNodeModel(m_proxyProvider, inputPorts,  m_node.getOutputPortTypes(),
+                    initialSettings, m_extensionVersion);
+            }
         }
 
 

@@ -120,10 +120,8 @@ public final class PythonNode implements ExtensionNode {
         m_afterId = afterId;
         m_keywords = keywords;
         m_description = description;
-
         m_inputPortTypesGroups = PythonPortObjects.getGroupPortTypesForIdentifiers(inputPortTypes);
         m_outputPortTypesGroups = PythonPortObjects.getGroupPortTypesForIdentifiers(outputPortTypes);
-
         m_inputPortTypes = PythonPortObjects.getPortTypesForIdentifiers(inputPortTypes);
         m_outputPortTypes = PythonPortObjects.getPortTypesForIdentifiers(outputPortTypes);
         m_numViews = numViews;
