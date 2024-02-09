@@ -390,8 +390,9 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
             //TODO was macht group ID,
             //b.addExtendableOutputPortGroup(m_extensionVersion, fixed, dynamisch);
 
-
-            b.addExtendableInputPortGroup("Input Table Dynamisch", inputGroupPortTypes);
+            // TODO: Same name as in description (group-identifier
+            // --> NodeDescriptionBuilder.dynamicInputPorts.setAttribute("group-identifier", "Input Table");
+            b.addExtendableInputPortGroup("Input Table", inputGroupPortTypes);
             //b.addExtendableOutputPortGroup("Output Table Dynamisch", outputGroupPortTypes);
 
 

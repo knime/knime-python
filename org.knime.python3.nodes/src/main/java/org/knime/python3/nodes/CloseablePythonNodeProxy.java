@@ -221,7 +221,8 @@ final class CloseablePythonNodeProxy
 
                 return FlowVariableUtils.convertToMap(getNode().getFlowObjectStack()
                     .getAvailableFlowVariables(getCompatibleFlowVariableTypes()).values());
-            }
+            }        // add <ports/> to node
+
 
             @SuppressWarnings("unused")
             public String get_auth_schema(final String serializedXMLString) throws CouldNotAuthorizeException, // NOSONAR

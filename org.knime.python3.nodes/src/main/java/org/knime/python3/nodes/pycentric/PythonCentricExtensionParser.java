@@ -202,6 +202,7 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
 
         PythonNode toPythonNode(final Path modulePath) {
             //TODO: How do we set dynamic ports in description
+            // Find out how to share identifier
             var descriptionBuilder = createDescriptionBuilder();
             descriptionBuilder.withIcon(modulePath.resolve(icon_path));
 
@@ -217,8 +218,9 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
 
             consumeIfPresent(tabs, t -> builder.withTab(t.toTab()));
             consumeIfPresent(options, o -> o.enter(builder::withOption));
-            consumeIfPresent(input_ports, p -> p.enter(builder::withInputPort));
+            // consumeIfPresent(input_ports, p -> p.enter(builder::withInputPort));
             consumeIfPresent(output_ports, p -> p.enter(builder::withOutputPort));
+            consumeIfPresent(input_ports, p -> p.enter(builder::withDynamicPorts));
             //TODO: we need to set groups here if we want to write groups in description
             consumeIfPresent(views, v -> v.enter(builder::withView));
             return builder;

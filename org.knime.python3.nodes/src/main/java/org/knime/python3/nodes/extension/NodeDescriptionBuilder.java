@@ -93,6 +93,8 @@ public final class NodeDescriptionBuilder {
 
     private final List<Port> m_inputPorts = new ArrayList<>();
 
+    private final List<Port> m_dynamicInputPorts = new ArrayList<>();
+
     private final List<Port> m_outputPorts = new ArrayList<>();
 
     private final List<Option> m_topLevelOptions = new ArrayList<>();
@@ -117,6 +119,7 @@ public final class NodeDescriptionBuilder {
         NodeType.Enum.forString(nodeType);
         m_nodeType = nodeType;
         m_isDeprecated = isDeprecated;
+        // m_dynamicInputPorts = [];
     }
 
     /**
@@ -183,10 +186,21 @@ public final class NodeDescriptionBuilder {
         var ports = doc.createElement("ports");
         buildHelper.createElements("inPort", m_inputPorts).forEach(ports::appendChild);
         buildHelper.createElements("outPort", m_outputPorts).forEach(ports::appendChild);
+        //<dynInPort name="Input table" group-identifier="Collector" insert-before="0">
+        //  Any data table
+        //</dynInPort>
+
+        if (!m_dynamicInputPorts.isEmpty()) {
+            var dynamicInputPorts = doc.createElement("dynInPort");
+            for (Port port : m_dynamicInputPorts) {
+                // node description and factory contain different (extendable) input port group identfier
+                dynamicInputPorts.setAttribute("name", port.getName());
+                dynamicInputPorts.setAttribute("group-identifier", "Input Table"); //TODO: use
+                dynamicInputPorts.setAttribute("insert-before", "0");
+                ports.appendChild(dynamicInputPorts);
+            }
+        }
         node.appendChild(ports);
-        //var option = doc.createElement("option");
-        //option.setAttribute("name", "title");
-        //doc.appendChild(option);
 
         if (!m_views.isEmpty()) {
             var views = doc.createElement("views");
@@ -203,6 +217,7 @@ public final class NodeDescriptionBuilder {
             }
             node.appendChild(keywords);
         }
+
 
         doc.appendChild(node);
 
@@ -391,10 +406,10 @@ public final class NodeDescriptionBuilder {
      *
      *     public NodeDescriptionBuild withDynamicPorts(final )
      */
-    public NodeDescriptionBuild withDynamicPorts(final String identifier, final String description, final String name) {
-        //
-
-
+    public NodeDescriptionBuilder withDynamicPorts(final String name, final String description) {
+        Port port = new Port(name, description);
+        m_dynamicInputPorts.add(port);
+        return this;
     }
 
     /**
@@ -434,6 +449,10 @@ public final class NodeDescriptionBuilder {
             super(name, description);
         }
     }
+
+    //private static final class PortGroup extends Described {
+    //    PortGroup(final String name, final String identifier, )
+    //}
 
     /**
      * Represents a Tab in the NodeDescription.
