@@ -919,7 +919,12 @@ class _Node:
             #todo better name
             def single_port_to_str(port):
                 if port.type == PortType.BINARY:
-                    return f"{port.type}={port.id}"
+                    # TODO:
+                    #import debugpy
+                    #debugpy.listen(5678)
+                    #debugpy.wait_for_client()
+                    #debugpy.breakpoint()
+                    return f"{port.type}"
                 elif hasattr(port.type, "object_class") and issubclass(
                     port.type.object_class, ConnectionPortObject
                 ):
@@ -1358,6 +1363,30 @@ def input_table_group(name: str, description: str):
         "input_ports",
         PortGroup(PortType.TABLE, name, description),
     )
+
+def input_binary_group(name: str, description: str):
+    """
+    Use this decorator to define an input port of type "Table" of a node.
+
+    Parameters
+    ----------
+        name : str
+            The name of the input port.
+        description : str
+            A description of the input port.
+        group : str
+            The name of the group this port belongs to.
+    """
+    # import pydevd_pycharm
+    # pydevd_pycharm.settrace('localhost', port=12345, stdoutToServer=True, stderrToServer=True)
+
+    return lambda node_factory: _add_port(
+        node_factory,
+        "input_ports",
+        PortGroup(PortType.BINARY, name, description),
+    )
+
+
 
 
 def output_table_group(name: str, description: str):

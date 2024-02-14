@@ -333,8 +333,10 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
         }
 
         public static Port[] createInputPorts(final PortsConfiguration config) {
-            final PortType[] inTypes = config.getInputPorts();
+            // getInputPortLocation Returns for each input port group its position.
 
+            final PortType[] inTypes = config.getInputPorts();
+            var groups = config.getInputPortLocation();
             final var inPorts = new InputPort[inTypes.length];
             for (int i = 0; i < inTypes.length; i++) {
                 final PortType inType = inTypes[i];
@@ -352,6 +354,8 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
             // wir müssen dise liste parsen und entsprechende fixed und group ports hinzufügen
 
             final var b = new PortsConfigurationBuilder();
+
+
             // TODO ordered hashmap
             /* mit {identifier: porttype}
              * for each
@@ -383,16 +387,29 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
             // Problem EXECUTE( wie kommen die sacen rein??????)
             // Oder für jeden fixed input port eine group mit anderer ID oder einfach eine ID für alle falls geht lol
             // b.addFixedInputPortGroup("All fixed input ports", inputPortTypes);
-//            PortType[] inputPortTypes = m_node.getInputPortTypes(); //Fixed
-//            PortType[] outputPortTypes = m_node.getOutputPortTypes();
+            // PortType[] inputPortTypes = m_node.getInputPortTypes(); //Fixed
+            // PortType[] outputPortTypes = m_node.getOutputPortTypes();
 
-            PortType[] inputGroupPortTypes = m_node.getInputPortTypesGroups(); //dynamic
+            PortType[] inputGroupPortTypes = m_node.getInputPortTypesGroups();
+            // Add
+            for (int i = 0; i < inputGroupPortTypes.length; i++) {
+                // distinct types
+                b.addExtendableInputPortGroup(String.format("Group#%d", i), inputGroupPortTypes[i]);
+
+            }
+            PortType[] inputPortTypes = m_node.getInputPortTypes();
+            b.addExtendableInputPortGroup("Input Table", inputPortTypes);
+
+            // b.addFixedInputPortGroup("Input Table", inputGroupPortTypes);
+            // Fixed Input Ports
+            // b.addFixedInputPortGroup("FixedInputs", inputPortTypes);
+
+            //dynamic
             //PortType[] outputGroupPortTypes = m_node.getOutputPortTypesGroups();
 
 
-//            b.addFixedInputPortGroup("Input Table", inputPortTypes);
-//
-//            b.addFixedOutputPortGroup("Output Table", outputPortTypes);
+            //b.addFixedInputPortGroup("Input Table", inputPortTypes);
+            //b.addFixedOutputPortGroup("Output Table", outputPortTypes);
 
             //b.addFixedInputPortGroup("Input Binary", inputBinaryPortTypes);
             //b.addFixedOutputPortGroup("Output Binary", outputBinaryPortTypes);
@@ -405,7 +422,6 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
 
             // TODO: Same name as in description (group-identifier
             // --> NodeDescriptionBuilder.dynamicInputPorts.setAttribute("group-identifier", "Input Table");
-            b.addExtendableInputPortGroup("Input Table", inputGroupPortTypes);
             //b.addExtendableOutputPortGroup("Output Table Dynamisch", outputGroupPortTypes);
             return Optional.of(b);
         }
@@ -420,6 +436,8 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
             // if new
 
             final var config = creationConfig.getPortConfig().get(); // NOSONAR
+            var groupNames = config.getPortGroupNames();
+            var locations = config.getInputPortLocation();
             var inputPorts = config.getInputPorts();
             // var inputPorts = config.getInputPorts();
             // createInputPorts(config);
@@ -428,6 +446,7 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
                 // happens here to speed up the population of the node repository
                 var initialSettings = proxy.getSettings(m_extensionVersion);
 
+                // InputPorts is the array
                 return new DelegatingNodeModel(m_proxyProvider, inputPorts,  m_node.getOutputPortTypes(),
                     initialSettings, m_extensionVersion);
             }
