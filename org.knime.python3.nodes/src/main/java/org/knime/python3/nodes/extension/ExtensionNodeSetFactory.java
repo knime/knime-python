@@ -75,7 +75,6 @@ import org.knime.core.node.NodeSettings;
 import org.knime.core.node.config.ConfigRO;
 import org.knime.core.node.config.ConfigWO;
 import org.knime.core.node.context.NodeCreationConfiguration;
-import org.knime.core.node.context.ports.PortsConfiguration;
 import org.knime.core.node.extension.CategoryExtension;
 import org.knime.core.node.extension.CategorySetFactory;
 import org.knime.core.node.port.PortType;
@@ -87,9 +86,6 @@ import org.knime.core.webui.node.dialog.SettingsType;
 import org.knime.core.webui.node.dialog.defaultdialog.DefaultNodeSettingsServiceWithVariables;
 import org.knime.core.webui.node.view.NodeView;
 import org.knime.core.webui.node.view.NodeViewFactory;
-import org.knime.python2.ports.DataTableInputPort;
-import org.knime.python2.ports.InputPort;
-import org.knime.python2.ports.Port;
 import org.knime.python3.nodes.DelegatingNodeModel;
 import org.knime.python3.nodes.dialog.DelegatingJsonSettingsDataService;
 import org.knime.python3.nodes.dialog.JsonFormsNodeDialog;
@@ -332,20 +328,6 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
             }
         }
 
-        public static Port[] createInputPorts(final PortsConfiguration config) {
-            // getInputPortLocation Returns for each input port group its position.
-
-            final PortType[] inTypes = config.getInputPorts();
-            var groups = config.getInputPortLocation();
-            final var inPorts = new InputPort[inTypes.length];
-            for (int i = 0; i < inTypes.length; i++) {
-                final PortType inType = inTypes[i];
-                final InputPort inPort;
-
-                inPorts[i] = new DataTableInputPort("Input Table");
-            }
-            return inPorts;
-        }
 
 
         @Override
@@ -398,11 +380,15 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
 
             }
             PortType[] inputPortTypes = m_node.getInputPortTypes();
-            b.addExtendableInputPortGroup("Input Table", inputPortTypes);
+            //b.addExtendableInputPortGroup("Input Table", inputPortTypes);
+            for (int i = 0; i < inputPortTypes.length; i++) {
+                // distinct types
+                b.addFixedInputPortGroup(String.format("Fixed#%d", i), inputPortTypes[i]);
 
-            // b.addFixedInputPortGroup("Input Table", inputGroupPortTypes);
+            }
+            //b.addFixedInputPortGroup("Input Table", inputPortTypes);
             // Fixed Input Ports
-            // b.addFixedInputPortGroup("FixedInputs", inputPortTypes);
+            //b.addFixedInputPortGroup("FixedInputs", inputPortTypes);
 
             //dynamic
             //PortType[] outputGroupPortTypes = m_node.getOutputPortTypesGroups();
@@ -445,10 +431,9 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
             try (var proxy = m_proxyProvider.getNodeFactoryProxy()) {
                 // happens here to speed up the population of the node repository
                 var initialSettings = proxy.getSettings(m_extensionVersion);
-
                 // InputPorts is the array
                 return new DelegatingNodeModel(m_proxyProvider, inputPorts,  m_node.getOutputPortTypes(),
-                    initialSettings, m_extensionVersion);
+                    initialSettings, m_extensionVersion, locations);
             }
         }
 

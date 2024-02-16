@@ -190,6 +190,7 @@ public final class NodeDescriptionBuilder {
         //  Any data table
         //</dynInPort>
 
+        // TODO: HERE BROKNNNNN
         if (!m_dynamicInputPorts.isEmpty()) {
             var dynamicInputPorts = doc.createElement("dynInPort");
             for (Port port : m_dynamicInputPorts) {

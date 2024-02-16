@@ -523,7 +523,11 @@ class DialogCreationContext(_BaseContext):
 
         """
         super().__init__(java_ctx, flow_variables)
-        self._python_specs = specs_to_python_converter(self._java_ctx.get_input_specs())
+        specs = self._java_ctx.get_input_specs()
+        portmap = self._java_ctx.get_input_port_map()
+        # cast portmap to dict
+        portmap = {k: list(v) for k, v in portmap.items()}
+        self._python_specs = specs_to_python_converter(specs, portmap)
 
     def get_input_specs(self) -> List[PortObjectSpec]:
         """

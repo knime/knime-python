@@ -109,6 +109,8 @@ public final class DelegatingNodeModel extends NodeModel
     private final AsynchronousCloseableTracker<RuntimeException> m_proxyShutdownTracker =
         new AsynchronousCloseableTracker<>(t -> LOGGER.debug("Exception during proxy shutdown.", t));
 
+    Map<String,int[]> m_portMap;
+
     /**
      * Constructor.
      *
@@ -119,13 +121,32 @@ public final class DelegatingNodeModel extends NodeModel
      * @param extensionVersion the version of the extension
      */
     public DelegatingNodeModel(final NodeModelProxyProvider proxyProvider, final PortType[] inputPorts,
-        final PortType[] outputPorts, final JsonNodeSettings initialSettings, final String extensionVersion) {
+        final PortType[] outputPorts, final JsonNodeSettings initialSettings, final String extensionVersion) { //
         super(inputPorts, outputPorts);
         m_proxyProvider = proxyProvider;
         m_settings = initialSettings;
         m_view = Optional.empty();
         m_extensionVersion = extensionVersion;
         m_outputPorts = outputPorts;
+    }
+    /**
+     * Constructor.
+     *
+     * @param proxyProvider provides the proxies for delegation
+     * @param inputPorts The input ports of this node
+     * @param outputPorts The output ports of this node
+     * @param initialSettings
+     * @param extensionVersion the version of the extension
+     */
+    public DelegatingNodeModel(final NodeModelProxyProvider proxyProvider, final PortType[] inputPorts,
+        final PortType[] outputPorts, final JsonNodeSettings initialSettings, final String extensionVersion, final Map<String,int[]> portMap) { //
+        super(inputPorts, outputPorts);
+        m_proxyProvider = proxyProvider;
+        m_settings = initialSettings;
+        m_view = Optional.empty();
+        m_extensionVersion = extensionVersion;
+        m_outputPorts = outputPorts;
+        m_portMap = portMap;
     }
 
     @Override

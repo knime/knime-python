@@ -335,6 +335,7 @@ class _PortTypeRegistry:
         raise KeyError(f"No PortType for id '{id}' registered.")
 
     def spec_to_python(self, spec: _PythonPortObjectSpec, port: kn.Port, java_callback):
+
         class_name = spec.getJavaClassName()
         data = json.loads(spec.toJsonString())
 
@@ -631,15 +632,42 @@ class _PythonNodeProxy:
                     schema_dict[key]
                 )
 
-    def _specs_to_python(self, specs):
+    def _specs_to_python(self, specs, portmap):
+
+
+        port_specs = self._parse_ports(portmap, specs)
+
         return [
             (
                 self._port_type_registry.spec_to_python(spec, port, self._java_callback)
                 if spec is not None
                 else None
             )
-            for port, spec in zip(self._node.input_ports, specs)
+            for port, spec in zip(port_specs, specs)
         ]
+
+    def _parse_ports(self, portmap, specs):
+        inverse = {}
+        for k, v in portmap.items():
+            for x in v:
+                inverse.setdefault(x, []).append(k)
+        # Todo: this is broken, we iterate over the ports we have listed with the decorator, but these might be empty
+        # BROKEN IF GROUP IS EMPTY OR > 1
+        port_specs = []
+        for index, portSpec in enumerate(specs):
+            port_group_key = inverse[index]
+            if len(port_group_key) == 0:
+                continue
+            port_group_key = port_group_key[0]
+            # map onto self._node.input_ports
+            if port_group_key.startswith("Group#"):
+                parsed_key = int(port_group_key.replace("Group#", ""))
+            else:
+                parsed_key = 2  # todo: fix, we need a proper mapping on java side
+
+            port_spec = self._node.input_ports[parsed_key]
+            port_specs.append(port_spec)
+        return port_specs
 
     def getParameters(self) -> str:
         parameters_dict = kp.extract_parameters(self._node)
@@ -683,12 +711,15 @@ class _PythonNodeProxy:
     def execute(
         self, input_objects: List[_PythonPortObject], java_exec_context
     ) -> List[_PythonPortObject]:
+
         _push_log_callback(lambda msg, sev: self._java_callback.log(msg, sev))
 
         try:
+            port_map = java_exec_context.get_input_port_map()
+            mapped_input_ports = self._parse_ports(port_map, input_objects)
             inputs = [
                 self._port_type_registry.port_object_to_python(
-                    po, self._node.input_ports[idx], self._java_callback
+                    po, mapped_input_ports[idx], self._java_callback
                 )
                 for idx, po in enumerate(input_objects)
             ]
@@ -768,10 +799,12 @@ class _PythonNodeProxy:
     ) -> List[_PythonPortObjectSpec]:
         _push_log_callback(lambda msg, sev: self._java_callback.log(msg, sev))
         try:
-            inputs = self._specs_to_python(input_specs)
+            portmap = java_config_context.get_input_port_map()
+            inputs = self._specs_to_python(input_specs, portmap)
             config_context = kn.ConfigurationContext(
                 java_config_context, self._get_flow_variables()
             )
+            kp.validate_specs(self._node, inputs)
             kp.validate_specs(self._node, inputs)
             # TODO: maybe we want to run execute on the main thread? use knime._backend._mainloop
             outputs = self._node.configure(config_context, *inputs)

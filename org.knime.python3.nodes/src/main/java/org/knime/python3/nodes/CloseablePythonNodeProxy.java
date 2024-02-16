@@ -259,8 +259,14 @@ final class CloseablePythonNodeProxy
                 return Arrays.stream(specs).map(PythonPortObjectTypeRegistry::convertToPythonPortObjectSpec)
                     .toArray(PythonPortObjectSpec[]::new);
             }
-        };
 
+            public Map<String, int[]> get_input_port_map(){
+                Map<String, int[]> portMap = ((DelegatingNodeModel)getNode().getNodeModel()).m_portMap;
+                return portMap;
+
+            }
+
+        };
         // extensionVersion must always be the version of the installed extension, since it is used
         // on the Python side to generate the schema and UI schema, which need to correspond to the
         // set of parameters available in the installed version of the extension.
@@ -492,6 +498,12 @@ final class CloseablePythonNodeProxy
             public String get_node_id() {
                 return workflowPropertiesProxy.getNodeNameWithID();
             }
+            public Map<String, int[]> get_input_port_map(){
+                Map<String, int[]> portMap = ((DelegatingNodeModel)getNode().getNodeModel()).m_portMap;
+                return portMap;
+
+            }
+
 
         };
 
@@ -645,6 +657,12 @@ final class CloseablePythonNodeProxy
             public String get_node_id() {
                 return workflowPropertiesProxy.getNodeNameWithID();
             }
+            public Map<String, int[]> get_input_port_map(){
+                Map<String, int[]> portMap = ((DelegatingNodeModel)getNode().getNodeModel()).m_portMap;
+                return portMap;
+
+            }
+
 
         };
 

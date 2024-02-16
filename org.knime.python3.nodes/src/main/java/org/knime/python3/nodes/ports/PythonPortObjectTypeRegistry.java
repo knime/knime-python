@@ -175,6 +175,7 @@ public final class PythonPortObjectTypeRegistry {
         }
     }
 
+
     /**
      * Convert from a {@link PythonPortObjectSpec} to a {@link PortObjectSpec} using the registered matching port object
      * spec types.
