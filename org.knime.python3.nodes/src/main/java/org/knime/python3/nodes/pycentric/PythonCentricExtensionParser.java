@@ -198,6 +198,10 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
 
         private JsonDescribed[] output_ports;
 
+        private JsonDescribed[] input_port_groups;
+
+        private JsonDescribed[] output_ports_groups;
+
         private JsonView[] views;
 
         PythonNode toPythonNode(final Path modulePath) {
@@ -218,9 +222,13 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
 
             consumeIfPresent(tabs, t -> builder.withTab(t.toTab()));
             consumeIfPresent(options, o -> o.enter(builder::withOption));
-            // consumeIfPresent(input_ports, p -> p.enter(builder::withInputPort));
+
+            consumeIfPresent(input_ports, p -> p.enter(builder::withInputPort));
             consumeIfPresent(output_ports, p -> p.enter(builder::withOutputPort));
-            consumeIfPresent(input_ports, p -> p.enter(builder::withDynamicPorts));
+
+            consumeIfPresent(input_port_groups, p -> p.enter(builder::withDynamicPorts));
+            consumeIfPresent(output_ports_groups, p -> p.enter(builder::withDynamicPorts));
+
             //TODO: we need to set groups here if we want to write groups in description
             consumeIfPresent(views, v -> v.enter(builder::withView));
             return builder;

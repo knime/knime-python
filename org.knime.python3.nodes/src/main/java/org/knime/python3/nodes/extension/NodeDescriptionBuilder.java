@@ -192,13 +192,17 @@ public final class NodeDescriptionBuilder {
 
         // TODO: HERE BROKNNNNN
         if (!m_dynamicInputPorts.isEmpty()) {
-            var dynamicInputPorts = doc.createElement("dynInPort");
+            int i = 0;
             for (Port port : m_dynamicInputPorts) {
+                var dynamicInputPorts = doc.createElement("dynInPort");
+
                 // node description and factory contain different (extendable) input port group identfier
                 dynamicInputPorts.setAttribute("name", port.getName());
-                dynamicInputPorts.setAttribute("group-identifier", "Input Table"); //TODO: use
+                dynamicInputPorts.setAttribute("group-identifier", String.format("Group#%d", i)); //TODO: use
                 dynamicInputPorts.setAttribute("insert-before", "0");
+                dynamicInputPorts.setTextContent(port.getDescription());
                 ports.appendChild(dynamicInputPorts);
+                i += 1;
             }
         }
         node.appendChild(ports);

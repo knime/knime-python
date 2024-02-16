@@ -47,14 +47,14 @@ Provides base implementations and utilities for the development of KNIME nodes i
 
 @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
 """
+import os.path
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, asdict
 from enum import Enum
-from typing import Any, Dict, List, Optional, Callable, Tuple, Type
-import os.path
+from typing import Any, Dict, List, Optional, Callable, Type
 
-import knime.extension.parameter as kp
 import knime.api.table as kt
+import knime.extension.parameter as kp
 from knime.api.schema import PortObjectSpec, _ColumnarView
 
 
@@ -124,7 +124,7 @@ class ConnectionPortObject(PortObject):
     @classmethod
     @abstractmethod
     def from_connection_data(
-        cls, spec: PortObjectSpec, data: Any
+            cls, spec: PortObjectSpec, data: Any
     ) -> "ConnectionPortObject":
         """
         Construct a ConnectionPortObject from spec and data. The data is the data that has
@@ -172,7 +172,7 @@ class FilestorePortObject(PortObject):
 
 
 def load_port_object(
-    port_object_type: Type[PortObject], spec: PortObjectSpec, file_path: str
+        port_object_type: Type[PortObject], spec: PortObjectSpec, file_path: str
 ) -> PortObject:
     """
     Loads a port object from the given file.
@@ -253,7 +253,7 @@ class ImageFormat(Enum):
 class _KnimeNodeBackend(ABC):
     @abstractmethod
     def register_port_type(
-        self, name: str, object_class: type, spec_class: type, id: Optional[str] = None
+            self, name: str, object_class: type, spec_class: type, id: Optional[str] = None
     ):
         raise RuntimeError("Not implemented")
 
@@ -288,10 +288,10 @@ _backend: _KnimeNodeBackend = None
 
 
 def port_type(
-    name: str,
-    object_class: Type[PortObject],
-    spec_class: Type[PortObjectSpec],
-    id: Optional[str] = None,
+        name: str,
+        object_class: Type[PortObject],
+        spec_class: Type[PortObjectSpec],
+        id: Optional[str] = None,
 ) -> PortType:
     """
     Use this decorator to annotate a PortObject class that should correspond to a PortType in KNIME.
@@ -756,14 +756,14 @@ class PythonNode(ABC):
 
 class _Category:
     def __init__(
-        self,
-        path: str,
-        level_id: str,
-        name: str,
-        description: str,
-        icon: str,
-        after: str = "",
-        locked: bool = True,
+            self,
+            path: str,
+            level_id: str,
+            name: str,
+            description: str,
+            icon: str,
+            after: str = "",
+            locked: bool = True,
     ) -> None:
         self._path = path
         self._level_id = level_id
@@ -789,13 +789,13 @@ _categories = []
 
 
 def category(
-    path: str,
-    level_id: str,
-    name: str,
-    description: str,
-    icon: str,
-    after: str = "",
-    locked: bool = True,
+        path: str,
+        level_id: str,
+        name: str,
+        description: str,
+        icon: str,
+        after: str = "",
+        locked: bool = True,
 ):
     """
     Register a new node category.
@@ -855,17 +855,17 @@ class _Node:
     ]  # for the moment we only allow one view, but we use a list to potentially allow multiple
 
     def __init__(
-        self,
-        node_factory,
-        id: str,
-        name: str,
-        is_deprecated: bool,
-        is_hidden: bool,
-        node_type: str,
-        icon_path: str,
-        category: str,
-        after: str,
-        keywords: Optional[List[str]],
+            self,
+            node_factory,
+            id: str,
+            name: str,
+            is_deprecated: bool,
+            is_hidden: bool,
+            node_type: str,
+            icon_path: str,
+            category: str,
+            after: str,
+            keywords: Optional[List[str]],
     ) -> None:
         self.id = id
         self.name = name
@@ -900,7 +900,6 @@ class _Node:
 
         self.node_factory = port_injector
 
-
     def assert_no_composed_parameters(self, node_instance):
         """
         Node-level parameter composition is not supported, hence we check that none of the
@@ -908,10 +907,10 @@ class _Node:
         since an instance-level parameter is by definition not a descriptor.
         """
         if any(
-            [
-                isinstance(attr, kp._BaseParameter)
-                for attr in node_instance.__dict__.values()
-            ]
+                [
+                    isinstance(attr, kp._BaseParameter)
+                    for attr in node_instance.__dict__.values()
+                ]
         ):
             raise AttributeError(
                 """Only parameter group composition is allowed at the node-level.
@@ -920,17 +919,17 @@ class _Node:
 
     def to_dict(self):
         def port_to_str(port):
-            #todo better name
+            # todo better name
             def single_port_to_str(port):
                 if port.type == PortType.BINARY:
                     # TODO:
-                    #import debugpy
-                    #debugpy.listen(5678)
-                    #debugpy.wait_for_client()
-                    #debugpy.breakpoint()
+                    # import debugpy
+                    # debugpy.listen(5678)
+                    # debugpy.wait_for_client()
+                    # debugpy.breakpoint()
                     return f"{port.type}"
                 elif hasattr(port.type, "object_class") and issubclass(
-                    port.type.object_class, ConnectionPortObject
+                        port.type.object_class, ConnectionPortObject
                 ):
                     return "Connection" + str(port.type)
                 else:
@@ -940,6 +939,16 @@ class _Node:
                 return f"PortGroup.{single_port_to_str(port)}"
 
             return single_port_to_str(port)
+
+        import pydevd_pycharm
+        pydevd_pycharm.settrace('localhost', port=12345, stdoutToServer=True, stderrToServer=True)
+        # split self.input_ports into static ports and port groups
+        static_input_ports = [port for port in self.input_ports if not isinstance(port, PortGroup)]
+        port_input_groups = [port for port in self.input_ports if isinstance(port, PortGroup)]
+
+        # split self.output_ports into static ports and port groups
+        static_output_ports = [port for port in self.output_ports if not isinstance(port, PortGroup)]
+        output_port_groups = [port for port in self.output_ports if isinstance(port, PortGroup)]
 
         return {
             "id": self.id,
@@ -954,11 +963,27 @@ class _Node:
             "input_port_types": [port_to_str(p) for p in self.input_ports],
             "output_port_types": [port_to_str(p) for p in self.output_ports],
             "input_ports": [
-                {"name": p.name, "description": p.description} for p in self.input_ports
+                {"name": p.name, "description": p.description} for p in static_input_ports
+            ],
+            "input_port_groups": [
+                {
+                    "name": p.name,
+                    "description": p.description,
+                    "type": p.type
+                }
+                for p in port_input_groups
             ],
             "output_ports": [
                 {"name": p.name, "description": p.description}
-                for p in self.output_ports
+                for p in static_output_ports
+            ],
+            "output_port_groups": [
+                {
+                    "name": p.name,
+                    "description": p.description,
+                    "type": p.type
+                }
+                for p in output_port_groups
             ],
             "views": [asdict(v) for v in self.views if v is not None],
         }
@@ -990,15 +1015,15 @@ class NodeType(Enum):
 
 # TODO allow to pass in other nodes as after?
 def node(
-    name: str,
-    node_type: NodeType,
-    icon_path: str,
-    category: str,
-    after: str = None,
-    keywords: Optional[List[str]] = None,
-    id: str = None,
-    is_deprecated: bool = False,
-    is_hidden: bool = False,
+        name: str,
+        node_type: NodeType,
+        icon_path: str,
+        category: str,
+        after: str = None,
+        keywords: Optional[List[str]] = None,
+        id: str = None,
+        is_deprecated: bool = False,
+        is_hidden: bool = False,
 ) -> Callable:
     """
     Use this decorator to annotate a PythonNode class or function that creates a PythonNode
@@ -1368,6 +1393,7 @@ def input_table_group(name: str, description: str):
         PortGroup(PortType.TABLE, name, description),
     )
 
+
 def input_binary_group(name: str, description: str):
     """
     Use this decorator to define an input port of type "Table" of a node.
@@ -1391,8 +1417,6 @@ def input_binary_group(name: str, description: str):
     )
 
 
-
-
 def output_table_group(name: str, description: str):
     """
     Use this decorator to define an output port of type "Table" of a node.
@@ -1411,6 +1435,7 @@ def output_table_group(name: str, description: str):
         "output_ports",
         PortGroup(PortType.TABLE, name, description),
     )
+
 
 @dataclass
 class PortGroup:
