@@ -994,17 +994,23 @@ class _KnimeNodeBackend(kg.EntryPoint, kn._KnimeNodeBackend):
         else:
             options = self._knime_parser.parse_options(param_doc)
             tabs = []
+        static_input_ports, dynamic_input_ports , static_output_ports, dynamic_output_ports = (
+            kn.split_port_and_port_groups(node.input_ports, node.output_ports))
+        static_input_ports = self._knime_parser.parse_ports(static_input_ports)
+        static_output_ports = self._knime_parser.parse_ports(static_output_ports)
 
-        input_ports = self._knime_parser.parse_ports(node.input_ports)
-        output_ports = self._knime_parser.parse_ports(node.output_ports)
+        dynamic_input_ports = self._knime_parser.parse_ports(dynamic_input_ports)
+        dynamic_output_ports = self._knime_parser.parse_ports(dynamic_output_ports)
 
         return {
             "short_description": short_description,
             "full_description": full_description,
             "options": options,
             "tabs": tabs,
-            "input_ports": input_ports,
-            "output_ports": output_ports,
+            "input_ports": static_input_ports,
+            "output_ports": static_output_ports,
+            "input_port_groups": dynamic_input_ports,
+            "output_port_groups": dynamic_output_ports,
         }
 
     def createNodeFromExtension(self, node_id: str) -> _PythonNodeProxy:
