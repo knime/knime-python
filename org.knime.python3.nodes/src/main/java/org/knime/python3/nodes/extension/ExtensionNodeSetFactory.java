@@ -174,7 +174,7 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
 
         private NodeDescription m_nodeDescription;
 
-        private Optional<String> m_bundleName;
+        private Optional<String> m_bundleName = Optional.empty();
 
         private ExtensionNode m_node;
 
