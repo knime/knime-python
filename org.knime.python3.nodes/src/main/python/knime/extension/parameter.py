@@ -1330,6 +1330,7 @@ class _BaseColumnParameter(_BaseParameter):
         default_value: Optional[Union[Any, DefaultValueProvider[Any]]] = None,
         since_version=None,
         is_advanced=False,
+        schema_provider=None,
     ):
         """
         Parameters
@@ -1352,12 +1353,23 @@ class _BaseColumnParameter(_BaseParameter):
             since_version=since_version,
             is_advanced=is_advanced,
         )
-        self._port_index = port_index
         if column_filter is None:
             column_filter = lambda c: True
         self._column_filter = column_filter
+        if schema_provider is None:
+            self._port_index = port_index
+
+            def default_schema_provider(dialog_creation_context):
+                return _pick_spec(dialog_creation_context.get_input_specs(), port_index)
+
+            schema_provider = default_schema_provider
+        else:
+            self._port_index = None
+        self._schema_provider = schema_provider
 
     def _validate_specs(self, specs):
+        if self._port_index is None:
+            return
         if len(specs) <= self._port_index:
             raise ValueError(
                 f"There are too few input specs. The column selection '{self._name}' requires a table input at index {self._port_index}"
@@ -1383,6 +1395,7 @@ class ColumnParameter(_BaseColumnParameter):
         include_none_column: bool = False,
         since_version: Optional[str] = None,
         is_advanced: bool = False,
+        schema_provider=None,
     ):
         """
         Parameters
@@ -1392,7 +1405,7 @@ class ColumnParameter(_BaseColumnParameter):
         description : str
             Description of the parameter in the node description and dialog
         port_index : int
-            The input port to select columns from
+            The input port to select columns. Ignored if a schema_provider is specified.
         column_filter : function
             A function for prefiltering columns
         include_row_key : bool
@@ -1401,6 +1414,8 @@ class ColumnParameter(_BaseColumnParameter):
             Whether to allow to select no column
         since_version : str, optional
             The version at which this parameter was introduced. Can be omitted if the parameter is part of the first version of the node.
+        schema_provider: function, optional
+            A function that takes a DialogCreationContext and extracts a Schema from it.
         """
         super().__init__(
             label,
@@ -1410,6 +1425,7 @@ class ColumnParameter(_BaseColumnParameter):
             None,
             since_version,
             is_advanced,
+            schema_provider,
         )
         self._include_row_key = include_row_key
         self._include_none_column = include_none_column
@@ -1431,9 +1447,7 @@ class ColumnParameter(_BaseColumnParameter):
             "showRowKeys": self._include_row_key,
             "showNoneColumn": self._include_none_column,
             "possibleValues": _possible_values(
-                dialog_creation_context.get_input_specs(),
-                self._port_index,
-                self._column_filter,
+                self._schema_provider(dialog_creation_context), self._column_filter
             ),
         }
 
@@ -1502,8 +1516,7 @@ class MultiColumnParameter(_BaseColumnParameter):
         options = {
             "format": "twinList",
             "possibleValues": _possible_values(
-                dialog_creation_context.get_input_specs(),
-                self._port_index,
+                self._schema_provider(dialog_creation_context),
                 self._column_filter,
             ),
         }
@@ -1523,11 +1536,27 @@ class MultiColumnParameter(_BaseColumnParameter):
         return super()._inject(obj, value, name, version)
 
 
+def _pick_spec(specs: List[ks.PortObjectSpec], port_index: int):
+    try:
+        spec = specs[port_index]
+    except IndexError:
+        raise IndexError(
+            f"The port index {port_index} is not contained in the spec list with length {len(specs)}. "
+            f"Maybe the port_index does not match the index of the corresponding input table? "
+        ) from None
+    if not isinstance(spec, ks.Schema):
+        raise TypeError(
+            f"The port at index {port_index} is not a table. "
+            f"The ColumnFilter can only be used for table ports. "
+            f"Available specs are: {specs}"
+        )
+    return spec
+
+
 def _possible_values(
-    specs: List[ks.PortObjectSpec],
-    port_index: int,
+    spec: ks.Schema,
     column_filter: Callable[[ks.Column], bool],
-):
+) -> list[dict[str, str]]:
     def entry(name, type=None, compatible_types=None):
         entry = {"id": name, "text": name}
         if type is not None:
@@ -1536,23 +1565,11 @@ def _possible_values(
             entry["compatibleTypes"] = compatible_types
         return entry
 
-    try:
-        if specs is None or specs[port_index] is None:
-            return [entry("")]
-
-        spec = specs[port_index]
-    except IndexError:
-        raise IndexError(
-            f"The port index {port_index} is not contained in the spec list with length {len(specs)}. "
-            f"Maybe the port_index does not match the index of the corresponding input table? "
-        ) from None
+    if spec is None:
+        return [entry("")]
 
     if not isinstance(spec, ks.Schema):
-        raise TypeError(
-            f"The port at index {port_index} is not a table. "
-            f"The ColumnFilter can only be used for table ports. "
-            f"Available specs are: {specs}"
-        )
+        raise TypeError("The given input is not a table.")
 
     filtered = [
         entry(
@@ -1925,6 +1942,7 @@ class ColumnFilterParameter(_BaseColumnParameter):
         column_filter: Callable[[ks.Column], bool] = None,
         since_version: Optional[Union[str, Version]] = None,
         is_advanced: bool = False,
+        schema_provider=None,
     ):
         default_value = default_value if default_value else ColumnFilterConfig()
         super().__init__(
@@ -1935,6 +1953,7 @@ class ColumnFilterParameter(_BaseColumnParameter):
             default_value,
             since_version,
             is_advanced,
+            schema_provider,
         )
 
     def _extract_schema(
@@ -1958,8 +1977,7 @@ class ColumnFilterParameter(_BaseColumnParameter):
             "showSearch": True,
             "showMode": True,
             "possibleValues": _possible_values(
-                dialog_creation_context.get_input_specs(),
-                self._port_index,
+                self._schema_provider(dialog_creation_context),
                 self._column_filter,
             ),
         }

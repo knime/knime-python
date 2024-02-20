@@ -2206,6 +2206,53 @@ class ParameterTest(unittest.TestCase):
                 self.parameterized_with_custom_methods, forbidden_params_middle
             )
 
+    def test_extract_ui_schema_with_custom_schema_provider(self):
+
+        def _first_input_table(
+            dialog_creation_context: kn.DialogCreationContext,
+        ) -> ks.Schema:
+            return dialog_creation_context.get_input_specs()[0]
+
+        class Parameterized:
+            column_selection = kn.ColumnParameter(
+                "Column selection",
+                "Column selection",
+                schema_provider=_first_input_table,
+            )
+            column_filter = kn.ColumnFilterParameter(
+                "Column filter", "Column filter", schema_provider=_first_input_table
+            )
+
+        expected = {
+            "type": "VerticalLayout",
+            "elements": [
+                {
+                    "scope": "#/properties/model/properties/column_selection",
+                    "type": "Control",
+                    "label": "Column selection",
+                    "options": {
+                        "format": "dropDown",
+                        "showRowKeys": False,
+                        "showNoneColumn": False,
+                        "possibleValues": test_possible_values,
+                    },
+                },
+                {
+                    "scope": "#/properties/model/properties/column_filter",
+                    "type": "Control",
+                    "label": "Column filter",
+                    "options": {
+                        "format": "columnFilter",
+                        "showSearch": True,
+                        "showMode": True,
+                        "possibleValues": test_possible_values,
+                    },
+                },
+            ],
+        }
+        extracted = kp.extract_ui_schema(Parameterized(), DummyDialogCreationContext())
+        self.assertEqual(extracted, expected)
+
 
 class FullColumnSelectionTest(unittest.TestCase):
     def test_apply_manual_filter(self):
