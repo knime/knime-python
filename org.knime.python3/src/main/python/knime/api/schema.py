@@ -930,6 +930,76 @@ class CredentialPortObjectSpec(PortObjectSpec):
         return cls(xml_data, java_callback)
 
 
+class WorkflowPortInfo:
+
+    def __init__(self, type_name: str, type_id: str, schema: "Schema") -> None:
+        self._type_name = type_name
+        self._type_id = type_id
+        self._schema = schema
+
+    @property
+    def type_name(self) -> str:
+        return self._type_name
+
+    @property
+    def type_id(self) -> str:
+        return self._type_id
+
+    @property
+    def schema(self) -> "Schema":
+        return self._schema
+
+    @classmethod
+    def deserialize(cls, data: dict):
+        if "table_spec" in data:
+            schema = Schema.deserialize(data["tableSpec"])
+        else:
+            schema = None
+
+        return cls(data["typeName"], data["typeId"], schema)
+
+
+class WorkflowPortObjectSpec(PortObjectSpec):
+
+    def __init__(
+        self,
+        name: str,
+        inputs: dict[str, WorkflowPortInfo],
+        outputs: dict[str, WorkflowPortInfo],
+    ) -> None:
+        super().__init__()
+        self._name = name
+        self._inputs = inputs
+        self._outputs = outputs
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def inputs(self) -> dict[str, WorkflowPortInfo]:
+        return self._inputs
+
+    @property
+    def outputs(self) -> dict[str, WorkflowPortInfo]:
+        return self._outputs
+
+    def serialize(self) -> dict:
+        return {"name": self.name, "inputs": self.inputs, "outputs": self.outputs}
+
+    @classmethod
+    def deserialize(cls, data: dict, java_callback=None):
+        inputs = {
+            key: WorkflowPortInfo.deserialize(value)
+            for key, value in data["inputs"].items()
+        }
+        outputs = {
+            key: WorkflowPortInfo.deserialize(value)
+            for key, value in data["outputs"].items()
+        }
+        return cls(data["name"], inputs, outputs)
+
+
 # --------------------------------------------------------------------
 # Schema
 # --------------------------------------------------------------------

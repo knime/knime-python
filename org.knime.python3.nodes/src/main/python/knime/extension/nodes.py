@@ -234,6 +234,7 @@ PortType.CONNECTION = "PortType.CONNECTION"
 PortType.TABLE = "PortType.TABLE"
 PortType.IMAGE = "PortType.IMAGE"
 PortType.CREDENTIAL = "PortType.CREDENTIAL"
+PortType.WORKFLOW = "PortType.WORKFLOW"
 
 
 class ImageFormat(Enum):

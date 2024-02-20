@@ -62,7 +62,6 @@ import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeLogger;
-import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.NodeView;
@@ -74,6 +73,7 @@ import org.knime.core.node.workflow.ICredentials;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.node.workflow.VariableType;
 import org.knime.core.node.workflow.VariableTypeRegistry;
+import org.knime.core.node.workflow.virtual.AbstractPortObjectRepositoryNodeModel;
 import org.knime.core.util.PathUtils;
 import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy;
@@ -88,10 +88,11 @@ import org.knime.python3.utils.FlowVariableUtils;
 
 /**
  * NodeModel that delegates its operations to a proxy implemented in Python.
+ * Extends {@link AbstractPortObjectRepositoryNodeModel} to enable the execution of WorkflowPortObjects.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-public final class DelegatingNodeModel extends NodeModel
+public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeModel
     implements CredentialsProviderProxy, WorkflowPropertiesProxy, FlowVariablesProxy, WarningConsumer {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(DelegatingNodeModel.class);

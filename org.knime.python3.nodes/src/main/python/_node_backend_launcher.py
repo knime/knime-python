@@ -48,7 +48,7 @@ Backend for KNIME nodes written in Python. Handles the communication with Java.
 @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
 """
 
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any, Dict, List, Optional, Type, Union, Callable
 
 from knime._backend._mainloop import MainLoop
 
@@ -67,7 +67,7 @@ import logging
 import traceback
 import collections
 
-from py4j.java_gateway import JavaClass
+from py4j.java_gateway import JavaClass, Py4JJavaError
 from py4j.java_collections import ListConverter
 import py4j.clientserver
 
@@ -222,6 +222,82 @@ class _PythonImagePortObject:
         ]
 
 
+class _WorkflowExecutionWarningConsumer:
+
+    def __init__(self, warning_consumer: Callable[[str], None]) -> None:
+        self._warning_consumer = warning_consumer
+
+    def accept(self, warning: str):
+        self._warning_consumer(warning)
+
+    class Java:
+        implements = ["java.util.function.Consumer"]
+
+
+class _PythonWorkflowPortObject:
+
+    _java_to_port_type = {"org.knime.core.node.BufferedDataTable": kn.PortType.TABLE}
+
+    def __init__(
+        self,
+        workflow,
+        workflow_spec: ks.WorkflowPortObjectSpec,
+        type_registry: "_PortTypeRegistry",
+    ):
+        self._workflow = workflow
+        self._workflow_spec = workflow_spec
+        self._type_registry = type_registry
+
+    @property
+    def spec(self) -> ks.WorkflowPortObjectSpec:
+        return self._workflow_spec
+
+    def execute(
+        self,
+        inputs: dict[str, kn.Table],
+        warning_consumer: Callable[[str], None] = None,
+    ) -> list[kn.Table]:
+        if warning_consumer is None:
+
+            def no_op_warning_consumer(warning: str) -> None:
+                pass
+
+            warning_consumer = no_op_warning_consumer
+
+        prepared_inputs = {
+            key: self._type_registry.table_from_python(input)
+            for key, input in inputs.items()
+        }
+        # workaround that closes the sinks. TODO close only the sinks we created in the previous line
+        kt._backend.close()
+        outports = [
+            self._create_placeholder_port_type(id, outport)
+            for id, outport in self._workflow_spec.outputs.items()
+        ]
+        try:
+            result = self._workflow.execute(
+                prepared_inputs, _WorkflowExecutionWarningConsumer(warning_consumer)
+            )
+        except Py4JJavaError as error:
+            raise RuntimeError(str(error.java_exception.getMessage()))
+
+        return (
+            [
+                self._type_registry.port_object_to_python(output, port, None)
+                for output, port in zip(result.outputs(), outports)
+            ],
+            result.flowVariables(),
+        )
+
+    def _create_placeholder_port_type(self, id: str, port_info: ks.WorkflowPortInfo):
+        port_type = self._java_to_port_type.get(port_info.type_id)
+        if port_type is None:
+            raise AssertionError(
+                f"Only tables are currently supported as outputs of workflows, not {port_info.type_name}."
+            )
+        return kn.Port(port_type, id, description="")
+
+
 class _PythonCredentialPortObject:
     def __init__(self, spec: ks.CredentialPortObjectSpec):
         self._spec = spec
@@ -366,6 +442,13 @@ class _PortTypeRegistry:
         elif class_name == "org.knime.credentials.base.CredentialPortObjectSpec":
             assert port.type == kn.PortType.CREDENTIAL
             return ks.CredentialPortObjectSpec.deserialize(data, java_callback)
+        elif (
+            class_name == "org.knime.core.node.workflow.capture.WorkflowPortObjectSpec"
+        ):
+            assert (
+                port.type == kn.PortType.WORKFLOW
+            ), f"Expected a {port.type} but got a Workflow instead."
+            return ks.WorkflowPortObjectSpec.deserialize(data)
 
         raise TypeError("Unsupported PortObjectSpec found in Python, got " + class_name)
 
@@ -412,6 +495,10 @@ class _PortTypeRegistry:
             assert isinstance(spec, ks.CredentialPortObjectSpec)
             data = spec.serialize()
             class_name = "org.knime.credentials.base.CredentialPortObjectSpec"
+        elif port.type == kn.PortType.WORKFLOW:
+            raise AssertionError(
+                "WorkflowPortObjectSpecs can't be created in a Python node."
+            )
         else:  # custom spec
             assert (
                 port.type.id in self._port_types_by_id
@@ -489,8 +576,28 @@ class _PortTypeRegistry:
         ):
             spec = self.spec_to_python(port_object.getSpec(), port, java_callback)
             return _PythonCredentialPortObject(spec)
+        elif class_name == "org.knime.core.node.workflow.capture.WorkflowPortObject":
+            spec = self.spec_to_python(port_object.getSpec(), port, java_callback)
+            return _PythonWorkflowPortObject(port_object, spec, self)
 
         raise TypeError("Unsupported PortObject found in Python, got " + class_name)
+
+    def table_from_python(self, obj):
+        class_name = "org.knime.core.node.BufferedDataTable"
+
+        java_data_sink = None
+        if isinstance(obj, kat.ArrowTable):
+            sink = kt._backend.create_sink()
+            obj._write_to_sink(sink)
+            java_data_sink = sink._java_data_sink
+        elif isinstance(obj, kat.ArrowBatchOutputTable):
+            java_data_sink = obj._sink._java_data_sink
+        else:
+            raise TypeError(
+                f"Object should be of type Table or BatchOutputTable, but got {type(obj)}"
+            )
+
+        return _PythonTablePortObject(class_name, java_data_sink)
 
     def port_object_from_python(
         self, obj, file_creator, port: kn.Port, node_id: str, port_idx: int
@@ -501,21 +608,11 @@ class _PortTypeRegistry:
         _PythonCredentialPortObject,
     ]:
         if port.type == kn.PortType.TABLE:
-            class_name = "org.knime.core.node.BufferedDataTable"
-
-            java_data_sink = None
-            if isinstance(obj, kat.ArrowTable):
-                sink = kt._backend.create_sink()
-                obj._write_to_sink(sink)
-                java_data_sink = sink._java_data_sink
-            elif isinstance(obj, kat.ArrowBatchOutputTable):
-                java_data_sink = obj._sink._java_data_sink
-            else:
+            if not isinstance(obj, (kat.ArrowTable, kat.ArrowBatchOutputTable)):
                 raise TypeError(
                     f"Object for port {port} should be of type Table or BatchOutputTable, but got {type(obj)}"
                 )
-
-            return _PythonTablePortObject(class_name, java_data_sink)
+            return self.table_from_python(obj)
         elif port.type == kn.PortType.BINARY:
             if not isinstance(obj, bytes):
                 tb = None
@@ -538,6 +635,8 @@ class _PortTypeRegistry:
             return _PythonImagePortObject(class_name, obj)
         elif port.type == kn.PortType.CREDENTIAL:
             return _PythonCredentialPortObject(obj.spec)
+        elif port.type == kn.PortType.WORKFLOW:
+            raise AssertionError("WorkflowPortObjects can't be created in Python.")
         else:
             assert (
                 port.type.id in self._port_types_by_id

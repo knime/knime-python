@@ -62,6 +62,8 @@ import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.image.ImagePortObject;
 import org.knime.core.node.port.image.ImagePortObjectSpec;
+import org.knime.core.node.workflow.capture.WorkflowPortObject;
+import org.knime.core.node.workflow.capture.WorkflowPortObjectSpec;
 import org.knime.credentials.base.CredentialPortObject;
 import org.knime.credentials.base.CredentialPortObjectSpec;
 import org.knime.python3.arrow.PythonArrowTableConverter;
@@ -84,6 +86,7 @@ import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonTablePortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonTablePortObjectSpec;
+import org.knime.python3.nodes.ports.PythonWorkflowPortObject.PythonWorkflowPortObjectSpec;
 
 /**
  * A registry for {@link PythonPortObject}s that manages the types registered at the extension point.
@@ -134,6 +137,7 @@ public final class PythonPortObjectTypeRegistry {
         m_pythonPortObjectMap.put(ImagePortObject.class.getName(), PythonImagePortObject.class);
         m_pythonPortObjectMap.put(CredentialPortObject.class.getName(), PythonCredentialPortObject.class);
 
+
         m_pythonPortObjectInterfaceMap.put(BufferedDataTable.class.getName(), PurePythonTablePortObject.class);
         m_pythonPortObjectInterfaceMap.put(PythonBinaryBlobFileStorePortObject.class.getName(),
             PurePythonBinaryPortObject.class);
@@ -148,6 +152,9 @@ public final class PythonPortObjectTypeRegistry {
             PythonConnectionPortObjectSpec.class);
         m_pythonPortObjectSpecMap.put(ImagePortObjectSpec.class.getName(), PythonImagePortObjectSpec.class);
         m_pythonPortObjectSpecMap.put(CredentialPortObjectSpec.class.getName(), PythonCredentialPortObjectSpec.class);
+
+        m_pythonPortObjectMap.put(WorkflowPortObject.class.getName(), PythonWorkflowPortObject.class);
+        m_pythonPortObjectSpecMap.put(WorkflowPortObjectSpec.class.getName(), PythonWorkflowPortObjectSpec.class);
     }
 
     /**

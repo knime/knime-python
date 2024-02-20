@@ -176,6 +176,7 @@ class _ArrowBackend(knt._Backend):
         """Closes all sinks that were opened in this session"""
         for s in self._sinks:
             s.close()
+        self._sinks = []
 
 
 class ArrowBatchOutputTable(knt.BatchOutputTable):

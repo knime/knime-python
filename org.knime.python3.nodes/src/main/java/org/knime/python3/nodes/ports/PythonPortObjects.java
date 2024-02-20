@@ -75,6 +75,7 @@ import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.PortType;
 import org.knime.core.node.port.image.ImagePortObject;
 import org.knime.core.node.port.image.ImagePortObjectSpec;
+import org.knime.core.node.workflow.capture.WorkflowPortObject;
 import org.knime.core.table.virtual.serialization.AnnotatedColumnarSchemaSerializer;
 import org.knime.credentials.base.Credential;
 import org.knime.credentials.base.CredentialPortObject;
@@ -535,7 +536,7 @@ public final class PythonPortObjects {
         public PythonCredentialPortObject( //
             final CredentialPortObject credentialPortObject, //
             final PythonArrowTableConverter tableConverter) { // NOSONAR
-            var cpos = (CredentialPortObjectSpec)credentialPortObject.getSpec();
+            var cpos = credentialPortObject.getSpec();
             m_spec = new PythonCredentialPortObjectSpec(cpos);
         }
 
@@ -993,6 +994,8 @@ public final class PythonPortObjects {
             return ImagePortObject.TYPE;
         } else if (identifier.startsWith("PortType.CREDENTIAL")) {
             return CredentialPortObject.TYPE;
+        } else if (identifier.startsWith("PortType.WORKFLOW")) {
+            return WorkflowPortObject.TYPE;
         } else {
             // for other custom ports
             return PythonBinaryBlobFileStorePortObject.TYPE;
