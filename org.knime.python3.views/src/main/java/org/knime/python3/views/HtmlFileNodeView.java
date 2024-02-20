@@ -61,6 +61,7 @@ import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.webui.data.ApplyDataService;
 import org.knime.core.webui.data.InitialDataService;
 import org.knime.core.webui.data.RpcDataService;
+import org.knime.core.webui.node.view.NodeTableView;
 import org.knime.core.webui.node.view.NodeView;
 import org.knime.core.webui.page.Page;
 
@@ -69,7 +70,8 @@ import org.knime.core.webui.page.Page;
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
  */
-public final class HtmlFileNodeView implements NodeView {
+@SuppressWarnings("restriction") // webui node views are still restricted API
+public final class HtmlFileNodeView implements NodeTableView {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(HtmlFileNodeView.class);
 
@@ -100,6 +102,7 @@ public final class HtmlFileNodeView implements NodeView {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public Optional<InitialDataService<?>> createInitialDataService() {
         return Optional.empty();
     }
@@ -110,6 +113,7 @@ public final class HtmlFileNodeView implements NodeView {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public Optional<ApplyDataService<?>> createApplyDataService() {
         return Optional.empty();
     }
@@ -145,5 +149,13 @@ public final class HtmlFileNodeView implements NodeView {
     @Override
     public void loadValidatedSettingsFrom(final NodeSettingsRO settings) {
         // Nothing to do
+    }
+
+    @Override
+    public int getPortIndex() {
+        // TODO(AP-22049) We should return the index of the input port that supplied the data shown in the view. Just
+        // returning 0 is not always correct but we do not have information about what input port was used for the view.
+        // Port 0 is our best guess
+        return 0;
     }
 }
