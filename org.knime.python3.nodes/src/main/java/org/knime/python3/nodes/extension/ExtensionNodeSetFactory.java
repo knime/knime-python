@@ -220,19 +220,20 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
 
         @Override
         public String getFactoryIdUniquifier() {
-            // TODO Get Logic From new interface in ConfigurableNodeFactory
             return m_factoryIdUniquifier;
         }
 
+        /**
+         * @return True, if the node is deprecated internally
+         */
         protected boolean isDeprecatedInternal() {
-            // TODO Get Logic From new interface in ConfigurableNodeFactory
             return m_node.isDeprecated();
         }
 
         @Override
         public Optional<String> getBundleName() {
-            // TODO Get Logic From new interface in ConfigurableNodeFactory
             return m_bundleName;
+
         }
 
         @Override
@@ -245,8 +246,8 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
             try (var proxy = m_proxyProvider.getNodeFactoryProxy()) {
                 // happens here to speed up the population of the node repository
                 var initialSettings = proxy.getSettings(m_extensionVersion);
-
-                return new DelegatingNodeModel(m_proxyProvider, m_node.getInputPortTypesGroups(),
+                // TODO: here also the new functions? When do we use this constructor?
+                return new DelegatingNodeModel(m_proxyProvider, m_node.getInputPortTypes(),
                     m_node.getOutputPortTypes(), initialSettings, m_extensionVersion);
             }
         }
@@ -330,13 +331,9 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
 
         @Override
         protected Optional<PortsConfigurationBuilder> createPortsConfigBuilder() {
-            // TODO Info stet getinputporttypes
-            // wir müssen dise liste parsen und entsprechende fixed und group ports hinzufügen
-
             final var b = new PortsConfigurationBuilder();
 
             PortType[] inputGroupPortTypes = m_node.getInputPortTypesGroups();
-            // Add
             for (int i = 0; i < inputGroupPortTypes.length; i++) {
                 PortType dynamicPortType = inputGroupPortTypes[i];
                 // distinct types
@@ -352,7 +349,6 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
             }
 
             PortType[] outputGroupPortTypes = m_node.getOutputPortTypesGroups();
-            // Add
             for (int i = 0; i < outputGroupPortTypes.length; i++) {
                 PortType dynamicPortType = outputGroupPortTypes[i];
                 // distinct types
@@ -368,26 +364,15 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
 
             }
 
-            // This has a default that can be removed by user
+            // TODO: Builder Name needs to have the same name as in description
+            // TODO: Add addExtendableInputPortGroupWithDefault
             //b.addExtendableInputPortGroupWithDefault(m_extensionVersion, inputGroupPortTypes, outputPortTypes, outputGroupPortTypes);
 
-            //TODO was macht group ID,
-            //b.addExtendableOutputPortGroup(m_extensionVersion, fixed, dynamisch);
-
-            // TODO: Same name as in description (group-identifier
-            // --> NodeDescriptionBuilder.dynamicInputPorts.setAttribute("group-identifier", "Input Table");
-            //b.addExtendableOutputPortGroup("Output Table Dynamisch", outputGroupPortTypes);
             return Optional.of(b);
         }
 
         @Override
         protected DelegatingNodeModel createNodeModel(final NodeCreationConfiguration creationConfig) {
-            // TODO what with the context?
-            // final var config = creationConfig.getPortConfig().get(); // NOSONAR
-            // inal NodeModelProxyProvider proxyProvider, final PortType[] inputPorts,
-            // final PortType[] outputPorts, final JsonNodeSettings initialSettings, final String extensionVersion)
-            // if new
-
             final var config = creationConfig.getPortConfig().get(); // NOSONAR
 
             PortType[] inputPorts = config.getInputPorts();
@@ -395,9 +380,7 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
 
             Map<String, int[]> inputLocations = config.getInputPortLocation();
             Map<String, int[]> outputLocations = config.getOutputPortLocation();
-            // var inputPorts = config.getInputPorts();
-            // createInputPorts(config);
-            // return new PythonViewNodeModel(createInputPorts(config), createOutputPorts(config));
+
             try (var proxy = m_proxyProvider.getNodeFactoryProxy()) {
                 // happens here to speed up the population of the node repository
                 var initialSettings = proxy.getSettings(m_extensionVersion);

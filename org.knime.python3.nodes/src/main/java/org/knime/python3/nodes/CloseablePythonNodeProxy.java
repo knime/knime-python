@@ -221,7 +221,7 @@ final class CloseablePythonNodeProxy
 
                 return FlowVariableUtils.convertToMap(getNode().getFlowObjectStack()
                     .getAvailableFlowVariables(getCompatibleFlowVariableTypes()).values());
-            }        // add <ports/> to node
+            }
 
 
             @SuppressWarnings("unused")
@@ -579,7 +579,6 @@ final class CloseablePythonNodeProxy
     public PortObjectSpec[] configure(final PortObjectSpec[] inSpecs, final FlowVariablesProxy flowVariablesProxy,
         final CredentialsProviderProxy credentialsProviderProxy, final WorkflowPropertiesProxy workflowPropertiesProxy,
         final WarningConsumer warningConsumer) throws InvalidSettingsException {
-        // TOOD:
 
         final var failure = new FailureState();
 
@@ -680,13 +679,10 @@ final class CloseablePythonNodeProxy
 
         };
 
-
         final var serializedInSpecs = Stream.of(inSpecs)//
             .map(PythonPortObjectTypeRegistry::convertToPythonPortObjectSpec)//
             .toArray(PythonPortObjectSpec[]::new);
 
-
-        // TODO: Call Configure with PortGroup
         final var serializedOutSpecs = m_proxy.configure(serializedInSpecs, pythonConfigContext);
         failure.throwIfFailure();
 
