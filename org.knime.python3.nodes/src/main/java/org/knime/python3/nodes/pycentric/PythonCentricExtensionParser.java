@@ -190,6 +190,11 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
 
         private String[] output_port_types;
 
+        private String[] input_port_names;
+
+        private String[] output_port_names;
+
+
         private JsonTab[] tabs;
 
         private JsonDescribed[] options;
@@ -215,7 +220,7 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
             descriptionBuilder.withIcon(modulePath.resolve(icon_path));
 
             return new PythonNode(id, category, after, keywords, descriptionBuilder.build(), input_port_types,
-                output_port_types, views.length, is_deprecated, is_hidden, getViewResources(modulePath));
+                output_port_types, input_port_names, output_port_names, views.length, is_deprecated, is_hidden, getViewResources(modulePath));
         }
 
         private NodeDescriptionBuilder createDescriptionBuilder() {

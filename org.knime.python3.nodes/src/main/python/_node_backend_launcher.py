@@ -629,7 +629,7 @@ class _PythonNodeProxy:
 
     def _specs_to_python(self, specs, portmap):
 
-        port_specs = self._parse_ports(portmap, specs)
+        port_specs = self._map_ports_to_specs(portmap, specs)
 
         return [
             (
@@ -640,14 +640,28 @@ class _PythonNodeProxy:
             for port, spec in zip(port_specs, specs)
         ]
 
-    def _parse_ports(self, portmap, specs):
-        inverse = {}
-        for k, v in portmap.items():
-            for x in v:
-                inverse.setdefault(x, []).append(k)
+    def _map_ports_to_specs(self, portmap, specs):
+
+
+
+        # import pydevd_pycharm
+        # pydevd_pycharm.settrace('localhost', port=12345, stdoutToServer=True, stderrToServer=True)
+
+        # we invert the dict to map the port indices to the port specs
+        inverse = self._invert_dictionary(portmap)
+
+        python_specs = list(specs)
+        node_input_ports = self._node.input_ports
+
+        # create map for port types for the node
+        port_type_map = {}
+        for port in node_input_ports:
+            pass
+
         # Todo: this is broken, we iterate over the ports we have listed with the decorator, but these might be empty
         # BROKEN IF GROUP IS EMPTY OR > 1
         port_specs = []
+
         for index, portSpec in enumerate(specs):
             port_group_key = inverse[index]
             if len(port_group_key) == 0:
@@ -661,7 +675,15 @@ class _PythonNodeProxy:
 
             port_spec = self._node.input_ports[parsed_key]
             port_specs.append(port_spec)
+
         return port_specs
+
+    def _invert_dictionary(self, portmap):
+        inverse = {}
+        for k, v in portmap.items():
+            for x in v:
+                inverse.setdefault(x, []).append(k)
+        return inverse
 
     def getParameters(self) -> str:
         parameters_dict = kp.extract_parameters(self._node)
@@ -710,7 +732,7 @@ class _PythonNodeProxy:
 
         try:
             port_map = java_exec_context.get_input_port_map()
-            mapped_input_ports = self._parse_ports(port_map, input_objects)
+            mapped_input_ports = self._map_ports_to_specs(port_map, input_objects)
             inputs = [
                 self._port_type_registry.port_object_to_python(
                     po, mapped_input_ports[idx], self._java_callback
@@ -988,9 +1010,7 @@ class _KnimeNodeBackend(kg.EntryPoint, kn._KnimeNodeBackend):
         else:
             options = self._knime_parser.parse_options(param_doc)
             tabs = []
-        #
-        # import pydevd_pycharm
-        # pydevd_pycharm.settrace('localhost', port=12345, stdoutToServer=True, stderrToServer=True)
+
 
         static_input_ports, dynamic_input_ports, static_output_ports, dynamic_output_ports = (
             kn.split_port_and_port_groups(node.input_ports, node.output_ports))

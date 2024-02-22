@@ -193,7 +193,6 @@ public final class NodeDescriptionBuilder {
         buildHelper.createElements("inPort", m_inputPorts).forEach(ports::appendChild);
         buildHelper.createElements("outPort", m_outputPorts).forEach(ports::appendChild);
 
-        // TODO: HERE BROKNNNNN
         if (!m_dynamicInputPorts.isEmpty()) {
             int i = 0;
             for (DynamicPort port : m_dynamicInputPorts) {
@@ -209,7 +208,7 @@ public final class NodeDescriptionBuilder {
                 }
 
                 dynamicInputPorts.setAttribute("name", nameString);
-                dynamicInputPorts.setAttribute("group-identifier", String.format("Input %s # %d",typeString, i)); //TODO: use
+                dynamicInputPorts.setAttribute("group-identifier", String.format("Input %s # %d", typeString, i)); //TODO: use
                 dynamicInputPorts.setAttribute("insert-before", "0");
 
                 var portDescription = buildHelper.parseDocumentFragment(port.getDescription());

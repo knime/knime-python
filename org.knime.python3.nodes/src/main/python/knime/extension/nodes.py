@@ -489,6 +489,33 @@ class _BaseContext:
         # create dataclass from credential list
         return Credential(credentials[0], credentials[1], credentials[2])
 
+    def get_input_port_map(self):
+        """
+        Returns the specs for all input ports of the node.
+
+        Returns
+        -------
+        Dict
+            A dict containing the number of input tables for each populated port.
+        """
+        # todo parse java spec to python?
+        input_port_map = dict(self._java_ctx.get_input_port_map())
+        input_port_map = {k: len(list(v)) for k, v in input_port_map.items()}
+        return input_port_map
+
+    def get_output_port_map(self):
+        """
+        Returns the specs for all output ports of the node.
+
+        Returns
+        -------
+        Dict
+            A dict containing the number of Output tables for each populated port.
+        """
+        output_port_map = dict(self._java_ctx.get_output_port_map())
+        output_port_map = {k: len(list(v)) for k, v in output_port_map.items()}
+        return output_port_map
+
 
 class DialogCreationContext(_BaseContext):
     """
@@ -940,8 +967,8 @@ class _Node:
 
             return single_port_to_str(port)
 
-        #import pydevd_pycharm
-        #pydevd_pycharm.settrace('localhost', port=12345, stdoutToServer=True, stderrToServer=True)
+        # import pydevd_pycharm
+        # pydevd_pycharm.settrace('localhost', port=12345, stdoutToServer=True, stderrToServer=True)
         return {
             "id": self.id,
             "name": self.name,
@@ -954,10 +981,13 @@ class _Node:
             "keywords": self.keywords if self.keywords is not None else [],
             "input_port_types": [port_to_str(p) for p in self.input_ports],
             "output_port_types": [port_to_str(p) for p in self.output_ports],
+            "input_port_names": [p.name for p in self.input_ports],
+            "output_port_names": [p.name for p in self.output_ports],
             "input_ports": [{"name": p.name, "description": p.description} for p in self.input_ports],
             "output_ports": [{"name": p.name, "description": p.description} for p in self.output_ports],
             "views": [asdict(v) for v in self.views if v is not None],
         }
+
 
 def split_port_and_port_groups(input_ports, output_ports):
     # split self.input_ports into static ports and port groups
@@ -966,7 +996,7 @@ def split_port_and_port_groups(input_ports, output_ports):
     # split self.output_ports into static ports and port groups
     static_output_ports = [port for port in output_ports if not isinstance(port, PortGroup)]
     dynamic_output_ports = [port for port in output_ports if isinstance(port, PortGroup)]
-    return static_input_ports, dynamic_input_ports , static_output_ports, dynamic_output_ports
+    return static_input_ports, dynamic_input_ports, static_output_ports, dynamic_output_ports
 
 
 _nodes = {}
@@ -1415,6 +1445,7 @@ def output_table_group(name: str, description: str):
         "output_ports",
         PortGroup(PortType.TABLE, name, description),
     )
+
 
 def output_binary_group(name: str, description: str):
     """

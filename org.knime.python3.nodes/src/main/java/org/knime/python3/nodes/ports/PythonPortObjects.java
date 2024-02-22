@@ -992,7 +992,7 @@ public final class PythonPortObjects {
 
 
     /**
-     * Convert port type encoded as string to a {@link PortType}. Possible values are TABLE and BINARY, where BINARY is
+     * Convert Group port type encoded as string to a {@link PortType}. Possible values are TABLE and BINARY, where BINARY is
      * followed by a Port Type ID as in "BINARY=org.knime.python3.nodes.test.porttype", or PortType(...) for general
      * custom port objects and ConnectionPortObject for connections, as well as IMAGE.
      *

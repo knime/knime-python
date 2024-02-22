@@ -265,6 +265,11 @@ final class CloseablePythonNodeProxy
                 return portMap;
 
             }
+            public Map<String, int[]> get_output_port_map(){
+                Map<String, int[]> portMap = ((DelegatingNodeModel)getNode().getNodeModel()).m_outputPortMap;
+                return portMap;
+
+            }
 
         };
         // extensionVersion must always be the version of the installed extension, since it is used
@@ -503,7 +508,11 @@ final class CloseablePythonNodeProxy
                 return portMap;
 
             }
+            public Map<String, int[]> get_output_port_map(){
+                Map<String, int[]> portMap = ((DelegatingNodeModel)getNode().getNodeModel()).m_outputPortMap;
+                return portMap;
 
+            }
 
         };
 
@@ -659,6 +668,11 @@ final class CloseablePythonNodeProxy
             }
             public Map<String, int[]> get_input_port_map(){
                 Map<String, int[]> portMap = ((DelegatingNodeModel)getNode().getNodeModel()).m_inputPortMap;
+                return portMap;
+
+            }
+            public Map<String, int[]> get_output_port_map(){
+                Map<String, int[]> portMap = ((DelegatingNodeModel)getNode().getNodeModel()).m_outputPortMap;
                 return portMap;
 
             }

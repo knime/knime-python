@@ -139,6 +139,8 @@ public final class DelegatingNodeModel extends NodeModel
      * @param outputPorts The output ports of this node
      * @param initialSettings
      * @param extensionVersion the version of the extension
+     * @param inputPortMap
+     * @param outputPortMap
      */
     public DelegatingNodeModel(final NodeModelProxyProvider proxyProvider, final PortType[] inputPorts,
         final PortType[] outputPorts, final JsonNodeSettings initialSettings, final String extensionVersion,

@@ -77,6 +77,10 @@ public final class PythonNode implements ExtensionNode {
 
     private final PortType[] m_outputPortTypes;
 
+    private final String[] m_inputPortNames;
+
+    private final String[] m_outputPortNames;
+
     private final int m_numViews;
 
     private final NodeDescription m_description;
@@ -111,6 +115,8 @@ public final class PythonNode implements ExtensionNode {
         final NodeDescription description, //
         final String[] inputPortTypes, //
         final String[] outputPortTypes, //
+        final String[] inputPortNames, //
+        final String[] outputPortNames, //
         final int numViews, //
         final boolean isDeprecated, //
         final boolean isHidden, //
@@ -120,10 +126,16 @@ public final class PythonNode implements ExtensionNode {
         m_afterId = afterId;
         m_keywords = keywords;
         m_description = description;
+
+        // TODO: COmbine PortType and name in object
         m_inputPortTypesGroups = PythonPortObjects.getGroupPortTypesForIdentifiers(inputPortTypes);
         m_outputPortTypesGroups = PythonPortObjects.getGroupPortTypesForIdentifiers(outputPortTypes);
         m_inputPortTypes = PythonPortObjects.getPortTypesForIdentifiers(inputPortTypes);
         m_outputPortTypes = PythonPortObjects.getPortTypesForIdentifiers(outputPortTypes);
+
+        m_inputPortNames = inputPortNames;
+        m_outputPortNames = outputPortNames;
+
         m_numViews = numViews;
         m_isDeprecated = isDeprecated;
         m_isHidden = isHidden;
