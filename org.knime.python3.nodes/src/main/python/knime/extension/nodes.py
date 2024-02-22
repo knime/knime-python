@@ -1416,6 +1416,28 @@ def output_table_group(name: str, description: str):
         PortGroup(PortType.TABLE, name, description),
     )
 
+def output_binary_group(name: str, description: str):
+    """
+    Use this decorator to define an input port of type "Table" of a node.
+
+    Parameters
+    ----------
+        name : str
+            The name of the input port.
+        description : str
+            A description of the input port.
+        group : str
+            The name of the group this port belongs to.
+    """
+    # import pydevd_pycharm
+    # pydevd_pycharm.settrace('localhost', port=12345, stdoutToServer=True, stderrToServer=True)
+
+    return lambda node_factory: _add_port(
+        node_factory,
+        "output_ports",
+        PortGroup(PortType.BINARY, name, description),
+    )
+
 
 @dataclass
 class PortGroup:

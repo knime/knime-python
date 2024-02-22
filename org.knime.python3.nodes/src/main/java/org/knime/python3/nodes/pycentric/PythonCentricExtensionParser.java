@@ -198,9 +198,13 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
 
         private JsonDescribed[] output_ports;
 
-        private JsonDescribed[] input_port_groups;
+        private JsonDescribed[] dynamic_input_ports;
 
-        private JsonDescribed[] output_ports_groups;
+        private JsonDescribed[] dynamic_output_ports;
+
+        private JsonDescribed[] dynamic_input_ports_types;
+
+        private JsonDescribed[] dynamic_output_ports_types;
 
         private JsonView[] views;
 
@@ -218,7 +222,8 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
             var builder = new NodeDescriptionBuilder(name, node_type, is_deprecated)//
                 .withShortDescription(short_description)//
                 .withIntro(full_description)//
-                .withKeywords(keywords);
+                .withKeywords(keywords)
+                ;
 
             consumeIfPresent(tabs, t -> builder.withTab(t.toTab()));
             consumeIfPresent(options, o -> o.enter(builder::withOption));
@@ -226,10 +231,13 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
             consumeIfPresent(input_ports, p -> p.enter(builder::withInputPort));
             consumeIfPresent(output_ports, p -> p.enter(builder::withOutputPort));
 
-            consumeIfPresent(input_port_groups, p -> p.enter(builder::withDynamicPorts));
-            consumeIfPresent(output_ports_groups, p -> p.enter(builder::withDynamicPorts));
+            consumeIfPresent(dynamic_input_ports, p -> p.enter(builder::withDynamicInputPorts));
+            consumeIfPresent(dynamic_output_ports, p -> p.enter(builder::withDynamicOuputPorts));
 
-            //TODO: we need to set groups here if we want to write groups in description
+            // TODO FIND BETTER SOLUTION HOW CAN WE GIVE 3 INPUTS TO CONSUMER
+            consumeIfPresent(dynamic_input_ports_types, p -> p.enter(builder::withDynamicInputPortTypes));
+            consumeIfPresent(dynamic_output_ports_types, p -> p.enter(builder::withDynamicOutputPortTypes));
+
             consumeIfPresent(views, v -> v.enter(builder::withView));
             return builder;
         }
@@ -259,6 +267,15 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
 
         void enter(final BiConsumer<String, String> descriptionConsumer) {
             descriptionConsumer.accept(name, description);
+        }
+
+        /**
+         * @param descriptionConsumer
+         * @return
+         */
+        public Object enter(final Object descriptionConsumer) {
+            // TODO Auto-generated method stub
+            return null;
         }
     }
 

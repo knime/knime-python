@@ -337,68 +337,35 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
 
             final var b = new PortsConfigurationBuilder();
 
-
-            // TODO ordered hashmap
-            /* mit {identifier: porttype}
-             * for each
-             *  b.addExtendableOutputPortGroup(identifier, porttype);
-             *  oder addExtendableInputPortGroupWithDefault
-             *  oder  addFixedInputPortGroup QUESTOIN: Kann man mehrere machen mit einem????
-             *
-             * Dictionary
-             * {
-             *      FixedPortGroup: Type: InputTable, ->  b.addFixedInputPortGroup("Input Table", inputPortTypes)
-             *      How to trenn?
-             *      ExtendablePortGroup: Type InputTable, ->  b.addExtendableInputPortGroup("Input Table Dynamisch", inputGroupPortTypes);
-             *      ExtendablePortGroupDefault: ...
-             *
-             * Bei unterschiedlichen Fixed Ports:
-             *  Wollen wir eine Gruppe für jeden individuellen Port, eine für jeden PortType oder eine Gruppe für alle?
-             *  1:
-             *      + Ordnung klar
-             *      - Wie sehen die Ports dann aus?
-             *      - Geht das überhaupt?
-             *  2.
-             *      - Ordnung unklar
-             *  3.
-             *      - Ordnung unklar
-             *      - Geht das überhaupt?
-             */
-            // -> [InputTable, BinaryObject, InputTable, BinaryObject] -> Problem mit Group ID
-            //   b.addFixedInputPortGroup("Input Table", inputPortTypes);
-            // Problem EXECUTE( wie kommen die sacen rein??????)
-            // Oder für jeden fixed input port eine group mit anderer ID oder einfach eine ID für alle falls geht lol
-            // b.addFixedInputPortGroup("All fixed input ports", inputPortTypes);
-            // PortType[] inputPortTypes = m_node.getInputPortTypes(); //Fixed
-            // PortType[] outputPortTypes = m_node.getOutputPortTypes();
-
             PortType[] inputGroupPortTypes = m_node.getInputPortTypesGroups();
             // Add
             for (int i = 0; i < inputGroupPortTypes.length; i++) {
+                PortType dynamicPortType = inputGroupPortTypes[i];
                 // distinct types
-                b.addExtendableInputPortGroup(String.format("Group#%d", i), inputGroupPortTypes[i]);
+                b.addExtendableInputPortGroup(String.format("Input %s # %d",dynamicPortType.getName(),i), dynamicPortType);
 
             }
             PortType[] inputPortTypes = m_node.getInputPortTypes();
-            //b.addExtendableInputPortGroup("Input Table", inputPortTypes);
             for (int i = 0; i < inputPortTypes.length; i++) {
                 // distinct types
-                b.addFixedInputPortGroup(String.format("Fixed#%d", i), inputPortTypes[i]);
+                b.addFixedInputPortGroup(String.format("Input Fixed#%d", i), inputPortTypes[i]);
 
             }
-            //b.addFixedInputPortGroup("Input Table", inputPortTypes);
-            // Fixed Input Ports
-            //b.addFixedInputPortGroup("FixedInputs", inputPortTypes);
 
-            //dynamic
-            //PortType[] outputGroupPortTypes = m_node.getOutputPortTypesGroups();
+            PortType[] outputGroupPortTypes = m_node.getOutputPortTypesGroups();
+            // Add
+            for (int i = 0; i < outputGroupPortTypes.length; i++) {
+                PortType dynamicPortType = outputGroupPortTypes[i];
+                // distinct types
+                b.addExtendableOutputPortGroup(String.format("Output %s # %d",dynamicPortType.getName(),i), dynamicPortType);
 
+            }
+            PortType[] outputPortTypes = m_node.getOutputPortTypes();
+            for (int i = 0; i < outputPortTypes.length; i++) {
+                // distinct types
+                b.addFixedOutputPortGroup(String.format("Output Fixed #%d", i), outputPortTypes[i]);
 
-            //b.addFixedInputPortGroup("Input Table", inputPortTypes);
-            //b.addFixedOutputPortGroup("Output Table", outputPortTypes);
-
-            //b.addFixedInputPortGroup("Input Binary", inputBinaryPortTypes);
-            //b.addFixedOutputPortGroup("Output Binary", outputBinaryPortTypes);
+            }
 
             // This has a default that can be removed by user
             //b.addExtendableInputPortGroupWithDefault(m_extensionVersion, inputGroupPortTypes, outputPortTypes, outputGroupPortTypes);
@@ -422,9 +389,12 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
             // if new
 
             final var config = creationConfig.getPortConfig().get(); // NOSONAR
-            var groupNames = config.getPortGroupNames();
-            var locations = config.getInputPortLocation();
-            var inputPorts = config.getInputPorts();
+
+            PortType[] inputPorts = config.getInputPorts();
+            PortType[] outputPorts = config.getOutputPorts();
+
+            Map<String, int[]> inputLocations = config.getInputPortLocation();
+            Map<String, int[]> outputLocations = config.getOutputPortLocation();
             // var inputPorts = config.getInputPorts();
             // createInputPorts(config);
             // return new PythonViewNodeModel(createInputPorts(config), createOutputPorts(config));
@@ -432,8 +402,8 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
                 // happens here to speed up the population of the node repository
                 var initialSettings = proxy.getSettings(m_extensionVersion);
                 // InputPorts is the array
-                return new DelegatingNodeModel(m_proxyProvider, inputPorts,  m_node.getOutputPortTypes(),
-                    initialSettings, m_extensionVersion, locations);
+                return new DelegatingNodeModel(m_proxyProvider, inputPorts,  outputPorts,
+                    initialSettings, m_extensionVersion, inputLocations, outputLocations);
             }
         }
 
