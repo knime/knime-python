@@ -1556,7 +1556,7 @@ def _pick_spec(specs: List[ks.PortObjectSpec], port_index: int):
 def _possible_values(
     spec: ks.Schema,
     column_filter: Callable[[ks.Column], bool],
-) -> list[dict[str, str]]:
+) -> List[Dict[str, str]]:
     def entry(name, type=None, compatible_types=None):
         entry = {"id": name, "text": name}
         if type is not None:
