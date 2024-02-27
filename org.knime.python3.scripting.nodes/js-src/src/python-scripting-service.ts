@@ -4,7 +4,6 @@ import {
   editor,
   getScriptingService,
   consoleHandler,
-  type NodeSettings,
 } from "@knime/scripting-editor";
 import { registerInputCompletions } from "./input-completions";
 import {
@@ -106,8 +105,6 @@ export const pythonScriptingService = {
   sendLastConsoleOutput: () => {
     scriptingService.sendToService("sendLastConsoleOutput");
   },
-  saveSettings: (settings: NodeSettings) =>
-    scriptingService.saveSettings(settings),
   getExecutableOptionsList: async (): Promise<ExecutableOption[]> => {
     return (await scriptingService.sendToService("getExecutableOptionsList", [
       executableSelection.id,
@@ -173,9 +170,6 @@ export const pythonScriptingService = {
         configureLanguageServer(newId);
       },
     );
-  },
-  closeDialog: (): void => {
-    scriptingService.closeDialog();
   },
   hasPreview: (): Promise<boolean> => {
     return scriptingService.sendToService("hasPreview");

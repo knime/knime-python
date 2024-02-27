@@ -77,14 +77,10 @@ watch(
 // Register the completion items for the inputs
 pythonScriptingService.registerInputCompletions();
 
-const saveSettings = async (commonSettings: NodeSettings) => {
-  const settings = {
-    ...commonSettings,
-    executableSelection: useExecutableSelectionStore().id,
-  };
-  await pythonScriptingService.saveSettings(settings);
-  pythonScriptingService.closeDialog();
-};
+const toSettings = (commonSettings: NodeSettings) => ({
+  ...commonSettings,
+  executableSelection: useExecutableSelectionStore().id,
+});
 
 // Right pane tab bar - only show if preview is available
 const hasPreview = ref<boolean>(false);
@@ -117,10 +113,10 @@ onMounted(async () => {
       :title="`Python ${hasPreview ? 'View' : 'Script'}`"
       :menu-items="menuItems"
       :show-run-buttons="true"
+      :to-settings="toSettings"
       language="python"
       file-name="main.py"
       @menu-item-clicked="onMenuItemClicked"
-      @save-settings="saveSettings"
     >
       <template #settings-title>
         {{ currentSettingsMenuItem?.title }}

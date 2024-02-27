@@ -126,8 +126,8 @@ describe("App.vue", () => {
   it("saves settings", async () => {
     const { wrapper } = await doMount();
     const scriptingEditor = wrapper.findComponent(ScriptingEditor);
-    scriptingEditor.vm.$emit("save-settings", { script: "myScript" });
-    expect(getScriptingService().saveSettings).toHaveBeenCalledWith({
+    const toSettings = scriptingEditor.props().toSettings;
+    expect(toSettings?.({ script: "myScript" })).toStrictEqual({
       script: "myScript",
       executableSelection: "",
     });

@@ -27,16 +27,6 @@ describe("python-scripting-service", () => {
       .calls[0][1];
   });
 
-  it("should save settings", () => {
-    const saveSettingsSpy = vi.spyOn(getScriptingService(), "saveSettings");
-
-    pythonScriptingService.saveSettings({ script: "print('Hello')" });
-    expect(saveSettingsSpy).toHaveBeenCalledOnce();
-    expect(saveSettingsSpy).toHaveBeenCalledWith({
-      script: "print('Hello')",
-    });
-  });
-
   afterEach(() => {
     vi.resetAllMocks();
   });
