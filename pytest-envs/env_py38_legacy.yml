@@ -11,6 +11,5 @@ dependencies:
   - pandas=1.3
   - py4j=0.10.9
   - markdown=3.3
-  - black # Formatting test
   - matplotlib # View tests
   - seaborn # View tests

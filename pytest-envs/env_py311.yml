@@ -7,6 +7,5 @@ dependencies:
   - knime-python-base=5.2
   - coverage
   - pytest
-  - black # Formatting test
   - matplotlib # View tests
   - seaborn # View tests
