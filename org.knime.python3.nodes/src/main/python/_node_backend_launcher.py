@@ -254,9 +254,9 @@ class _PythonWorkflowPortObject:
 
     def execute(
         self,
-        inputs: dict[str, kn.Table],
+        inputs: Dict[str, kn.Table],
         warning_consumer: Callable[[str], None] = None,
-    ) -> list[kn.Table]:
+    ) -> List[kn.Table]:
         if warning_consumer is None:
 
             def no_op_warning_consumer(warning: str) -> None:

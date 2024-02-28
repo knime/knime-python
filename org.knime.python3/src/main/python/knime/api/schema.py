@@ -964,8 +964,8 @@ class WorkflowPortObjectSpec(PortObjectSpec):
     def __init__(
         self,
         name: str,
-        inputs: dict[str, WorkflowPortInfo],
-        outputs: dict[str, WorkflowPortInfo],
+        inputs: Dict[str, WorkflowPortInfo],
+        outputs: Dict[str, WorkflowPortInfo],
     ) -> None:
         super().__init__()
         self._name = name
