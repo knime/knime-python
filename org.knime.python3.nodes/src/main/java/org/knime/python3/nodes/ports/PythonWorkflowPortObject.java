@@ -166,7 +166,7 @@ public final class PythonWorkflowPortObject implements PythonPortObject {
     private void checkPortCompatibility(final Map<String, PythonPortObject> inputs) {
         var expectedInputs = m_workflow.getSpec().getInputs();
         CheckUtils.checkArgument(inputs.size() == expectedInputs.size(),
-            "The number of provided (%s) and the number of expected inputs differ.", inputs.size(),
+            "The number of provided (%s) and the number of expected inputs (%s) differ.", inputs.size(),
             expectedInputs.size());
         var portTypeRegistry = PortTypeRegistry.getInstance();
         for (var providedInput : inputs.entrySet()) {
@@ -210,7 +210,7 @@ public final class PythonWorkflowPortObject implements PythonPortObject {
             var mapper = ObjectMapperUtil.getInstance().getObjectMapper();
 
             try {
-                return mapper.writeValueAsString(WorkflowSpecDef.fromWorklflowPortObjectSpec(m_workflowSpec));
+                return mapper.writeValueAsString(WorkflowSpecDef.fromWorkflowPortObjectSpec(m_workflowSpec));
             } catch (JsonProcessingException ex) {
                 throw new IllegalStateException(ex);
             }
@@ -219,7 +219,7 @@ public final class PythonWorkflowPortObject implements PythonPortObject {
 
     private record WorkflowSpecDef(String name, Map<String, WorkflowPortDef> inputs,
         Map<String, WorkflowPortDef> outputs) {
-        static WorkflowSpecDef fromWorklflowPortObjectSpec(final WorkflowPortObjectSpec workflowSpec) {
+        static WorkflowSpecDef fromWorkflowPortObjectSpec(final WorkflowPortObjectSpec workflowSpec) {
             return new WorkflowSpecDef(workflowSpec.getWorkflowName(), parsePortInfo(workflowSpec.getInputs()),
                 parsePortInfo(workflowSpec.getOutputs()));
         }
