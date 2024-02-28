@@ -977,18 +977,18 @@ class WorkflowPortObjectSpec(PortObjectSpec):
         return self._name
 
     @property
-    def inputs(self) -> dict[str, WorkflowPortInfo]:
+    def inputs(self) -> Dict[str, WorkflowPortInfo]:
         return self._inputs
 
     @property
-    def outputs(self) -> dict[str, WorkflowPortInfo]:
+    def outputs(self) -> Dict[str, WorkflowPortInfo]:
         return self._outputs
 
-    def serialize(self) -> dict:
+    def serialize(self) -> Dict:
         return {"name": self.name, "inputs": self.inputs, "outputs": self.outputs}
 
     @classmethod
-    def deserialize(cls, data: dict, java_callback=None):
+    def deserialize(cls, data: Dict, java_callback=None):
         inputs = {
             key: WorkflowPortInfo.deserialize(value)
             for key, value in data["inputs"].items()
