@@ -1,12 +1,18 @@
-image: node:18.19.0
-
 options:
   max-time: 30
 
 definitions:
   steps:
-    - step: &lint-test-build
-        name: Lint, tests and build
+    - step: &python-format
+        name: Python format
+        image: python:3.12
+        script:
+          - python -m pip install --upgrade pip
+          - pip install ruff
+          - ruff format --check .
+    - step: &js-lint-test-build
+        name: JS lint, tests, and build
+        image: node:18.19.0
         caches:
           - node
         size: 2x # more memory to accomodate docker container for sonarcloud
@@ -25,7 +31,8 @@ definitions:
 pipelines:
   pull-requests:
     "**":
-      - step: *lint-test-build
+      - step: *python-format
+      - step: *js-lint-test-build
   branches:
     '{master,releases/*}':
-      - step: *lint-test-build
+      - step: *js-lint-test-build
