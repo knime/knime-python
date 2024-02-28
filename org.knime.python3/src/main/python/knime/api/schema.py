@@ -952,11 +952,11 @@ class WorkflowPortInfo:
     @classmethod
     def deserialize(cls, data: dict):
         if "table_spec" in data:
-            schema = Schema.deserialize(data["tableSpec"])
+            schema = Schema.deserialize(data["table_spec"])
         else:
             schema = None
 
-        return cls(data["typeName"], data["typeId"], schema)
+        return cls(data["type_name"], data["type_id"], schema)
 
 
 class WorkflowPortObjectSpec(PortObjectSpec):

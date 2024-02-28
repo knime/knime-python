@@ -72,6 +72,8 @@ import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
 import org.knime.python3.utils.FlowVariableUtils;
 import org.knime.shared.workflow.storage.text.util.ObjectMapperUtil;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonRawValue;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 /**
@@ -230,7 +232,8 @@ public final class PythonWorkflowPortObject implements PythonPortObject {
         }
     }
 
-    private record WorkflowPortDef(String typeName, String typeId, String tableSpec) {
+    private record WorkflowPortDef(@JsonProperty("type_name") String typeName, @JsonProperty("type_id") String typeId,
+        @JsonRawValue @JsonProperty("table_spec") String tableSpec) {
         static WorkflowPortDef fromIOInfo(final IOInfo ioInfo) {
             var portType = ioInfo.getType().orElseThrow();
             var tableSpec = ioInfo.getSpec()//
