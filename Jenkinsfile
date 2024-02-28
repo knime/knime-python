@@ -179,6 +179,7 @@ def runPython3MultiversionWorkflowTestConfig(String environmentFile, String base
                         'knime-credentials-base',
                         'knime-google',
                         'knime-cloud',
+                        'knime-buildworkflows'
                     ],
                     ius: [
                         'org.knime.features.chem.types.feature.group',
