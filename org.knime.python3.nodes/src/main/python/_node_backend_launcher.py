@@ -269,7 +269,7 @@ class _PythonWorkflowPortObject:
             prepared_input, sink = self._type_registry.table_from_python(input)
             prepared_inputs[key] = prepared_input
             sink.close()
-        
+
         outports = [
             self._create_placeholder_port_type(id, outport)
             for id, outport in self._workflow_spec.outputs.items()
