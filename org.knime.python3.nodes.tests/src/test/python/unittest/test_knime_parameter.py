@@ -2207,7 +2207,6 @@ class ParameterTest(unittest.TestCase):
             )
 
     def test_extract_ui_schema_with_custom_schema_provider(self):
-
         def _first_input_table(
             dialog_creation_context: kn.DialogCreationContext,
         ) -> ks.Schema:

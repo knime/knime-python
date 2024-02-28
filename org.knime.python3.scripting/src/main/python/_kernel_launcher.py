@@ -610,9 +610,7 @@ class PythonKernel(kg.EntryPoint):
                             "doc": docstring,
                         }
                     )
-            except (
-                Exception
-            ):  # Autocomplete is purely optional. So a broad exception clause should be fine.
+            except Exception:  # Autocomplete is purely optional. So a broad exception clause should be fine.
                 warnings.warn("An error occurred while autocompleting.")
         return ListConverter().convert(suggestions, kg.client_server._gateway_client)
 

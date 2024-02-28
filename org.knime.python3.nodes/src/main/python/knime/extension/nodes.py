@@ -352,9 +352,9 @@ class Port:
     type: PortType
     name: str
     description: str
-    id: Optional[str] = (
-        None  # can be used by BINARY and CONNECTION ports to only allow linking ports with matching IDs
-    )
+    id: Optional[
+        str
+    ] = None  # can be used by BINARY and CONNECTION ports to only allow linking ports with matching IDs
 
     def __post_init__(self):
         """

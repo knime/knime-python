@@ -165,9 +165,9 @@ class ZonedDateTimeValueFactory2(
         tz_offset = tz_info.utcoffset(value)
         offset_string = self.parse_utc_offset(tz_offset)
 
-        local_dt_dict["2"] = (
-            0  # we handle the complete offset with the offset (ZoneID) String
-        )
+        local_dt_dict[
+            "2"
+        ] = 0  # we handle the complete offset with the offset (ZoneID) String
         local_dt_dict["3"] = offset_string
         return local_dt_dict
 
@@ -199,9 +199,7 @@ class ZonedDateTimeValueFactory2(
         from knime._arrow._backend import gateway
 
         try:
-            self._java_timezones = (
-                gateway().jvm.org.knime.python3.PythonEntryPointUtils.getSupportedTimeZones()
-            )
+            self._java_timezones = gateway().jvm.org.knime.python3.PythonEntryPointUtils.getSupportedTimeZones()
         except RuntimeError:
             warnings.warn(
                 "Could not load Java Timezones. This can happen in UNIT Tests"
