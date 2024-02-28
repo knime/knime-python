@@ -595,7 +595,7 @@ class _PortTypeRegistry:
             java_data_sink = sink._java_data_sink
         elif isinstance(obj, kat.ArrowBatchOutputTable):
             sink = obj._sink
-            java_data_sink = sink.java_data_sink
+            java_data_sink = sink._java_data_sink
         else:
             raise TypeError(
                 f"Object should be of type Table or BatchOutputTable, but got {type(obj)}"
