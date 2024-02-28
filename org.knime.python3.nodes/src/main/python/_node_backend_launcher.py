@@ -234,9 +234,12 @@ class _WorkflowExecutionWarningConsumer:
         implements = ["java.util.function.Consumer"]
 
 
+_bdt_java_type = "org.knime.core.node.BufferedDataTable"
+
+
 class _PythonWorkflowPortObject:
 
-    _java_to_port_type = {"org.knime.core.node.BufferedDataTable": kn.PortType.TABLE}
+    _java_to_port_type = {_bdt_java_type: kn.PortType.TABLE}
 
     def __init__(
         self,
@@ -260,6 +263,7 @@ class _PythonWorkflowPortObject:
         if warning_consumer is None:
 
             def no_op_warning_consumer(warning: str) -> None:
+                # empty because this consumer does nothing
                 pass
 
             warning_consumer = no_op_warning_consumer
@@ -529,7 +533,7 @@ class _PortTypeRegistry:
             with open(file, "rb") as f:
                 return f.read()
 
-        if class_name == "org.knime.core.node.BufferedDataTable":
+        if class_name == _bdt_java_type:
             assert port.type == kn.PortType.TABLE
             java_source = port_object.getDataSource()
             return kat.ArrowSourceTable(kg.data_source_mapper(java_source))
@@ -582,8 +586,7 @@ class _PortTypeRegistry:
 
         raise TypeError("Unsupported PortObject found in Python, got " + class_name)
 
-    def table_from_python(self, obj):
-        class_name = "org.knime.core.node.BufferedDataTable"
+    def table_from_python(self, obj):  # -> tuple[_PythonTablePortObject, Any]:
 
         java_data_sink = None
         if isinstance(obj, kat.ArrowTable):
@@ -598,7 +601,7 @@ class _PortTypeRegistry:
                 f"Object should be of type Table or BatchOutputTable, but got {type(obj)}"
             )
 
-        return _PythonTablePortObject(class_name, java_data_sink), sink
+        return _PythonTablePortObject(_bdt_java_type, java_data_sink), sink
 
     def port_object_from_python(
         self, obj, file_creator, port: kn.Port, node_id: str, port_idx: int
