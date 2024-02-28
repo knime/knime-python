@@ -504,7 +504,7 @@ class _PortTypeRegistry:
         else:  # custom spec
             assert (
                 port.type.id in self._port_types_by_id
-            ), f"There is no port type with id '{port.type.id}' registered"
+            ), f"Invalid output spec, no port type with id '{port.type.id}' registered. Please register the port type."
             assert isinstance(
                 spec, port.type.spec_class
             ), f"Expected output spec of type {port.type.spec_class} but got spec of type {type(spec)}"
@@ -641,7 +641,7 @@ class _PortTypeRegistry:
         else:
             assert (
                 port.type.id in self._port_types_by_id
-            ), f"There is no port type with '{id}' registered"
+            ), f"Invalid output port value, no port type with id '{id}' registered. Please register the port type."
             assert isinstance(
                 obj, port.type.object_class
             ), f"Expected output object of type {port.type.object_class}, got object of type {type(obj)}"
