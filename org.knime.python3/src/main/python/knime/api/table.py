@@ -263,6 +263,11 @@ class _Backend:
     @abstractmethod
     def close(self) -> None:
         raise RuntimeError("Not implemented")
+    
+    @abstractmethod
+    def create_sink(self):
+        """Creates a sink for transferring a table to KNIME."""
+        raise RuntimeError("Not implemented")
 
 
 _backend: _Backend = None

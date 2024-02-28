@@ -264,12 +264,12 @@ class _PythonWorkflowPortObject:
 
             warning_consumer = no_op_warning_consumer
 
-        prepared_inputs = {
-            key: self._type_registry.table_from_python(input)
-            for key, input in inputs.items()
-        }
-        # workaround that closes the sinks. TODO close only the sinks we created in the previous line
-        kt._backend.close()
+        prepared_inputs = {}
+        for key, input in inputs.items():
+            prepared_input, sink = self._type_registry.table_from_python(input)
+            prepared_inputs[key] = prepared_input
+            sink.close()
+        
         outports = [
             self._create_placeholder_port_type(id, outport)
             for id, outport in self._workflow_spec.outputs.items()
@@ -591,13 +591,14 @@ class _PortTypeRegistry:
             obj._write_to_sink(sink)
             java_data_sink = sink._java_data_sink
         elif isinstance(obj, kat.ArrowBatchOutputTable):
-            java_data_sink = obj._sink._java_data_sink
+            sink = obj._sink
+            java_data_sink = sink.java_data_sink
         else:
             raise TypeError(
                 f"Object should be of type Table or BatchOutputTable, but got {type(obj)}"
             )
 
-        return _PythonTablePortObject(class_name, java_data_sink)
+        return _PythonTablePortObject(class_name, java_data_sink), sink
 
     def port_object_from_python(
         self, obj, file_creator, port: kn.Port, node_id: str, port_idx: int
@@ -612,7 +613,7 @@ class _PortTypeRegistry:
                 raise TypeError(
                     f"Object for port {port} should be of type Table or BatchOutputTable, but got {type(obj)}"
                 )
-            return self.table_from_python(obj)
+            return self.table_from_python(obj)[0]
         elif port.type == kn.PortType.BINARY:
             if not isinstance(obj, bytes):
                 tb = None

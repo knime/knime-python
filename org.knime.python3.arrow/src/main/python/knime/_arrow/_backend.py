@@ -360,6 +360,7 @@ class ArrowDataSink:
         self._writer = None
         self._chunk_size = None
         self._recieved_last_batch = False
+        self._is_closed = False
 
     def __enter__(self):
         return self
@@ -457,7 +458,10 @@ class ArrowDataSink:
         return len(schema_buf) + 8
 
     def close(self):
+        if self._is_closed:
+            return
         if self._writer is not None:
             self._writer.close()
         self._java_data_sink.setFinalSize(self._size)
         self._file.close()
+        self._is_closed = True
