@@ -458,9 +458,15 @@ class _PortTypeRegistry:
         self, data, expected_port: kn.Port
     ) -> kn.PortType:
         spec_id = data["id"]
-        assert (
-            spec_id in self._port_types_by_id
-        ), f"There is no port type with id '{spec_id}' registered."
+
+        if spec_id not in self._port_types_by_id:
+            raise kn.InvalidParametersError(
+                f"""
+                The provided input port type is incompatible with the expected type '{expected_port.type.name}'
+                (got {spec_id}).
+                """
+            )
+
         incoming_port_type: kn.PortType = self._port_types_by_id[spec_id]
         if not expected_port.type.is_super_type_of(incoming_port_type):
             raise kn.InvalidParametersError(
