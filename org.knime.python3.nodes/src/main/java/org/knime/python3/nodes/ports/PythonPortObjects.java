@@ -943,8 +943,7 @@ public final class PythonPortObjects {
                     loadFromXMLCredentialPortObjectSpecString(serializedXMLString);
                 return new PythonCredentialPortObjectSpec(credentialPortObjectSpec);
 
-            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException
-                    | IOException ex) {
+            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | IOException ex) {
                 throw new IllegalStateException("Could not parse PythonCredentialPortObject from given JSON data", ex);
             }
         }
@@ -983,27 +982,21 @@ public final class PythonPortObjects {
      * @return {@link PortType}s
      */
     public static PortType[] getGroupPortTypesForIdentifiers(final String[] identifiers) {
-        return Arrays
-                .stream(identifiers)
-                .map(PythonPortObjects::getGroupPortTypeForIdentifier)
-                .filter(Objects::nonNull)
-                .toArray(PortType[]::new);
+        return Arrays.stream(identifiers).map(PythonPortObjects::getGroupPortTypeForIdentifier).filter(Objects::nonNull)
+            .toArray(PortType[]::new);
     }
 
-
     /**
-     * Convert Group port type encoded as string to a {@link PortType}. Possible values are TABLE and BINARY, where BINARY is
-     * followed by a Port Type ID as in "BINARY=org.knime.python3.nodes.test.porttype", or PortType(...) for general
-     * custom port objects and ConnectionPortObject for connections, as well as IMAGE.
+     * Convert Group port type encoded as string to a {@link PortType}. Possible values are TABLE and BINARY, where
+     * BINARY is followed by a Port Type ID as in "BINARY=org.knime.python3.nodes.test.porttype", or PortType(...) for
+     * general custom port objects and ConnectionPortObject for connections, as well as IMAGE.
      *
      * @param identifier Port type identifier (TABLE, BINARY, IMAGE or CREDENTIAL currently).
      * @return {@link PortType}
      */
     public static PortType getGroupPortTypeForIdentifier(final String identifier) {
         String portGroupIdentifier = "PortGroup.";
-        //TODO: Add PORT GROUP
-        if (identifier.startsWith(portGroupIdentifier)){
-            //Wrapperz for group
+        if (identifier.startsWith(portGroupIdentifier)) {
             return getPortTypeForIdentifier(identifier.replace(portGroupIdentifier, ""));
         }
         return null;
@@ -1011,7 +1004,7 @@ public final class PythonPortObjects {
 
     /**
      * @param identifier
-     * @return
+     * @return Null if Port Group, else PortType for the identifier
      */
     public static PortType getPortTypeForIdentifier(final String identifier) {
         String portGroupIdentifier = "PortGroup.";
@@ -1026,8 +1019,7 @@ public final class PythonPortObjects {
             return ImagePortObject.TYPE;
         } else if (identifier.startsWith("PortType.CREDENTIAL")) {
             return CredentialPortObject.TYPE;
-        }
-        else if(identifier.startsWith(portGroupIdentifier)){
+        } else if (identifier.startsWith(portGroupIdentifier)) {
             return null;
         } else {
             // for other custom ports
@@ -1043,11 +1035,8 @@ public final class PythonPortObjects {
      * @return {@link PortType}s
      */
     public static PortType[] getPortTypesForIdentifiers(final String[] identifiers) {
-        return Arrays
-                .stream(identifiers)
-                .map(PythonPortObjects::getPortTypeForIdentifier)
-                .filter(Objects::nonNull)
-                .toArray(PortType[]::new);
+        return Arrays.stream(identifiers).map(PythonPortObjects::getPortTypeForIdentifier).filter(Objects::nonNull)
+            .toArray(PortType[]::new);
     }
 
 }

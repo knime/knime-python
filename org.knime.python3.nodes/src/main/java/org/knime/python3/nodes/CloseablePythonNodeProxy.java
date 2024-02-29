@@ -263,14 +263,11 @@ final class CloseablePythonNodeProxy
             public Map<String, int[]> get_input_port_map(){
                 Map<String, int[]> portMap = ((DelegatingNodeModel)getNode().getNodeModel()).m_inputPortMap;
                 return portMap;
-
             }
             public Map<String, int[]> get_output_port_map(){
                 Map<String, int[]> portMap = ((DelegatingNodeModel)getNode().getNodeModel()).m_outputPortMap;
                 return portMap;
-
             }
-
         };
         // extensionVersion must always be the version of the installed extension, since it is used
         // on the Python side to generate the schema and UI schema, which need to correspond to the
@@ -506,14 +503,11 @@ final class CloseablePythonNodeProxy
             public Map<String, int[]> get_input_port_map(){
                 Map<String, int[]> portMap = ((DelegatingNodeModel)getNode().getNodeModel()).m_inputPortMap;
                 return portMap;
-
             }
             public Map<String, int[]> get_output_port_map(){
                 Map<String, int[]> portMap = ((DelegatingNodeModel)getNode().getNodeModel()).m_outputPortMap;
                 return portMap;
-
             }
-
         };
 
         // Configure before execution whether the gateway should be left open, otherwise an exception thrown in Python
@@ -526,7 +520,6 @@ final class CloseablePythonNodeProxy
 
         final var pythonOutputs = m_proxy.execute(pythonInputs, pythonExecContext);
 
-        // TODO: ASSERT PORTS AND SIZE
         failure.throwIfFailure();
 
         final var outputExec = exec.createSubExecutionContext(0.1);
@@ -670,15 +663,11 @@ final class CloseablePythonNodeProxy
             public Map<String, int[]> get_input_port_map(){
                 Map<String, int[]> portMap = ((DelegatingNodeModel)getNode().getNodeModel()).m_inputPortMap;
                 return portMap;
-
             }
             public Map<String, int[]> get_output_port_map(){
                 Map<String, int[]> portMap = ((DelegatingNodeModel)getNode().getNodeModel()).m_outputPortMap;
                 return portMap;
-
             }
-
-
         };
 
         final var serializedInSpecs = Stream.of(inSpecs)//

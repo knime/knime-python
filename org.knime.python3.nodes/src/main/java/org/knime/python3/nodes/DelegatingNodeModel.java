@@ -123,7 +123,7 @@ public final class DelegatingNodeModel extends NodeModel
      * @param extensionVersion the version of the extension
      */
     public DelegatingNodeModel(final NodeModelProxyProvider proxyProvider, final PortType[] inputPorts,
-        final PortType[] outputPorts, final JsonNodeSettings initialSettings, final String extensionVersion) { //
+        final PortType[] outputPorts, final JsonNodeSettings initialSettings, final String extensionVersion) {
         super(inputPorts, outputPorts);
         m_proxyProvider = proxyProvider;
         m_settings = initialSettings;
@@ -132,19 +132,19 @@ public final class DelegatingNodeModel extends NodeModel
         m_outputPorts = outputPorts;
     }
     /**
-     * Constructor.
+     * Constructor with port maps
      *
      * @param proxyProvider provides the proxies for delegation
      * @param inputPorts The input ports of this node
      * @param outputPorts The output ports of this node
      * @param initialSettings
      * @param extensionVersion the version of the extension
-     * @param inputPortMap
-     * @param outputPortMap
+     * @param inputPortMap Input Port Map for creating the node model
+     * @param outputPortMap Output Port Map for creating the node model
      */
     public DelegatingNodeModel(final NodeModelProxyProvider proxyProvider, final PortType[] inputPorts,
         final PortType[] outputPorts, final JsonNodeSettings initialSettings, final String extensionVersion,
-        final Map<String,int[]> inputPortMap,final Map<String,int[]> outputPortMap) { //
+        final Map<String,int[]> inputPortMap,final Map<String,int[]> outputPortMap) {
         super(inputPorts, outputPorts);
         m_proxyProvider = proxyProvider;
         m_settings = initialSettings;

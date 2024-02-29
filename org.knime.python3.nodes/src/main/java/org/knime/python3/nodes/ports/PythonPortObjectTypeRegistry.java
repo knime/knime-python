@@ -122,7 +122,6 @@ public final class PythonPortObjectTypeRegistry {
     private final Map<String, Class<? extends PythonPortObjectSpec>> m_pythonPortObjectSpecMap;
 
     private PythonPortObjectTypeRegistry() {
-        // TODO: PortGroup <?>
         // TODO: actually make this a registry. See https://knime-com.atlassian.net/browse/AP-18368
         m_pythonPortObjectMap = new HashMap<>();
         m_pythonPortObjectInterfaceMap = new HashMap<>();
@@ -174,7 +173,6 @@ public final class PythonPortObjectTypeRegistry {
                 "Could not find or create PythonPortObjectSpec for " + spec.getClass().getName(), ex);
         }
     }
-
 
     /**
      * Convert from a {@link PythonPortObjectSpec} to a {@link PortObjectSpec} using the registered matching port object

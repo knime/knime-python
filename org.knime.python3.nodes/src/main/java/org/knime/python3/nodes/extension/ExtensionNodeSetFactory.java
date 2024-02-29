@@ -167,8 +167,7 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
      *
      * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
      */
-    public static final class DynamicExtensionNodeFactory
-        extends ConfigurableNodeFactory<DelegatingNodeModel>
+    public static final class DynamicExtensionNodeFactory extends ConfigurableNodeFactory<DelegatingNodeModel>
         implements NodeDialogFactory, NodeViewFactory<DelegatingNodeModel>, IDynamicNodeFactory {
 
         private NodeProxyProvider m_proxyProvider;
@@ -194,7 +193,6 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
          */
         public DynamicExtensionNodeFactory() {
             super(true);
-
         }
 
         @SuppressWarnings("null")
@@ -246,9 +244,8 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
             try (var proxy = m_proxyProvider.getNodeFactoryProxy()) {
                 // happens here to speed up the population of the node repository
                 var initialSettings = proxy.getSettings(m_extensionVersion);
-                // TODO: here also the new functions? When do we use this constructor?
-                return new DelegatingNodeModel(m_proxyProvider, m_node.getInputPortTypes(),
-                    m_node.getOutputPortTypes(), initialSettings, m_extensionVersion);
+                return new DelegatingNodeModel(m_proxyProvider, m_node.getInputPortTypes(), m_node.getOutputPortTypes(),
+                    initialSettings, m_extensionVersion);
             }
         }
 
@@ -339,14 +336,14 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
                 String dynamicPortName = dynamicInputPortNames[i];
                 PortType dynamicPortType = inputGroupPortTypes[i];
                 // distinct types
-                b.addExtendableInputPortGroup(String.format("%s",dynamicPortName), dynamicPortType);
+                b.addExtendableInputPortGroup(String.format("%s", dynamicPortName), dynamicPortType);
 
             }
             PortType[] inputPortTypes = m_node.getInputPortTypes();
             for (int i = 0; i < inputPortTypes.length; i++) {
                 // distinct types
                 PortType staticPortType = inputPortTypes[i];
-                b.addFixedInputPortGroup(String.format("Input %s # %d",staticPortType.getName(), i), staticPortType);
+                b.addFixedInputPortGroup(String.format("Input %s # %d", staticPortType.getName(), i), staticPortType);
 
             }
             String[] dynamicOutputPortNames = m_node.getDynamicOutputPortNames();
@@ -361,15 +358,10 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
             PortType[] outputPortTypes = m_node.getOutputPortTypes();
             for (int i = 0; i < outputPortTypes.length; i++) {
                 PortType staticPortType = outputPortTypes[i];
-
                 // distinct types
                 b.addFixedOutputPortGroup(String.format("Output %s # %d", staticPortType.getName(), i), staticPortType);
 
             }
-
-            // TODO: Builder Name needs to have the same name as in description
-            // TODO: Add addExtendableInputPortGroupWithDefault
-            //b.addExtendableInputPortGroupWithDefault(m_extensionVersion, inputGroupPortTypes, outputPortTypes, outputGroupPortTypes);
 
             return Optional.of(b);
         }
@@ -395,7 +387,6 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
 
         @Override
         protected NodeDialogPane createNodeDialogPane(final NodeCreationConfiguration creationConfig) {
-            // TODO Auto-generated method stub
             return null;
         }
 

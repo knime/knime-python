@@ -125,7 +125,6 @@ public final class NodeDescriptionBuilder {
         NodeType.Enum.forString(nodeType);
         m_nodeType = nodeType;
         m_isDeprecated = isDeprecated;
-        // m_dynamicInputPorts = [];
     }
 
     /**
@@ -189,48 +188,14 @@ public final class NodeDescriptionBuilder {
         // NOTE:
         // We always need the "ports" element even if there are no ports.
         // Otherwise the XML validation will fail.
+        // Also, the order matters, it's input, dynamic input, output, dynamic output
         var ports = doc.createElement("ports");
 
         buildHelper.createElements("inPort", m_inputPorts).forEach(ports::appendChild);
-
-        if (!m_dynamicInputPorts.isEmpty()) {
-            for (DynamicPort port : m_dynamicInputPorts) {
-                var dynamicInputPorts = doc.createElement("dynInPort");
-
-                String nameString = port.getName();
-
-                dynamicInputPorts.setAttribute("name", nameString);
-                dynamicInputPorts.setAttribute("group-identifier", nameString);
-                dynamicInputPorts.setAttribute("insert-before", "0");
-
-                var portDescription = buildHelper.parseDocumentFragment(port.getDescription());
-                dynamicInputPorts.appendChild(portDescription);
-
-                ports.appendChild(dynamicInputPorts);
-            }
-        }
-
+        buildHelper.createDynamicPorts("dynInPort", m_dynamicInputPorts).forEach(ports::appendChild);
 
         buildHelper.createElements("outPort", m_outputPorts).forEach(ports::appendChild);
-
-
-        if (!m_dynamicOutputPorts.isEmpty()) {
-            int i = 0;
-            for (DynamicPort port : m_dynamicOutputPorts) {
-                var dynamicOutputPorts = doc.createElement("dynOutPort");
-
-                String nameString = port.getName();
-
-                dynamicOutputPorts.setAttribute("name", nameString);
-                dynamicOutputPorts.setAttribute("group-identifier", nameString);
-                dynamicOutputPorts.setAttribute("insert-before", "0");
-
-                var portDescription = buildHelper.parseDocumentFragment(port.getDescription());
-                dynamicOutputPorts.appendChild(portDescription);
-
-                ports.appendChild(dynamicOutputPorts);
-            }
-        }
+        buildHelper.createDynamicPorts("dynOutPort", m_dynamicOutputPorts).forEach(ports::appendChild);
 
         node.appendChild(ports);
 
@@ -249,7 +214,6 @@ public final class NodeDescriptionBuilder {
             }
             node.appendChild(keywords);
         }
-
 
         doc.appendChild(node);
 
@@ -295,6 +259,25 @@ public final class NodeDescriptionBuilder {
             return element;
         }
 
+        public List<Element> createDynamicPorts(final String elementName, final List<DynamicPort> dynamicPorts) {
+            List<Element> elements = new ArrayList<>();
+            for (DynamicPort port : dynamicPorts) {
+                var dynamicPortElement = m_doc.createElement(elementName);
+
+                String nameString = port.getName();
+
+                dynamicPortElement.setAttribute("name", nameString);
+                dynamicPortElement.setAttribute("group-identifier", nameString);
+                dynamicPortElement.setAttribute("insert-before", "0");
+
+                var portDescription = parseDocumentFragment(port.getDescription());
+                dynamicPortElement.appendChild(portDescription);
+
+                elements.add(dynamicPortElement);
+            }
+            return elements;
+        }
+
         private DocumentFragment parseDocumentFragment(final String s) {
             var wrapped = "<fragment>" + s + "</fragment>";
             Document parsed;
@@ -312,6 +295,7 @@ public final class NodeDescriptionBuilder {
             }
             return fragment;
         }
+
     }
 
     private static DocumentBuilder createDocBuilder(final DocumentBuilderFactory fac) {
@@ -439,12 +423,14 @@ public final class NodeDescriptionBuilder {
      * @param name of the Port
      * @param description of the Port
      * @return this builder
-    */
-    public NodeDescriptionBuilder withDynamicInputPorts(final String name, final String description, final String type) {
+     */
+    public NodeDescriptionBuilder withDynamicInputPorts(final String name, final String description,
+        final String type) {
         DynamicPort dynamicPort = new DynamicPort(name, description, type);
         m_dynamicInputPorts.add(dynamicPort);
         return this;
     }
+
     /**
      * Adds a Dynamic Output Port.
      *
@@ -452,12 +438,12 @@ public final class NodeDescriptionBuilder {
      * @param description of the Port
      * @return this builder
      */
-    public NodeDescriptionBuilder withDynamicOutputPorts(final String name, final String description, final String type) {
+    public NodeDescriptionBuilder withDynamicOutputPorts(final String name, final String description,
+        final String type) {
         DynamicPort dynamicPort = new DynamicPort(name, description, type);
         m_dynamicOutputPorts.add(dynamicPort);
         return this;
     }
-
 
     public NodeDescriptionBuilder withView(final String name, final String description) {
         m_views.add(new View(name, description));
@@ -542,6 +528,13 @@ public final class NodeDescriptionBuilder {
                 super(name, description);
             }
 
+            /**
+             * Adds an option to the tab.
+             *
+             * @param name of the option
+             * @param description of the option
+             * @return this builder
+             */
             public Builder withOption(final String name, final String description) {
                 m_options.add(new Option(name, description));
                 return this;

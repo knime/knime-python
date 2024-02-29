@@ -106,16 +106,6 @@ public interface PythonNodeModelProxy {
     List<PythonPortObjectSpec> configure(PythonPortObjectSpec[] inputs, PythonConfigurationContext context);
 
     /**
-     * Performs the node configuration. Given the input table schemas, provide the schemas of the resulting tables.
-     *
-     * @param inputs input specs
-     * @param context The {@link PythonConfigurationContext} used during configure
-     * @return The output specs
-     */
-    // List<PythonPortObjectSpec> configure(PythonPortObjectSpec[] inputs, PythonPortGroupSpec[] groups, PythonConfigurationContext context);
-
-
-    /**
      * Initializes the Python node's Java callback that provides it with Java-backed functionality (e.g. resolving KNIME
      * URLs to local file paths).
      *
@@ -230,8 +220,8 @@ public interface PythonNodeModelProxy {
         /**
          * Retrieves the authentication schema from a serialized XML representation of a credential.
          *
-         * This method parses the input XML string and extracts the authentication schema from it,
-         * assuming that the XML represents a valid CredentialPortObjectSpec.
+         * This method parses the input XML string and extracts the authentication schema from it, assuming that the XML
+         * represents a valid CredentialPortObjectSpec.
          *
          * @param serializedXMLString The serialized XML string containing credential information.
          * @return The authentication schema extracted from the credential, or null if the schema is not found.
@@ -244,12 +234,11 @@ public interface PythonNodeModelProxy {
         public String get_auth_schema(final String serializedXMLString) throws CouldNotAuthorizeException, // NOSONAR
             ClassNotFoundException, InstantiationException, IllegalAccessException, IOException;
 
-
         /**
          * Retrieves the authentication parameters from a serialized XML representation of a credential.
          *
-         * This method parses the input XML string and extracts the authentication parameters from it,
-         * assuming that the XML represents a valid CredentialPortObjectSpec.
+         * This method parses the input XML string and extracts the authentication parameters from it, assuming that the
+         * XML represents a valid CredentialPortObjectSpec.
          *
          * @param serializedXMLString The serialized XML string containing credential information.
          * @return The authentication parameters extracted from the credential, or null if not found.
@@ -297,9 +286,6 @@ public interface PythonNodeModelProxy {
          * @return String array containing username, password and identifier
          **/
         String[] get_credentials(final String identifier); // NOSONAR
-
-
-
 
     }
 

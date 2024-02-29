@@ -194,7 +194,6 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
 
         private String[] output_port_names;
 
-
         private JsonTab[] tabs;
 
         private JsonDescribed[] options;
@@ -215,15 +214,15 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
             descriptionBuilder.withIcon(modulePath.resolve(icon_path));
 
             return new PythonNode(id, category, after, keywords, descriptionBuilder.build(), input_port_types,
-                output_port_types, input_port_names, output_port_names, views.length, is_deprecated, is_hidden, getViewResources(modulePath));
+                output_port_types, input_port_names, output_port_names, views.length, is_deprecated, is_hidden,
+                getViewResources(modulePath));
         }
 
         private NodeDescriptionBuilder createDescriptionBuilder() {
             var builder = new NodeDescriptionBuilder(name, node_type, is_deprecated)//
                 .withShortDescription(short_description)//
                 .withIntro(full_description)//
-                .withKeywords(keywords)
-                ;
+                .withKeywords(keywords);
 
             consumeIfPresent(tabs, t -> builder.withTab(t.toTab()));
             consumeIfPresent(options, o -> o.enter(builder::withOption));
@@ -265,18 +264,9 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
         void enter(final BiConsumer<String, String> descriptionConsumer) {
             descriptionConsumer.accept(name, description);
         }
-
-        /**
-         * @param descriptionConsumer
-         * @return
-         */
-        public Object enter(final Object descriptionConsumer) {
-            // TODO Auto-generated method stub
-            return null;
-        }
     }
 
-    private static class JsonDynamicPort extends JsonDescribed{
+    private static class JsonDynamicPort extends JsonDescribed {
         protected String type;
     }
 
