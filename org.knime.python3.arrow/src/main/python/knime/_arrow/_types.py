@@ -1198,7 +1198,7 @@ def _unwrap_primitive_knime_extension_array(array: pa.Array) -> pa.Array:
 
 
 def unwrap_primitive_arrays(
-    table: Union[pa.Table, pa.RecordBatch]
+    table: Union[pa.Table, pa.RecordBatch],
 ) -> Union[pa.Table, pa.RecordBatch]:
     arrays = [
         _apply_to_array(column, _unwrap_primitive_knime_extension_array)
@@ -1422,7 +1422,7 @@ def _check_is_rowkey(array: pa.Array):
 
 
 def wrap_primitive_arrays(
-    table: Union[pa.Table, pa.RecordBatch]
+    table: Union[pa.Table, pa.RecordBatch],
 ) -> Union[pa.Table, pa.RecordBatch]:
     arrays = [
         _wrap_primitive_array(column, i == 0, table.schema.names[i])

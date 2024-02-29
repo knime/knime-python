@@ -234,6 +234,12 @@ PortType.TABLE = "PortType.TABLE"
 PortType.IMAGE = "PortType.IMAGE"
 PortType.CREDENTIAL = "PortType.CREDENTIAL"
 
+input_port_type_to_java_name_map = {
+    PortType.TABLE: "Table",
+    PortType.BINARY: "Binary",
+    PortType.IMAGE: "Image",
+}
+
 
 class ImageFormat(Enum):
     """
@@ -994,25 +1000,12 @@ class _Node:
         }
 
 
-def split_port_and_port_groups(input_ports, output_ports):
-    # split self.input_ports into static ports and port groups
-    static_input_ports = [
-        port for port in input_ports if not isinstance(port, PortGroup)
-    ]
-    dynamic_input_ports = [port for port in input_ports if isinstance(port, PortGroup)]
-    # split self.output_ports into static ports and port groups
-    static_output_ports = [
-        port for port in output_ports if not isinstance(port, PortGroup)
-    ]
-    dynamic_output_ports = [
-        port for port in output_ports if isinstance(port, PortGroup)
-    ]
-    return (
-        static_input_ports,
-        dynamic_input_ports,
-        static_output_ports,
-        dynamic_output_ports,
-    )
+def split_port_and_port_groups(ports):
+    # split ports into static ports and dynamic groups
+    static_ports = [port for port in ports if not isinstance(port, PortGroup)]
+    dynamic_ports = [port for port in ports if isinstance(port, PortGroup)]
+
+    return static_ports, dynamic_ports
 
 
 _nodes = {}
@@ -1476,13 +1469,62 @@ def output_binary_group(name: str, description: str):
         group : str
             The name of the group this port belongs to.
     """
-    # import pydevd_pycharm
-    # pydevd_pycharm.settrace('localhost', port=12345, stdoutToServer=True, stderrToServer=True)
-
     return lambda node_factory: _add_port(
         node_factory,
         "output_ports",
         PortGroup(PortType.BINARY, name, description),
+    )
+
+
+def output_image_group(name: str, description: str):
+    """
+    Use this decorator to define an output port of the type "Image" of a node.
+
+    The `configure` method must return specs of the type `ImagePortObjectSpec`. The
+    `execute` method must return a `bytes` object containing the image data. Note
+    that the image data must be valid for the format defined in `configure`.
+
+    Parameters
+    ----------
+        name : str
+            The name of the image output port
+        description : str
+            Description of the image output port
+
+    Examples
+    --------
+
+    >>> @knext.node(...)
+    ... @knext.output_image(
+    ...     name="PNG Output Image",
+    ...     description="An example PNG output image")
+    ... @knext.output_image(
+    ...     name="SVG Output Image",
+    ...     description="An example SVG output image")
+    ... class ImageNode:
+    ...     def configure(self, config_context):
+    ...         return (
+    ...             knext.ImagePortObjectSpec(knext.ImageFormat.PNG),
+    ...             knext.ImagePortObjectSpec(knext.ImageFormat.SVG),
+    ...         )
+    ...
+    ...     def execute(self, exec_context):
+    ...         # create a plot ...
+    ...         buffer_png = io.BytesIO()
+    ...         plt.savefig(buffer_png, format="png")
+    ...
+    ...         buffer_svg = io.BytesIO()
+    ...         plt.savefig(buffer_svg, format="svg")
+    ...
+    ...         return (
+    ...             buffer_png.getvalue(),
+    ...             buffer_svg.getvalue(),
+    ...         )
+    """
+    return lambda node_factory: _add_port(
+        node_factory,
+        "output_ports",
+        PortGroup(PortType.IMAGE, name, description),
     )
 
 

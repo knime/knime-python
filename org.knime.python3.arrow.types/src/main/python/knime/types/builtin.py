@@ -199,9 +199,7 @@ class ZonedDateTimeValueFactory2(
         from knime._arrow._backend import gateway
 
         try:
-            self._java_timezones = (
-                gateway().jvm.org.knime.python3.PythonEntryPointUtils.getSupportedTimeZones()
-            )
+            self._java_timezones = gateway().jvm.org.knime.python3.PythonEntryPointUtils.getSupportedTimeZones()
         except RuntimeError:
             warnings.warn(
                 "Could not load Java Timezones. This can happen in UNIT Tests"

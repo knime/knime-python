@@ -525,6 +525,8 @@ final class CloseablePythonNodeProxy
         }
 
         final var pythonOutputs = m_proxy.execute(pythonInputs, pythonExecContext);
+
+        // TODO: ASSERT PORTS AND SIZE
         failure.throwIfFailure();
 
         final var outputExec = exec.createSubExecutionContext(0.1);
@@ -686,8 +688,14 @@ final class CloseablePythonNodeProxy
         final var serializedOutSpecs = m_proxy.configure(serializedInSpecs, pythonConfigContext);
         failure.throwIfFailure();
 
-        final var outputPortTypeIdentifiers = m_nodeSpec.getOutputPortTypes();
-        if (serializedOutSpecs.size() != outputPortTypeIdentifiers.length) {
+        // Get number of active ports
+        final Map<String, int[]> portMap = ((DelegatingNodeModel)getNode().getNodeModel()).m_outputPortMap;
+        int activePortsNumber = 0;
+        for (int[] array : portMap.values()) {
+            activePortsNumber += array.length;
+        }
+
+        if (serializedOutSpecs.size() != activePortsNumber) {
             throw new IllegalStateException("Python node configure returned wrong number of output port specs");
         }
 

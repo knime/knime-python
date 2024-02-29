@@ -121,10 +121,20 @@ public interface ExtensionNode {
     /**
      * @return Input port type identifiers
      */
-    public PortType[] getInputPortTypesGroups();
+    public PortType[] getDynamicInputPortTypes();
 
     /**
      * @return Output port type identifiers
      */
-    public PortType[] getOutputPortTypesGroups();
+    public PortType[] getDynamicOutputPortTypes();
+
+    /**
+     * @return
+     */
+    String[] getDynamicInputPortNames();
+
+    /**
+     * @return
+     */
+    String[] getDynamicOutputPortNames();
 }

@@ -203,19 +203,14 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
 
         private JsonDescribed[] output_ports;
 
-        private JsonDescribed[] dynamic_input_ports;
+        private JsonDynamicPort[] dynamic_input_ports;
 
-        private JsonDescribed[] dynamic_output_ports;
-
-        private JsonDescribed[] dynamic_input_ports_types;
-
-        private JsonDescribed[] dynamic_output_ports_types;
+        private JsonDynamicPort[] dynamic_output_ports;
 
         private JsonView[] views;
 
         PythonNode toPythonNode(final Path modulePath) {
-            //TODO: How do we set dynamic ports in description
-            // Find out how to share identifier
+
             var descriptionBuilder = createDescriptionBuilder();
             descriptionBuilder.withIcon(modulePath.resolve(icon_path));
 
@@ -236,12 +231,9 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
             consumeIfPresent(input_ports, p -> p.enter(builder::withInputPort));
             consumeIfPresent(output_ports, p -> p.enter(builder::withOutputPort));
 
-            consumeIfPresent(dynamic_input_ports, p -> p.enter(builder::withDynamicInputPorts));
-            consumeIfPresent(dynamic_output_ports, p -> p.enter(builder::withDynamicOuputPorts));
-
-            // TODO FIND BETTER SOLUTION HOW CAN WE GIVE 3 INPUTS TO CONSUMER
-            consumeIfPresent(dynamic_input_ports_types, p -> p.enter(builder::withDynamicInputPortTypes));
-            consumeIfPresent(dynamic_output_ports_types, p -> p.enter(builder::withDynamicOutputPortTypes));
+            // TODO: Change the weird enter syntax for the others
+            consumeIfPresent(dynamic_input_ports, p -> builder.withDynamicInputPorts(p.name, p.description, p.type));
+            consumeIfPresent(dynamic_output_ports, p -> builder.withDynamicOutputPorts(p.name, p.description, p.type));
 
             consumeIfPresent(views, v -> v.enter(builder::withView));
             return builder;
@@ -282,6 +274,10 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
             // TODO Auto-generated method stub
             return null;
         }
+    }
+
+    private static class JsonDynamicPort extends JsonDescribed{
+        protected String type;
     }
 
     @SuppressWarnings("java:S116") // the fields are named this way for JSON deserialization

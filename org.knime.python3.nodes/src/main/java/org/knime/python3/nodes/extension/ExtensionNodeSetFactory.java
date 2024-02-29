@@ -134,7 +134,7 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
 
     @Override
     public final Class<? extends NodeFactory<? extends NodeModel>> getNodeFactory(final String id) {
-        return InternConfigurableExtensionNodeFactory.class;
+        return DynamicExtensionNodeFactory.class;
     }
 
     @Override
@@ -167,7 +167,7 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
      *
      * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
      */
-    public static final class InternConfigurableExtensionNodeFactory
+    public static final class DynamicExtensionNodeFactory
         extends ConfigurableNodeFactory<DelegatingNodeModel>
         implements NodeDialogFactory, NodeViewFactory<DelegatingNodeModel>, IDynamicNodeFactory {
 
@@ -190,9 +190,9 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
         private String m_factoryIdUniquifier;
 
         /**
-         * InternConfigurableExtensionNodeFactory Lazy Init
+         * DynamicExtensionNodeFactory Lazy Init
          */
-        public InternConfigurableExtensionNodeFactory() {
+        public DynamicExtensionNodeFactory() {
             super(true);
 
         }
@@ -333,26 +333,29 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
         protected Optional<PortsConfigurationBuilder> createPortsConfigBuilder() {
             final var b = new PortsConfigurationBuilder();
 
-            PortType[] inputGroupPortTypes = m_node.getInputPortTypesGroups();
+            String[] dynamicInputPortNames = m_node.getDynamicInputPortNames();
+            PortType[] inputGroupPortTypes = m_node.getDynamicInputPortTypes();
             for (int i = 0; i < inputGroupPortTypes.length; i++) {
+                String dynamicPortName = dynamicInputPortNames[i];
                 PortType dynamicPortType = inputGroupPortTypes[i];
                 // distinct types
-                b.addExtendableInputPortGroup(String.format("Input %s # %d",dynamicPortType.getName(), i), dynamicPortType);
+                b.addExtendableInputPortGroup(String.format("%s",dynamicPortName), dynamicPortType);
 
             }
             PortType[] inputPortTypes = m_node.getInputPortTypes();
             for (int i = 0; i < inputPortTypes.length; i++) {
                 // distinct types
                 PortType staticPortType = inputPortTypes[i];
-                b.addFixedInputPortGroup(String.format("Input Static %s # %d",staticPortType.getName(), i), staticPortType);
+                b.addFixedInputPortGroup(String.format("Input %s # %d",staticPortType.getName(), i), staticPortType);
 
             }
-
-            PortType[] outputGroupPortTypes = m_node.getOutputPortTypesGroups();
-            for (int i = 0; i < outputGroupPortTypes.length; i++) {
-                PortType dynamicPortType = outputGroupPortTypes[i];
+            String[] dynamicOutputPortNames = m_node.getDynamicOutputPortNames();
+            PortType[] dynamicOutputPortTypes = m_node.getDynamicOutputPortTypes();
+            for (int i = 0; i < dynamicOutputPortTypes.length; i++) {
+                String dynamicPortName = dynamicOutputPortNames[i];
+                PortType dynamicPortType = dynamicOutputPortTypes[i];
                 // distinct types
-                b.addExtendableOutputPortGroup(String.format("Output %s # %d",dynamicPortType.getName(), i), dynamicPortType);
+                b.addExtendableOutputPortGroup(String.format("%s", dynamicPortName), dynamicPortType);
 
             }
             PortType[] outputPortTypes = m_node.getOutputPortTypes();
@@ -360,7 +363,7 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
                 PortType staticPortType = outputPortTypes[i];
 
                 // distinct types
-                b.addFixedOutputPortGroup(String.format("Output Static %s # %d", staticPortType.getName(), i), staticPortType);
+                b.addFixedOutputPortGroup(String.format("Output %s # %d", staticPortType.getName(), i), staticPortType);
 
             }
 

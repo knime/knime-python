@@ -103,8 +103,8 @@ class EntryPoint(kg.EntryPoint):
             assert (
                 py_array == values
             ), f"Wrong list of ints, expected '{values}' got '{py_array}'"
-            assert pd_array.shape == (
-                1,
+            assert (
+                pd_array.shape == (1,)
             ), f"Wrong shape returned from pandas, expected '(1,)', got '{pd_array.shape}'"
             assert (
                 type(pd_array[0]) == np.ndarray

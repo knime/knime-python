@@ -267,9 +267,7 @@ except BaseException:
 except:
     # We report unavailability by default.
     pass
-""".format(
-            module_name
-        )
+""".format(module_name)
         test_env = {}
         exec(test_script, {}, test_env)
 
@@ -331,9 +329,7 @@ try:
 except:
     # We report unavailability by default.
     pass
-""".format(
-            module_name, class_name
-        )
+""".format(module_name, class_name)
         test_env = {}
         exec(test_script, {}, test_env)
 
