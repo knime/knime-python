@@ -50,6 +50,7 @@ package org.knime.python3.nodes.extension;
 
 import org.knime.core.node.NodeDescription;
 import org.knime.core.node.port.PortType;
+import org.knime.python3.nodes.PythonNode.PortSpecifier;
 import org.knime.python3.views.ViewResources;
 
 /**
@@ -119,22 +120,22 @@ public interface ExtensionNode {
     ViewResources[] getViewResources();
 
     /**
-     * @return Input port type identifiers
+     * @return
      */
-    public PortType[] getDynamicInputPortTypes();
-
-    /**
-     * @return Output port type identifiers
-     */
-    public PortType[] getDynamicOutputPortTypes();
+    PortSpecifier[] getInputPorts();
 
     /**
      * @return
      */
-    String[] getDynamicInputPortNames();
+    PortSpecifier[] getOutputPorts();
 
     /**
      * @return
      */
-    String[] getDynamicOutputPortNames();
+    PortSpecifier[] getInputPortGroups();
+
+    /**
+     * @return
+     */
+    PortSpecifier[] getOutputPortGroups();
 }

@@ -419,25 +419,6 @@ class KnimeMarkdownParser:
         else:
             return ""
 
-    def parse_ports(self, ports):
-        return [
-            {
-                "name": port.name,
-                "description": self.parse_port_description(port.description),
-            }
-            for port in ports
-        ]
-
-    def parse_dynamic_ports(self, ports, port_type_map):
-        return [
-            {
-                "name": port.name,
-                "description": port.description,
-                "type": port_type_map[port.type],
-            }
-            for port in ports
-        ]
-
     def parse_options(self, options):
         return [
             {

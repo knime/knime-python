@@ -48,7 +48,6 @@
  */
 package org.knime.python3.nodes;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.knime.core.node.NodeDescription;
@@ -72,21 +71,9 @@ public final class PythonNode implements ExtensionNode {
 
     private final String[] m_keywords;
 
-    private final PortType[] m_dynamicInputPortTypes;
+    private final List<PortSpecifier> m_inputPortSpecifiers;
 
-    private final PortType[] m_dynamicOutputPortTypes;
-
-    private final PortType[] m_inputPortTypes;
-
-    private final PortType[] m_outputPortTypes;
-
-    private final String[] m_inputPortNames;
-
-    private final String[] m_outputPortNames;
-
-    private final String[] m_dynamicInputPortNames;
-
-    private final String[] m_dynamicOutputPortNames;
+    private final List<PortSpecifier> m_outputPortSpecifiers;
 
     private final int m_numViews;
 
@@ -106,28 +93,24 @@ public final class PythonNode implements ExtensionNode {
      * @param afterId id of the node after which to insert this node
      * @param keywords
      * @param description the node's description
-     * @param inputPortTypes
-     * @param outputPortTypes
-     * @param inputPortNames
-     * @param outputPortNames
      * @param numViews
      * @param isDeprecated whether the node is deprecated
      * @param isHidden whether the node is hidden from node repository
      * @param viewResources
+     * @param inputPortSpecifiers
+     * @param outputPortSpecifiers
      */
     public PythonNode(final String id, //
         final String categoryPath, //
         final String afterId, //
         final String[] keywords, //
         final NodeDescription description, //
-        final String[] inputPortTypes, //
-        final String[] outputPortTypes, //
-        final String[] inputPortNames, //
-        final String[] outputPortNames, //
         final int numViews, //
         final boolean isDeprecated, //
         final boolean isHidden, //
-        final ViewResources[] viewResources) {
+        final ViewResources[] viewResources,
+        final List<PortSpecifier> inputPortSpecifiers,
+        final List<PortSpecifier> outputPortSpecifiers) {
 
         m_id = id;
         m_categoryPath = categoryPath;
@@ -135,27 +118,16 @@ public final class PythonNode implements ExtensionNode {
         m_keywords = keywords;
         m_description = description;
 
-        m_dynamicInputPortTypes = PythonPortObjects.getGroupPortTypesForIdentifiers(inputPortTypes);
-        m_dynamicOutputPortTypes = PythonPortObjects.getGroupPortTypesForIdentifiers(outputPortTypes);
-
-        m_inputPortTypes = PythonPortObjects.getPortTypesForIdentifiers(inputPortTypes);
-        m_outputPortTypes = PythonPortObjects.getPortTypesForIdentifiers(outputPortTypes);
-
-        String[][] allInputPortNames = filterDynamicPortNames(inputPortNames, inputPortTypes);
-        m_dynamicInputPortNames = allInputPortNames[0];
-        m_inputPortNames = allInputPortNames[1];
-
-        String[][] allOutputPortNames = filterDynamicPortNames(outputPortNames, outputPortTypes);
-        m_dynamicOutputPortNames = allOutputPortNames[0];
-        m_outputPortNames = allOutputPortNames[1];
-
         m_numViews = numViews;
         m_isDeprecated = isDeprecated;
         m_isHidden = isHidden;
         m_viewResources = viewResources;
+
+        m_inputPortSpecifiers = inputPortSpecifiers;
+        m_outputPortSpecifiers = outputPortSpecifiers;
+
+
     }
-
-
 
     /**
      * @return id of the node
@@ -197,52 +169,53 @@ public final class PythonNode implements ExtensionNode {
         return m_description;
     }
 
+
     /**
-     * @return Input port type identifiers
+     * Returns an array of input PortSpecifiers where the group attribute is true.
+     *
+     * @return an array of PortSpecifiers belonging to input groups.
      */
     @Override
-    public PortType[] getDynamicInputPortTypes() {
-        return m_dynamicInputPortTypes;
+    public PortSpecifier[] getInputPortGroups() {
+        return m_inputPortSpecifiers.stream()
+                .filter(PortSpecifier::group)
+                .toArray(PortSpecifier[]::new);
     }
 
     /**
-     * @return Output port type identifiers
+     * Returns an array of output PortSpecifiers where the group attribute is true.
+     *
+     * @return an array of PortSpecifiers belonging to output groups.
      */
     @Override
-    public PortType[] getDynamicOutputPortTypes() {
-        return m_dynamicOutputPortTypes;
+    public PortSpecifier[] getOutputPortGroups() {
+        return m_outputPortSpecifiers.stream()
+                .filter(PortSpecifier::group)
+                .toArray(PortSpecifier[]::new);
     }
 
     /**
-     * @return Input port type names
+     * Returns an array of input PortSpecifiers where the group attribute is false.
+     *
+     * @return an array of individual input PortSpecifiers.
      */
     @Override
-    public String[] getDynamicInputPortNames() {
-        return m_dynamicInputPortNames;
+    public PortSpecifier[] getInputPorts() {
+        return m_inputPortSpecifiers.stream()
+                .filter(portSpecifier -> !portSpecifier.group())
+                .toArray(PortSpecifier[]::new);
     }
 
     /**
-     * @return Output port type names
+     * Returns an array of output PortSpecifiers where the group attribute is false.
+     *
+     * @return an array of individual output PortSpecifiers.
      */
     @Override
-    public String[] getDynamicOutputPortNames() {
-        return m_dynamicOutputPortNames;
-    }
-
-    /**
-     * @return Input port type identifiers
-     */
-    @Override
-    public PortType[] getInputPortTypes() {
-        return m_inputPortTypes;
-    }
-
-    /**
-     * @return Output port type identifiers
-     */
-    @Override
-    public PortType[] getOutputPortTypes() {
-        return m_outputPortTypes;
+    public PortSpecifier[] getOutputPorts() {
+        return m_outputPortSpecifiers.stream()
+                .filter(portSpecifier -> !portSpecifier.group())
+                .toArray(PortSpecifier[]::new);
     }
 
     /**
@@ -268,17 +241,58 @@ public final class PythonNode implements ExtensionNode {
         return m_viewResources;
     }
 
-    private static String[][] filterDynamicPortNames(final String[] portNames, final String[] portTypes) {
-        List<String> staticPortNamesList = new ArrayList<>();
-        List<String> dynamicPortNamesList = new ArrayList<>();
-        for (int i = 0; i < portNames.length; i++) {
-            if(portTypes[i].startsWith("PortGroup.")) {
-                dynamicPortNamesList.add(portNames[i]);
-            }
-            else {
-                staticPortNamesList.add(portNames[i]);
-            }
-        }
-        return new String[][]{dynamicPortNamesList.toArray(new String[0]), staticPortNamesList.toArray(new String[0])};
+    /**
+     * Returns an array of input port types for all input ports.
+     *
+     * @return an array of PortType representing the types of the input ports.
+     */
+    @Override
+    public PortType[] getInputPortTypes() {
+        return m_inputPortSpecifiers.stream()
+                .map(PortSpecifier::getType)
+                .toArray(PortType[]::new);
     }
+
+    /**
+     * Returns an array of output port types for all output ports.
+     *
+     * @return an array of PortType representing the types of the output ports.
+     */
+    @Override
+    public PortType[] getOutputPortTypes() {
+        return m_outputPortSpecifiers.stream()
+                .map(PortSpecifier::getType)
+                .toArray(PortType[]::new);
+    }
+
+    /**
+     * Represents a specification for a port, including its name, type, description,
+     * and additional properties such as group membership and default values.
+     *
+     * @param name        The name of the port.
+     * @param typeString  The type of the port, represented as a string.
+     * @param description A brief description of the port's purpose or usage.
+     * @param group       Indicates whether the port is part of a group (true) or not (false).
+     * @param defaults    The default value for the port, typically used for initialization.
+     */
+    public record PortSpecifier(
+        String name,
+        String typeString,
+        String description,
+        boolean group,
+        int defaults
+    ) {
+        /**
+         * @return PortType for the Port Specifier
+         */
+        public PortType getType() {
+            return PythonPortObjects.getPortTypeForIdentifier(typeString);
+        }
+    }
+
+
+
 }
+
+
+

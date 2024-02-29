@@ -87,6 +87,7 @@ import org.knime.core.webui.node.dialog.defaultdialog.DefaultNodeSettingsService
 import org.knime.core.webui.node.view.NodeView;
 import org.knime.core.webui.node.view.NodeViewFactory;
 import org.knime.python3.nodes.DelegatingNodeModel;
+import org.knime.python3.nodes.PythonNode.PortSpecifier;
 import org.knime.python3.nodes.dialog.DelegatingJsonSettingsDataService;
 import org.knime.python3.nodes.dialog.JsonFormsNodeDialog;
 import org.knime.python3.nodes.proxy.NodeProxyProvider;
@@ -330,38 +331,28 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
         protected Optional<PortsConfigurationBuilder> createPortsConfigBuilder() {
             final var b = new PortsConfigurationBuilder();
 
-            String[] dynamicInputPortNames = m_node.getDynamicInputPortNames();
-            PortType[] inputGroupPortTypes = m_node.getDynamicInputPortTypes();
-            for (int i = 0; i < inputGroupPortTypes.length; i++) {
-                String dynamicPortName = dynamicInputPortNames[i];
-                PortType dynamicPortType = inputGroupPortTypes[i];
-                // distinct types
-                b.addExtendableInputPortGroup(String.format("%s", dynamicPortName), dynamicPortType);
-
-            }
-            PortType[] inputPortTypes = m_node.getInputPortTypes();
+            PortSpecifier[] inputPortTypes = m_node.getInputPorts();
             for (int i = 0; i < inputPortTypes.length; i++) {
-                // distinct types
-                PortType staticPortType = inputPortTypes[i];
-                b.addFixedInputPortGroup(String.format("Input %s # %d", staticPortType.getName(), i), staticPortType);
+                PortSpecifier staticPortType = inputPortTypes[i];
+                b.addFixedInputPortGroup(String.format("Input %s # %d", staticPortType.name(), i), staticPortType.getType());
 
             }
-            String[] dynamicOutputPortNames = m_node.getDynamicOutputPortNames();
-            PortType[] dynamicOutputPortTypes = m_node.getDynamicOutputPortTypes();
-            for (int i = 0; i < dynamicOutputPortTypes.length; i++) {
-                String dynamicPortName = dynamicOutputPortNames[i];
-                PortType dynamicPortType = dynamicOutputPortTypes[i];
-                // distinct types
-                b.addExtendableOutputPortGroup(String.format("%s", dynamicPortName), dynamicPortType);
 
+            for (PortSpecifier portSpecifier :  m_node.getInputPortGroups()) {
+                b.addExtendableInputPortGroup(portSpecifier.name(), portSpecifier.getType());
             }
-            PortType[] outputPortTypes = m_node.getOutputPortTypes();
+
+            PortSpecifier[] outputPortTypes = m_node.getOutputPorts();
             for (int i = 0; i < outputPortTypes.length; i++) {
-                PortType staticPortType = outputPortTypes[i];
-                // distinct types
-                b.addFixedOutputPortGroup(String.format("Output %s # %d", staticPortType.getName(), i), staticPortType);
+                PortSpecifier staticPortType = outputPortTypes[i];
+                b.addFixedOutputPortGroup(String.format("Output %s # %d", staticPortType.name(), i), staticPortType.getType());
 
             }
+
+            for (PortSpecifier portSpecifier :  m_node.getOutputPortGroups()) {
+                b.addExtendableOutputPortGroup(portSpecifier.name(), portSpecifier.getType());
+            }
+
 
             return Optional.of(b);
         }

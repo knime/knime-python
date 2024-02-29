@@ -53,6 +53,7 @@ import importlib
 import json
 import logging
 import traceback
+from dataclasses import asdict
 from typing import Any, Dict, List, Optional, Type, Union, Callable
 
 import py4j.clientserver
@@ -654,6 +655,12 @@ class _PythonNodeProxy:
         list of list of _PythonPortObjectSpec
             A list of lists containing Python port object specifications for each input port.
         """
+        import pydevd_pycharm
+
+        pydevd_pycharm.settrace(
+            "localhost", port=12345, stdoutToServer=True, stderrToServer=True
+        )
+
         portmap = {k: list(v) for k, v in java_portmap.items()}
 
         port_specs_lists = [[] for _ in range(len(self._node.input_ports))]
@@ -684,43 +691,12 @@ class _PythonNodeProxy:
         """
         if isinstance(port, kn.PortGroup) and port.name in portmap:
             return portmap.pop(port.name)
-        elif not isinstance(port, kn.PortGroup):
+        elif isinstance(port, kn.Port):
             mapped_port_type = kn.input_port_type_to_java_name_map[port.type]
             for k, v in portmap.items():
                 if mapped_port_type in k:
                     return portmap.pop(k)
         return []
-
-    def _map_tables_to_specs(
-        self, java_portmap, specs
-    ) -> List[List[_PythonPortObjectSpec]]:
-        # import pydevd_pycharm
-        # pydevd_pycharm.settrace('localhost', port=12345, stdoutToServer=True, stderrToServer=True)
-        # convert java portmap to python portmap
-        portmap = {}
-        for k, v in java_portmap.items():
-            portmap[k] = list(v)
-        # todo static ports are always in order
-        port_specs_lists = [[] for _ in range(len(self._node.input_ports))]
-        for input_port_idx, port in enumerate(self._node.input_ports):
-            port_indices = portmap.get(port.name, [])
-            # todo: this does not handle static ports yet
-            for idx in port_indices:
-                spec = specs[idx]
-                python_port = self._port_type_registry.port_object_to_python(
-                    spec, port, self._java_callback
-                )
-                port_specs_lists[input_port_idx].append(python_port)
-
-        # todo populate once naming is correct
-        return port_specs_lists
-
-    def _invert_dictionary(self, portmap):
-        inverse = {}
-        for k, v in portmap.items():
-            for x in v:
-                inverse.setdefault(x, []).append(k)
-        return inverse
 
     def getParameters(self) -> str:
         parameters_dict = kp.extract_parameters(self._node)
@@ -1053,10 +1029,12 @@ class _KnimeNodeBackend(kg.EntryPoint, kn._KnimeNodeBackend):
         return json.dumps(node_dicts)
 
     def resolve_node_dict(self, node: kn._Node):
-        d = node.to_dict()
+        node_dict = node.to_dict()
         instance = node.node_factory()
         description = self.extract_description(instance, node.name)
-        return {**d, **description}
+        self.update_port_descriptions(node_dict)
+
+        return {**node_dict, **description}
 
     def extract_description(self, node: kn.PythonNode, name) -> dict:
         node_doc = node.__doc__
@@ -1095,33 +1073,39 @@ class _KnimeNodeBackend(kg.EntryPoint, kn._KnimeNodeBackend):
             options = self._knime_parser.parse_options(param_doc)
             tabs = []
 
-        static_input_ports, dynamic_input_ports = kn.split_port_and_port_groups(
-            node.input_ports
-        )
-        static_output_ports, dynamic_output_ports = kn.split_port_and_port_groups(
-            node.output_ports
-        )
-
-        static_input_ports = self._knime_parser.parse_ports(static_input_ports)
-        static_output_ports = self._knime_parser.parse_ports(static_output_ports)
-
-        dynamic_input_ports = self._knime_parser.parse_dynamic_ports(
-            dynamic_input_ports, kn.input_port_type_to_java_name_map
-        )
-        dynamic_output_ports = self._knime_parser.parse_dynamic_ports(
-            dynamic_output_ports, kn.input_port_type_to_java_name_map
-        )
-
         return {
             "short_description": short_description,
             "full_description": full_description,
             "options": options,
             "tabs": tabs,
-            "input_ports": static_input_ports,
-            "output_ports": static_output_ports,
-            "dynamic_input_ports": dynamic_input_ports,
-            "dynamic_output_ports": dynamic_output_ports,
+            # The port descriptions are added in a separate method, and contained in the node_dict
         }
+
+    def update_port_descriptions(self, node_dict):
+        """
+        Inplace parsing of the descriptions of the input and output ports in the node dictionary.
+
+        Parameters
+        ----------
+        node_dict : dict
+            The dictionary representing the node. It should contain
+            "input_port_specifier" and "output_port_specifier" keys, each
+            associated with a list of port dictionaries. Each port dictionary
+            should have a "description" key.
+        """
+        for port_dict in node_dict["input_port_specifier"]:
+            port_dict.update(
+                description=self._knime_parser.parse_port_description(
+                    port_dict["description"]
+                )
+            )
+
+        for port_dict in node_dict["output_port_specifier"]:
+            port_dict.update(
+                description=self._knime_parser.parse_port_description(
+                    port_dict["description"]
+                )
+            )
 
     def createNodeFromExtension(self, node_id: str) -> _PythonNodeProxy:
         node_info = kn._nodes[node_id]
@@ -1188,18 +1172,8 @@ class FallBackMarkdownParser:
     def parse_basic(self, s):
         return s
 
-    def parse_ports(self, ports):
-        return [{"name": port.name, "description": port.description} for port in ports]
-
-    def parse_dynamic_ports(self, ports, port_type_map):
-        return [
-            {
-                "name": port.name,
-                "description": port.description,
-                "type": port_type_map[port.type],
-            }
-            for port in ports
-        ]
+    def parse_port_description(self, port_description):
+        return port_description
 
     def parse_options(self, options):
         return options
