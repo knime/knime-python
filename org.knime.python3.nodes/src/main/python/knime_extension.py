@@ -48,6 +48,7 @@ Old-style import for the KNIME Python extension interface.
 This only includes the contents of knime.extension, by which it has been
 replaced.
 """
+
 from knime.extension import *  # NOSONAR: intended; this file is only a placeholder
 import warnings
 

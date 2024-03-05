@@ -47,6 +47,7 @@ Defines the Python equivalent to a ValueFactory and related utility method/class
 
 @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
 """
+
 import warnings
 from abc import ABC, abstractmethod
 from contextlib import contextmanager

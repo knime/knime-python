@@ -45,6 +45,7 @@
 """
 @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
 """
+
 import abc
 import functools
 from collections import OrderedDict

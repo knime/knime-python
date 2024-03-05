@@ -44,7 +44,7 @@
 
 """
 knime.extension provides a unified user interface for the development of KNIME extensions in Python.
-It simplifies the import of KNIME-related Python files such that only knime.extension needs to be imported. 
+It simplifies the import of KNIME-related Python files such that only knime.extension needs to be imported.
 """
 # @author Steffen Fissler, KNIME GmbH, Konstanz, Germany
 

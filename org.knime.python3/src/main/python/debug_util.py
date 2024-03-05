@@ -51,6 +51,7 @@ See: http://www.pydev.org/manual_adv_remote_debugger.html on how to setup debugg
 @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
 @author Christian Dietz, KNIME GmbH, Konstanz, Germany
 """
+
 import traceback
 
 import inspect

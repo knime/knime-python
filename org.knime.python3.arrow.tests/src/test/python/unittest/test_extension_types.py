@@ -45,6 +45,7 @@
 """
 @author Jonas Klotz, KNIME GmbH, Berlin, Germany
 """
+
 import unittest
 
 import knime.api.types as kt

@@ -47,6 +47,7 @@ Provides access to environment variables and other information about the KNIME P
 
 @author Jonas Klotz, KNIME GmbH, Berlin, Germany
 """
+
 import os
 from dataclasses import dataclass
 from typing import Optional, Tuple

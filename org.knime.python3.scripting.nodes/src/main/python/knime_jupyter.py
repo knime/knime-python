@@ -48,6 +48,7 @@ Old-style import for the modern KNIME Python jupyter interface.
 This only includes the contents of knime.scripting.jupyter, by which it has been
 replaced.
 """
+
 from knime.scripting.jupyter import *  # NOSONAR: intended; this file is only a placeholder
 import warnings
 

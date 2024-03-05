@@ -47,6 +47,7 @@ Basic utilities for communicating with the KNIME instance which started the Pyth
 
 @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
 """
+
 import os
 import sys
 import importlib

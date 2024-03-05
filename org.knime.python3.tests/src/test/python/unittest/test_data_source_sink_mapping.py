@@ -45,6 +45,7 @@
 """
 @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
 """
+
 import unittest
 
 import knime._backend._gateway as kg

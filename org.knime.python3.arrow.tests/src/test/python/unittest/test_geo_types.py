@@ -44,6 +44,7 @@
 """
 @author Jonas Klotz, KNIME GmbH, Berlin, Germany
 """
+
 import os
 from codecs import ignore_errors
 from os import pardir

@@ -45,6 +45,7 @@
 """
 @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
 """
+
 from abc import ABC, abstractmethod
 import os
 import unittest

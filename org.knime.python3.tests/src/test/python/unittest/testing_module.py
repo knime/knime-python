@@ -46,7 +46,6 @@
 @author Steffen Fissler, KNIME GmbH, Konstanz, Germany
 """
 
-
 import knime.api.types as kt
 
 

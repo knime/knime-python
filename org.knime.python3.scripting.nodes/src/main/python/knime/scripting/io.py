@@ -46,6 +46,7 @@
 Input and output variables used to communicate with KNIME from within
 KNIME's Python Scripting nodes
 """
+
 import sys
 
 if "knime_io" in sys.modules:

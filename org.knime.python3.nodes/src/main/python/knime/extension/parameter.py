@@ -48,6 +48,7 @@ Contains the implementation of the Parameter Dialogue API for building native Py
 @author Ivan Prigarin, KNIME GmbH, Konstanz, Germany
 @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
 """
+
 import datetime
 import inspect
 import logging

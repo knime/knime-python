@@ -48,6 +48,7 @@ Old-style import for the modern KNIME Python types interface.
 This only includes the contents of knime.api.types, by which it has been
 replaced.
 """
+
 from knime.api.types import *  # NOSONAR: intended; this file is only a placeholder
 import warnings
 

@@ -45,6 +45,7 @@
 """
 @author Steffen Fissler, KNIME GmbH, Konstanz, Germany
 """
+
 import unittest
 import knime.api.schema as ks
 import knime.api.types as kt

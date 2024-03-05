@@ -47,6 +47,7 @@ Provides base implementations and utilities for the development of KNIME nodes i
 
 @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
 """
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, asdict
 from enum import Enum
@@ -352,9 +353,9 @@ class Port:
     type: PortType
     name: str
     description: str
-    id: Optional[
-        str
-    ] = None  # can be used by BINARY and CONNECTION ports to only allow linking ports with matching IDs
+    id: Optional[str] = (
+        None  # can be used by BINARY and CONNECTION ports to only allow linking ports with matching IDs
+    )
 
     def __post_init__(self):
         """

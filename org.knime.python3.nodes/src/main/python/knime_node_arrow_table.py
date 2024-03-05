@@ -48,6 +48,7 @@ Old-style import for the modern KNIME Python table Arrow backend.
 This only includes the contents of knime._arrow._table, by which it has been
 replaced.
 """
+
 from knime._arrow._table import *
 
 import knime._arrow._table as _katn

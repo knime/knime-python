@@ -48,6 +48,7 @@ Old-style import for the KNIME Python parameter interface.
 This only includes the contents of knime.extension.parameter, by which it has been
 replaced.
 """
+
 from knime.extension.parameter import *  # NOSONAR: intended; this file is only a placeholder
 import warnings
 

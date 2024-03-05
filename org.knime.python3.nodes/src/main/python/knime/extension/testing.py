@@ -43,7 +43,7 @@
 # ------------------------------------------------------------------------
 
 """
-Experimental unit testing support for Python based KNIME nodes. 
+Experimental unit testing support for Python based KNIME nodes.
 
 This module provides mock implementations for some KNIME internals as
 well as an TestingExecutionContext and a TestingConfigureContext which you
@@ -51,7 +51,7 @@ can instantiate, e.g. set some flow variables, or overwrite the behavior
 of some methods if needed.
 
 With that, you can build unit tests that instanciate a node and run configure
-or execute, using Pandas DataFrames as inputs and outputs (Arrow is not implemented 
+or execute, using Pandas DataFrames as inputs and outputs (Arrow is not implemented
 for testing).
 
 If you need any extension types like e.g. Chemistry or Geospatial types, we provide
@@ -68,11 +68,11 @@ Examples
 ... # set up test input
 ... input_df = pd.DataFrame({"Test": [1, 2, 3, 4]})
 ... input = knext.Table.from_pandas(input_df)
-... 
+...
 ... # assume TestNode is your Python node with one input and one output table
 ... node = TestNode()
 ... node.column = "Test" # configure parameter "column" to the value "Test"
-... 
+...
 ... # create testing execution context
 ... exec_context = ktest.TestingExecutionContext()
 ...

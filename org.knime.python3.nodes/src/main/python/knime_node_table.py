@@ -48,6 +48,7 @@ Old-style import for the modern KNIME Python table interface.
 This only includes the contents of knime.api.table, by which it has been
 replaced.
 """
+
 from knime.api.table import *  # NOSONAR: intended; this file is only a placeholder
 import warnings
 

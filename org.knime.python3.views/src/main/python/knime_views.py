@@ -47,6 +47,7 @@ Old-style import for the modern KNIME Python views interface.
 This only includes the contents of knime.api.views, by which it has been
 replaced.
 """
+
 from knime.api.views import *
 
 

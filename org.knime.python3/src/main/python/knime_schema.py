@@ -48,6 +48,7 @@ Old-style import for the modern KNIME Python schema interface.
 This only includes the contents of knime.api.schema, by which it has been
 replaced.
 """
+
 from knime.api.schema import *  # NOSONAR: intended; this file is only a placeholder
 import warnings
 
