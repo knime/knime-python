@@ -817,7 +817,6 @@ propagated with or for interoperation with KNIME.
          version="0.0.0"
          fragment="true"/>
 
-
    <plugin
          id="org.knime.pythonscripting.channel.v1.bin.macosx.aarch64"
          os="macosx"
@@ -826,5 +825,11 @@ propagated with or for interoperation with KNIME.
          install-size="0"
          version="0.0.0"
          fragment="true"/>
+
+   <plugin
+         id="org.knime.python3.views"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"/>
 
 </feature>
