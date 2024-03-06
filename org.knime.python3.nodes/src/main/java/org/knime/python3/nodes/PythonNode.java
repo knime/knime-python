@@ -108,8 +108,7 @@ public final class PythonNode implements ExtensionNode {
         final int numViews, //
         final boolean isDeprecated, //
         final boolean isHidden, //
-        final ViewResources[] viewResources,
-        final List<PortSpecifier> inputPortSpecifiers,
+        final ViewResources[] viewResources, final List<PortSpecifier> inputPortSpecifiers, //
         final List<PortSpecifier> outputPortSpecifiers) {
 
         m_id = id;
@@ -125,7 +124,6 @@ public final class PythonNode implements ExtensionNode {
 
         m_inputPortSpecifiers = inputPortSpecifiers;
         m_outputPortSpecifiers = outputPortSpecifiers;
-
 
     }
 
@@ -170,6 +168,19 @@ public final class PythonNode implements ExtensionNode {
     }
 
 
+    @Override
+    public PortSpecifier[] getInputPorts() {
+        return m_inputPortSpecifiers.stream() //
+                .toArray(PortSpecifier[]::new);
+
+    }
+
+    @Override
+    public PortSpecifier[] getOutputPorts() {
+        return m_outputPortSpecifiers.stream() //
+                .toArray(PortSpecifier[]::new);
+    }
+
     /**
      * Returns an array of input PortSpecifiers where the group attribute is true.
      *
@@ -177,9 +188,9 @@ public final class PythonNode implements ExtensionNode {
      */
     @Override
     public PortSpecifier[] getInputPortGroups() {
-        return m_inputPortSpecifiers.stream()
-                .filter(PortSpecifier::group)
-                .toArray(PortSpecifier[]::new);
+        return m_inputPortSpecifiers.stream() //
+            .filter(PortSpecifier::group) //
+            .toArray(PortSpecifier[]::new);
     }
 
     /**
@@ -189,9 +200,9 @@ public final class PythonNode implements ExtensionNode {
      */
     @Override
     public PortSpecifier[] getOutputPortGroups() {
-        return m_outputPortSpecifiers.stream()
-                .filter(PortSpecifier::group)
-                .toArray(PortSpecifier[]::new);
+        return m_outputPortSpecifiers.stream() //
+            .filter(PortSpecifier::group) //
+            .toArray(PortSpecifier[]::new);
     }
 
     /**
@@ -199,11 +210,10 @@ public final class PythonNode implements ExtensionNode {
      *
      * @return an array of individual input PortSpecifiers.
      */
-    @Override
-    public PortSpecifier[] getInputPorts() {
-        return m_inputPortSpecifiers.stream()
-                .filter(portSpecifier -> !portSpecifier.group())
-                .toArray(PortSpecifier[]::new);
+    public PortSpecifier[] getStaticInputPorts() {
+        return m_inputPortSpecifiers.stream() //
+            .filter(portSpecifier -> !portSpecifier.group()) //
+            .toArray(PortSpecifier[]::new);
     }
 
     /**
@@ -211,11 +221,10 @@ public final class PythonNode implements ExtensionNode {
      *
      * @return an array of individual output PortSpecifiers.
      */
-    @Override
-    public PortSpecifier[] getOutputPorts() {
-        return m_outputPortSpecifiers.stream()
-                .filter(portSpecifier -> !portSpecifier.group())
-                .toArray(PortSpecifier[]::new);
+    public PortSpecifier[] getStaticOutputPorts() {
+        return m_outputPortSpecifiers.stream() //
+            .filter(portSpecifier -> !portSpecifier.group()) //
+            .toArray(PortSpecifier[]::new);
     }
 
     /**
@@ -248,8 +257,8 @@ public final class PythonNode implements ExtensionNode {
      */
     @Override
     public PortType[] getInputPortTypes() {
-        return m_inputPortSpecifiers.stream()
-                .map(PortSpecifier::getType)
+        return m_inputPortSpecifiers.stream() //
+                .map(PortSpecifier::getType) //
                 .toArray(PortType[]::new);
     }
 
@@ -260,39 +269,37 @@ public final class PythonNode implements ExtensionNode {
      */
     @Override
     public PortType[] getOutputPortTypes() {
-        return m_outputPortSpecifiers.stream()
-                .map(PortSpecifier::getType)
+        return m_outputPortSpecifiers .stream() //
+                .map(PortSpecifier::getType) //
                 .toArray(PortType[]::new);
     }
 
     /**
-     * Represents a specification for a port, including its name, type, description,
-     * and additional properties such as group membership and default values.
+     * Represents a specification for a port, including its name, type, description, and additional properties such as
+     * group membership and default values.
      *
-     * @param name        The name of the port.
-     * @param typeString  The type of the port, represented as a string.
+     * @param name The name of the port.
+     * @param typeString The type of the port, represented as a string.
      * @param description A brief description of the port's purpose or usage.
-     * @param group       Indicates whether the port is part of a group (true) or not (false).
-     * @param defaults    The default value for the port, typically used for initialization.
+     * @param group Indicates whether the port is part of a group (true) or not (false).
+     * @param defaults The default value for the port, typically used for initialization.
      */
-    public record PortSpecifier(
-        String name,
-        String typeString,
-        String description,
-        boolean group,
-        int defaults
-    ) {
+    public record PortSpecifier(String name, String typeString, String description, boolean group, int defaults) {
         /**
          * @return PortType for the Port Specifier
          */
         public PortType getType() {
             return PythonPortObjects.getPortTypeForIdentifier(typeString);
         }
+
+        /**
+         * @return True if port specifier describes a group
+         */
+        public boolean isGroup() {
+            return group;
+        }
+
     }
 
 
-
 }
-
-
-

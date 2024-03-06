@@ -1020,7 +1020,9 @@ public final class PythonPortObjects {
      * @return {@link PortType}s
      */
     public static PortType[] getGroupPortTypesForIdentifiers(final String[] identifiers) {
-        return Arrays.stream(identifiers).map(PythonPortObjects::getGroupPortTypeForIdentifier).filter(Objects::nonNull)
+        return Arrays.stream(identifiers)//
+            .map(PythonPortObjects::getGroupPortTypeForIdentifier)//
+            .filter(Objects::nonNull)//
             .toArray(PortType[]::new);
     }
 
@@ -1077,7 +1079,9 @@ public final class PythonPortObjects {
      * @return {@link PortType}s
      */
     public static PortType[] getPortTypesForIdentifiers(final String[] identifiers) {
-        return Arrays.stream(identifiers).map(PythonPortObjects::getPortTypeForIdentifier).filter(Objects::nonNull)
+        return Arrays.stream(identifiers) //
+            .map(PythonPortObjects::getPortTypeForIdentifier) //
+            .filter(Objects::nonNull) //
             .toArray(PortType[]::new);
     }
 

@@ -190,8 +190,9 @@ public final class NodeDescriptionBuilder {
         // Otherwise the XML validation will fail.
         // Also, the order matters, it's input, dynamic input, output, dynamic output
         var ports = doc.createElement("ports");
+        buildHelper.createPorts("inPort", m_inputPorts).forEach(ports::appendChild);
 
-        buildHelper.createElements("inPort", m_inputPorts).forEach(ports::appendChild);
+        //buildHelper.createElements("inPort", m_inputPorts).forEach(ports::appendChild);
         buildHelper.createDynamicPorts("dynInPort", m_dynamicInputPorts).forEach(ports::appendChild);
 
         buildHelper.createElements("outPort", m_outputPorts).forEach(ports::appendChild);
@@ -259,6 +260,41 @@ public final class NodeDescriptionBuilder {
             return element;
         }
 
+        public List<Element> createPorts(final String elementName, final List<Port> ports) {
+            List<Element> elements = new ArrayList<>();
+            var portElement0 = m_doc.createElement(elementName);
+            Port port0 = ports.get(0);
+            portElement0.setAttribute("name", port0.getName());
+            portElement0.setAttribute("index", Integer.toString(0));
+
+            portElement0.appendChild(parseDocumentFragment(port0.getDescription()));
+            elements.add(portElement0);
+
+            var portElement2 = m_doc.createElement(elementName);
+            Port port2 = ports.get(1);
+            portElement2.setAttribute("name", port2.getName());
+            portElement2.setAttribute("index", Integer.toString(1));
+
+            portElement2.appendChild(parseDocumentFragment(port2.getDescription()));
+            elements.add(portElement2);
+
+//            for (Port port : ports) {
+//                var portElement = m_doc.createElement(elementName);
+//
+//                String nameString = port.getName();
+//
+//                portElement.setAttribute("name", nameString);
+//                portElement.setAttribute("index", Integer.toString(0));
+//
+//                var portDescription = parseDocumentFragment(port.getDescription());
+//                portElement.appendChild(portDescription);
+//
+//                elements.add(portElement);
+//            }
+            return elements;
+        }
+
+
         public List<Element> createDynamicPorts(final String elementName, final List<DynamicPort> dynamicPorts) {
             List<Element> elements = new ArrayList<>();
             for (DynamicPort port : dynamicPorts) {
@@ -268,7 +304,7 @@ public final class NodeDescriptionBuilder {
 
                 dynamicPortElement.setAttribute("name", nameString);
                 dynamicPortElement.setAttribute("group-identifier", nameString);
-                dynamicPortElement.setAttribute("insert-before", "0");
+                dynamicPortElement.setAttribute("insert-before", "1");
 
                 var portDescription = parseDocumentFragment(port.getDescription());
                 dynamicPortElement.appendChild(portDescription);
@@ -445,6 +481,13 @@ public final class NodeDescriptionBuilder {
         return this;
     }
 
+    /**
+     * Adds a view.
+     *
+     * @param name of the view
+     * @param description of the view
+     * @return this builder
+     */
     public NodeDescriptionBuilder withView(final String name, final String description) {
         m_views.add(new View(name, description));
         return this;

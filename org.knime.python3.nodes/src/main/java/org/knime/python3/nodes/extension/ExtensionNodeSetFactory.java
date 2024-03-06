@@ -329,28 +329,31 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
 
         @Override
         protected Optional<PortsConfigurationBuilder> createPortsConfigBuilder() {
+            // Order matters here too
             final var b = new PortsConfigurationBuilder();
 
-            PortSpecifier[] inputPortTypes = m_node.getInputPorts();
-            for (int i = 0; i < inputPortTypes.length; i++) {
-                PortSpecifier staticPortType = inputPortTypes[i];
-                b.addFixedInputPortGroup(String.format("Input %s # %d", staticPortType.name(), i), staticPortType.getType());
+            PortSpecifier[] inputPorts = m_node.getInputPorts();
+            for (int i = 0; i < inputPorts.length; i++) {
 
+                PortSpecifier portSpecifier = inputPorts[i];
+                if(portSpecifier.isGroup()) {
+                    b.addExtendableInputPortGroup(portSpecifier.name(), portSpecifier.getType());
+                }
+                else {
+                    b.addFixedInputPortGroup(String.format("Input %s # %d", portSpecifier.name(), i), portSpecifier.getType());
+                }
             }
 
-            for (PortSpecifier portSpecifier :  m_node.getInputPortGroups()) {
-                b.addExtendableInputPortGroup(portSpecifier.name(), portSpecifier.getType());
-            }
+            PortSpecifier[] outputPorts = m_node.getOutputPorts();
+            for (int i = 0; i < outputPorts.length; i++) {
 
-            PortSpecifier[] outputPortTypes = m_node.getOutputPorts();
-            for (int i = 0; i < outputPortTypes.length; i++) {
-                PortSpecifier staticPortType = outputPortTypes[i];
-                b.addFixedOutputPortGroup(String.format("Output %s # %d", staticPortType.name(), i), staticPortType.getType());
-
-            }
-
-            for (PortSpecifier portSpecifier :  m_node.getOutputPortGroups()) {
-                b.addExtendableOutputPortGroup(portSpecifier.name(), portSpecifier.getType());
+                PortSpecifier portSpecifier = outputPorts[i];
+                if(portSpecifier.isGroup()) {
+                    b.addExtendableOutputPortGroup(portSpecifier.name(), portSpecifier.getType());
+                }
+                else {
+                    b.addFixedOutputPortGroup(String.format("Output %s # %d", portSpecifier.name(), i), portSpecifier.getType());
+                }
             }
 
 

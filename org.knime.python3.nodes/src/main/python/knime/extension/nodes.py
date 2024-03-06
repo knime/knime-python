@@ -498,32 +498,62 @@ class _BaseContext:
         # create dataclass from credential list
         return Credential(credentials[0], credentials[1], credentials[2])
 
-    def get_input_port_map(self):
-        """
-        Returns the specs for all input ports of the node.
+    def get_input_port_list(self):
+        """Gets the number of connected input ports for each port type.
+
+        This method can be used to know how many input ports are connected to the node for each port type. This
+        is relevant when using PortGroups to determine which ports have to be populated with data.
+
+        Examples
+        --------
+        >>> @node(name="Example Node")
+        ... @input_table_group(name="Input Data", description="The data to process in my node")
+        ... @output_table(name="Output Data", description="The data to process in my node")
+        ... class ExampleNode(PythonNode):
+        ...     # ...
+        ...     def execute(self, exec_context, table_list):
+        ...         input_table = table_list[0]
+        ...         exec_context.get_input_port_list()  # When 2 input ports are connected, this will return [2].
+        ...         return input_table # Thus, one table from the list of tables is returned.
 
         Returns
         -------
-        Dict
-            A dict containing the number of input tables for each populated port.
+        list
+            A list of the number of connected input ports for each port type.
         """
-        # todo parse java spec to python?
-        input_port_map = dict(self._java_ctx.get_input_port_map())
-        input_port_map = {k: len(list(v)) for k, v in input_port_map.items()}
-        return input_port_map
+        port_map = dict(self._java_ctx.get_input_port_map())
+        port_list = [len(list(v)) for _, v in port_map.items()]
+        return port_list
 
-    def get_output_port_map(self):
-        """
-        Returns the specs for all output ports of the node.
+    def get_ouput_port_list(self):
+        """  Gets the number of connected output ports for each port type.
+
+        This method can be used to know how many output ports are connected to the node for each port type. This
+        is relevant when using PortGroups to determine which ports have to be populated with data.
+
+        Examples
+        --------
+        >>> @node(name="Example Node")
+        ... @input_table(name="Input Data", description="The data to process in my node")
+        ... @output_table_group(name="Output Data", description="The data to process in my node")
+        ... class ExampleNode(PythonNode):
+        ...     # ...
+        ...     def execute(self, exec_context, table):
+        ...         output_table = table
+        ...         exec_context.get_ouput_port_list()  # When 2 output ports are connected, this will return [2].
+        ...         return [output_table, output_table] # Thus, one list with two tables has to be returned.
+
 
         Returns
         -------
-        Dict
-            A dict containing the number of Output tables for each populated port.
+        list
+            A list of the number of connected output ports for each port type.
         """
-        output_port_map = dict(self._java_ctx.get_output_port_map())
-        output_port_map = {k: len(list(v)) for k, v in output_port_map.items()}
-        return output_port_map
+        port_map = dict(self._java_ctx.get_output_port_map())
+        port_list = [len(list(v)) for _, v in port_map.items()]
+        return port_list
+
+
 
 
 class DialogCreationContext(_BaseContext):
@@ -1143,7 +1173,14 @@ def _add_port(node_factory, port_slot: str, port: Port):
                 f"Cannot use '{port_slot}' decorator on object which has an attribute '{port_slot}' already"
             )
 
-    getattr(node_factory, port_slot).insert(0, port)
+    port_list = getattr(node_factory, port_slot)
+    if isinstance(port, PortGroup):
+        assert not any(isinstance(existing_port, PortGroup) and existing_port.name == port.name
+                       for existing_port in port_list), \
+            (f"A PortGroup with the same name ({port.name}) already exists in the port list. Please use a unique name "
+             f"for Port Groups.")
+
+    port_list.insert(0, port)
 
     return node_factory
 
