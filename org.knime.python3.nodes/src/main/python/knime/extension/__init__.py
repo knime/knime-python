@@ -105,7 +105,10 @@ output_table = _kn.output_table
 output_port = _kn.output_port
 output_view = _kn.output_view
 output_image = _kn.output_image
-
+input_table_group = _kn.input_table_group
+input_binary_group = _kn.input_binary_group
+output_table_group = _kn.output_table_group
+output_binary_group = _kn.output_binary_group
 ## knime.api.table
 Table = _kt.Table
 BatchOutputTable = _kt.BatchOutputTable

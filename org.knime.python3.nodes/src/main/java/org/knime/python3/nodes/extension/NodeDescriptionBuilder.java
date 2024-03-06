@@ -95,6 +95,14 @@ public final class NodeDescriptionBuilder {
 
     private final List<Port> m_outputPorts = new ArrayList<>();
 
+    private final List<DynamicPort> m_dynamicInputPorts = new ArrayList<>();
+
+    private final List<DynamicPort> m_dynamicOutputPorts = new ArrayList<>();
+
+    private final List<DynamicPort> m_dynamicInputPortTypes = new ArrayList<>();
+
+    private final List<DynamicPort> m_dynamicOutputPortTypes = new ArrayList<>();
+
     private final List<Option> m_topLevelOptions = new ArrayList<>();
 
     private final List<Tab> m_tabs = new ArrayList<>();
@@ -180,13 +188,16 @@ public final class NodeDescriptionBuilder {
         // NOTE:
         // We always need the "ports" element even if there are no ports.
         // Otherwise the XML validation will fail.
+        // Also, the order matters, it's input, dynamic input, output, dynamic output
         var ports = doc.createElement("ports");
+
         buildHelper.createElements("inPort", m_inputPorts).forEach(ports::appendChild);
+        buildHelper.createDynamicPorts("dynInPort", m_dynamicInputPorts).forEach(ports::appendChild);
+
         buildHelper.createElements("outPort", m_outputPorts).forEach(ports::appendChild);
+        buildHelper.createDynamicPorts("dynOutPort", m_dynamicOutputPorts).forEach(ports::appendChild);
+
         node.appendChild(ports);
-        //var option = doc.createElement("option");
-        //option.setAttribute("name", "title");
-        //doc.appendChild(option);
 
         if (!m_views.isEmpty()) {
             var views = doc.createElement("views");
@@ -248,6 +259,25 @@ public final class NodeDescriptionBuilder {
             return element;
         }
 
+        public List<Element> createDynamicPorts(final String elementName, final List<DynamicPort> dynamicPorts) {
+            List<Element> elements = new ArrayList<>();
+            for (DynamicPort port : dynamicPorts) {
+                var dynamicPortElement = m_doc.createElement(elementName);
+
+                String nameString = port.getName();
+
+                dynamicPortElement.setAttribute("name", nameString);
+                dynamicPortElement.setAttribute("group-identifier", nameString);
+                dynamicPortElement.setAttribute("insert-before", "0");
+
+                var portDescription = parseDocumentFragment(port.getDescription());
+                dynamicPortElement.appendChild(portDescription);
+
+                elements.add(dynamicPortElement);
+            }
+            return elements;
+        }
+
         private DocumentFragment parseDocumentFragment(final String s) {
             var wrapped = "<fragment>" + s + "</fragment>";
             Document parsed;
@@ -265,6 +295,7 @@ public final class NodeDescriptionBuilder {
             }
             return fragment;
         }
+
     }
 
     private static DocumentBuilder createDocBuilder(final DocumentBuilderFactory fac) {
@@ -387,12 +418,33 @@ public final class NodeDescriptionBuilder {
     }
 
     /**
-     * Adds a view.
+     * Adds a Dynamic Input Port.
      *
-     * @param name of the view
-     * @param description of the view
+     * @param name of the Port
+     * @param description of the Port
      * @return this builder
      */
+    public NodeDescriptionBuilder withDynamicInputPorts(final String name, final String description,
+        final String type) {
+        DynamicPort dynamicPort = new DynamicPort(name, description, type);
+        m_dynamicInputPorts.add(dynamicPort);
+        return this;
+    }
+
+    /**
+     * Adds a Dynamic Output Port.
+     *
+     * @param name of the Port
+     * @param description of the Port
+     * @return this builder
+     */
+    public NodeDescriptionBuilder withDynamicOutputPorts(final String name, final String description,
+        final String type) {
+        DynamicPort dynamicPort = new DynamicPort(name, description, type);
+        m_dynamicOutputPorts.add(dynamicPort);
+        return this;
+    }
+
     public NodeDescriptionBuilder withView(final String name, final String description) {
         m_views.add(new View(name, description));
         return this;
@@ -421,6 +473,20 @@ public final class NodeDescriptionBuilder {
     private static final class Port extends Described {
         Port(final String name, final String description) {
             super(name, description);
+        }
+    }
+
+    private static final class DynamicPort extends Described {
+        private String m_portType;
+
+        DynamicPort(final String name, final String description, final String portType) {
+            super(name, description);
+            m_portType = portType;
+
+        }
+
+        protected String getType() {
+            return m_portType;
         }
     }
 

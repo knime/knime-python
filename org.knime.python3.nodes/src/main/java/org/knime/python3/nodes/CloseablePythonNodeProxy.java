@@ -228,6 +228,7 @@ final class CloseablePythonNodeProxy
                     .getAvailableFlowVariables(getCompatibleFlowVariableTypes()).values());
             }
 
+
             @SuppressWarnings("unused")
             public String get_auth_schema(final String serializedXMLString) throws CouldNotAuthorizeException, // NOSONAR
                 ClassNotFoundException, InstantiationException, IllegalAccessException, IOException { // NOSONAR
@@ -274,8 +275,16 @@ final class CloseablePythonNodeProxy
                 return Arrays.stream(specs).map(PythonPortObjectTypeRegistry::convertToPythonPortObjectSpec)
                     .toArray(PythonPortObjectSpec[]::new);
             }
-        };
 
+            public Map<String, int[]> get_input_port_map(){
+                Map<String, int[]> portMap = ((DelegatingNodeModel)getNode().getNodeModel()).m_inputPortMap;
+                return portMap;
+            }
+            public Map<String, int[]> get_output_port_map(){
+                Map<String, int[]> portMap = ((DelegatingNodeModel)getNode().getNodeModel()).m_outputPortMap;
+                return portMap;
+            }
+        };
         // extensionVersion must always be the version of the installed extension, since it is used
         // on the Python side to generate the schema and UI schema, which need to correspond to the
         // set of parameters available in the installed version of the extension.
@@ -531,7 +540,14 @@ final class CloseablePythonNodeProxy
             public String get_node_id() {
                 return workflowPropertiesProxy.getNodeNameWithID();
             }
-
+            public Map<String, int[]> get_input_port_map(){
+                Map<String, int[]> portMap = ((DelegatingNodeModel)getNode().getNodeModel()).m_inputPortMap;
+                return portMap;
+            }
+            public Map<String, int[]> get_output_port_map(){
+                Map<String, int[]> portMap = ((DelegatingNodeModel)getNode().getNodeModel()).m_outputPortMap;
+                return portMap;
+            }
         };
 
         // Configure before execution whether the gateway should be left open, otherwise an exception thrown in Python
@@ -543,6 +559,7 @@ final class CloseablePythonNodeProxy
         }
 
         final var pythonOutputs = m_proxy.execute(pythonInputs, pythonExecContext);
+
         failure.throwIfFailure();
 
         final var outputExec = exec.createSubExecutionContext(0.1);
@@ -690,7 +707,14 @@ final class CloseablePythonNodeProxy
             public String get_node_id() {
                 return workflowPropertiesProxy.getNodeNameWithID();
             }
-
+            public Map<String, int[]> get_input_port_map(){
+                Map<String, int[]> portMap = ((DelegatingNodeModel)getNode().getNodeModel()).m_inputPortMap;
+                return portMap;
+            }
+            public Map<String, int[]> get_output_port_map(){
+                Map<String, int[]> portMap = ((DelegatingNodeModel)getNode().getNodeModel()).m_outputPortMap;
+                return portMap;
+            }
         };
 
         final var serializedInSpecs = Stream.of(inSpecs)//
@@ -700,8 +724,14 @@ final class CloseablePythonNodeProxy
         final var serializedOutSpecs = m_proxy.configure(serializedInSpecs, pythonConfigContext);
         failure.throwIfFailure();
 
-        final var outputPortTypeIdentifiers = m_nodeSpec.getOutputPortTypes();
-        if (serializedOutSpecs.size() != outputPortTypeIdentifiers.length) {
+        // Get number of active ports
+        final Map<String, int[]> portMap = ((DelegatingNodeModel)getNode().getNodeModel()).m_outputPortMap;
+        int activePortsNumber = 0;
+        for (int[] array : portMap.values()) {
+            activePortsNumber += array.length;
+        }
+
+        if (serializedOutSpecs.size() != activePortsNumber) {
             throw new IllegalStateException("Python node configure returned wrong number of output port specs");
         }
 

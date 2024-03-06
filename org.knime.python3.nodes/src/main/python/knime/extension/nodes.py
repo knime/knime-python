@@ -237,6 +237,12 @@ PortType.CREDENTIAL = "PortType.CREDENTIAL"
 PortType.WORKFLOW = "PortType.WORKFLOW"
 PortType.HUB_AUTHENTICATION = "PortType.HUB_AUTHENTICATION"
 
+input_port_type_to_java_name_map = {
+    PortType.TABLE: "Table",
+    PortType.BINARY: "Binary",
+    PortType.IMAGE: "Image",
+}
+
 
 class ImageFormat(Enum):
     """
@@ -492,6 +498,33 @@ class _BaseContext:
         # create dataclass from credential list
         return Credential(credentials[0], credentials[1], credentials[2])
 
+    def get_input_port_map(self):
+        """
+        Returns the specs for all input ports of the node.
+
+        Returns
+        -------
+        Dict
+            A dict containing the number of input tables for each populated port.
+        """
+        # todo parse java spec to python?
+        input_port_map = dict(self._java_ctx.get_input_port_map())
+        input_port_map = {k: len(list(v)) for k, v in input_port_map.items()}
+        return input_port_map
+
+    def get_output_port_map(self):
+        """
+        Returns the specs for all output ports of the node.
+
+        Returns
+        -------
+        Dict
+            A dict containing the number of Output tables for each populated port.
+        """
+        output_port_map = dict(self._java_ctx.get_output_port_map())
+        output_port_map = {k: len(list(v)) for k, v in output_port_map.items()}
+        return output_port_map
+
 
 class DialogCreationContext(_BaseContext):
     """
@@ -526,7 +559,11 @@ class DialogCreationContext(_BaseContext):
 
         """
         super().__init__(java_ctx, flow_variables)
-        self._python_specs = specs_to_python_converter(self._java_ctx.get_input_specs())
+        specs = self._java_ctx.get_input_specs()
+        portmap = self._java_ctx.get_input_port_map()
+        # cast portmap to dict
+        portmap = {k: list(v) for k, v in portmap.items()}
+        self._python_specs = specs_to_python_converter(specs, portmap)
 
     def get_input_specs(self) -> List[PortObjectSpec]:
         """
@@ -917,16 +954,6 @@ class _Node:
             )
 
     def to_dict(self):
-        def port_to_str(port):
-            if port.type == PortType.BINARY:
-                return f"{port.type}={port.id}"
-            elif hasattr(port.type, "object_class") and issubclass(
-                port.type.object_class, ConnectionPortObject
-            ):
-                return "Connection" + str(port.type)
-            else:
-                return str(port.type)
-
         return {
             "id": self.id,
             "name": self.name,
@@ -937,14 +964,11 @@ class _Node:
             "category": self.category,
             "after": self.after,
             "keywords": self.keywords if self.keywords is not None else [],
-            "input_port_types": [port_to_str(p) for p in self.input_ports],
-            "output_port_types": [port_to_str(p) for p in self.output_ports],
-            "input_ports": [
-                {"name": p.name, "description": p.description} for p in self.input_ports
+            "input_port_specifier": [
+                asdict(PortSpecifier.from_port(p)) for p in self.input_ports
             ],
-            "output_ports": [
-                {"name": p.name, "description": p.description}
-                for p in self.output_ports
+            "output_port_specifier": [
+                asdict(PortSpecifier.from_port(p)) for p in self.output_ports
             ],
             "views": [asdict(v) for v in self.views if v is not None],
         }
@@ -1330,3 +1354,245 @@ def output_image(name: str, description: str):
         "output_ports",
         Port(PortType.IMAGE, name, description),
     )
+
+
+def input_table_group(name: str, description: str, defaults: int = 0):
+    """
+    Use this decorator to define an input port of type "Table" of a node.
+
+    Parameters
+    ----------
+        name : str
+            The name of the input port.
+        description : str
+            A description of the input port.
+        group : str
+            The name of the group this port belongs to.
+    """
+    # import pydevd_pycharm
+    # pydevd_pycharm.settrace('localhost', port=12345, stdoutToServer=True, stderrToServer=True)
+
+    return lambda node_factory: _add_port(
+        node_factory,
+        "input_ports",
+        PortGroup(PortType.TABLE, name, description, defaults),
+    )
+
+
+def input_binary_group(name: str, description: str, defaults: int = 0):
+    """
+    Use this decorator to define an input port of type "Table" of a node.
+
+    Parameters
+    ----------
+        name : str
+            The name of the input port.
+        description : str
+            A description of the input port.
+        group : str
+            The name of the group this port belongs to.
+    """
+    return lambda node_factory: _add_port(
+        node_factory,
+        "input_ports",
+        PortGroup(PortType.BINARY, name, description, defaults),
+    )
+
+
+def output_table_group(name: str, description: str, defaults: int = 0):
+    """
+    Use this decorator to define an output port of type "Table" of a node.
+
+    Parameters
+    ----------
+        name : str
+            The name of the output port.
+        description : str
+            A description of the output port.
+        group : str
+            The name of the group this port belongs to.
+    """
+    return lambda node_factory: _add_port(
+        node_factory,
+        "output_ports",
+        PortGroup(PortType.TABLE, name, description, defaults),
+    )
+
+
+def output_binary_group(name: str, description: str, defaults: int = 0):
+    """
+    Use this decorator to define an input port of type "Table" of a node.
+
+    Parameters
+    ----------
+        name : str
+            The name of the input port.
+        description : str
+            A description of the input port.
+        group : str
+            The name of the group this port belongs to.
+    """
+    return lambda node_factory: _add_port(
+        node_factory,
+        "output_ports",
+        PortGroup(PortType.BINARY, name, description, defaults),
+    )
+
+
+def output_image_group(name: str, description: str, defaults: int = 0):
+    """
+    Use this decorator to define an output port of the type "Image" of a node.
+
+    The `configure` method must return specs of the type `ImagePortObjectSpec`. The
+    `execute` method must return a `bytes` object containing the image data. Note
+    that the image data must be valid for the format defined in `configure`.
+
+    Parameters
+    ----------
+        name : str
+            The name of the image output port
+        description : str
+            Description of the image output port
+
+    Examples
+    --------
+
+    >>> @knext.node(...)
+    ... @knext.output_image(
+    ...     name="PNG Output Image",
+    ...     description="An example PNG output image")
+    ... @knext.output_image(
+    ...     name="SVG Output Image",
+    ...     description="An example SVG output image")
+    ... class ImageNode:
+    ...     def configure(self, config_context):
+    ...         return (
+    ...             knext.ImagePortObjectSpec(knext.ImageFormat.PNG),
+    ...             knext.ImagePortObjectSpec(knext.ImageFormat.SVG),
+    ...         )
+    ...
+    ...     def execute(self, exec_context):
+    ...         # create a plot ...
+    ...         buffer_png = io.BytesIO()
+    ...         plt.savefig(buffer_png, format="png")
+    ...
+    ...         buffer_svg = io.BytesIO()
+    ...         plt.savefig(buffer_svg, format="svg")
+    ...
+    ...         return (
+    ...             buffer_png.getvalue(),
+    ...             buffer_svg.getvalue(),
+    ...         )
+    """
+    return lambda node_factory: _add_port(
+        node_factory,
+        "output_ports",
+        PortGroup(PortType.IMAGE, name, description, defaults),
+    )
+
+
+@dataclass
+class PortGroup:
+    """
+    A class representing a port group.
+
+    Parameters
+    ----------
+    type : PortType
+        The type of the port group.
+    name : str
+        The name of the port group.
+    description : str
+        The description of the port group.
+    """
+
+    type: PortType
+    name: str
+    description: str
+    defaults: int = 0
+
+    def __post_init__(self):
+        """
+        Perform validation after ``__init__``
+        """
+        if not isinstance(self.name, str):
+            raise TypeError(f"name must be of type str. Got {type(self.name)}.")
+
+        if not isinstance(self.description, str):
+            raise TypeError(
+                f"description must be of type str. Got {type(self.description)}."
+            )
+
+
+@dataclass
+class PortSpecifier:
+    """
+    A class representing a port specifier.
+
+    Used for the Java python communication
+
+    Parameters
+    ----------
+    name : str
+        The name of the port specifier.
+    type : PortType
+        The type of the port specifier.
+    description : str
+        The description of the port specifier.
+    group : bool = False
+        Whether the port is a group or not.
+    defaults : int = 0
+        The default number of ports. When the node is initialized, this number of ports will be created. But these
+        ports can be removed.
+    """
+
+    name: str
+    type_string: str
+    description: str
+    group: bool = False
+    defaults: int = 0
+
+    @classmethod
+    def from_port(cls, port: Port):
+        return cls(
+            name=port.name,
+            type_string=port_to_str(port),
+            description=port.description,
+            group=isinstance(port, PortGroup),
+            defaults=getattr(port, "defaults", 0) if isinstance(port, PortGroup) else 0,
+        )
+
+    def __post_init__(self):
+        """
+        Perform validation after ``__init__``
+        """
+        if not isinstance(self.name, str):
+            raise TypeError(f"name must be of type str. Got {type(self.name)}.")
+
+        if not isinstance(self.description, str):
+            raise TypeError(
+                f"description must be of type str. Got {type(self.description)}."
+            )
+        if not isinstance(self.group, bool):
+            raise TypeError(f"group must be of type bool. Got {type(self.group)}.")
+        if not isinstance(self.defaults, int):
+            raise TypeError(f"defaults must be of type int. Got {type(self.defaults)}.")
+        if self.defaults < 0:
+            raise ValueError(
+                f"defaults must be greater than or equal to 0. Got {self.defaults}."
+            )
+        if self.defaults > 0 and not self.group:
+            raise ValueError(
+                f"defaults can only be set for group ports. Got {self.defaults}."
+            )
+
+
+def port_to_str(port):
+    if port.type == PortType.BINARY:
+        return f"{port.type}"
+    elif hasattr(port.type, "object_class") and issubclass(
+        port.type.object_class, ConnectionPortObject
+    ):
+        return "Connection" + str(port.type)
+    else:
+        return str(port.type)

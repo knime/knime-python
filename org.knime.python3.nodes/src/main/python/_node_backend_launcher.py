@@ -708,6 +708,43 @@ class _PortTypeRegistry:
                     )
 
 
+def _get_port_indices(port, portmap: Dict[str, List[int]]) -> List[int]:
+    """
+    Retrieves the indices of specs corresponding to a given port.
+
+    Parameters
+    ----------
+    port : kn.Port or kn.PortGroup
+        The input port or port group.
+    portmap : dict
+        A dictionary mapping port names or types to indices in the specs list.
+
+    Returns
+    -------
+    list of int
+        A list of indices corresponding to the port.
+    """
+    if isinstance(port, kn.PortGroup) and port.name in portmap:
+        # Easy case as PortGroup Names have to be unique
+        return portmap.pop(port.name)
+    elif isinstance(port, kn.Port):
+        import re
+        def extract_number(key):
+            match = re.search(r'# (\d+)$', key)
+            if match:
+                return int(match.group(1))
+            raise ValueError(f"Key {key} does not match the expected pattern")
+
+        # regex pattern for "Input * # Number" Where * is the port name and # is the index
+        pattern = re.compile(f"^Input {port.name} # \\d+$")
+        # Filter the keys that do not match the pattern
+        keys = [key for key in portmap.keys() if pattern.match(key)]
+        keys = sorted(keys, key=extract_number)
+        if keys:
+            return portmap.pop(keys[0])
+    return []
+
+
 class _PythonNodeProxy:
     def __init__(
         self,
@@ -770,15 +807,48 @@ class _PythonNodeProxy:
                     schema_dict[key]
                 )
 
-    def _specs_to_python(self, specs):
-        return [
-            (
-                self._port_type_registry.spec_to_python(spec, port, self._java_callback)
-                if spec is not None
-                else None
-            )
-            for port, spec in zip(self._node.input_ports, specs)
-        ]
+    def _specs_to_python(self, specs, portmap):
+        return self._map_ports_to_specs(
+            portmap, specs, self._port_type_registry.spec_to_python
+        )
+
+    def _map_ports_to_specs(
+            self,
+            java_portmap: Dict[str, List[int]],
+            specs: List[Any],
+            mapping_function: Callable,
+    ) -> List[List[_PythonPortObjectSpec]]:
+        """
+        Maps input ports to their corresponding Python port object specifications.
+
+        Parameters
+        ----------
+        java_portmap : dict
+            A dictionary mapping port names or types to indices in the specs list.
+        specs : list
+            A list of specifications for each input port.
+        mapping_function : callable
+            A function that takes a spec, port, and Java callback, and returns a Python port object.
+
+        Returns
+        -------
+        list of list of _PythonPortObjectSpec
+            A list of lists containing Python port object specifications for each input port.
+        """
+        portmap = {k: list(v) for k, v in java_portmap.items()}
+
+        port_specs_lists = [[] for _ in range(len(self._node.input_ports))]
+        for input_port_idx, port in enumerate(self._node.input_ports):
+            port_indices = _get_port_indices(port, portmap)
+            for idx in port_indices:
+                spec = specs[idx]
+                python_port = mapping_function(spec, port, self._java_callback)
+                if isinstance(port, kn.PortGroup):
+                    port_specs_lists[input_port_idx].append(python_port)
+                else:
+                    port_specs_lists[input_port_idx] = python_port
+
+        return port_specs_lists
 
     def getParameters(self) -> str:
         parameters_dict = kp.extract_parameters(self._node)
@@ -825,18 +895,19 @@ class _PythonNodeProxy:
         _push_log_callback(lambda msg, sev: self._java_callback.log(msg, sev))
 
         try:
-            inputs = [
-                self._port_type_registry.port_object_to_python(
-                    po, self._node.input_ports[idx], self._java_callback
-                )
-                for idx, po in enumerate(input_objects)
-            ]
+            port_map = java_exec_context.get_input_port_map()
+            inputs = self._map_ports_to_specs(
+                port_map, input_objects, self._port_type_registry.port_object_to_python
+            )
 
             # inject preferred_value_types as these are not part of a column's metadata
-            for table in [i for i in inputs if isinstance(i, kat.ArrowSourceTable)]:
-                table._inject_metadata(
-                    self._java_callback.get_preferred_value_types_as_json
-                )
+            for table_list in inputs:
+                for table in [
+                    i for i in table_list if isinstance(i, kat.ArrowSourceTable)
+                ]:
+                    table._inject_metadata(
+                        self._java_callback.get_preferred_value_types_as_json
+                    )
 
             # prepare output table creation
             def create_python_sink():
@@ -861,34 +932,7 @@ class _PythonNodeProxy:
 
             self._set_flow_variables(exec_context.flow_variables)
 
-            if outputs is None:
-                outputs = []
-
-            if not isinstance(outputs, list) and not isinstance(outputs, tuple):
-                # single outputs are fine
-                outputs = [outputs]
-
-            if (
-                hasattr(self._node, "output_view")
-                and self._node.output_view is not None
-            ):
-                out_view = outputs[-1]
-                outputs = outputs[:-1]
-
-                # write the view to the sink
-                view_sink = kg.data_sink_mapper(self._java_callback.create_view_sink())
-                view_sink.display(out_view)
-
-            java_outputs = [
-                self._port_type_registry.port_object_from_python(
-                    obj,
-                    lambda: self._java_callback.create_filestore_file(),
-                    self._node.output_ports[idx],
-                    java_exec_context.get_node_id(),
-                    idx,
-                )
-                for idx, obj in enumerate(outputs)
-            ]
+            java_outputs = self.postprocess_execute_outputs(java_exec_context, outputs)
 
         except Exception as ex:
             self._set_failure(ex, 0)
@@ -907,7 +951,8 @@ class _PythonNodeProxy:
     ) -> List[_PythonPortObjectSpec]:
         _push_log_callback(lambda msg, sev: self._java_callback.log(msg, sev))
         try:
-            inputs = self._specs_to_python(input_specs)
+            portmap = java_config_context.get_input_port_map()
+            inputs = self._specs_to_python(input_specs, portmap)
             config_context = kn.ConfigurationContext(
                 java_config_context, self._get_flow_variables()
             )
@@ -920,28 +965,163 @@ class _PythonNodeProxy:
 
         self._set_flow_variables(config_context.flow_variables)
 
+        java_outputs = self.postprocess_config_outputs(java_config_context, outputs)
+
+        _pop_log_callback()
+        return ListConverter().convert(java_outputs, kg.client_server._gateway_client)
+
+    def postprocess_config_outputs(self, java_config_context: JavaClass, outputs: Optional[List]) \
+            -> List[_PythonPortObjectSpec]:
+        """
+        Post-processes the outputs of the configure method of a node.
+
+        Parameters:
+        java_config_context (JavaClass): The Java configuration context.
+        outputs (List): The outputs from the configure method of a node.
+
+        Returns:
+        List: A list of Python port object specifications for each output port.
+        """
         if outputs is None:
             # indicates that downstream nodes can't be configured, yet
             outputs = [None] * self._num_outports
+
+        outputs = self._postprocess_outputs(outputs)
+
+        java_outputs = []
+        for port_idx, output_list in enumerate(outputs):
+            for spec_idx, output in enumerate(output_list):
+                if output is not None:
+                    java_outputs.append(
+                        self._port_type_registry.spec_from_python(
+                            output,
+                            self._node.output_ports[port_idx],
+                            java_config_context.get_node_id(),
+                            port_idx,
+                        )
+                    )
+        return java_outputs
+
+    def postprocess_execute_outputs(self, java_exec_context: JavaClass, outputs: Optional[List]) -> List[kn.PortObject]:
+        """
+            Post-processes the outputs of the execute method of a node.
+
+            Parameters:
+            java_exec_context (JavaClass): The Java execution context.
+            outputs (List): The outputs from the execute method of a node.
+
+            Returns:
+            List: A list of Python port objects for each output port.
+            """
+        if outputs is None:
+            outputs = []
+        outputs = self._postprocess_outputs(outputs)
+        if (
+                hasattr(self._node, "output_view")
+                and self._node.output_view is not None
+        ):
+            out_view = outputs[-1]
+            outputs = outputs[:-1]
+
+            # write the view to the sink
+            view_sink = kg.data_sink_mapper(self._java_callback.create_view_sink())
+            view_sink.display(out_view)
+
+        java_outputs = []
+
+        for port_idx, output_list in enumerate(outputs):
+            for spec_idx, output in enumerate(output_list):
+                if output is not None:
+                    java_outputs.append(
+                        self._port_type_registry.port_object_from_python(
+                            output,
+                            java_exec_context.create_python_sink,
+                            self._node.output_ports[port_idx],
+                            java_exec_context.get_node_id(),
+                            port_idx,
+                        )
+                    )
+        return java_outputs
+
+    def _postprocess_outputs(self, outputs: Union[List, tuple]) -> List:
+        """
+            Helper method to post-process outputs.
+
+            Encapsulates the functionality shared between the post-processing of execute and configure outputs.
+
+            Parameters:
+            outputs (List or Tuple): The outputs to be post-processed.
+
+            Returns:
+            List: A list of outputs where each output is itself a list.
+            """
         if not isinstance(outputs, list) and not isinstance(outputs, tuple):
             # single outputs are fine
             outputs = [outputs]
+        # pack all outputs into a list
+        for spec_idx in range(len(outputs)):
+            output = outputs[spec_idx]
+            if not isinstance(output, list):
+                outputs[spec_idx] = [output]
 
-        output_specs = [
-            (
-                self._port_type_registry.spec_from_python(
-                    spec,
-                    self._node.output_ports[i],
-                    java_config_context.get_node_id(),
-                    i,
-                )
-                if spec is not None
-                else None
-            )
-            for i, spec in enumerate(outputs)
-        ]
-        _pop_log_callback()
-        return ListConverter().convert(output_specs, kg.client_server._gateway_client)
+        return outputs
+
+    def convert_outputs_to_java(
+            self,
+            context: object,
+            outputs: list,
+            is_config: bool = False,
+            create_python_sink: callable = None,
+    ) -> list:
+        """
+        Converts Python outputs to Java representations for execution or configuration contexts.
+
+        Parameters
+        ----------
+        context : object
+            The Java context with a `get_node_id` method. For execution contexts, `create_python_sink` is also required.
+        outputs : list
+            A list of Python outputs to be converted, each can be a single object or a list of objects.
+        is_config : bool, optional
+            True for configuration context, False for execution context. Default is False.
+        create_python_sink : callable, optional
+            Function to create a Python sink for execution context. Required if `is_config` is False.
+
+        Returns
+        -------
+        list
+            A list of Java representations of the Python outputs.
+        """
+        # pack all outputs into a list
+        for spec_idx in range(len(outputs)):
+            output = outputs[spec_idx]
+            if not isinstance(output, list):
+                outputs[spec_idx] = [output]
+
+        java_outputs = []
+        for port_idx, output_list in enumerate(outputs):
+            for spec_idx, output in enumerate(output_list):
+                if output is not None:
+                    if is_config:
+                        java_outputs.append(
+                            self._port_type_registry.spec_from_python(
+                                output,
+                                self._node.output_ports[port_idx],
+                                context.get_node_id(),
+                                port_idx,
+                            )
+                        )
+                    else:
+                        java_outputs.append(
+                            self._port_type_registry.port_object_from_python(
+                                output,
+                                create_python_sink,
+                                self._node.output_ports[port_idx],
+                                context.get_node_id(),
+                                port_idx,
+                            )
+                        )
+        return java_outputs
 
     def _set_failure(self, ex: Exception, remove_tb_levels=0):
         # Remove levels from the traceback
@@ -979,7 +1159,7 @@ class _PythonNodeProxy:
             fv = flow_variables[key]
             try:
                 java_flow_variables[key] = fv
-            except AttributeError as ex:
+            except AttributeError:
                 # py4j raises attribute errors of the form "'<type>' object has no attribute '_get_object_id'" if it
                 # fails to translate Python objects to Java objects.
                 raise TypeError(
@@ -1059,10 +1239,12 @@ class _KnimeNodeBackend(kg.EntryPoint, kn._KnimeNodeBackend):
         return json.dumps(node_dicts)
 
     def resolve_node_dict(self, node: kn._Node):
-        d = node.to_dict()
+        node_dict = node.to_dict()
         instance = node.node_factory()
         description = self.extract_description(instance, node.name)
-        return {**d, **description}
+        self.update_port_descriptions(node_dict)
+
+        return {**node_dict, **description}
 
     def extract_description(self, node: kn.PythonNode, name) -> dict:
         node_doc = node.__doc__
@@ -1091,7 +1273,7 @@ class _KnimeNodeBackend(kg.EntryPoint, kn._KnimeNodeBackend):
         # Check short description
         if not len(short_description):
             logging.warning(
-                f"No short description available. Create it by placing text right next to starting docstrings."
+                "No short description available. Create it by placing text right next to starting docstrings."
             )
 
         if tabs_used:
@@ -1101,17 +1283,39 @@ class _KnimeNodeBackend(kg.EntryPoint, kn._KnimeNodeBackend):
             options = self._knime_parser.parse_options(param_doc)
             tabs = []
 
-        input_ports = self._knime_parser.parse_ports(node.input_ports)
-        output_ports = self._knime_parser.parse_ports(node.output_ports)
-
         return {
             "short_description": short_description,
             "full_description": full_description,
             "options": options,
             "tabs": tabs,
-            "input_ports": input_ports,
-            "output_ports": output_ports,
+            # The port descriptions are added in a separate method, and contained in the node_dict
         }
+
+    def update_port_descriptions(self, node_dict):
+        """
+        Inplace parsing of the descriptions of the input and output ports in the node dictionary.
+
+        Parameters
+        ----------
+        node_dict : dict
+            The dictionary representing the node. It should contain
+            "input_port_specifier" and "output_port_specifier" keys, each
+            associated with a list of port dictionaries. Each port dictionary
+            should have a "description" key.
+        """
+        for port_dict in node_dict["input_port_specifier"]:
+            port_dict.update(
+                description=self._knime_parser.parse_port_description(
+                    port_dict["description"]
+                )
+            )
+
+        for port_dict in node_dict["output_port_specifier"]:
+            port_dict.update(
+                description=self._knime_parser.parse_port_description(
+                    port_dict["description"]
+                )
+            )
 
     def createNodeFromExtension(self, node_id: str) -> _PythonNodeProxy:
         node_info = kn._nodes[node_id]
@@ -1178,8 +1382,8 @@ class FallBackMarkdownParser:
     def parse_basic(self, s):
         return s
 
-    def parse_ports(self, ports):
-        return [{"name": port.name, "description": port.description} for port in ports]
+    def parse_port_description(self, port_description):
+        return port_description
 
     def parse_options(self, options):
         return options
