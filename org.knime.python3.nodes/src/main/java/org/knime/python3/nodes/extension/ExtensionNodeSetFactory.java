@@ -370,7 +370,6 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
             try (var proxy = m_proxyProvider.getNodeFactoryProxy()) {
                 // happens here to speed up the population of the node repository
                 var initialSettings = proxy.getSettings(m_extensionVersion);
-                // InputPorts is the array
                 return new DelegatingNodeModel(m_proxyProvider, inputPorts, outputPorts, initialSettings,
                     m_extensionVersion, inputLocations, outputLocations);
             }

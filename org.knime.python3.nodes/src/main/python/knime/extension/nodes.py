@@ -971,14 +971,6 @@ class _Node:
         }
 
 
-def split_port_and_port_groups(ports):
-    # split ports into static ports and dynamic groups
-    static_ports = [port for port in ports if not isinstance(port, PortGroup)]
-    dynamic_ports = [port for port in ports if isinstance(port, PortGroup)]
-
-    return static_ports, dynamic_ports
-
-
 _nodes = {}
 
 
