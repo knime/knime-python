@@ -10,7 +10,7 @@
 	<packaging>${packaging.default}</packaging>
 
 	<properties>
-		<revision>5.2.0</revision>
+		<revision>5.2.2</revision>
 		<sonar.sources>src</sonar.sources>
 	</properties>
 
