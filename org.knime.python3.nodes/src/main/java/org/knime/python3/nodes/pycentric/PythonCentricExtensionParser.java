@@ -54,7 +54,6 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -66,6 +65,7 @@ import org.knime.python3.nodes.KnimeNodeBackend;
 import org.knime.python3.nodes.PurePythonNodeSetFactory.PythonExtensionParser;
 import org.knime.python3.nodes.PyNodeExtension;
 import org.knime.python3.nodes.PythonNode;
+import org.knime.python3.nodes.PythonNode.PortSpecifier;
 import org.knime.python3.nodes.PythonNodeGatewayFactory;
 import org.knime.python3.nodes.extension.NodeDescriptionBuilder;
 import org.knime.python3.nodes.extension.NodeDescriptionBuilder.Tab;
@@ -186,25 +186,29 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
 
         private String full_description;
 
-        private String[] input_port_types;
+        private JsonPort[] input_port_specifier;
 
-        private String[] output_port_types;
+        private JsonPort[] output_port_specifier;
 
         private JsonTab[] tabs;
 
         private JsonDescribed[] options;
 
-        private JsonDescribed[] input_ports;
-
-        private JsonDescribed[] output_ports;
-
         private JsonView[] views;
 
         PythonNode toPythonNode(final Path modulePath) {
+
             var descriptionBuilder = createDescriptionBuilder();
             descriptionBuilder.withIcon(modulePath.resolve(icon_path));
-            return new PythonNode(id, category, after, keywords, descriptionBuilder.build(), input_port_types,
-                output_port_types, views.length, is_deprecated, is_hidden, getViewResources(modulePath));
+
+            List<PortSpecifier> inputPortSpecifiers =
+                Arrays.stream(input_port_specifier).map(JsonPort::toPortSpecifier).collect(Collectors.toList());
+
+            List<PortSpecifier> outputPortSpecifiers =
+                Arrays.stream(output_port_specifier).map(JsonPort::toPortSpecifier).collect(Collectors.toList());
+
+            return new PythonNode(id, category, after, keywords, descriptionBuilder.build(), views.length,
+                is_deprecated, is_hidden, getViewResources(modulePath), inputPortSpecifiers, outputPortSpecifiers);
         }
 
         private NodeDescriptionBuilder createDescriptionBuilder() {
@@ -214,10 +218,25 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
                 .withKeywords(keywords);
 
             consumeIfPresent(tabs, t -> builder.withTab(t.toTab()));
-            consumeIfPresent(options, o -> o.enter(builder::withOption));
-            consumeIfPresent(input_ports, p -> p.enter(builder::withInputPort));
-            consumeIfPresent(output_ports, p -> p.enter(builder::withOutputPort));
-            consumeIfPresent(views, v -> v.enter(builder::withView));
+            consumeIfPresent(options, o -> builder.withOption(o.name, o.description));
+
+            consumeIfPresent(input_port_specifier, port -> {
+                if (port.group) {
+                    builder.withDynamicInputPorts(port.name, port.description, port.type_string);
+                } else {
+                    builder.withInputPort(port.name, port.description);
+                }
+            });
+
+            consumeIfPresent(output_port_specifier, port -> {
+                if (port.group) {
+                    builder.withDynamicOutputPorts(port.name, port.description, port.type_string);
+                } else {
+                    builder.withOutputPort(port.name, port.description);
+                }
+            });
+
+            consumeIfPresent(views, v -> builder.withView(v.name, v.description));
             return builder;
         }
 
@@ -244,8 +263,17 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
 
         protected String description;
 
-        void enter(final BiConsumer<String, String> descriptionConsumer) {
-            descriptionConsumer.accept(name, description);
+    }
+
+    private static class JsonPort extends JsonDescribed {
+        protected String type_string; //NOSONAR
+
+        protected boolean group;
+
+        protected int defaults;
+
+        PortSpecifier toPortSpecifier() {
+            return new PortSpecifier(name, type_string, description, group, defaults);
         }
     }
 
@@ -256,7 +284,7 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
         Tab toTab() {
             var builder = Tab.builder(name, description);
             for (var option : options) {
-                option.enter(builder::withOption);
+                builder.withOption(option.name, option.description);
             }
             return builder.build();
         }

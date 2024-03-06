@@ -56,5 +56,4 @@ import org.knime.core.util.asynclose.AsynchronousCloseable;
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
 public interface CloseableNodeFactoryProxy extends AsynchronousCloseable<RuntimeException>, NodeFactoryProxy {
-
 }

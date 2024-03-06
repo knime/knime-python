@@ -165,9 +165,9 @@ class ZonedDateTimeValueFactory2(
         tz_offset = tz_info.utcoffset(value)
         offset_string = self.parse_utc_offset(tz_offset)
 
-        local_dt_dict["2"] = (
-            0  # we handle the complete offset with the offset (ZoneID) String
-        )
+        local_dt_dict[
+            "2"
+        ] = 0  # we handle the complete offset with the offset (ZoneID) String
         local_dt_dict["3"] = offset_string
         return local_dt_dict
 

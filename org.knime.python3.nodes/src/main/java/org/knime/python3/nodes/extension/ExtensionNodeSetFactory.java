@@ -62,7 +62,9 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.knime.core.node.ConfigurableNodeFactory;
 import org.knime.core.node.DynamicNodeFactory;
+import org.knime.core.node.IDynamicNodeFactory;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeDescription;
 import org.knime.core.node.NodeDialogPane;
@@ -72,8 +74,10 @@ import org.knime.core.node.NodeSetFactory;
 import org.knime.core.node.NodeSettings;
 import org.knime.core.node.config.ConfigRO;
 import org.knime.core.node.config.ConfigWO;
+import org.knime.core.node.context.NodeCreationConfiguration;
 import org.knime.core.node.extension.CategoryExtension;
 import org.knime.core.node.extension.CategorySetFactory;
+import org.knime.core.node.port.PortType;
 import org.knime.core.node.util.CheckUtils;
 import org.knime.core.webui.node.dialog.NodeDialog;
 import org.knime.core.webui.node.dialog.NodeDialogFactory;
@@ -83,6 +87,7 @@ import org.knime.core.webui.node.dialog.defaultdialog.DefaultNodeSettingsService
 import org.knime.core.webui.node.view.NodeView;
 import org.knime.core.webui.node.view.NodeViewFactory;
 import org.knime.python3.nodes.DelegatingNodeModel;
+import org.knime.python3.nodes.PythonNode.PortSpecifier;
 import org.knime.python3.nodes.dialog.DelegatingJsonSettingsDataService;
 import org.knime.python3.nodes.dialog.JsonFormsNodeDialog;
 import org.knime.python3.nodes.proxy.NodeProxyProvider;
@@ -163,8 +168,8 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
      *
      * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
      */
-    public static final class DynamicExtensionNodeFactory extends DynamicNodeFactory<DelegatingNodeModel>
-        implements NodeDialogFactory, NodeViewFactory<DelegatingNodeModel> {
+    public static final class DynamicExtensionNodeFactory extends ConfigurableNodeFactory<DelegatingNodeModel>
+        implements NodeDialogFactory, NodeViewFactory<DelegatingNodeModel>, IDynamicNodeFactory {
 
         private NodeProxyProvider m_proxyProvider;
 
@@ -183,6 +188,13 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
         private String m_extensionVersion;
 
         private String m_factoryIdUniquifier;
+
+        /**
+         * DynamicExtensionNodeFactory Lazy Init
+         */
+        public DynamicExtensionNodeFactory() {
+            super(true);
+        }
 
         @SuppressWarnings("null")
         @Override
@@ -210,14 +222,17 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
             return m_factoryIdUniquifier;
         }
 
-        @Override
+        /**
+         * @return True, if the node is deprecated internally
+         */
         protected boolean isDeprecatedInternal() {
             return m_node.isDeprecated();
         }
 
         @Override
-        protected Optional<String> getBundleName() {
+        public Optional<String> getBundleName() {
             return m_bundleName;
+
         }
 
         @Override
@@ -311,5 +326,59 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
                 // Dummy
             }
         }
+
+        @Override
+        protected Optional<PortsConfigurationBuilder> createPortsConfigBuilder() {
+            final var b = new PortsConfigurationBuilder();
+
+            PortSpecifier[] inputPortTypes = m_node.getInputPorts();
+            for (int i = 0; i < inputPortTypes.length; i++) {
+                PortSpecifier staticPortType = inputPortTypes[i];
+                b.addFixedInputPortGroup(String.format("Input %s # %d", staticPortType.name(), i), staticPortType.getType());
+
+            }
+
+            for (PortSpecifier portSpecifier :  m_node.getInputPortGroups()) {
+                b.addExtendableInputPortGroup(portSpecifier.name(), portSpecifier.getType());
+            }
+
+            PortSpecifier[] outputPortTypes = m_node.getOutputPorts();
+            for (int i = 0; i < outputPortTypes.length; i++) {
+                PortSpecifier staticPortType = outputPortTypes[i];
+                b.addFixedOutputPortGroup(String.format("Output %s # %d", staticPortType.name(), i), staticPortType.getType());
+
+            }
+
+            for (PortSpecifier portSpecifier :  m_node.getOutputPortGroups()) {
+                b.addExtendableOutputPortGroup(portSpecifier.name(), portSpecifier.getType());
+            }
+
+
+            return Optional.of(b);
+        }
+
+        @Override
+        protected DelegatingNodeModel createNodeModel(final NodeCreationConfiguration creationConfig) {
+            final var config = creationConfig.getPortConfig().get(); // NOSONAR
+
+            PortType[] inputPorts = config.getInputPorts();
+            PortType[] outputPorts = config.getOutputPorts();
+
+            Map<String, int[]> inputLocations = config.getInputPortLocation();
+            Map<String, int[]> outputLocations = config.getOutputPortLocation();
+
+            try (var proxy = m_proxyProvider.getNodeFactoryProxy()) {
+                // happens here to speed up the population of the node repository
+                var initialSettings = proxy.getSettings(m_extensionVersion);
+                return new DelegatingNodeModel(m_proxyProvider, inputPorts, outputPorts, initialSettings,
+                    m_extensionVersion, inputLocations, outputLocations);
+            }
+        }
+
+        @Override
+        protected NodeDialogPane createNodeDialogPane(final NodeCreationConfiguration creationConfig) {
+            return null;
+        }
+
     }
 }
