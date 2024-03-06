@@ -931,7 +931,6 @@ class CredentialPortObjectSpec(PortObjectSpec):
 
 
 class WorkflowPortInfo:
-
     def __init__(self, type_name: str, type_id: str, schema: "Schema") -> None:
         self._type_name = type_name
         self._type_id = type_id
@@ -960,7 +959,6 @@ class WorkflowPortInfo:
 
 
 class WorkflowPortObjectSpec(PortObjectSpec):
-
     def __init__(
         self,
         name: str,

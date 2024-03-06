@@ -223,7 +223,6 @@ class _PythonImagePortObject:
 
 
 class _WorkflowExecutionWarningConsumer:
-
     def __init__(self, warning_consumer: Callable[[str], None]) -> None:
         self._warning_consumer = warning_consumer
 
@@ -238,7 +237,6 @@ _bdt_java_type = "org.knime.core.node.BufferedDataTable"
 
 
 class _PythonWorkflowPortObject:
-
     _java_to_port_type = {_bdt_java_type: kn.PortType.TABLE}
 
     def __init__(
@@ -587,7 +585,6 @@ class _PortTypeRegistry:
         raise TypeError("Unsupported PortObject found in Python, got " + class_name)
 
     def table_from_python(self, obj):  # -> tuple[_PythonTablePortObject, Any]:
-
         java_data_sink = None
         if isinstance(obj, kat.ArrowTable):
             sink = kt._backend.create_sink()
