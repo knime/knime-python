@@ -201,11 +201,13 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
             var descriptionBuilder = createDescriptionBuilder();
             descriptionBuilder.withIcon(modulePath.resolve(icon_path));
 
-            List<PortSpecifier> inputPortSpecifiers =
-                Arrays.stream(input_port_specifier).map(JsonPort::toPortSpecifier).collect(Collectors.toList());
+            List<PortSpecifier> inputPortSpecifiers = Arrays.stream(input_port_specifier) //
+                .map(JsonPort::toPortSpecifier) //
+                .collect(Collectors.toList());
 
-            List<PortSpecifier> outputPortSpecifiers =
-                Arrays.stream(output_port_specifier).map(JsonPort::toPortSpecifier).collect(Collectors.toList());
+            List<PortSpecifier> outputPortSpecifiers = Arrays.stream(output_port_specifier) //
+                .map(JsonPort::toPortSpecifier) //
+                .collect(Collectors.toList());
 
             return new PythonNode(id, category, after, keywords, descriptionBuilder.build(), views.length,
                 is_deprecated, is_hidden, getViewResources(modulePath), inputPortSpecifiers, outputPortSpecifiers);
@@ -264,9 +266,9 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
         protected String description;
 
     }
-
+    @SuppressWarnings("java:S116") // the fields are named this way for JSON deserialization
     private static class JsonPort extends JsonDescribed {
-        protected String type_string; //NOSONAR
+        protected String type_string;
 
         protected boolean group;
 
