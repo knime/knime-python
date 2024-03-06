@@ -182,6 +182,7 @@ def runPython3MultiversionWorkflowTestConfig(String environmentFile, String base
                         'knime-buildworkflows',
                         'knime-productivity-oss',
                         'knime-reporting',
+                        'knime-cef',
                     ],
                     ius: [
                         'org.knime.features.chem.types.feature.group',
