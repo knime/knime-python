@@ -108,7 +108,8 @@ public final class PythonNode implements ExtensionNode {
         final int numViews, //
         final boolean isDeprecated, //
         final boolean isHidden, //
-        final ViewResources[] viewResources, final List<PortSpecifier> inputPortSpecifiers, //
+        final ViewResources[] viewResources, //
+        final List<PortSpecifier> inputPortSpecifiers, //
         final List<PortSpecifier> outputPortSpecifiers) {
 
         m_id = id;
@@ -179,52 +180,6 @@ public final class PythonNode implements ExtensionNode {
     public PortSpecifier[] getOutputPorts() {
         return m_outputPortSpecifiers.stream() //
                 .toArray(PortSpecifier[]::new);
-    }
-
-    /**
-     * Returns an array of input PortSpecifiers where the group attribute is true.
-     *
-     * @return an array of PortSpecifiers belonging to input groups.
-     */
-    @Override
-    public PortSpecifier[] getInputPortGroups() {
-        return m_inputPortSpecifiers.stream() //
-            .filter(PortSpecifier::group) //
-            .toArray(PortSpecifier[]::new);
-    }
-
-    /**
-     * Returns an array of output PortSpecifiers where the group attribute is true.
-     *
-     * @return an array of PortSpecifiers belonging to output groups.
-     */
-    @Override
-    public PortSpecifier[] getOutputPortGroups() {
-        return m_outputPortSpecifiers.stream() //
-            .filter(PortSpecifier::group) //
-            .toArray(PortSpecifier[]::new);
-    }
-
-    /**
-     * Returns an array of input PortSpecifiers where the group attribute is false.
-     *
-     * @return an array of individual input PortSpecifiers.
-     */
-    public PortSpecifier[] getStaticInputPorts() {
-        return m_inputPortSpecifiers.stream() //
-            .filter(portSpecifier -> !portSpecifier.group()) //
-            .toArray(PortSpecifier[]::new);
-    }
-
-    /**
-     * Returns an array of output PortSpecifiers where the group attribute is false.
-     *
-     * @return an array of individual output PortSpecifiers.
-     */
-    public PortSpecifier[] getStaticOutputPorts() {
-        return m_outputPortSpecifiers.stream() //
-            .filter(portSpecifier -> !portSpecifier.group()) //
-            .toArray(PortSpecifier[]::new);
     }
 
     /**

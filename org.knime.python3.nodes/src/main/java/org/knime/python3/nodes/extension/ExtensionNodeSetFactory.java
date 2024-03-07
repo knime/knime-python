@@ -77,7 +77,6 @@ import org.knime.core.node.config.ConfigWO;
 import org.knime.core.node.context.NodeCreationConfiguration;
 import org.knime.core.node.extension.CategoryExtension;
 import org.knime.core.node.extension.CategorySetFactory;
-import org.knime.core.node.port.PortType;
 import org.knime.core.node.util.CheckUtils;
 import org.knime.core.webui.node.dialog.NodeDialog;
 import org.knime.core.webui.node.dialog.NodeDialogFactory;
@@ -336,11 +335,11 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
             for (int i = 0; i < inputPorts.length; i++) {
 
                 PortSpecifier portSpecifier = inputPorts[i];
-                if(portSpecifier.isGroup()) {
+                if (portSpecifier.isGroup()) {
                     b.addExtendableInputPortGroup(portSpecifier.name(), portSpecifier.getType());
-                }
-                else {
-                    b.addFixedInputPortGroup(String.format("Input %s # %d", portSpecifier.name(), i), portSpecifier.getType());
+                } else {
+                    b.addFixedInputPortGroup(String.format("Input %s # %d", portSpecifier.name(), i),
+                        portSpecifier.getType());
                 }
             }
 
@@ -348,14 +347,13 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
             for (int i = 0; i < outputPorts.length; i++) {
 
                 PortSpecifier portSpecifier = outputPorts[i];
-                if(portSpecifier.isGroup()) {
+                if (portSpecifier.isGroup()) {
                     b.addExtendableOutputPortGroup(portSpecifier.name(), portSpecifier.getType());
-                }
-                else {
-                    b.addFixedOutputPortGroup(String.format("Output %s # %d", portSpecifier.name(), i), portSpecifier.getType());
+                } else {
+                    b.addFixedOutputPortGroup(String.format("Output %s # %d", portSpecifier.name(), i),
+                        portSpecifier.getType());
                 }
             }
-
 
             return Optional.of(b);
         }
@@ -364,17 +362,11 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
         protected DelegatingNodeModel createNodeModel(final NodeCreationConfiguration creationConfig) {
             final var config = creationConfig.getPortConfig().get(); // NOSONAR
 
-            PortType[] inputPorts = config.getInputPorts();
-            PortType[] outputPorts = config.getOutputPorts();
-
-            Map<String, int[]> inputLocations = config.getInputPortLocation();
-            Map<String, int[]> outputLocations = config.getOutputPortLocation();
-
             try (var proxy = m_proxyProvider.getNodeFactoryProxy()) {
                 // happens here to speed up the population of the node repository
                 var initialSettings = proxy.getSettings(m_extensionVersion);
-                return new DelegatingNodeModel(m_proxyProvider, inputPorts, outputPorts, initialSettings,
-                    m_extensionVersion, inputLocations, outputLocations);
+                return new DelegatingNodeModel(m_proxyProvider, config.getInputPorts(), config.getOutputPorts(),
+                    initialSettings, m_extensionVersion, config.getInputPortLocation(), config.getOutputPortLocation());
             }
         }
 
