@@ -899,7 +899,17 @@ def category(
     return f"{path}/{level_id}"
 
 
-def _port_specifier_list_from_port_list(port_list):
+def _port_specifier_list_from_port_list(port_list:List[Union["Port", "PortGroup"]])->List["PortSpecifier"]:
+    """ Convert a list of Port objects to a list of PortSpecifier objects.
+
+    Also increments the description index for each Port object in the list.
+
+    Args:
+        port_list:
+
+    Returns:
+
+    """
     description_index = 0
     port_specifier_list = []
 
@@ -1416,9 +1426,6 @@ def input_table_group(name: str, description: str, defaults: int = 0):
         group : str
             The name of the group this port belongs to.
     """
-    # import pydevd_pycharm
-    # pydevd_pycharm.settrace('localhost', port=12345, stdoutToServer=True, stderrToServer=True)
-
     return lambda node_factory: _add_port(
         node_factory,
         "input_ports",

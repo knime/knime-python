@@ -120,22 +120,13 @@ public interface ExtensionNode {
     ViewResources[] getViewResources();
 
     /**
-     * @return
+     * @return get all input ports
      */
     PortSpecifier[] getInputPorts();
 
     /**
-     * @return
+     * @return get all output ports
      */
     PortSpecifier[] getOutputPorts();
 
-    /**
-     * @return
-     */
-    PortSpecifier[] getInputPortGroups();
-
-    /**
-     * @return
-     */
-    PortSpecifier[] getOutputPortGroups();
 }

@@ -65,6 +65,7 @@ import json
 import logging
 import datetime as dt
 
+import re
 import traceback
 import collections
 
@@ -728,7 +729,6 @@ def _get_port_indices(port, portmap: Dict[str, List[int]]) -> List[int]:
         # Easy case as PortGroup Names have to be unique
         return portmap.pop(port.name)
     elif isinstance(port, kn.Port):
-        import re
         def extract_number(key):
             match = re.search(r'# (\d+)$', key)
             if match:
@@ -1065,63 +1065,6 @@ class _PythonNodeProxy:
                 outputs[spec_idx] = [output]
 
         return outputs
-
-    def convert_outputs_to_java(
-            self,
-            context: object,
-            outputs: list,
-            is_config: bool = False,
-            create_python_sink: callable = None,
-    ) -> list:
-        """
-        Converts Python outputs to Java representations for execution or configuration contexts.
-
-        Parameters
-        ----------
-        context : object
-            The Java context with a `get_node_id` method. For execution contexts, `create_python_sink` is also required.
-        outputs : list
-            A list of Python outputs to be converted, each can be a single object or a list of objects.
-        is_config : bool, optional
-            True for configuration context, False for execution context. Default is False.
-        create_python_sink : callable, optional
-            Function to create a Python sink for execution context. Required if `is_config` is False.
-
-        Returns
-        -------
-        list
-            A list of Java representations of the Python outputs.
-        """
-        # pack all outputs into a list
-        for spec_idx in range(len(outputs)):
-            output = outputs[spec_idx]
-            if not isinstance(output, list):
-                outputs[spec_idx] = [output]
-
-        java_outputs = []
-        for port_idx, output_list in enumerate(outputs):
-            for spec_idx, output in enumerate(output_list):
-                if output is not None:
-                    if is_config:
-                        java_outputs.append(
-                            self._port_type_registry.spec_from_python(
-                                output,
-                                self._node.output_ports[port_idx],
-                                context.get_node_id(),
-                                port_idx,
-                            )
-                        )
-                    else:
-                        java_outputs.append(
-                            self._port_type_registry.port_object_from_python(
-                                output,
-                                create_python_sink,
-                                self._node.output_ports[port_idx],
-                                context.get_node_id(),
-                                port_idx,
-                            )
-                        )
-        return java_outputs
 
     def _set_failure(self, ex: Exception, remove_tb_levels=0):
         # Remove levels from the traceback

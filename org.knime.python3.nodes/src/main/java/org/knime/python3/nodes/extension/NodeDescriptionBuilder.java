@@ -265,7 +265,7 @@ public final class NodeDescriptionBuilder {
                 var portElement = m_doc.createElement(elementName);
 
                 portElement.setAttribute("name", port.getName());
-                portElement.setAttribute("index",  Integer.toString(port.getDescriptionIndex()));
+                portElement.setAttribute("index", Integer.toString(port.getDescriptionIndex()));
 
                 var portDescription = parseDocumentFragment(port.getDescription());
                 portElement.appendChild(portDescription);
@@ -280,7 +280,7 @@ public final class NodeDescriptionBuilder {
             for (PortGroup port : portGroups) {
                 var groupPortElement = m_doc.createElement(elementName);
 
-                groupPortElement.setAttribute("name",  port.getName());
+                groupPortElement.setAttribute("name", port.getName());
                 groupPortElement.setAttribute("group-identifier", port.getName());
                 groupPortElement.setAttribute("insert-before", Integer.toString(port.getDescriptionIndex()));
 
@@ -500,6 +500,7 @@ public final class NodeDescriptionBuilder {
             super(name, description);
             m_descriptionIndex = descriptionIndex;
         }
+
         protected int getDescriptionIndex() {
             return m_descriptionIndex;
         }

@@ -82,7 +82,6 @@ import org.knime.core.table.virtual.serialization.AnnotatedColumnarSchemaSeriali
 import org.knime.credentials.base.Credential;
 import org.knime.credentials.base.CredentialPortObject;
 import org.knime.credentials.base.CredentialPortObjectSpec;
-import org.knime.credentials.base.oauth.api.AccessTokenAccessor;
 import org.knime.credentials.base.oauth.api.HttpAuthorizationHeaderCredentialValue;
 import org.knime.python3.PythonDataSource;
 import org.knime.python3.arrow.PythonArrowDataSink;
@@ -541,7 +540,7 @@ public final class PythonPortObjects {
         public PythonCredentialPortObject( //
             final CredentialPortObject credentialPortObject, //
             final PythonArrowTableConverter tableConverter) { // NOSONAR
-            var cpos = (CredentialPortObjectSpec)credentialPortObject.getSpec();
+            var cpos = credentialPortObject.getSpec();
             m_spec = new PythonCredentialPortObjectSpec(cpos);
         }
 
@@ -912,18 +911,6 @@ public final class PythonPortObjects {
             throw new IOException("Not logged in");
         }
 
-        /**
-         * @return the optional expiry time of the access token.
-         */
-        public Optional<Instant> getExpiresAfter() {
-            Optional<Credential> credential = m_spec.getCredential(Credential.class);
-            final Credential cred = credential.orElseThrow();
-            if (cred instanceof AccessTokenAccessor val) {
-                return val.getExpiresAfter();
-            }
-            return Optional.empty();
-        }
-
         @Override
         public String getJavaClassName() {
             return CredentialPortObjectSpec.class.getName();
@@ -980,8 +967,7 @@ public final class PythonPortObjects {
                     loadFromXMLCredentialPortObjectSpecString(serializedXMLString);
                 return new PythonCredentialPortObjectSpec(credentialPortObjectSpec);
 
-            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException
-                    | IOException ex) {
+            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | IOException ex) {
                 throw new IllegalStateException("Could not parse PythonCredentialPortObject from given JSON data", ex);
             }
         }
@@ -1013,42 +999,14 @@ public final class PythonPortObjects {
     }
 
     /**
-     * Convert port types encoded as string to {@link PortType}. The order is important. Possible values are TABLE,
-     * BINARY, followed by a Port Type ID as in "BINARY=org.knime.python3.nodes.test.porttype", and IMAGE.
-     *
-     * @param identifiers Port type identifiers (TABLE, BINARY, or IMAGE currently).
-     * @return {@link PortType}s
-     */
-    public static PortType[] getGroupPortTypesForIdentifiers(final String[] identifiers) {
-        return Arrays.stream(identifiers)//
-            .map(PythonPortObjects::getGroupPortTypeForIdentifier)//
-            .filter(Objects::nonNull)//
-            .toArray(PortType[]::new);
-    }
-
-    /**
-     * Convert Group port type encoded as string to a {@link PortType}. Possible values are TABLE and BINARY, where
-     * BINARY is followed by a Port Type ID as in "BINARY=org.knime.python3.nodes.test.porttype", or PortType(...) for
-     * general custom port objects and ConnectionPortObject for connections, as well as IMAGE.
+     * Convert port type encoded as string to a {@link PortType}. Possible values are TABLE and BINARY, where BINARY is
+     * followed by a Port Type ID as in "BINARY=org.knime.python3.nodes.test.porttype", or PortType(...) for general
+     * custom port objects and ConnectionPortObject for connections, as well as IMAGE.
      *
      * @param identifier Port type identifier (TABLE, BINARY, IMAGE or CREDENTIAL currently).
      * @return {@link PortType}
      */
-    public static PortType getGroupPortTypeForIdentifier(final String identifier) {
-        String portGroupIdentifier = "PortGroup.";
-        if (identifier.startsWith(portGroupIdentifier)) {
-            return getPortTypeForIdentifier(identifier.replace(portGroupIdentifier, ""));
-        }
-        return null;
-    }
-
-    /**
-     * @param identifier
-     * @return Null if Port Group, else PortType for the identifier
-     */
     public static PortType getPortTypeForIdentifier(final String identifier) {
-        String portGroupIdentifier = "PortGroup.";
-
         if (identifier.equals("PortType.TABLE")) {
             return BufferedDataTable.TYPE;
         } else if (identifier.startsWith("PortType.BINARY")) {
@@ -1063,26 +1021,10 @@ public final class PythonPortObjects {
             return AbstractHubAuthenticationPortObject.TYPE;
         } else if (identifier.startsWith("PortType.WORKFLOW")) {
             return WorkflowPortObject.TYPE;
-        } else if (identifier.startsWith(portGroupIdentifier)) {
-            return null;
         } else {
             // for other custom ports
             return PythonBinaryBlobFileStorePortObject.TYPE;
         }
-    }
-
-    /**
-     * Convert port types encoded as string to {@link PortType}. The order is important. Possible values are TABLE,
-     * BINARY, followed by a Port Type ID as in "BINARY=org.knime.python3.nodes.test.porttype", and IMAGE.
-     *
-     * @param identifiers Port type identifiers (TABLE, BINARY, or IMAGE currently).
-     * @return {@link PortType}s
-     */
-    public static PortType[] getPortTypesForIdentifiers(final String[] identifiers) {
-        return Arrays.stream(identifiers) //
-            .map(PythonPortObjects::getPortTypeForIdentifier) //
-            .filter(Objects::nonNull) //
-            .toArray(PortType[]::new);
     }
 
 }
