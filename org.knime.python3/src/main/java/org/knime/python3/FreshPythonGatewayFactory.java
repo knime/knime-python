@@ -89,6 +89,9 @@ public final class FreshPythonGatewayFactory implements PythonGatewayFactory {
                 throw new IllegalStateException("Customization of entry point failed.", ex);
             }
         }
+        if (gateway.getEntryPoint() != null) {
+            LOGGER.debug("Created Python process with PID " + gateway.getEntryPoint().getPid());
+        }
         return PythonGatewayTracker.INSTANCE.createTrackedGateway(gateway);
     }
 }

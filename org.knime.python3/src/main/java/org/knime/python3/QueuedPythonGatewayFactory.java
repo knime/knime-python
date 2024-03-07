@@ -90,6 +90,8 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
  */
 public final class QueuedPythonGatewayFactory implements PythonGatewayFactory {
 
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(QueuedPythonGatewayFactory.class);
+
     /**
      * The default maximum number of idling gateways that are held by the queue at any time, that is, the default
      * capacity of the queue.
@@ -115,7 +117,11 @@ public final class QueuedPythonGatewayFactory implements PythonGatewayFactory {
             }
         }
         PythonGatewayCreationGate.INSTANCE.awaitPythonGatewayCreationAllowedInterruptibly();
-        return m_queue.getNextGateway(description);
+        var gateway = m_queue.getNextGateway(description);
+        if (gateway.getEntryPoint() != null) {
+            LOGGER.debug("Reusing Python process with PID " + gateway.getEntryPoint().getPid());
+        }
+        return gateway;
     }
 
     /**

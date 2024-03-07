@@ -51,6 +51,7 @@ package org.knime.python3.nodes;
 import java.io.IOException;
 import java.util.OptionalInt;
 
+import org.knime.core.node.NodeLogger;
 import org.knime.core.node.port.PortObject;
 import org.knime.python3.PythonGateway;
 import org.knime.python3.nodes.PurePythonNodeSetFactory.ResolvedPythonExtension;
@@ -69,6 +70,8 @@ import org.knime.python3.nodes.proxy.model.NodeExecutionProxy;
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
 class PurePythonExtensionNodeProxyProvider implements NodeProxyProvider {
+
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(PurePythonExtensionNodeProxyProvider.class);
 
     protected final CloseablePythonNodeProxyFactory m_proxyFactory;
 
@@ -137,10 +140,12 @@ class PurePythonExtensionNodeProxyProvider implements NodeProxyProvider {
         try {
             PythonGateway<KnimeNodeBackend> gateway = null;
             if (requiredPid.isPresent()) {
+                LOGGER.debug("Looking for Python process with PID " + requiredPid.getAsInt() + " to find connection data");
                 gateway = m_extension.getGatewayByPid(requiredPid.getAsInt());
 
                 if (gateway == null || gateway.getEntryPoint() == null) {
                     m_extension.releaseGateway(m_cachedGateway);
+                    LOGGER.warn("Could not find Python process with PID " + requiredPid.getAsInt());
                     throw new IllegalStateException(
                         "No connection data found. Re-execute the upstream node to refresh the connection.");
                 }

@@ -119,6 +119,9 @@ public final class PythonGatewayTracker implements PythonGatewayCreationGateList
         for (var gateway : m_openGateways) {
             // not using gateway.close() because that would modify m_openGateways during iteration
             try {
+                if (gateway.getEntryPoint() != null) {
+                    LOGGER.debug("Terminating Python process with PID " + gateway.getEntryPoint().getPid());
+                }
                 gateway.m_delegate.close();
             } catch (Exception ex) {
                 exceptions.add(ex);
@@ -167,6 +170,9 @@ public final class PythonGatewayTracker implements PythonGatewayCreationGateList
         @Override
         public void close() throws IOException {
             try {
+                if (getEntryPoint() != null) {
+                    LOGGER.debug("Ending Python Process with PID " + m_delegate.getEntryPoint().getPid());
+                }
                 m_delegate.close();
             } finally {
                 m_tracker.remove(this);
