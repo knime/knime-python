@@ -224,17 +224,19 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
 
             consumeIfPresent(input_port_specifier, port -> {
                 if (port.group) {
-                    builder.withDynamicInputPorts(port.name, port.description, port.type_string);
+                    builder.withDynamicInputPorts(port.name, port.description, port.description_index,
+                        port.type_string);
                 } else {
-                    builder.withInputPort(port.name, port.description);
+                    builder.withInputPort(port.name, port.description, port.description_index);
                 }
             });
 
             consumeIfPresent(output_port_specifier, port -> {
                 if (port.group) {
-                    builder.withDynamicOutputPorts(port.name, port.description, port.type_string);
+                    builder.withDynamicOutputPorts(port.name, port.description, port.description_index,
+                        port.type_string);
                 } else {
-                    builder.withOutputPort(port.name, port.description);
+                    builder.withOutputPort(port.name, port.description, port.description_index);
                 }
             });
 
@@ -266,6 +268,7 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
         protected String description;
 
     }
+
     @SuppressWarnings("java:S116") // the fields are named this way for JSON deserialization
     private static class JsonPort extends JsonDescribed {
         protected String type_string;
@@ -274,8 +277,10 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
 
         protected int defaults;
 
+        protected int description_index;
+
         PortSpecifier toPortSpecifier() {
-            return new PortSpecifier(name, type_string, description, group, defaults);
+            return new PortSpecifier(name, type_string, description, group, defaults, description_index);
         }
     }
 

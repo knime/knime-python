@@ -899,6 +899,19 @@ def category(
     return f"{path}/{level_id}"
 
 
+def _port_specifier_list_from_port_list(port_list):
+    description_index = 0
+    port_specifier_list = []
+
+    for port in port_list:
+        port_specifier_list.append(asdict(PortSpecifier.from_port(port, description_index)))
+        # we only increment the description index if the port is a Port object, as PortGroups
+        # are inserted in between two Ports.
+        if isinstance(port, Port):
+            description_index += 1
+    return port_specifier_list
+
+
 class _Node:
     """
     Class representing an actual node in KNIME AP.
@@ -984,6 +997,7 @@ class _Node:
             )
 
     def to_dict(self):
+
         return {
             "id": self.id,
             "name": self.name,
@@ -994,12 +1008,8 @@ class _Node:
             "category": self.category,
             "after": self.after,
             "keywords": self.keywords if self.keywords is not None else [],
-            "input_port_specifier": [
-                asdict(PortSpecifier.from_port(p)) for p in self.input_ports
-            ],
-            "output_port_specifier": [
-                asdict(PortSpecifier.from_port(p)) for p in self.output_ports
-            ],
+            "input_port_specifier": _port_specifier_list_from_port_list(self.input_ports),
+            "output_port_specifier": _port_specifier_list_from_port_list(self.output_ports),
             "views": [asdict(v) for v in self.views if v is not None],
         }
 
@@ -1576,6 +1586,8 @@ class PortSpecifier:
         The type of the port specifier.
     description : str
         The description of the port specifier.
+    index: int
+        The index of the port specifier. Where to insert in the description.
     group : bool = False
         Whether the port is a group or not.
     defaults : int = 0
@@ -1586,15 +1598,17 @@ class PortSpecifier:
     name: str
     type_string: str
     description: str
+    description_index: int
     group: bool = False
     defaults: int = 0
 
     @classmethod
-    def from_port(cls, port: Port):
+    def from_port(cls, port: Port, description_index:int)->"PortSpecifier":
         return cls(
             name=port.name,
             type_string=port_to_str(port),
             description=port.description,
+            description_index=description_index,
             group=isinstance(port, PortGroup),
             defaults=getattr(port, "defaults", 0) if isinstance(port, PortGroup) else 0,
         )

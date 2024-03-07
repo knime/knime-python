@@ -283,8 +283,9 @@ public final class PythonNode implements ExtensionNode {
      * @param description A brief description of the port's purpose or usage.
      * @param group Indicates whether the port is part of a group (true) or not (false).
      * @param defaults The default value for the port, typically used for initialization.
+     * @param descriptionIndex the index where to insert in the description.
      */
-    public record PortSpecifier(String name, String typeString, String description, boolean group, int defaults) {
+    public record PortSpecifier(String name, String typeString, String description, boolean group, int defaults, int descriptionIndex) {
         /**
          * @return PortType for the Port Specifier
          */
