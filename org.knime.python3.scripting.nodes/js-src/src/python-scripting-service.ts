@@ -152,24 +152,26 @@ export const pythonScriptingService = {
     consoleHandler.writeln(text);
   },
   connectToLanguageServer: async () => {
-    await scriptingService.connectToLanguageServer();
+    try {
+      const connection = await scriptingService.connectToLanguageServer();
+      const configureLanguageServer = async (id: string) => {
+        const config = JSON.parse(
+          await scriptingService.sendToService("getLanguageServerConfig", [id]),
+        );
+        await connection.changeConfiguration(config);
+      };
+      await configureLanguageServer(executableSelection.id);
 
-    // Configure the LSP server
-    const configureLanguageServer = async (id: string) => {
-      const config = JSON.parse(
-        await scriptingService.sendToService("getLanguageServerConfig", [id]),
+      // Watch the executable selection and re-configure on every change
+      watch(
+        () => executableSelection.id,
+        (newId) => {
+          configureLanguageServer(newId);
+        },
       );
-      await scriptingService.configureLanguageServer(config);
-    };
-    await configureLanguageServer(executableSelection.id);
-
-    // Watch the executable selection and re-configure on every change
-    watch(
-      () => executableSelection.id,
-      (newId) => {
-        configureLanguageServer(newId);
-      },
-    );
+    } catch (e: any) {
+      consoleHandler.writeln({ warning: e.message });
+    }
   },
   hasPreview: (): Promise<boolean> => {
     return scriptingService.sendToService("hasPreview");

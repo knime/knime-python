@@ -10,6 +10,7 @@ export const languages = {
 export const editor = {
   getModel: vi.fn(() => ({
     getValue: () => "foo",
+    setValue: vi.fn(),
     isAttachedToEditor: () => false,
     onDidChangeContent: vi.fn(),
     updateOptions: vi.fn(),
