@@ -729,8 +729,9 @@ def _get_port_indices(port, portmap: Dict[str, List[int]]) -> List[int]:
         # Easy case as PortGroup Names have to be unique
         return portmap.pop(port.name)
     elif isinstance(port, kn.Port):
+
         def extract_number(key):
-            match = re.search(r'# (\d+)$', key)
+            match = re.search(r"# (\d+)$", key)
             if match:
                 return int(match.group(1))
             raise ValueError(f"Key {key} does not match the expected pattern")
@@ -813,10 +814,10 @@ class _PythonNodeProxy:
         )
 
     def _map_ports_to_specs(
-            self,
-            java_portmap: Dict[str, List[int]],
-            specs: List[Any],
-            mapping_function: Callable,
+        self,
+        java_portmap: Dict[str, List[int]],
+        specs: List[Any],
+        mapping_function: Callable,
     ) -> List[List[_PythonPortObjectSpec]]:
         """
         Maps input ports to their corresponding Python port object specifications.
@@ -970,8 +971,9 @@ class _PythonNodeProxy:
         _pop_log_callback()
         return ListConverter().convert(java_outputs, kg.client_server._gateway_client)
 
-    def postprocess_config_outputs(self, java_config_context: JavaClass, outputs: Optional[List]) \
-            -> List[_PythonPortObjectSpec]:
+    def postprocess_config_outputs(
+        self, java_config_context: JavaClass, outputs: Optional[List]
+    ) -> List[_PythonPortObjectSpec]:
         """
         Post-processes the outputs of the configure method of a node.
 
@@ -1002,24 +1004,23 @@ class _PythonNodeProxy:
                     )
         return java_outputs
 
-    def postprocess_execute_outputs(self, java_exec_context: JavaClass, outputs: Optional[List]) -> List[kn.PortObject]:
+    def postprocess_execute_outputs(
+        self, java_exec_context: JavaClass, outputs: Optional[List]
+    ) -> List[kn.PortObject]:
         """
-            Post-processes the outputs of the execute method of a node.
+        Post-processes the outputs of the execute method of a node.
 
-            Parameters:
-            java_exec_context (JavaClass): The Java execution context.
-            outputs (List): The outputs from the execute method of a node.
+        Parameters:
+        java_exec_context (JavaClass): The Java execution context.
+        outputs (List): The outputs from the execute method of a node.
 
-            Returns:
-            List: A list of Python port objects for each output port.
-            """
+        Returns:
+        List: A list of Python port objects for each output port.
+        """
         if outputs is None:
             outputs = []
         outputs = self._postprocess_outputs(outputs)
-        if (
-                hasattr(self._node, "output_view")
-                and self._node.output_view is not None
-        ):
+        if hasattr(self._node, "output_view") and self._node.output_view is not None:
             out_view = outputs[-1]
             outputs = outputs[:-1]
 
@@ -1045,16 +1046,16 @@ class _PythonNodeProxy:
 
     def _postprocess_outputs(self, outputs: Union[List, tuple]) -> List:
         """
-            Helper method to post-process outputs.
+        Helper method to post-process outputs.
 
-            Encapsulates the functionality shared between the post-processing of execute and configure outputs.
+        Encapsulates the functionality shared between the post-processing of execute and configure outputs.
 
-            Parameters:
-            outputs (List or Tuple): The outputs to be post-processed.
+        Parameters:
+        outputs (List or Tuple): The outputs to be post-processed.
 
-            Returns:
-            List: A list of outputs where each output is itself a list.
-            """
+        Returns:
+        List: A list of outputs where each output is itself a list.
+        """
         if not isinstance(outputs, list) and not isinstance(outputs, tuple):
             # single outputs are fine
             outputs = [outputs]

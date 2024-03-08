@@ -51,7 +51,7 @@ Provides base implementations and utilities for the development of KNIME nodes i
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, asdict
 from enum import Enum
-from typing import Any, Dict, List, Optional, Callable, Tuple, Type
+from typing import Any, Dict, List, Optional, Callable, Tuple, Type, Union
 import os.path
 
 import knime.extension.parameter as kp
@@ -526,7 +526,7 @@ class _BaseContext:
         return port_list
 
     def get_ouput_port_list(self):
-        """  Gets the number of connected output ports for each port type.
+        """Gets the number of connected output ports for each port type.
 
         This method can be used to know how many output ports are connected to the node for each port type. This
         is relevant when using PortGroups to determine which ports have to be populated with data.
@@ -552,8 +552,6 @@ class _BaseContext:
         port_map = dict(self._java_ctx.get_output_port_map())
         port_list = [len(list(v)) for _, v in port_map.items()]
         return port_list
-
-
 
 
 class DialogCreationContext(_BaseContext):
@@ -899,8 +897,10 @@ def category(
     return f"{path}/{level_id}"
 
 
-def _port_specifier_list_from_port_list(port_list:List[Union["Port", "PortGroup"]])->List["PortSpecifier"]:
-    """ Convert a list of Port objects to a list of PortSpecifier objects.
+def _port_specifier_list_from_port_list(
+    port_list: List[Union["Port", "PortGroup"]],
+) -> List["PortSpecifier"]:
+    """Convert a list of Port objects to a list of PortSpecifier objects.
 
     Also increments the description index for each Port object in the list.
 
@@ -914,7 +914,9 @@ def _port_specifier_list_from_port_list(port_list:List[Union["Port", "PortGroup"
     port_specifier_list = []
 
     for port in port_list:
-        port_specifier_list.append(asdict(PortSpecifier.from_port(port, description_index)))
+        port_specifier_list.append(
+            asdict(PortSpecifier.from_port(port, description_index))
+        )
         # we only increment the description index if the port is a Port object, as PortGroups
         # are inserted in between two Ports.
         if isinstance(port, Port):
@@ -1007,7 +1009,6 @@ class _Node:
             )
 
     def to_dict(self):
-
         return {
             "id": self.id,
             "name": self.name,
@@ -1018,8 +1019,12 @@ class _Node:
             "category": self.category,
             "after": self.after,
             "keywords": self.keywords if self.keywords is not None else [],
-            "input_port_specifier": _port_specifier_list_from_port_list(self.input_ports),
-            "output_port_specifier": _port_specifier_list_from_port_list(self.output_ports),
+            "input_port_specifier": _port_specifier_list_from_port_list(
+                self.input_ports
+            ),
+            "output_port_specifier": _port_specifier_list_from_port_list(
+                self.output_ports
+            ),
             "views": [asdict(v) for v in self.views if v is not None],
         }
 
@@ -1195,10 +1200,13 @@ def _add_port(node_factory, port_slot: str, port: Port):
 
     port_list = getattr(node_factory, port_slot)
     if isinstance(port, PortGroup):
-        assert not any(isinstance(existing_port, PortGroup) and existing_port.name == port.name
-                       for existing_port in port_list), \
-            (f"A PortGroup with the same name ({port.name}) already exists in the port list. Please use a unique name "
-             f"for Port Groups.")
+        assert not any(
+            isinstance(existing_port, PortGroup) and existing_port.name == port.name
+            for existing_port in port_list
+        ), (
+            f"A PortGroup with the same name ({port.name}) already exists in the port list. Please use a unique name "
+            f"for Port Groups."
+        )
 
     port_list.insert(0, port)
 
@@ -1610,7 +1618,7 @@ class PortSpecifier:
     defaults: int = 0
 
     @classmethod
-    def from_port(cls, port: Port, description_index:int)->"PortSpecifier":
+    def from_port(cls, port: Port, description_index: int) -> "PortSpecifier":
         return cls(
             name=port.name,
             type_string=port_to_str(port),
