@@ -63,6 +63,16 @@ def _set_flow_variables(self, flow_variables):
     pass  # Mockup
 
 
+def create_mock_input_port_map(node):
+    # only works for static input ports
+    input_ports = node.input_ports
+    input_portmap = {}
+    for idx, port in enumerate(input_ports):
+        portmap_name = f"Input {port.name} # {idx}"
+        input_portmap[portmap_name] = [1]  # single table is connected
+    return input_portmap
+
+
 py4j.java_collections.ListConverter = ListConverter
 import _node_backend_launcher as knb
 

@@ -93,12 +93,18 @@ class NodeApiTest(unittest.TestCase):
         )
 
         class MockConfigContext:
+            def __init__(self, node):
+                self._node = node
+
+            def get_input_port_map(self):
+                return util.create_mock_input_port_map(self._node)
+
             def get_node_id(self):
                 return "node:2"
 
         configuration = node_proxy.configure(
             input_specs=[input_spec, input_spec],
-            java_config_context=MockConfigContext(),
+            java_config_context=MockConfigContext(self.node),
         )
 
         self.assertEqual(configuration[0].getJavaClassName(), TABLE_SPEC_JAVA_CLASS)

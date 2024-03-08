@@ -444,8 +444,6 @@ class DescriptionParsingTest(unittest.TestCase):
             "full_description": "Missing description.",
             "options": [],
             "tabs": [],
-            "input_ports": [],
-            "output_ports": [],
         }
         self.assertEqual(expected, description)
 
@@ -461,8 +459,6 @@ class DescriptionParsingTest(unittest.TestCase):
             "full_description": "Missing description.",
             "options": [],
             "tabs": [],
-            "input_ports": [],
-            "output_ports": [],
         }
         self.assertEqual(expected, description)
 
@@ -476,8 +472,6 @@ class DescriptionParsingTest(unittest.TestCase):
             "full_description": "<p>And long description.</p>",
             "options": [],
             "tabs": [],
-            "input_ports": [],
-            "output_ports": [],
         }
         self.assertEqual(expected, description)
 
