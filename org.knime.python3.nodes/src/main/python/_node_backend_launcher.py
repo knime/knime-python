@@ -844,10 +844,7 @@ class _PythonNodeProxy:
             for idx in port_indices:
                 spec = specs[idx]
                 python_port = mapping_function(spec, port, self._java_callback)
-                if isinstance(port, kn.PortGroup):
-                    port_specs_lists[input_port_idx].append(python_port)
-                else:
-                    port_specs_lists[input_port_idx] = python_port
+                port_specs_lists[input_port_idx].append(python_port)
 
         return port_specs_lists
 
@@ -909,6 +906,8 @@ class _PythonNodeProxy:
                     table._inject_metadata(
                         self._java_callback.get_preferred_value_types_as_json
                     )
+            # unpack inputs with only one element
+            inputs = [i[0] if len(i) == 1 else i for i in inputs]
 
             # prepare output table creation
             def create_python_sink():
@@ -920,7 +919,10 @@ class _PythonNodeProxy:
 
             # execute
             exec_context = kn.ExecutionContext(
-                java_exec_context, self._get_flow_variables()
+                java_exec_context,
+                self._get_flow_variables(),
+                self._node.input_ports,
+                self._node.output_ports,
             )
 
             # TODO: maybe we want to run execute on the main thread? use knime._backend._mainloop
@@ -955,8 +957,13 @@ class _PythonNodeProxy:
             portmap = java_config_context.get_input_port_map()
             inputs = self._specs_to_python(input_specs, portmap)
             config_context = kn.ConfigurationContext(
-                java_config_context, self._get_flow_variables()
+                java_config_context,
+                self._get_flow_variables(),
+                self._node.input_ports,
+                self._node.output_ports,
             )
+            # unpack inputs with only one element
+            inputs = [i[0] if len(i) == 1 else i for i in inputs]
             kp.validate_specs(self._node, inputs)
             # TODO: maybe we want to run execute on the main thread? use knime._backend._mainloop
             outputs = self._node.configure(config_context, *inputs)
@@ -1002,6 +1009,8 @@ class _PythonNodeProxy:
                             port_idx,
                         )
                     )
+                else:
+                    java_outputs.append(None)
         return java_outputs
 
     def postprocess_execute_outputs(
@@ -1023,7 +1032,8 @@ class _PythonNodeProxy:
         if hasattr(self._node, "output_view") and self._node.output_view is not None:
             out_view = outputs[-1]
             outputs = outputs[:-1]
-
+            if isinstance(out_view, list):
+                out_view = out_view[0]
             # write the view to the sink
             view_sink = kg.data_sink_mapper(self._java_callback.create_view_sink())
             view_sink.display(out_view)
@@ -1031,12 +1041,12 @@ class _PythonNodeProxy:
         java_outputs = []
 
         for port_idx, output_list in enumerate(outputs):
-            for spec_idx, output in enumerate(output_list):
+            for output in output_list:
                 if output is not None:
                     java_outputs.append(
                         self._port_type_registry.port_object_from_python(
                             output,
-                            java_exec_context.create_python_sink,
+                            lambda: self._java_callback.create_filestore_file(),
                             self._node.output_ports[port_idx],
                             java_exec_context.get_node_id(),
                             port_idx,

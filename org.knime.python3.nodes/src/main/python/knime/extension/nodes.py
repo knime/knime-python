@@ -376,6 +376,41 @@ class Port:
 
 
 @dataclass
+class PortGroup:
+    """
+    A class representing a port group.
+
+    Parameters
+    ----------
+    type : PortType
+        The type of the port group.
+    name : str
+        The name of the port group.
+    description : str
+        The description of the port group.
+    """
+
+    type: PortType
+    name: str
+    description: str
+    id: Optional[str] = (
+        None  # can be used by BINARY and CONNECTION ports to only allow linking ports with matching IDs
+    )
+
+    def __post_init__(self):
+        """
+        Perform validation after ``__init__``
+        """
+        if not isinstance(self.name, str):
+            raise TypeError(f"name must be of type str. Got {type(self.name)}.")
+
+        if not isinstance(self.description, str):
+            raise TypeError(
+                f"description must be of type str. Got {type(self.description)}."
+            )
+
+
+@dataclass
 class ViewDeclaration:
     """
     A data class representing a view declaration.
@@ -498,61 +533,6 @@ class _BaseContext:
         # create dataclass from credential list
         return Credential(credentials[0], credentials[1], credentials[2])
 
-    def get_input_port_list(self):
-        """Gets the number of connected input ports for each port type.
-
-        This method can be used to know how many input ports are connected to the node for each port type. This
-        is relevant when using PortGroups to determine which ports have to be populated with data.
-
-        Examples
-        --------
-        >>> @node(name="Example Node")
-        ... @input_table_group(name="Input Data", description="The data to process in my node")
-        ... @output_table(name="Output Data", description="The data to process in my node")
-        ... class ExampleNode(PythonNode):
-        ...     # ...
-        ...     def execute(self, exec_context, table_list):
-        ...         input_table = table_list[0]
-        ...         exec_context.get_input_port_list()  # When 2 input ports are connected, this will return [2].
-        ...         return input_table # Thus, one table from the list of tables is returned.
-
-        Returns
-        -------
-        list
-            A list of the number of connected input ports for each port type.
-        """
-        port_map = dict(self._java_ctx.get_input_port_map())
-        port_list = [len(list(v)) for _, v in port_map.items()]
-        return port_list
-
-    def get_ouput_port_list(self):
-        """Gets the number of connected output ports for each port type.
-
-        This method can be used to know how many output ports are connected to the node for each port type. This
-        is relevant when using PortGroups to determine which ports have to be populated with data.
-
-        Examples
-        --------
-        >>> @node(name="Example Node")
-        ... @input_table(name="Input Data", description="The data to process in my node")
-        ... @output_table_group(name="Output Data", description="The data to process in my node")
-        ... class ExampleNode(PythonNode):
-        ...     # ...
-        ...     def execute(self, exec_context, table):
-        ...         output_table = table
-        ...         exec_context.get_ouput_port_list()  # When 2 output ports are connected, this will return [2].
-        ...         return [output_table, output_table] # Thus, one list with two tables has to be returned.
-
-
-        Returns
-        -------
-        list
-            A list of the number of connected output ports for each port type.
-        """
-        port_map = dict(self._java_ctx.get_output_port_map())
-        port_list = [len(list(v)) for _, v in port_map.items()]
-        return port_list
-
 
 class DialogCreationContext(_BaseContext):
     """
@@ -634,6 +614,78 @@ class ConfigurationContext(_BaseContext):
     The ConfigurationContext provides utilities to communicate with KNIME
     during a node's configure() method.
     """
+
+    def __init__(
+        self, java_ctx, flow_variables, input_ports=None, output_ports=None
+    ) -> None:
+        super().__init__(java_ctx, flow_variables)
+        self._input_ports = input_ports
+        self._output_ports = output_ports
+
+    def get_connected_input_ports_numbers(self) -> List[int]:
+        """Gets the number of connected input ports for each port type.
+
+        This method can be used to know how many input ports are connected to the node for each port type.
+
+        Examples
+        --------
+        >>> @node(name="Example Node")
+        ... @input_table_group(name="Input Data", description="The data to process in my node")
+        ... @output_table(name="Output Data", description="The data to process in my node")
+        ... class ExampleNode(PythonNode):
+        ...     # ...
+        ...     def execute(self, exec_context, table_list):
+        ...         input_table = table_list[0]
+        ...         exec_context.get_connected_input_ports_numbers()  # When 2 input ports are connected, this will return [2].
+        ...         return input_table # Thus, one table from the list of tables is returned.
+
+        Returns
+        -------
+        list of int
+            A list of the number of connected input ports for each port type.
+        """
+        assert self._input_ports is not None
+        port_map = dict(self._java_ctx.get_input_port_map())
+        port_list = [
+            len(port_map.get(port.name, [])) if isinstance(port, PortGroup) else 1
+            for port in self._input_ports
+        ]
+        return port_list
+
+    def get_connected_output_ports_numbers(self) -> List[int]:
+        """Gets the number of connected output ports for each port type.
+
+        This method can be used to know how many output ports are connected to the node for each port type. This
+        is relevant when using PortGroups to determine which ports have to be populated with data.
+
+        Examples
+        --------
+        >>> @node(name="Example Node with Group Ports")
+        ... @input_table(name="Input Data", description="The data to process in my node")
+        ... @output_table_group(name="Output Data", description="Multiple outputs from my node")
+        ... class ExampleNode(PythonNode):
+        ...     # ...
+        ...     def execute(self, exec_context, table):
+        ...         output_table = table
+        ...         connected_output_ports  = exec_context.get_connected_output_ports_numbers()
+        ...         # When 2 output ports are connected, this will return [2].
+        ...         output_tables = [output_table] * connected_output_ports[0]
+        ...         return output_tables # Thus, one list with two tables has to be returned.
+
+
+        Returns
+        -------
+        list of int
+            A list of the number of connected output ports for each port type.
+        """
+        assert self._output_ports is not None
+        port_map = dict(self._java_ctx.get_output_port_map())
+        port_list = [
+            len(port_map.get(port.name, [])) if isinstance(port, PortGroup) else 1
+            for port in self._output_ports
+        ]
+
+        return port_list
 
     def set_warning(self, message: str) -> None:
         """
@@ -1161,7 +1213,7 @@ def _unwrap_results(func: Callable) -> Callable:
     return wrapper
 
 
-def _add_port(node_factory, port_slot: str, port: Port):
+def _add_port(node_factory, port_slot: str, port: Union[Port, PortGroup]):
     """
     Add a port to a node factory object.
 
@@ -1171,7 +1223,7 @@ def _add_port(node_factory, port_slot: str, port: Port):
         The node factory object to add the port to.
     port_slot : str
         The name of the attribute in the node factory object to add the port to.
-    port : Port
+    port : Union[Port, PortGroup]
         The port to be added to the node factory.
 
     Returns
@@ -1204,8 +1256,10 @@ def _add_port(node_factory, port_slot: str, port: Port):
             isinstance(existing_port, PortGroup) and existing_port.name == port.name
             for existing_port in port_list
         ), (
-            f"A PortGroup with the same name ({port.name}) already exists in the port list. Please use a unique name "
-            f"for Port Groups."
+            f"A PortGroup named '{port.name}' already exists in the '{port_slot}' list. "
+            f"For Input and Output PortGroups, the name of a PortGroup must be unique. "
+            f"For example, if you have an Input PortGroup named 'data', you cannot have another Input PortGroup named 'data'. "
+            f"But you can have an Output PortGroup named 'data'."
         )
 
     port_list.insert(0, port)
@@ -1421,9 +1475,9 @@ def output_image(name: str, description: str):
     )
 
 
-def input_table_group(name: str, description: str, defaults: int = 0):
+def input_table_group(name: str, description: str):
     """
-    Use this decorator to define an input port of type "Table" of a node.
+    Use this decorator to define an input port group of type "Table" of a node.
 
     Parameters
     ----------
@@ -1431,39 +1485,37 @@ def input_table_group(name: str, description: str, defaults: int = 0):
             The name of the input port.
         description : str
             A description of the input port.
-        group : str
-            The name of the group this port belongs to.
     """
     return lambda node_factory: _add_port(
         node_factory,
         "input_ports",
-        PortGroup(PortType.TABLE, name, description, defaults),
+        PortGroup(PortType.TABLE, name, description),
     )
 
 
-def input_binary_group(name: str, description: str, defaults: int = 0):
+def input_binary_group(name: str, description: str, id: Optional[str] = None):
     """
-    Use this decorator to define an input port of type "Table" of a node.
+    Use this decorator to define an input port group of type "Binary" for a node.
 
     Parameters
     ----------
-        name : str
-            The name of the input port.
-        description : str
-            A description of the input port.
-        group : str
-            The name of the group this port belongs to.
+    name : str
+        The name of the input port group.
+    description : str
+        A description of the input port group.
+    id : Optional[str]
+        A unique ID identifying the type of the PortGroup. Only PortGroups with equal ID can be connected in KNIME.
     """
     return lambda node_factory: _add_port(
         node_factory,
         "input_ports",
-        PortGroup(PortType.BINARY, name, description, defaults),
+        PortGroup(PortType.BINARY, name, description, id=id),
     )
 
 
-def output_table_group(name: str, description: str, defaults: int = 0):
+def output_table_group(name: str, description: str):
     """
-    Use this decorator to define an output port of type "Table" of a node.
+    Use this decorator to define an output port group of type "Table" of a node.
 
     Parameters
     ----------
@@ -1471,39 +1523,37 @@ def output_table_group(name: str, description: str, defaults: int = 0):
             The name of the output port.
         description : str
             A description of the output port.
-        group : str
-            The name of the group this port belongs to.
     """
     return lambda node_factory: _add_port(
         node_factory,
         "output_ports",
-        PortGroup(PortType.TABLE, name, description, defaults),
+        PortGroup(PortType.TABLE, name, description),
     )
 
 
-def output_binary_group(name: str, description: str, defaults: int = 0):
+def output_binary_group(name: str, description: str, id: Optional[str] = None):
     """
-    Use this decorator to define an input port of type "Table" of a node.
+    Use this decorator to define an output port group of type "Binary" for a node.
 
     Parameters
     ----------
-        name : str
-            The name of the input port.
-        description : str
-            A description of the input port.
-        group : str
-            The name of the group this port belongs to.
+    name : str
+        The name of the output port group.
+    description : str
+        A description of the output port group.
+    id : Optional[str]
+        A unique ID identifying the type of the PortGroup. Only PortGroups with equal ID can be connected in KNIME.
     """
     return lambda node_factory: _add_port(
         node_factory,
         "output_ports",
-        PortGroup(PortType.BINARY, name, description, defaults),
+        PortGroup(PortType.BINARY, name, description, id=id),
     )
 
 
-def output_image_group(name: str, description: str, defaults: int = 0):
+def output_image_group(name: str, description: str):
     """
-    Use this decorator to define an output port of the type "Image" of a node.
+    Use this decorator to define an output port group of the type "Image" of a node.
 
     The `configure` method must return specs of the type `ImagePortObjectSpec`. The
     `execute` method must return a `bytes` object containing the image data. Note
@@ -1520,17 +1570,18 @@ def output_image_group(name: str, description: str, defaults: int = 0):
     --------
 
     >>> @knext.node(...)
-    ... @knext.output_image(
-    ...     name="PNG Output Image",
+    ... @knext.output_image_group(
+    ...     name="PNG Output Image Group",
     ...     description="An example PNG output image")
-    ... @knext.output_image(
-    ...     name="SVG Output Image",
+    ... @knext.output_image_group(
+    ...     name="SVG Output Image Group",
     ...     description="An example SVG output image")
     ... class ImageNode:
     ...     def configure(self, config_context):
+    ...         # if 2 ports are connected per group, we will have 2 PNG and 2 SVG outputs
     ...         return (
-    ...             knext.ImagePortObjectSpec(knext.ImageFormat.PNG),
-    ...             knext.ImagePortObjectSpec(knext.ImageFormat.SVG),
+    ...             [knext.ImagePortObjectSpec(knext.ImageFormat.PNG]*2,
+    ...             [knext.ImagePortObjectSpec(knext.ImageFormat.SVG)]*2,
     ...         )
     ...
     ...     def execute(self, exec_context):
@@ -1542,48 +1593,15 @@ def output_image_group(name: str, description: str, defaults: int = 0):
     ...         plt.savefig(buffer_svg, format="svg")
     ...
     ...         return (
-    ...             buffer_png.getvalue(),
-    ...             buffer_svg.getvalue(),
+    ...             [buffer_png.getvalue()]*2,
+    ...             [buffer_svg.getvalue()]*2,
     ...         )
     """
     return lambda node_factory: _add_port(
         node_factory,
         "output_ports",
-        PortGroup(PortType.IMAGE, name, description, defaults),
+        PortGroup(PortType.IMAGE, name, description),
     )
-
-
-@dataclass
-class PortGroup:
-    """
-    A class representing a port group.
-
-    Parameters
-    ----------
-    type : PortType
-        The type of the port group.
-    name : str
-        The name of the port group.
-    description : str
-        The description of the port group.
-    """
-
-    type: PortType
-    name: str
-    description: str
-    defaults: int = 0
-
-    def __post_init__(self):
-        """
-        Perform validation after ``__init__``
-        """
-        if not isinstance(self.name, str):
-            raise TypeError(f"name must be of type str. Got {type(self.name)}.")
-
-        if not isinstance(self.description, str):
-            raise TypeError(
-                f"description must be of type str. Got {type(self.description)}."
-            )
 
 
 @dataclass
@@ -1615,7 +1633,6 @@ class PortSpecifier:
     description: str
     description_index: int
     group: bool = False
-    defaults: int = 0
 
     @classmethod
     def from_port(cls, port: Port, description_index: int) -> "PortSpecifier":
@@ -1625,7 +1642,6 @@ class PortSpecifier:
             description=port.description,
             description_index=description_index,
             group=isinstance(port, PortGroup),
-            defaults=getattr(port, "defaults", 0) if isinstance(port, PortGroup) else 0,
         )
 
     def __post_init__(self):
@@ -1641,16 +1657,6 @@ class PortSpecifier:
             )
         if not isinstance(self.group, bool):
             raise TypeError(f"group must be of type bool. Got {type(self.group)}.")
-        if not isinstance(self.defaults, int):
-            raise TypeError(f"defaults must be of type int. Got {type(self.defaults)}.")
-        if self.defaults < 0:
-            raise ValueError(
-                f"defaults must be greater than or equal to 0. Got {self.defaults}."
-            )
-        if self.defaults > 0 and not self.group:
-            raise ValueError(
-                f"defaults can only be set for group ports. Got {self.defaults}."
-            )
 
 
 def port_to_str(port):
