@@ -59,6 +59,10 @@ These decorators can be used to easily configure your Python node.
 .. autofunction:: knime.extension.node
    :noindex:
 
+Port Decorators
++++++++++++++++++
+Port decorators in the KNIME Python extension allow you to define individual input and output ports for your nodes. Each port can be of a specific type, such as "Table" or "Binary", and is used for nodes that require a fixed number of inputs or outputs. Unlike port groups, there is no requirement for individual port names to be unique within the node. This means you can have multiple ports with the same name, although it is generally recommended to use distinct names for clarity and maintainability.
+
 .. autofunction:: knime.extension.input_table
    :noindex:
 
@@ -82,6 +86,27 @@ These decorators can be used to easily configure your Python node.
 
 .. autofunction:: knime.extension.output_view
    :noindex:
+
+Port Group Decorators
+++++++++++++++++++++++
+The group decorators in the KNIME Python extension allow you to define input and output port groups for your nodes. A port group can contain multiple ports of the same type and is useful for nodes that need to handle a variable number of inputs or outputs. It's important to note that input port groups must have unique names within the input scope, and output port groups must have unique names within the output scope. For example, you can't have two input port groups with the name "data", but you can have one input and one output port group both named "data".
+
+.. autofunction:: knime.extension.input_table_group
+   :noindex:
+
+.. autofunction:: knime.extension.input_binary_group
+   :noindex:
+
+.. autofunction:: knime.extension.output_table_group
+   :noindex:
+
+.. autofunction:: knime.extension.output_image_group
+   :noindex:
+
+.. autofunction:: knime.extension.output_binary_group
+   :noindex:
+
+
 
 Parameters
 ^^^^^^^^^^
