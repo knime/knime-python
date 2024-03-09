@@ -1255,15 +1255,16 @@ def _add_port(node_factory, port_slot: str, port: Union[Port, PortGroup]):
 
     port_list = getattr(node_factory, port_slot)
     if isinstance(port, PortGroup):
-        assert not any(
+        if any(
             isinstance(existing_port, PortGroup) and existing_port.name == port.name
             for existing_port in port_list
-        ), (
-            f"A PortGroup named '{port.name}' already exists in the '{port_slot}' list. "
-            f"For Input and Output PortGroups, the name of a PortGroup must be unique. "
-            f"For example, if you have an Input PortGroup named 'data', you cannot have another Input PortGroup named 'data'. "
-            f"But you can have an Output PortGroup named 'data'."
-        )
+        ):
+            raise ValueError(
+                f"A PortGroup named '{port.name}' already exists in the '{port_slot}' list. "
+                f"For Input and Output PortGroups, the name of a PortGroup must be unique. "
+                f"For example, if you have an Input PortGroup named 'data', you cannot have another Input PortGroup named 'data'. "
+                f"But you can have an Output PortGroup named 'data'."
+            )
 
     port_list.insert(0, port)
 

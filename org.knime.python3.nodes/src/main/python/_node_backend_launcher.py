@@ -1066,6 +1066,9 @@ class _PythonNodeProxy:
         Returns:
         List: A list of outputs where each output is itself a list.
         """
+        if isinstance(outputs, list) and len(outputs) != len(self._node.output_ports):
+            outputs = [outputs]  # Wrap in list if outputs represent a single port group
+
         if not isinstance(outputs, list) and not isinstance(outputs, tuple):
             # single outputs are fine
             outputs = [outputs]
