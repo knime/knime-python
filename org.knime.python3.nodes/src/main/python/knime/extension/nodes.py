@@ -627,18 +627,6 @@ class ConfigurationContext(_BaseContext):
 
         This method can be used to know how many input ports are connected to the node for each port type.
 
-        Examples
-        --------
-        >>> @node(name="Example Node")
-        ... @input_table_group(name="Input Data", description="The data to process in my node")
-        ... @output_table(name="Output Data", description="The data to process in my node")
-        ... class ExampleNode(PythonNode):
-        ...     # ...
-        ...     def execute(self, exec_context, table_list):
-        ...         input_table = table_list[0]
-        ...         exec_context.get_connected_input_ports_numbers()  # When 2 input ports are connected, this will return [2].
-        ...         return input_table # Thus, one table from the list of tables is returned.
-
         Returns
         -------
         list of int
@@ -665,7 +653,7 @@ class ConfigurationContext(_BaseContext):
         ... @output_table_group(name="Output Data", description="Multiple outputs from my node")
         ... class ExampleNode(PythonNode):
         ...     # ...
-        ...     def execute(self, exec_context, table):
+        ...     def execute(self, exec_context, table)->List[knext.Schema]:
         ...         output_table = table
         ...         connected_output_ports  = exec_context.get_connected_output_ports_numbers()
         ...         # When 2 output ports are connected, this will return [2].
@@ -913,34 +901,49 @@ def category(
     after: str = "",
     locked: bool = True,
 ):
-    """
-    Register a new node category.
+    """Register a new node category.
 
-    A node category must only be created once. Use a string encoding the
+    A node category must be created only once. Use the string that represents the
     absolute category path to add nodes to an existing category.
+
+    Examples
+    --------
+    >>> node_category = knext.category(
+    ...     "/testing", "python-nodes", "Python Nodes", "Python testing nodes", "icon.png"
+    ... )
+    ...
+    ... @knext.node(
+    ...     name="Simple Python Node",
+    ...     node_type=knext.NodeType.MANIPULATOR,
+    ...     icon_path="icon.png",
+    ...     category=node_category
+    ... )
+    ... class SimpleNode(knext.PythonNode):
+    ...     pass
 
     Parameters
     ----------
-    path : Union[str, Category]
-        The absolute "path" that lead to this category e.g. "/io/read". The segments are the category level-IDs, separated by a slash ("/"). Categories that contain community nodes should be placed in the "/community" category.
+    path : str
+        The absolute path that leads to this category, e.g., "/io/read". The segments are the category level-IDs, separated by a slash ("/"). Categories that contain community nodes should be placed in the "/community" category.
     level_id : str
         The identifier of the level which is used as a path-segment and must be unique at the level specified by "path".
     name : str
-        The name of this category e.g. "File readers".
+        The name of this category, e.g., "File readers".
     description : str
         A short description of the category.
     icon : str
-        File path to 16x16 pixel PNG icon for this category. The path must be relative to the root of the extension.
+        File path to a 16x16 pixel PNG icon for this category. The path must be relative to the root of the extension.
     after : str, optional
-        Specifies the level-id of the category after which this category should be sorted in. Defaults to "".
+        Specifies the level-id of the category after which this category should be sorted. Defaults to "".
     locked : bool, optional
         Set this to False to allow extensions from other vendors to add sub-categories or nodes to this category. Defaults to True.
 
     Returns
     -------
     str
-        The full path of the category which can be used to create nodes inside this category.
+        The full path of the category, which can be used to create nodes inside this category.
     """
+
     _categories.append(
         _Category(path, level_id, name, description, icon, after, locked)
     )
@@ -1475,16 +1478,61 @@ def output_image(name: str, description: str):
     )
 
 
+def input_port_group(name: str, description: str, port_type: PortType):
+    """
+    Use this decorator to add an input port group of the provided type to a node.
+
+    Parameters
+    ----------
+        name : str
+            The name of the input port. Must be unique for all input port groups.
+        description : str
+            A description of the input port.
+        port_type : PortType
+            The type of the input port.
+    """
+    return lambda node_factory: _add_port(
+        node_factory, "input_ports", PortGroup(port_type, name, description)
+    )
+
+
 def input_table_group(name: str, description: str):
     """
     Use this decorator to define an input port group of type "Table" of a node.
 
     Parameters
     ----------
-        name : str
-            The name of the input port.
-        description : str
-            A description of the input port.
+    name : str
+        The name of the input port group. Must be unique for all input port groups.
+    description : str
+        A description of the input port group.
+
+    Examples
+    --------
+    >>> @knext.node(
+    ...     name="Example Node with Multiple Input Table Groups",
+    ...     node_type=knext.NodeType.MANIPULATOR,
+    ...     icon_path="icon.png",
+    ...     category="community/example"
+    ... )
+    ... @knext.input_table_group(
+    ...     name="First Input Tables",
+    ...     description="The first group of input tables for processing"
+    ... )
+    ... @knext.input_table_group(
+    ...     name="Second Input Tables",
+    ...     description="The second group of input tables for processing"
+    ... )
+    ... @knext.output_table_group(
+    ...     name="Output Tables",
+    ...     description="Combined results of the input tables"
+    ... )
+    ... class ConcatenateNode(knext.PythonNode):
+    ...     def configure(self, config_context, first_table_specs: List[knext.Schema], second_table_specs: List[knext.Schema]) -> Iterable[List[knext.Schema]]:
+    ...         return first_table_specs + second_table_specs
+    ...
+    ...     def execute(self, exec_context, first_tables: List[knext.Table], second_tables: List[knext.Table]) -> List[List[knext.Table]]:
+    ...         return first_tables + second_tables
     """
     return lambda node_factory: _add_port(
         node_factory,
@@ -1500,7 +1548,7 @@ def input_binary_group(name: str, description: str, id: Optional[str] = None):
     Parameters
     ----------
     name : str
-        The name of the input port group.
+        The name of the input port group. Must be unique for all input port groups.
     description : str
         A description of the input port group.
     id : Optional[str]
@@ -1520,7 +1568,7 @@ def output_table_group(name: str, description: str):
     Parameters
     ----------
         name : str
-            The name of the output port.
+            The name of the output port. Must be unique for all output port groups.
         description : str
             A description of the output port.
     """
@@ -1538,7 +1586,7 @@ def output_binary_group(name: str, description: str, id: Optional[str] = None):
     Parameters
     ----------
     name : str
-        The name of the output port group.
+        The name of the output port group. Must be unique for all output port groups.
     description : str
         A description of the output port group.
     id : Optional[str]
@@ -1562,7 +1610,7 @@ def output_image_group(name: str, description: str):
     Parameters
     ----------
         name : str
-            The name of the image output port
+            The name of the image output port. Must be unique for all output port groups.
         description : str
             Description of the image output port
 
@@ -1601,6 +1649,24 @@ def output_image_group(name: str, description: str):
         node_factory,
         "output_ports",
         PortGroup(PortType.IMAGE, name, description),
+    )
+
+
+def output_port_group(name: str, description: str, port_type: PortType):
+    """
+    Use this decorator to add an output port group of the provided type to a node.
+
+    Parameters
+    ----------
+    name : str
+        The name of the port group. Must be unique for all output port groups.
+    description : str
+        Description of what the port is used for.
+    port_type : type
+        The type of the port to add.
+    """
+    return lambda node_factory: _add_port(
+        node_factory, "output_ports", PortGroup(port_type, name, description)
     )
 
 
