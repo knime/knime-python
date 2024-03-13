@@ -48,102 +48,104 @@ properties([
 ])
 
 try {
-    knimetools.defaultTychoBuild('org.knime.update.python', 'maven && java17 && ubuntu22.04 && workflow-tests')
+    node('maven && java17 && ubuntu22.04 && workflow-tests') {
+        knimetools.defaultTychoBuild(updateSiteProject: 'org.knime.update.python')
 
-    node('ubuntu22.04 && workflow-tests && java17') {
-        stage('Prepare for pytest') {
-            env.lastStage = env.STAGE_NAME
-            checkout scm
-        }
-
-        for (pyEnv in PYTEST_PYTHON_ENVS) {
-            stage("Run pytest for ${pyEnv}") {
-                env.lastStage = env.STAGE_NAME
-
-                String envPath = "${env.WORKSPACE}/pytest-envs/${pyEnv}"
-                String envYml = "${env.WORKSPACE}/pytest-envs/${pyEnv}.yml"
-
-                sh(label: 'create conda env', script: """
-                    micromamba create -p ${envPath} -f ${envYml}
-                """)
-
-                sh(label: 'run pytest', script: """
-                    ${envPath}/bin/coverage run -m pytest --junit-xml=pytest_results.xml || true
-
-                    # create a separate coverage.xml file for each module
-                    for d in org.knime.python3*/ ; do
-                        ${envPath}/bin/coverage xml -o "\${d}coverage-${pyEnv}.xml" --include "*\$d**/*.py" || true
-
-                        # delete mention of module name in coverage.xml
-                        if [ -f "\${d}coverage-${pyEnv}.xml" ]; then
-                            sed -i "s|\$d||g" "\${d}coverage-${pyEnv}.xml"
-                        fi
-                    done
-                """)
-
-                junit 'pytest_results.xml'
-                stash(name: "${pyEnv}", includes: "**/coverage-${pyEnv}.xml")
-            }
-        }
-    }
-
-    def parallelConfigs = [:]
-    for (env in WF_TESTS_PYTHON_ENVS) {
-        if (params[env]) {
-            // need to create a deep copy here, otherwise Jenkins will use
-            // the last selected option for everything
-            String environmentFile = new String(env)
-            parallelConfigs["${environmentFile}"] = {
-                runPython3MultiversionWorkflowTestConfig(environmentFile, baseBranch)
-            }
-        }
-    }
-
-    parallel(parallelConfigs)
-
-    // Only build if on master and tests pass
-    if (params.UPLOAD_ANYWAY || BN == 'master' && currentBuild.result == 'STABLE') {
-        node('ubuntu22.04') {
-
-            stage('Build and Deploy knime-extension ') {
-
+        node('ubuntu22.04 && workflow-tests && java17') {
+            stage('Prepare for pytest') {
                 env.lastStage = env.STAGE_NAME
                 checkout scm
+            }
 
-                String envName = "test_knime_extension"
-                String recipePath = "${env.WORKSPACE}/knime-extension/recipe"
-                String prefixPath = "${env.WORKSPACE}/${envName}"
-                String[] packageNames = [
-                    "conda-build",
-                    "anaconda-client"
-                ]
+            for (pyEnv in PYTEST_PYTHON_ENVS) {
+                stage("Run pytest for ${pyEnv}") {
+                    env.lastStage = env.STAGE_NAME
 
-                condaHelpers.createCondaEnv(prefixPath: prefixPath, packageNames: packageNames)
+                    String envPath = "${env.WORKSPACE}/pytest-envs/${pyEnv}"
+                    String envYml = "${env.WORKSPACE}/pytest-envs/${pyEnv}.yml"
 
-                sh(
-                    label: "Collect Files",
-                    script: """#!/bin/sh
-                        cd knime-extension
-                        micromamba run -p ${prefixPath} python ${env.WORKSPACE}/knime-extension/collect_files.py
-                    """
-                )
+                    sh(label: 'create conda env', script: """
+                        micromamba create -p ${envPath} -f ${envYml}
+                    """)
 
-                condaHelpers.buildCondaPackage(recipePath, prefixPath, true)
+                    sh(label: 'run pytest', script: """
+                        ${envPath}/bin/coverage run -m pytest --junit-xml=pytest_results.xml || true
 
+                        # create a separate coverage.xml file for each module
+                        for d in org.knime.python3*/ ; do
+                            ${envPath}/bin/coverage xml -o "\${d}coverage-${pyEnv}.xml" --include "*\$d**/*.py" || true
+
+                            # delete mention of module name in coverage.xml
+                            if [ -f "\${d}coverage-${pyEnv}.xml" ]; then
+                                sed -i "s|\$d||g" "\${d}coverage-${pyEnv}.xml"
+                            fi
+                        done
+                    """)
+
+                    junit 'pytest_results.xml'
+                    stash(name: "${pyEnv}", includes: "**/coverage-${pyEnv}.xml")
+                }
             }
         }
+
+        def parallelConfigs = [:]
+        for (env in WF_TESTS_PYTHON_ENVS) {
+            if (params[env]) {
+                // need to create a deep copy here, otherwise Jenkins will use
+                // the last selected option for everything
+                String environmentFile = new String(env)
+                parallelConfigs["${environmentFile}"] = {
+                    runPython3MultiversionWorkflowTestConfig(environmentFile, baseBranch)
+                }
+            }
+        }
+
+        parallel(parallelConfigs)
+
+        // Only build if on master and tests pass
+        if (params.UPLOAD_ANYWAY || BN == 'master' && currentBuild.result == 'STABLE') {
+            node('ubuntu22.04') {
+
+                stage('Build and Deploy knime-extension ') {
+
+                    env.lastStage = env.STAGE_NAME
+                    checkout scm
+
+                    String envName = "test_knime_extension"
+                    String recipePath = "${env.WORKSPACE}/knime-extension/recipe"
+                    String prefixPath = "${env.WORKSPACE}/${envName}"
+                    String[] packageNames = [
+                        "conda-build",
+                        "anaconda-client"
+                    ]
+
+                    condaHelpers.createCondaEnv(prefixPath: prefixPath, packageNames: packageNames)
+
+                    sh(
+                        label: "Collect Files",
+                        script: """#!/bin/sh
+                            cd knime-extension
+                            micromamba run -p ${prefixPath} python ${env.WORKSPACE}/knime-extension/collect_files.py
+                        """
+                    )
+
+                    condaHelpers.buildCondaPackage(recipePath, prefixPath, true)
+
+                }
+            }
+        }
+
+
+        stage('Sonarqube analysis') {
+            env.lastStage = env.STAGE_NAME
+            env.SONAR_ENV = "Sonarcloud"
+            configs = workflowTests.ALL_CONFIGURATIONS + PYTEST_PYTHON_ENVS
+            echo "running sonar on ${configs}"
+            workflowTests.runSonar(configs)
+        }
+
+        owasp.sendNodeJSSBOMs('5.3.0-beta-0-79befdd3')
     }
-
-
-    stage('Sonarqube analysis') {
-        env.lastStage = env.STAGE_NAME
-        env.SONAR_ENV = "Sonarcloud"
-        configs = workflowTests.ALL_CONFIGURATIONS + PYTEST_PYTHON_ENVS
-        echo "running sonar on ${configs}"
-        workflowTests.runSonar(configs)
-    }
-
-    owasp.sendNodeJSSBOMs('5.3.0-beta-0-79befdd3')
  } catch (ex) {
     currentBuild.result = 'FAILURE'
     throw ex
