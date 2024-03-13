@@ -7,7 +7,7 @@ import tempfile
 import json
 import os
 import test_utilities
-from typing import Any, Dict
+from typing import Any
 
 
 class AnotherPortObjectSpec(knext.PortObjectSpec):
@@ -218,7 +218,7 @@ class PortTypeRegistryTest(unittest.TestCase):
         )
         port = knext.Port(unknown_port_type, "", "")
         java_spec = _binary_spec_from_java(unknown_port_type.id, {})
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(kn.InvalidParametersError):
             self.registry.spec_to_python(java_spec, port, callback_mock)
 
     def test_custom_spec_to_python(self):
@@ -278,7 +278,7 @@ class PortTypeRegistryTest(unittest.TestCase):
                 file.write(b"furball")
                 file.flush()
                 java_obj = self.MockFromJavaObject(java_spec, file.name)
-                with self.assertRaises(AssertionError):
+                with self.assertRaises(kn.InvalidParametersError):
                     self.registry.port_object_to_python(java_obj, port, callback_mock)
             finally:
                 file.close()
@@ -296,7 +296,7 @@ class PortTypeRegistryTest(unittest.TestCase):
                 file.write(b"furball")
                 file.flush()
                 java_obj = self.MockFromJavaObject(java_spec, file.name)
-                with self.assertRaises(AssertionError):
+                with self.assertRaises(kn.InvalidParametersError):
                     self.registry.port_object_to_python(java_obj, port, callback_mock)
             finally:
                 file.close()
