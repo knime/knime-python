@@ -34,3 +34,4 @@ test-results/
 # Optional eslint/stylelint cache
 .eslintcache
 .stylelintcache
+bom.json

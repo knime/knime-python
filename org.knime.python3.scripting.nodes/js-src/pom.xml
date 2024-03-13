@@ -26,6 +26,7 @@
 		<sonar.eslint.reportPaths>target/eslint.json</sonar.eslint.reportPaths>
 		<node.version>v18.19.0</node.version>
 		<npm.version>10.2.3</npm.version>
+		<cyclonedx.skip>true</cyclonedx.skip>
 	</properties>
 
 	<build>
@@ -80,6 +81,17 @@
 						</goals>
 						<configuration>
 							<arguments>run coverage</arguments>
+						</configuration>
+					</execution>
+
+					<execution>
+						<id>npm run sbom</id>
+						<phase>package</phase>
+						<goals>
+							<goal>npm</goal>
+						</goals>
+						<configuration>
+							<arguments>run sbom</arguments>
 						</configuration>
 					</execution>
 
