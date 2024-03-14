@@ -18,7 +18,7 @@
     "ci:lint-format": "run-p ci:lint:* format:check -c",
     "ci:lint:js": "npm run lint:js && npm run lint:js -- -f json -o test-results/eslint.json",
     "ci:lint:css": "npm run lint:css -- -f json -o test-results/stylelint.json",
-    "jenkins:lint": "eslint --cache --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts -f json -o target/eslint.json || true; stylelint '**/*.css' -f json -o target/stylelint.json || true",
+    "jenkins:lint": "eslint . --cache --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts -f json -o target/eslint.json || true; stylelint '**/*.css' -f json -o target/stylelint.json || true",
     "audit": "npm audit --omit dev",
     "test:unit": "vitest",
     "coverage": "vitest run --coverage",
