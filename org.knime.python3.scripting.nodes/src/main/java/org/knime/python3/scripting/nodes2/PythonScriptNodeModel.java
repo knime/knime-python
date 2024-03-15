@@ -283,15 +283,12 @@ public final class PythonScriptNodeModel extends NodeModel {
 
     @Override
     protected void reset() {
-        if (m_consoleOutputStorage == null) {
-            return; // Nothing to do
+        if (m_consoleOutputStorage != null) {
+            m_consoleOutputStorage.close();
+            m_consoleOutputStorage = null;
         }
-
-        m_consoleOutputStorage.close();
-        m_consoleOutputStorage = null;
-
-        m_sessionShutdownTracker.waitForAllToClose();
         m_view = Optional.empty();
+        m_sessionShutdownTracker.waitForAllToClose();
     }
 
     void sendLastConsoleOutputs(final Consumer<ConsoleText> consumer) throws IOException {
