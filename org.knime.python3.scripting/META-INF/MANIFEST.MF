@@ -7,7 +7,7 @@ Bundle-ClassPath: knime-python3-scripting.jar
 Bundle-Vendor: KNIME AG, Zurich, Switzerland
 Bundle-RequiredExecutionEnvironment: JavaSE-17
 Bundle-ActivationPolicy: lazy
-Require-Bundle: com.google.guava;bundle-version="[19.0.0,20.0.0)",
+Require-Bundle: com.google.guava;bundle-version="[31.0.1,33.0.0)",
  org.apache.commons.lang3;bundle-version="[3.9.0,4.0.0)",
  org.knime.core.table;bundle-version="[5.3.0,6.0.0)",
  org.knime.core.columnar;bundle-version="[5.3.0,6.0.0)",

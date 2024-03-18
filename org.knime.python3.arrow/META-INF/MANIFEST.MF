@@ -20,7 +20,7 @@ Require-Bundle: org.knime.python3;bundle-version="[5.3.0,6.0.0)",
  org.knime.core;bundle-version="[5.3.0,6.0.0)",
  org.knime.core.data.columnar;bundle-version="[5.3.0,6.0.0)",
  org.knime.ext.py4j;bundle-version="[0.10.9.2,1.0.0)",
- com.google.guava;bundle-version="[19.0.0,20.0.0)"
+ com.google.guava;bundle-version="[31.0.1,33.0.0)"
 Export-Package: org.knime.python3.arrow
 Automatic-Module-Name: org.knime.python3.arrow
 Eclipse-BundleShape: dir
