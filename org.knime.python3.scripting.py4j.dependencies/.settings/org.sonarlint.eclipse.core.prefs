@@ -1,7 +1,3 @@
 autoEnabled=true
-bindingSuggestionsDisabled=false
+bindingSuggestionsDisabled=true
 eclipse.preferences.version=1
-idePrefixKey=
-projectKey=KNIME_knime-python
-serverId=SonarCloud
-sqPrefixKey=
