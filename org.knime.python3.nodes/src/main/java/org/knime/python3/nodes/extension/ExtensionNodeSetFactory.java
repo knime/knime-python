@@ -62,9 +62,10 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.knime.core.node.BundleNameProvider;
 import org.knime.core.node.ConfigurableNodeFactory;
 import org.knime.core.node.DynamicNodeFactory;
-import org.knime.core.node.IDynamicNodeFactory;
+import org.knime.core.node.FactoryIDUniquifierProvider;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeDescription;
 import org.knime.core.node.NodeDialogPane;
@@ -86,9 +87,9 @@ import org.knime.core.webui.node.dialog.defaultdialog.DefaultNodeSettingsService
 import org.knime.core.webui.node.view.NodeView;
 import org.knime.core.webui.node.view.NodeViewFactory;
 import org.knime.python3.nodes.DelegatingNodeModel;
-import org.knime.python3.nodes.PythonNode.PortSpecifier;
 import org.knime.python3.nodes.dialog.DelegatingJsonSettingsDataService;
 import org.knime.python3.nodes.dialog.JsonFormsNodeDialog;
+import org.knime.python3.nodes.ports.PythonPortObjects;
 import org.knime.python3.nodes.proxy.NodeProxyProvider;
 import org.knime.python3.views.HtmlFileNodeView;
 
@@ -168,7 +169,7 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
      * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
      */
     public static final class DynamicExtensionNodeFactory extends ConfigurableNodeFactory<DelegatingNodeModel>
-        implements NodeDialogFactory, NodeViewFactory<DelegatingNodeModel>, IDynamicNodeFactory {
+        implements NodeDialogFactory, NodeViewFactory<DelegatingNodeModel>, BundleNameProvider, FactoryIDUniquifierProvider {
 
         private NodeProxyProvider m_proxyProvider;
 
@@ -189,7 +190,8 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
         private String m_factoryIdUniquifier;
 
         /**
-         * DynamicExtensionNodeFactory Lazy Init
+         * We use the constructor {@link NodeFactory#NodeFactory(Supplier)} which lazily intializes the factory
+         * and defines that the factory is used for multiple nodes ( needs an ID)
          */
         public DynamicExtensionNodeFactory() {
             super(true);
@@ -216,20 +218,11 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
             super.loadAdditionalFactorySettings(config);
         }
 
-        @Override
-        public String getFactoryIdUniquifier() {
-            return m_factoryIdUniquifier;
-        }
-
         /**
-         * @return True, if the node is deprecated internally
+         * @return The name for the bundle
          */
-        protected boolean isDeprecatedInternal() {
-            return m_node.isDeprecated();
-        }
-
         @Override
-        public Optional<String> getBundleName() {
+        public Optional<String> getBundleName2() {
             return m_bundleName;
 
         }
@@ -237,16 +230,6 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
         @Override
         public void saveAdditionalFactorySettings(final ConfigWO config) {
             m_nodeFactoryConfig.copyTo(config);
-        }
-
-        @Override
-        public DelegatingNodeModel createNodeModel() {
-            try (var proxy = m_proxyProvider.getNodeFactoryProxy()) {
-                // happens here to speed up the population of the node repository
-                var initialSettings = proxy.getSettings(m_extensionVersion);
-                return new DelegatingNodeModel(m_proxyProvider, m_node.getInputPortTypes(), m_node.getOutputPortTypes(),
-                    initialSettings, m_extensionVersion);
-            }
         }
 
         @Override
@@ -279,11 +262,6 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
         public NodeDialog createNodeDialog() {
             return new JsonFormsNodeDialog(SettingsType.MODEL,
                 new DefaultNodeSettingsServiceWithVariables(m_dialogSettingsService), m_dialogSettingsService);
-        }
-
-        @Override
-        protected NodeDialogPane createNodeDialogPane() {
-            return NodeDialogManager.createLegacyFlowVariableNodeDialog(createNodeDialog());
         }
 
         @Override
@@ -336,10 +314,11 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
 
                 PortSpecifier portSpecifier = inputPorts[i];
                 if (portSpecifier.isGroup()) {
-                    b.addExtendableInputPortGroup(portSpecifier.name(), portSpecifier.getType());
+                    b.addExtendableInputPortGroup(portSpecifier.name(),
+                        PythonPortObjects.getPortTypeForIdentifier(portSpecifier.typeString()));
                 } else {
                     b.addFixedInputPortGroup(String.format("Input %s # %d", portSpecifier.name(), i),
-                        portSpecifier.getType());
+                        PythonPortObjects.getPortTypeForIdentifier(portSpecifier.typeString()));
                 }
             }
 
@@ -348,10 +327,11 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
 
                 PortSpecifier portSpecifier = outputPorts[i];
                 if (portSpecifier.isGroup()) {
-                    b.addExtendableOutputPortGroup(portSpecifier.name(), portSpecifier.getType());
+                    b.addExtendableOutputPortGroup(portSpecifier.name(),
+                        PythonPortObjects.getPortTypeForIdentifier(portSpecifier.typeString()));
                 } else {
                     b.addFixedOutputPortGroup(String.format("Output %s # %d", portSpecifier.name(), i),
-                        portSpecifier.getType());
+                        PythonPortObjects.getPortTypeForIdentifier(portSpecifier.typeString()));
                 }
             }
 
@@ -372,8 +352,28 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
 
         @Override
         protected NodeDialogPane createNodeDialogPane(final NodeCreationConfiguration creationConfig) {
-            return null;
+            return NodeDialogManager.createLegacyFlowVariableNodeDialog(createNodeDialog());
         }
 
+        @Override
+        public String getFactoryIdUniquifier() {
+            return m_factoryIdUniquifier;
+        }
+
+    }
+
+    /**
+     * Represents a specification for a port, including its name, type, description, and additional properties such as
+     * group membership and default values.
+     *
+     * @param name The name of the port.
+     * @param typeString The type of the port, represented as a string.
+     * @param description A brief description of the port's purpose or usage.
+     * @param isGroup Indicates whether the port is part of a group (true) or not (false).
+     * @param defaults The default value for the port, typically used for initialization.
+     * @param descriptionIndex the index where to insert in the description.
+     */
+    public record PortSpecifier(String name, String typeString, String description, boolean isGroup, int defaults,
+        int descriptionIndex) {
     }
 }

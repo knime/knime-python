@@ -87,8 +87,8 @@ import org.knime.python3.nodes.settings.JsonNodeSettingsSchema;
 import org.knime.python3.utils.FlowVariableUtils;
 
 /**
- * NodeModel that delegates its operations to a proxy implemented in Python.
- * Extends {@link AbstractPortObjectRepositoryNodeModel} to enable the execution of WorkflowPortObjects.
+ * NodeModel that delegates its operations to a proxy implemented in Python. Extends
+ * {@link AbstractPortObjectRepositoryNodeModel} to enable the execution of WorkflowPortObjects.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
@@ -110,9 +110,9 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
     private final AsynchronousCloseableTracker<RuntimeException> m_proxyShutdownTracker =
         new AsynchronousCloseableTracker<>(t -> LOGGER.debug("Exception during proxy shutdown.", t));
 
-    Map<String,int[]> m_inputPortMap;
+    private Map<String, int[]> m_inputPortMap;
 
-    Map<String, int[]> m_outputPortMap;
+    private Map<String, int[]> m_outputPortMap;
 
     /**
      * Constructor.
@@ -132,6 +132,7 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
         m_extensionVersion = extensionVersion;
         m_outputPorts = outputPorts;
     }
+
     /**
      * Constructor with port maps
      *
@@ -145,7 +146,7 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
      */
     public DelegatingNodeModel(final NodeModelProxyProvider proxyProvider, final PortType[] inputPorts,
         final PortType[] outputPorts, final JsonNodeSettings initialSettings, final String extensionVersion,
-        final Map<String,int[]> inputPortMap,final Map<String,int[]> outputPortMap) {
+        final Map<String, int[]> inputPortMap, final Map<String, int[]> outputPortMap) {
         super(inputPorts, outputPorts);
         m_proxyProvider = proxyProvider;
         m_settings = initialSettings;
@@ -339,4 +340,19 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
     public String getNodeNameWithID() {
         return NodeContext.getContext().getNodeContainer().getNameWithID();
     }
+
+    /**
+     * @return the inputPortMap
+     */
+    public Map<String, int[]> getInputPortMap() {
+        return m_inputPortMap;
+    }
+
+    /**
+     * @return the outputPortMap
+     */
+    public Map<String, int[]> getOutputPortMap() {
+        return m_outputPortMap;
+    }
+
 }

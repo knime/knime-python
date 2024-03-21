@@ -53,6 +53,7 @@ import java.util.List;
 import org.knime.core.node.NodeDescription;
 import org.knime.core.node.port.PortType;
 import org.knime.python3.nodes.extension.ExtensionNode;
+import org.knime.python3.nodes.extension.ExtensionNodeSetFactory.PortSpecifier;
 import org.knime.python3.nodes.ports.PythonPortObjects;
 import org.knime.python3.views.ViewResources;
 
@@ -168,18 +169,15 @@ public final class PythonNode implements ExtensionNode {
         return m_description;
     }
 
-
     @Override
     public PortSpecifier[] getInputPorts() {
-        return m_inputPortSpecifiers.stream() //
-                .toArray(PortSpecifier[]::new);
+        return m_inputPortSpecifiers.toArray(PortSpecifier[]::new);
 
     }
 
     @Override
     public PortSpecifier[] getOutputPorts() {
-        return m_outputPortSpecifiers.stream() //
-                .toArray(PortSpecifier[]::new);
+        return m_outputPortSpecifiers.toArray(PortSpecifier[]::new);
     }
 
     /**
@@ -210,11 +208,10 @@ public final class PythonNode implements ExtensionNode {
      *
      * @return an array of PortType representing the types of the input ports.
      */
-    @Override
     public PortType[] getInputPortTypes() {
         return m_inputPortSpecifiers.stream() //
-                .map(PortSpecifier::getType) //
-                .toArray(PortType[]::new);
+            .map(portSpecifier -> PythonPortObjects.getPortTypeForIdentifier(portSpecifier.typeString()))
+            .toArray(PortType[]::new);
     }
 
     /**
@@ -222,40 +219,10 @@ public final class PythonNode implements ExtensionNode {
      *
      * @return an array of PortType representing the types of the output ports.
      */
-    @Override
     public PortType[] getOutputPortTypes() {
-        return m_outputPortSpecifiers .stream() //
-                .map(PortSpecifier::getType) //
-                .toArray(PortType[]::new);
+        return m_outputPortSpecifiers.stream() //
+            .map(portSpecifier -> PythonPortObjects.getPortTypeForIdentifier(portSpecifier.typeString()))
+            .toArray(PortType[]::new);
     }
-
-    /**
-     * Represents a specification for a port, including its name, type, description, and additional properties such as
-     * group membership and default values.
-     *
-     * @param name The name of the port.
-     * @param typeString The type of the port, represented as a string.
-     * @param description A brief description of the port's purpose or usage.
-     * @param group Indicates whether the port is part of a group (true) or not (false).
-     * @param defaults The default value for the port, typically used for initialization.
-     * @param descriptionIndex the index where to insert in the description.
-     */
-    public record PortSpecifier(String name, String typeString, String description, boolean group, int defaults, int descriptionIndex) {
-        /**
-         * @return PortType for the Port Specifier
-         */
-        public PortType getType() {
-            return PythonPortObjects.getPortTypeForIdentifier(typeString);
-        }
-
-        /**
-         * @return True if port specifier describes a group
-         */
-        public boolean isGroup() {
-            return group;
-        }
-
-    }
-
 
 }

@@ -709,7 +709,9 @@ class _PortTypeRegistry:
                     )
 
 
-def _get_port_indices(port, portmap: Dict[str, List[int]]) -> List[int]:
+def _get_port_indices(
+    port, portmap: Dict[str, List[int]], input_port_idx: int
+) -> List[int]:
     """
     Retrieves the indices of specs corresponding to a given port.
 
@@ -727,7 +729,7 @@ def _get_port_indices(port, portmap: Dict[str, List[int]]) -> List[int]:
     """
     if isinstance(port, kn.PortGroup) and port.name in portmap:
         # Easy case as PortGroup Names have to be unique
-        return portmap.pop(port.name)
+        return portmap[port.name]
     elif isinstance(port, kn.Port):
 
         def extract_number(key):
@@ -740,9 +742,9 @@ def _get_port_indices(port, portmap: Dict[str, List[int]]) -> List[int]:
         pattern = re.compile(f"^Input {port.name} # \\d+$")
         # Filter the keys that do not match the pattern
         keys = [key for key in portmap.keys() if pattern.match(key)]
-        keys = sorted(keys, key=extract_number)
-        if keys:
-            return portmap.pop(keys[0])
+        # find the key where extract_number returns the input_port_idx
+        key = next((key for key in keys if extract_number(key) == input_port_idx), [])
+        return portmap[key]
     return []
 
 
@@ -809,16 +811,14 @@ class _PythonNodeProxy:
                 )
 
     def _specs_to_python(self, specs, portmap):
-        return self._map_ports_to_specs(
-            portmap, specs, self._port_type_registry.spec_to_python
-        )
+        return self._map_ports(portmap, specs, self._port_type_registry.spec_to_python)
 
-    def _map_ports_to_specs(
+    def _map_ports(
         self,
         java_portmap: Dict[str, List[int]],
         specs: List[Any],
         mapping_function: Callable,
-    ) -> List[List[_PythonPortObjectSpec]]:
+    ) -> List[List[Union["kn.Schema", "kn.Table"]]]:
         """
         Maps input ports to their corresponding Python port object specifications.
 
@@ -833,14 +833,14 @@ class _PythonNodeProxy:
 
         Returns
         -------
-        list of list of _PythonPortObjectSpec
-            A list of lists containing Python port object specifications for each input port.
+        list of lists
+            A list of of Schemas (when called from config) or Tables (when called from execute)
         """
         portmap = {k: list(v) for k, v in java_portmap.items()}
 
         port_specs_lists = [[] for _ in range(len(self._node.input_ports))]
         for input_port_idx, port in enumerate(self._node.input_ports):
-            port_indices = _get_port_indices(port, portmap)
+            port_indices = _get_port_indices(port, portmap, input_port_idx)
             for idx in port_indices:
                 spec = specs[idx]
                 python_port = mapping_function(spec, port, self._java_callback)
@@ -891,10 +891,9 @@ class _PythonNodeProxy:
         self, input_objects: List[_PythonPortObject], java_exec_context
     ) -> List[_PythonPortObject]:
         _push_log_callback(lambda msg, sev: self._java_callback.log(msg, sev))
-
         try:
             port_map = java_exec_context.get_input_port_map()
-            inputs = self._map_ports_to_specs(
+            inputs = self._map_ports(
                 port_map, input_objects, self._port_type_registry.port_object_to_python
             )
 
@@ -906,8 +905,11 @@ class _PythonNodeProxy:
                     table._inject_metadata(
                         self._java_callback.get_preferred_value_types_as_json
                     )
-            # unpack inputs with only one element
-            inputs = [i[0] if len(i) == 1 else i for i in inputs]
+            # unpacks inputs that come from a Port not a PortGroup
+            inputs = [
+                i[0] if isinstance(port, kn.Port) else i
+                for i, port in zip(inputs, self._node.input_ports)
+            ]
 
             # prepare output table creation
             def create_python_sink():
@@ -962,8 +964,11 @@ class _PythonNodeProxy:
                 self._node.input_ports,
                 self._node.output_ports,
             )
-            # unpack inputs with only one element
-            inputs = [i[0] if len(i) == 1 else i for i in inputs]
+            # unpacks inputs that come from a Port not a PortGroup
+            inputs = [
+                i[0] if isinstance(port, kn.Port) else i
+                for i, port in zip(inputs, self._node.input_ports)
+            ]
             kp.validate_specs(self._node, inputs)
             # TODO: maybe we want to run execute on the main thread? use knime._backend._mainloop
             outputs = self._node.configure(config_context, *inputs)
@@ -973,12 +978,12 @@ class _PythonNodeProxy:
 
         self._set_flow_variables(config_context.flow_variables)
 
-        java_outputs = self.postprocess_config_outputs(java_config_context, outputs)
+        java_outputs = self.postprocess_configure_outputs(java_config_context, outputs)
 
         _pop_log_callback()
         return ListConverter().convert(java_outputs, kg.client_server._gateway_client)
 
-    def postprocess_config_outputs(
+    def postprocess_configure_outputs(
         self, java_config_context: JavaClass, outputs: Optional[List]
     ) -> List[_PythonPortObjectSpec]:
         """

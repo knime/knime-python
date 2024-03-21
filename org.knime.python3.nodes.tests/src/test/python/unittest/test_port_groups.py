@@ -82,34 +82,24 @@ class TestPortIndices(unittest.TestCase):
         port_group = kn.PortGroup(name="group1", description="", type="PortType.TABLE")
         expected_indices = [0, 1]
         self.assertEqual(
-            knb._get_port_indices(port_group, portmap),
+            knb._get_port_indices(port_group, portmap, 0),
             expected_indices,
             "Port group 'group1' should have indices [0, 1]",
-        )
-        self.assertNotIn(
-            "group1",
-            portmap,
-            "Port group 'group1' should be removed from portmap after assignment",
         )
 
     def test_port_indices_are_assigned_correctly(self):
         """Test that port indices are assigned correctly."""
         portmap = {
-            "Input port1 # 1": [1],
-            "Input port1 # 2": [2],
+            "Input port1 # 0": [1],
+            "Input port1 # 1": [2],
             "Input port2 # 1": [3],
         }
         port = kn.Port(name="port1", description="", type="PortType.TABLE")
         expected_indices = [1]
         self.assertEqual(
-            knb._get_port_indices(port, portmap),
+            knb._get_port_indices(port, portmap, 0),
             expected_indices,
             "Port 'port1' should have index [1]",
-        )
-        self.assertNotIn(
-            "Input port1 # 1",
-            portmap,
-            "Port 'port1' should be removed from portmap after assignment",
         )
 
     def test_no_match_port_group_returns_empty_list(self):
@@ -120,7 +110,7 @@ class TestPortIndices(unittest.TestCase):
         )
         expected_indices = []
         self.assertEqual(
-            knb._get_port_indices(port_group, portmap),
+            knb._get_port_indices(port_group, portmap, 0),
             expected_indices,
             "Non-existent port group should return an empty list of indices",
         )

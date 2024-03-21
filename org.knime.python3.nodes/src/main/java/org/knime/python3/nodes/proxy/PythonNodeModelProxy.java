@@ -307,6 +307,16 @@ public interface PythonNodeModelProxy {
          **/
         String[] get_credentials(final String identifier); // NOSONAR
 
+        /**
+         * @return Returns the portmap for all connected input ports.
+         */
+        Map<String, int[]> get_input_port_map(); // NOSONAR
+
+        /**
+         * @return Returns the portmap for all connected output ports.
+         */
+        Map<String, int[]> get_output_port_map(); // NOSONAR
+
     }
 
     /**

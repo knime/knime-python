@@ -49,8 +49,7 @@
 package org.knime.python3.nodes.extension;
 
 import org.knime.core.node.NodeDescription;
-import org.knime.core.node.port.PortType;
-import org.knime.python3.nodes.PythonNode.PortSpecifier;
+import org.knime.python3.nodes.extension.ExtensionNodeSetFactory.PortSpecifier;
 import org.knime.python3.views.ViewResources;
 
 /**
@@ -88,16 +87,6 @@ public interface ExtensionNode {
      * @return the description of the node as it is displayed in the KNIME AP
      */
     NodeDescription getNodeDescription();
-
-    /**
-     * @return the input port types
-     */
-    PortType[] getInputPortTypes();
-
-    /**
-     * @return the output port types
-     */
-    PortType[] getOutputPortTypes();
 
     /**
      * @return the number of views of the node

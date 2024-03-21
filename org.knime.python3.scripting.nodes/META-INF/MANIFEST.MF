@@ -41,7 +41,6 @@ Require-Bundle: org.knime.core;bundle-version="[5.3.0,6.0.0)",
  com.fasterxml.jackson.core.jackson-databind;bundle-version="2.13.2",
  org.eclipse.orbit.xml-apis-ext;bundle-version="[1.0.0,2.0.0)"
 Automatic-Module-Name: org.knime.python3.scripting.nodes
-Export-Package: org.knime.python3.scripting.nodes,
- org.knime.python3.scripting.nodes.prefs
+Export-Package: org.knime.python3.scripting.nodes.prefs
 Eclipse-RegisterBuddy: org.knime.ext.py4j
 Eclipse-BundleShape: dir

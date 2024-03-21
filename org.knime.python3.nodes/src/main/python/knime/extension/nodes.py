@@ -623,9 +623,9 @@ class ConfigurationContext(_BaseContext):
         self._output_ports = output_ports
 
     def get_connected_input_ports_numbers(self) -> List[int]:
-        """Gets the number of connected input ports for each port type.
+        """Gets the number of connected input ports for each port.
 
-        This method can be used to know how many input ports are connected to the node for each port type.
+        This method can be used to know how many input ports are connected to the node for each port.
 
         Returns
         -------
@@ -641,9 +641,9 @@ class ConfigurationContext(_BaseContext):
         return port_list
 
     def get_connected_output_ports_numbers(self) -> List[int]:
-        """Gets the number of connected output ports for each port type.
+        """Gets the number of connected output ports for each port.
 
-        This method can be used to know how many output ports are connected to the node for each port type. This
+        This method can be used to know how many output ports are connected to the node for each port. This
         is relevant when using PortGroups to determine which ports have to be populated with data.
 
         Examples
@@ -954,7 +954,7 @@ def category(
 
 def _port_specifier_list_from_port_list(
     port_list: List[Union["Port", "PortGroup"]],
-) -> List["PortSpecifier"]:
+) -> List["_PortSpecifier"]:
     """Convert a list of Port objects to a list of PortSpecifier objects.
 
     Also increments the description index for each Port object in the list.
@@ -970,7 +970,7 @@ def _port_specifier_list_from_port_list(
 
     for port in port_list:
         port_specifier_list.append(
-            asdict(PortSpecifier.from_port(port, description_index))
+            asdict(_PortSpecifier.from_port(port, description_index))
         )
         # we only increment the description index if the port is a Port object, as PortGroups
         # are inserted in between two Ports.
@@ -1254,17 +1254,16 @@ def _add_port(node_factory, port_slot: str, port: Union[Port, PortGroup]):
             )
 
     port_list = getattr(node_factory, port_slot)
-    if isinstance(port, PortGroup):
-        if any(
-            isinstance(existing_port, PortGroup) and existing_port.name == port.name
-            for existing_port in port_list
-        ):
-            raise ValueError(
-                f"A PortGroup named '{port.name}' already exists in the '{port_slot}' list. "
-                f"For Input and Output PortGroups, the name of a PortGroup must be unique. "
-                f"For example, if you have an Input PortGroup named 'data', you cannot have another Input PortGroup named 'data'. "
-                f"But you can have an Output PortGroup named 'data'."
-            )
+    if isinstance(port, PortGroup) and any(
+        isinstance(existing_port, PortGroup) and existing_port.name == port.name
+        for existing_port in port_list
+    ):
+        raise ValueError(
+            f"A PortGroup named '{port.name}' already exists in the '{port_slot}' list. "
+            f"For Input and Output PortGroups, the name of a PortGroup must be unique. "
+            f"For example, if you have an Input PortGroup named 'data', you cannot have another Input PortGroup named 'data'. "
+            f"But you can have an Output PortGroup named 'data'."
+        )
 
     port_list.insert(0, port)
 
@@ -1672,7 +1671,7 @@ def output_port_group(name: str, description: str, port_type: PortType):
 
 
 @dataclass
-class PortSpecifier:
+class _PortSpecifier:
     """
     A class representing a port specifier.
 
@@ -1702,10 +1701,10 @@ class PortSpecifier:
     group: bool = False
 
     @classmethod
-    def from_port(cls, port: Port, description_index: int) -> "PortSpecifier":
+    def from_port(cls, port: Port, description_index: int) -> "_PortSpecifier":
         return cls(
             name=port.name,
-            type_string=port_to_str(port),
+            type_string=_port_to_str(port),
             description=port.description,
             description_index=description_index,
             group=isinstance(port, PortGroup),
@@ -1726,7 +1725,7 @@ class PortSpecifier:
             raise TypeError(f"group must be of type bool. Got {type(self.group)}.")
 
 
-def port_to_str(port):
+def _port_to_str(port):
     if port.type == PortType.BINARY:
         return f"{port.type}"
     elif hasattr(port.type, "object_class") and issubclass(

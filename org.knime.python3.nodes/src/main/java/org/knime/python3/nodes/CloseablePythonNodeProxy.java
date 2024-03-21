@@ -275,14 +275,13 @@ final class CloseablePythonNodeProxy
                 return Arrays.stream(specs).map(PythonPortObjectTypeRegistry::convertToPythonPortObjectSpec)
                     .toArray(PythonPortObjectSpec[]::new);
             }
-
+            @Override
             public Map<String, int[]> get_input_port_map(){
-                Map<String, int[]> portMap = ((DelegatingNodeModel)getNode().getNodeModel()).m_inputPortMap;
-                return portMap;
+                return ((DelegatingNodeModel)getNode().getNodeModel()).getInputPortMap();
             }
+            @Override
             public Map<String, int[]> get_output_port_map(){
-                Map<String, int[]> portMap = ((DelegatingNodeModel)getNode().getNodeModel()).m_outputPortMap;
-                return portMap;
+                return ((DelegatingNodeModel)getNode().getNodeModel()).getOutputPortMap();
             }
         };
         // extensionVersion must always be the version of the installed extension, since it is used
@@ -540,13 +539,13 @@ final class CloseablePythonNodeProxy
             public String get_node_id() {
                 return workflowPropertiesProxy.getNodeNameWithID();
             }
+            @Override
             public Map<String, int[]> get_input_port_map(){
-                Map<String, int[]> portMap = ((DelegatingNodeModel)getNode().getNodeModel()).m_inputPortMap;
-                return portMap;
+                return ((DelegatingNodeModel)getNode().getNodeModel()).getInputPortMap();
             }
+            @Override
             public Map<String, int[]> get_output_port_map(){
-                Map<String, int[]> portMap = ((DelegatingNodeModel)getNode().getNodeModel()).m_outputPortMap;
-                return portMap;
+                return ((DelegatingNodeModel)getNode().getNodeModel()).getOutputPortMap();
             }
         };
 
@@ -707,13 +706,13 @@ final class CloseablePythonNodeProxy
             public String get_node_id() {
                 return workflowPropertiesProxy.getNodeNameWithID();
             }
+            @Override
             public Map<String, int[]> get_input_port_map(){
-                Map<String, int[]> portMap = ((DelegatingNodeModel)getNode().getNodeModel()).m_inputPortMap;
-                return portMap;
+                return ((DelegatingNodeModel)getNode().getNodeModel()).getInputPortMap();
             }
+            @Override
             public Map<String, int[]> get_output_port_map(){
-                Map<String, int[]> portMap = ((DelegatingNodeModel)getNode().getNodeModel()).m_outputPortMap;
-                return portMap;
+                return ((DelegatingNodeModel)getNode().getNodeModel()).getOutputPortMap();
             }
         };
 
@@ -725,11 +724,8 @@ final class CloseablePythonNodeProxy
         failure.throwIfFailure();
 
         // Get number of active ports
-        final Map<String, int[]> portMap = ((DelegatingNodeModel)getNode().getNodeModel()).m_outputPortMap;
-        int activePortsNumber = 0;
-        for (int[] array : portMap.values()) {
-            activePortsNumber += array.length;
-        }
+        final Map<String, int[]> portMap = ((DelegatingNodeModel)getNode().getNodeModel()).getOutputPortMap();
+        final var activePortsNumber = portMap.values().stream().mapToInt(array -> array.length).sum();
 
         if (serializedOutSpecs.size() != activePortsNumber) {
             throw new IllegalStateException("Python node configure returned wrong number of output port specs");

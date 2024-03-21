@@ -99,10 +99,6 @@ public final class NodeDescriptionBuilder {
 
     private final List<PortGroup> m_dynamicOutputPorts = new ArrayList<>();
 
-    private final List<PortGroup> m_dynamicInputPortTypes = new ArrayList<>();
-
-    private final List<PortGroup> m_dynamicOutputPortTypes = new ArrayList<>();
-
     private final List<Option> m_topLevelOptions = new ArrayList<>();
 
     private final List<Tab> m_tabs = new ArrayList<>();
@@ -258,7 +254,7 @@ public final class NodeDescriptionBuilder {
             return element;
         }
 
-        public List<Element> createPortElements(final String elementName, final List<Port> ports) {
+        Iterable<Element> createPortElements(final String elementName, final List<Port> ports) {
             List<Element> elements = new ArrayList<>();
 
             for (Port port : ports) {
@@ -275,7 +271,7 @@ public final class NodeDescriptionBuilder {
             return elements;
         }
 
-        public List<Element> createPortGroupsElements(final String elementName, final List<PortGroup> portGroups) {
+        Iterable<Element> createPortGroupsElements(final String elementName, final List<PortGroup> portGroups) {
             List<Element> elements = new ArrayList<>();
             for (PortGroup port : portGroups) {
                 var groupPortElement = m_doc.createElement(elementName);
@@ -515,7 +511,7 @@ public final class NodeDescriptionBuilder {
 
         }
 
-        protected String getType() {
+        String getType() {
             return m_portType;
         }
     }
