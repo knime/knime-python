@@ -1,0 +1,29 @@
+
+def BN = (BRANCH_NAME == 'master' || BRANCH_NAME.startsWith('releases/')) ? BRANCH_NAME : 'releases/2024-06'
+
+library "knime-pipeline@$BN"
+
+properties([
+    parameters(),
+    buildDiscarder(logRotator(numToKeepStr: '5')),
+    disableConcurrentBuilds()
+])
+
+node(label: 'micromamba') {
+    stage("Setup") {
+        checkout scm
+
+        // Prepare the conda environment for the base checks
+        condaEnvPath = "${WORKSPACE}/base-checks-env"
+        condaHelpers.createCondaEnv(
+            prefixPath: condaEnvPath,
+            packageNames: ['ruff']
+        )
+    }
+
+    stage("Ruff format check") {
+        sh label: 'run ruff check', script: """
+        micromamba run -p ${condaEnvPath} ruff format --check --exclude ${condaEnvPath} .
+        """
+    }
+}
