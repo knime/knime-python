@@ -215,8 +215,8 @@ public class PythonArrowDataUtilsTest {
 
     private void checkReadable(final DefaultPythonArrowDataSink dataSink, final int idx) throws IOException {
         try (final var readable = PythonArrowDataUtils.createReadable(dataSink, m_storeFactory);
-                var reader = readable.createRandomAccessReader()) {
-            final var batch = reader.readRetained(0);
+                var reader = readable.createSequentialReader()) {
+            final var batch = reader.forward();
             assertEquals(1, batch.length());
             assertEquals(1, batch.numData());
             final var data = (IntReadData)batch.get(0);
