@@ -88,6 +88,7 @@ import org.knime.core.columnar.arrow.compress.ArrowCompressionUtil;
 import org.knime.core.columnar.batch.BatchWriter;
 import org.knime.core.columnar.batch.RandomAccessBatchReadable;
 import org.knime.core.columnar.batch.ReadBatch;
+import org.knime.core.columnar.batch.SequentialBatchReadable;
 import org.knime.core.columnar.data.IntData.IntWriteData;
 import org.knime.core.columnar.data.ListData.ListWriteData;
 import org.knime.core.columnar.data.NullableReadData;
@@ -333,7 +334,7 @@ public class KnimeArrowExtensionTypesTest {
 
 	}
 
-	private Consumer<RandomAccessBatchReadable> createSingleFsLocationTester(String category, String specifier,
+	private Consumer<SequentialBatchReadable> createSingleFsLocationTester(String category, String specifier,
 			String path) {
 		return createSingleDataTester(0, StructReadData.class, d -> {
 			assertEquals(category, d.<StringReadData>getReadDataAt(0).getString(0));
@@ -661,15 +662,15 @@ public class KnimeArrowExtensionTypesTest {
 	}
 
 	@SuppressWarnings("unchecked")
-	private static <D extends NullableReadData> Consumer<RandomAccessBatchReadable> createSingleDataTester(int colIdx,
+	private static <D extends NullableReadData> Consumer<SequentialBatchReadable> createSingleDataTester(int colIdx,
 			Class<D> dataClass, final Consumer<D> dataTester) {
 		return createSingleBatchTester(b -> dataTester.accept((D) b.get(colIdx)));
 	}
 
-	private static Consumer<RandomAccessBatchReadable> createSingleBatchTester(final Consumer<ReadBatch> batchTester) {
+	private static Consumer<SequentialBatchReadable> createSingleBatchTester(final Consumer<ReadBatch> batchTester) {
 		return s -> {
-			try (var reader = s.createRandomAccessReader()) {
-				final ReadBatch batch = reader.readRetained(0);
+			try (var reader = s.createSequentialReader()) {
+				final ReadBatch batch = reader.forward();
 				batchTester.accept(batch);
 				batch.release();
 			} catch (IOException e) {
@@ -753,7 +754,7 @@ public class KnimeArrowExtensionTypesTest {
 		}
 
 		void runPythonToJavaTest(BiConsumer<E, PythonDataSink> pythonCommand,
-				Consumer<RandomAccessBatchReadable> storeTester) throws IOException {
+				Consumer<SequentialBatchReadable> storeTester) throws IOException {
 			final var writePath = createTmpKNIMEArrowPath();
 			final var dataSink = PythonArrowDataUtils.createSink(writePath);
 			pythonCommand.accept(getEntryPoint(), dataSink);

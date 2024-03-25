@@ -64,7 +64,7 @@ import org.junit.Test;
 import org.knime.core.columnar.arrow.ArrowColumnStoreFactory;
 import org.knime.core.columnar.arrow.compress.ArrowCompressionUtil;
 import org.knime.core.columnar.batch.BatchWriter;
-import org.knime.core.columnar.batch.RandomAccessBatchReader;
+import org.knime.core.columnar.batch.SequentialBatchReader;
 import org.knime.core.columnar.data.DoubleData.DoubleReadData;
 import org.knime.core.columnar.data.DoubleData.DoubleWriteData;
 import org.knime.core.columnar.data.LongData.LongReadData;
@@ -149,11 +149,11 @@ public class KnimeTableTest {
                         + (duration / 1_000_000) + "ms using mode '" + mode + "'");
 
                     try (final var readable = PythonArrowDataUtils.createReadable(dataSink, m_storeFactory);
-                            final var reader = readable.createRandomAccessReader()) {
+                            final var reader = readable.createSequentialReader()) {
                         assertEquals(schema, readable.getSchema());
 
                         for (int b = 0; b < numBatches; b++) { // NOSONAR
-                            checkBatch(schema, b, numRowsPerBatch, reader, mode.equals("arrow-sentinel"));
+                            checkNextBatch(schema, b, numRowsPerBatch, reader, mode.equals("arrow-sentinel"));
                         }
                     }
                 }
@@ -209,9 +209,10 @@ public class KnimeTableTest {
         }
     }
 
-    private static void checkBatch(final ColumnarSchema schema, final int batchIdx, final int numRows,
-        final RandomAccessBatchReader reader, final boolean missingLongs) throws IOException {
-        final var batch = reader.readRetained(batchIdx);
+    private static void checkNextBatch(final ColumnarSchema schema,
+        final int batchIdx, final int numRows,
+        final SequentialBatchReader reader, final boolean missingLongs) throws IOException {
+        final var batch = reader.forward();
 
         for (int col = 0; col < schema.numColumns(); col++) { // NOSONAR
             final var data = batch.get(col);

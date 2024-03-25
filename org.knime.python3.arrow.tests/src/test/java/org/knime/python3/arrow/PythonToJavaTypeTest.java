@@ -77,8 +77,8 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.knime.core.columnar.arrow.ArrowColumnStoreFactory;
 import org.knime.core.columnar.arrow.compress.ArrowCompressionUtil;
-import org.knime.core.columnar.batch.RandomAccessBatchReader;
 import org.knime.core.columnar.batch.ReadBatch;
+import org.knime.core.columnar.batch.SequentialBatchReader;
 import org.knime.core.columnar.data.BooleanData.BooleanReadData;
 import org.knime.core.columnar.data.ByteData.ByteReadData;
 import org.knime.core.columnar.data.DoubleData.DoubleReadData;
@@ -378,9 +378,9 @@ public class PythonToJavaTypeTest {
             // TODO(AP-17518) compare traits? They don't have equals implemented
             // assertEquals(spec.traits(), schema.getTraits(0));
 
-            try (final RandomAccessBatchReader reader = store.createRandomAccessReader()) {
+            try (final SequentialBatchReader reader = store.createSequentialReader()) {
                 for (int b = 0; b < NUM_BATCHES; b++) {
-                    final ReadBatch batch = reader.readRetained(b);
+                    final ReadBatch batch = reader.forward();
                     checkBatch(valueChecker, b, batch);
                     batch.release();
                 }

@@ -65,6 +65,7 @@ import org.knime.core.columnar.arrow.ArrowReaderWriterUtils.OffsetProvider;
 import org.knime.core.columnar.arrow.ArrowSchemaUtils;
 import org.knime.core.columnar.arrow.PathBackedFileHandle;
 import org.knime.core.columnar.batch.RandomAccessBatchReadable;
+import org.knime.core.columnar.batch.SequentialBatchReadable;
 import org.knime.core.columnar.store.ColumnStoreFactory;
 import org.knime.core.data.DataColumnDomain;
 import org.knime.core.data.DataColumnSpec;
@@ -211,7 +212,7 @@ public final class PythonArrowDataUtils {
      */
     public static RowKeyChecker createRowKeyChecker(final DefaultPythonArrowDataSink dataSink,
         final ArrowColumnStoreFactory storeFactory) {
-        final var rowKeyChecker = RowKeyChecker.fromRandomAccessReadable(() -> createReadable(dataSink, storeFactory));
+        final var rowKeyChecker = RowKeyChecker.fromSequentialReadable(() -> createReadable(dataSink, storeFactory));
         dataSink.registerBatchListener(() -> {
             try {
                 rowKeyChecker.processNextBatch();
@@ -238,14 +239,14 @@ public final class PythonArrowDataUtils {
         final ArrowColumnStoreFactory storeFactory, final int maxPossibleNominalDomainValues,
         final IDataRepository dataRepository) {
         // Create the domain calculator
-        final Supplier<RandomAccessBatchReadable> batchReadableSupplier = () -> createReadable(sink, storeFactory);
+        final Supplier<SequentialBatchReadable> batchReadableSupplier = () -> createReadable(sink, storeFactory);
         final Supplier<DomainWritableConfig> configSupplier = () -> {
             // NB: The schema will be known when this method is called
             final ColumnarValueSchema schema =
                 PythonArrowDataUtils.createColumnarValueSchema(sink, TableDomainAndMetadata.empty(), dataRepository);
             return new DefaultDomainWritableConfig(schema, maxPossibleNominalDomainValues, false);
         };
-        final var domainCalculator = DomainCalculator.fromRandomAccessReadable(batchReadableSupplier, configSupplier);
+        final var domainCalculator = DomainCalculator.fromSequentialReadable(batchReadableSupplier, configSupplier);
 
         // Register a listener that processes a batch as soon as available
         sink.registerBatchListener(() -> {
@@ -266,7 +267,7 @@ public final class PythonArrowDataUtils {
      * @param storeFactory an {@link ArrowColumnStoreFactory} to create the readable
      * @return the {@link RandomAccessBatchReadable} with the data
      */
-    public static RandomAccessBatchReadable createReadable(final DefaultPythonArrowDataSink dataSink,
+    public static SequentialBatchReadable createReadable(final DefaultPythonArrowDataSink dataSink,
         final ArrowColumnStoreFactory storeFactory) {
         // TODO Do not require DefaultPythonArrowDataSink but an interface
         return storeFactory.createPartialFileReadable(dataSink.getPath(), getOffsetProvider(dataSink));
@@ -469,7 +470,7 @@ public final class PythonArrowDataUtils {
      * @return the {@link RandomAccessBatchReadable} with the data
      * @throws IllegalStateException if Python did not report data with the expected schema to the sink
      */
-    public static RandomAccessBatchReadable createReadable(final DefaultPythonArrowDataSink dataSink,
+    static SequentialBatchReadable createReadable(final DefaultPythonArrowDataSink dataSink,
         final ColumnarSchema expectedSchema, final ArrowColumnStoreFactory storeFactory) {
         // TODO Do not require DefaultPythonArrowDataSink but an interface
         // TODO(extensiontypes) we need an expected schema with virtual types/extension types
