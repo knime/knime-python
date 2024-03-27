@@ -22,8 +22,14 @@ node(label: 'micromamba') {
     }
 
     stage("Ruff format check") {
-        sh label: 'run ruff check', script: """
+        sh label: 'run ruff format check', script: """
         micromamba run -p ${condaEnvPath} ruff format --check --exclude ${condaEnvPath} .
+        """
+    }
+
+    stage("Ruff linting check") {
+        sh label: 'run ruff linting', script: """
+        micromamba run -p ${condaEnvPath} ruff check --exclude ${condaEnvPath} .
         """
     }
 }
