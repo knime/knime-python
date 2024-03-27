@@ -739,7 +739,7 @@ class PortObjectSpec(ABC):
 
     @classmethod
     @abstractmethod
-    def deserialize(cls, data: Dict):
+    def deserialize(cls, data: Dict, java_callback=None):
         pass
 
 

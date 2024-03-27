@@ -418,7 +418,14 @@ class _PortTypeRegistry:
 
         def deserialize_custom_spec() -> kn.PortObjectSpec:
             incoming_port_type = self._extract_port_type_from_spec_data(data, port)
-            return incoming_port_type.spec_class.deserialize(data["data"])
+            spec_data = data["data"]
+            try:
+                return incoming_port_type.spec_class.deserialize(
+                    spec_data, java_callback
+                )
+            except TypeError:
+                # Many existing spec classes don't accept a java_callback argument
+                return incoming_port_type.spec_class.deserialize(spec_data)
 
         if class_name == "org.knime.core.data.DataTableSpec":
             assert port.type == kn.PortType.TABLE
