@@ -523,7 +523,7 @@ public final class PythonPortObjects {
      * {@link PythonPortObject} implementation for {@link PythonCredentialPortObject}s used and populated on the Java
      * side.
      */
-    public static final class PythonCredentialPortObject implements PythonPortObject, PortObjectProvider {
+    public static class PythonCredentialPortObject implements PythonPortObject, PortObjectProvider {
 
         private final PythonCredentialPortObjectSpec m_spec;
 
@@ -546,8 +546,16 @@ public final class PythonPortObjects {
          * @param spec the spec containing the credential format
          */
         private PythonCredentialPortObject(final CredentialPortObjectSpec spec) {
-            m_spec = new PythonCredentialPortObjectSpec(spec);
+            this(new PythonCredentialPortObjectSpec(spec));
         }
+
+        /**
+         * @param spec the python spec of the credentials
+         */
+        protected PythonCredentialPortObject(final PythonCredentialPortObjectSpec spec) {
+            m_spec = spec;
+        }
+
 
         /**
          * @return the spec of this {@link PythonCredentialPortObjectSpec}
@@ -857,7 +865,7 @@ public final class PythonPortObjects {
      *
      * @author Carsten Haubold, KNIME GmbH, Berlin, Germany
      */
-    public static final class PythonCredentialPortObjectSpec implements PythonPortObjectSpec, PortObjectSpecProvider {
+    public static class PythonCredentialPortObjectSpec implements PythonPortObjectSpec, PortObjectSpecProvider {
         private final CredentialPortObjectSpec m_spec;
 
         /**
@@ -908,22 +916,34 @@ public final class PythonPortObjects {
         public String toJsonString() {
             final var om = new ObjectMapper();
             final var rootNode = om.createObjectNode();
+            rootNode.put("data", getData());
+            fill(rootNode);
+            try {
+                return om.writeValueAsString(rootNode);
+            } catch (JsonProcessingException ex) {
+                throw new IllegalStateException("Could not generate JSON data for PythonCredentialPortObjectSpec", ex);
+            }
+        }
+
+        /**
+         * Subclasses can implement this class to add custom content to the JSON representation.
+         *
+         * @param node to fill with content
+         */
+        protected void fill(final ObjectNode node) {
+            // optional hook for subclasses
+        }
+
+        private String getData() {
             ModelContent fakeConfig = new ModelContent("fakeConfig");
 
             AbstractSimplePortObjectSpecSerializer.savePortObjectSpecToModelSettings(m_spec, fakeConfig);
             try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
                 fakeConfig.saveToXML(byteArrayOutputStream);
                 byteArrayOutputStream.close(); // NOSONAR we have to close here
-                rootNode.put("data", byteArrayOutputStream.toString(StandardCharsets.UTF_8));
-
+                return byteArrayOutputStream.toString(StandardCharsets.UTF_8);
             } catch (IOException ex) {
                 throw new IllegalStateException("Could not save the PythonCredentialPortObjectSpec to XML.", ex);
-            }
-
-            try {
-                return om.writeValueAsString(rootNode);
-            } catch (JsonProcessingException ex) {
-                throw new IllegalStateException("Could not generate JSON data for PythonCredentialPortObjectSpec", ex);
             }
         }
 
