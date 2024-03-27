@@ -138,5 +138,10 @@
 			<layout>p2</layout>
 			<url>${knime.gateway.p2}</url>
 		</repository>
+		<repository>
+			<id>p2-knime-productivity-oss</id>
+			<layout>p2</layout>
+			<url>${knime.productivity.oss.p2}</url>
+		</repository>
 	</repositories>
 </project>

@@ -337,6 +337,16 @@ class _PythonCredentialPortObject:
         return f"PythonCredentialPortObject[spec={self._spec.serialize()}]"
 
 
+class _PythonHubAuthenticationPortObject(_PythonCredentialPortObject):
+
+    def __init__(self, spec: ks.HubAuthenticationPortObjectSpec):
+        super().__init__(spec)
+
+    @property
+    def spec(self) -> ks.HubAuthenticationPortObjectSpec:
+        return self._spec
+
+
 class _FlowVariablesDict(collections.UserDict):
     def __init__(self):
         super().__init__({})
@@ -448,9 +458,18 @@ class _PortTypeRegistry:
             assert port.type not in [kn.PortType.TABLE, kn.PortType.BINARY]
             assert issubclass(port.type.object_class, kn.ConnectionPortObject)
             return deserialize_custom_spec()
-        elif class_name == "org.knime.credentials.base.CredentialPortObjectSpec":
-            assert port.type == kn.PortType.CREDENTIAL
+        elif port.type == kn.PortType.CREDENTIAL:
+            assert class_name in [
+                "org.knime.credentials.base.CredentialPortObjectSpec",
+                "org.knime.workflowservices.connection.AbstractHubAuthenticationPortObjectSpec",
+            ]
             return ks.CredentialPortObjectSpec.deserialize(data, java_callback)
+        elif port.type == kn.PortType.HUB_AUTHENTICATION:
+            assert (
+                class_name
+                == "org.knime.workflowservices.connection.AbstractHubAuthenticationPortObjectSpec"
+            ), "Expected Hub Authentication."
+            return ks.HubAuthenticationPortObjectSpec.deserialize(data, java_callback)
         elif (
             class_name == "org.knime.core.node.workflow.capture.WorkflowPortObjectSpec"
         ):
@@ -585,12 +604,12 @@ class _PortTypeRegistry:
 
             connection_data = _PortTypeRegistry._connection_port_data[key]
             return port.type.object_class.from_connection_data(spec, connection_data)
-        elif (
-            class_name
-            == "org.knime.python3.nodes.ports.PythonPortObjects$PythonCredentialPortObject"
-        ):
+        elif port.type == kn.PortType.CREDENTIAL:
             spec = self.spec_to_python(port_object.getSpec(), port, java_callback)
             return _PythonCredentialPortObject(spec)
+        elif port.type == kn.PortType.HUB_AUTHENTICATION:
+            spec = self.spec_to_python(port_object.getSpec(), port, java_callback)
+            return _PythonHubAuthenticationPortObject(spec)
         elif class_name == "org.knime.core.node.workflow.capture.WorkflowPortObject":
             spec = self.spec_to_python(port_object.getSpec(), port, java_callback)
             return _PythonWorkflowPortObject(port_object, spec, self)

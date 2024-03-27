@@ -930,6 +930,28 @@ class CredentialPortObjectSpec(PortObjectSpec):
         return cls(xml_data, java_callback)
 
 
+class HubAuthenticationPortObjectSpec(CredentialPortObjectSpec):
+
+    def __init__(self, xml_data: Optional[str], java_callback, hub_url: str) -> None:
+        super().__init__(xml_data, java_callback)
+        self._hub_url = hub_url
+
+    @property
+    def hub_url(self) -> str:
+        return self._hub_url
+
+    def serialize(self) -> dict:
+        data = super().serialize()
+        data["hub_url"] = self.hub_url
+        return data
+
+    @classmethod
+    def deserialize(cls, data: dict, java_callback=None):
+        xml_data = data.get("data")
+        hub_url = data.get("hub_url")
+        return cls(xml_data, java_callback, hub_url)
+
+
 class WorkflowPortInfo:
     def __init__(self, type_name: str, type_id: str, schema: "Schema") -> None:
         self._type_name = type_name

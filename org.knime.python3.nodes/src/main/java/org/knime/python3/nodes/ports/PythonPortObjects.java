@@ -86,6 +86,7 @@ import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.arrow.PythonArrowDataSource;
 import org.knime.python3.arrow.PythonArrowDataUtils;
 import org.knime.python3.arrow.PythonArrowTableConverter;
+import org.knime.workflowservices.connection.AbstractHubAuthenticationPortObject;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -93,6 +94,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * Collection of Interfaces and adapters to pass PortObjects between knime and Python
@@ -1014,6 +1016,8 @@ public final class PythonPortObjects {
             return ImagePortObject.TYPE;
         } else if (identifier.startsWith("PortType.CREDENTIAL")) {
             return CredentialPortObject.TYPE;
+        } else if (identifier.startsWith("PortType.HUB_AUTHENTICATION")) {
+            return AbstractHubAuthenticationPortObject.TYPE;
         } else if (identifier.startsWith("PortType.WORKFLOW")) {
             return WorkflowPortObject.TYPE;
         } else {

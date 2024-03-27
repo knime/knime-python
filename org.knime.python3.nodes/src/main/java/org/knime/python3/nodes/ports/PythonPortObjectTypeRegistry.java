@@ -87,6 +87,8 @@ import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonTablePortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonTablePortObjectSpec;
 import org.knime.python3.nodes.ports.PythonWorkflowPortObject.PythonWorkflowPortObjectSpec;
+import org.knime.workflowservices.connection.AbstractHubAuthenticationPortObject;
+import org.knime.workflowservices.connection.AbstractHubAuthenticationPortObjectSpec;
 
 /**
  * A registry for {@link PythonPortObject}s that manages the types registered at the extension point.
@@ -168,12 +170,18 @@ public final class PythonPortObjectTypeRegistry {
             return null;
         }
         var registry = InstanceHolder.INSTANCE;
-        var clazz = registry.m_pythonPortObjectSpecMap.get(spec.getClass().getName());
+
+        Class<? extends PortObjectSpec> specClass = spec.getClass();
+        var clazz = registry.m_pythonPortObjectSpecMap.get(specClass.getName());
+        if (clazz == null && AbstractHubAuthenticationPortObjectSpec.class.isAssignableFrom(specClass)) {
+            clazz = PythonHubAuthenticationPortObjectSpec.class;
+            specClass = AbstractHubAuthenticationPortObjectSpec.class;
+        }
         if (clazz == null) {
-            throw new IllegalStateException("No PythonPortObjectSpec found for " + spec.getClass().getName());
+            throw new IllegalStateException("No PythonPortObjectSpec found for " + specClass.getName());
         }
         try {
-            return clazz.getConstructor(spec.getClass()).newInstance(spec);
+            return clazz.getConstructor(specClass).newInstance(spec);
         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
                 | NoSuchMethodException | SecurityException ex) {
             throw new IllegalStateException(
@@ -224,17 +232,22 @@ public final class PythonPortObjectTypeRegistry {
             throw new IllegalStateException("Cannot convert null portObject from KNIME to Python");
         }
         var registry = InstanceHolder.INSTANCE;
-        var clazz = registry.m_pythonPortObjectMap.get(portObject.getClass().getName());
+        Class<? extends PortObject> objClass = portObject.getClass();
+        var clazz = registry.m_pythonPortObjectMap.get(objClass.getName());
+        if (clazz == null && AbstractHubAuthenticationPortObject.class.isAssignableFrom(objClass)) {
+            objClass = AbstractHubAuthenticationPortObject.class;
+            clazz = PythonHubAuthenticationPortObject.class;
+        }
         if (clazz == null) {
-            throw new IllegalStateException("No PythonPortObject found for " + portObject.getClass().getName());
+            throw new IllegalStateException("No PythonPortObject found for " + objClass.getName());
         }
         try {
-            return clazz.getConstructor(portObject.getClass(), PythonArrowTableConverter.class).newInstance(portObject,
+            return clazz.getConstructor(objClass, PythonArrowTableConverter.class).newInstance(portObject,
                 tableConverter);
         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
                 | NoSuchMethodException | SecurityException ex) {
             throw new IllegalStateException(
-                "Could not find or create PythonPortObject for " + portObject.getClass().getName(), ex);
+                "Could not find or create PythonPortObject for " + objClass.getName(), ex);
         }
     }
 
