@@ -338,7 +338,6 @@ class _PythonCredentialPortObject:
 
 
 class _PythonHubAuthenticationPortObject(_PythonCredentialPortObject):
-
     def __init__(self, spec: ks.HubAuthenticationPortObjectSpec):
         super().__init__(spec)
 

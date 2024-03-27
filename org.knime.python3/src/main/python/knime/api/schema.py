@@ -931,7 +931,6 @@ class CredentialPortObjectSpec(PortObjectSpec):
 
 
 class HubAuthenticationPortObjectSpec(CredentialPortObjectSpec):
-
     def __init__(self, xml_data: Optional[str], java_callback, hub_url: str) -> None:
         super().__init__(xml_data, java_callback)
         self._hub_url = hub_url
