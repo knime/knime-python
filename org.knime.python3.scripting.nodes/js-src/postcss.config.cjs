@@ -1,4 +1,4 @@
-const { preset } = require("webapps-common/config/postcss.config");
+const { preset } = require("webapps-common/config/postcss.config.cjs");
 
 module.exports = {
   plugins: {
