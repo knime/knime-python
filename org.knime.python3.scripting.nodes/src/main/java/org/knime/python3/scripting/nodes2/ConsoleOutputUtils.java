@@ -72,6 +72,7 @@ import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DefaultColumnarSchema;
 import org.knime.core.util.PathUtils;
 import org.knime.python3.arrow.PythonArrowDataUtils;
+import org.knime.python3.scripting.nodes2.ConsoleOutputUtils.ConsoleOutputStorage;
 import org.knime.scripting.editor.ScriptingService.ConsoleText;
 
 /**
@@ -317,7 +318,7 @@ final class ConsoleOutputUtils {
 
         void finish() throws IOException {
             if (m_writeCursor != null) {
-                m_writeCursor.flush();
+                m_writeCursor.finish();
                 m_writeCursor.close();
                 m_writeCursor = null;
             }
