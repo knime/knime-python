@@ -153,5 +153,10 @@
 			<layout>p2</layout>
 			<url>${knime.javasnippet.p2}</url>
 		</repository>
+		<repository>
+			<id>p2-knime-reporting</id>
+			<layout>p2</layout>
+			<url>${knime.reporting.p2}</url>
+		</repository>
 	</repositories>
 </project>
