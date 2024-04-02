@@ -135,9 +135,8 @@ def _inject_parameters(
     parameters: dict,
     parameters_version: Version,
 ) -> None:
-    
-    if hasattr(obj, "__modify_parameters"):
-        parameters = obj.__modify_parameters(parameters)
+    if hasattr(obj, "_modify_parameters"):
+        parameters = obj._modify_parameters(parameters)
 
     for name, param_obj in _get_parameters(obj).items():
         if param_obj._since_version <= parameters_version:
