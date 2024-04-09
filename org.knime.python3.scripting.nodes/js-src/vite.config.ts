@@ -27,18 +27,7 @@ export default defineConfig({
     svgLoader({ svgoConfig }),
   ],
   resolve: {
-    alias: {
-      "@": fileURLToPath(new URL("./src", import.meta.url)),
-      "./scripting-service-instance.js":
-        process.env.APP_ENV === "browser"
-          ? fileURLToPath(
-              new URL(
-                "./src/__mocks__/scripting-service-instance",
-                import.meta.url,
-              ),
-            )
-          : "./scripting-service-instance.js",
-    },
+    alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
   },
   optimizeDeps: { exclude: ["@knime/scripting-editor"] },
   base: "./",
