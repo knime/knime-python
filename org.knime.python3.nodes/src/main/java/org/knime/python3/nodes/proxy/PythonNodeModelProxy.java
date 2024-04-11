@@ -158,13 +158,25 @@ public interface PythonNodeModelProxy {
         }
     }
 
+    interface FailureCallback {
+
+        /**
+         * Set a failure of user code.
+         *
+         * @param message a short message that is shown to the node user
+         * @param details a detailed message containing the traceback that is logged in the console
+         * @param invalidSettings if the failure occurred because of invalid settings
+         */
+        void set_failure(String message, String details, boolean invalidSettings); // NOSONAR
+    }
+
     /**
      * Provides Java-backed functionality to the Python side.
      * <P>
      * Sonar: the methods of this interface are intended to be called from Python only, so they follow Python's naming
      * conventions. Sonar issues caused by this are suppressed.
      */
-    interface Callback extends LogCallback {
+    interface Callback extends LogCallback, FailureCallback {
 
         /**
          * @return a new {@link PythonArrowDataSink} that writes to a temporary file
@@ -197,15 +209,6 @@ public interface PythonNodeModelProxy {
          * @param flowVariables A map of name -> object pairs for the flow variables;
          */
         void set_flow_variables(Map<String, Object> flowVariables); // NOSONAR
-
-        /**
-         * Set a failure of user code.
-         *
-         * @param message a short message that is shown to the node user
-         * @param details a detailed message containing the traceback that is logged in the console
-         * @param invalidSettings if the failure occurred because of invalid settings
-         */
-        void set_failure(String message, String details, boolean invalidSettings); // NOSONAR
 
         /**
          * Given a JSON-serialized {@link AnnotatedColumnarSchema}, this method will return a string-serialized JSON
@@ -261,7 +264,7 @@ public interface PythonNodeModelProxy {
      *
      * @author Jonas Klotz, KNIME GmbH, Berlin, Germany
      */
-    interface DialogCallback extends LogCallback {
+    interface DialogCallback extends LogCallback, FailureCallback {
         /**
          * Used to send flow variables from KNIME to Python
          *

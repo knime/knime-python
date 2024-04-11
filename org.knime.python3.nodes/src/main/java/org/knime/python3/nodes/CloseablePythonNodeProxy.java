@@ -203,6 +203,8 @@ final class CloseablePythonNodeProxy
     public String getDialogRepresentation(final JsonNodeSettings settings, final PortObjectSpec[] specs,
         final String extensionVersion) {
 
+        var failure = new FailureState();
+
         final PythonNodeModelProxy.DialogCallback dialogCallback = new DialogCallback() {
 
             private DefaultLogCallback m_logCallback = new DefaultLogCallback(LOGGER);
@@ -236,6 +238,11 @@ final class CloseablePythonNodeProxy
                 return getAuthParameters(serializedXMLString);
             }
 
+            @Override
+            public void set_failure(final String message, final String details, final boolean invalidSettings) {
+                failure.setFailure(message, details, invalidSettings);
+            }
+
         };
         m_proxy.initializeJavaCallback(dialogCallback);
 
@@ -263,7 +270,13 @@ final class CloseablePythonNodeProxy
         // extensionVersion must always be the version of the installed extension, since it is used
         // on the Python side to generate the schema and UI schema, which need to correspond to the
         // set of parameters available in the installed version of the extension.
-        return m_proxy.getDialogRepresentation(settings.getParameters(), extensionVersion, pythonDialogContext);
+        var dialogRepresentation = m_proxy.getDialogRepresentation(settings.getParameters(), extensionVersion, pythonDialogContext);
+        try {
+            failure.throwIfFailure();
+        } catch (InvalidSettingsException ex) {
+            throw new IllegalStateException(ex);
+        }
+        return dialogRepresentation;
     }
 
     /**

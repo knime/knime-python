@@ -727,26 +727,30 @@ class _PythonNodeProxy:
         parameters_version: str,
         python_dialog_context,
     ):
-        # parameters could be from an older version
-        self.setParameters(parameters, parameters_version)
+        try:
+            # parameters could be from an older version
+            self.setParameters(parameters, parameters_version)
 
-        dialog_context = kn.DialogCreationContext(
-            python_dialog_context, self._get_flow_variables(), self._specs_to_python
-        )
+            dialog_context = kn.DialogCreationContext(
+                python_dialog_context, self._get_flow_variables(), self._specs_to_python
+            )
 
-        json_forms_dict = {
-            "data": kp.extract_parameters(self._node, for_dialog=True),
-            "schema": kp.extract_schema(
-                self._node,
-                self._extension_version,  # we need the current schema for the dialog
-                dialog_creation_context=dialog_context,
-            ),
-            "ui_schema": kp.extract_ui_schema(self._node, dialog_context),
-        }
+            json_forms_dict = {
+                "data": kp.extract_parameters(self._node, for_dialog=True),
+                "schema": kp.extract_schema(
+                    self._node,
+                    self._extension_version,  # we need the current schema for the dialog
+                    dialog_creation_context=dialog_context,
+                ),
+                "ui_schema": kp.extract_ui_schema(self._node, dialog_context),
+            }
 
-        self._parse_parameter_descriptions(json_forms_dict["schema"])
+            self._parse_parameter_descriptions(json_forms_dict["schema"])
 
-        return json.dumps(json_forms_dict)
+            return json.dumps(json_forms_dict)
+        except Exception as ex:
+            self._set_failure(ex, 0)
+            return None
 
     def _parse_parameter_descriptions(self, schema_dict):
         """
