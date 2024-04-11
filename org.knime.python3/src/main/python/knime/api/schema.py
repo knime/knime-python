@@ -740,6 +740,21 @@ class PortObjectSpec(ABC):
     @classmethod
     @abstractmethod
     def deserialize(cls, data: Dict, java_callback=None):
+        """
+        Deserialize the port object.
+
+        Parameters
+        ----------
+        data : Dict
+            The data dict created by serialize
+        java_callback : any
+            A callback handler that allows to make callbacks to Java.
+            Was introduced in 5.3 and can be omitted in derived classes.
+        Returns
+        ----------
+        PortObjectSpec
+            The deserialized PortObjectSpec
+        """
         pass
 
 
