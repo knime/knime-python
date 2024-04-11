@@ -173,6 +173,9 @@ public final class PythonPortObjectTypeRegistry {
 
         Class<? extends PortObjectSpec> specClass = spec.getClass();
         var clazz = registry.m_pythonPortObjectSpecMap.get(specClass.getName());
+        // TODO AP-22325: Hack to enable the Hub AI Connectors
+        // The entire type logic should be generalized to handle inheritance relationships properly
+        // e.g. via a specialized tree map that ensures that sub classes are matched before super classes
         if (clazz == null && AbstractHubAuthenticationPortObjectSpec.class.isAssignableFrom(specClass)) {
             clazz = PythonHubAuthenticationPortObjectSpec.class;
             specClass = AbstractHubAuthenticationPortObjectSpec.class;
@@ -234,6 +237,9 @@ public final class PythonPortObjectTypeRegistry {
         var registry = InstanceHolder.INSTANCE;
         Class<? extends PortObject> objClass = portObject.getClass();
         var clazz = registry.m_pythonPortObjectMap.get(objClass.getName());
+        // TODO AP-22325: Hack to enable the Hub AI Connectors
+        // The entire type logic should be generalized to handle inheritance relationships properly
+        // e.g. via a specialized tree map that ensures that sub classes are matched before super classes
         if (clazz == null && AbstractHubAuthenticationPortObject.class.isAssignableFrom(objClass)) {
             objClass = AbstractHubAuthenticationPortObject.class;
             clazz = PythonHubAuthenticationPortObject.class;
