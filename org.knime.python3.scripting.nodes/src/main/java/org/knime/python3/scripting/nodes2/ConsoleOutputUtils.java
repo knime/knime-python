@@ -255,7 +255,7 @@ final class ConsoleOutputUtils {
     /** Internal data structure combining a batch store and a size. Used for writing to and reading from. */
     private static final class Table implements AutoCloseable {
 
-        /** load table from an arrow and size file, retuns <code>null</code> if the table could not be load */
+        /** load table from an arrow and size file, returns <code>null</code> if the table could not be load */
         @SuppressWarnings("resource") // Store will be closed by Table#close
         static Table loadFrom(final Path dir, final String suffix) {
             final var sizeFilePath = sizeFilePath(dir, suffix);
@@ -318,6 +318,7 @@ final class ConsoleOutputUtils {
 
         void finish() throws IOException {
             if (m_writeCursor != null) {
+                m_writeCursor.forward(); // to commit the last row
                 m_writeCursor.finish();
                 m_writeCursor.close();
                 m_writeCursor = null;
