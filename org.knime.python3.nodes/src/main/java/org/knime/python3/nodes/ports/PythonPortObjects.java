@@ -52,6 +52,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Map;
@@ -80,6 +81,7 @@ import org.knime.core.table.virtual.serialization.AnnotatedColumnarSchemaSeriali
 import org.knime.credentials.base.Credential;
 import org.knime.credentials.base.CredentialPortObject;
 import org.knime.credentials.base.CredentialPortObjectSpec;
+import org.knime.credentials.base.oauth.api.AccessTokenAccessor;
 import org.knime.credentials.base.oauth.api.HttpAuthorizationHeaderCredentialValue;
 import org.knime.python3.PythonDataSource;
 import org.knime.python3.arrow.PythonArrowDataSink;
@@ -907,6 +909,18 @@ public final class PythonPortObjects {
                 return val.getAuthParameters();
             }
             throw new IOException("Not logged in");
+        }
+
+        /**
+         * @return the optional expiry time of the access token.
+         */
+        public Optional<Instant> getExpiresAfter() {
+            Optional<Credential> credential = m_spec.getCredential(Credential.class);
+            final Credential cred = credential.orElseThrow();
+            if (cred instanceof AccessTokenAccessor val) {
+                return val.getExpiresAfter();
+            }
+            return Optional.empty();
         }
 
         @Override

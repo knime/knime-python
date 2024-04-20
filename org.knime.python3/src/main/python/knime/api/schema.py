@@ -52,6 +52,7 @@ Type system and schema definition for KNIME tables.
 # Types
 # --------------------------------------------------------------------
 from abc import ABC, abstractmethod
+import datetime as dt
 from typing import Dict, Iterable, Iterator, List, Optional, Sequence, Type, Union
 
 import logging
@@ -865,6 +866,26 @@ class CredentialPortObjectSpec(PortObjectSpec):
         """
         return self._java_callback.get_auth_parameters(self._xml_data)
 
+    def _get_expires_after(self) -> Optional[dt.datetime]:
+        """
+        Get the optional expiry time of the access token. If the expiry time is not set, None is returned.
+
+        Returns
+        -------
+        datetime
+            The optional expiry time of the access token.
+        """
+        expiry_date = self._java_callback.get_expires_after(self._xml_data)
+        if expiry_date is None:
+            return None
+        _start_of_epoch = dt.datetime(1970, 1, 1)
+        micro_of_day = expiry_date.getNanoSeconds() // 1000  # here we lose precision
+
+        res = _start_of_epoch + dt.timedelta(
+            seconds=expiry_date.getEpochSeconds(), microseconds=micro_of_day
+        )
+        return res
+
     @property
     def auth_schema(self) -> str:
         """
@@ -918,6 +939,32 @@ class CredentialPortObjectSpec(PortObjectSpec):
         except Py4JJavaError as ex:
             raise ValueError(
                 f"Could not get auth parameters from {self.__class__.__name__}. Check if the credentials are valid and "
+                f"accessible. Maybe execute the upstream nodes?"
+            ) from ex
+
+    @property
+    def expires_after(self) -> Optional[dt.datetime]:
+        """
+        Get the optional expiry time of the access token.
+
+        Returns
+        -------
+        str
+            The optional expiry time of the access token.
+
+        Raises
+        ------
+        ValueError
+            If the credentials are not valid or accessible.
+
+        """
+        from py4j.protocol import Py4JJavaError
+
+        try:
+            return self._get_expires_after()
+        except Py4JJavaError as ex:
+            raise ValueError(
+                f"Could not get expires after from {self.__class__.__name__}. Check if the credentials are valid and "
                 f"accessible. Maybe execute the upstream nodes?"
             ) from ex
 

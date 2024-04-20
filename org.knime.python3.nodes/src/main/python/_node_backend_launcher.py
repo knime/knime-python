@@ -63,6 +63,7 @@ import knime.api.table as kt
 import importlib
 import json
 import logging
+import datetime as dt
 
 import traceback
 import collections
@@ -313,6 +314,9 @@ class _PythonCredentialPortObject:
 
     def get_auth_parameters(self) -> str:
         return self._spec.auth_parameters
+
+    def get_expires_after(self) -> Optional[dt.datetime]:
+        return self._spec.expires_after
 
     def getSpec(self) -> _PythonPortObjectSpec:  # NOSONAR - Java naming conventions
         # wrap as a PythonPortObjectSpec

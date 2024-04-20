@@ -254,6 +254,23 @@ public interface PythonNodeModelProxy {
          */
         public String get_auth_parameters(final String serializedXMLString) throws CouldNotAuthorizeException, // NOSONAR
             ClassNotFoundException, InstantiationException, IllegalAccessException, IOException;
+
+        /**
+         * Retrieves the optional expiry time of the access token from a serialized XML representation of a credential.
+         *
+         * This method parses the input XML string and extracts the expiry time of the access token from it,
+         * assuming that the XML represents a valid CredentialPortObjectSpec that has an expiry time.
+         *
+         * @param serializedXMLString The serialized XML string containing credential information.
+         * @return The optional expiry time of the access token extracted from the credential, or null if not found.
+         * @throws CouldNotAuthorizeException If there is an issue with the authorization process.
+         * @throws ClassNotFoundException If the required class is not found during deserialization.
+         * @throws InstantiationException If an error occurs while instantiating an object during deserialization.
+         * @throws IllegalAccessException If there is an illegal access operation during deserialization.
+         * @throws IOException If an I/O error occurs during deserialization or when retrieving parameters.
+         */
+        public ExpiryDate get_expires_after(final String serializedXMLString) throws CouldNotAuthorizeException, // NOSONAR
+            ClassNotFoundException, InstantiationException, IllegalAccessException, IOException;
     }
 
     /**
@@ -375,4 +392,41 @@ public interface PythonNodeModelProxy {
 
     }
 
+    /**
+     * Class for the JWT token expiration date.
+     *
+     * @author Tobias Koetter, KNIME GmbH, Konstanz, Germany
+     */
+    public class ExpiryDate {
+
+        private final long m_epochSeconds;
+        private final int m_nanoSeconds;
+
+        /**
+         * Constructor.
+         * @param epochSeconds the seconds from the epoch of 1970-01-01T00:00:00Z
+         * @param nanoSeconds the nanoseconds within the second, always positive, never exceeds 999,999,999
+         */
+        public ExpiryDate(final long epochSeconds, final int nanoSeconds) {
+            m_epochSeconds = epochSeconds;
+            m_nanoSeconds = nanoSeconds;
+        }
+        /**
+         * Returns the seconds from the epoch of 1970-01-01T00:00:00Z.
+         *
+         * @return the epochSeconds
+         */
+        public long getEpochSeconds() {
+            return m_epochSeconds;
+        }
+        /**
+         * Returns the nanoseconds within the second, always positive, never exceeds 999,999,999.
+         *
+         * @return the nanoSeconds
+         */
+        public int getNanoSeconds() {
+            return m_nanoSeconds;
+        }
+
+    }
 }

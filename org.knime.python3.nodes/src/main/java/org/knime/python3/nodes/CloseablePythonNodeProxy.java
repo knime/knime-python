@@ -51,6 +51,7 @@ package org.knime.python3.nodes;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -91,6 +92,7 @@ import org.knime.core.util.asynclose.AsynchronousCloseable;
 import org.knime.core.util.auth.CouldNotAuthorizeException;
 import org.knime.credentials.base.Credential;
 import org.knime.credentials.base.CredentialPortObjectSpec;
+import org.knime.credentials.base.oauth.api.AccessTokenAccessor;
 import org.knime.credentials.base.oauth.api.HttpAuthorizationHeaderCredentialValue;
 import org.knime.python3.PythonFileStoreUtils;
 import org.knime.python3.arrow.PythonArrowDataSink;
@@ -109,6 +111,7 @@ import org.knime.python3.nodes.proxy.NodeDialogProxy;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy.Callback;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy.DialogCallback;
+import org.knime.python3.nodes.proxy.PythonNodeModelProxy.ExpiryDate;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy.FileStoreBasedFile;
 import org.knime.python3.nodes.proxy.PythonNodeProxy;
 import org.knime.python3.nodes.proxy.model.NodeConfigurationProxy;
@@ -238,6 +241,12 @@ final class CloseablePythonNodeProxy
                 return getAuthParameters(serializedXMLString);
             }
 
+            @SuppressWarnings("unused")
+            public ExpiryDate get_expires_after(final String serializedXMLString) throws CouldNotAuthorizeException, // NOSONAR
+                ClassNotFoundException, InstantiationException, IllegalAccessException, IOException { // NOSONAR
+                return getExpiresAfter(serializedXMLString);
+            }
+
             @Override
             public void set_failure(final String message, final String details, final boolean invalidSettings) {
                 failure.setFailure(message, details, invalidSettings);
@@ -306,6 +315,18 @@ final class CloseablePythonNodeProxy
             return cred.getAuthParameters();
         }
 
+        return null;
+    }
+
+    public static ExpiryDate getExpiresAfter(final String serializedXMLString) throws CouldNotAuthorizeException, // NOSONAR
+        ClassNotFoundException, InstantiationException, IllegalAccessException, IOException { // NOSONAR
+        final HttpAuthorizationHeaderCredentialValue cred = getCredentialFromXMLString(serializedXMLString);
+        if (cred instanceof AccessTokenAccessor accessor) {
+            final Instant instant = accessor.getExpiresAfter().orElse(null);
+            if (instant != null) {
+                return new ExpiryDate(instant.getEpochSecond(), instant.getNano());
+            }
+        }
         return null;
     }
 
@@ -435,6 +456,12 @@ final class CloseablePythonNodeProxy
                 return getAuthParameters(serializedXMLString);
             }
 
+            @Override
+            @SuppressWarnings("unused")
+            public ExpiryDate get_expires_after(final String serializedXMLString) throws CouldNotAuthorizeException, // NOSONAR
+                ClassNotFoundException, InstantiationException, IllegalAccessException, IOException { // NOSONAR
+                return getExpiresAfter(serializedXMLString);
+            }
         };
         m_proxy.initializeJavaCallback(callback);
 
@@ -629,6 +656,13 @@ final class CloseablePythonNodeProxy
             public String get_auth_parameters(final String serializedXMLString) throws CouldNotAuthorizeException, // NOSONAR
                 ClassNotFoundException, InstantiationException, IllegalAccessException, IOException { // NOSONAR
                 return getAuthParameters(serializedXMLString);
+            }
+
+            @Override
+            @SuppressWarnings("unused")
+            public ExpiryDate get_expires_after(final String serializedXMLString) throws CouldNotAuthorizeException, // NOSONAR
+                ClassNotFoundException, InstantiationException, IllegalAccessException, IOException { // NOSONAR
+                return getExpiresAfter(serializedXMLString);
             }
         };
         m_proxy.initializeJavaCallback(callback);
