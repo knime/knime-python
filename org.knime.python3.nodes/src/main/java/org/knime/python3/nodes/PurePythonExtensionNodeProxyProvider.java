@@ -49,6 +49,7 @@
 package org.knime.python3.nodes;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.util.OptionalInt;
 
 import org.knime.core.node.port.PortObject;
@@ -82,8 +83,8 @@ class PurePythonExtensionNodeProxyProvider implements NodeProxyProvider {
      * When the node is reset, removed from the workflow, or the workflow is closed, it will call
      * {@link PurePythonExtensionNodeProxyProvider#cleanup()} to make sure the gateway gets closed.
      *
-     * If this node does not create a connection port, closing the gateway will be handled in {@link DelegatingNodeModel}
-     * and the reference here will point to a closed gateway, which doesn't cost much.
+     * If this node does not create a connection port, closing the gateway will be handled in
+     * {@link DelegatingNodeModel} and the reference here will point to a closed gateway, which doesn't cost much.
      */
     @SuppressWarnings("javadoc")
     protected PythonGateway<KnimeNodeBackend> m_cachedGateway;
@@ -153,6 +154,9 @@ class PurePythonExtensionNodeProxyProvider implements NodeProxyProvider {
                 m_cachedGateway = gateway;
             }
             return m_proxyFactory.createProxy(gateway);
+        } catch (ConnectException ex) {
+            throw new IllegalStateException(String.format("Failed to connect to Python gateway.  %s", ex.getMessage()),
+                ex);
         } catch (IOException ex) {
             throw new IllegalStateException("Failed to initialize Python gateway.", ex);
         } catch (InterruptedException ex) {

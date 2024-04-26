@@ -121,7 +121,6 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
 
     private final SingleClientInputStreamSupplier m_stdErrorManager;
 
-
     /**
      * Creates a {@link PythonGateway} to a new Python process.
      *
@@ -202,17 +201,18 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
                 th.addSuppressed(ex);
             }
             if (th instanceof ConnectException) {
-                // A ConnectException doesn't contain useful information itself
+                // A ConnectException doesn't contain useful information itself, except when it comes from a timeout
                 // There might be useful information in the stdout or stderr
                 LOGGER.warn("Python standard output: " + startupStdout.toString());
                 LOGGER.warn("Python standard error: " + startupStderr.toString());
+                // The exception will be handled in the next if clause
             }
-            if (th instanceof IOException) {
-                throw (IOException)th;
-            } else if (th instanceof RuntimeException) {
-                throw (RuntimeException)th;
-            } else if (th instanceof Error) {
-                throw (Error)th;
+            if (th instanceof IOException ioException) {
+                throw ioException;
+            } else if (th instanceof RuntimeException runtimeException) {
+                throw runtimeException;
+            } else if (th instanceof Error error) {
+                throw error;
             } else {
                 throw new IOException("Failed to create PythonGateway", th);
             }
@@ -235,9 +235,10 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
         };
         server.addListener(listener);
         if (!connectionLatch.await(timeout, TimeUnit.MILLISECONDS)) {
-            throw new ConnectException(
-                String.format("The connection to the Python process timed out. The current timeout is %s milliseconds. "
-                    + "You can set a longer timeout via the %s system property.", timeout, CONNECT_TIMEOUT_VM_OPT));
+            throw new ConnectException(String.format(
+                "The connection to the Python process timed out. The current timeout is %s milliseconds. "
+                    + "You can set a longer timeout by adding '-d%s=<your desired timeout>' to the knime.ini file.",
+                timeout, CONNECT_TIMEOUT_VM_OPT));
         }
         server.removeListener(listener);
         do {
