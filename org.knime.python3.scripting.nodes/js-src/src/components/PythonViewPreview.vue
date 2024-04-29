@@ -4,13 +4,18 @@ import { usePythonPreviewStatusStore, useSessionStatusStore } from "@/store";
 import { onMounted, ref } from "vue";
 import Button from "webapps-common/ui/components/Button.vue";
 
+const IFRAME_SOURCE = "./preview.html";
+
 const iframe = ref<HTMLIFrameElement | null>(null);
 const pythonPreviewStatus = usePythonPreviewStatusStore();
 const sessionStatus = useSessionStatusStore();
 
 onMounted(() => {
   pythonPreviewStatus.updateViewCallback = () => {
-    iframe.value?.contentWindow?.location.reload();
+    // NB: This is a workaround to force the iframe to reload the content
+    // "replace" is allowed by the same-origin policy on the sandboxed iframe
+    // see https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy#location
+    iframe.value?.contentWindow?.location.replace(IFRAME_SOURCE);
   };
 });
 </script>
@@ -22,7 +27,7 @@ onMounted(() => {
         ref="iframe"
         title="Preview"
         sandbox="allow-scripts"
-        src="./preview.html"
+        :src="IFRAME_SOURCE"
       />
     </div>
     <div
