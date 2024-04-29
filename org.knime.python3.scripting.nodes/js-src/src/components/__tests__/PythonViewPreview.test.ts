@@ -32,11 +32,11 @@ describe("PythonViewPreview", () => {
     expect(previewStatusStore.updateViewCallback).toBeDefined();
   });
 
-  it("reloads iframe when update view callback is called", () => {
+  it("replaces iframe when update view callback is called", () => {
     // Mock the iframe's contentWindow
     const mockIframeContentWindow = {
       location: {
-        reload: vi.fn(),
+        replace: vi.fn(),
       },
     };
 
@@ -52,7 +52,7 @@ describe("PythonViewPreview", () => {
     const store = usePythonPreviewStatusStore();
     store.updateViewCallback!();
 
-    expect(mockIframeContentWindow.location.reload).toHaveBeenCalled();
+    expect(mockIframeContentWindow.location.replace).toHaveBeenCalled();
 
     delete store.updateViewCallback;
   });
