@@ -51,7 +51,8 @@ package org.knime.python3.nodes;
 import java.io.IOException;
 
 import org.knime.core.node.NodeLogger;
-import org.knime.core.util.proxy.GlobalProxyConfigProvider;
+import org.knime.core.util.proxy.ProxyProtocol;
+import org.knime.core.util.proxy.search.GlobalProxySearch;
 import org.knime.python3.PythonGateway;
 import org.knime.python3.PythonGatewayUtils;
 import org.knime.python3.nodes.PurePythonNodeSetFactory.ResolvedPythonExtension;
@@ -152,8 +153,8 @@ final class CloseablePythonNodeProxyFactory {
             @SuppressWarnings("unused")
             public String[] get_proxy_server_strings() { // NOSONAR
 
-                final var maybeProxyConfig = GlobalProxyConfigProvider.getCurrent();
-                String[] proxySettingStrings = new String[6];
+                final var maybeProxyConfig = GlobalProxySearch.getCurrentFor(ProxyProtocol.values());
+                final var proxySettingStrings = new String[6];
 
                 if (maybeProxyConfig.isPresent()) {
                     final var proxyConfig = maybeProxyConfig.get();
