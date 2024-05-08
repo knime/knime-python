@@ -1268,7 +1268,7 @@ class EnumParameter(_BaseMultiChoiceParameter):
         if validator is None:
             validator = self.default_validator
         else:
-            validator = self.add_default_validator(validator)
+            validator = self._add_default_validator(validator)
 
         if enum is None or len(enum.get_all_options()) == 0:
             self._enum = EnumParameterOptions._get_default_option()
@@ -1308,7 +1308,7 @@ class EnumParameter(_BaseMultiChoiceParameter):
     def _extract_description(self, name, parent_scope: _Scope):
         return {"name": self._label, "description": self._generate_description()}
 
-    def add_default_validator(self, func):
+    def _add_default_validator(self, func):
         def combined_validator(value):
             # we retain the default validator to ensure that value is always one of the available options
             self.default_validator(value)
@@ -1317,7 +1317,119 @@ class EnumParameter(_BaseMultiChoiceParameter):
         return combined_validator
 
     def validator(self, func):
-        self._validator = self.add_default_validator(func)
+        self._validator = self._add_default_validator(func)
+
+
+class EnumSetParameter(_BaseMultiChoiceParameter):
+    """
+    Parameter class for multiple-choice parameter types. Expands the EnumParameter by enabling to select
+    multiple enum constants.
+
+    A subclass of `EnumParameterOptions` should be provided as the enum parameter, which should contain
+    class attributes of the form `OPTION_NAME = (OPTION_LABEL, OPTION_DESCRIPTION)`. The corresponding
+    option attributes can be accessed via `MyOptions.OPTION_NAME.name`, `.label`, and `.description`
+    respectively.
+
+    The `.name` attribute of each option is used as the selection constant, e.g.
+    `MyOptions.OPTION_NAME.name == "OPTION_NAME"`.
+
+    Examples
+    --------
+
+    >>> class CoffeeOptions(EnumParameterOptions):
+    ...     CLASSIC = ("Classic", "The classic chocolatey taste, with notes of bitterness and wood.")
+    ...     FRUITY = ("Fruity", "A fruity taste, with notes of berries and citrus.")
+    ...     WATERY = ("Watery", "A watery taste, with notes of water and wetness.")
+    ...
+    ... coffee_selection_param = knext.EnumSetParameter(
+    ...     label="Coffee Selection",
+    ...     description="Select the types of coffee you like to drink.",
+    ...     default_value=[CoffeeOptions.CLASSIC.name, CoffeeOptions.FRUITY.name],
+    ...     enum=CoffeeOptions,
+    ... )
+    """
+
+    def default_validator(self, value):
+        if not isinstance(value, list):
+            raise TypeError(
+                f"""The selection '{value}' for parameter '{self._label}' is not a list"""
+            )
+        if not set(value).issubset(self._enum.get_all_options()):
+            raise ValueError(
+                f"""The selection '{value}' for parameter '{self._label}' is not a subset of the available options: {"'" + "', '".join(self._enum.get_all_options()) + "'"}."""
+            )
+
+    def __init__(
+        self,
+        label: Optional[str] = None,
+        description: Optional[str] = None,
+        default_value: Union[List[str], DefaultValueProvider[List[str]]] = None,
+        enum: Optional[EnumParameterOptions] = None,
+        validator: Optional[Callable[[str], None]] = None,
+        since_version: Optional[Union[Version, str]] = None,
+        is_advanced: bool = False,
+    ):
+        if validator is None:
+            validator = self.default_validator
+        else:
+            validator = self._add_default_validator(validator)
+
+        if enum is None or len(enum.get_all_options()) == 0:
+            self._enum = EnumParameterOptions._get_default_option()
+            default_value = [self._enum.DEFAULT_OPTION.name]
+        else:
+            self._enum = enum
+            if default_value is None:
+                default_value = self._enum.get_all_options()
+
+        super().__init__(
+            label,
+            description,
+            default_value,
+            validator,
+            since_version,
+            is_advanced,
+        )
+
+    def _get_options(self, dialog_creation_context) -> dict:
+        options = {
+            "format": "twinList",
+            "possibleValues": [
+                {"id": option, "text": self._enum[option].label}
+                for option in self._enum.get_all_options()
+            ],
+        }
+        return options
+
+    def _generate_description(self):
+        return self._enum._generate_options_description(self.__doc__)
+
+    def _extract_schema(
+        self,
+        extension_version=None,
+        dialog_creation_context=None,
+    ):
+        schema = super()._extract_schema(
+            dialog_creation_context=dialog_creation_context
+        )
+        schema["type"] = "array"
+        schema["items"] = {"type": "string"}
+        schema["description"] = self._generate_description()
+        return schema
+
+    def _extract_description(self, name, parent_scope: _Scope):
+        return {"name": self._label, "description": self._generate_description()}
+
+    def _add_default_validator(self, func):
+        def combined_validator(value):
+            # we retain the default validator to ensure that value is always one of the available options
+            self.default_validator(value)
+            func(value)
+
+        return combined_validator
+
+    def validator(self, func):
+        self._validator = self._add_default_validator(func)
 
 
 class _BaseColumnParameter(_BaseParameter):

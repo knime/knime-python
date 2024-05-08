@@ -70,6 +70,7 @@ ColumnFilterParameter = _kp.ColumnFilterParameter
 ColumnFilterConfig = _kp.ColumnFilterConfig
 EnumParameter = _kp.EnumParameter
 EnumParameterOptions = _kp.EnumParameterOptions
+EnumSetParameter = _kp.EnumSetParameter
 DateTimeParameter = _kp.DateTimeParameter
 LocalPathParameter = _kp.LocalPathParameter
 Version = _kp.Version
