@@ -154,6 +154,13 @@ the following parameter types. For a more detailed description see
    :inherited-members:
 
 
+.. autoclass:: knime.extension.EnumSetParameter
+   :members:
+   :noindex:
+   :inherited-members:
+   :exclude-members: validator, rule
+
+
 .. autoclass:: knime.extension.DateTimeParameter
    :members:
    :noindex:
