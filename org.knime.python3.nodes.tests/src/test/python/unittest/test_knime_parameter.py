@@ -72,6 +72,12 @@ test_possible_values = [
 ]
 
 
+class TestEnumSetOptions(kp.EnumParameterOptions):
+    FOO = ("Foo", "The foo")
+    BAR = ("Bar", "The bar")
+    BAZ = ("Baz", "The baz")
+
+
 def generate_values_dict(
     int_param=3,
     double_param=1.5,
@@ -83,6 +89,7 @@ def generate_values_dict(
     full_multi_column_param=kp.ColumnFilterConfig(
         included_column_names=["foo_column", "bar_column"]
     ),
+    enum_set_param=[TestEnumSetOptions.FOO],
     first=1,
     second=5,
     third=3,
@@ -97,6 +104,7 @@ def generate_values_dict(
             "column_param": column_param,
             "multi_column_param": multi_column_param,
             "full_multi_column_param": full_multi_column_param._to_dict(),
+            "enum_set_param": enum_set_param,
             "parameter_group": {
                 "subgroup": {"first": first, "second": second},
                 "third": third,
@@ -115,6 +123,7 @@ def generate_values_dict_without_groups(
     full_multi_column_param=kp.ColumnFilterConfig(
         included_column_names=["foo_column", "bar_column"]
     ),
+    enum_set_param=[TestEnumSetOptions.FOO],
 ):
     return {
         "model": {
@@ -125,6 +134,7 @@ def generate_values_dict_without_groups(
             "column_param": column_param,
             "multi_column_param": multi_column_param,
             "full_multi_column_param": full_multi_column_param._to_dict(),
+            "enum_set_param": enum_set_param,
         }
     }
 
@@ -276,6 +286,13 @@ def generate_versioned_schema_dict(extension_version):
                             "description": "A string parameter",
                             "type": "string",
                         },
+                        "enum_set_param": {
+                            "description": "An EnumSet Parameter\n\n**Available options:**\n\n- Foo: The "
+                            "foo\n- Bar: The bar\n- Baz: The baz\n",
+                            "items": {"type": "string"},
+                            "title": "EnumSet " "Parameter",
+                            "type": "array",
+                        },
                         "group": {
                             "type": "object",
                             "properties": {
@@ -319,6 +336,13 @@ def generate_versioned_schema_dict(extension_version):
                             "title": "Boolean Parameter",
                             "description": "A boolean parameter",
                             "type": "boolean",
+                        },
+                        "enum_set_param": {
+                            "description": "An EnumSet Parameter\n\n**Available options:**\n\n- Foo: The "
+                            "foo\n- Bar: The bar\n- Baz: The baz\n",
+                            "items": {"type": "string"},
+                            "title": "EnumSet " "Parameter",
+                            "type": "array",
                         },
                         "group": {
                             "type": "object",
@@ -438,6 +462,12 @@ class Parameterized:
         "Full Multi Column Parameter",
         "A full multi column parameter",
     )
+    enum_set_param = kp.EnumSetParameter(
+        "EnumSet Parameter",
+        "An EnumSet Parameter",
+        [TestEnumSetOptions.FOO],
+        TestEnumSetOptions,
+    )
 
     parameter_group = ParameterGroup()
 
@@ -461,6 +491,21 @@ class ParameterizedIndentation:
 \t\tAny Text
 \t\t""",
         default_value="txt",
+    )
+
+
+class ParameterizedEnumSet:
+    """Provides edge case EnumSetParameters"""
+
+    no_default_value_enum_set = kp.EnumSetParameter(
+        label="EnumSet Parameter",
+        description="An EnumSet Parameter",
+        enum=TestEnumSetOptions,
+    )
+    no_enum_enum_set = kp.EnumSetParameter(
+        label="EnumSet Parameter",
+        description="An EnumSet Parameter",
+        default_value=[TestEnumSetOptions.FOO],
     )
 
 
@@ -538,6 +583,19 @@ class ParameterizedWithAdvancedOption:
     full_multi_column_param = kp.ColumnFilterParameter(
         "Full Multi Column Parameter", "A full multi column parameter", is_advanced=True
     )
+    enum_set_param = kp.EnumSetParameter(
+        "EnumSet Parameter",
+        "An EnumSet Parameter",
+        [TestEnumSetOptions.FOO],
+        TestEnumSetOptions,
+    )
+    enum_set_advanced_param = kp.EnumSetParameter(
+        "EnumSet Parameter",
+        "An EnumSet Parameter",
+        [TestEnumSetOptions.FOO],
+        TestEnumSetOptions,
+        is_advanced=True,
+    )
     parameter_group = ParameterGroup()
     parameter_group_advanced = ParameterGroupAdvanced()
 
@@ -555,6 +613,12 @@ class ParameterizedWithoutGroup:
     full_multi_column_param = kp.ColumnFilterParameter(
         "Full Multi Column Parameter",
         "A full multi column parameter",
+    )
+    enum_set_param = kp.EnumSetParameter(
+        "EnumSet Parameter",
+        "An EnumSet Parameter",
+        [TestEnumSetOptions.FOO],
+        TestEnumSetOptions,
     )
 
 
@@ -710,6 +774,13 @@ class VersionedParameterized:
     )
     bool_param = kp.BoolParameter(
         "Boolean Parameter", "A boolean parameter", True, since_version="0.3.0"
+    )
+    enum_set_param = kp.EnumSetParameter(
+        "EnumSet Parameter",
+        "An EnumSet Parameter",
+        [TestEnumSetOptions.FOO],
+        TestEnumSetOptions,
+        since_version="0.2.0",
     )
 
     group = VersionedParameterGroup(since_version="0.2.0")
@@ -929,6 +1000,7 @@ class ParameterTest(unittest.TestCase):
             ParameterizedWithDialogCreationContext()
         )
         self.parameterized_with_indented_docstring = ParameterizedIndentation()
+        self.parameterized_with_enum_set_params = ParameterizedEnumSet()
 
         self.maxDiff = None
 
@@ -1011,6 +1083,7 @@ class ParameterTest(unittest.TestCase):
                 )
             ),
         )
+        self.assertEqual(self.parameterized.enum_set_param, [TestEnumSetOptions.FOO])
 
         # group-level parameters
         self.assertEqual(self.parameterized.parameter_group.third, 3)
@@ -1029,6 +1102,10 @@ class ParameterTest(unittest.TestCase):
         self.parameterized.bool_param = False
         self.parameterized.column_param = "foo_column"
         self.parameterized.multi_column_param = ["foo_column", "bar_column"]
+        self.parameterized.enum_set_param = [
+            TestEnumSetOptions.FOO.name,
+            TestEnumSetOptions.BAZ.name,
+        ]
 
         # group-level parameters
         self.assertEqual(self.parameterized.int_param, 5)
@@ -1038,6 +1115,13 @@ class ParameterTest(unittest.TestCase):
         self.assertEqual(self.parameterized.column_param, "foo_column")
         self.assertEqual(
             self.parameterized.multi_column_param, ["foo_column", "bar_column"]
+        )
+        self.assertEqual(
+            self.parameterized.enum_set_param,
+            [
+                TestEnumSetOptions.FOO.name,
+                TestEnumSetOptions.BAZ.name,
+            ],
         )
 
         # subgroup-level parameters
@@ -1068,6 +1152,7 @@ class ParameterTest(unittest.TestCase):
                     included=["foo_column", "bar_column"]
                 )
             ),
+            [TestEnumSetOptions.FOO.name],
             3,
             2,
             1,
@@ -1211,6 +1296,13 @@ class ParameterTest(unittest.TestCase):
                                 },
                             },
                         },
+                        "enum_set_param": {
+                            "description": "An EnumSet Parameter\n\n**Available options:**\n\n- Foo: The "
+                            "foo\n- Bar: The bar\n- Baz: The baz\n",
+                            "items": {"type": "string"},
+                            "title": "EnumSet " "Parameter",
+                            "type": "array",
+                        },
                         "parameter_group": {
                             "type": "object",
                             "properties": {
@@ -1348,6 +1440,19 @@ class ParameterTest(unittest.TestCase):
                         "showMode": True,
                         "possibleValues": test_possible_values,
                     },
+                },
+                {
+                    "label": "EnumSet Parameter",
+                    "options": {
+                        "format": "twinList",
+                        "possibleValues": [
+                            {"id": "FOO", "text": "Foo"},
+                            {"id": "BAR", "text": "Bar"},
+                            {"id": "BAZ", "text": "Baz"},
+                        ],
+                    },
+                    "scope": "#/properties/model/properties/enum_set_param",
+                    "type": "Control",
                 },
                 {
                     "type": "Section",
@@ -1542,6 +1647,33 @@ class ParameterTest(unittest.TestCase):
                     },
                 },
                 {
+                    "label": "EnumSet Parameter",
+                    "options": {
+                        "format": "twinList",
+                        "possibleValues": [
+                            {"id": "FOO", "text": "Foo"},
+                            {"id": "BAR", "text": "Bar"},
+                            {"id": "BAZ", "text": "Baz"},
+                        ],
+                    },
+                    "scope": "#/properties/model/properties/enum_set_param",
+                    "type": "Control",
+                },
+                {
+                    "label": "EnumSet Parameter",
+                    "options": {
+                        "format": "twinList",
+                        "isAdvanced": True,
+                        "possibleValues": [
+                            {"id": "FOO", "text": "Foo"},
+                            {"id": "BAR", "text": "Bar"},
+                            {"id": "BAZ", "text": "Baz"},
+                        ],
+                    },
+                    "scope": "#/properties/model/properties/enum_set_advanced_param",
+                    "type": "Control",
+                },
+                {
                     "type": "Section",
                     "label": "Primary Group",
                     "options": {},
@@ -1626,6 +1758,9 @@ class ParameterTest(unittest.TestCase):
         with self.assertRaises(TypeError):
             self.parameterized.bool_param = 1
 
+        with self.assertRaises(TypeError):
+            self.parameterized.enum_set_param = 1
+
     def test_custom_validators(self):
         """
         Test custom validators for parameters.
@@ -1639,12 +1774,18 @@ class ParameterTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.parameterized.string_param = "hello there, General Kenobi"
 
+        with self.assertRaises(ValueError):
+            self.parameterized.enum_set_param = ["Test"]
+
         # Check that the default type validators still work
         with self.assertRaises(TypeError):
             self.parameterized.parameter_group.third = "foo"
 
         with self.assertRaises(TypeError):
             self.parameterized.string_param = 1
+
+        with self.assertRaises(TypeError):
+            self.parameterized.enum_set_param = 1
 
     def test_group_validation(self):
         """
@@ -1992,6 +2133,16 @@ class ParameterTest(unittest.TestCase):
                         "name": "Full Multi Column Parameter",
                         "description": "A full multi column parameter",
                     },
+                    {
+                        "description": "An EnumSet Parameter\n"
+                        "\n"
+                        "**Available options:**\n"
+                        "\n"
+                        "- Foo: The foo\n"
+                        "- Bar: The bar\n"
+                        "- Baz: The baz\n",
+                        "name": "EnumSet Parameter",
+                    },
                 ],
             },
             {
@@ -2034,6 +2185,16 @@ class ParameterTest(unittest.TestCase):
                 "name": "Full Multi Column Parameter",
                 "description": "A full multi column parameter",
             },
+            {
+                "name": "EnumSet Parameter",
+                "description": "An EnumSet Parameter\n"
+                "\n"
+                "**Available options:**\n"
+                "\n"
+                "- Foo: The foo\n"
+                "- Bar: The bar\n"
+                "- Baz: The baz\n",
+            },
         ]
         description, use_tabs = kp.extract_parameter_descriptions(
             self.parameterized_without_group
@@ -2054,6 +2215,25 @@ class ParameterTest(unittest.TestCase):
         ]
         description, use_tabs = kp.extract_parameter_descriptions(
             self.parameterized_with_indented_docstring
+        )
+
+        self.assertEqual(description, expected)
+
+    def test_extract_description_with_no_default_enum_set(self):
+        expected = [
+            {
+                "description": "An EnumSet Parameter\n\n**Available options:**\n\n- Foo: The "
+                "foo\n- Bar: The bar\n- Baz: The baz\n",
+                "name": "EnumSet Parameter",
+            },
+            {
+                "description": "An EnumSet Parameter\n\n**Available options:**\n\n- Default: This is the "
+                "default option, since additional options have not been provided.\n",
+                "name": "EnumSet Parameter",
+            },
+        ]
+        description, use_tabs = kp.extract_parameter_descriptions(
+            self.parameterized_with_enum_set_params
         )
 
         self.assertEqual(description, expected)
@@ -2151,18 +2331,21 @@ class ParameterTest(unittest.TestCase):
                     "DEBUG:Python backend: The node was previously configured with an older version of the extension, 0.1.0, while the current version is 0.2.0.",
                     "DEBUG:Python backend: The following parameters have since been added, and are configured with their default values:",
                     'DEBUG:Python backend: - "String Parameter"',
+                    'DEBUG:Python backend: - "EnumSet Parameter"',
                     'DEBUG:Python backend: - "First Parameter"',
                     # 0.1.0 -> 0.3.0: backward compatibility
                     "DEBUG:Python backend: The node was previously configured with an older version of the extension, 0.1.0, while the current version is 0.3.0.",
                     "DEBUG:Python backend: The following parameters have since been added, and are configured with their default values:",
                     'DEBUG:Python backend: - "String Parameter"',
                     'DEBUG:Python backend: - "Boolean Parameter"',
+                    'DEBUG:Python backend: - "EnumSet Parameter"',
                     'DEBUG:Python backend: - "First Parameter"',
                     'DEBUG:Python backend: - "Second Parameter"',
                     # 0.2.0 -> 0.3.0: backward compatibility
                     "DEBUG:Python backend: The node was previously configured with an older version of the extension, 0.2.0, while the current version is 0.3.0.",
                     "DEBUG:Python backend: The following parameters have since been added, and are configured with their default values:",
                     'DEBUG:Python backend: - "Boolean Parameter"',
+                    'DEBUG:Python backend: - "EnumSet Parameter"',
                     'DEBUG:Python backend: - "Second Parameter"',
                 ],
                 context_manager.output,
