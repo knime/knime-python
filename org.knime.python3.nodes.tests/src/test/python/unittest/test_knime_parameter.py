@@ -580,7 +580,7 @@ class ParameterizedWithAdvancedOption:
         "Full Multi Column Parameter",
         "A full multi column parameter",
     )
-    full_multi_column_param = kp.ColumnFilterParameter(
+    full_multi_column_advanced_param = kp.ColumnFilterParameter(
         "Full Multi Column Parameter", "A full multi column parameter", is_advanced=True
     )
     enum_set_param = kp.EnumSetParameter(
@@ -1636,6 +1636,17 @@ class ParameterTest(unittest.TestCase):
                 },
                 {
                     "scope": "#/properties/model/properties/full_multi_column_param",
+                    "type": "Control",
+                    "label": "Full Multi Column Parameter",
+                    "options": {
+                        "format": "columnFilter",
+                        "showSearch": True,
+                        "showMode": True,
+                        "possibleValues": test_possible_values,
+                    },
+                },
+                {
+                    "scope": "#/properties/model/properties/full_multi_column_advanced_param",
                     "type": "Control",
                     "label": "Full Multi Column Parameter",
                     "options": {
