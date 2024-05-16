@@ -75,6 +75,7 @@ DateTimeParameter = _kp.DateTimeParameter
 LocalPathParameter = _kp.LocalPathParameter
 Version = _kp.Version
 Effect = _kp.Effect
+Or = _kp.Or
 OneOf = _kp.OneOf
 Condition = _kp.Condition
 

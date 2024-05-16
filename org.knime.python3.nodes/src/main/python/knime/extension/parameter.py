@@ -434,7 +434,7 @@ class Condition(ABC):
     """Abstract base class for all condition types of parameter visibility rules."""
 
     @abstractmethod
-    def to_dict(self):
+    def to_dict(self, find_scope: Callable[[Any], _Scope]):
         """Converts the Condition into a dict that is JSON serializable."""
 
     @property
@@ -443,6 +443,33 @@ class Condition(ABC):
         """
         The subjects this condition applies to. Typically these are parameters.
         """
+
+
+class Or(Condition):
+    """
+    A Condition that combines other Conditions with OR.
+    """
+
+    def __init__(self, *conditions: Condition) -> None:
+        """ """
+        if not conditions:
+            raise ValueError("At least one condition is required in Or condition.")
+
+        super().__init__()
+        self._conditions = conditions
+
+    def to_dict(self, find_scope: Callable[[Any], _Scope]):
+        return {
+            "type": "OR",
+            "conditions": [c.to_dict(find_scope) for c in self._conditions],
+        }
+
+    @property
+    def subjects(self) -> List[Any]:
+        subjects = []
+        for c in self._conditions:
+            subjects += c.subjects
+        return subjects
 
 
 class OneOf(Condition):
@@ -457,8 +484,11 @@ class OneOf(Condition):
         self._values = values
         self._subject = subject
 
-    def to_dict(self):
-        return {"oneOf": [{"const": value} for value in self._values]}
+    def to_dict(self, find_scope: Callable[[Any], _Scope]):
+        return {
+            "scope": str(find_scope(self._subject)),
+            "schema": {"oneOf": [{"const": value} for value in self._values]},
+        }
 
     @property
     def subjects(self) -> List[Any]:
@@ -534,17 +564,9 @@ class _UISchemaExtractor:
         return element_schema
 
     def _create_rule_ui_schema(self, rule: Rule):
-        subjects = rule.condition.subjects
-        if not len(subjects) == 1:
-            raise ValueError(
-                f"Exactly one signal per rule is allowed but received {len(subjects)}."
-            )
         return {
             "effect": rule.effect.value,
-            "condition": {
-                "scope": str(self.find_scope(subjects[0])),
-                "schema": rule.condition.to_dict(),
-            },
+            "condition": rule.condition.to_dict(lambda x: self.find_scope(x)),
         }
 
     # it is intended that the cache is not shared across instances to prevent unexpected side-effects
@@ -728,8 +750,7 @@ class _BaseParameter(ABC):
 
         Note
         ----
-        Currently this only supports conditions where another parameter exactly matches a value. Rules
-        can only depend on parameters on the same level, not in a child or parent parameter group.
+        Rules can only depend on parameters on the same level, not in a child or parent parameter group.
 
         Examples
         --------

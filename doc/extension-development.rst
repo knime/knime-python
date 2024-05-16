@@ -217,6 +217,12 @@ the condition becomes true.
    :inherited-members:
    :exclude-members: to_dict, subjects
 
+.. autoclass:: knime.extension.Or
+   :members:
+   :noindex:
+   :inherited-members:
+   :exclude-members: to_dict, subjects
+
 .. autoclass:: knime.extension.Effect
    :members:
    :noindex:
