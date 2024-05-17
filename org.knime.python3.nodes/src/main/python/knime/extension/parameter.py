@@ -786,10 +786,10 @@ class _NumericParameter(_BaseParameter):
     """
     Note
     ------
-    Subclasses of this class must implement the `check_type` method for the `default_validator`.
+    Subclasses of this class must implement the `check_type` method for the `_default_validator`.
     """
 
-    def default_validator(self, value):
+    def _default_validator(self, value):
         self.check_type(value)
         self.check_range(value)
 
@@ -811,7 +811,7 @@ class _NumericParameter(_BaseParameter):
         self.min_value = min_value
         self.max_value = max_value
         if validator is None:
-            validator = self.default_validator
+            validator = self._default_validator
         super().__init__(
             label,
             description,
@@ -969,7 +969,7 @@ class StringParameter(_BaseMultiChoiceParameter):
     Parameter class for primitive string types.
     """
 
-    def default_validator(self, value):
+    def _default_validator(self, value):
         if not isinstance(value, str):
             raise TypeError(
                 f"{value} is of type {type(value)}, but should be of type string."
@@ -987,7 +987,7 @@ class StringParameter(_BaseMultiChoiceParameter):
         choices: Optional[Callable] = None,
     ):
         if validator is None:
-            validator = self.default_validator
+            validator = self._default_validator
         if enum is not None and not isinstance(enum, list):
             raise TypeError("The enum parameter must be a list.")
         if enum and choices:
@@ -1053,7 +1053,7 @@ class LocalPathParameter(StringParameter):
         )
         self.placeholder_text = placeholder_text
 
-    def default_validator(self, value):
+    def _default_validator(self, value):
         if value and not isinstance(value, str):
             raise TypeError(
                 f"{value} is of type {type(value)}, but should be of type string."
@@ -1084,7 +1084,7 @@ class MultilineStringParameter(_BaseParameter):
     Parameter class for string type with multiline supported.
     """
 
-    def default_validator(self, value):
+    def _default_validator(self, value):
         if not isinstance(value, str):
             raise TypeError(
                 f"{value} is of type {type(value)}, but should be of type string."
@@ -1101,7 +1101,7 @@ class MultilineStringParameter(_BaseParameter):
         number_of_lines: Optional[int] = 3,
     ):
         if validator is None:
-            validator = self.default_validator
+            validator = self._default_validator
 
         if not isinstance(number_of_lines, int):
             raise TypeError(
@@ -1248,7 +1248,7 @@ class EnumParameter(_BaseMultiChoiceParameter):
         VALUE_SWITCH = "valueSwitch"
         DROPDOWN = "string"
 
-    def default_validator(self, value):
+    def _default_validator(self, value):
         if value not in self._enum.get_all_options():
             raise ValueError(
                 f"""The selection '{value}' for parameter '{self._label}' is not one of the available options: {"'" + "', '".join(self._enum.get_all_options()) + "'"}."""
@@ -1266,7 +1266,7 @@ class EnumParameter(_BaseMultiChoiceParameter):
         style: Optional[Style] = None,
     ):
         if validator is None:
-            validator = self.default_validator
+            validator = self._default_validator
         else:
             validator = self._add_default_validator(validator)
 
@@ -1311,7 +1311,7 @@ class EnumParameter(_BaseMultiChoiceParameter):
     def _add_default_validator(self, func):
         def combined_validator(value):
             # we retain the default validator to ensure that value is always one of the available options
-            self.default_validator(value)
+            self._default_validator(value)
             func(value)
 
         return combined_validator
@@ -1349,7 +1349,7 @@ class EnumSetParameter(_BaseMultiChoiceParameter):
     ... )
     """
 
-    def default_validator(self, value):
+    def _default_validator(self, value):
         if not isinstance(value, list):
             raise TypeError(
                 f"""The selection '{value}' for parameter '{self._label}' is not a list"""
@@ -1370,7 +1370,7 @@ class EnumSetParameter(_BaseMultiChoiceParameter):
         is_advanced: bool = False,
     ):
         if validator is None:
-            validator = self.default_validator
+            validator = self._default_validator
         else:
             validator = self._add_default_validator(validator)
 
@@ -1423,7 +1423,7 @@ class EnumSetParameter(_BaseMultiChoiceParameter):
     def _add_default_validator(self, func):
         def combined_validator(value):
             # we retain the default validator to ensure that value is always one of the available options
-            self.default_validator(value)
+            self._default_validator(value)
             func(value)
 
         return combined_validator
@@ -2112,7 +2112,7 @@ class BoolParameter(_BaseParameter):
     Parameter class for primitive boolean types.
     """
 
-    def default_validator(self, value):
+    def _default_validator(self, value):
         if not isinstance(value, bool):
             raise TypeError(f"{value} is not a boolean")
 
@@ -2126,7 +2126,7 @@ class BoolParameter(_BaseParameter):
         is_advanced: bool = False,
     ):
         if validator is None:
-            validator = self.default_validator
+            validator = self._default_validator
         super().__init__(
             label,
             description,
@@ -2210,7 +2210,7 @@ class DateTimeParameter(_BaseParameter):
         self.max_value = self._to_datetime(max_value, user_input=True)
 
         if validator is None:
-            validator = self.default_validator
+            validator = self._default_validator
         default_value = self._parse_date_time_default_value(default_value)
 
         super().__init__(
@@ -2222,7 +2222,7 @@ class DateTimeParameter(_BaseParameter):
             is_advanced,
         )
 
-    def default_validator(self, value: str):
+    def _default_validator(self, value: str):
         if not value:
             return
 
