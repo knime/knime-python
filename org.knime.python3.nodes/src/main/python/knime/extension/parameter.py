@@ -445,6 +445,33 @@ class Condition(ABC):
         """
 
 
+class And(Condition):
+    """
+    A Condition that combines other Conditions with AND.
+    """
+
+    def __init__(self, *conditions: Condition) -> None:
+        """ """
+        if not conditions:
+            raise ValueError("At least one condition is required in And condition.")
+
+        super().__init__()
+        self._conditions = conditions
+
+    def to_dict(self, find_scope: Callable[[Any], _Scope]):
+        return {
+            "type": "AND",
+            "conditions": [c.to_dict(find_scope) for c in self._conditions],
+        }
+
+    @property
+    def subjects(self) -> List[Any]:
+        subjects = []
+        for c in self._conditions:
+            subjects += c.subjects
+        return subjects
+
+
 class Or(Condition):
     """
     A Condition that combines other Conditions with OR.
