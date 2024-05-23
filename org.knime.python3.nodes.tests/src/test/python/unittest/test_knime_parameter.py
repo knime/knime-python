@@ -89,7 +89,7 @@ def generate_values_dict(
     full_multi_column_param=kp.ColumnFilterConfig(
         included_column_names=["foo_column", "bar_column"]
     ),
-    enum_set_param=[TestEnumSetOptions.FOO],
+    enum_set_param=[TestEnumSetOptions.FOO.name],
     first=1,
     second=5,
     third=3,
@@ -123,7 +123,7 @@ def generate_values_dict_without_groups(
     full_multi_column_param=kp.ColumnFilterConfig(
         included_column_names=["foo_column", "bar_column"]
     ),
-    enum_set_param=[TestEnumSetOptions.FOO],
+    enum_set_param=[TestEnumSetOptions.FOO.name],
 ):
     return {
         "model": {
@@ -465,7 +465,7 @@ class Parameterized:
     enum_set_param = kp.EnumSetParameter(
         "EnumSet Parameter",
         "An EnumSet Parameter",
-        [TestEnumSetOptions.FOO],
+        [TestEnumSetOptions.FOO.name],
         TestEnumSetOptions,
     )
 
@@ -505,7 +505,7 @@ class ParameterizedEnumSet:
     no_enum_enum_set = kp.EnumSetParameter(
         label="EnumSet Parameter",
         description="An EnumSet Parameter",
-        default_value=[TestEnumSetOptions.FOO],
+        default_value=[TestEnumSetOptions.FOO.name],
     )
 
 
@@ -586,13 +586,13 @@ class ParameterizedWithAdvancedOption:
     enum_set_param = kp.EnumSetParameter(
         "EnumSet Parameter",
         "An EnumSet Parameter",
-        [TestEnumSetOptions.FOO],
+        [TestEnumSetOptions.FOO.name],
         TestEnumSetOptions,
     )
     enum_set_advanced_param = kp.EnumSetParameter(
         "EnumSet Parameter",
         "An EnumSet Parameter",
-        [TestEnumSetOptions.FOO],
+        [TestEnumSetOptions.FOO.name],
         TestEnumSetOptions,
         is_advanced=True,
     )
@@ -617,7 +617,7 @@ class ParameterizedWithoutGroup:
     enum_set_param = kp.EnumSetParameter(
         "EnumSet Parameter",
         "An EnumSet Parameter",
-        [TestEnumSetOptions.FOO],
+        [TestEnumSetOptions.FOO.name],
         TestEnumSetOptions,
     )
 
@@ -778,7 +778,7 @@ class VersionedParameterized:
     enum_set_param = kp.EnumSetParameter(
         "EnumSet Parameter",
         "An EnumSet Parameter",
-        [TestEnumSetOptions.FOO],
+        [TestEnumSetOptions.FOO.name],
         TestEnumSetOptions,
         since_version="0.2.0",
     )
@@ -1083,7 +1083,9 @@ class ParameterTest(unittest.TestCase):
                 )
             ),
         )
-        self.assertEqual(self.parameterized.enum_set_param, [TestEnumSetOptions.FOO])
+        self.assertEqual(
+            self.parameterized.enum_set_param, [TestEnumSetOptions.FOO.name]
+        )
 
         # group-level parameters
         self.assertEqual(self.parameterized.parameter_group.third, 3)
