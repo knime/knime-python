@@ -3,6 +3,12 @@ import knime.extension.parameter as kp
 from test_knime_parameter import DummyDialogCreationContext
 
 
+class TestEnumOptions(kp.EnumParameterOptions):
+    FOO = ("Foo", "The foo")
+    BAR = ("Bar", "The bar")
+    BAZ = ("Baz", "The baz")
+
+
 @kp.parameter_group("Group with rules")
 class ParameterGroupWithRules:
     string_param = kp.StringParameter("String Parameter", "A string parameter", "foo")
@@ -37,6 +43,18 @@ class ParameterGroupWithRules:
         kp.Effect.HIDE,
     )
 
+    enum_set_param = kp.EnumSetParameter(
+        "EnumSet Parameter",
+        "An EnumSet Parameter",
+        [TestEnumOptions.FOO.name, TestEnumOptions.BAR.name],
+        TestEnumOptions,
+    )
+    bool_param_contains = kp.BoolParameter(
+        "Bool Parameter",
+        "Bool parameter that is showns if enum_set_param contains FOO",
+        True,
+    ).rule(kp.Contains(enum_set_param, TestEnumOptions.FOO.name), kp.Effect.HIDE)
+
 
 class ParameterizedWithRule:
     string_param = kp.StringParameter("String Parameter", "A string parameter", "foo")
@@ -70,6 +88,18 @@ class ParameterizedWithRule:
         kp.And(kp.OneOf(statement_1, [True]), kp.OneOf(statement_2, [True])),
         kp.Effect.SHOW,
     )
+
+    enum_set_param = kp.EnumSetParameter(
+        "EnumSet Parameter",
+        "An EnumSet Parameter",
+        [TestEnumOptions.FOO.name, TestEnumOptions.BAR.name],
+        TestEnumOptions,
+    )
+    bool_param_contains = kp.BoolParameter(
+        "Bool Parameter",
+        "Bool parameter that is showns if enum_set_param contains FOO",
+        True,
+    ).rule(kp.Contains(enum_set_param, TestEnumOptions.FOO.name), kp.Effect.SHOW)
 
     group = ParameterGroupWithRules()
 
@@ -111,6 +141,19 @@ class ComposedGroup:
             kp.And(kp.OneOf(statement_1, [True]), kp.OneOf(statement_2, [True])),
             kp.Effect.DISABLE,
         )
+
+        enum_set_param = kp.EnumSetParameter(
+            "EnumSet Parameter",
+            "An EnumSet Parameter",
+            [TestEnumOptions.FOO.name, TestEnumOptions.BAR.name],
+            TestEnumOptions,
+        )
+        self.enum_set_param = enum_set_param
+        self.bool_param_contains = kp.BoolParameter(
+            "Bool Parameter",
+            "Bool parameter that is disabled if enum_set_param contains FOO",
+            True,
+        ).rule(kp.Contains(enum_set_param, TestEnumOptions.FOO.name), kp.Effect.DISABLE)
 
 
 class ParameterizedWithComposedGroup:
@@ -199,6 +242,32 @@ class RulesTest(unittest.TestCase):
                     },
                 },
                 {
+                    "label": "EnumSet Parameter",
+                    "options": {
+                        "format": "twinList",
+                        "possibleValues": [
+                            {"id": "FOO", "text": "Foo"},
+                            {"id": "BAR", "text": "Bar"},
+                            {"id": "BAZ", "text": "Baz"},
+                        ],
+                    },
+                    "scope": "#/properties/model/properties/enum_set_param",
+                    "type": "Control",
+                },
+                {
+                    "label": "Bool Parameter",
+                    "options": {"format": "boolean"},
+                    "rule": {
+                        "condition": {
+                            "schema": {"contains": {"const": "FOO"}},
+                            "scope": "#/properties/model/properties/enum_set_param",
+                        },
+                        "effect": "SHOW",
+                    },
+                    "scope": "#/properties/model/properties/bool_param_contains",
+                    "type": "Control",
+                },
+                {
                     "type": "Section",
                     "label": "Group with rules",
                     "options": {},
@@ -277,6 +346,32 @@ class RulesTest(unittest.TestCase):
                                 },
                                 "effect": "HIDE",
                             },
+                        },
+                        {
+                            "label": "EnumSet Parameter",
+                            "options": {
+                                "format": "twinList",
+                                "possibleValues": [
+                                    {"id": "FOO", "text": "Foo"},
+                                    {"id": "BAR", "text": "Bar"},
+                                    {"id": "BAZ", "text": "Baz"},
+                                ],
+                            },
+                            "scope": "#/properties/model/properties/group/properties/enum_set_param",
+                            "type": "Control",
+                        },
+                        {
+                            "label": "Bool Parameter",
+                            "options": {"format": "boolean"},
+                            "rule": {
+                                "condition": {
+                                    "schema": {"contains": {"const": "FOO"}},
+                                    "scope": "#/properties/model/properties/group/properties/enum_set_param",
+                                },
+                                "effect": "HIDE",
+                            },
+                            "scope": "#/properties/model/properties/group/properties/bool_param_contains",
+                            "type": "Control",
                         },
                     ],
                 },
@@ -374,6 +469,32 @@ class RulesTest(unittest.TestCase):
                                 "effect": "DISABLE",
                             },
                         },
+                        {
+                            "label": "EnumSet Parameter",
+                            "options": {
+                                "format": "twinList",
+                                "possibleValues": [
+                                    {"id": "FOO", "text": "Foo"},
+                                    {"id": "BAR", "text": "Bar"},
+                                    {"id": "BAZ", "text": "Baz"},
+                                ],
+                            },
+                            "scope": "#/properties/model/properties/group/properties/enum_set_param",
+                            "type": "Control",
+                        },
+                        {
+                            "label": "Bool Parameter",
+                            "options": {"format": "boolean"},
+                            "rule": {
+                                "condition": {
+                                    "schema": {"contains": {"const": "FOO"}},
+                                    "scope": "#/properties/model/properties/group/properties/enum_set_param",
+                                },
+                                "effect": "DISABLE",
+                            },
+                            "scope": "#/properties/model/properties/group/properties/bool_param_contains",
+                            "type": "Control",
+                        },
                     ],
                 },
             ],
@@ -425,6 +546,12 @@ class RulesTest(unittest.TestCase):
             "Bool parameter that is used to test combined Conditions",
             True,
         )
+        enum_set_param = kp.EnumSetParameter(
+            "EnumSet Parameter",
+            "An EnumSet Parameter",
+            [TestEnumOptions.FOO.name, TestEnumOptions.BAR.name],
+            TestEnumOptions,
+        )
 
         or_condition = kp.Or(
             kp.OneOf(statement_1, [True]), kp.OneOf(statement_2, [True])
@@ -432,6 +559,8 @@ class RulesTest(unittest.TestCase):
         and_condition = kp.And(
             kp.OneOf(statement_1, [True]), kp.OneOf(statement_2, [True])
         )
+        contains_condition = kp.Contains(enum_set_param, TestEnumOptions.FOO.name)
 
         self.assertEqual(or_condition.subjects, [statement_1, statement_2])
         self.assertEqual(and_condition.subjects, [statement_1, statement_2])
+        self.assertEqual(contains_condition.subjects, [enum_set_param])
