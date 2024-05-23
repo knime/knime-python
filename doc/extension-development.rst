@@ -211,13 +211,19 @@ the condition becomes true.
    :inherited-members:
    :exclude-members: to_dict, subjects
 
-.. autoclass:: knime.extension.OneOf
+.. autoclass:: knime.extension.And
    :members:
    :noindex:
    :inherited-members:
    :exclude-members: to_dict, subjects
 
-.. autoclass:: knime.extension.And
+.. autoclass:: knime.extension.Contains
+   :members:
+   :noindex:
+   :inherited-members:
+   :exclude-members: to_dict, subjects
+
+.. autoclass:: knime.extension.OneOf
    :members:
    :noindex:
    :inherited-members:

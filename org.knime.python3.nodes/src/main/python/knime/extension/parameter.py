@@ -522,6 +522,29 @@ class OneOf(Condition):
         return [self._subject]
 
 
+class Contains(Condition):
+    """
+    A Condition that evaluates to true if one of the values of the ``subject`` parameter is equal to the
+    expected ``value``.
+    """
+
+    def __init__(self, subject: Any, value: Any) -> None:
+        """ """
+        super().__init__()
+        self._value = value
+        self._subject = subject
+
+    def to_dict(self, find_scope: Callable[[Any], _Scope]):
+        return {
+            "scope": str(find_scope(self._subject)),
+            "schema": {"contains": {"const": self._value}},
+        }
+
+    @property
+    def subjects(self) -> List[Any]:
+        return [self._subject]
+
+
 class Effect(Enum):
     """
     Encodes the effect a rule may cause.
