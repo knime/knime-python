@@ -39,6 +39,39 @@ class TestNode(knext.PythonNode):
         return knext.Table.from_pandas(df)
 
 
+@knext.node(
+    "Batch Test Node", knext.NodeType.MANIPULATOR, icon_path="./icon.png", category="/"
+)
+@knext.input_table("Table", "Input Table")
+@knext.output_table("Table", "Input Table")
+class BatchTestNode(knext.PythonNode):
+    column = knext.ColumnParameter("Column to duplicate", "Column to duplicate")
+
+    def configure(self, config_context: knext.ConfigurationContext, input_schema):
+        if self.column is None:
+            raise knext.InvalidParametersError("Must select a column")
+
+        selected_col = input_schema[self.column]
+
+        return input_schema.append(
+            knext.Schema.from_columns(
+                [
+                    knext.Column(selected_col.ktype, selected_col.name + "_copy"),
+                ]
+            )
+        )
+
+    def execute(self, exec_context: knext.ExecutionContext, input_table):
+        output_table: knext.BatchOutputTable = knext.BatchOutputTable.create()
+
+        for batch in input_table.batches():
+            df = batch.to_pandas()
+            df[self.column + "_copy"] = df[self.column]
+            output_table.append(df)
+
+        return output_table
+
+
 class TestCase(unittest.TestCase):
     def setUp(self) -> None:
         super().setUp()
@@ -152,6 +185,54 @@ class TestCase(unittest.TestCase):
             ]
         )
         self.assertEqual(expected_schema, table.schema)
+
+    def test_single_batch(self):
+        """
+        same as test_node_execute, but using a node that works with batches
+        """
+        input_df = pd.DataFrame({"Test": [1, 2, 3, 4]})
+
+        node = BatchTestNode()
+        node.column = "Test"
+
+        input = knext.Table.from_pandas(input_df)
+        exec_context = ktest.TestingExecutionContext()
+        output = node.execute(exec_context, input)
+
+        output_df = output.to_pandas()
+        expected_df = input_df
+        expected_df["Test_copy"] = expected_df["Test"]
+        for column in expected_df.columns:
+            self.assertEqual(
+                input_df[column].to_list(),
+                output_df[column].to_list(),
+                f"Values not equal in {column}",
+            )
+
+    def test_multiple_batches(self):
+        """
+        same as test_node_execute, but using a node that works with batches
+        """
+
+        node = BatchTestNode()
+        node.column = "Test"
+
+        input = knext.BatchOutputTable.create()
+        input.append(pd.DataFrame({"Test": [1, 2]}))
+        input.append(pd.DataFrame({"Test": [3, 4]}))
+
+        exec_context = ktest.TestingExecutionContext()
+        output = node.execute(exec_context, input)
+
+        output_df = output.to_pandas()
+        expected_df = pd.DataFrame({"Test": [1, 2, 3, 4]})
+        expected_df["Test_copy"] = expected_df["Test"]
+        for column in expected_df.columns:
+            self.assertEqual(
+                expected_df[column].to_list(),
+                output_df[column].to_list(),
+                f"Values not equal in {column}",
+            )
 
 
 if __name__ == "__main__":

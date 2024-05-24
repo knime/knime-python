@@ -98,7 +98,11 @@ class _TestingTable(ktab.Table):
         self._df = data.copy()
 
     def batches(self):
-        raise RuntimeError(_NOT_AVAILABLE)
+        return iter([_TestingTable(self._df)])
+
+    @property
+    def num_batches(self):
+        return 1
 
     @property
     def num_rows(self):
@@ -130,6 +134,57 @@ class _TestingTable(ktab.Table):
     @property
     def schema(self) -> ks.Schema:
         return _extract_knime_schema_from_df(self._df)
+
+
+class _TestingBatchOutputTable(ktab.BatchOutputTable):
+    def __init__(self):
+        self._test_batches = []
+
+    def append(self, batch):
+        import pandas as pd
+
+        if isinstance(batch, pd.DataFrame):
+            batch = knext.Table.from_pandas(batch)
+        elif isinstance(batch, ktab.Table):
+            pass
+        else:
+            raise RuntimeError("Creating Batches from PyArrow not supported in testing")
+
+        self._test_batches.append(batch)
+
+    def batches(self):
+        return iter(self._test_batches)
+
+    @property
+    def num_rows(self):
+        return sum(batch.num_rows for batch in self._test_batches)
+
+    @property
+    def num_columns(self):
+        return len(self.column_names)
+
+    @property
+    def column_names(self):
+        if len(self._test_batches) > 0:
+            return self._test_batches[0].column_names
+        else:
+            return []
+
+    @property
+    def num_batches(self):
+        return len(self._test_batches)
+
+    @property
+    def schema(self) -> ks.Schema:
+        if len(self._test_batches) > 0:
+            return self._test_batches[0].column_names
+        else:
+            return ks.Schema.from_columns([])
+
+    def to_pandas(self, sentinel: Optional[Union[str, int]] = None):
+        import pandas as pd
+
+        return pd.concat([batch.to_pandas() for batch in self._test_batches])
 
 
 def _extract_knime_schema_from_df(df: "pandas.DataFrame") -> knext.Schema:
@@ -232,7 +287,7 @@ class _TestingBackend(ktab._Backend):
         raise RuntimeError(_PYARROW_NOT_AVAILABLE)
 
     def create_batch_output_table(self, row_ids: str = "keep"):
-        raise RuntimeError(_PYARROW_NOT_AVAILABLE)
+        return _TestingBatchOutputTable()
 
     def close(self) -> None:
         # Nothing to do
