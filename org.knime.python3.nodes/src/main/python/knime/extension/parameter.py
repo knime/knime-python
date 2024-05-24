@@ -593,7 +593,7 @@ class _UISchemaExtractor:
     def _create_rule_ui_schema(self, rule: Rule):
         return {
             "effect": rule.effect.value,
-            "condition": rule.condition.to_dict(lambda x: self.find_scope(x)),
+            "condition": rule.condition.to_dict(self.find_scope),
         }
 
     # it is intended that the cache is not shared across instances to prevent unexpected side-effects
