@@ -88,6 +88,7 @@ from typing import Optional, Union, Dict, Any
 import knime.extension as knext
 import knime.api.table as ktab
 import knime.api.schema as ks
+import knime.extension.nodes as knodes
 
 _NOT_AVAILABLE = "Not implemented for testing"
 _PYARROW_NOT_AVAILABLE = "PyArrow tables not supported for testing"
@@ -294,6 +295,20 @@ class _TestingBackend(ktab._Backend):
         pass
 
 
+class _TestingNodeBackend(knodes._KnimeNodeBackend):
+    def register_port_type(
+        self, name: str, object_class: type, spec_class: type, id: Optional[str] = None
+    ):
+        # no need to do anything
+        pass
+
+    def get_port_type_for_spec_type(self, spec_type):
+        raise RuntimeError("Port type retrieval not implemented for testing")
+
+    def get_port_type_for_id(self, id: str):
+        raise RuntimeError("Port type retrieval not implemented for testing")
+
+
 class TestingBaseContest:
     def __init__(self) -> None:
         self._flow_variables = {}
@@ -409,3 +424,6 @@ def register_extension(plugin_xml: str):
 # If an arrow backend is imported after the testing backend, it will overwrite the table backend.
 if ktab._backend is None:
     ktab._backend = _TestingBackend()
+
+if knodes._backend is None:
+    knodes._backend = _TestingNodeBackend()
