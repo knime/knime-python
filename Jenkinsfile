@@ -103,7 +103,7 @@ try {
         parallel(parallelConfigs)
 
         // Only build if on master and tests pass
-        if (params.UPLOAD_ANYWAY || BN == 'master' && currentBuild.result == 'STABLE') {
+        if (params.UPLOAD_ANYWAY || BN == 'master' && currentBuild.result != 'UNSTABLE') {
             node('ubuntu22.04') {
 
                 stage('Build and Deploy knime-extension ') {
