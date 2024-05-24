@@ -140,7 +140,9 @@ class TestCase(unittest.TestCase):
         self.assertEqual(expected_schema, output_schema)
 
     def test_node_execute(self):
-        input_df = pd.DataFrame({"Test": [1, 2, 3, 4]})
+        input_df = pd.DataFrame(
+            {"Test": [1, 2, 3, 4], "Test Strings": ["asdf", "foo", "bar", "baz"]}
+        )
 
         node = TestNode()
         node.column = "Test"

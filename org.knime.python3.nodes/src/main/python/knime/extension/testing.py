@@ -216,13 +216,13 @@ def _extract_knime_type_from_series(col: "pandas.Series"):
 
     try:
         if not is_object_dtype(col.dtype) or col.size == 0:
-            return _pandas_to_knime_type(col.dtype)
+            return _pandas_to_knime_type(col)
 
         cleaned = col.dropna()
         if (
             cleaned.size == 0
         ):  # if the column only contains empty elements we keep object type
-            return _pandas_to_knime_type(col.dtype)
+            return _pandas_to_knime_type(col)
 
         dtype = type(cleaned.iloc[0])
         if _check_if_local_dt(cleaned, dtype):
@@ -233,10 +233,11 @@ def _extract_knime_type_from_series(col: "pandas.Series"):
         else:
             return knext.logical(dtype)
     except TypeError:
-        return _pandas_to_knime_type(col.dtype)
+        return _pandas_to_knime_type(col)
 
 
-def _pandas_to_knime_type(pd_type):
+def _pandas_to_knime_type(col: "pandas.Series"):
+    pd_type = col.dtype
     import numpy as np
     import pandas as pd
 
@@ -252,6 +253,9 @@ def _pandas_to_knime_type(pd_type):
     try:
         return type_map[pd_type]
     except KeyError:
+        # last check: did we have strings?
+        if pd_type == np.object_ and isinstance(col.dropna().iloc[0], str):
+            return knext.string()
         raise RuntimeError(f"Testing doesn't support type: {pd_type} ({type(pd_type)})")
 
 
