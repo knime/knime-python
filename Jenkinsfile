@@ -102,37 +102,30 @@ try {
 
         parallel(parallelConfigs)
 
-        // Only build if on master and tests pass
-        if (params.UPLOAD_ANYWAY || BN == 'master' && currentBuild.result != 'UNSTABLE') {
-            node('ubuntu22.04') {
+        stage('Build and Deploy knime-extension ') {
+            env.lastStage = env.STAGE_NAME
 
-                stage('Build and Deploy knime-extension ') {
+            String envName = "test_knime_extension"
+            String recipePath = "${env.WORKSPACE}/knime-extension/recipe"
+            String prefixPath = "${env.WORKSPACE}/${envName}"
+            String[] packageNames = [
+                "conda-build",
+                "anaconda-client"
+            ]
 
-                    env.lastStage = env.STAGE_NAME
-                    checkout scm
+            condaHelpers.createCondaEnv(prefixPath: prefixPath, packageNames: packageNames)
 
-                    String envName = "test_knime_extension"
-                    String recipePath = "${env.WORKSPACE}/knime-extension/recipe"
-                    String prefixPath = "${env.WORKSPACE}/${envName}"
-                    String[] packageNames = [
-                        "conda-build",
-                        "anaconda-client"
-                    ]
+            sh(
+                label: "Collect Files",
+                script: """#!/bin/sh
+                    cd knime-extension
+                    micromamba run -p ${prefixPath} python ${env.WORKSPACE}/knime-extension/collect_files.py
+                """
+            )
 
-                    condaHelpers.createCondaEnv(prefixPath: prefixPath, packageNames: packageNames)
-
-                    sh(
-                        label: "Collect Files",
-                        script: """#!/bin/sh
-                            cd knime-extension
-                            micromamba run -p ${prefixPath} python ${env.WORKSPACE}/knime-extension/collect_files.py
-                        """
-                    )
-
-                    condaHelpers.buildCondaPackage(recipePath, prefixPath, true)
-
-                }
-            }
+            // Only upload if on master and tests pass
+            def upload = params.FORCE_UPLOAD_PACKAGE || (BN == 'master' && currentBuild.result != 'UNSTABLE')
+            condaHelpers.buildCondaPackage(recipePath, prefixPath, upload)
         }
 
 
