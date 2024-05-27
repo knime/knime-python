@@ -26,8 +26,8 @@
     "sbom": "npx @cyclonedx/cyclonedx-npm --output-file bom.json --ignore-npm-errors --omit dev"
   },
   "dependencies": {
-    "@knime/scripting-editor": "0.0.59",
-    "@knime/ui-extension-service": "0.30.0",
+    "@knime/scripting-editor": "0.0.63",
+    "@knime/ui-extension-service": "0.32.0",
     "@vueuse/core": "10.9.0",
     "consola": "2.15.3",
     "vue": "3.4.21",
