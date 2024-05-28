@@ -191,7 +191,7 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
             var nodeId = config.getString("node_id");
             var extension = ALL_EXTENSIONS.get(extensionId);
             CheckUtils.checkSetting(extension != null, "Unknown extension id '%s' encountered.", extensionId);
-            m_bundleName = extension.getBundleName();
+            m_bundleName = Optional.of(extensionId);
             m_node = extension.getNode(nodeId);
             m_nodeDescription = m_node.getNodeDescription();
             m_nodeFactoryConfig = config;
