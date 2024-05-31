@@ -2176,7 +2176,11 @@ class DateTimeParameter(_BaseParameter):
                 return self.max_value
             if self.min_value is not None:
                 return self.min_value
-            return datetime.datetime.now().date()
+
+            if self.show_time:
+                return datetime.datetime.now()
+            else:
+                return datetime.datetime.now().date()
 
         if not (
             isinstance(default_value, datetime.date) or isinstance(default_value, str)
