@@ -123,7 +123,7 @@ def inject_parameters(
     parameters_version: str = None,
 ) -> None:
     """
-    This method injects the provided values into the parameter descriptors of the parameterised object,
+    This method injects the provided values into the parameter descriptors of the parameterized object,
     which can be a node or a parameter group.
     """
     parameters_version = Version.parse_version(parameters_version)
@@ -135,15 +135,17 @@ def _inject_parameters(
     parameters: dict,
     parameters_version: Version,
 ) -> None:
+    # Modify the parameters dict if the node has a _modify_parameters() method
     if hasattr(obj, "_modify_parameters"):
         parameters = obj._modify_parameters(parameters)
 
     for name, param_obj in _get_parameters(obj).items():
-        if param_obj._since_version <= parameters_version:
-            if name in parameters:
-                param_obj._inject(obj, parameters[name], name, parameters_version)
-        else:
-            # the parameter was introduced in a newer version but we might want to initialize
+        if name in parameters:
+            # Check if name is available as it might have been added by _modify_parameters above
+            # In that case we don't care about the since_version
+            param_obj._inject(obj, parameters[name], name, parameters_version)
+        elif param_obj._since_version > parameters_version:
+            # The parameter was introduced in a newer version but we might want to initialize
             # the default based on the version the workflow was created with
             param_obj._set_default_for_version(obj, name, parameters_version)
 
