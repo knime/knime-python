@@ -248,9 +248,18 @@ class ArrowTable(knt.Table):
     ) -> "pandas.DataFrame":
         import knime._arrow._pandas as kap
 
+        if "<RowID>" in self.schema.column_names:
+            raise RuntimeError(
+                "The column name '<RowID>' is reserved for internal purposes. Please rename the column to a different name."
+            )
         return kap.arrow_data_to_pandas_df(self.to_pyarrow(sentinel))
 
     def to_pyarrow(self, sentinel: Optional[Union[str, int]] = None) -> pa.Table:
+        if "<RowID>" in self.schema.column_names:
+            raise RuntimeError(
+                "The column name '<RowID>' is reserved for internal purposes. Please rename the column to a different name."
+            )
+
         table = katy.unwrap_primitive_arrays(self._get_table())
 
         if sentinel is not None:

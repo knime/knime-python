@@ -163,6 +163,16 @@ class ArrowTableTest(unittest.TestCase):
         ads = ka.ArrowDataSource(test_data_source)
         return kat.ArrowSourceTable(ads)
 
+    def generate_test_table_with_rowid_column(self):
+        """Creates a KNIME table that has a column named <RowID>"""
+        rowid_table = pa.table(
+            [
+                pa.array([1]),
+            ],
+            ["<RowID>"],
+        )
+        return kt.Table.from_pyarrow(rowid_table, row_ids="generate")
+
     @classmethod
     def setUpClass(cls):
         import knime.api.table as ktn
@@ -283,6 +293,9 @@ class ArrowTableTest(unittest.TestCase):
         self.assertEqual(table.num_columns, other.num_columns)
         self.assertEqual(table.column_names, other.column_names)
 
+        with self.assertRaises(RuntimeError):
+            self.generate_test_table_with_rowid_column().to_pyarrow()
+
     def test_to_from_pandas(self):
         table = self._test_table
         data = table.to_pandas()
@@ -290,6 +303,9 @@ class ArrowTableTest(unittest.TestCase):
         self.assertEqual(table.num_rows, other.num_rows)
         self.assertEqual(table.num_columns, other.num_columns)
         self.assertEqual(table.column_names, other.column_names)
+
+        with self.assertRaises(RuntimeError):
+            self.generate_test_table_with_rowid_column().to_pandas()
 
     def test_to_batches(self):
         table = self._test_table
@@ -413,6 +429,10 @@ class ArrowTableTest(unittest.TestCase):
             return pa.table(columns, names=names)
 
         def get_row_ids(table):
+            # Remove all columns except for the row ID column to avoid error when <RowID> exists twice
+            while len(table.column_names) > 0:
+                table = table.remove(0)
+
             return table.to_pyarrow()[0].to_pylist()
 
         # ========== row_ids = "keep"
