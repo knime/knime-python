@@ -52,8 +52,8 @@ import knime.api.table as _kt
 import knime.extension.nodes as _kn
 import knime.api.schema as _ks
 import knime.api.views as _kv
+import knime.api.env as _ke
 import knime.extension.parameter as _kp
-import knime.extension.env as _ke
 
 # re-exporting symbols so that "import knime.extension" allows the user to conduct every KAP-facing call via this interface
 

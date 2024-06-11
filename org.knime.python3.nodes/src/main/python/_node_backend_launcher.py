@@ -72,7 +72,7 @@ from py4j.java_gateway import JavaClass, Py4JJavaError
 from py4j.java_collections import ListConverter
 import py4j.clientserver
 
-from knime.extension.env import _set_proxy_settings
+from knime.api.env import _set_proxy_settings
 
 
 # TODO: register extension types

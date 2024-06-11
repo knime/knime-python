@@ -46,7 +46,7 @@ import os
 import unittest
 from unittest import mock
 
-import knime.extension.env as ke
+import knime.extension.env as ke  # old import to test forwarding
 
 
 class TestProxySettings(unittest.TestCase):
