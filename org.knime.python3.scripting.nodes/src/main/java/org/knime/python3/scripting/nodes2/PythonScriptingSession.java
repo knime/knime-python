@@ -81,8 +81,6 @@ import org.knime.core.util.FileUtil;
 import org.knime.core.util.ThreadUtils;
 import org.knime.core.util.asynclose.AsynchronousCloseable;
 import org.knime.core.util.pathresolve.ResolverUtil;
-import org.knime.core.util.proxy.ProxyProtocol;
-import org.knime.core.util.proxy.search.GlobalProxySearch;
 import org.knime.python3.Activator;
 import org.knime.python3.Python3SourceDirectory;
 import org.knime.python3.PythonCommand;
@@ -100,6 +98,7 @@ import org.knime.python3.arrow.PythonArrowTableConverter;
 import org.knime.python3.types.PythonValueFactoryModule;
 import org.knime.python3.types.PythonValueFactoryRegistry;
 import org.knime.python3.utils.FlowVariableUtils;
+import org.knime.python3.utils.ProxyUtils;
 import org.knime.python3.views.Python3ViewsSourceDirectory;
 import org.knime.python3.views.PythonViewsExtension;
 import org.knime.scripting.editor.ScriptingService.ConsoleText;
@@ -236,29 +235,7 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
 
         @SuppressWarnings("unused")
         public String[] get_proxy_server_strings() { // NOSONAR
-
-            final var maybeProxyConfig = GlobalProxySearch.getCurrentFor(ProxyProtocol.values());
-            final var proxySettingStrings = new String[6];
-
-            if (maybeProxyConfig.isPresent()) {
-                final var proxyConfig = maybeProxyConfig.get();
-
-                proxySettingStrings[0] = proxyConfig.protocol().name();
-                proxySettingStrings[1] =  proxyConfig.host();
-                proxySettingStrings[2]  = proxyConfig.port();
-
-                if (proxyConfig.useExcludedHosts()) {
-                    proxySettingStrings[3] = proxyConfig.excludedHosts();
-                }
-
-                if (proxyConfig.useAuthentication()) {
-                    proxySettingStrings[4] = proxyConfig.username();
-                    proxySettingStrings[5]  = proxyConfig.password();
-                }
-
-            }
-
-            return proxySettingStrings;
+            return ProxyUtils.getProxyServerStrings();
         }
     }
 

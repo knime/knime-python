@@ -51,11 +51,10 @@ package org.knime.python3.nodes;
 import java.io.IOException;
 
 import org.knime.core.node.NodeLogger;
-import org.knime.core.util.proxy.ProxyProtocol;
-import org.knime.core.util.proxy.search.GlobalProxySearch;
 import org.knime.python3.PythonGateway;
 import org.knime.python3.PythonGatewayUtils;
 import org.knime.python3.nodes.PurePythonNodeSetFactory.ResolvedPythonExtension;
+import org.knime.python3.utils.ProxyUtils;
 
 /**
  * Creates CloseablePythonNodeProxy objects for NodeProxyProvider implementations.
@@ -152,29 +151,8 @@ final class CloseablePythonNodeProxyFactory {
 
             @SuppressWarnings("unused")
             public String[] get_proxy_server_strings() { // NOSONAR
+                return ProxyUtils.getProxyServerStrings();
 
-                final var maybeProxyConfig = GlobalProxySearch.getCurrentFor(ProxyProtocol.values());
-                final var proxySettingStrings = new String[6];
-
-                if (maybeProxyConfig.isPresent()) {
-                    final var proxyConfig = maybeProxyConfig.get();
-
-                    proxySettingStrings[0] = proxyConfig.protocol().name();
-                    proxySettingStrings[1] =  proxyConfig.host();
-                    proxySettingStrings[2]  = proxyConfig.port();
-
-                    if (proxyConfig.useExcludedHosts()) {
-                        proxySettingStrings[3] = proxyConfig.excludedHosts();
-                    }
-
-                    if (proxyConfig.useAuthentication()) {
-                        proxySettingStrings[4] = proxyConfig.username();
-                        proxySettingStrings[5]  = proxyConfig.password();
-                    }
-
-                }
-
-                return proxySettingStrings;
             }
         };
         backend.initializeJavaCallback(callback);
