@@ -65,7 +65,7 @@ import java.util.stream.Stream;
 import org.knime.core.node.BundleNameProvider;
 import org.knime.core.node.ConfigurableNodeFactory;
 import org.knime.core.node.DynamicNodeFactory;
-import org.knime.core.node.FactoryIDUniquifierProvider;
+import org.knime.core.node.ParameterizedNodeFactory;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeDescription;
 import org.knime.core.node.NodeDialogPane;
@@ -169,7 +169,7 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
      * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
      */
     public static final class DynamicExtensionNodeFactory extends ConfigurableNodeFactory<DelegatingNodeModel>
-        implements NodeDialogFactory, NodeViewFactory<DelegatingNodeModel>, BundleNameProvider, FactoryIDUniquifierProvider {
+        implements NodeDialogFactory, NodeViewFactory<DelegatingNodeModel>, BundleNameProvider, ParameterizedNodeFactory {
 
         private NodeProxyProvider m_proxyProvider;
 
