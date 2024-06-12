@@ -436,11 +436,8 @@ class Condition(ABC):
     """Abstract base class for all condition types of parameter visibility rules."""
 
     @abstractmethod
-    def to_dict(self, find_scope: Callable[[Any], _Scope]):
+    def to_dict(self, find_scope: Callable[[Any], _Scope], ctx):
         """Converts the Condition into a dict that is JSON serializable."""
-
-
-
 
 
 class And(Condition):
@@ -456,10 +453,10 @@ class And(Condition):
         super().__init__()
         self._conditions = conditions
 
-    def to_dict(self, find_scope: Callable[[Any], _Scope]):
+    def to_dict(self, find_scope: Callable[[Any], _Scope], ctx):
         return {
             "type": "AND",
-            "conditions": [c.to_dict(find_scope) for c in self._conditions],
+            "conditions": [c.to_dict(find_scope, ctx) for c in self._conditions],
         }
 
 
@@ -476,18 +473,11 @@ class Or(Condition):
         super().__init__()
         self._conditions = conditions
 
-    def to_dict(self, find_scope: Callable[[Any], _Scope]):
+    def to_dict(self, find_scope: Callable[[Any], _Scope], ctx):
         return {
             "type": "OR",
-            "conditions": [c.to_dict(find_scope) for c in self._conditions],
+            "conditions": [c.to_dict(find_scope, ctx) for c in self._conditions],
         }
-
-    @property
-    def subjects(self) -> List[Any]:
-        subjects = []
-        for c in self._conditions:
-            subjects += c.subjects
-        return subjects
 
 
 class OneOf(Condition):
@@ -502,7 +492,7 @@ class OneOf(Condition):
         self._values = values
         self._subject = subject
 
-    def to_dict(self, find_scope: Callable[[Any], _Scope]):
+    def to_dict(self, find_scope: Callable[[Any], _Scope], ctx):
         return {
             "scope": str(find_scope(self._subject)),
             "schema": {"oneOf": [{"const": value} for value in self._values]},
@@ -521,10 +511,34 @@ class Contains(Condition):
         self._value = value
         self._subject = subject
 
-    def to_dict(self, find_scope: Callable[[Any], _Scope]):
+    def to_dict(self, find_scope: Callable[[Any], _Scope], ctx):
         return {
             "scope": str(find_scope(self._subject)),
             "schema": {"contains": {"const": self._value}},
+        }
+
+
+class DialogContextCondition(Condition):
+    """
+    A Condition that evaluates to true if a user supplied predicate on the DialogCreationContext evaluates to true when
+    the dialog is opened. Useful for rules that depend e.g. on the number and types of input ports in a node with dynamic ports.
+    """
+
+    def __init__(self, ctx_predicate: Callable[[Any], bool]) -> None:
+        """
+        Initializes a DialogContextCondition.
+
+        Parameters
+        ----------
+        ctx_predicate : Callable[[DialogCreationContext], bool]
+            Context predicate that is evaluated when the dialog is opened.
+        """
+        self._ctx_predicate = ctx_predicate
+
+    def to_dict(self, find_scope: Callable[[Any], _Scope], ctx):
+        return {
+            "scope": "#",
+            "schema": {"type": ["object"] if self._ctx_predicate(ctx) else []},
         }
 
 
@@ -599,7 +613,9 @@ class _UISchemaExtractor:
     def _create_rule_ui_schema(self, rule: Rule):
         return {
             "effect": rule.effect.value,
-            "condition": rule.condition.to_dict(self.find_scope),
+            "condition": rule.condition.to_dict(
+                self.find_scope, self._dialog_creation_context
+            ),
         }
 
     # it is intended that the cache is not shared across instances to prevent unexpected side-effects

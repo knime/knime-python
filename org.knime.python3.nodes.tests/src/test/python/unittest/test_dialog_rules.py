@@ -1,6 +1,6 @@
 import unittest
 import knime.extension.parameter as kp
-from test_knime_parameter import DummyDialogCreationContext
+from test_knime_parameter import DummyDialogCreationContext, test_schema
 
 
 class TestEnumOptions(kp.EnumParameterOptions):
@@ -534,3 +534,56 @@ class RulesTest(unittest.TestCase):
                 kp.And(),
                 kp.Effect.SHOW,
             )
+
+    def test_dialog_context_condition(self):
+        class Parameterized:
+            conditional_param = kp.BoolParameter(
+                "Conditional Parameter",
+                "Conditional param that is only shown if there is exactly one input spec.",
+            ).rule(
+                kp.DialogContextCondition(lambda ctx: len(ctx.get_input_specs()) == 1),
+                kp.Effect.SHOW,
+            )
+
+        expected_when_condition_true = {
+            "type": "VerticalLayout",
+            "elements": [
+                {
+                    "type": "Control",
+                    "label": "Conditional Parameter",
+                    "scope": "#/properties/model/properties/conditional_param",
+                    "options": {"format": "boolean"},
+                    "rule": {
+                        "condition": {"scope": "#", "schema": {"type": ["object"]}},
+                        "effect": "SHOW",
+                    },
+                }
+            ],
+        }
+
+        self.assertEqual(
+            expected_when_condition_true,
+            kp.extract_ui_schema(Parameterized(), DummyDialogCreationContext()),
+        )
+
+        expected_when_condition_false = {
+            "type": "VerticalLayout",
+            "elements": [
+                {
+                    "type": "Control",
+                    "label": "Conditional Parameter",
+                    "scope": "#/properties/model/properties/conditional_param",
+                    "options": {"format": "boolean"},
+                    "rule": {
+                        "condition": {"scope": "#", "schema": {"type": []}},
+                        "effect": "SHOW",
+                    },
+                }
+            ],
+        }
+        self.assertEqual(
+            expected_when_condition_false,
+            kp.extract_ui_schema(
+                Parameterized(), DummyDialogCreationContext([test_schema] * 2)
+            ),
+        )

@@ -3,6 +3,7 @@ import unittest
 import knime.api.schema as ks
 import knime.extension.nodes as kn
 import knime.extension.parameter as kp
+from typing import List
 
 test_schema = ks.Schema.from_columns(
     [
@@ -973,7 +974,7 @@ class ParameterizedWithEnumStyles:
 
 
 class DummyDialogCreationContext:
-    def __init__(self) -> None:
+    def __init__(self, specs: List = None) -> None:
         class DummyJavaContext:
             def get_credential_names(self):
                 return ["foo", "bar", "baz"]
@@ -983,9 +984,10 @@ class DummyDialogCreationContext:
 
         self._java_ctx = DummyJavaContext()
         self._flow_variables = ["flow1", "flow2", "flow3"]
+        self._specs = specs if specs is not None else [test_schema]
 
     def get_input_specs(self):
-        return [test_schema]
+        return self._specs
 
 
 #### Tests: ####

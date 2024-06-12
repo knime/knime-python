@@ -79,6 +79,7 @@ And = _kp.And
 Or = _kp.Or
 OneOf = _kp.OneOf
 Contains = _kp.Contains
+DialogContextCondition = _kp.DialogContextCondition
 Condition = _kp.Condition
 
 ## knime.extension.nodes
