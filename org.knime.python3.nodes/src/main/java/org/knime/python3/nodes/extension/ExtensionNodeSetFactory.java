@@ -65,7 +65,6 @@ import java.util.stream.Stream;
 import org.knime.core.node.BundleNameProvider;
 import org.knime.core.node.ConfigurableNodeFactory;
 import org.knime.core.node.DynamicNodeFactory;
-import org.knime.core.node.ParameterizedNodeFactory;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeDescription;
 import org.knime.core.node.NodeDialogPane;
@@ -73,6 +72,7 @@ import org.knime.core.node.NodeFactory;
 import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSetFactory;
 import org.knime.core.node.NodeSettings;
+import org.knime.core.node.ParameterizedNodeFactory;
 import org.knime.core.node.config.ConfigRO;
 import org.knime.core.node.config.ConfigWO;
 import org.knime.core.node.context.NodeCreationConfiguration;
@@ -179,7 +179,7 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
 
         private NodeDescription m_nodeDescription;
 
-        private Optional<String> m_bundleName = Optional.empty();
+        private String m_bundleName;
 
         private ExtensionNode m_node;
 
@@ -190,8 +190,7 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
         private String m_factoryIdUniquifier;
 
         /**
-         * We use the constructor {@link NodeFactory#NodeFactory(Supplier)} which lazily intializes the factory
-         * and defines that the factory is used for multiple nodes ( needs an ID)
+         * We use the lazy constructor of the {@link ConfigurableNodeFactory}.
          */
         public DynamicExtensionNodeFactory() {
             super(true);
@@ -204,7 +203,7 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
             var nodeId = config.getString("node_id");
             var extension = ALL_EXTENSIONS.get(extensionId);
             CheckUtils.checkSetting(extension != null, "Unknown extension id '%s' encountered.", extensionId);
-            m_bundleName = Optional.of(extensionId);
+            m_bundleName = extensionId;
             m_node = extension.getNode(nodeId);
             m_nodeDescription = m_node.getNodeDescription();
             m_nodeFactoryConfig = config;
@@ -222,7 +221,7 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
          * @return The name for the bundle
          */
         @Override
-        public Optional<String> getBundleName2() {
+        public String getBundleName() {
             return m_bundleName;
 
         }
