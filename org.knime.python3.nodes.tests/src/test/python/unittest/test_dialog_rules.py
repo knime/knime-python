@@ -534,33 +534,3 @@ class RulesTest(unittest.TestCase):
                 kp.And(),
                 kp.Effect.SHOW,
             )
-
-    def test_condition_subjects_property(self):
-        statement_1 = kp.BoolParameter(
-            "Bool Parameter",
-            "Bool parameter that is used to test combined Conditions",
-            True,
-        )
-        statement_2 = kp.BoolParameter(
-            "Bool Parameter",
-            "Bool parameter that is used to test combined Conditions",
-            True,
-        )
-        enum_set_param = kp.EnumSetParameter(
-            "EnumSet Parameter",
-            "An EnumSet Parameter",
-            [TestEnumOptions.FOO.name, TestEnumOptions.BAR.name],
-            TestEnumOptions,
-        )
-
-        or_condition = kp.Or(
-            kp.OneOf(statement_1, [True]), kp.OneOf(statement_2, [True])
-        )
-        and_condition = kp.And(
-            kp.OneOf(statement_1, [True]), kp.OneOf(statement_2, [True])
-        )
-        contains_condition = kp.Contains(enum_set_param, TestEnumOptions.FOO.name)
-
-        self.assertEqual(or_condition.subjects, [statement_1, statement_2])
-        self.assertEqual(and_condition.subjects, [statement_1, statement_2])
-        self.assertEqual(contains_condition.subjects, [enum_set_param])

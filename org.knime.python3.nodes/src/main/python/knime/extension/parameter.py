@@ -439,12 +439,8 @@ class Condition(ABC):
     def to_dict(self, find_scope: Callable[[Any], _Scope]):
         """Converts the Condition into a dict that is JSON serializable."""
 
-    @property
-    @abstractmethod
-    def subjects(self) -> List[Any]:
-        """
-        The subjects this condition applies to. Typically these are parameters.
-        """
+
+
 
 
 class And(Condition):
@@ -465,13 +461,6 @@ class And(Condition):
             "type": "AND",
             "conditions": [c.to_dict(find_scope) for c in self._conditions],
         }
-
-    @property
-    def subjects(self) -> List[Any]:
-        subjects = []
-        for c in self._conditions:
-            subjects += c.subjects
-        return subjects
 
 
 class Or(Condition):
@@ -519,10 +508,6 @@ class OneOf(Condition):
             "schema": {"oneOf": [{"const": value} for value in self._values]},
         }
 
-    @property
-    def subjects(self) -> List[Any]:
-        return [self._subject]
-
 
 class Contains(Condition):
     """
@@ -541,10 +526,6 @@ class Contains(Condition):
             "scope": str(find_scope(self._subject)),
             "schema": {"contains": {"const": self._value}},
         }
-
-    @property
-    def subjects(self) -> List[Any]:
-        return [self._subject]
 
 
 class Effect(Enum):
