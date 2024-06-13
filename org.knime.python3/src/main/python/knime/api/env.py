@@ -181,6 +181,13 @@ class ProxySettings:
         """
         Set the proxy settings as environment variables.
         """
+        if self.protocol_name not in supported_proxy_protocols:
+            logging.warning(
+                f"The KNIME proxy settings currently only support the following protocols: "
+                f"{supported_proxy_protocols}, but the protocol {self.protocol_name} was provided."
+                f"The KNIME proxy settings will be ignored for python nodes."
+            )
+            return
         (
             proxy_env_variable,
             proxy_env_string,
@@ -259,6 +266,30 @@ class ProxySettings:
         {supported_proxy_protocols}
         """
 
+    @classmethod
+    def from_dict(cls, proxy_dict):
+        """
+        Create a ProxySettings object from a dictionary.
+
+        Parameters
+        ----------
+        proxy_dict : dict
+            The dictionary containing the proxy settings.
+
+        Returns
+        -------
+        ProxySettings
+            The proxy settings object.
+        """
+        return cls(
+            protocol_name=proxy_dict.get("protocol_name"),
+            host_name=proxy_dict.get("host_name"),
+            port_number=proxy_dict.get("port_number"),
+            exclude_hosts=proxy_dict.get("exclude_hosts"),
+            user_name=proxy_dict.get("user_name"),
+            password=proxy_dict.get("password"),
+        )
+
 
 def get_proxy_settings(protocol_name: Optional[str] = None) -> Optional[ProxySettings]:
     """
@@ -272,7 +303,8 @@ def get_proxy_settings(protocol_name: Optional[str] = None) -> Optional[ProxySet
     ----------
     protocol_name : str
         The protocol name, e.g. 'http' or 'https'. To see all supported protocols,
-        call ProxySettings.supported_proxy_protocols().
+        call ProxySettings.supported_proxy_protocols(). If not provided, the function will
+        return the first proxy settings it finds.
 
     Returns
     -------
@@ -311,7 +343,10 @@ def _set_proxy_settings(java_callback):
     ----------
     java_callback : object
         The Java callback object. Must have the following methods:
-        - get_proxy_server_strings() -> JavaArray[str]
+        - get_global_proxy_list() -> JavaList[JavaMap[str, str]]
     """
-    proxy_settings = ProxySettings(*list(java_callback.get_proxy_server_strings()))
-    proxy_settings.set_as_environment_variable()
+    proxy_map_list = list(java_callback.get_global_proxy_list())
+    for java_proxy_map in proxy_map_list:
+        proxy_dict = dict(java_proxy_map)
+        proxy_settings = ProxySettings.from_dict(proxy_dict)
+        proxy_settings.set_as_environment_variable()

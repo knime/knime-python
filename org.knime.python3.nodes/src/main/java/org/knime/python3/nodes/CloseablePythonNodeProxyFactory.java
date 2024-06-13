@@ -49,6 +49,8 @@
 package org.knime.python3.nodes;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 
 import org.knime.core.node.NodeLogger;
 import org.knime.python3.PythonGateway;
@@ -150,9 +152,8 @@ final class CloseablePythonNodeProxyFactory {
             }
 
             @SuppressWarnings("unused")
-            public String[] get_proxy_server_strings() { // NOSONAR
-                return ProxyUtils.getProxyServerStrings();
-
+            public List<Map<String, String>> get_global_proxy_list() { // NOSONAR
+                return ProxyUtils.getGlobalProxyList();
             }
         };
         backend.initializeJavaCallback(callback);

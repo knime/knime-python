@@ -55,6 +55,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -234,8 +235,8 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
         }
 
         @SuppressWarnings("unused")
-        public String[] get_proxy_server_strings() { // NOSONAR
-            return ProxyUtils.getProxyServerStrings();
+        public List<Map<String, String>> get_global_proxy_list() { // NOSONAR
+            return ProxyUtils.getGlobalProxyList();
         }
     }
 

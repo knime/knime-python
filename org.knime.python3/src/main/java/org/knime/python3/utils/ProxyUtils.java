@@ -48,6 +48,12 @@
  */
 package org.knime.python3.utils;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.knime.core.util.proxy.GlobalProxyConfig;
 import org.knime.core.util.proxy.ProxyProtocol;
 import org.knime.core.util.proxy.search.GlobalProxySearch;
 
@@ -62,26 +68,42 @@ public final class ProxyUtils {
     }
 
     /**
-     * @return get the proxy server information in a format parseable by python.
+     * Retrieves global proxy server configurations and formats them into a list of maps. Each map contains the proxy
+     * configuration details such as protocol name, host, port, and optionally excluded hosts and authentication
+     * credentials.
+     *
+     * @return a list of maps, where each map contains proxy configuration details with keys: "protocol_name",
+     *         "host_name", "port_number", and optionally "exclude_hosts", "user_name", and "password" if those fields
+     *         are applicable.
      */
-    public static String[] getProxyServerStrings() {
-        final var maybeProxyConfig = GlobalProxySearch.getCurrentFor(ProxyProtocol.values());
-        final var proxySettingStrings = new String[6];
-        if (maybeProxyConfig.isPresent()) {
-            final var proxyConfig = maybeProxyConfig.get();
-            proxySettingStrings[0] = proxyConfig.protocol().name();
-            proxySettingStrings[1] = proxyConfig.host();
-            proxySettingStrings[2] = proxyConfig.port();
-            if (proxyConfig.useExcludedHosts()) {
-                proxySettingStrings[3] = proxyConfig.excludedHosts();
-            }
-            if (proxyConfig.useAuthentication()) {
-                proxySettingStrings[4] = proxyConfig.username();
-                proxySettingStrings[5] = proxyConfig.password();
-            }
-        }
-        return proxySettingStrings;
+    public static List<Map<String, String>> getGlobalProxyList() {
+        List<Map<String, String>> globalProxyList = new ArrayList<Map<String, String>>();
 
+        for (ProxyProtocol proxyProtocol : ProxyProtocol.values()) {
+            GlobalProxySearch.getCurrentFor(proxyProtocol).ifPresent(proxyConfig -> {
+                Map<String, String> proxyMap = buildProxyMap(proxyConfig);
+                globalProxyList.add(proxyMap);
+            });
+        }
+
+        return globalProxyList;
     }
 
+    private static Map<String, String> buildProxyMap(final GlobalProxyConfig proxyConfig) {
+        Map<String, String> proxyMap = new HashMap<>();
+        proxyMap.put("protocol_name", proxyConfig.protocol().name());
+        proxyMap.put("host_name", proxyConfig.host());
+        proxyMap.put("port_number", proxyConfig.port());
+
+        if (proxyConfig.useExcludedHosts()) {
+            proxyMap.put("exclude_hosts", proxyConfig.excludedHosts());
+        }
+
+        if (proxyConfig.useAuthentication()) {
+            proxyMap.put("user_name", proxyConfig.username());
+            proxyMap.put("password", proxyConfig.password());
+        }
+
+        return proxyMap;
+    }
 }
