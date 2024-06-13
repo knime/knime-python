@@ -1,7 +1,4 @@
-const iFrameKnimeService = new KnimeUIExtensionService.IFrameKnimeService();
-const selectionService = new KnimeUIExtensionService.SelectionService(
-  iFrameKnimeService
-);
+const selectionService = KnimeUIExtensionService.SelectionService.getInstance();
 
 const plotlyPlot = document.getElementById("{plot_id}");
 let selected = new Set();
@@ -51,22 +48,20 @@ function updateSelection(mode, selection) {
   updating = false;
 }
 
-iFrameKnimeService.waitForInitialization().then(() => {
-  // Register the selection listener
-  selectionService.onInit(
-    (event) => updateSelection(event.mode, event.selection),
-    true,
-    true
+// Register the selection listener
+selectionService.then((service) => {
+  service.addOnSelectionChangeCallback((event) =>
+    updateSelection(event.mode, event.selection)
   );
-
-  // NOTE: selectionService.initialSelection does not work because the implementation
-  // only returns an inital selection if initalData is not undefined
-
-  // Get the inital selection and apply it
-  const initialSelection =
-    selectionService.knimeService.extensionConfig.initialSelection;
-  updateSelection("REPLACE", initialSelection);
 });
+
+// NOTE: selectionService.initialSelection does not work because the implementation
+// only returns an inital selection if initalData is not undefined
+
+// Get the inital selection and apply it
+selectionService
+  .then((service) => service.baseService.getConfig().initialSelection)
+  .then((selection) => updateSelection("REPLACE", selection));
 
 /////////////////////////////////////////////////////////////////////
 // Plotly Selection -> KNIME Selection
@@ -91,7 +86,7 @@ plotlyPlot.on("plotly_selected", function () {
   });
 
   // Send the selection to the SelectionService
-  selectionService.replace(selectedRows);
+  selectionService.then((service) => service.replace(selectedRows));
 
   // Remember the selection to be able to add points to it
   selected = new Set(selectedRows);
@@ -101,5 +96,5 @@ plotlyPlot.on("plotly_deselect", function () {
   // Make sure we deselect everything: All facelets
   Plotly.relayout(plotlyPlot, { selections: [] });
   Plotly.restyle(plotlyPlot, { selectedpoints: [null] });
-  selectionService.replace([]);
+  selectionService.then((service) => service.replace([]));
 });

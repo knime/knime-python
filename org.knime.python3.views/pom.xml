@@ -29,8 +29,8 @@
 						</goals>
 						<configuration>
 							<target>
-								<property name="knime.ui.extension.service.version" value="0.9.0"/>
-								<property name="knime.ui.extension.service.checksum" value="3249dca7e7d31f2feca01d3a95f276a56e259b78"/>
+								<property name="knime.ui.extension.service.version" value="0.33.0"/>
+								<property name="knime.ui.extension.service.checksum" value="4c0aeb9bbbeb280be5e5ca9265d1706f218fb21c"/>
 								<ant antfile="${project.basedir}/build.xml">
 									<target name="build"/>
 								</ant>
