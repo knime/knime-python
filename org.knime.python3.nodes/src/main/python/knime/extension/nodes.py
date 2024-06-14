@@ -622,7 +622,7 @@ class ConfigurationContext(_BaseContext):
         self._input_ports = input_ports
         self._output_ports = output_ports
 
-    def get_connected_input_ports_numbers(self) -> List[int]:
+    def get_connected_input_port_numbers(self) -> List[int]:
         """Gets the number of connected input ports for each port.
 
         This method can be used to know how many input ports are connected to the node for each port.
@@ -640,7 +640,7 @@ class ConfigurationContext(_BaseContext):
         ]
         return port_list
 
-    def get_connected_output_ports_numbers(self) -> List[int]:
+    def get_connected_output_port_numbers(self) -> List[int]:
         """Gets the number of connected output ports for each port.
 
         This method can be used to know how many output ports are connected to the node for each port. This
@@ -655,7 +655,7 @@ class ConfigurationContext(_BaseContext):
         ...     # ...
         ...     def execute(self, exec_context, table)->List[knext.Schema]:
         ...         output_table = table
-        ...         connected_output_ports  = exec_context.get_connected_output_ports_numbers()
+        ...         connected_output_ports  = exec_context.get_connected_output_port_numbers()
         ...         # When 2 output ports are connected, this will return [2].
         ...         output_tables = [output_table] * connected_output_ports[0]
         ...         return output_tables # Thus, one list with two tables has to be returned.
@@ -1531,7 +1531,7 @@ def input_table_group(name: str, description: str):
     ...     def configure(self, config_context, first_table_specs: List[knext.Schema], second_table_specs: List[knext.Schema]) -> Iterable[List[knext.Schema]]:
     ...         return first_table_specs + second_table_specs
     ...
-    ...     def execute(self, exec_context, first_tables: List[knext.Table], second_tables: List[knext.Table]) -> List[List[knext.Table]]:
+    ...     def execute(self, exec_context, first_tables: List[knext.Table], second_tables: List[knext.Table]) -> Iterable[List[knext.Table]]:
     ...         return first_tables + second_tables
     """
     return lambda node_factory: _add_port(
@@ -1627,9 +1627,10 @@ def output_image_group(name: str, description: str):
     ... class ImageNode:
     ...     def configure(self, config_context):
     ...         # if 2 ports are connected per group, we will have 2 PNG and 2 SVG outputs
+    ...         port_numbers = config_context.get_connected_output_port_numbers()
     ...         return (
-    ...             [knext.ImagePortObjectSpec(knext.ImageFormat.PNG]*2,
-    ...             [knext.ImagePortObjectSpec(knext.ImageFormat.SVG)]*2,
+    ...             [knext.ImagePortObjectSpec(knext.ImageFormat.PNG]*port_numbers[0],
+    ...             [knext.ImagePortObjectSpec(knext.ImageFormat.SVG)]*port_numbers[1],
     ...         )
     ...
     ...     def execute(self, exec_context):
@@ -1681,17 +1682,14 @@ class _PortSpecifier:
     ----------
     name : str
         The name of the port specifier.
-    type : PortType
-        The type of the port specifier.
+    type_string : str
+        The type string of the port specifier.
     description : str
         The description of the port specifier.
-    index: int
-        The index of the port specifier. Where to insert in the description.
+    description_index: int
+        The description index of the port specifier. Where to insert in the description.
     group : bool = False
         Whether the port is a group or not.
-    defaults : int = 0
-        The default number of ports. When the node is initialized, this number of ports will be created. But these
-        ports can be removed.
     """
 
     name: str
