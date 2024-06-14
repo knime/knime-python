@@ -811,7 +811,9 @@ class _PythonNodeProxy:
                 )
 
     def _specs_to_python(self, specs, portmap):
-        inputs = self._map_ports(portmap, specs, self._port_type_registry.spec_to_python)
+        inputs = self._map_ports(
+            portmap, specs, self._port_type_registry.spec_to_python
+        )
         # unpacks inputs that come from a Port not a PortGroup
         return [
             i[0] if isinstance(port, kn.Port) else i
