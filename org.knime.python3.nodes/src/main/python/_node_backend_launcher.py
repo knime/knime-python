@@ -811,7 +811,12 @@ class _PythonNodeProxy:
                 )
 
     def _specs_to_python(self, specs, portmap):
-        return self._map_ports(portmap, specs, self._port_type_registry.spec_to_python)
+        inputs = self._map_ports(portmap, specs, self._port_type_registry.spec_to_python)
+        # unpacks inputs that come from a Port not a PortGroup
+        return [
+            i[0] if isinstance(port, kn.Port) else i
+            for i, port in zip(inputs, self._node.input_ports)
+        ]
 
     def _map_ports(
         self,
@@ -964,11 +969,6 @@ class _PythonNodeProxy:
                 self._node.input_ports,
                 self._node.output_ports,
             )
-            # unpacks inputs that come from a Port not a PortGroup
-            inputs = [
-                i[0] if isinstance(port, kn.Port) else i
-                for i, port in zip(inputs, self._node.input_ports)
-            ]
             kp.validate_specs(self._node, inputs)
             # TODO: maybe we want to run execute on the main thread? use knime._backend._mainloop
             outputs = self._node.configure(config_context, *inputs)
