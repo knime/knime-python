@@ -575,7 +575,7 @@ class RulesTest(unittest.TestCase):
                     "scope": "#/properties/model/properties/conditional_param",
                     "options": {"format": "boolean"},
                     "rule": {
-                        "condition": {"scope": "#", "schema": {"type": []}},
+                        "condition": {"scope": "#", "schema": {"type": ["null"]}},
                         "effect": "SHOW",
                     },
                 }

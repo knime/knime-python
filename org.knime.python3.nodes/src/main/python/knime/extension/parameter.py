@@ -538,7 +538,7 @@ class DialogContextCondition(Condition):
     def to_dict(self, find_scope: Callable[[Any], _Scope], ctx):
         return {
             "scope": "#",
-            "schema": {"type": ["object"] if self._ctx_predicate(ctx) else []},
+            "schema": {"type": ["object"] if self._ctx_predicate(ctx) else ["null"]},
         }
 
 
