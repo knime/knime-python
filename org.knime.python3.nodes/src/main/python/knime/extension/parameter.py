@@ -60,7 +60,7 @@ from copy import deepcopy
 from dataclasses import dataclass
 from enum import Enum
 from functools import lru_cache
-from typing import Any, Callable, Dict, List, Optional, TypeVar, Union
+from typing import Any, Callable, Dict, List, Optional, TypeVar, Union, Tuple
 
 import pytz
 from dateutil import parser
@@ -1511,7 +1511,7 @@ class _BaseColumnParameter(_BaseParameter):
         self,
         label,
         description,
-        port_index: int,
+        port_index: Union[int, Tuple[int, int]],
         column_filter: Optional[Callable[[ks.Column], bool]] = None,
         default_value: Optional[Union[Any, DefaultValueProvider[Any]]] = None,
         since_version=None,
@@ -1525,8 +1525,10 @@ class _BaseColumnParameter(_BaseParameter):
             Label of the parameter in the dialog
         description : str
             Description of the parameter in the node description and dialog
-        port_index : int
-            The input port to select columns from
+        port_index : int or (int, int)
+            The input port to select columns from. If the input port is a dynamic port group, provide a tuple of (port index, port index within group).
+            Each dynamic port group counts as one in port index numbering, so if you have e.g. table port, dynamic port group, table port, accessing the
+            last table would have index 2.
         column_filter : function
             A function for prefiltering columns
         since_version : str, optional
@@ -1556,11 +1558,18 @@ class _BaseColumnParameter(_BaseParameter):
     def _validate_specs(self, specs):
         if self._port_index is None:
             return
-        if len(specs) <= self._port_index:
+        if isinstance(self._port_index, int) and len(specs) <= self._port_index:
             raise ValueError(
                 f"There are too few input specs. The column selection '{self._name}' requires a table input at index {self._port_index}"
             )
-        elif not isinstance(specs[self._port_index], ks.Schema):
+        elif isinstance(self._port_index, tuple) and (
+            len(specs) <= self._port_index[0]
+            or len(specs[self._port_index[0]]) < self._port_index[1]
+        ):
+            raise ValueError(
+                f"There are too few input specs. The column selection '{self._name}' requires a table input at dynamic port index {self._port_index}"
+            )
+        elif not isinstance(_pick_spec(specs, self._port_index), ks.Schema):
             raise TypeError(
                 f"The port index ({self._port_index}) of the column selection '{self._name}' does not point to a table input."
             )
@@ -1722,9 +1731,32 @@ class MultiColumnParameter(_BaseColumnParameter):
         return super()._inject(obj, value, name, version)
 
 
-def _pick_spec(specs: List[ks.PortObjectSpec], port_index: int):
+def _pick_spec(specs: List[ks.PortObjectSpec], port_index: Union[int, Tuple[int, int]]):
     try:
-        spec = specs[port_index]
+        if isinstance(port_index, tuple):
+            if not isinstance(port_index[0], int) and isinstance(port_index[1], int):
+                raise ValueError(
+                    f"Invlid port index, must be int or (int, int), but got ({type(port_index[0])}, {type(port_index[1])})."
+                )
+            port_group_specs = specs[port_index[0]]
+            if not isinstance(port_group_specs, list):
+                raise TypeError(
+                    f"The port at index {port_index[0]} is not a port group. Access this port with a single int instead."
+                )
+
+            if port_index[1] >= len(port_group_specs):
+                return ks.Schema.from_columns([])
+            spec = port_group_specs[port_index[1]]
+
+            if spec is None:
+                # this is fine for dynamic ports
+                return ks.Schema.from_columns([])
+        else:
+            if not isinstance(port_index, int):
+                raise ValueError(
+                    f"Invalid port index, must be int or (int, int), but got {type(port_index)}."
+                )
+            spec = specs[port_index]
     except IndexError:
         raise IndexError(
             f"The port index {port_index} is not contained in the spec list with length {len(specs)}. "
