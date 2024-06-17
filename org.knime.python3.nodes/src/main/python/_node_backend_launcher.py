@@ -427,6 +427,8 @@ class _PortTypeRegistry:
         raise KeyError(f"No PortType for id '{id}' registered.")
 
     def spec_to_python(self, spec: _PythonPortObjectSpec, port: kn.Port, java_callback):
+        if spec is None:
+            return None
         class_name = spec.getJavaClassName()
         data = json.loads(spec.toJsonString())
 
