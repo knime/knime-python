@@ -114,7 +114,8 @@ public final class DelegatingJsonSettingsDataService implements NodeSettingsServ
     }
 
     @Override
-    public void toNodeSettings(final String jsonSettings, final Map<SettingsType, NodeSettingsRO> previousSettings,
+    public void toNodeSettings(final String jsonSettings,
+        final Map<SettingsType, NodeAndVariableSettingsRO> previousSettings,
         final Map<SettingsType, NodeAndVariableSettingsWO> settings) {
         // the jsonSettings received from the frontend are wrapped into a 'data' object
         var unwrapped = JsonNodeSettingsMapperUtil.getNestedJsonObject(jsonSettings, JsonFormsConsts.FIELD_NAME_DATA);
