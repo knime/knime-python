@@ -1736,7 +1736,7 @@ def _pick_spec(specs: List[ks.PortObjectSpec], port_index: Union[int, Tuple[int,
         if isinstance(port_index, tuple):
             if not isinstance(port_index[0], int) and isinstance(port_index[1], int):
                 raise ValueError(
-                    f"Invlid port index, must be int or (int, int), but got ({type(port_index[0])}, {type(port_index[1])})."
+                    f"Invalid port index, must be int or (int, int), but got ({type(port_index[0])}, {type(port_index[1])})."
                 )
             port_group_specs = specs[port_index[0]]
             if not isinstance(port_group_specs, list):
