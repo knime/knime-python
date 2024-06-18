@@ -5,63 +5,70 @@ import knime.extension.nodes as kn
 import knime.extension.parameter as kp
 from typing import List
 
+test_columns = {
+    "int": ks.Column(
+        ks.int32(),
+        "IntColumn",
+        {
+            "preferred_value_type": "org.knime.core.IntValue",
+            "displayed_column_type": "Integer",
+        },
+    ),
+    "double": ks.Column(
+        ks.double(),
+        "DoubleColumn",
+        {
+            "preferred_value_type": "org.knime.core.DoubleValue",
+            "displayed_column_type": "Double",
+        },
+    ),
+    "string": ks.Column(
+        ks.string(),
+        "StringColumn",
+        {
+            "preferred_value_type": "org.knime.core.StringValue",
+            "displayed_column_type": "String",
+        },
+    ),
+    "long list": ks.Column(
+        ks.list_(ks.int64()),
+        "LongListColumn",
+        {
+            "preferred_value_type": "org.knime.core.data.collection.ListDataValue",
+            "displayed_column_type": "Long List",
+        },
+    ),
+}
+
 test_schema = ks.Schema.from_columns(
     [
-        ks.Column(
-            ks.int32(),
-            "IntColumn",
-            {
-                "preferred_value_type": "org.knime.core.IntValue",
-                "displayed_column_type": "Integer",
-            },
-        ),
-        ks.Column(
-            ks.double(),
-            "DoubleColumn",
-            {
-                "preferred_value_type": "org.knime.core.DoubleValue",
-                "displayed_column_type": "Double",
-            },
-        ),
-        ks.Column(
-            ks.string(),
-            "StringColumn",
-            {
-                "preferred_value_type": "org.knime.core.StringValue",
-                "displayed_column_type": "String",
-            },
-        ),
-        ks.Column(
-            ks.list_(ks.int64()),
-            "LongListColumn",
-            {
-                "preferred_value_type": "org.knime.core.data.collection.ListDataValue",
-                "displayed_column_type": "Long List",
-            },
-        ),
+        test_columns["int"],
+        test_columns["double"],
+        test_columns["string"],
+        test_columns["long list"],
     ]
 )
 
-test_possible_values = [
-    {
+test_values = {
+    "int": {
         "id": "IntColumn",
         "text": "IntColumn",
         "type": {"id": "org.knime.core.IntValue", "text": "Integer"},
         "compatibleTypes": ["org.knime.core.IntValue"],
     },
-    {
+    "double": {
         "id": "DoubleColumn",
         "text": "DoubleColumn",
         "type": {"id": "org.knime.core.DoubleValue", "text": "Double"},
         "compatibleTypes": ["org.knime.core.DoubleValue"],
     },
-    {
+    "string": {
         "id": "StringColumn",
         "text": "StringColumn",
         "type": {"id": "org.knime.core.StringValue", "text": "String"},
         "compatibleTypes": ["org.knime.core.StringValue"],
     },
-    {
+    "long list": {
         "id": "LongListColumn",
         "text": "LongListColumn",
         "type": {
@@ -70,6 +77,13 @@ test_possible_values = [
         },
         "compatibleTypes": ["org.knime.core.data.collection.ListDataValue"],
     },
+}
+
+test_possible_values = [
+    test_values["int"],
+    test_values["double"],
+    test_values["string"],
+    test_values["long list"],
 ]
 
 
@@ -2448,6 +2462,81 @@ class ParameterTest(unittest.TestCase):
             ],
         }
         extracted = kp.extract_ui_schema(Parameterized(), DummyDialogCreationContext())
+        self.assertEqual(extracted, expected)
+
+    def test_column_parameter_with_dynamic_ports(self):
+        class Parameterized:
+            column_selection = kn.ColumnParameter(
+                "Column selection", "Column selection", port_index=(1, 0)
+            )
+            multi_column_param = kn.MultiColumnParameter(
+                "Multi Column Parameter", "Multi Column Parameter", port_index=(1, 1)
+            )
+            column_filter = kn.ColumnFilterParameter(
+                "Column filter", "Column filter", port_index=(2, 0)
+            )
+
+        table_specs = [
+            ks.Schema.from_columns([test_columns["int"]]),  # never accessed anyways
+            [
+                ks.Schema.from_columns([test_columns["int"], test_columns["double"]]),
+                ks.Schema.from_columns(
+                    [test_columns["string"], test_columns["long list"]]
+                ),
+            ],
+            [
+                ks.Schema.from_columns([test_columns["string"]]),
+            ],
+        ]
+
+        possible_values = [
+            [test_values["int"]],  # never accessed anyways
+            [
+                [test_values["int"], test_values["double"]],
+                [test_values["string"], test_values["long list"]],
+            ],
+            [[test_values["string"]]],
+        ]
+
+        expected = {
+            "type": "VerticalLayout",
+            "elements": [
+                {
+                    "scope": "#/properties/model/properties/column_selection",
+                    "type": "Control",
+                    "label": "Column selection",
+                    "options": {
+                        "format": "dropDown",
+                        "showRowKeys": False,
+                        "showNoneColumn": False,
+                        "possibleValues": possible_values[1][0],
+                    },
+                },
+                {
+                    "scope": "#/properties/model/properties/multi_column_param",
+                    "type": "Control",
+                    "label": "Multi Column Parameter",
+                    "options": {
+                        "format": "twinList",
+                        "possibleValues": possible_values[1][1],
+                    },
+                },
+                {
+                    "scope": "#/properties/model/properties/column_filter",
+                    "type": "Control",
+                    "label": "Column filter",
+                    "options": {
+                        "format": "columnFilter",
+                        "showSearch": True,
+                        "showMode": True,
+                        "possibleValues": possible_values[2][0],
+                    },
+                },
+            ],
+        }
+        extracted = kp.extract_ui_schema(
+            Parameterized(), DummyDialogCreationContext(table_specs)
+        )
         self.assertEqual(extracted, expected)
 
 
