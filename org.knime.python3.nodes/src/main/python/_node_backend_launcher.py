@@ -1037,15 +1037,19 @@ class _PythonNodeProxy:
         """
         if outputs is None:
             outputs = []
-        outputs = self._postprocess_outputs(outputs)
         if hasattr(self._node, "output_view") and self._node.output_view is not None:
-            out_view = outputs[-1]
-            outputs = outputs[:-1]
+            if isinstance(outputs, (list, tuple)):
+                out_view = outputs[-1]
+                outputs = outputs[:-1]
+            else:
+                out_view = outputs
+                outputs = []
             if isinstance(out_view, list):
                 out_view = out_view[0]
             # write the view to the sink
             view_sink = kg.data_sink_mapper(self._java_callback.create_view_sink())
             view_sink.display(out_view)
+        outputs = self._postprocess_outputs(outputs)
 
         java_outputs = []
 
