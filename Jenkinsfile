@@ -4,7 +4,6 @@ def BN = (BRANCH_NAME == 'master' || BRANCH_NAME.startsWith('releases/')) ? BRAN
 @groovy.transform.Field
 static final String[] WF_TESTS_PYTHON_ENVS = [
     'bundled',
-    'env_py36_pa5.yml',
     'env_py38_pa7.yml',
     'env_py39_kn47.yml',
 ]
