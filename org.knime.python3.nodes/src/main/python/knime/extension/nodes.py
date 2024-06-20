@@ -469,6 +469,7 @@ parameter_group = kp.parameter_group
 ColumnParameter = kp.ColumnParameter
 MultiColumnParameter = kp.MultiColumnParameter
 ColumnFilterParameter = kp.ColumnFilterParameter
+ParameterArray = kp.ParameterArray
 Table = kt.Table
 BatchOutputTable = kt.BatchOutputTable
 

@@ -73,6 +73,7 @@ EnumParameterOptions = _kp.EnumParameterOptions
 EnumSetParameter = _kp.EnumSetParameter
 DateTimeParameter = _kp.DateTimeParameter
 LocalPathParameter = _kp.LocalPathParameter
+ParameterArray = _kp.ParameterArray
 Version = _kp.Version
 Effect = _kp.Effect
 And = _kp.And
