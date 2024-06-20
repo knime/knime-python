@@ -93,6 +93,22 @@ class TestEnumSetOptions(kp.EnumParameterOptions):
     BAZ = ("Baz", "The baz")
 
 
+@kp.parameter_group("Parameter Group Array")
+class ParameterGroupArray:
+    """A parameter group which contains two parameters and passed to a ParameterArray."""
+
+    first = kp.IntParameter(
+        label="First Parameter",
+        description="First parameter description",
+        default_value=1,
+    )
+    second = kp.IntParameter(
+        label="Second Parameter",
+        description="Second parameter description",
+        default_value=5,
+    )
+
+
 def generate_values_dict(
     int_param=3,
     double_param=1.5,
@@ -108,6 +124,7 @@ def generate_values_dict(
     first=1,
     second=5,
     third=3,
+    parameter_array=[],
 ):
     return {
         "model": {
@@ -124,6 +141,7 @@ def generate_values_dict(
                 "subgroup": {"first": first, "second": second},
                 "third": third,
             },
+            "parameter_array": parameter_array,
         }
     }
 
@@ -483,8 +501,8 @@ class Parameterized:
         [TestEnumSetOptions.FOO.name],
         TestEnumSetOptions,
     )
-
     parameter_group = ParameterGroup()
+    parameter_array = kp.ParameterArray(parameters=ParameterGroupArray())
 
     @string_param.validator
     def validate_string_param(value):
@@ -521,6 +539,23 @@ class ParameterizedEnumSet:
         label="EnumSet Parameter",
         description="An EnumSet Parameter",
         default_value=[TestEnumSetOptions.FOO.name],
+    )
+
+
+class ParameterizedParameterArray:
+    """Provides checks for other ParameterArray parameters"""
+
+    parameter_array_vertical = kp.ParameterArray(
+        parameters=ParameterGroupArray(),
+        allow_reorder=True,
+        layout_type="vertical",
+        array_title="Second Array Title",
+    )
+
+    parameter_array_horizontal = kp.ParameterArray(
+        parameters=ParameterGroupArray(),
+        allow_reorder=False,
+        button_text="Add new parameter",
     )
 
 
@@ -1017,6 +1052,7 @@ class ParameterTest(unittest.TestCase):
         )
         self.parameterized_with_indented_docstring = ParameterizedIndentation()
         self.parameterized_with_enum_set_params = ParameterizedEnumSet()
+        self.parameterized_with_parameter_array = ParameterizedParameterArray()
 
         self.maxDiff = None
 
@@ -1174,6 +1210,11 @@ class ParameterTest(unittest.TestCase):
             3,
             2,
             1,
+            [
+                {"first": 1, "second": 2},
+                {"third": 3, "fourth": 4},
+                {"fifth": 5, "sixth": 6},
+            ],
         )
 
         kp.inject_parameters(self.parameterized, params)
@@ -1375,6 +1416,30 @@ class ParameterTest(unittest.TestCase):
                                 },
                             },
                         },
+                        "parameter_array": {
+                            "title": "parameter_array",
+                            "description": "",
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "first": {
+                                        "title": "First Parameter",
+                                        "description": "First parameter description",
+                                        "type": "integer",
+                                        "format": "int32",
+                                        "default": 1,
+                                    },
+                                    "second": {
+                                        "title": "Second Parameter",
+                                        "description": "Second parameter description",
+                                        "type": "integer",
+                                        "format": "int32",
+                                        "default": 5,
+                                    },
+                                },
+                            },
+                        },
                     },
                 }
             },
@@ -1530,8 +1595,37 @@ class ParameterTest(unittest.TestCase):
                         },
                     ],
                 },
+                {
+                    "scope": "#/properties/model/properties/parameter_array",
+                    "type": "Control",
+                    "label": "parameter_array",
+                    "options": {
+                        "addButtonText": None,
+                        "detail": {
+                            "horizontalLayout": {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                    {
+                                        "type": "Control",
+                                        "scope": "#/properties/first",
+                                        "label": "First Parameter",
+                                        "options": {"format": "integer"},
+                                    },
+                                    {
+                                        "type": "Control",
+                                        "scope": "#/properties/second",
+                                        "label": "Second Parameter",
+                                        "options": {"format": "integer"},
+                                    },
+                                ],
+                            }
+                        },
+                        "showSortButtons": True,
+                    },
+                },
             ],
         }
+
         extracted = kp.extract_ui_schema(
             self.parameterized, DummyDialogCreationContext()
         )
@@ -1800,6 +1894,74 @@ class ParameterTest(unittest.TestCase):
         )
         self.assertEqual(expected, extracted)
 
+    def test_extract_ui_schema_array_parameter(self):
+        expected = {
+            "type": "VerticalLayout",
+            "elements": [
+                {
+                    "scope": "#/properties/model/properties/parameter_array_vertical",
+                    "type": "Control",
+                    "label": "parameter_array_vertical",
+                    "options": {
+                        "addButtonText": None,
+                        "detail": {
+                            "horizontalLayout": {
+                                "type": "VerticalLayout",
+                                "elements": [
+                                    {
+                                        "type": "Control",
+                                        "scope": "#/properties/first",
+                                        "label": "First Parameter",
+                                        "options": {"format": "integer"},
+                                    },
+                                    {
+                                        "type": "Control",
+                                        "scope": "#/properties/second",
+                                        "label": "Second Parameter",
+                                        "options": {"format": "integer"},
+                                    },
+                                ],
+                            }
+                        },
+                        "arrayElementTitle": "Second Array Title",
+                        "showSortButtons": True,
+                    },
+                },
+                {
+                    "scope": "#/properties/model/properties/parameter_array_horizontal",
+                    "type": "Control",
+                    "label": "parameter_array_horizontal",
+                    "options": {
+                        "addButtonText": "Add new parameter",
+                        "detail": {
+                            "horizontalLayout": {
+                                "type": "HorizontalLayout",
+                                "elements": [
+                                    {
+                                        "type": "Control",
+                                        "scope": "#/properties/first",
+                                        "label": "First Parameter",
+                                        "options": {"format": "integer"},
+                                    },
+                                    {
+                                        "type": "Control",
+                                        "scope": "#/properties/second",
+                                        "label": "Second Parameter",
+                                        "options": {"format": "integer"},
+                                    },
+                                ],
+                            }
+                        },
+                    },
+                },
+            ],
+        }
+        extracted = kp.extract_ui_schema(
+            self.parameterized_with_parameter_array,
+            DummyDialogCreationContext(),
+        )
+        self.assertEqual(expected, extracted)
+
     def test_default_validators(self):
         """
         Test the default type-checking validators provided with each parameter class.
@@ -1925,7 +2087,6 @@ class ParameterTest(unittest.TestCase):
         descr_nested_groups_extracted = kp.extract_parameters(obj_descr_nested_groups)
         descr_nested_groups_expected = generate_values_dict(first=42)
         self.assertEqual(descr_nested_groups_extracted, descr_nested_groups_expected)
-
         ##### composed #####
         # # composed non-nested (here `param` was also declared as a class-level descriptor)
         # obj_composed_simple = ComposedParameterizedWithoutGroup(54321)
@@ -2215,6 +2376,20 @@ class ParameterTest(unittest.TestCase):
                     {
                         "name": "Internal int Parameter",
                         "description": "Internal int parameter description",
+                    },
+                ],
+            },
+            {
+                "name": "Parameter Group Array",
+                "description": "A parameter group which contains two parameters and passed to a ParameterArray.",
+                "options": [
+                    {
+                        "name": "First Parameter",
+                        "description": "First parameter description",
+                    },
+                    {
+                        "name": "Second Parameter",
+                        "description": "Second parameter description",
                     },
                 ],
             },
