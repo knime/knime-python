@@ -49,7 +49,11 @@ Provides access to environment variables and other information about the KNIME P
 """
 
 import os
-from dataclasses import dataclass
+
+try:
+    from dataclasses import dataclass
+except ImportError:
+    from dataclasses_py36backport import dataclass
 from typing import Optional, Tuple
 import logging
 
