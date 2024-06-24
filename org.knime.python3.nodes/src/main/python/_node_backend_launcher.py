@@ -775,7 +775,7 @@ class _PythonNodeProxy:
     ):
         try:
             # parameters could be from an older version
-            self.setParameters(parameters, parameters_version)
+            self.setParameters(parameters, parameters_version, exclude_validations=True)
 
             dialog_context = kn.DialogCreationContext(
                 python_dialog_context, self._get_flow_variables(), self._specs_to_python
@@ -869,12 +869,11 @@ class _PythonNodeProxy:
         self,
         parameters: str,
         parameters_version: str,
+        exclude_validations: bool = False,
     ) -> None:
         parameters_dict = json.loads(parameters)
         kp.inject_parameters(
-            self._node,
-            parameters_dict,
-            parameters_version,
+            self._node, parameters_dict, parameters_version, exclude_validations
         )
 
     def validateParameters(self, parameters: str, saved_version: str) -> None:

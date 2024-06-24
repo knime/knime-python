@@ -121,19 +121,23 @@ def inject_parameters(
     obj,
     parameters: dict,
     parameters_version: str = None,
+    exclude_validations: bool = False,
 ) -> None:
     """
     This method injects the provided values into the parameter descriptors of the parameterized object,
     which can be a node or a parameter group.
     """
     parameters_version = Version.parse_version(parameters_version)
-    _inject_parameters(obj, parameters["model"], parameters_version)
+    _inject_parameters(
+        obj, parameters["model"], parameters_version, exclude_validations
+    )
 
 
 def _inject_parameters(
     obj,
     parameters: dict,
     parameters_version: Version,
+    exclude_validations: bool = False,
 ) -> None:
     # Modify the parameters dict if the node has a _modify_parameters() method
     if hasattr(obj, "_modify_parameters"):
@@ -143,11 +147,15 @@ def _inject_parameters(
         if name in parameters:
             # Check if name is available as it might have been added by _modify_parameters above
             # In that case we don't care about the since_version
-            param_obj._inject(obj, parameters[name], name, parameters_version)
+            param_obj._inject(
+                obj, parameters[name], name, parameters_version, exclude_validations
+            )
         elif param_obj._since_version > parameters_version:
             # The parameter was introduced in a newer version but we might want to initialize
             # the default based on the version the workflow was created with
-            param_obj._set_default_for_version(obj, name, parameters_version)
+            param_obj._set_default_for_version(
+                obj, name, parameters_version, exclude_validations
+            )
 
 
 def validate_parameters(obj, parameters: dict, saved_version: str = None) -> None:
@@ -730,21 +738,32 @@ class _BaseParameter(ABC):
         else:
             return self._default_value
 
-    def _set_default_for_version(self, obj, name, version: Version):
-        self._set_value(obj, self._get_default(version), name)
+    def _set_default_for_version(
+        self, obj, name, version: Version, exclude_validations: bool = False
+    ):
+        self._set_value(obj, self._get_default(version), name, exclude_validations)
 
-    def _inject(self, obj, value, name, parameters_version: Version = None):  # NOSONAR
+    def _inject(
+        self,
+        obj,
+        value,
+        name,
+        parameters_version: Version = None,
+        exclude_validations: bool = False,
+    ):  # NOSONAR
         # the parameters_version parameter are needed to match the signature of the
         # _inject method for parameter groups
-        self._set_value(obj, self._from_dict(value), name)
+        self._set_value(obj, self._from_dict(value), name, exclude_validations)
 
-    def _set_value(self, obj, value, name):
+    def _set_value(self, obj, value, name, exclude_validations: bool = False):
         if not hasattr(obj, "__kind__"):
             # obj is the root parameterised object
             _create_param_dict_if_not_exists(obj)
-
-        # perform individual validation
-        self._validate(value)
+        # Exclude validation for LocalPathParameter when dialog is opened
+        # In the future, we may want to exclude additional parameters
+        if not exclude_validations or not isinstance(self, LocalPathParameter):
+            # perform individual validation
+            self._validate(value)
         obj.__parameters__[name] = value
 
     def __set__(self, obj, value):
@@ -1648,9 +1667,9 @@ class ColumnParameter(_BaseColumnParameter):
 
         return options
 
-    def _inject(self, obj, value, name, version):
+    def _inject(self, obj, value, name, version, exclude_validations: bool = False):
         value = None if value == "" else value
-        return super()._inject(obj, value, name, version)
+        return super()._inject(obj, value, name, version, exclude_validations)
 
 
 class MultiColumnParameter(_BaseColumnParameter):
@@ -1724,11 +1743,11 @@ class MultiColumnParameter(_BaseColumnParameter):
         else:
             return value
 
-    def _inject(self, obj, value, name, version):
+    def _inject(self, obj, value, name, version, exclude_validations: bool = False):
         # if there are no columns then the empty string is used as placeholder and we need to filter it out here
         if value is not None:
             value = [c for c in value if c != ""]
-        return super()._inject(obj, value, name, version)
+        return super()._inject(obj, value, name, version, exclude_validations)
 
 
 def _pick_spec(specs: List[ks.PortObjectSpec], port_index: Union[int, Tuple[int, int]]):
@@ -2746,15 +2765,28 @@ def parameter_group(
             def __set__(self, obj, values):
                 raise RuntimeError("Cannot set parameter group values directly.")
 
-            def _set_default_for_version(self, obj, name, version: Version):
+            def _set_default_for_version(
+                self, obj, name, version: Version, exclude_validations: bool = False
+            ):
                 param_holder = self._get_param_holder(obj)
                 # Assumes that if a parameter group is new, so are its elements
                 for name, param_obj in _get_parameters(param_holder).items():
-                    param_obj._set_default_for_version(param_holder, name, version)
+                    param_obj._set_default_for_version(
+                        param_holder, name, version, exclude_validations
+                    )
 
-            def _inject(self, obj, values, name, parameters_version: Version):
+            def _inject(
+                self,
+                obj,
+                values,
+                name,
+                parameters_version: Version,
+                exclude_validations: bool = False,
+            ):
                 param_holder = self._get_param_holder(obj)
-                _inject_parameters(param_holder, values, parameters_version)
+                _inject_parameters(
+                    param_holder, values, parameters_version, exclude_validations
+                )
 
             def __str__(self):
                 group_name = self._label if not hasattr(self, "_name") else self._name

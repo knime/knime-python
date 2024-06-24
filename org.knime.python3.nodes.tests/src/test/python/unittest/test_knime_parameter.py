@@ -1192,6 +1192,32 @@ class ParameterTest(unittest.TestCase):
         expected = generate_values_dict(5)
         self.assertEqual(expected, extracted)
 
+    def test_inject_parameters_with_validation(self):
+        """Test validation behaviour for LocalPathParameter."""
+
+        class ParameterizedWithPath:
+            int_param = kp.IntParameter("Int Parameter", "An integer parameter", 3)
+            path_param = kp.LocalPathParameter(
+                "Local Path Parameter", "A local path parameter", ""
+            )
+
+        params = {
+            "model": {
+                "int_param": 4,
+                "path_param": "C:\\Users\\Name\\Wrong_Path",
+            }
+        }
+
+        parameterized = ParameterizedWithPath()
+
+        kp.inject_parameters(parameterized, params, exclude_validations=True)
+        extracted = kp.extract_parameters(parameterized)
+        self.assertEqual(params, extracted)
+
+        # Check if error occurs when validation is done
+        with self.assertRaises(ValueError):
+            kp.inject_parameters(parameterized, params, exclude_validations=False)
+
     def test_extract_schema(self):
         expected = {
             "type": "object",
