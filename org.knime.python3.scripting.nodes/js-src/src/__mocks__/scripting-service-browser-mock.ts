@@ -52,6 +52,12 @@ if (import.meta.env.MODE === "development.browser") {
             type: "String",
           },
         ],
+        portType: "table",
+      },
+      {
+        name: "Input Object 1",
+        portType: "object",
+        portIconColor: "#FF0000",
       },
     ],
     outputObjects: [
@@ -59,6 +65,15 @@ if (import.meta.env.MODE === "development.browser") {
         name: "Output Table 1",
         codeAlias: "knio.output_tables[0]",
         requiredImport: "import knio.scripting.io as knio",
+      },
+      {
+        name: "Output Object 1",
+        portType: "object",
+        portIconColor: "#FF0000",
+      },
+      {
+        name: "Output View",
+        portType: "view",
       },
     ],
     flowVariableInputs: {

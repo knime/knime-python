@@ -63,7 +63,6 @@ import org.knime.core.node.port.image.ImagePortObject;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
 import org.knime.scripting.editor.InputOutputModel;
-import org.knime.scripting.editor.InputOutputModel.InputOutputModelSubItem;
 import org.knime.scripting.editor.WorkflowControl.InputPortInfo;
 
 /**
@@ -93,15 +92,12 @@ final class PythonScriptingInputOutputModelUtils {
     }
 
     static InputOutputModel getFlowVariableInputs(final Collection<FlowVariable> flowVariables) {
-        var subItems = flowVariables.stream() //
-            .map(f -> new InputOutputModelSubItem(f.getName(), f.getVariableType().toString())) //
-            .toArray(InputOutputModelSubItem[]::new);
-        return new InputOutputModel("Flow Variables", //
+        return InputOutputModel.createFromFlowVariables(flowVariables, //
             CODE_ALIAS_FLOW_VARS, //
             CODE_ALIAS_TEMPLATE_FLOW_VARS, //
             REQUIRED_IMPORT, //
-            false, //
-            subItems);
+            false //
+        );
     }
 
     static List<InputOutputModel> getInputObjects(final InputPortInfo[] inputPorts) {
@@ -152,7 +148,10 @@ final class PythonScriptingInputOutputModelUtils {
                 null, //
                 REQUIRED_IMPORT, //
                 false, //
-                null);
+                null, //
+                getPortObjectTypeId(type), //
+                getPortObjectColor(type) //
+            );
         }).toList();
         if (hasView) {
             outputPortInfos = new ArrayList<>(outputPortInfos);
@@ -161,7 +160,10 @@ final class PythonScriptingInputOutputModelUtils {
                 null, //
                 REQUIRED_IMPORT, //
                 false, //
-                null));
+                null, //
+                InputOutputModel.VIEW_PORT_TYPE_NAME, //
+                null //
+            ));
         }
         return outputPortInfos;
     }
@@ -181,7 +183,9 @@ final class PythonScriptingInputOutputModelUtils {
             getSubItemCodeAliasTemplate(index, displayName), //
             REQUIRED_IMPORT, //
             true, //
-            null //
+            null, //
+            getPortObjectTypeId(displayName), //
+            getPortObjectColor(displayName) //
         );
     }
 
@@ -253,5 +257,29 @@ final class PythonScriptingInputOutputModelUtils {
             default:
                 throw new IllegalArgumentException("Unexpected input object type: " + type);
         }
+    }
+
+    private static String getPortObjectTypeId(final String type) {
+        return switch (type) {
+            case INPUT_OUTPUT_TYPE_TABLE -> InputOutputModel.TABLE_PORT_TYPE_NAME;
+            case INPUT_OUTPUT_TYPE_OBJECT, INPUT_OUTPUT_TYPE_IMAGE -> InputOutputModel.OBJECT_PORT_TYPE_NAME;
+            default -> throw new IllegalArgumentException("Unexpected input object type: " + type);
+        };
+    }
+
+    private static String getPortObjectColor(final String type) {
+        return switch (type) {
+            case INPUT_OUTPUT_TYPE_TABLE -> null;
+            case INPUT_OUTPUT_TYPE_OBJECT -> toHexColor(PickledObjectFileStorePortObject.TYPE.getColor());
+            case INPUT_OUTPUT_TYPE_IMAGE -> toHexColor(ImagePortObject.TYPE.getColor());
+            default -> throw new IllegalArgumentException("Unexpected input object type: " + type);
+        };
+    }
+
+    private static String toHexColor(final int color) {
+        // Ignore alpha (if there is any)
+        var rgb = color & 0x00FFFFFF;
+        // Format with a "#" prefix and 6 hex digits
+        return String.format("#%06X", rgb);
     }
 }

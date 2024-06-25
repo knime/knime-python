@@ -92,7 +92,7 @@ public final class PythonScriptingInputOutputModelUtilsTest {
         );
         final var model = PythonScriptingInputOutputModelUtils.getFlowVariableInputs(variables);
 
-        assertEquals("name", "Flow Variables", model.name());
+        assertEquals("name", "Flow variables", model.name());
         assertEquals("codeAlias", "knio.flow_variables", model.codeAlias());
         assertEquals("subItemCodeAliasTemplate", "knio.flow_variables[\"{{subItems.[0]}}\"]",
             model.subItemCodeAliasTemplate());
