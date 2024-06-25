@@ -1747,10 +1747,6 @@ def _pick_spec(specs: List[ks.PortObjectSpec], port_index: Union[int, Tuple[int,
             if port_index[1] >= len(port_group_specs):
                 return ks.Schema.from_columns([])
             spec = port_group_specs[port_index[1]]
-
-            if spec is None:
-                # this is fine for dynamic ports
-                return ks.Schema.from_columns([])
         else:
             if not isinstance(port_index, int):
                 raise ValueError(
@@ -1762,6 +1758,9 @@ def _pick_spec(specs: List[ks.PortObjectSpec], port_index: Union[int, Tuple[int,
             f"The port index {port_index} is not contained in the spec list with length {len(specs)}. "
             f"Maybe the port_index does not match the index of the corresponding input table? "
         ) from None
+    if spec is None:
+        # no input connected at this port
+        return ks.Schema.from_columns([])
     if not isinstance(spec, ks.Schema):
         raise TypeError(
             f"The port at index {port_index} is not a table. "
