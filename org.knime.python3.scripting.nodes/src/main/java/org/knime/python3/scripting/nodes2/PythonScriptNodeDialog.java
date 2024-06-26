@@ -93,8 +93,10 @@ public final class PythonScriptNodeDialog implements NodeDialog {
 
     @Override
     public Optional<RpcDataService> createRpcDataService() {
-        return Optional.of(RpcDataService.builder(m_scriptingService.getJsonRpcService())
-            .onDeactivate(m_scriptingService::onDeactivate).build());
+        return Optional.of(RpcDataService.builder() //
+            .addService("ScriptingService", m_scriptingService.getJsonRpcService()) //
+            .onDeactivate(m_scriptingService::onDeactivate) //
+            .build());
     }
 
     @Override
