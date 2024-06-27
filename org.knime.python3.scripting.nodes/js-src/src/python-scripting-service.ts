@@ -184,12 +184,12 @@ export const pythonScriptingService = {
       ...inpObjects.flatMap(
         (inp, inpIdx) =>
           inp.subItems?.map((subItem) => ({
-            label: subItem.name,
+            label: subItem.name.replace(/\\/g, "\\\\").replace(/"/g, '\\"'),
             detail: `input ${inpIdx} - column : ${subItem.type}`,
           })) ?? [],
       ),
       ...(inpFlowVars.subItems?.map((subItem) => ({
-        label: subItem.name,
+        label: subItem.name.replace(/\\/g, "\\\\").replace(/"/g, '\\"'),
         detail: `flow variable : ${subItem.type}`,
       })) ?? []),
     ]);

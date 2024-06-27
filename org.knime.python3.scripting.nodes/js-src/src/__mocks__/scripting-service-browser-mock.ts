@@ -24,9 +24,9 @@ if (import.meta.env.MODE === "development.browser") {
         multiSelection: true,
         subItemCodeAliasTemplate: `knio.input_tables[0][
         {{~#if subItems.[1]~}}
-          [{{#each subItems}}"{{this}}"{{#unless @last}},{{/unless}}{{/each}}]
+          [{{#each subItems}}"{{{escapeDblQuotes this}}}"{{#unless @last}},{{/unless}}{{/each}}]
         {{~else~}}
-          "{{subItems.[0]}}"
+          "{{{escapeDblQuotes subItems.[0]}}}"
           {{~/if~}}
       ].to_pandas()`,
       },
@@ -37,9 +37,9 @@ if (import.meta.env.MODE === "development.browser") {
         multiSelection: true,
         subItemCodeAliasTemplate: `knio.input_tables[1][
         {{~#if subItems.[1]~}}
-          [{{#each subItems}}"{{this}}"{{#unless @last}},{{/unless}}{{/each}}]
+          [{{#each subItems}}"{{{escapeDblQuotes this}}}"{{#unless @last}},{{/unless}}{{/each}}]
         {{~else~}}
-          "{{subItems.[0]}}"
+          "{{{escapeDblQuotes subItems.[0]}}}"
           {{~/if~}}
       ].to_pandas()`,
         subItems: [
@@ -48,7 +48,7 @@ if (import.meta.env.MODE === "development.browser") {
             type: "Number",
           },
           {
-            name: "Bar",
+            name: 'Bar & "<xml>"',
             type: "String",
           },
         ],
@@ -81,7 +81,8 @@ if (import.meta.env.MODE === "development.browser") {
       codeAlias: "knio.flow_variables",
       requiredImport: "import knio.scripting.io as knio",
       multiSelection: false,
-      subItemCodeAliasTemplate: 'knio.flow_variables["{{subItems.[0]}}"]',
+      subItemCodeAliasTemplate:
+        'knio.flow_variables["{{{escapeDblQuotes subItems.[0]}}}"]',
     },
   });
 

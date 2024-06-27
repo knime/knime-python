@@ -83,7 +83,7 @@ final class PythonScriptingInputOutputModelUtils {
 
     private static final String CODE_ALIAS_FLOW_VARS = "knio.flow_variables";
 
-    private static final String CODE_ALIAS_TEMPLATE_FLOW_VARS = "knio.flow_variables[\"{{subItems.[0]}}\"]";
+    private static final String CODE_ALIAS_TEMPLATE_FLOW_VARS = "knio.flow_variables[\"{{{escapeDblQuotes subItems.[0]}}}\"]";
 
     private static final String CODE_ALIAS_OUTPUT_VIEW = "knio.output_view";
 
@@ -213,9 +213,9 @@ final class PythonScriptingInputOutputModelUtils {
         var templateString = """
                 knio.input_%s[%d][
                     {{~#if subItems.[1]~}}
-                        [{{#each subItems}}"{{this}}"{{#unless @last}},{{/unless}}{{/each}}]
+                        [{{#each subItems}}"{{{escapeDblQuotes this}}}"{{#unless @last}},{{/unless}}{{/each}}]
                     {{~else~}}
-                        "{{subItems.[0]}}"
+                        "{{{escapeDblQuotes subItems.[0]}}}"
                     {{~/if~}}
                 ].to_pandas()""";
         switch (type) {
