@@ -1851,14 +1851,14 @@ class ParameterArray(_BaseParameter):
         else:
             return value
 
-    def _inject(self, obj, value, name, version):
+    def _inject(self, obj, value, name, version, exclude_validations: bool = False):
         param_holder = self.parameters._get_param_holder(self.parameters)
         if value is None:
             value = [{}]
             for param_name, param_obj in _get_parameters(param_holder).items():
                 def_val = param_obj._get_value(obj, param_name)
                 value[0][param_name] = def_val
-        return super()._inject(obj, value, name, version)
+        return super()._inject(obj, value, name, version, exclude_validations)
 
 
 class MultiColumnParameter(_BaseColumnParameter):
