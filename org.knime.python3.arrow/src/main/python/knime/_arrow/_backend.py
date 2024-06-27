@@ -358,9 +358,10 @@ class ArrowDataSink:
         self._file = pa.OSFile(java_data_sink.getAbsolutePath(), mode="wb")
         self._size = 0
         self._writer = None
-        self._chunk_size = None
+        self._chunk_size = None # TODO remove
         self._recieved_last_batch = False
         self._is_closed = False
+        self._batch_boundaries = []
 
     def __enter__(self):
         return self
@@ -402,6 +403,12 @@ class ArrowDataSink:
             )
 
         chunk_size = len(data)
+
+        # remember batch boundaries for footer
+        previous_batch_end = 0 if len(self._batch_boundaries) == 0 else self._batch_boundaries[-1]
+        self._batch_boundaries.append()
+
+
         offset = self._get_offset(data.schema, chunk_size)
         self._writer.write(data)
         self._file.flush()
