@@ -1698,169 +1698,6 @@ class ColumnParameter(_BaseColumnParameter):
         return super()._inject(obj, value, name, version, exclude_validations)
 
 
-class ParameterArray(_BaseParameter):
-    """
-    Parameter class that takes parameter groups as a parameter to create array of parameters.
-
-    Example
-    --------
-
-    >>> @knext.parameter_group(label="Coffee Selections")
-    ... class CoffeeSelections:
-    ...     coffee_options = knext.StringParameter(
-    ...         "Coffee Options",
-    ...         "Enter the type of coffee you like to drink.",
-    ...         default_value="Watery",
-    ...     )
-    ...
-    ...     number_of_cups = knext.IntParameter(
-    ...         "Number of Cups",
-    ...         "Enter the number of cups of coffee you usually drink.",
-    ...         default_value=5,
-    ...     )
-    ...
-    ... coffee_selection = knext.ParameterArray(
-    ...     label="Coffee Selections",
-    ...     description="It's all about your caffeine intake.",
-    ...     since_version="5.3.0",
-    ...     parameters=CoffeeSelections(),
-    ...     button_text="Add new selection",
-    ...     array_title="Selections",
-    ... )
-
-    """
-
-    def __init__(
-        self,
-        label: Optional[str] = None,
-        description: Optional[str] = None,
-        since_version: Optional[Union[Version, str]] = None,
-        is_advanced: bool = False,
-        allow_reorder: bool = True,
-        layout_type: Optional[str] = None,
-        button_text: Optional[str] = None,
-        array_title: Optional[str] = None,
-        parameters=None,
-    ):
-        """
-        Parameters
-        ----------
-        label : str, optional
-            Label of the parameter in the dialog
-        description : str, optional
-            Description of the parameter in the node description and dialog
-        since_version : Union[Version, str], optional
-            A string or Version object representing the version since when the object is available (default is None).
-        is_advanced : bool, optional
-            A boolean indicating if the object is advanced (default is False).
-        allow_reorder : bool, optional
-            Whether the order of parameters in the array can be changed. Defaults to True.
-        layout_type : str, optional
-            Layout type for the array. Can be "horizontal" or "vertical". Defaults to "horizontal".
-        button_text : str, optional
-            Text to display on the button for adding new parameters.
-        array_title : str, optional
-            Title of the array of parameters.
-        parameters : list, optional
-            Initial list of parameters for the array. Defaults to an empty list.
-        """
-        super().__init__(
-            label,
-            description,
-            None,
-            None,
-            since_version,
-            is_advanced,
-        )
-        self.allow_reorder = allow_reorder
-        self.layout_type = layout_type
-        self.parameters = parameters if parameters is not None else []
-        self.button_text = button_text
-        self.array_title = array_title
-
-    def _extract_description(self, name, parent_scope: _Scope):
-        param_holder = self.parameters._get_param_holder(self.parameters)
-        descriptions = param_holder._extract_description(name, parent_scope)
-
-        return descriptions
-
-    def _extract_schema(
-        self,
-        extension_version=None,
-        dialog_creation_context=None,
-    ):
-        schema = super()._extract_schema(
-            dialog_creation_context=dialog_creation_context
-        )
-        param_holder = self.parameters._get_param_holder(self.parameters)
-        item_properties = {}
-        for name, param_obj in _get_parameters(param_holder).items():
-            param_schema = param_obj._extract_schema(
-                extension_version, dialog_creation_context
-            )
-            param_schema["default"] = param_obj._get_default()
-            item_properties[name] = param_schema
-
-        schema["type"] = "array"
-        schema["items"] = {"type": "object", "properties": item_properties}
-
-        return schema
-
-    def _extract_ui_schema(self, dialog_creation_context):
-        base_schema = super()._extract_ui_schema(dialog_creation_context)
-        base_schema["options"] = self._get_options(dialog_creation_context)
-
-        nested_elements = base_schema["options"]["detail"]["horizontalLayout"][
-            "elements"
-        ]
-        param_holder = self.parameters._get_param_holder(self.parameters)
-
-        for name, param_obj in _get_parameters(param_holder).items():
-            element_schema = param_obj._extract_ui_schema(
-                dialog_creation_context=dialog_creation_context
-            )
-            nested_elements.append(
-                {"type": "Control", "scope": f"#/properties/{name}", **element_schema}
-            )
-        return base_schema
-
-    def _get_options(self, dialog_creation_context) -> dict:
-        options = {
-            "addButtonText": self.button_text,
-            "detail": {
-                "horizontalLayout": {
-                    "type": "HorizontalLayout",
-                    "elements": [],
-                }
-            },
-        }
-
-        if self.layout_type == "vertical":
-            options["detail"]["horizontalLayout"]["type"] = "VerticalLayout"
-        if self.array_title:
-            options["arrayElementTitle"] = self.array_title
-        if self.allow_reorder:
-            options["showSortButtons"] = self.allow_reorder
-
-        return options
-
-    def _get_value(self, obj, name, for_dialog: bool = False):
-        value = super()._get_value(obj, name, for_dialog)
-        if value is None:
-            return []
-        else:
-            return value
-
-    def _inject(self, obj, value, name, version, exclude_validations: bool = False):
-        param_holder = self.parameters._get_param_holder(self.parameters)
-        if value is None:
-            value = [{}]
-            for param_name, param_obj in _get_parameters(param_holder).items():
-                def_val = param_obj._get_value(obj, param_name)
-                value[0][param_name] = def_val
-        return super()._inject(obj, value, name, version, exclude_validations)
-
-
 class MultiColumnParameter(_BaseColumnParameter):
     """
     Parameter class for multiple columns.
@@ -3068,6 +2905,168 @@ def parameter_group(
         return ParameterGroupHolder
 
     return decorate_class
+
+
+class ParameterArray(_BaseParameter):
+    """
+    Parameter class that takes a parameter group as a parameter to create array of parameters.
+
+    Example
+    --------
+
+    >>> @knext.parameter_group(label="Coffee Selections")
+    ... class CoffeeSelections:
+    ...     coffee_options = knext.StringParameter(
+    ...         "Coffee Options",
+    ...         "Enter the type of coffee you like to drink.",
+    ...         default_value="Watery",
+    ...     )
+    ...
+    ...     number_of_cups = knext.IntParameter(
+    ...         "Number of Cups",
+    ...         "Enter the number of cups of coffee you usually drink.",
+    ...         default_value=5,
+    ...     )
+    ...
+    ... coffee_selection = knext.ParameterArray(
+    ...     label="Coffee Selections",
+    ...     description="It's all about your caffeine intake.",
+    ...     since_version="5.3.0",
+    ...     parameters=CoffeeSelections(),
+    ...     button_text="Add new selection",
+    ...     array_title="Selections",
+    ... )
+
+    """
+
+    def __init__(
+        self,
+        label: str,
+        description: str,
+        parameters: GetSetBase,
+        since_version: Optional[Union[Version, str]] = None,
+        is_advanced: bool = False,
+        allow_reorder: bool = True,
+        layout_type: Optional[str] = None,
+        button_text: Optional[str] = None,
+        array_title: Optional[str] = None,
+    ):
+        """
+        Parameters
+        ----------
+        label : str, optional
+            Label of the parameter in the dialog
+        description : str, optional
+            Description of the parameter in the node description and dialog
+        since_version : Union[Version, str], optional
+            A string or Version object representing the version since when the object is available (default is None).
+        is_advanced : bool, optional
+            A boolean indicating if the object is advanced (default is False).
+        allow_reorder : bool, optional
+            Whether the order of parameters in the array can be changed. Defaults to True.
+        layout_type : str, optional
+            Layout type for the array. Can be "horizontal" or "vertical". Defaults to "horizontal".
+        button_text : str, optional
+            Text to display on the button for adding new parameters.
+        array_title : str, optional
+            Title of the array of parameters.
+        parameters : list, optional
+            Initial list of parameters for the array. Pass the ParameterGroup defining the settings of each item,
+            with each item being an instance of the ParameterGroup.
+        """
+        super().__init__(
+            label,
+            description,
+            None,
+            None,
+            since_version,
+            is_advanced,
+        )
+        self._allow_reorder = allow_reorder
+        self._layout_type = layout_type
+        self._parameters = parameters
+        self._button_text = button_text
+        self._array_title = array_title
+
+    def _extract_description(self, name, parent_scope: _Scope):
+        param_holder = self._parameters._get_param_holder(self._parameters)
+        descriptions = param_holder._extract_description(name, parent_scope)
+
+        return descriptions
+
+    def _extract_schema(
+        self,
+        extension_version=None,
+        dialog_creation_context=None,
+    ):
+        schema = super()._extract_schema(
+            dialog_creation_context=dialog_creation_context
+        )
+        param_holder = self._parameters._get_param_holder(self._parameters)
+        item_properties = {}
+        for name, param_obj in _get_parameters(param_holder).items():
+            param_schema = param_obj._extract_schema(
+                extension_version, dialog_creation_context
+            )
+            param_schema["default"] = param_obj._get_default()
+            item_properties[name] = param_schema
+
+        schema["type"] = "array"
+        schema["items"] = {"type": "object", "properties": item_properties}
+
+        return schema
+
+    def _extract_ui_schema(self, dialog_creation_context):
+        base_schema = super()._extract_ui_schema(dialog_creation_context)
+        base_schema["options"] = self._get_options(dialog_creation_context)
+
+        nested_elements = base_schema["options"]["detail"]["layout"]["elements"]
+        param_holder = self._parameters._get_param_holder(self._parameters)
+
+        for name, param_obj in _get_parameters(param_holder).items():
+            element_schema = param_obj._extract_ui_schema(
+                dialog_creation_context=dialog_creation_context
+            )
+            nested_elements.append(
+                {"type": "Control", "scope": f"#/properties/{name}", **element_schema}
+            )
+        return base_schema
+
+    def _get_options(self, dialog_creation_context) -> dict:
+        options = {
+            "addButtonText": self._button_text,
+            "detail": {
+                "layout": {
+                    "type": "HorizontalLayout",
+                    "elements": [],
+                }
+            },
+        }
+
+        if self._layout_type == "vertical":
+            options["detail"]["layout"]["type"] = "VerticalLayout"
+        if self._array_title:
+            options["arrayElementTitle"] = self._array_title
+        if self._allow_reorder:
+            options["showSortButtons"] = self._allow_reorder
+
+        return options
+
+    def _get_value(self, obj, name, for_dialog: bool = False):
+        value = super()._get_value(obj, name, for_dialog)
+        if value is None:
+            return []
+        else:
+            return value
+
+    def _inject(self, obj, value, name, version, exclude_validations: bool = False):
+        param_holder = self._parameters._get_param_holder(self._parameters)
+        if value is None:
+            value = [{}]
+            for param_name, param_obj in _get_parameters(param_holder).items():
+                def_val = param_obj._get_value(obj, param_name)
+                value[0][param_name] = def_val
+        return super()._inject(obj, value, name, version, exclude_validations)
 
 
 def _get_indent_level(lines):
