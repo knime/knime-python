@@ -162,7 +162,7 @@ class ProxySettings:
         # The protocol (which depends on the target URL) is only used to determine which proxy to use.
         proxy_env_string = "http://"
 
-        if self.has_credentials:
+        if self.has_credentials():
             proxy_env_string += f"{self.user_name}:{self._password}@"
 
         proxy_env_string += f"{self.host_name}"
