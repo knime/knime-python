@@ -139,7 +139,8 @@ class ProxySettings:
         self.user_name = user_name
         self._password = password
 
-        self._has_credentials = user_name and password
+    def has_credentials(self) -> bool:
+        return (self.user_name and self.password) is not None
 
     def __str__(self):
         """
@@ -157,9 +158,11 @@ class ProxySettings:
             )
             return ""
 
-        proxy_env_string = f"{self.protocol_name}://"
+        # KNIME always uses http to talk to the proxy, no matter which protocol.
+        # The protocol (which depends on the target URL) is only used to determine which proxy to use.
+        proxy_env_string = "http://"
 
-        if self._has_credentials:
+        if self.has_credentials:
             proxy_env_string += f"{self.user_name}:{self._password}@"
 
         proxy_env_string += f"{self.host_name}"
