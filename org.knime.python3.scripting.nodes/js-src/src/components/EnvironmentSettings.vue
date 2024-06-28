@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, type Ref } from "vue";
+import { computed, onMounted, onUnmounted, ref, type Ref, watch } from "vue";
 import RadioButtons from "webapps-common/ui/components/forms/RadioButtons.vue";
 import Dropdown from "webapps-common/ui/components/forms/Dropdown.vue";
 import Label from "webapps-common/ui/components/forms/Label.vue";
@@ -65,8 +65,6 @@ onUnmounted(() => {
     return;
   }
 
-  setSelectedExecutable({ id: newSelection, isMissing: false });
-
   // Notify the backend that the executable selection has changed
   pythonScriptingService.updateExecutableSelection(newSelection);
 
@@ -78,6 +76,10 @@ onUnmounted(() => {
     });
   }
 });
+
+watch(selectedEnv, () =>
+  setSelectedExecutable({ id: selectedEnv.value, isMissing: false }),
+);
 </script>
 
 <template>

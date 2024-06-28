@@ -365,7 +365,9 @@ final class PythonScriptingService extends ScriptingService {
          * @param executableSelection the identifier for the new executable
          */
         public void updateExecutableSelection(final String executableSelection) {
+
             if (!m_executableSelection.equals(executableSelection)) {
+                System.out.println("Updating executable selection to: " + executableSelection);
                 m_executableSelection = executableSelection;
                 clearSession();
             }

@@ -88,11 +88,23 @@ final class PythonScriptNodeSettings extends ScriptingNodeSettings {
         return m_executableSelection;
     }
 
+
+    @Override
+    public void saveModelSettingsTo(final NodeSettingsWO settings) {
+        this.saveSettingsTo(settings);
+    }
+
     void saveSettingsTo(final NodeSettingsWO settings) {
         super.saveModelSettingsTo(settings);
 
         // NB: only configured via flow variables
         settings.addString(EXECUTABLE_SELECTION_CFG_KEY, EXEC_SELECTION_PREF_ID);
+    }
+
+
+    @Override
+    public void loadModelSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
+        this.loadValidatedSettingsFrom(settings);
     }
 
     void loadValidatedSettingsFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
@@ -117,8 +129,12 @@ final class PythonScriptNodeSettings extends ScriptingNodeSettings {
         @Override
         protected void putAdditionalSettingsToJson(final Map<SettingsType, NodeAndVariableSettingsRO> settings,
             final PortObjectSpec[] specs, final ObjectNode settingsJson) {
+
+            System.out.println("\n\n\n PythonScriptNodeSettingsService.putAdditionalSettingsToJson()");
+
             var modelSettings = settings.get(SettingsType.MODEL);
             var executableSelection = modelSettings.getString(EXECUTABLE_SELECTION_CFG_KEY, EXEC_SELECTION_PREF_ID);
+            System.out.println("settings: " +executableSelection + "\n\n\n");
             if (modelSettings.isVariableSetting(EXECUTABLE_SELECTION_CFG_KEY)) {
                 try {
                     executableSelection = modelSettings.getUsedVariable(EXECUTABLE_SELECTION_CFG_KEY);
