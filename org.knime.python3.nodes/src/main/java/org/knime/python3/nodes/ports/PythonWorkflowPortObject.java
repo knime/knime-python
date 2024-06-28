@@ -154,7 +154,7 @@ public final class PythonWorkflowPortObject implements PythonPortObject {
 
     private static ExecutionContext createExecutionContext() {
         var nodeContainer = (NativeNodeContainer)NodeContext.getContext().getNodeContainer();
-        return nodeContainer.createExecutionContext();
+        return nodeContainer.createExecutionContext().createSilentSubExecutionContext(0);
     }
 
     private WorkflowSegmentExecutor createExecutable(final Consumer<String> warningConsumer) throws KNIMEException {
