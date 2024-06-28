@@ -100,6 +100,8 @@ def _create_table_from_pyarrow(data, sentinel, row_ids="auto", first_row_id=0):
 
 
 def _check_batch_sizes_constant(data: Union[pa.Table, pa.RecordBatch]):
+    # TODO I think this is not needed anymore because we split the table anyway
+
     """If the data is a pyarrow Table, check that all batches have the same size"""
     if isinstance(data, pa.Table) and len(data) > 0:
         batch_sizes = [len(rb) for rb in data.to_batches()]
@@ -338,15 +340,42 @@ class ArrowTable(knt.Table):
         """
         Split a table into batches of KNIMEs desired batch size.
         """
+        # Empty table
         if len(data) == 0:
             # Return data so that we write the schema even if no rows are present
             return [data]
 
-        desired_num_batches = data.nbytes / self._MAX_NUM_BYTES_PER_BATCH
-        if desired_num_batches < 1:
-            return data.to_batches()
-        num_rows_per_batch = int(len(data) // desired_num_batches)
-        return data.to_batches(max_chunksize=num_rows_per_batch)
+        # Check if the table is already batched correctly
+        batches = data.to_batches()
+        batch_num_rows = [len(rb) for rb in batches]
+        batch_bytes = [rb.nbytes for rb in batches]
+        if (
+            # all batches have the same number of rows
+            all(num_rows == batch_num_rows[0] for num_rows in batch_num_rows[:-1])
+            # the last batch has less or equal rows than the other batches
+            and batch_num_rows[-1] <= batch_num_rows[0]
+            # all batches are smaller than the target size
+            and all(
+                num_bytes <= self._MAX_NUM_BYTES_PER_BATCH for num_bytes in batch_bytes
+            )
+        ):
+            return batches
+
+        # Split the table into batches manually
+        # Note that pa.Table.to_batches(max_chunksize) does not split the table into batches of equal size
+        num_rows_per_batch = max(
+            int(self._MAX_NUM_BYTES_PER_BATCH / (data.nbytes / len(data))), 1
+        )
+        batches = []
+        next_start = 0
+        while next_start < len(data):
+            next_end = min(next_start + num_rows_per_batch, len(data))
+            batches.append(
+                data.slice(next_start, next_end - next_start).combine_chunks()
+            )
+            next_start = next_end
+
+        return batches
 
 
 class ArrowSourceTable(ArrowTable):
