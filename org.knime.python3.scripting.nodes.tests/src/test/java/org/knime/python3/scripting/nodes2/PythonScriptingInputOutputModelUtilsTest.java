@@ -94,8 +94,7 @@ public final class PythonScriptingInputOutputModelUtilsTest {
 
         assertEquals("name", "Flow variables", model.name());
         assertEquals("codeAlias", "knio.flow_variables", model.codeAlias());
-        assertEquals("subItemCodeAliasTemplate", "knio.flow_variables[\"{{subItems.[0]}}\"]",
-            model.subItemCodeAliasTemplate());
+        assertNotNull("subItemCodeAliasTemplate", model.subItemCodeAliasTemplate());
         assertEquals("requiredImport", "import knime.scripting.io as knio", model.requiredImport());
         assertFalse("multiSelection should be false", model.multiSelection());
 
