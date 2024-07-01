@@ -94,7 +94,7 @@ const rightPaneOptions = [
 onMounted(async () => {
   pythonScriptingService.sendLastConsoleOutput();
 
-  pythonScriptingService.initExecutableSelection();
+  void pythonScriptingService.initExecutableSelection();
 
   // Check if the preview is available
   hasPreview.value = await pythonScriptingService.hasPreview();

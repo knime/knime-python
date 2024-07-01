@@ -11,6 +11,7 @@ const executableSelection = useExecutableSelectionStore();
 const selectedEnv: Ref<"default" | "conda"> = ref(
   executableSelection.id === "" ? "default" : "conda",
 );
+const changedExecutableOption = ref<boolean>(false);
 const selectedExecutableOption = ref("");
 const dropDownOptions: Ref<
   { id: string; text: string; type: string }[] | null
@@ -36,6 +37,7 @@ const getExecutableById = (executableId: string): ExecutableOption | null => {
 
 onMounted(async () => {
   executableOptions = await pythonScriptingService.getExecutableOptionsList();
+  changedExecutableOption.value = false;
 
   dropDownOptions.value = executableOptions
     .map((executableOption: ExecutableOption) => ({
@@ -54,6 +56,27 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+  if (changedExecutableOption.value === false) {
+    return;
+  }
+
+  // Okay button will not trigger this function
+  const executableSelection = useExecutableSelectionStore();
+
+  // Notify the backend that the executable selection has changed
+  pythonScriptingService.updateExecutableSelection(executableSelection.id);
+
+  // Print a message about the changed executable to the console
+  const executable = getExecutableById(executableSelection.id);
+  if (executable) {
+    pythonScriptingService.sendToConsole({
+      text: `Changed python executable to ${executable.pythonExecutable}`,
+    });
+  }
+  changedExecutableOption.value = true;
+});
+
+watch(selectedEnv, () => {
   const newSelection =
     selectedEnv.value === "default" ? "" : selectedExecutableOption.value ?? "";
   const executableSelectionChanged = executableSelection.id !== newSelection;
@@ -64,22 +87,9 @@ onUnmounted(() => {
   if (isMissingVarSelected.value && selectedEnv.value === "conda") {
     return;
   }
-
-  // Notify the backend that the executable selection has changed
-  pythonScriptingService.updateExecutableSelection(newSelection);
-
-  // Print a message about the changed executable to the console
-  const executable = getExecutableById(newSelection);
-  if (executable) {
-    pythonScriptingService.sendToConsole({
-      text: `Changed python executable to ${executable.pythonExecutable}`,
-    });
-  }
+  changedExecutableOption.value = true;
+  return setSelectedExecutable({ id: selectedEnv.value, isMissing: false });
 });
-
-watch(selectedEnv, () =>
-  setSelectedExecutable({ id: selectedEnv.value, isMissing: false }),
-);
 </script>
 
 <template>
