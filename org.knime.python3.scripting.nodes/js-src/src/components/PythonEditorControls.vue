@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onUnmounted, ref, type Ref } from "vue";
+import { computed, ref, type Ref } from "vue";
 import CancelIcon from "webapps-common/ui/assets/img/icons/circle-close.svg";
 import PlayIcon from "webapps-common/ui/assets/img/icons/play.svg";
 import Button from "webapps-common/ui/components/Button.vue";
@@ -14,12 +14,6 @@ const hasSelection = computed(
 );
 
 const sessionStatus = useSessionStatusStore();
-
-onUnmounted(() => {
-  if (sessionStatus.isRunningSupported) {
-    pythonScriptingService.killInteractivePythonSession();
-  }
-});
 
 const runningSelected = computed(
   () => sessionStatus.status === "RUNNING_SELECTED",

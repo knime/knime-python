@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, type Ref } from "vue";
+import { computed, onMounted, onUnmounted, ref, type Ref, watch } from "vue";
 import RadioButtons from "webapps-common/ui/components/forms/RadioButtons.vue";
 import Dropdown from "webapps-common/ui/components/forms/Dropdown.vue";
 import Label from "webapps-common/ui/components/forms/Label.vue";
-import { setSelectedExecutable, useExecutableSelectionStore } from "@/store";
+import { useExecutableSelectionStore, setSelectedExecutable } from "@/store";
 import { pythonScriptingService } from "@/python-scripting-service";
 import type { ExecutableOption } from "@/types/common";
 
@@ -36,7 +36,6 @@ const getExecutableById = (executableId: string): ExecutableOption | null => {
 
 onMounted(async () => {
   executableOptions = await pythonScriptingService.getExecutableOptionsList();
-
   dropDownOptions.value = executableOptions
     .map((executableOption: ExecutableOption) => ({
       id: executableOption.id,
@@ -53,31 +52,44 @@ onMounted(async () => {
   }
 });
 
+// Note that the Ok button will not trigger this function
 onUnmounted(() => {
+  if (
+    executableSelection.livePrefValue !== null && // if something is set
+    executableSelection.id !== executableSelection.livePrefValue // and it differs from the old setting
+  ) {
+    // Update the selected executable in the store
+    setSelectedExecutable({
+      id: executableSelection.livePrefValue,
+      isMissing: false,
+      livePrefValue: null,
+    });
+
+    // Notify the backend that the executable selection has changed
+    pythonScriptingService.updateExecutableSelection(executableSelection.id);
+
+    // Print a message about the changed executable to the console
+    const executable = getExecutableById(executableSelection.id);
+    if (executable) {
+      pythonScriptingService.sendToConsole({
+        text: `Changed python executable to ${executable.pythonExecutable}`,
+      });
+    }
+  }
+});
+
+const updateLiveExecutableSelection = () => {
   const newSelection =
     selectedEnv.value === "default" ? "" : selectedExecutableOption.value ?? "";
-  const executableSelectionChanged = executableSelection.id !== newSelection;
 
-  if (!executableSelectionChanged) {
-    return;
-  }
   if (isMissingVarSelected.value && selectedEnv.value === "conda") {
     return;
   }
+  executableSelection.livePrefValue = newSelection;
+};
 
-  setSelectedExecutable({ id: newSelection, isMissing: false });
-
-  // Notify the backend that the executable selection has changed
-  pythonScriptingService.updateExecutableSelection(newSelection);
-
-  // Print a message about the changed executable to the console
-  const executable = getExecutableById(newSelection);
-  if (executable) {
-    pythonScriptingService.sendToConsole({
-      text: `Changed python executable to ${executable.pythonExecutable}`,
-    });
-  }
-});
+watch(selectedEnv, updateLiveExecutableSelection);
+watch(selectedExecutableOption, updateLiveExecutableSelection);
 </script>
 
 <template>

@@ -77,9 +77,11 @@ watch(
 // Register the completion items for the inputs
 pythonScriptingService.registerInputCompletions();
 
+const executableSelection = useExecutableSelectionStore();
 const toSettings = (commonSettings: NodeSettings) => ({
   ...commonSettings,
-  executableSelection: useExecutableSelectionStore().id,
+  executableSelection:
+    executableSelection.livePrefValue ?? executableSelection.id,
 });
 
 // Right pane tab bar - only show if preview is available

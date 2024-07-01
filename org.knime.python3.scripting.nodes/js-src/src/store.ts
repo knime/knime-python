@@ -14,11 +14,14 @@ export const useWorkspaceStore = (): WorkspaceStore => {
 
 export type ExecutableStore = {
   id: string;
+  /** the value selected on the preference page, applied to "id" when the preference page is closed */
+  livePrefValue: string | null;
   isMissing: boolean;
 };
 
 const selectedExecutable: ExecutableStore = reactive<ExecutableStore>({
   id: "",
+  livePrefValue: null,
   isMissing: false,
 });
 
