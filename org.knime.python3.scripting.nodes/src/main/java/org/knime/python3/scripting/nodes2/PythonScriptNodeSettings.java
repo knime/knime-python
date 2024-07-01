@@ -57,9 +57,10 @@ import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.webui.node.dialog.NodeAndVariableSettingsRO;
-import org.knime.core.webui.node.dialog.NodeAndVariableSettingsWO;
 import org.knime.core.webui.node.dialog.NodeSettingsService;
 import org.knime.core.webui.node.dialog.SettingsType;
+import org.knime.core.webui.node.dialog.VariableSettingsRO;
+import org.knime.core.webui.node.dialog.VariableSettingsWO;
 import org.knime.scripting.editor.ScriptingNodeSettings;
 import org.knime.scripting.editor.ScriptingNodeSettingsService;
 
@@ -132,11 +133,18 @@ final class PythonScriptNodeSettings extends ScriptingNodeSettings {
 
         @Override
         protected void addAdditionalSettingsToNodeSettings(final ObjectNode settingsJson,
-            final Map<SettingsType, NodeAndVariableSettingsWO> settings) {
-            var modelSettings = settings.get(SettingsType.MODEL);
-            modelSettings.addString(EXECUTABLE_SELECTION_CFG_KEY, EXEC_SELECTION_PREF_ID);
+            final Map<SettingsType, ? extends NodeSettingsWO> settings) {
+            settings.get(SettingsType.MODEL).addString(EXECUTABLE_SELECTION_CFG_KEY, EXEC_SELECTION_PREF_ID);
+        }
+
+        @Override
+        protected void setVariableSettings(final ObjectNode settingsJson,
+            final Map<SettingsType, ? extends VariableSettingsRO> previousSettings,
+            final Map<SettingsType, ? extends VariableSettingsWO> settings) {
+            copyScriptVariableSetting(previousSettings, settings);
+
             try {
-                modelSettings.addUsedVariable(EXECUTABLE_SELECTION_CFG_KEY,
+                settings.get(SettingsType.MODEL).addUsedVariable(EXECUTABLE_SELECTION_CFG_KEY,
                     settingsJson.get(EXEC_SELECTION_JSON_KEY).asText());
             } catch (final InvalidSettingsException e) {
                 // Cannot happen because we have a setting with the key EXECUTABLE_SELECTION_CFG_KEY
