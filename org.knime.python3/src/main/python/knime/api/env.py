@@ -79,9 +79,9 @@ class ProxySettings:
             List of hosts to exclude.
         user_name : str or None
             The username.
-        _password : str or None
+        password : str or None
             The password.
-        _has_credentials : bool
+        has_credentials : bool
             True if both username and password are provided, False otherwise.
 
     Parameters
@@ -137,10 +137,10 @@ class ProxySettings:
         self.port_number = port_number
         self.exclude_hosts = exclude_hosts
         self.user_name = user_name
-        self._password = password
+        self.password = password
 
     def has_credentials(self) -> bool:
-        return (self.user_name and self.password) is not None
+        return self.user_name is not None and self.password is not None
 
     def __str__(self):
         """
@@ -163,7 +163,7 @@ class ProxySettings:
         proxy_env_string = "http://"
 
         if self.has_credentials():
-            proxy_env_string += f"{self.user_name}:{self._password}@"
+            proxy_env_string += f"{self.user_name}:{self.password}@"
 
         proxy_env_string += f"{self.host_name}"
 
