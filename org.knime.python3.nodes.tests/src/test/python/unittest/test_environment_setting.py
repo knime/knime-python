@@ -102,7 +102,7 @@ class TestProxySettings(unittest.TestCase):
         self.assertEqual(proxy.host_name, "localhost")
         self.assertEqual(proxy.port_number, "8080")
         self.assertEqual(proxy.user_name, "user")
-        self.assertEqual(proxy._password, "password")
+        self.assertEqual(proxy.password, "password")
         self.assertEqual(proxy.exclude_hosts, self.no_proxy_literal)
 
 
