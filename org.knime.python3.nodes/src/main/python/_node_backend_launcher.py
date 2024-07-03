@@ -741,7 +741,7 @@ def _get_port_indices(
             raise ValueError(f"Key {key} does not match the expected pattern")
 
         # regex pattern for "Input * # Number" Where * is the port name and # is the index
-        pattern = re.compile(f"^Input {port.name} # \\d+$")
+        pattern = re.compile(f"^Input {re.escape(port.name)} # \\d+$")
         # Filter the keys that do not match the pattern
         keys = [key for key in portmap.keys() if pattern.match(key)]
         # find the key where extract_number returns the input_port_idx
