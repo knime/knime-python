@@ -1602,7 +1602,7 @@ class ParameterTest(unittest.TestCase):
                     "options": {
                         "addButtonText": None,
                         "detail": {
-                            "horizontalLayout": {
+                            "layout": {
                                 "type": "HorizontalLayout",
                                 "elements": [
                                     {
@@ -1905,7 +1905,7 @@ class ParameterTest(unittest.TestCase):
                     "options": {
                         "addButtonText": None,
                         "detail": {
-                            "horizontalLayout": {
+                            "layout": {
                                 "type": "VerticalLayout",
                                 "elements": [
                                     {
@@ -1934,7 +1934,7 @@ class ParameterTest(unittest.TestCase):
                     "options": {
                         "addButtonText": "Add new parameter",
                         "detail": {
-                            "horizontalLayout": {
+                            "layout": {
                                 "type": "HorizontalLayout",
                                 "elements": [
                                     {
