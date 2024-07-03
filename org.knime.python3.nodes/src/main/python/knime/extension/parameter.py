@@ -2929,10 +2929,8 @@ class ParameterArray(_BaseParameter):
     ...     )
     ...
     ... coffee_selection = knext.ParameterArray(
-    ...     label="Coffee Selections",
-    ...     description="It's all about your caffeine intake.",
-    ...     since_version="5.3.0",
     ...     parameters=CoffeeSelections(),
+    ...     since_version="5.3.0",
     ...     button_text="Add new selection",
     ...     array_title="Selections",
     ... )
@@ -2941,8 +2939,6 @@ class ParameterArray(_BaseParameter):
 
     def __init__(
         self,
-        label: str,
-        description: str,
         parameters: GetSetBase,
         since_version: Optional[Union[Version, str]] = None,
         is_advanced: bool = False,
@@ -2954,10 +2950,6 @@ class ParameterArray(_BaseParameter):
         """
         Parameters
         ----------
-        label : str, optional
-            Label of the parameter in the dialog
-        description : str, optional
-            Description of the parameter in the node description and dialog
         since_version : Union[Version, str], optional
             A string or Version object representing the version since when the object is available (default is None).
         is_advanced : bool, optional
@@ -2975,8 +2967,8 @@ class ParameterArray(_BaseParameter):
             with each item being an instance of the ParameterGroup.
         """
         super().__init__(
-            label,
-            description,
+            None,
+            None,
             None,
             None,
             since_version,
