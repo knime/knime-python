@@ -502,7 +502,11 @@ class Parameterized:
         TestEnumSetOptions,
     )
     parameter_group = ParameterGroup()
-    parameter_array = kp.ParameterArray(parameters=ParameterGroupArray())
+    parameter_array = kp.ParameterArray(
+        parameters=ParameterGroupArray(),
+        layout_type="vertical",
+        array_title="First Array Title",
+    )
 
     @string_param.validator
     def validate_string_param(value):
@@ -546,6 +550,8 @@ class ParameterizedParameterArray:
     """Provides checks for other ParameterArray parameters"""
 
     parameter_array_vertical = kp.ParameterArray(
+        label="Vertical Array",
+        description="A vertical array",
         parameters=ParameterGroupArray(),
         allow_reorder=True,
         layout_type="vertical",
@@ -553,6 +559,8 @@ class ParameterizedParameterArray:
     )
 
     parameter_array_horizontal = kp.ParameterArray(
+        label="Horizontal Array",
+        description="A horizontal array",
         parameters=ParameterGroupArray(),
         allow_reorder=False,
         button_text="Add new parameter",
@@ -1551,6 +1559,8 @@ class ParameterTest(unittest.TestCase):
                     },
                 },
                 {
+                    "scope": "#/properties/model/properties/enum_set_param",
+                    "type": "Control",
                     "label": "EnumSet Parameter",
                     "options": {
                         "format": "twinList",
@@ -1560,8 +1570,6 @@ class ParameterTest(unittest.TestCase):
                             {"id": "BAZ", "text": "Baz"},
                         ],
                     },
-                    "scope": "#/properties/model/properties/enum_set_param",
-                    "type": "Control",
                 },
                 {
                     "type": "Section",
@@ -1596,32 +1604,39 @@ class ParameterTest(unittest.TestCase):
                     ],
                 },
                 {
-                    "scope": "#/properties/model/properties/parameter_array",
-                    "type": "Control",
+                    "type": "Section",
                     "label": "parameter_array",
-                    "options": {
-                        "addButtonText": None,
-                        "detail": {
-                            "layout": {
-                                "type": "HorizontalLayout",
-                                "elements": [
-                                    {
-                                        "type": "Control",
-                                        "scope": "#/properties/first",
-                                        "label": "First Parameter",
-                                        "options": {"format": "integer"},
-                                    },
-                                    {
-                                        "type": "Control",
-                                        "scope": "#/properties/second",
-                                        "label": "Second Parameter",
-                                        "options": {"format": "integer"},
-                                    },
-                                ],
-                            }
-                        },
-                        "showSortButtons": True,
-                    },
+                    "elements": [
+                        {
+                            "scope": "#/properties/model/properties/parameter_array",
+                            "type": "Control",
+                            "label": "parameter_array",
+                            "options": {
+                                "addButtonText": None,
+                                "detail": {
+                                    "layout": {
+                                        "type": "VerticalLayout",
+                                        "elements": [
+                                            {
+                                                "type": "Control",
+                                                "scope": "#/properties/first",
+                                                "label": "First Parameter",
+                                                "options": {"format": "integer"},
+                                            },
+                                            {
+                                                "type": "Control",
+                                                "scope": "#/properties/second",
+                                                "label": "Second Parameter",
+                                                "options": {"format": "integer"},
+                                            },
+                                        ],
+                                    }
+                                },
+                                "arrayElementTitle": "First Array Title",
+                                "showSortButtons": True,
+                            },
+                        }
+                    ],
                 },
             ],
         }
@@ -1899,60 +1914,73 @@ class ParameterTest(unittest.TestCase):
             "type": "VerticalLayout",
             "elements": [
                 {
-                    "scope": "#/properties/model/properties/parameter_array_vertical",
-                    "type": "Control",
-                    "label": "parameter_array_vertical",
-                    "options": {
-                        "addButtonText": None,
-                        "detail": {
-                            "layout": {
-                                "type": "VerticalLayout",
-                                "elements": [
-                                    {
-                                        "type": "Control",
-                                        "scope": "#/properties/first",
-                                        "label": "First Parameter",
-                                        "options": {"format": "integer"},
-                                    },
-                                    {
-                                        "type": "Control",
-                                        "scope": "#/properties/second",
-                                        "label": "Second Parameter",
-                                        "options": {"format": "integer"},
-                                    },
-                                ],
-                            }
-                        },
-                        "arrayElementTitle": "Second Array Title",
-                        "showSortButtons": True,
-                    },
+                    "type": "Section",
+                    "label": "Vertical Array",
+                    "elements": [
+                        {
+                            "scope": "#/properties/model/properties/parameter_array_vertical",
+                            "type": "Control",
+                            "label": "Vertical Array",
+                            "options": {
+                                "addButtonText": None,
+                                "detail": {
+                                    "layout": {
+                                        "type": "VerticalLayout",
+                                        "elements": [
+                                            {
+                                                "type": "Control",
+                                                "scope": "#/properties/first",
+                                                "label": "First Parameter",
+                                                "options": {"format": "integer"},
+                                            },
+                                            {
+                                                "type": "Control",
+                                                "scope": "#/properties/second",
+                                                "label": "Second Parameter",
+                                                "options": {"format": "integer"},
+                                            },
+                                        ],
+                                    }
+                                },
+                                "arrayElementTitle": "Second Array Title",
+                                "showSortButtons": True,
+                            },
+                        }
+                    ],
                 },
                 {
-                    "scope": "#/properties/model/properties/parameter_array_horizontal",
-                    "type": "Control",
-                    "label": "parameter_array_horizontal",
-                    "options": {
-                        "addButtonText": "Add new parameter",
-                        "detail": {
-                            "layout": {
-                                "type": "HorizontalLayout",
-                                "elements": [
-                                    {
-                                        "type": "Control",
-                                        "scope": "#/properties/first",
-                                        "label": "First Parameter",
-                                        "options": {"format": "integer"},
-                                    },
-                                    {
-                                        "type": "Control",
-                                        "scope": "#/properties/second",
-                                        "label": "Second Parameter",
-                                        "options": {"format": "integer"},
-                                    },
-                                ],
-                            }
-                        },
-                    },
+                    "type": "Section",
+                    "label": "Horizontal Array",
+                    "elements": [
+                        {
+                            "scope": "#/properties/model/properties/parameter_array_horizontal",
+                            "type": "Control",
+                            "label": "Horizontal Array",
+                            "options": {
+                                "addButtonText": "Add new parameter",
+                                "detail": {
+                                    "layout": {
+                                        "type": "HorizontalLayout",
+                                        "elements": [
+                                            {
+                                                "type": "Control",
+                                                "scope": "#/properties/first",
+                                                "label": "First Parameter",
+                                                "options": {"format": "integer"},
+                                            },
+                                            {
+                                                "type": "Control",
+                                                "scope": "#/properties/second",
+                                                "label": "Second Parameter",
+                                                "options": {"format": "integer"},
+                                            },
+                                        ],
+                                    }
+                                },
+                                "arrayElementTitle": "Group",
+                            },
+                        }
+                    ],
                 },
             ],
         }
@@ -2337,10 +2365,7 @@ class ParameterTest(unittest.TestCase):
                         "description": "A multiline string parameter",
                     },
                     {"name": "Boolean Parameter", "description": "A boolean parameter"},
-                    {
-                        "name": "Column Parameter",
-                        "description": "A column parameter",
-                    },
+                    {"name": "Column Parameter", "description": "A column parameter"},
                     {
                         "name": "Multi Column Parameter",
                         "description": "A multi column parameter",
@@ -2350,14 +2375,12 @@ class ParameterTest(unittest.TestCase):
                         "description": "A full multi column parameter",
                     },
                     {
-                        "description": "An EnumSet Parameter\n"
-                        "\n"
-                        "**Available options:**\n"
-                        "\n"
-                        "- Foo: The foo\n"
-                        "- Bar: The bar\n"
-                        "- Baz: The baz\n",
                         "name": "EnumSet Parameter",
+                        "description": "An EnumSet Parameter\n\n**Available options:**\n\n- Foo: The foo\n- Bar: The bar\n- Baz: The baz\n",
+                    },
+                    {
+                        "name": "parameter_array",
+                        "description": "\n\n**First Array Title:**\n\n- First Parameter : First parameter description\n- Second Parameter : Second parameter description\n",
                     },
                 ],
             },
@@ -2379,24 +2402,9 @@ class ParameterTest(unittest.TestCase):
                     },
                 ],
             },
-            {
-                "name": "Parameter Group Array",
-                "description": "A parameter group which contains two parameters and passed to a ParameterArray.",
-                "options": [
-                    {
-                        "name": "First Parameter",
-                        "description": "First parameter description",
-                    },
-                    {
-                        "name": "Second Parameter",
-                        "description": "Second parameter description",
-                    },
-                ],
-            },
         ]
 
         description, use_tabs = kp.extract_parameter_descriptions(self.parameterized)
-
         self.assertTrue(use_tabs)
         self.assertEqual(description, expected)
 
