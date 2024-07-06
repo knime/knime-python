@@ -382,6 +382,10 @@ def _is_group(param):
     return hasattr(param, "__kind__") and param.__kind__ == "parameter_group"
 
 
+def _is_array(param):
+    return hasattr(param, "__kind__") and param.__kind__ == "parameter_array"
+
+
 def _is_parameter_or_group(obj) -> bool:
     return hasattr(obj, "__kind__")
 
@@ -600,6 +604,8 @@ class _UISchemaExtractor:
 
     def _extract_element_schema(self, scope, name, param_obj):
         is_group = _is_group(param_obj)
+        is_array = _is_array(param_obj)
+
         element_scope = scope.create_child(name, is_group)
         if is_group:
             element_schema = {
@@ -607,6 +613,21 @@ class _UISchemaExtractor:
                 **param_obj._extract_ui_schema(),
                 "elements": self._extract_elements(param_obj, element_scope),
             }
+
+        elif is_array:
+            element_schema = {
+                "type": "Section",
+                "label": param_obj._label,
+                "elements": [
+                    {
+                        "scope": str(element_scope),
+                        **param_obj._extract_ui_schema(
+                            dialog_creation_context=self._dialog_creation_context
+                        ),
+                    }
+                ],
+            }
+
         else:
             element_schema = {
                 "scope": str(element_scope),
@@ -2929,6 +2950,8 @@ class ParameterArray(_BaseParameter):
     ...     )
     ...
     ... coffee_selection = knext.ParameterArray(
+    ...     label="Coffee Selections",
+    ...     description="Select the type of coffee you like to drink.",
     ...     parameters=CoffeeSelections(),
     ...     since_version="5.3.0",
     ...     button_text="Add new selection",
@@ -2937,9 +2960,22 @@ class ParameterArray(_BaseParameter):
 
     """
 
+    __kind__ = "parameter_array"
+
+    def _default_validator(self, value):
+        param_holder = self._parameters._get_param_holder(self._parameters)
+        for _, param_obj in _get_parameters(param_holder).items():
+            if isinstance(param_obj, ParameterArray):
+                raise ValueError(
+                    "ParameterArray instances cannot be nested within another ParameterArray."
+                )
+
     def __init__(
         self,
         parameters: GetSetBase,
+        label: Optional[str] = None,
+        description: Optional[str] = None,
+        validator: Optional[Callable[[GetSetBase], None]] = None,
         since_version: Optional[Union[Version, str]] = None,
         is_advanced: bool = False,
         allow_reorder: bool = True,
@@ -2950,6 +2986,16 @@ class ParameterArray(_BaseParameter):
         """
         Parameters
         ----------
+        parameters : GetSetBase
+            Initial list of parameters for the array. Pass the ParameterGroup defining the settings of each item,
+            with each item being an instance of the ParameterGroup.
+        label : str, optional
+            The label of the parameter in the dialog. It shows up as a headline of a section.
+            If not specified, the name of the parameter will be used.
+        description : str, optional
+            The description of the parameter in the node description.
+        validator : Optional[Callable]
+            A function which checks if there are any nested ParameterArray instances defined.
         since_version : Union[Version, str], optional
             A string or Version object representing the version since when the object is available (default is None).
         is_advanced : bool, optional
@@ -2961,30 +3007,51 @@ class ParameterArray(_BaseParameter):
         button_text : str, optional
             Text to display on the button for adding new parameters.
         array_title : str, optional
-            Title of the array of parameters.
-        parameters : list, optional
-            Initial list of parameters for the array. Pass the ParameterGroup defining the settings of each item,
-            with each item being an instance of the ParameterGroup.
+            Title of the array of parameters. If not specified, the default "Group" will be used.
+            An incremental suffix number is added to the title for each group added.
         """
-        super().__init__(
-            None,
-            None,
-            None,
-            None,
-            since_version,
-            is_advanced,
-        )
+
         self._allow_reorder = allow_reorder
         self._layout_type = layout_type
         self._parameters = parameters
         self._button_text = button_text
-        self._array_title = array_title
+        self._array_title = array_title if array_title else "Group"
+
+        if validator is None:
+            validator = self._default_validator
+
+        super().__init__(
+            label,
+            description,
+            None,
+            validator,
+            since_version,
+            is_advanced,
+        )
+
+    def _generate_options_description(
+        self, docstring: str, parent_scope: _Scope = None
+    ):
+        if docstring:
+            lines = docstring.expandtabs().splitlines()
+            indent_lvl = _get_indent_level(lines)
+            indent = " " * indent_lvl
+        else:
+            indent = ""
+
+        param_holder = self._parameters._get_param_holder(self._parameters)
+        options_description = f"\n\n{indent}**{self._array_title}:**\n\n"
+        for name, param_obj in _get_parameters(param_holder).items():
+            parameter_description = param_obj._extract_description(name, parent_scope)
+            options_description += f"{indent}- {parameter_description['name']} : {parameter_description['description']}\n"
+
+        return docstring.expandtabs() + options_description
+
+    def _generate_description(self):
+        return self._generate_options_description(self.__doc__, parent_scope=None)
 
     def _extract_description(self, name, parent_scope: _Scope):
-        param_holder = self._parameters._get_param_holder(self._parameters)
-        descriptions = param_holder._extract_description(name, parent_scope)
-
-        return descriptions
+        return {"name": self._label, "description": self._generate_description()}
 
     def _extract_schema(
         self,
