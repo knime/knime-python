@@ -3,7 +3,7 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import PythonViewPreview from "../PythonViewPreview.vue";
 import { usePythonPreviewStatusStore, useSessionStatusStore } from "@/store";
 import { editor, getScriptingService } from "@knime/scripting-editor";
-import Button from "webapps-common/ui/components/Button.vue";
+import { Button } from "@knime/components";
 import { ref } from "vue";
 
 describe("PythonViewPreview", () => {

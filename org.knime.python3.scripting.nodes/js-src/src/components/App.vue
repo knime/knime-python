@@ -9,10 +9,10 @@ import {
   type SettingsMenuItem,
 } from "@knime/scripting-editor";
 import { nextTick, onMounted, ref, watch, type Ref } from "vue";
-import SettingsIcon from "webapps-common/ui/assets/img/icons/cog.svg";
-import FileCogIcon from "webapps-common/ui/assets/img/icons/file-cog.svg";
-import FileTextIcon from "webapps-common/ui/assets/img/icons/file-text.svg";
-import type { MenuItem } from "webapps-common/ui/components/MenuItems.vue";
+import SettingsIcon from "@knime/styles/img/icons/cog.svg";
+import FileCogIcon from "@knime/styles/img/icons/file-cog.svg";
+import FileTextIcon from "@knime/styles/img/icons/file-text.svg";
+import type { MenuItem } from "@knime/components";
 import EnvironmentSettings from "./EnvironmentSettings.vue";
 import LastActionStatus from "./LastActionStatus.vue";
 import PythonEditorControls from "./PythonEditorControls.vue";

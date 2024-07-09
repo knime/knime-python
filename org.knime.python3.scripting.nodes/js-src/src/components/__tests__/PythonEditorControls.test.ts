@@ -2,10 +2,9 @@ import { useSessionStatusStore } from "@/store";
 import { editor, getScriptingService } from "@knime/scripting-editor";
 import { DOMWrapper, VueWrapper, flushPromises, mount } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import CancelIcon from "webapps-common/ui/assets/img/icons/circle-close.svg";
-import PlayIcon from "webapps-common/ui/assets/img/icons/play.svg";
-import Button from "webapps-common/ui/components/Button.vue";
-import LoadingIcon from "webapps-common/ui/components/LoadingIcon.vue";
+import CancelIcon from "@knime/styles/img/icons/circle-close.svg";
+import PlayIcon from "@knime/styles/img/icons/play.svg";
+import { Button, LoadingIcon } from "@knime/components";
 import PythonEditorControls from "../PythonEditorControls.vue";
 import { nextTick, ref } from "vue";
 

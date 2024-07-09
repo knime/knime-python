@@ -3,7 +3,7 @@ import { getScriptingService } from "@knime/scripting-editor";
 import { flushPromises, mount } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { type Ref } from "vue";
-import Button from "webapps-common/ui/components/Button.vue";
+import { Button } from "@knime/components";
 import PythonWorkspace from "../PythonWorkspace.vue";
 import { type ColumnSizes } from "../PythonWorkspaceHeader.vue";
 

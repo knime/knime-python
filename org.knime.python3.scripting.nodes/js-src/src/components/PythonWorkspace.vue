@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useDebounceFn, useResizeObserver } from "@vueuse/core";
 import { onMounted, onUnmounted, ref, type Ref } from "vue";
-import Button from "webapps-common/ui/components/Button.vue";
+import { Button } from "@knime/components";
 
 import { pythonScriptingService } from "@/python-scripting-service";
 import { usePythonPreviewStatusStore, useSessionStatusStore } from "@/store";

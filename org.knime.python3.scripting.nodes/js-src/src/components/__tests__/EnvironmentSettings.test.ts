@@ -3,7 +3,7 @@ import { setSelectedExecutable } from "@/store";
 import { getScriptingService, consoleHandler } from "@knime/scripting-editor";
 import { flushPromises, mount } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import Dropdown from "webapps-common/ui/components/forms/Dropdown.vue";
+import { Dropdown } from "@knime/components";
 import EnvironmentSettings from "../EnvironmentSettings.vue";
 
 describe("EnvironmentSettings", () => {

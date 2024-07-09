@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, type Ref, watch } from "vue";
-import RadioButtons from "webapps-common/ui/components/forms/RadioButtons.vue";
-import Dropdown from "webapps-common/ui/components/forms/Dropdown.vue";
-import Label from "webapps-common/ui/components/forms/Label.vue";
+import { RadioButtons, Dropdown, Label } from "@knime/components";
 import { useExecutableSelectionStore, setSelectedExecutable } from "@/store";
 import { pythonScriptingService } from "@/python-scripting-service";
 import type { ExecutableOption } from "@/types/common";

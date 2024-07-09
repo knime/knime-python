@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, type Ref } from "vue";
-import CancelIcon from "webapps-common/ui/assets/img/icons/circle-close.svg";
-import PlayIcon from "webapps-common/ui/assets/img/icons/play.svg";
-import Button from "webapps-common/ui/components/Button.vue";
-import LoadingIcon from "webapps-common/ui/components/LoadingIcon.vue";
+import CancelIcon from "@knime/styles/img/icons/circle-close.svg";
+import PlayIcon from "@knime/styles/img/icons/play.svg";
+import { Button, LoadingIcon } from "@knime/components";
 import { pythonScriptingService } from "../python-scripting-service";
 import { useExecutableSelectionStore, useSessionStatusStore } from "@/store";
 import { editor } from "@knime/scripting-editor";
