@@ -155,7 +155,7 @@ onMounted(async () => {
 </template>
 
 <style>
-@import url("webapps-common/ui/css");
+@import url("@knime/styles/css");
 </style>
 
 <style scoped lang="postcss">
