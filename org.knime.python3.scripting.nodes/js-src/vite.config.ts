@@ -36,7 +36,7 @@ export default defineConfig({
       fileURLToPath(new URL("./src/test-setup/setup.ts", import.meta.url)),
     ],
     include: ["src/**/__tests__/**/*.test.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
-    exclude: ["**/node_modules/**", "**/dist/**", "webapps-common/**"],
+    exclude: ["**/node_modules/**", "**/dist/**"],
     environment: "jsdom",
     reporters: ["default"],
     root: fileURLToPath(new URL("./", import.meta.url)),
@@ -52,7 +52,6 @@ export default defineConfig({
       exclude: [
         "coverage/**",
         "dist/**",
-        "webapps-common/**",
         "lib/**",
         "**/*.d.ts",
         "**/__tests__/**",
