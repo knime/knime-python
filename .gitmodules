@@ -1,3 +1,0 @@
-[submodule "org.knime.python3.scripting.nodes/js-src/webapps-common"]
-	path = org.knime.python3.scripting.nodes/js-src/webapps-common
-	url = ../webapps-common
