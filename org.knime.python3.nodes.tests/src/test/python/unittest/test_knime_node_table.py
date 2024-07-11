@@ -124,6 +124,21 @@ class SchemaTest(unittest.TestCase):
             self.assertEqual(t, s[0].ktype)
             self.assertEqual(n, s[0].name)
 
+    def test_schema_column_compare(self):
+        types = [ks.int32(), ks.int64(), ks.double(), ks.string()]
+        names = ["Ints", "Longs", "Doubles", "Strings"]
+
+        columns = [ks.Column(t, n) for t, n in zip(types, names)]
+
+        s1 = ks.Schema.from_columns(columns)
+        s2 = ks.Schema.from_columns(columns)
+
+        s1_names = {c.name for c in s1}
+        s2_names = {c.name for c in s2}
+
+        self.assertTrue(all(c in s1 for c in s2))
+        self.assertTrue(all(c in s1_names for c in s2_names))
+
 
 if __name__ == "__main__":
     unittest.main()

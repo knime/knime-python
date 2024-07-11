@@ -1623,6 +1623,14 @@ class Schema(_Columnar, PortObjectSpec):
                 f"or list of string, not {type(index)}"
             )
 
+    def __contains__(self, key) -> bool:
+        if isinstance(key, str):
+            return any(c.name == key for c in self._columns)
+        elif isinstance(key, Column):
+            return key.name in self.column_names
+        else:
+            return False
+
     def __eq__(self, other) -> bool:
         if not other.__class__ == self.__class__:
             return False
