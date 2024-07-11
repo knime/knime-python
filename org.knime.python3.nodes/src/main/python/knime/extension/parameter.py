@@ -615,7 +615,6 @@ class _UISchemaExtractor:
             }
         if param_obj._rule:
             element_schema["rule"] = self._create_rule_ui_schema(param_obj._rule)
-
         return element_schema
 
     def _create_rule_ui_schema(self, rule: Rule):
@@ -1101,14 +1100,40 @@ class StringParameter(_BaseMultiChoiceParameter):
             # We pass the current DialogCreationContext to the _choices callable
             # and expect that the node developers write a lambda such that it
             # passes this parameter as "self" to the respective methods of the context.
-            schema["oneOf"] = [
-                {"const": e, "title": e} for e in self._choices(dialog_creation_context)
-            ]
-        elif self._enum is None:
+
+            if len(self._choices(dialog_creation_context)) == 0:
+                schema["type"] = "string"
+            else:
+                schema["oneOf"] = [
+                    {"const": e, "title": e}
+                    for e in self._choices(dialog_creation_context)
+                ]
+
+        elif self._enum is None or len(self._enum) == 0:
             schema["type"] = "string"
         else:
             schema["oneOf"] = [{"const": e, "title": e} for e in self._enum]
         return schema
+
+    # Overwrites method from _BaseMultiChoiceParameter
+    def _get_options(self, dialog_creation_context) -> dict:
+        """Returns the jsonforms options for the parameter"""
+
+        if self._enum and len(self._enum) <= 4:
+            return {"format": "radio"}
+
+        has_empty_list = (
+            hasattr(self, "_choices")
+            and callable(self._choices)
+            and len(self._choices(dialog_creation_context)) == 0
+            or isinstance(self._enum, list)
+            and len(self._enum) == 0
+        )
+
+        if has_empty_list:
+            return {"format": "dropDown", "placeholder": "No values present"}
+        else:
+            return {"format": "string"}
 
 
 class LocalPathParameter(StringParameter):
