@@ -1,6 +1,6 @@
 [project]
 name = "knime-extension"
-version = "5.3"
+version = "5.4"
 
 [build-system]
 requires = ["setuptools"]
