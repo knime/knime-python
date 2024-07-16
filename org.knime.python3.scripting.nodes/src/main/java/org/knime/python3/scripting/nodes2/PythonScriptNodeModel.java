@@ -139,6 +139,8 @@ public final class PythonScriptNodeModel extends NodeModel {
         String[].class //
     ));
 
+    static final Set<VariableType<?>> KNOWN_FLOW_VARIABLE_TYPES_SET = Set.of(KNOWN_FLOW_VARIABLE_TYPES);
+
     /**
      * @param portsConfiguration the configured ports
      * @param hasView if the node has a view

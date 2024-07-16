@@ -46,10 +46,17 @@ if (import.meta.env.MODE === "development.browser") {
           {
             name: "Foo",
             type: "Number",
+            supported: true,
           },
           {
             name: 'Bar & "<xml>"',
             type: "String",
+            supported: true,
+          },
+          {
+            name: "Unsupported",
+            type: "Unsupported",
+            supported: false,
           },
         ],
         portType: "table",

@@ -56,6 +56,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.knime.core.data.DataTableSpec;
+import org.knime.core.data.DataType;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.port.PortType;
 import org.knime.core.node.port.flowvariable.FlowVariablePortObject;
@@ -83,7 +84,8 @@ final class PythonScriptingInputOutputModelUtils {
 
     private static final String CODE_ALIAS_FLOW_VARS = "knio.flow_variables";
 
-    private static final String CODE_ALIAS_TEMPLATE_FLOW_VARS = "knio.flow_variables[\"{{{escapeDblQuotes subItems.[0]}}}\"]";
+    private static final String CODE_ALIAS_TEMPLATE_FLOW_VARS =
+        "knio.flow_variables[\"{{{escapeDblQuotes subItems.[0]}}}\"]";
 
     private static final String CODE_ALIAS_OUTPUT_VIEW = "knio.output_view";
 
@@ -96,7 +98,8 @@ final class PythonScriptingInputOutputModelUtils {
             CODE_ALIAS_FLOW_VARS, //
             CODE_ALIAS_TEMPLATE_FLOW_VARS, //
             REQUIRED_IMPORT, //
-            false //
+            false, //
+            PythonScriptNodeModel.KNOWN_FLOW_VARIABLE_TYPES_SET::contains //
         );
     }
 
@@ -110,14 +113,16 @@ final class PythonScriptingInputOutputModelUtils {
             final var spec = inputPorts[i].portSpec();
             if (spec instanceof DataTableSpec dataTableSpec) {
                 // Table with specs available
-                inputInfos.add( //
-                    InputOutputModel.createFromTableSpec( //
-                        inputName(tableIdx, INPUT_OUTPUT_TYPE_TABLE), //
-                        dataTableSpec, //
-                        getInputObjectCodeAlias(tableIdx, INPUT_OUTPUT_TYPE_TABLE), //
-                        getSubItemCodeAliasTemplate(tableIdx, INPUT_OUTPUT_TYPE_TABLE), //
-                        REQUIRED_IMPORT //
-                    ));
+                inputInfos.add(InputOutputModel.createFromTableSpec( //
+                    inputName(tableIdx, INPUT_OUTPUT_TYPE_TABLE), //
+                    dataTableSpec, //
+                    getInputObjectCodeAlias(tableIdx, INPUT_OUTPUT_TYPE_TABLE), //
+                    getSubItemCodeAliasTemplate(tableIdx, INPUT_OUTPUT_TYPE_TABLE), //
+                    true, //
+                    REQUIRED_IMPORT, //
+                    DataType::getName, //
+                    t -> true //
+                ));
                 tableIdx++;
             } else if (type.acceptsPortObjectClass(BufferedDataTable.class)) {
                 // Table but no spec available
