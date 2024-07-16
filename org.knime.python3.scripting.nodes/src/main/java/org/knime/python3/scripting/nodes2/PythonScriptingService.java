@@ -53,14 +53,11 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.knime.conda.CondaEnvironmentDirectory;
@@ -73,7 +70,6 @@ import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.NodeContext;
-import org.knime.core.node.workflow.VariableType;
 import org.knime.core.util.PathUtils;
 import org.knime.core.util.ThreadUtils;
 import org.knime.core.webui.data.DataServiceContext;
@@ -92,12 +88,6 @@ import org.knime.scripting.editor.ScriptingService;
 final class PythonScriptingService extends ScriptingService {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonScriptingService.class);
-
-    private static final HashSet<VariableType<?>> KNOWN_FLOW_VARIABLE_SET =
-        new HashSet<>(Arrays.asList(PythonScriptNodeModel.KNOWN_FLOW_VARIABLE_TYPES));
-
-    private static final Predicate<FlowVariable> FLOW_VARIABLE_FILTER =
-        x -> KNOWN_FLOW_VARIABLE_SET.contains(x.getVariableType());
 
     private final boolean m_hasView;
 
@@ -120,7 +110,9 @@ final class PythonScriptingService extends ScriptingService {
      * @param hasView if the node has an output view
      */
     PythonScriptingService(final boolean hasView) {
-        super(PythonLanguageServer::startLanguageServer, FLOW_VARIABLE_FILTER);
+        super(PythonLanguageServer::startLanguageServer,
+            PythonScriptNodeModel.KNOWN_FLOW_VARIABLE_TYPES_SET::contains);
+
         m_hasView = hasView;
         m_view = Optional.empty();
         m_ports = PythonScriptPortsConfiguration.fromCurrentNodeContext();
@@ -266,8 +258,9 @@ final class PythonScriptingService extends ScriptingService {
             // TODO report the progress of converting the tables using the ExecutionMonitor?
             m_interactiveSession = new PythonScriptingSession(pythonCommand,
                 PythonScriptingService.this::addConsoleOutputEvent, new DialogFileStoreHandlerSupplier());
-            m_interactiveSession.setupIO(workflowControl.getInputData(), getFlowVariables(), m_ports.getNumOutTables(),
-                m_ports.getNumOutImages(), m_ports.getNumOutObjects(), m_hasView, new ExecutionMonitor());
+            m_interactiveSession.setupIO(workflowControl.getInputData(), getSupportedFlowVariables(),
+                m_ports.getNumOutTables(), m_ports.getNumOutImages(), m_ports.getNumOutObjects(), m_hasView,
+                new ExecutionMonitor());
         }
 
         private synchronized void executeScriptInternal(final String script, final boolean newSession,
@@ -373,7 +366,7 @@ final class PythonScriptingService extends ScriptingService {
 
         @Override
         public InputOutputModel getFlowVariableInputs() {
-            return PythonScriptingInputOutputModelUtils.getFlowVariableInputs(getFlowVariables());
+            return PythonScriptingInputOutputModelUtils.getFlowVariableInputs(getAllFlowVariables());
         }
 
         @Override
@@ -429,7 +422,7 @@ final class PythonScriptingService extends ScriptingService {
                 currentCode, //
                 getWorkflowControl().getInputSpec(), //
                 getWorkflowControl().getOutputPortTypes(), //
-                getFlowVariables(), //
+                getSupportedFlowVariables(), //
                 m_hasView);
         }
     }
