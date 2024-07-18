@@ -2953,7 +2953,7 @@ class ParameterArray(_BaseParameter):
     ...     label="Coffee Selections",
     ...     description="Select the type of coffee you like to drink.",
     ...     parameters=CoffeeSelections(),
-    ...     since_version="5.3.0",
+    ...     since_version="5.3.1",
     ...     button_text="Add new selection",
     ...     array_title="Selections",
     ... )
@@ -2972,10 +2972,10 @@ class ParameterArray(_BaseParameter):
 
     def __init__(
         self,
-        parameters: GetSetBase,
+        parameters,
         label: Optional[str] = None,
         description: Optional[str] = None,
-        validator: Optional[Callable[[GetSetBase], None]] = None,
+        validator: Optional[Callable[[_BaseParameter], None]] = None,
         since_version: Optional[Union[Version, str]] = None,
         is_advanced: bool = False,
         allow_reorder: bool = True,
@@ -2986,9 +2986,10 @@ class ParameterArray(_BaseParameter):
         """
         Parameters
         ----------
-        parameters : GetSetBase
-            Initial list of parameters for the array. Pass the ParameterGroup defining the settings of each item,
-            with each item being an instance of the ParameterGroup.
+        parameters
+            A parameter group instance, created using the @parameter_group decorator.
+            This defines the structure of each item in the array. The parameter group
+            should contain the settings that each item in the array will have.
         label : str, optional
             The label of the parameter in the dialog. It shows up as a headline of a section.
             If not specified, the name of the parameter will be used.
@@ -3047,11 +3048,14 @@ class ParameterArray(_BaseParameter):
 
         return docstring.expandtabs() + options_description
 
-    def _generate_description(self):
-        return self._generate_options_description(self.__doc__, parent_scope=None)
+    def _generate_description(self, parent_scope):
+        return self._generate_options_description(self.__doc__, parent_scope)
 
     def _extract_description(self, name, parent_scope: _Scope):
-        return {"name": self._label, "description": self._generate_description()}
+        return {
+            "name": self._label,
+            "description": self._generate_description(parent_scope),
+        }
 
     def _extract_schema(
         self,
@@ -3096,14 +3100,16 @@ class ParameterArray(_BaseParameter):
             "addButtonText": self._button_text,
             "detail": {
                 "layout": {
-                    "type": "HorizontalLayout",
+                    "type": (
+                        "VerticalLayout"
+                        if self._layout_type == "vertical"
+                        else "HorizontalLayout"
+                    ),
                     "elements": [],
                 }
             },
         }
 
-        if self._layout_type == "vertical":
-            options["detail"]["layout"]["type"] = "VerticalLayout"
         if self._array_title:
             options["arrayElementTitle"] = self._array_title
         if self._allow_reorder:
@@ -3120,6 +3126,9 @@ class ParameterArray(_BaseParameter):
 
     def _inject(self, obj, value, name, version, exclude_validations: bool = False):
         param_holder = self._parameters._get_param_holder(self._parameters)
+
+        # Default values are provided by the first item (i.e. how parameters are set in the parameter group).
+        # Therefore, we only set the first item here, and not a list of values.
         if value is None:
             value = [{}]
             for param_name, param_obj in _get_parameters(param_holder).items():
