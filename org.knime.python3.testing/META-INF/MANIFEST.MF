@@ -7,7 +7,7 @@ Bundle-ClassPath: .
 Bundle-Vendor: KNIME AG, Zurich, Switzerland
 Bundle-RequiredExecutionEnvironment: JavaSE-17
 Require-Bundle: org.apache.commons.lang3;bundle-version="[3.9.0,4.0.0)",
- org.knime.python3;bundle-version="[5.3.0,6.0.0)",
- org.knime.core.columnar;bundle-version="[5.3.0,6.0.0)"
+ org.knime.python3;bundle-version="[5.4.0,6.0.0)",
+ org.knime.core.columnar;bundle-version="[5.4.0,6.0.0)"
 Automatic-Module-Name: org.knime.python3.testing
 Export-Package: org.knime.python3.testing

@@ -7,9 +7,9 @@ Bundle-ClassPath: knime-python3-views.jar
 Bundle-Vendor: KNIME AG, Zurich, Switzerland
 Bundle-RequiredExecutionEnvironment: JavaSE-17
 Bundle-ActivationPolicy: lazy
-Require-Bundle: org.knime.python3;bundle-version="[5.3.0,6.0.0)",
- org.knime.core;bundle-version="[5.3.0,6.0.0)",
- org.knime.core.ui;bundle-version="[5.3.0,6.0.0)"
+Require-Bundle: org.knime.python3;bundle-version="[5.4.0,6.0.0)",
+ org.knime.core;bundle-version="[5.4.0,6.0.0)",
+ org.knime.core.ui;bundle-version="[5.4.0,6.0.0)"
 Automatic-Module-Name: org.knime.python3.views
 Eclipse-BundleShape: dir
 Eclipse-RegisterBuddy: org.knime.ext.py4j
