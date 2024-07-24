@@ -61,6 +61,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.SystemUtils;
+import org.knime.core.data.util.memory.ExternalProcessMemoryWatchdog;
 import org.knime.core.node.NodeLogger;
 
 import py4j.ClientServer;
@@ -177,8 +178,11 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
             m_stdError = new UncloseableInputStream(new BufferedInputStream(m_process.getErrorStream()));
 
             m_stdOutputManager = new SingleClientInputStreamSupplier(() -> m_stdOutput);
-
             m_stdErrorManager = new SingleClientInputStreamSupplier(() -> m_stdError);
+
+            // TODO(22950) handle process being killed better
+            ExternalProcessMemoryWatchdog.getInstance().trackProcess(m_process.toHandle(), memoryUsed -> LOGGER.error(
+                "Total memory limit exceeded. This Python process used " + memoryUsed / 1024 + " MB and was killed."));
 
             // NOSONAR: PythonGatewayUtils only uses the #getOutputStream and #getErrorStream methods that are already
             // fully functional at this point in time.
