@@ -50,57 +50,57 @@ properties([
 try {
     node('maven && java17 && ubuntu22.04 && workflow-tests') {
         knimetools.defaultTychoBuild(updateSiteProject: 'org.knime.update.python')
+    }
 
-        node('ubuntu22.04 && workflow-tests && java17') {
-            stage('Prepare for pytest') {
+    def parallelConfigs = [:]
+    for (env in WF_TESTS_PYTHON_ENVS) {
+        if (params[env]) {
+            // need to create a deep copy here, otherwise Jenkins will use
+            // the last selected option for everything
+            String environmentFile = new String(env)
+            parallelConfigs["${environmentFile}"] = {
+                runPython3MultiversionWorkflowTestConfig(environmentFile, baseBranch)
+            }
+        }
+    }
+
+    parallel(parallelConfigs)
+
+    node('ubuntu22.04 && workflow-tests && java17') {
+        stage('Clone') {
+            env.lastStage = env.STAGE_NAME
+            checkout scm
+        }
+
+        for (pyEnv in PYTEST_PYTHON_ENVS) {
+            stage("Run pytest for ${pyEnv}") {
                 env.lastStage = env.STAGE_NAME
-                checkout scm
-            }
 
-            for (pyEnv in PYTEST_PYTHON_ENVS) {
-                stage("Run pytest for ${pyEnv}") {
-                    env.lastStage = env.STAGE_NAME
+                String envPath = "${env.WORKSPACE}/pytest-envs/${pyEnv}"
+                String envYml = "${env.WORKSPACE}/pytest-envs/${pyEnv}.yml"
 
-                    String envPath = "${env.WORKSPACE}/pytest-envs/${pyEnv}"
-                    String envYml = "${env.WORKSPACE}/pytest-envs/${pyEnv}.yml"
+                sh(label: 'create conda env', script: """
+                    micromamba create -p ${envPath} -f ${envYml}
+                """)
 
-                    sh(label: 'create conda env', script: """
-                        micromamba create -p ${envPath} -f ${envYml}
-                    """)
+                sh(label: 'run pytest', script: """
+                    ${envPath}/bin/coverage run -m pytest --junit-xml=pytest_results.xml || true
 
-                    sh(label: 'run pytest', script: """
-                        ${envPath}/bin/coverage run -m pytest --junit-xml=pytest_results.xml || true
+                    # create a separate coverage.xml file for each module
+                    for d in org.knime.python3*/ ; do
+                        ${envPath}/bin/coverage xml -o "\${d}coverage-${pyEnv}.xml" --include "*\$d**/*.py" || true
 
-                        # create a separate coverage.xml file for each module
-                        for d in org.knime.python3*/ ; do
-                            ${envPath}/bin/coverage xml -o "\${d}coverage-${pyEnv}.xml" --include "*\$d**/*.py" || true
+                        # delete mention of module name in coverage.xml
+                        if [ -f "\${d}coverage-${pyEnv}.xml" ]; then
+                            sed -i "s|\$d||g" "\${d}coverage-${pyEnv}.xml"
+                        fi
+                    done
+                """)
 
-                            # delete mention of module name in coverage.xml
-                            if [ -f "\${d}coverage-${pyEnv}.xml" ]; then
-                                sed -i "s|\$d||g" "\${d}coverage-${pyEnv}.xml"
-                            fi
-                        done
-                    """)
-
-                    junit 'pytest_results.xml'
-                    stash(name: "${pyEnv}", includes: "**/coverage-${pyEnv}.xml")
-                }
+                junit 'pytest_results.xml'
+                stash(name: "${pyEnv}", includes: "**/coverage-${pyEnv}.xml")
             }
         }
-
-        def parallelConfigs = [:]
-        for (env in WF_TESTS_PYTHON_ENVS) {
-            if (params[env]) {
-                // need to create a deep copy here, otherwise Jenkins will use
-                // the last selected option for everything
-                String environmentFile = new String(env)
-                parallelConfigs["${environmentFile}"] = {
-                    runPython3MultiversionWorkflowTestConfig(environmentFile, baseBranch)
-                }
-            }
-        }
-
-        parallel(parallelConfigs)
 
         stage('Build and Deploy knime-extension ') {
             env.lastStage = env.STAGE_NAME
@@ -127,7 +127,6 @@ try {
             def upload = params.FORCE_UPLOAD_PACKAGE || (BN == 'master' && currentBuild.result != 'UNSTABLE')
             condaHelpers.buildCondaPackage(recipePath, prefixPath, upload)
         }
-
 
         stage('Sonarqube analysis') {
             env.lastStage = env.STAGE_NAME
