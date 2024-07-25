@@ -49,6 +49,8 @@
 package org.knime.python3;
 
 import java.io.IOException;
+import java.util.Map;
+import java.util.Set;
 
 import org.knime.core.node.NodeLogger;
 
@@ -63,6 +65,9 @@ public final class FreshPythonGatewayFactory implements PythonGatewayFactory {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(FreshPythonGatewayFactory.class);
 
+    // environment variables that common Python libraries use to resolve custom CAs (requests, httpx, ssl)
+    private static final Set<String> CA_CERT_ENV_VARS = Set.of("REQUESTS_CA_BUNDLE", "SSL_CERT_FILE");
+
     @Override
     @SuppressWarnings("resource")
     public <E extends PythonEntryPoint> PythonGateway<E> create(final PythonGatewayDescription<E> description)
@@ -72,7 +77,9 @@ public final class FreshPythonGatewayFactory implements PythonGatewayFactory {
             || description.getCommand() instanceof BundledPythonCommand) {
             PythonGatewayCreationGate.INSTANCE.awaitPythonGatewayCreationAllowedInterruptibly();
         }
-        var gateway = DefaultPythonGateway.create(description.getCommand().createProcessBuilder(), launcherPath,
+        var processBuilder = description.getCommand().createProcessBuilder();
+        addCertificates(processBuilder.environment());
+        var gateway = DefaultPythonGateway.create(processBuilder, launcherPath,
             description.getEntryPointClass(), description.getExtensions(), description.getPythonPath());
         if (!description.getCustomizers().isEmpty()) {
             var entryPoint = gateway.getEntryPoint();
@@ -91,4 +98,24 @@ public final class FreshPythonGatewayFactory implements PythonGatewayFactory {
         }
         return PythonGatewayTracker.INSTANCE.createTrackedGateway(gateway);
     }
+
+    private static void addCertificates(final Map<String, String> environment) {
+        if (CA_CERT_ENV_VARS.stream().anyMatch(environment::containsKey)) {
+            // don't change the environment if it already has any of the environment variables
+            return;
+        }
+
+        var tempCertFile = CertificateUtils.getCertificatePath();
+        if (tempCertFile.isEmpty()) {
+            // writing the certificates failed for some reason, so we leave the environment as is
+            return;
+        }
+        var pathString = tempCertFile.get().toAbsolutePath().toString();
+        for (var envVar : CA_CERT_ENV_VARS) {
+            environment.put(envVar, pathString);
+        }
+    }
+
+
+
 }
