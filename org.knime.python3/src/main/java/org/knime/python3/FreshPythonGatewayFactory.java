@@ -49,6 +49,7 @@
 package org.knime.python3;
 
 import java.io.IOException;
+import java.util.Map;
 
 import org.knime.core.node.NodeLogger;
 
@@ -72,7 +73,9 @@ public final class FreshPythonGatewayFactory implements PythonGatewayFactory {
             || description.getCommand() instanceof BundledPythonCommand) {
             PythonGatewayCreationGate.INSTANCE.awaitPythonGatewayCreationAllowedInterruptibly();
         }
-        var gateway = DefaultPythonGateway.create(description.getCommand().createProcessBuilder(), launcherPath,
+        var processBuilder = description.getCommand().createProcessBuilder();
+        addCertificates(processBuilder.environment());
+        var gateway = DefaultPythonGateway.create(processBuilder, launcherPath,
             description.getEntryPointClass(), description.getExtensions(), description.getPythonPath());
         if (!description.getCustomizers().isEmpty()) {
             var entryPoint = gateway.getEntryPoint();
@@ -91,4 +94,13 @@ public final class FreshPythonGatewayFactory implements PythonGatewayFactory {
         }
         return PythonGatewayTracker.INSTANCE.createTrackedGateway(gateway);
     }
+
+    private static void addCertificates(final Map<String, String> environment) {
+        var caCertMode = PythonCaCertsMode.fromProperty();
+        LOGGER.debug("Using CA cert mode " + caCertMode);
+        caCertMode.updateEnvironment(environment);
+    }
+
+
+
 }
