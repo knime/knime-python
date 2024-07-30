@@ -131,6 +131,11 @@ public class PythonGatewayTrackerTest {
             return m_isClosed;
         }
 
+        @Override
+        public String getTerminationReason() {
+            return null;
+        }
+
     }
 
     @SuppressWarnings("resource")

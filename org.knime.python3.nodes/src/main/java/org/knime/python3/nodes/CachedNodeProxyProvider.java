@@ -263,6 +263,11 @@ final class CachedNodeProxyProvider extends PurePythonExtensionNodeProxyProvider
         public void close() throws IOException {
             m_cachedGateway.close();
         }
+
+        @Override
+        public String getTerminationReason() {
+            return m_delegate.getTerminationReason();
+        }
     }
 
 }

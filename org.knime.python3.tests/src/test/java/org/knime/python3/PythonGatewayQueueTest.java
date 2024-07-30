@@ -368,5 +368,10 @@ public final class PythonGatewayQueueTest {
         public void close() throws IOException {
             m_factory.gatewayClosed();
         }
+
+        @Override
+        public String getTerminationReason() {
+            return null;
+        }
     }
 }

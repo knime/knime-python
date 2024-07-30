@@ -83,6 +83,12 @@ public interface PythonGateway<T extends PythonEntryPoint> extends Closeable {
      */
     InputStream getStandardErrorStream();
 
+    /**
+     * @return If the process was terminated abnormally, returns a user friendly string explaining why that happened.
+     *         null otherwise.
+     */
+    String getTerminationReason();
+
     @Override
     void close() throws IOException;
 }
