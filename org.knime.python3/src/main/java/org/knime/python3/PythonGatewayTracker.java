@@ -172,6 +172,11 @@ public final class PythonGatewayTracker implements PythonGatewayCreationGateList
                 m_tracker.remove(this);
             }
         }
+
+        @Override
+        public String getTerminationReason() {
+            return m_delegate.getTerminationReason();
+        }
     }
 
     @SuppressWarnings("unchecked")
