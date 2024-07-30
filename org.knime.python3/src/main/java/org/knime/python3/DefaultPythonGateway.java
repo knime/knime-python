@@ -124,6 +124,11 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
 
 
     /**
+     * The termination reason is set if the watchdog killed the Python process
+     */
+    private String m_terminationReason;
+
+    /**
      * Creates a {@link PythonGateway} to a new Python process.
      *
      * @param <T> the type of {@link PythonEntryPoint}
@@ -182,8 +187,12 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
             m_stdErrorManager = new SingleClientInputStreamSupplier(() -> m_stdError);
 
             // TODO(22950) handle process being killed better
-            ExternalProcessMemoryWatchdog.getInstance().trackProcess(m_process.toHandle(), memoryUsed -> LOGGER.error(
-                "Total memory limit exceeded. This Python process used " + memoryUsed / 1024 + " MB and was killed."));
+            ExternalProcessMemoryWatchdog.getInstance().trackProcess(m_process.toHandle(), memoryUsed -> {
+                m_terminationReason =
+                        "The Python process was killed to prevent the system from running out of memory (it used "
+                            + memoryUsed / 1024 + "MB).";
+                LOGGER.error(m_terminationReason);
+            });
 
             // NOSONAR: PythonGatewayUtils only uses the #getOutputStream and #getErrorStream methods that are already
             // fully functional at this point in time.
@@ -379,5 +388,10 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
         public String toString() {
             return m_value.toString();
         }
+    }
+
+    @Override
+    public String getTerminationReason() {
+        return m_terminationReason;
     }
 }
