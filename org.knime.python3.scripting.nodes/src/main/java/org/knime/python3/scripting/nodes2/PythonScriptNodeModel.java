@@ -50,6 +50,7 @@ package org.knime.python3.scripting.nodes2;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.ConnectException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -95,6 +96,7 @@ import org.knime.python3.utils.FlowVariableUtils;
 import org.knime.scripting.editor.ScriptingService.ConsoleText;
 
 import py4j.Py4JException;
+import py4j.Py4JNetworkException;
 
 /**
  * The node model of a Python scripting node.
@@ -191,10 +193,54 @@ public final class PythonScriptNodeModel extends NodeModel {
             m_sessionShutdownTracker.closeAsynchronously(session);
             return outputs;
         } catch (final Py4JException ex) {
+            handleNewCommunicationChannelError(ex);
             throw new KNIMEException(StringUtils.removeStart(ex.getMessage(),
                 "An exception was raised by the Python Proxy. Return Message: knime.scripting._backend."), ex);
         } finally {
             m_consoleOutputStorage = consoleConsumer.finish();
+        }
+    }
+
+    /**
+     * Throw a nicer error message if the exception we are seeing is an "Error while obtaining a new communication
+     * channel"
+     *
+     * @param ex The exception
+     * @throws KNIMEException A more human-readable exception
+     */
+    private void handleNewCommunicationChannelError(final Py4JException ex) throws KNIMEException {
+        if (ex.getCause() instanceof ConnectException) {
+            var messageBuilder = createMessageBuilder();
+            messageBuilder.withSummary("Connecting to prefetched Python process failed.");
+            messageBuilder.addResolutions(
+                "The Python process we prepared in the background got killed. Try again to start a new one.");
+            throw KNIMEException.of(messageBuilder.build().orElseThrow(), ex);
+        }
+    }
+
+    /**
+     * Throw a nicer error message if the exception we are seeing is an "error while sending a command".
+     *
+     * If the provided {@link PythonScriptingSession} knows a reason for termination, we show that. Otherwise we just
+     * say that the Python process got terminated.
+     *
+     * @param session The current Python scripting session
+     * @param exception The exception we're seeing
+     * @throws KNIMEException
+     */
+    private void handleErrorWhileSendingCommandError(final PythonScriptingSession session, final Throwable exception)
+        throws KNIMEException {
+        if (exception.getCause() instanceof Py4JNetworkException) {
+            var message = session.getTerminationReason() != null ? session.getTerminationReason()
+                : "The Python process got terminated.";
+
+            var messageBuilder = createMessageBuilder();
+            messageBuilder.withSummary(message);
+            // This resolution is true in any case that the Python process got killed, be it from the outside or our
+            // Watchdog
+            messageBuilder.addResolutions(
+                "This can happen if the system ran out of memory, increase the system resources and try again.");
+            throw KNIMEException.of(messageBuilder.build().orElseThrow(), exception);
         }
     }
 
@@ -208,6 +254,8 @@ public final class PythonScriptNodeModel extends NodeModel {
             // everything else we just unwrap from the ExecutionException and wrap in a KNIMEException
             var cause = ex.getCause();
             if (cause instanceof Py4JException py4jException) {
+                handleErrorWhileSendingCommandError(session, cause);
+
                 throw py4jException;
             } else {
                 throw new KNIMEException(cause.getMessage(), cause);
