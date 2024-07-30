@@ -374,6 +374,14 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
         return PythonIOUtils.getOutputView(m_entryPoint);
     }
 
+    /**
+     * @return If the Python session was terminated abnormally, returns a user friendly string explaining why that
+     *         happened. null otherwise.
+     */
+    String getTerminationReason() {
+        return m_gateway.getTerminationReason();
+    }
+
     private static PythonGateway<PythonScriptingEntryPoint> createGateway(final PythonCommand pythonCommand)
         throws IOException, InterruptedException {
         final var gatewayDescriptionBuilder =

@@ -186,7 +186,6 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
             m_stdOutputManager = new SingleClientInputStreamSupplier(() -> m_stdOutput);
             m_stdErrorManager = new SingleClientInputStreamSupplier(() -> m_stdError);
 
-            // TODO(22950) handle process being killed better
             ExternalProcessMemoryWatchdog.getInstance().trackProcess(m_process.toHandle(), memoryUsed -> {
                 m_terminationReason =
                         "The Python process was killed to prevent the system from running out of memory (it used "
