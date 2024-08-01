@@ -13,12 +13,9 @@ import {
   useSessionStatusStore,
   useWorkspaceStore,
 } from "./store";
-import type {
-  ExecutableOption,
-  ExecutionInfo,
-  KillSessionInfo,
-  PythonScriptingNodeSettings,
-} from "./types/common";
+import type { ExecutionInfo, KillSessionInfo } from "./types/common";
+import { getPythonInitialDataService } from "./python-initial-data-service";
+import { getPythonSettingsService } from "./python-settings-service";
 
 const scriptingService = getScriptingService();
 const executableSelection = useExecutableSelectionStore();
@@ -85,13 +82,13 @@ const mainEditorState = editor.useMainCodeEditorStore();
 
 export const pythonScriptingService = {
   initExecutableSelection: async (): Promise<void> => {
-    const settings =
-      (await scriptingService.getInitialSettings()) as PythonScriptingNodeSettings;
+    const settings = await getPythonSettingsService().getSettings();
+
     setSelectedExecutable({ id: settings.executableSelection ?? "" });
     pythonScriptingService.updateExecutableSelection(executableSelection.id);
     const executableInfo = (
-      await pythonScriptingService.getExecutableOptionsList()
-    ).find(({ id }) => id === executableSelection.id);
+      await getPythonInitialDataService().getInitialData()
+    ).executableOptionsList.find(({ id }) => id === executableSelection.id);
     if (
       typeof executableInfo === "undefined" ||
       executableInfo.type === "MISSING_VAR"
@@ -104,11 +101,6 @@ export const pythonScriptingService = {
   },
   sendLastConsoleOutput: () => {
     scriptingService.sendToService("sendLastConsoleOutput");
-  },
-  getExecutableOptionsList: async (): Promise<ExecutableOption[]> => {
-    return (await scriptingService.sendToService("getExecutableOptionsList", [
-      executableSelection.id,
-    ])) as ExecutableOption[];
   },
   runScript: () => {
     scriptingService.sendToService("runScript", [
@@ -173,12 +165,10 @@ export const pythonScriptingService = {
       consoleHandler.writeln({ warning: e.message });
     }
   },
-  hasPreview: (): Promise<boolean> => {
-    return scriptingService.sendToService("hasPreview");
-  },
   registerInputCompletions: async () => {
-    const inpObjects = await scriptingService.getInputObjects();
-    const inpFlowVars = await scriptingService.getFlowVariableInputs();
+    const initialData = await getPythonInitialDataService().getInitialData();
+    const inpObjects = initialData.inputObjects;
+    const inpFlowVars = initialData.flowVariables;
 
     registerInputCompletions([
       ...inpObjects.flatMap(

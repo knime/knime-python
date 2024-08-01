@@ -1,24 +1,27 @@
+import { describe, expect, it, vi } from "vitest";
+
 import { pythonScriptingService } from "@/python-scripting-service";
 import { useWorkspaceStore, type WorkspaceStore } from "@/store";
 import { getScriptingService } from "@knime/scripting-editor";
 import { mount } from "@vue/test-utils";
-import { describe, expect, it, vi } from "vitest";
 import PythonWorkspaceBody from "../PythonWorkspaceBody.vue";
 
-const mockStore = {
-  workspace: [
-    {
-      name: "Hallo",
-      type: "Int",
-      value: "1",
-    },
-    {
-      name: "Foo",
-      type: "String",
-      value: "bar",
-    },
-  ],
-} as WorkspaceStore;
+const mockStore = vi.hoisted(
+  (): WorkspaceStore => ({
+    workspace: [
+      {
+        name: "Hallo",
+        type: "Int",
+        value: "1",
+      },
+      {
+        name: "Foo",
+        type: "String",
+        value: "bar",
+      },
+    ],
+  }),
+);
 
 vi.mock("@/store");
 

@@ -51,11 +51,16 @@ package org.knime.python3.scripting.nodes2;
 import java.util.Optional;
 import java.util.Set;
 
+import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.webui.data.RpcDataService;
 import org.knime.core.webui.node.dialog.NodeDialog;
 import org.knime.core.webui.node.dialog.NodeSettingsService;
 import org.knime.core.webui.node.dialog.SettingsType;
 import org.knime.core.webui.page.Page;
+import org.knime.scripting.editor.GenericInitialDataBuilder;
+import org.knime.scripting.editor.GenericInitialDataBuilder.DataSupplier;
+import org.knime.scripting.editor.ScriptingNodeSettingsService;
+import org.knime.scripting.editor.WorkflowControl;
 
 /**
  * The node dialog implementation of the Python Scripting nodes.
@@ -67,12 +72,15 @@ public final class PythonScriptNodeDialog implements NodeDialog {
 
     private final PythonScriptingService m_scriptingService;
 
+    private final boolean m_hasView;
+
     /**
      * Create a new scripting editor dialog
      *
      * @param hasView if the node has an output view
      */
     public PythonScriptNodeDialog(final boolean hasView) {
+        m_hasView = hasView;
         m_scriptingService = new PythonScriptingService(hasView);
     }
 
@@ -101,7 +109,42 @@ public final class PythonScriptNodeDialog implements NodeDialog {
 
     @Override
     public NodeSettingsService getNodeSettingsService() {
-        return PythonScriptNodeSettings.createNodeSettingsService();
+        var workflowControl = new WorkflowControl(NodeContext.getContext().getNodeContainer());
+
+        DataSupplier inputObjectSupplier =
+            () -> PythonScriptingInputOutputModelUtils.getInputObjects(workflowControl.getInputInfo());
+
+        DataSupplier flowVariableSupplier = () -> PythonScriptingInputOutputModelUtils
+            .getFlowVariableInputs(workflowControl.getFlowObjectStack().getAllAvailableFlowVariables().values());
+
+        DataSupplier outputObjectSupplier = () -> PythonScriptingInputOutputModelUtils
+            .getOutputObjects(workflowControl.getOutputPortTypes(), m_hasView);
+
+        DataSupplier executableOptionsListSupplier = () -> {
+            var executableOptions = ExecutableSelectionUtils.getExecutableOptions(workflowControl.getFlowObjectStack());
+
+            return executableOptions.values().stream() //
+                .sorted((o1, o2) -> o1.type == o2.type ? o1.id.compareTo(o2.id) : o1.type.compareTo(o2.type)) //
+                .toList();
+        };
+
+        var initialData = GenericInitialDataBuilder //
+            .createDefaultInitialDataBuilder(NodeContext.getContext()) //
+            .addDataSupplier("inputObjects", inputObjectSupplier) //
+            .addDataSupplier("flowVariables", flowVariableSupplier) //
+            .addDataSupplier("outputObjects", outputObjectSupplier) //
+            .addDataSupplier("hasPreview", () -> m_hasView) //
+            .addDataSupplier("executableOptionsList", executableOptionsListSupplier);
+
+        // We grab this here instead of inside the settings supplier, because the node context gets disposed
+        // when the node is closed, which happens BEFORE the settings are saved.
+        final PythonScriptPortsConfiguration portsConfiguration =
+            PythonScriptPortsConfiguration.fromCurrentNodeContext();
+
+        return new ScriptingNodeSettingsService( //
+            () -> new PythonScriptNodeSettings(portsConfiguration), //
+            initialData //
+        );
     }
 
     @Override

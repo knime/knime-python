@@ -317,13 +317,12 @@ public final class PythonScriptNodeModel extends NodeModel {
 
     @Override
     protected void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
-        // Nothing to validate
-        // Add a validate method to the m_settings object for validation
+        m_settings.validate(settings);
     }
 
     @Override
     protected void loadValidatedSettingsFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
-        m_settings.loadValidatedSettingsFrom(settings);
+        m_settings.loadSettingsFrom(settings);
     }
 
     @Override

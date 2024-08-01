@@ -1,5 +1,8 @@
-import { getScriptingService, consoleHandler } from "@knime/scripting-editor";
+import { DEFAULT_INITIAL_DATA } from "@/__mocks__/mock-data";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { consoleHandler } from "@knime/scripting-editor";
+import { getPythonInitialDataService } from "@/python-initial-data-service";
+import { ref } from "vue";
 
 describe("store.ts", () => {
   beforeEach(() => {
@@ -20,20 +23,32 @@ describe("store.ts", () => {
     });
 
     it("should set isRunningSupported to false if no inputs are available", async () => {
-      vi.mocked(getScriptingService().inputsAvailable).mockReturnValueOnce(
-        Promise.resolve(false),
-      );
+      vi.mocked(getPythonInitialDataService).mockReturnValue({
+        getInitialData: () =>
+          Promise.resolve({
+            ...DEFAULT_INITIAL_DATA,
+            inputsAvailable: false,
+          }),
+        isInitialDataLoaded: () => ref(true),
+      });
       const sessionStatus = await importSessionStatusStore();
       expect(sessionStatus.isRunningSupported).toBe(false);
     });
 
     it("should log warning if no inputs are available", async () => {
-      const scriptingService = getScriptingService();
+      vi.mocked(getPythonInitialDataService).mockReturnValue({
+        getInitialData: () =>
+          Promise.resolve({
+            ...DEFAULT_INITIAL_DATA,
+            inputsAvailable: false,
+          }),
+        isInitialDataLoaded: () => ref(true),
+      });
+
       const consoleSpy = vi.spyOn(consoleHandler, "writeln");
-      vi.mocked(scriptingService.inputsAvailable).mockReturnValueOnce(
-        Promise.resolve(false),
-      );
+
       await importSessionStatusStore();
+
       expect(consoleSpy).toHaveBeenCalledOnce();
       expect(consoleSpy).toHaveBeenCalledWith({
         warning:

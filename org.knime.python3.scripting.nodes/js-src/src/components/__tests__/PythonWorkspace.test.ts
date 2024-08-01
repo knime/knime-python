@@ -1,11 +1,14 @@
+import { DEFAULT_INITIAL_DATA } from "@/__mocks__/mock-data";
+import { vi, afterEach, beforeEach, describe, expect, it } from "vitest";
+
 import { useSessionStatusStore, useWorkspaceStore } from "@/store";
 import { getScriptingService } from "@knime/scripting-editor";
 import { flushPromises, mount } from "@vue/test-utils";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { type Ref } from "vue";
+import { ref, type Ref } from "vue";
 import { Button } from "@knime/components";
 import PythonWorkspace from "../PythonWorkspace.vue";
 import { type ColumnSizes } from "../PythonWorkspaceHeader.vue";
+import { getPythonInitialDataService } from "@/python-initial-data-service";
 
 type WorkspaceState = {
   headerWidths?: ColumnSizes;
@@ -115,8 +118,13 @@ describe("PythonWorkspace", () => {
   });
 
   it("reset button disabled if inputs are not available", async () => {
-    vi.mocked(getScriptingService().inputsAvailable).mockImplementation(() => {
-      return Promise.resolve(false);
+    vi.mocked(getPythonInitialDataService).mockReturnValue({
+      getInitialData: () =>
+        Promise.resolve({
+          ...DEFAULT_INITIAL_DATA,
+          inputsAvailable: false,
+        }),
+      isInitialDataLoaded: () => ref(true),
     });
 
     const { wrapper } = await doMount();

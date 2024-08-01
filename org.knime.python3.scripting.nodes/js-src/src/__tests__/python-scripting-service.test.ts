@@ -1,12 +1,5 @@
-import {
-  describe,
-  it,
-  vi,
-  expect,
-  beforeEach,
-  afterEach,
-  beforeAll,
-} from "vitest";
+import { DEFAULT_INITIAL_DATA } from "@/__mocks__/mock-data";
+import { describe, it, vi, expect, beforeEach, beforeAll } from "vitest";
 
 import {
   getScriptingService,
@@ -18,6 +11,37 @@ import { useSessionStatusStore, useWorkspaceStore } from "@/store";
 import type { ExecutionInfo, KillSessionInfo } from "@/types/common";
 import { ref } from "vue";
 
+const mockScriptingService = vi.hoisted(() => {
+  const languageServerConnection = { changeConfiguration: vi.fn() };
+
+  return {
+    sendToService: vi.fn((args) => {
+      // If this method is not mocked, the tests fail with a hard to debug
+      // error otherwise, so we're really explicit here.
+      throw new Error(
+        `ScriptingService.sendToService should have been mocked for method ${args}`,
+      );
+    }),
+    registerEventHandler: vi.fn(),
+    connectToLanguageServer: vi.fn(() => languageServerConnection),
+    registerSettingsGetterForApply: vi.fn(),
+  };
+});
+vi.mock("@knime/scripting-editor", async (importActual) => {
+  const scriptEditorModule = (await importActual()) as any;
+
+  return {
+    ...scriptEditorModule,
+    getScriptingService: vi.fn(() => {
+      return mockScriptingService;
+    }),
+    getInitialDataService: vi.fn(() => ({
+      getInitialData: vi.fn(() => Promise.resolve(DEFAULT_INITIAL_DATA)),
+      isInitialDataLoaded: vi.fn(() => true),
+    })),
+  };
+});
+
 describe("python-scripting-service", () => {
   let eventHandler: (info: ExecutionInfo) => void;
   const getConsoleSpy = () => vi.spyOn(consoleHandler, "writeln");
@@ -27,15 +51,12 @@ describe("python-scripting-service", () => {
       .calls[0][1];
   });
 
-  afterEach(() => {
-    vi.resetAllMocks();
-  });
-
   describe("session handling", () => {
     beforeEach(() => {
-      vi.mocked(getScriptingService().sendToService).mockImplementation(() =>
+      vi.mocked(getScriptingService().sendToService).mockReturnValue(
         Promise.resolve(),
       );
+
       useSessionStatusStore().status = "IDLE";
     });
 

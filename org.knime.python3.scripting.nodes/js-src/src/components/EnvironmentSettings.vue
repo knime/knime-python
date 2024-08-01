@@ -4,6 +4,7 @@ import { RadioButtons, Dropdown, Label } from "@knime/components";
 import { useExecutableSelectionStore, setSelectedExecutable } from "@/store";
 import { pythonScriptingService } from "@/python-scripting-service";
 import type { ExecutableOption } from "@/types/common";
+import { getPythonInitialDataService } from "@/python-initial-data-service";
 
 const executableSelection = useExecutableSelectionStore();
 const selectedEnv: Ref<"default" | "conda"> = ref(
@@ -33,7 +34,9 @@ const getExecutableById = (executableId: string): ExecutableOption | null => {
 };
 
 onMounted(async () => {
-  executableOptions = await pythonScriptingService.getExecutableOptionsList();
+  executableOptions = (await getPythonInitialDataService().getInitialData())
+    .executableOptionsList;
+
   dropDownOptions.value = executableOptions
     .map((executableOption: ExecutableOption) => ({
       id: executableOption.id,
@@ -161,3 +164,4 @@ watch(selectedExecutableOption, updateLiveExecutableSelection);
   --radio-button-margin: 0 0 30px 0;
 }
 </style>
+@/python-initial-data-service

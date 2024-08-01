@@ -17,6 +17,8 @@ export type ExecutableOption = {
 export type PythonScriptingNodeSettings = {
   script: string;
   executableSelection: string;
+  scriptUsedFlowVariable?: string;
+  settingsAreOverriddenByFlowVariable?: boolean;
 };
 
 export type Workspace = {
@@ -31,6 +33,7 @@ export type ExecutionResult =
   | "KNIME_ERROR"
   | "FATAL_ERROR"
   | "CANCELLED";
+
 export type ExecutionInfo = {
   status: ExecutionResult;
   description: string;

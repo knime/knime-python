@@ -1,3 +1,8 @@
+import {
+  DEFAULT_INITIAL_DATA,
+  DEFAULT_INITIAL_SETTINGS,
+} from "@/__mocks__/mock-data";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { setSelectedExecutable, useExecutableSelectionStore } from "@/store";
 import {
   ScriptingEditor,
@@ -5,17 +10,22 @@ import {
   editor,
   consoleHandler,
 } from "@knime/scripting-editor";
+import { getPythonInitialDataService } from "@/python-initial-data-service";
 import {
   VueWrapper,
   enableAutoUnmount,
   flushPromises,
   mount,
 } from "@vue/test-utils";
-import { afterEach, describe, expect, it, vi } from "vitest";
 import { executableOptionsMock } from "../../__mocks__/executable-options";
 import App from "../App.vue";
-import { nextTick } from "vue";
+import { nextTick, ref } from "vue";
 import { pythonScriptingService } from "@/python-scripting-service";
+import type {
+  ExecutableOption,
+  PythonScriptingNodeSettings,
+} from "@/types/common";
+import { getPythonSettingsService } from "@/python-settings-service";
 
 describe("App.vue", () => {
   enableAutoUnmount(afterEach);
@@ -23,17 +33,15 @@ describe("App.vue", () => {
   const doMount = async ({
     viewAvailable = false,
     executableOptions = executableOptionsMock,
+    settings = DEFAULT_INITIAL_SETTINGS,
   }: {
     viewAvailable?: boolean;
     executableOptions?: any[];
+    settings?: { [key: string]: any };
   } = {}) => {
     vi.mocked(getScriptingService().sendToService).mockImplementation(
       (methodName: string): any => {
-        if (methodName === "hasPreview") {
-          return Promise.resolve(viewAvailable);
-        } else if (methodName === "getExecutableOptionsList") {
-          return executableOptions;
-        } else if (methodName === "sendLastConsoleOutput") {
+        if (methodName === "sendLastConsoleOutput") {
           // do nothing
           return Promise.resolve();
         } else if (methodName === "getLanguageServerConfig") {
@@ -45,6 +53,21 @@ describe("App.vue", () => {
         throw Error(`Method ${methodName} was not mocked but called in test`);
       },
     );
+    vi.mocked(getPythonInitialDataService).mockReturnValue({
+      getInitialData: () =>
+        Promise.resolve({
+          ...DEFAULT_INITIAL_DATA,
+          executableOptionsList: executableOptions as ExecutableOption[],
+          hasPreview: viewAvailable,
+        }),
+      isInitialDataLoaded: () => ref(true),
+    });
+    vi.mocked(getPythonSettingsService).mockReturnValue({
+      getSettings: () =>
+        Promise.resolve(settings as PythonScriptingNodeSettings),
+      areSettingsLoaded: () => ref(true),
+      registerSettingsGetterForApply: () => Promise.resolve(),
+    });
     setSelectedExecutable({ id: "", isMissing: false });
     const wrapper = mount(App, {
       global: {
@@ -196,15 +219,12 @@ describe("App.vue", () => {
       script: "",
       executableSelection: "conda.environment1",
     };
-    getScriptingService().getInitialSettings = vi.fn((): any => settingsMock);
-    await doMount();
+    await doMount({
+      settings: settingsMock,
+    });
     await flushPromises();
     expect(getScriptingService().sendToService).toHaveBeenCalledWith(
       "updateExecutableSelection",
-      [settingsMock.executableSelection],
-    );
-    expect(getScriptingService().sendToService).toHaveBeenCalledWith(
-      "getExecutableOptionsList",
       [settingsMock.executableSelection],
     );
     const executableSelectionStore = useExecutableSelectionStore();
@@ -227,13 +247,11 @@ describe("App.vue", () => {
       script: "",
       executableSelection: "unknown environment",
     };
-    getScriptingService().getInitialSettings = vi.fn((): any => settingsMock);
-    await doMount();
+    await doMount({
+      settings: settingsMock,
+    });
     await flushPromises();
-    expect(getScriptingService().sendToService).toHaveBeenCalledWith(
-      "getExecutableOptionsList",
-      [settingsMock.executableSelection],
-    );
+
     expect(consoleSpy).toHaveBeenCalledWith({
       error:
         'Flow variable "unknown environment" is missing, therefore no Python executable could be started',
@@ -246,7 +264,6 @@ describe("App.vue", () => {
       script: "",
       executableSelection: "conda.environment1",
     };
-    getScriptingService().getInitialSettings = vi.fn((): any => settingsMock);
     await doMount({
       executableOptions: [
         executableOptionsMock[0],
@@ -255,12 +272,9 @@ describe("App.vue", () => {
           id: "conda.environment1",
         },
       ],
+      settings: settingsMock,
     });
     await flushPromises();
-    expect(getScriptingService().sendToService).toHaveBeenCalledWith(
-      "getExecutableOptionsList",
-      [settingsMock.executableSelection],
-    );
     expect(consoleSpy).toHaveBeenCalledWith({
       error:
         'Flow variable "conda.environment1" is missing, therefore no Python executable could be started',

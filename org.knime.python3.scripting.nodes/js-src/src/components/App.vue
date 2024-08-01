@@ -5,19 +5,20 @@ import {
   CompactTabBar,
   ScriptingEditor,
   editor,
-  type NodeSettings,
   type SettingsMenuItem,
+  type GenericNodeSettings,
 } from "@knime/scripting-editor";
+import { getPythonInitialDataService } from "@/python-initial-data-service";
 import { nextTick, onMounted, ref, watch, type Ref } from "vue";
 import SettingsIcon from "@knime/styles/img/icons/cog.svg";
 import FileCogIcon from "@knime/styles/img/icons/file-cog.svg";
 import FileTextIcon from "@knime/styles/img/icons/file-text.svg";
-import type { MenuItem } from "@knime/components";
-import EnvironmentSettings from "./EnvironmentSettings.vue";
-import LastActionStatus from "./LastActionStatus.vue";
-import PythonEditorControls from "./PythonEditorControls.vue";
-import PythonViewPreview from "./PythonViewPreview.vue";
-import PythonWorkspace from "./PythonWorkspace.vue";
+import { type MenuItem, LoadingIcon } from "@knime/components";
+import EnvironmentSettings from "@/components/EnvironmentSettings.vue";
+import LastActionStatus from "@/components/LastActionStatus.vue";
+import PythonEditorControls from "@/components/PythonEditorControls.vue";
+import PythonViewPreview from "@/components/PythonViewPreview.vue";
+import PythonWorkspace from "@/components/PythonWorkspace.vue";
 
 const menuItems: MenuItem[] = [
   {
@@ -74,11 +75,17 @@ watch(
   () => pythonScriptingService.connectToLanguageServer(),
 );
 
+const initialDataLoaded = ref(false);
+getPythonInitialDataService()
+  .getInitialData()
+  .then(() => {
+    initialDataLoaded.value = true;
+  });
 // Register the completion items for the inputs
 pythonScriptingService.registerInputCompletions();
 
 const executableSelection = useExecutableSelectionStore();
-const toSettings = (commonSettings: NodeSettings) => ({
+const toSettings = (commonSettings: GenericNodeSettings) => ({
   ...commonSettings,
   executableSelection:
     executableSelection.livePrefValue ?? executableSelection.id,
@@ -99,7 +106,9 @@ onMounted(async () => {
   pythonScriptingService.initExecutableSelection();
 
   // Check if the preview is available
-  hasPreview.value = await pythonScriptingService.hasPreview();
+  hasPreview.value = (
+    await getPythonInitialDataService().getInitialData()
+  ).hasPreview;
 
   if (hasPreview.value) {
     // wait until preview is mounted to DOM
@@ -111,46 +120,53 @@ onMounted(async () => {
 
 <template>
   <main>
-    <ScriptingEditor
-      :title="`Python ${hasPreview ? 'View' : 'Script'}`"
-      :menu-items="menuItems"
-      :show-run-buttons="true"
-      :to-settings="toSettings"
-      language="python"
-      file-name="main.py"
-      @menu-item-clicked="onMenuItemClicked"
-    >
-      <template #settings-title>
-        {{ currentSettingsMenuItem?.title }}
-      </template>
-      <template #settings-content>
-        <EnvironmentSettings
-          v-if="currentSettingsMenuItem?.title === 'Select Environment'"
-        />
-      </template>
-      <template #code-editor-controls>
-        <PythonEditorControls />
-      </template>
-      <template #right-pane>
-        <div v-if="hasPreview" id="right-pane">
-          <CompactTabBar
-            ref="rightTabBar"
-            v-model="rightPaneActiveTab"
-            :possible-values="rightPaneOptions"
-            :disabled="false"
-            name="rightTabBar"
+    <template v-if="initialDataLoaded">
+      <ScriptingEditor
+        :title="`Python ${hasPreview ? 'View' : 'Script'}`"
+        :menu-items="menuItems"
+        :show-run-buttons="true"
+        :to-settings="toSettings"
+        language="python"
+        file-name="main.py"
+        @menu-item-clicked="onMenuItemClicked"
+      >
+        <template #settings-title>
+          {{ currentSettingsMenuItem?.title }}
+        </template>
+        <template #settings-content>
+          <EnvironmentSettings
+            v-if="currentSettingsMenuItem?.title === 'Select Environment'"
           />
-          <div id="right-pane-content">
-            <PythonWorkspace v-show="rightPaneActiveTab === 'workspace'" />
-            <PythonViewPreview v-show="rightPaneActiveTab === 'preview'" />
+        </template>
+        <template #code-editor-controls>
+          <PythonEditorControls />
+        </template>
+        <template #right-pane>
+          <div v-if="hasPreview" id="right-pane">
+            <CompactTabBar
+              ref="rightTabBar"
+              v-model="rightPaneActiveTab"
+              :possible-values="rightPaneOptions"
+              :disabled="false"
+              name="rightTabBar"
+            />
+            <div id="right-pane-content">
+              <PythonWorkspace v-show="rightPaneActiveTab === 'workspace'" />
+              <PythonViewPreview v-show="rightPaneActiveTab === 'preview'" />
+            </div>
           </div>
-        </div>
-        <PythonWorkspace v-if="!hasPreview" />
-      </template>
-      <template #console-status>
-        <LastActionStatus />
-      </template>
-    </ScriptingEditor>
+          <PythonWorkspace v-if="!hasPreview" />
+        </template>
+        <template #console-status>
+          <LastActionStatus />
+        </template>
+      </ScriptingEditor>
+    </template>
+    <template v-else>
+      <div class="no-editors">
+        <LoadingIcon />
+      </div>
+    </template>
   </main>
 </template>
 
@@ -167,5 +183,12 @@ onMounted(async () => {
 
 #right-pane-content {
   flex-grow: 1;
+}
+
+.no-editors {
+  position: absolute;
+  inset: calc(50% - 25px);
+  width: 50px;
+  height: 50px;
 }
 </style>

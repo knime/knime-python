@@ -1,7 +1,8 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import { useSessionStatusStore } from "@/store";
 import { editor, getScriptingService } from "@knime/scripting-editor";
 import { DOMWrapper, VueWrapper, flushPromises, mount } from "@vue/test-utils";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import CancelIcon from "@knime/styles/img/icons/circle-close.svg";
 import PlayIcon from "@knime/styles/img/icons/play.svg";
 import { Button, LoadingIcon } from "@knime/components";

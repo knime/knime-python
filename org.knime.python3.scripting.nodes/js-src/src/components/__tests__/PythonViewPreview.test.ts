@@ -1,5 +1,6 @@
-import { mount } from "@vue/test-utils";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { mount } from "@vue/test-utils";
 import PythonViewPreview from "../PythonViewPreview.vue";
 import { usePythonPreviewStatusStore, useSessionStatusStore } from "@/store";
 import { editor, getScriptingService } from "@knime/scripting-editor";

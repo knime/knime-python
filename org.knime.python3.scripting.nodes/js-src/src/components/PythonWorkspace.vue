@@ -5,11 +5,11 @@ import { Button } from "@knime/components";
 
 import { pythonScriptingService } from "@/python-scripting-service";
 import { usePythonPreviewStatusStore, useSessionStatusStore } from "@/store";
-import { getScriptingService } from "@knime/scripting-editor";
 import PythonWorkspaceBody from "./PythonWorkspaceBody.vue";
 import PythonWorkspaceHeader, {
   type ColumnSizes,
 } from "./PythonWorkspaceHeader.vue";
+import { getPythonInitialDataService } from "@/python-initial-data-service";
 
 const resizeContainer = ref<HTMLElement | null>(null);
 const totalWidth: Ref<number> = ref(0);
@@ -43,7 +43,7 @@ const resetWorkspace = async () => {
 
 onMounted(async () => {
   useTotalWidth();
-  if (await getScriptingService().inputsAvailable()) {
+  if ((await getPythonInitialDataService().getInitialData()).inputsAvailable) {
     resetButtonEnabled.value = true;
   }
 });
@@ -124,3 +124,4 @@ onMounted(async () => {
   margin-right: 10px;
 }
 </style>
+@/python-initial-data-service

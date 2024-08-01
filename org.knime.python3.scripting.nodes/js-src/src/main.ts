@@ -1,8 +1,8 @@
-import "./__mocks__/scripting-service-browser-mock";
+import "@/__mocks__/browser-mock-services";
 
 import { BrowserReporter, Consola, LogLevel } from "consola";
 import { createApp } from "vue";
-import App from "./components/App.vue";
+import App from "@/components/App.vue";
 
 const setupConsola = () => {
   const consola = new Consola({

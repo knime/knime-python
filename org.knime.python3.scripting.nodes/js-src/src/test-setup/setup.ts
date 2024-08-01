@@ -1,14 +1,32 @@
 import "vitest-canvas-mock";
+import {
+  DEFAULT_INITIAL_DATA,
+  DEFAULT_INITIAL_SETTINGS,
+} from "@/__mocks__/mock-data";
 import { vi } from "vitest";
-import { LogLevel } from "consola";
+import { Consola, LogLevel } from "consola";
+import { ref } from "vue";
 
-consola.level = LogLevel.Debug;
+export const consola = new Consola({
+  level: LogLevel.Log,
+});
 
-vi.mock("@knime/scripting-editor", async () => {
-  const initialSettings = {
-    script: "print('Hello World!')",
-    executableSelection: "",
-  };
+vi.mock("@/python-initial-data-service", () => ({
+  getPythonInitialDataService: vi.fn(() => ({
+    getInitialData: vi.fn(() => Promise.resolve(DEFAULT_INITIAL_DATA)),
+    isInitialDataLoaded: vi.fn(() => true),
+  })),
+}));
+
+vi.mock("@/python-settings-service", () => ({
+  getPythonSettingsService: vi.fn(() => ({
+    getSettings: vi.fn(() => Promise.resolve(DEFAULT_INITIAL_SETTINGS)),
+    areSettingsLoaded: vi.fn(() => ref(true)),
+    registerSettingsGetterForApply: vi.fn(() => Promise.resolve()),
+  })),
+}));
+
+vi.mock("@knime/scripting-editor", async (importActual) => {
   const languageServerConnection = { changeConfiguration: vi.fn() };
   const mockScriptingService = {
     sendToService: vi.fn((args) => {
@@ -20,26 +38,14 @@ vi.mock("@knime/scripting-editor", async () => {
     }),
     registerEventHandler: vi.fn(),
     connectToLanguageServer: vi.fn(() => languageServerConnection),
-    isCodeAssistantEnabled: vi.fn(() => Promise.resolve(true)),
-    isCodeAssistantInstalled: vi.fn(() => Promise.resolve(true)),
-    inputsAvailable: vi.fn(() => true),
-    getInputObjects: vi.fn(() => []),
-    getOutputObjects: vi.fn(() => []),
-    getFlowVariableInputs: vi.fn(() => ({})),
-    getInitialSettings: vi.fn(() => Promise.resolve(initialSettings)),
-    registerSettingsGetterForApply: vi.fn(),
   };
 
-  const scriptEditorModule = await vi.importActual("@knime/scripting-editor");
-
-  // Replace the original implementations by the mocks
-  // @ts-ignore
-  Object.assign(scriptEditorModule.getScriptingService(), mockScriptingService);
+  const scriptEditorModule = (await importActual()) as any;
 
   return {
     ...scriptEditorModule,
-    getScriptingService: () => {
+    getScriptingService: vi.fn(() => {
       return mockScriptingService;
-    },
+    }),
   };
 });

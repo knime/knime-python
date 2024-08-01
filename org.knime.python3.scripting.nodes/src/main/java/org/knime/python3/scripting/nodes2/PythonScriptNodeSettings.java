@@ -50,21 +50,17 @@ package org.knime.python3.scripting.nodes2;
 
 import static org.knime.python3.scripting.nodes2.ExecutableSelectionUtils.EXEC_SELECTION_PREF_ID;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
-import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.webui.node.dialog.NodeAndVariableSettingsRO;
-import org.knime.core.webui.node.dialog.NodeSettingsService;
+import org.knime.core.webui.node.dialog.NodeAndVariableSettingsWO;
 import org.knime.core.webui.node.dialog.SettingsType;
-import org.knime.core.webui.node.dialog.VariableSettingsRO;
-import org.knime.core.webui.node.dialog.VariableSettingsWO;
+import org.knime.scripting.editor.GenericSettingsIOManager;
 import org.knime.scripting.editor.ScriptingNodeSettings;
-import org.knime.scripting.editor.ScriptingNodeSettingsService;
-
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * The settings of a Python scripting node.
@@ -72,84 +68,84 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
  */
 @SuppressWarnings("restriction") // the UIExtension node dialog API is still restricted
-final class PythonScriptNodeSettings extends ScriptingNodeSettings {
+final class PythonScriptNodeSettings extends ScriptingNodeSettings implements GenericSettingsIOManager {
 
-    private static final SettingsType SCRIPT_SETTINGS_TYPE = SettingsType.MODEL;
+    private static final String CFG_KEY_EXECUTABLE_SELECTION = "python3_command";
 
-    private static final String EXECUTABLE_SELECTION_CFG_KEY = "python3_command";
+    private static final String JSON_KEY_EXECUTABLE_SELECTION = "executableSelection";
+
+    private static final String JSON_KEY_ARE_SETTINGS_OVERRIDDEN_BY_FLOW_VARIABLES = "settingsAreOverriddenByFlowVariable";
+
+    private static final String JSON_KEY_OVERRIDING_FLOW_VARIABLE = "scriptUsedFlowVariable";
+
+    private static final String CFG_KEY_SCRIPT = "script";
 
     private String m_executableSelection;
 
+    private String m_script;
+
     PythonScriptNodeSettings(final PythonScriptPortsConfiguration portsConfiguration) {
-        super(PythonScriptNodeDefaultScripts.getDefaultScript(portsConfiguration), SCRIPT_SETTINGS_TYPE);
+        super(SettingsType.MODEL);
+
         m_executableSelection = EXEC_SELECTION_PREF_ID;
+        m_script = PythonScriptNodeDefaultScripts.getDefaultScript(portsConfiguration);
     }
 
     String getExecutableSelection() {
         return m_executableSelection;
     }
 
-    void saveSettingsTo(final NodeSettingsWO settings) {
-        super.saveModelSettingsTo(settings);
-
+    @Override
+    public void saveSettingsTo(final NodeSettingsWO settings) {
         // NB: only configured via flow variables
-        settings.addString(EXECUTABLE_SELECTION_CFG_KEY, EXEC_SELECTION_PREF_ID);
+        settings.addString(CFG_KEY_EXECUTABLE_SELECTION, m_executableSelection);
+        settings.addString(CFG_KEY_SCRIPT, m_script);
     }
 
-    void loadValidatedSettingsFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
-        super.loadModelSettings(settings);
-
+    @Override
+    public void loadSettingsFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
         // NB: might be overwritten by a flow variable
-        m_executableSelection = settings.getString(EXECUTABLE_SELECTION_CFG_KEY);
+        m_executableSelection = settings.getString(CFG_KEY_EXECUTABLE_SELECTION);
+        m_script = settings.getString(CFG_KEY_SCRIPT);
     }
 
-    static NodeSettingsService createNodeSettingsService() {
-        return new PythonScriptNodeSettingsService();
+    @Override
+    public Map<String, Object> convertNodeSettingsToMap(final Map<SettingsType, NodeAndVariableSettingsRO> settings)
+        throws InvalidSettingsException {
+
+        var nodeSettings = settings.get(m_scriptSettingsType);
+
+        loadSettingsFrom(nodeSettings);
+
+        // Check if the script is overridden by a flow variable, and if so, pass the var name to the frontend
+
+        Map<String, Object> ret = new HashMap<>(Map.of( //
+            CFG_KEY_SCRIPT, m_script, //
+            JSON_KEY_EXECUTABLE_SELECTION, m_executableSelection //
+        ));
+
+        var scriptUsedFlowVariable = getOverridingFlowVariableName(nodeSettings, CFG_KEY_SCRIPT);
+        if (scriptUsedFlowVariable.isPresent()) {
+            ret.put(JSON_KEY_OVERRIDING_FLOW_VARIABLE, scriptUsedFlowVariable.get());
+            ret.put(JSON_KEY_ARE_SETTINGS_OVERRIDDEN_BY_FLOW_VARIABLES, true);
+        } else {
+            ret.put(JSON_KEY_ARE_SETTINGS_OVERRIDDEN_BY_FLOW_VARIABLES, false);
+        }
+
+        return ret;
     }
 
-    private static final class PythonScriptNodeSettingsService extends ScriptingNodeSettingsService {
+    @Override
+    public void writeMapToNodeSettings(final Map<String, Object> data,
+        final Map<SettingsType, NodeAndVariableSettingsWO> settings) throws InvalidSettingsException {
 
-        private static final String EXEC_SELECTION_JSON_KEY = "executableSelection";
+        m_executableSelection = (String)data.get(JSON_KEY_EXECUTABLE_SELECTION);
+        m_script = (String)data.get(CFG_KEY_SCRIPT);
 
-        public PythonScriptNodeSettingsService() {
-            super(SCRIPT_SETTINGS_TYPE);
-        }
+        saveSettingsTo(settings);
+    }
 
-        @Override
-        protected void putAdditionalSettingsToJson(final Map<SettingsType, NodeAndVariableSettingsRO> settings,
-            final PortObjectSpec[] specs, final ObjectNode settingsJson) {
-            var modelSettings = settings.get(SettingsType.MODEL);
-            var executableSelection = modelSettings.getString(EXECUTABLE_SELECTION_CFG_KEY, EXEC_SELECTION_PREF_ID);
-            if (modelSettings.isVariableSetting(EXECUTABLE_SELECTION_CFG_KEY)) {
-                try {
-                    executableSelection = modelSettings.getUsedVariable(EXECUTABLE_SELECTION_CFG_KEY);
-                } catch (final InvalidSettingsException e) {
-                    // This should not happen because we check that the executable selection is a variable setting first
-                    throw new IllegalStateException(e);
-                }
-            }
-            settingsJson.put(EXEC_SELECTION_JSON_KEY, executableSelection);
-        }
-
-        @Override
-        protected void addAdditionalSettingsToNodeSettings(final ObjectNode settingsJson,
-            final Map<SettingsType, ? extends NodeSettingsWO> settings) {
-            settings.get(SettingsType.MODEL).addString(EXECUTABLE_SELECTION_CFG_KEY, EXEC_SELECTION_PREF_ID);
-        }
-
-        @Override
-        protected void setVariableSettings(final ObjectNode settingsJson,
-            final Map<SettingsType, ? extends VariableSettingsRO> previousSettings,
-            final Map<SettingsType, ? extends VariableSettingsWO> settings) {
-            copyScriptVariableSetting(previousSettings, settings);
-
-            try {
-                settings.get(SettingsType.MODEL).addUsedVariable(EXECUTABLE_SELECTION_CFG_KEY,
-                    settingsJson.get(EXEC_SELECTION_JSON_KEY).asText());
-            } catch (final InvalidSettingsException e) {
-                // Cannot happen because we have a setting with the key EXECUTABLE_SELECTION_CFG_KEY
-                throw new IllegalStateException(e);
-            }
-        }
+    public String getScript() {
+        return m_script;
     }
 }
