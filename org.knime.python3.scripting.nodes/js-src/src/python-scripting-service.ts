@@ -4,6 +4,7 @@ import {
   editor,
   getScriptingService,
   consoleHandler,
+  getInitialDataService,
 } from "@knime/scripting-editor";
 import { registerInputCompletions } from "./input-completions";
 import {
@@ -85,12 +86,13 @@ const mainEditorState = editor.useMainCodeEditorStore();
 
 export const pythonScriptingService = {
   initExecutableSelection: async (): Promise<void> => {
-    const settings =
-      (await scriptingService.getInitialSettings()) as PythonScriptingNodeSettings;
+    const settings = (await getInitialDataService().getInitialData())
+      .settings as PythonScriptingNodeSettings;
     setSelectedExecutable({ id: settings.executableSelection ?? "" });
     pythonScriptingService.updateExecutableSelection(executableSelection.id);
     const executableInfo = (
-      await pythonScriptingService.getExecutableOptionsList()
+      (await getInitialDataService().getInitialData())
+        .executableOptionsList as ExecutableOption[]
     ).find(({ id }) => id === executableSelection.id);
     if (
       typeof executableInfo === "undefined" ||
@@ -104,11 +106,6 @@ export const pythonScriptingService = {
   },
   sendLastConsoleOutput: () => {
     scriptingService.sendToService("sendLastConsoleOutput");
-  },
-  getExecutableOptionsList: async (): Promise<ExecutableOption[]> => {
-    return (await scriptingService.sendToService("getExecutableOptionsList", [
-      executableSelection.id,
-    ])) as ExecutableOption[];
   },
   runScript: () => {
     scriptingService.sendToService("runScript", [
@@ -173,12 +170,10 @@ export const pythonScriptingService = {
       consoleHandler.writeln({ warning: e.message });
     }
   },
-  hasPreview: (): Promise<boolean> => {
-    return scriptingService.sendToService("hasPreview");
-  },
   registerInputCompletions: async () => {
-    const inpObjects = await scriptingService.getInputObjects();
-    const inpFlowVars = await scriptingService.getFlowVariableInputs();
+    const initialData = await getInitialDataService().getInitialData();
+    const inpObjects = initialData.inputObjects;
+    const inpFlowVars = initialData.flowVariables;
 
     registerInputCompletions([
       ...inpObjects.flatMap(

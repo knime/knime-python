@@ -3,7 +3,8 @@ import { computed, onMounted, onUnmounted, ref, type Ref, watch } from "vue";
 import { RadioButtons, Dropdown, Label } from "@knime/components";
 import { useExecutableSelectionStore, setSelectedExecutable } from "@/store";
 import { pythonScriptingService } from "@/python-scripting-service";
-import type { ExecutableOption } from "@/types/common";
+import type { ExecutableOption, PythonInitialData } from "@/types/common";
+import { getInitialDataService } from "@knime/scripting-editor";
 
 const executableSelection = useExecutableSelectionStore();
 const selectedEnv: Ref<"default" | "conda"> = ref(
@@ -33,7 +34,10 @@ const getExecutableById = (executableId: string): ExecutableOption | null => {
 };
 
 onMounted(async () => {
-  executableOptions = await pythonScriptingService.getExecutableOptionsList();
+  executableOptions = (
+    (await getInitialDataService().getInitialData()) as PythonInitialData
+  ).executableOptionsList;
+
   dropDownOptions.value = executableOptions
     .map((executableOption: ExecutableOption) => ({
       id: executableOption.id,

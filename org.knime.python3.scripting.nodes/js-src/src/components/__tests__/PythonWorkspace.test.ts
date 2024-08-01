@@ -1,11 +1,45 @@
+import { DEFAULT_INITIAL_DATA } from "@/__mocks__/mock-data";
+import { vi, afterEach, beforeEach, describe, expect, it } from "vitest";
+
 import { useSessionStatusStore, useWorkspaceStore } from "@/store";
-import { getScriptingService } from "@knime/scripting-editor";
+import {
+  getInitialDataService,
+  getScriptingService,
+} from "@knime/scripting-editor";
 import { flushPromises, mount } from "@vue/test-utils";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { type Ref } from "vue";
 import { Button } from "@knime/components";
 import PythonWorkspace from "../PythonWorkspace.vue";
 import { type ColumnSizes } from "../PythonWorkspaceHeader.vue";
+
+vi.mock("@knime/scripting-editor", async (importActual) => {
+  const languageServerConnection = { changeConfiguration: vi.fn() };
+  const mockScriptingService = {
+    sendToService: vi.fn((args) => {
+      // If this method is not mocked, the tests fail with a hard to debug
+      // error otherwise, so we're really explicit here.
+      throw new Error(
+        `ScriptingService.sendToService should have been mocked for method ${args}`,
+      );
+    }),
+    registerEventHandler: vi.fn(),
+    connectToLanguageServer: vi.fn(() => languageServerConnection),
+    registerSettingsGetterForApply: vi.fn(),
+  };
+
+  const scriptEditorModule = (await importActual()) as any;
+
+  return {
+    ...scriptEditorModule,
+    getScriptingService: vi.fn(() => {
+      return mockScriptingService;
+    }),
+    getInitialDataService: vi.fn(() => ({
+      getInitialData: vi.fn(() => Promise.resolve(DEFAULT_INITIAL_DATA)),
+      isInitialDataLoaded: vi.fn(() => true),
+    })),
+  };
+});
 
 type WorkspaceState = {
   headerWidths?: ColumnSizes;
@@ -115,8 +149,14 @@ describe("PythonWorkspace", () => {
   });
 
   it("reset button disabled if inputs are not available", async () => {
-    vi.mocked(getScriptingService().inputsAvailable).mockImplementation(() => {
-      return Promise.resolve(false);
+    vi.mocked(getInitialDataService).mockReturnValue({
+      getInitialData: vi.fn(() =>
+        Promise.resolve({
+          ...DEFAULT_INITIAL_DATA,
+          inputsAvailable: false,
+        }),
+      ),
+      isInitialDataLoaded: vi.fn(() => true),
     });
 
     const { wrapper } = await doMount();

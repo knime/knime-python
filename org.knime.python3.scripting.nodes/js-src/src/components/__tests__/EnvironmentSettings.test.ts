@@ -1,10 +1,41 @@
+import { DEFAULT_INITIAL_DATA } from "@/__mocks__/mock-data";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import { executableOptionsMock } from "@/__mocks__/executable-options";
 import { setSelectedExecutable } from "@/store";
 import { getScriptingService, consoleHandler } from "@knime/scripting-editor";
 import { flushPromises, mount } from "@vue/test-utils";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Dropdown } from "@knime/components";
 import EnvironmentSettings from "../EnvironmentSettings.vue";
+
+vi.mock("@knime/scripting-editor", async (importActual) => {
+  const languageServerConnection = { changeConfiguration: vi.fn() };
+  const mockScriptingService = {
+    sendToService: vi.fn((args) => {
+      // If this method is not mocked, the tests fail with a hard to debug
+      // error otherwise, so we're really explicit here.
+      throw new Error(
+        `ScriptingService.sendToService should have been mocked for method ${args}`,
+      );
+    }),
+    registerEventHandler: vi.fn(),
+    connectToLanguageServer: vi.fn(() => languageServerConnection),
+    registerSettingsGetterForApply: vi.fn(),
+  };
+
+  const scriptEditorModule = (await importActual()) as any;
+
+  return {
+    ...scriptEditorModule,
+    getScriptingService: vi.fn(() => {
+      return mockScriptingService;
+    }),
+    getInitialDataService: vi.fn(() => ({
+      getInitialData: vi.fn(() => Promise.resolve(DEFAULT_INITIAL_DATA)),
+      isInitialDataLoaded: vi.fn(() => true),
+    })),
+  };
+});
 
 describe("EnvironmentSettings", () => {
   const executableOptions = executableOptionsMock;

@@ -1,26 +1,59 @@
+import { DEFAULT_INITIAL_DATA } from "@/__mocks__/mock-data";
+import { describe, expect, it, vi } from "vitest";
+
 import { pythonScriptingService } from "@/python-scripting-service";
 import { useWorkspaceStore, type WorkspaceStore } from "@/store";
 import { getScriptingService } from "@knime/scripting-editor";
 import { mount } from "@vue/test-utils";
-import { describe, expect, it, vi } from "vitest";
 import PythonWorkspaceBody from "../PythonWorkspaceBody.vue";
 
-const mockStore = {
-  workspace: [
-    {
-      name: "Hallo",
-      type: "Int",
-      value: "1",
-    },
-    {
-      name: "Foo",
-      type: "String",
-      value: "bar",
-    },
-  ],
-} as WorkspaceStore;
+const mockStore = vi.hoisted(
+  (): WorkspaceStore => ({
+    workspace: [
+      {
+        name: "Hallo",
+        type: "Int",
+        value: "1",
+      },
+      {
+        name: "Foo",
+        type: "String",
+        value: "bar",
+      },
+    ],
+  }),
+);
 
 vi.mock("@/store");
+
+vi.mock("@knime/scripting-editor", async (importActual) => {
+  const languageServerConnection = { changeConfiguration: vi.fn() };
+  const mockScriptingService = {
+    sendToService: vi.fn((args) => {
+      // If this method is not mocked, the tests fail with a hard to debug
+      // error otherwise, so we're really explicit here.
+      throw new Error(
+        `ScriptingService.sendToService should have been mocked for method ${args}`,
+      );
+    }),
+    registerEventHandler: vi.fn(),
+    connectToLanguageServer: vi.fn(() => languageServerConnection),
+    registerSettingsGetterForApply: vi.fn(),
+  };
+
+  const scriptEditorModule = (await importActual()) as any;
+
+  return {
+    ...scriptEditorModule,
+    getScriptingService: vi.fn(() => {
+      return mockScriptingService;
+    }),
+    getInitialDataService: vi.fn(() => ({
+      getInitialData: vi.fn(() => Promise.resolve(DEFAULT_INITIAL_DATA)),
+      isInitialDataLoaded: vi.fn(() => true),
+    })),
+  };
+});
 
 describe("PythonWorkspaceBody.vue", () => {
   const doMount = (columnWidths?: [number, number, number]) => {

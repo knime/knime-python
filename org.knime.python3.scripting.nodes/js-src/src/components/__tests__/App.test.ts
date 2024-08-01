@@ -1,9 +1,12 @@
+import { DEFAULT_INITIAL_DATA } from "@/__mocks__/mock-data";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { setSelectedExecutable, useExecutableSelectionStore } from "@/store";
 import {
   ScriptingEditor,
   getScriptingService,
   editor,
   consoleHandler,
+  getInitialDataService,
 } from "@knime/scripting-editor";
 import {
   VueWrapper,
@@ -11,11 +14,39 @@ import {
   flushPromises,
   mount,
 } from "@vue/test-utils";
-import { afterEach, describe, expect, it, vi } from "vitest";
 import { executableOptionsMock } from "../../__mocks__/executable-options";
 import App from "../App.vue";
 import { nextTick } from "vue";
 import { pythonScriptingService } from "@/python-scripting-service";
+
+vi.mock("@knime/scripting-editor", async (importActual) => {
+  const languageServerConnection = { changeConfiguration: vi.fn() };
+  const mockScriptingService = {
+    sendToService: vi.fn((args) => {
+      // If this method is not mocked, the tests fail with a hard to debug
+      // error otherwise, so we're really explicit here.
+      throw new Error(
+        `ScriptingService.sendToService should have been mocked for method ${args}`,
+      );
+    }),
+    registerEventHandler: vi.fn(),
+    connectToLanguageServer: vi.fn(() => languageServerConnection),
+    registerSettingsGetterForApply: vi.fn(),
+  };
+
+  const scriptEditorModule = (await importActual()) as any;
+
+  return {
+    ...scriptEditorModule,
+    getScriptingService: vi.fn(() => {
+      return mockScriptingService;
+    }),
+    getInitialDataService: vi.fn(() => ({
+      getInitialData: vi.fn(() => Promise.resolve(DEFAULT_INITIAL_DATA)),
+      isInitialDataLoaded: vi.fn(() => true),
+    })),
+  };
+});
 
 describe("App.vue", () => {
   enableAutoUnmount(afterEach);
@@ -196,7 +227,15 @@ describe("App.vue", () => {
       script: "",
       executableSelection: "conda.environment1",
     };
-    getScriptingService().getInitialSettings = vi.fn((): any => settingsMock);
+    vi.mocked(getInitialDataService).mockReturnValue({
+      getInitialData: vi.fn(() =>
+        Promise.resolve({
+          ...DEFAULT_INITIAL_DATA,
+          settings: settingsMock,
+        }),
+      ),
+      isInitialDataLoaded: vi.fn(() => true),
+    });
     await doMount();
     await flushPromises();
     expect(getScriptingService().sendToService).toHaveBeenCalledWith(
@@ -227,7 +266,15 @@ describe("App.vue", () => {
       script: "",
       executableSelection: "unknown environment",
     };
-    getScriptingService().getInitialSettings = vi.fn((): any => settingsMock);
+    vi.mocked(getInitialDataService).mockReturnValue({
+      getInitialData: vi.fn(() =>
+        Promise.resolve({
+          ...DEFAULT_INITIAL_DATA,
+          settings: settingsMock,
+        }),
+      ),
+      isInitialDataLoaded: vi.fn(() => true),
+    });
     await doMount();
     await flushPromises();
     expect(getScriptingService().sendToService).toHaveBeenCalledWith(
@@ -246,7 +293,15 @@ describe("App.vue", () => {
       script: "",
       executableSelection: "conda.environment1",
     };
-    getScriptingService().getInitialSettings = vi.fn((): any => settingsMock);
+    vi.mocked(getInitialDataService).mockReturnValue({
+      getInitialData: vi.fn(() =>
+        Promise.resolve({
+          ...DEFAULT_INITIAL_DATA,
+          settings: settingsMock,
+        }),
+      ),
+      isInitialDataLoaded: vi.fn(() => true),
+    });
     await doMount({
       executableOptions: [
         executableOptionsMock[0],

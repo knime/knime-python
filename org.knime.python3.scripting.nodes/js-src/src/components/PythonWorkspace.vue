@@ -5,7 +5,7 @@ import { Button } from "@knime/components";
 
 import { pythonScriptingService } from "@/python-scripting-service";
 import { usePythonPreviewStatusStore, useSessionStatusStore } from "@/store";
-import { getScriptingService } from "@knime/scripting-editor";
+import { getInitialDataService } from "@knime/scripting-editor";
 import PythonWorkspaceBody from "./PythonWorkspaceBody.vue";
 import PythonWorkspaceHeader, {
   type ColumnSizes,
@@ -43,7 +43,7 @@ const resetWorkspace = async () => {
 
 onMounted(async () => {
   useTotalWidth();
-  if (await getScriptingService().inputsAvailable()) {
+  if ((await getInitialDataService().getInitialData()).inputsAvailable) {
     resetButtonEnabled.value = true;
   }
 });

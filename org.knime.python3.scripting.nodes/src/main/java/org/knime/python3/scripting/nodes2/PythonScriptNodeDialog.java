@@ -51,11 +51,15 @@ package org.knime.python3.scripting.nodes2;
 import java.util.Optional;
 import java.util.Set;
 
+import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.webui.data.RpcDataService;
 import org.knime.core.webui.node.dialog.NodeDialog;
 import org.knime.core.webui.node.dialog.NodeSettingsService;
 import org.knime.core.webui.node.dialog.SettingsType;
 import org.knime.core.webui.page.Page;
+import org.knime.scripting.editor.GenericInitialDataService;
+import org.knime.scripting.editor.GenericInitialDataService.DataSupplier;
+import org.knime.scripting.editor.WorkflowControl;
 
 /**
  * The node dialog implementation of the Python Scripting nodes.
@@ -67,12 +71,15 @@ public final class PythonScriptNodeDialog implements NodeDialog {
 
     private final PythonScriptingService m_scriptingService;
 
+    private final boolean m_hasView;
+
     /**
      * Create a new scripting editor dialog
      *
      * @param hasView if the node has an output view
      */
     public PythonScriptNodeDialog(final boolean hasView) {
+        m_hasView = hasView;
         m_scriptingService = new PythonScriptingService(hasView);
     }
 
@@ -101,7 +108,47 @@ public final class PythonScriptNodeDialog implements NodeDialog {
 
     @Override
     public NodeSettingsService getNodeSettingsService() {
-        return PythonScriptNodeSettings.createNodeSettingsService();
+        var workflowControl = new WorkflowControl(NodeContext.getContext().getNodeContainer());
+
+        DataSupplier inputObjectSupplier = (settings, specs) -> {
+            return PythonScriptingInputOutputModelUtils.getInputObjects(workflowControl.getInputInfo());
+        };
+
+        DataSupplier flowVariableSupplier = (settings, specs) -> {
+            return PythonScriptingInputOutputModelUtils
+                .getFlowVariableInputs(workflowControl.getFlowObjectStack().getAllAvailableFlowVariables().values());
+        };
+
+        DataSupplier outputObjectSupplier = (settings, specs) -> {
+            return PythonScriptingInputOutputModelUtils.getOutputObjects(workflowControl.getOutputPortTypes(),
+                m_hasView);
+        };
+
+        DataSupplier executableOptionsListSupplier = (settings, specs) -> {
+            var executableOptions = ExecutableSelectionUtils.getExecutableOptions(workflowControl.getFlowObjectStack());
+
+            final var availableOptions = executableOptions.values().stream() //
+                .sorted((o1, o2) -> o1.type == o2.type ? o1.id.compareTo(o2.id) : o1.type.compareTo(o2.type)) //
+                .toList();
+
+            return availableOptions;
+        };
+
+        DataSupplier initialLanguageServerConfigSupplier = (settings, specs) -> {
+            return executableOptionsListSupplier.getData(settings, specs);
+        };
+
+        return GenericInitialDataService //
+            .createDefaultInitialDataService(
+                () -> new PythonScriptNodeSettings(PythonScriptPortsConfiguration.fromCurrentNodeContext()), //
+                () -> new PythonScriptNodeSettings(PythonScriptPortsConfiguration.fromCurrentNodeContext()), //
+                NodeContext.getContext()) //
+            .addDataSupplier("inputObjects", inputObjectSupplier) //
+            .addDataSupplier("flowVariables", flowVariableSupplier) //
+            .addDataSupplier("outputObjects", outputObjectSupplier) //
+            .addDataSupplier("hasPreview", (settings, specs) -> m_hasView) //
+            .addDataSupplier("executableOptionsList", executableOptionsListSupplier) //
+            .addDataSupplier("initialLanguageServerConfig", initialLanguageServerConfigSupplier);
     }
 
     @Override

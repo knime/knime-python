@@ -56,12 +56,10 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import org.knime.conda.CondaEnvironmentDirectory;
 import org.knime.core.data.filestore.FileStoreKey;
@@ -81,7 +79,6 @@ import org.knime.python3.scripting.nodes2.PythonScriptingService.ExecutableOptio
 import org.knime.python3.scripting.nodes2.PythonScriptingSession.ExecutionInfo;
 import org.knime.python3.scripting.nodes2.PythonScriptingSession.ExecutionStatus;
 import org.knime.python3.scripting.nodes2.PythonScriptingSession.FileStoreHandlerSupplier;
-import org.knime.scripting.editor.InputOutputModel;
 import org.knime.scripting.editor.ScriptingService;
 
 /**
@@ -234,13 +231,6 @@ final class PythonScriptingService extends ScriptingService {
      */
     public final class PythonRpcService extends RpcService {
 
-        /**
-         * @return true if the node has a node view which should be shown in a preview tab
-         */
-        public boolean hasPreview() {
-            return m_hasView;
-        }
-
         @SuppressWarnings("restriction") // the DataServiceContext is still restricted API
         public void sendLastConsoleOutput() {
             // Send the console output of the last execution to the dialog
@@ -369,43 +359,6 @@ final class PythonScriptingService extends ScriptingService {
                 m_executableSelection = executableSelection;
                 clearSession();
             }
-        }
-
-        @Override
-        public InputOutputModel getFlowVariableInputs() {
-            return PythonScriptingInputOutputModelUtils.getFlowVariableInputs(getFlowVariables());
-        }
-
-        @Override
-        public List<InputOutputModel> getInputObjects() {
-            return PythonScriptingInputOutputModelUtils.getInputObjects(getWorkflowControl().getInputInfo());
-        }
-
-        @Override
-        public List<InputOutputModel> getOutputObjects() {
-            return PythonScriptingInputOutputModelUtils.getOutputObjects(getWorkflowControl().getOutputPortTypes(),
-                m_hasView);
-        }
-
-        /**
-         * @param executableSelection the id of the selected executable option (which might not be available anymore)
-         * @return a sorted list of executable options that the user can select from
-         */
-        public List<ExecutableOption> getExecutableOptionsList(final String executableSelection) {
-            final var availableOptions = getExecutableOptions().values().stream().sorted((o1, o2) -> {
-                if (o1.type != o2.type) {
-                    return o1.type.compareTo(o2.type);
-                }
-                return o1.id.compareTo(o2.id);
-            }).collect(Collectors.toList());
-
-            if (!getExecutableOptions().containsKey(executableSelection)) {
-                // The selected option is not available: String variable selected or variable missing
-                // We add the option to the available options such that the frontend can display it nicely
-                availableOptions.add(getExecutableOption(executableSelection));
-            }
-
-            return availableOptions;
         }
 
         /**

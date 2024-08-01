@@ -55,16 +55,12 @@ import java.util.Map;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
-import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.webui.node.dialog.NodeAndVariableSettingsRO;
-import org.knime.core.webui.node.dialog.NodeSettingsService;
+import org.knime.core.webui.node.dialog.NodeAndVariableSettingsWO;
 import org.knime.core.webui.node.dialog.SettingsType;
-import org.knime.core.webui.node.dialog.VariableSettingsRO;
-import org.knime.core.webui.node.dialog.VariableSettingsWO;
+import org.knime.scripting.editor.GenericSettingsLoader;
+import org.knime.scripting.editor.GenericSettingsSaver;
 import org.knime.scripting.editor.ScriptingNodeSettings;
-import org.knime.scripting.editor.ScriptingNodeSettingsService;
-
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * The settings of a Python scripting node.
@@ -72,84 +68,63 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
  */
 @SuppressWarnings("restriction") // the UIExtension node dialog API is still restricted
-final class PythonScriptNodeSettings extends ScriptingNodeSettings {
-
-    private static final SettingsType SCRIPT_SETTINGS_TYPE = SettingsType.MODEL;
+final class PythonScriptNodeSettings extends ScriptingNodeSettings
+    implements GenericSettingsLoader, GenericSettingsSaver {
 
     private static final String EXECUTABLE_SELECTION_CFG_KEY = "python3_command";
 
     private String m_executableSelection;
 
+    private String m_script;
+
     PythonScriptNodeSettings(final PythonScriptPortsConfiguration portsConfiguration) {
-        super(PythonScriptNodeDefaultScripts.getDefaultScript(portsConfiguration), SCRIPT_SETTINGS_TYPE);
+        super(SettingsType.MODEL);
+
         m_executableSelection = EXEC_SELECTION_PREF_ID;
+        m_script = PythonScriptNodeDefaultScripts.getDefaultScript(portsConfiguration);
     }
 
     String getExecutableSelection() {
         return m_executableSelection;
     }
 
-    void saveSettingsTo(final NodeSettingsWO settings) {
-        super.saveModelSettingsTo(settings);
-
+    @Override
+    public void saveSettingsTo(final NodeSettingsWO settings) {
         // NB: only configured via flow variables
         settings.addString(EXECUTABLE_SELECTION_CFG_KEY, EXEC_SELECTION_PREF_ID);
+        settings.addString("script", m_script);
     }
 
-    void loadValidatedSettingsFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
-        super.loadModelSettings(settings);
-
+    @Override
+    public void loadSettingsFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
         // NB: might be overwritten by a flow variable
         m_executableSelection = settings.getString(EXECUTABLE_SELECTION_CFG_KEY);
+        m_script = settings.getString("script");
     }
 
-    static NodeSettingsService createNodeSettingsService() {
-        return new PythonScriptNodeSettingsService();
+    @Override
+    public Map<String, Object> convertNodeSettingsToMap(final Map<SettingsType, NodeAndVariableSettingsRO> settings)
+        throws InvalidSettingsException {
+
+        loadSettingsFrom(settings.get(m_scriptSettingsType));
+
+        return Map.of( //
+            "script", m_script, //
+            "executableSelection", m_executableSelection //
+        );
     }
 
-    private static final class PythonScriptNodeSettingsService extends ScriptingNodeSettingsService {
+    @Override
+    public void writeMapToNodeSettings(final Map<String, Object> data,
+        final Map<SettingsType, NodeAndVariableSettingsWO> settings) throws InvalidSettingsException {
 
-        private static final String EXEC_SELECTION_JSON_KEY = "executableSelection";
+        m_executableSelection = (String)data.get("executableSelection");
+        m_script = (String)data.get("script");
 
-        public PythonScriptNodeSettingsService() {
-            super(SCRIPT_SETTINGS_TYPE);
-        }
+        saveSettingsTo(settings);
+    }
 
-        @Override
-        protected void putAdditionalSettingsToJson(final Map<SettingsType, NodeAndVariableSettingsRO> settings,
-            final PortObjectSpec[] specs, final ObjectNode settingsJson) {
-            var modelSettings = settings.get(SettingsType.MODEL);
-            var executableSelection = modelSettings.getString(EXECUTABLE_SELECTION_CFG_KEY, EXEC_SELECTION_PREF_ID);
-            if (modelSettings.isVariableSetting(EXECUTABLE_SELECTION_CFG_KEY)) {
-                try {
-                    executableSelection = modelSettings.getUsedVariable(EXECUTABLE_SELECTION_CFG_KEY);
-                } catch (final InvalidSettingsException e) {
-                    // This should not happen because we check that the executable selection is a variable setting first
-                    throw new IllegalStateException(e);
-                }
-            }
-            settingsJson.put(EXEC_SELECTION_JSON_KEY, executableSelection);
-        }
-
-        @Override
-        protected void addAdditionalSettingsToNodeSettings(final ObjectNode settingsJson,
-            final Map<SettingsType, ? extends NodeSettingsWO> settings) {
-            settings.get(SettingsType.MODEL).addString(EXECUTABLE_SELECTION_CFG_KEY, EXEC_SELECTION_PREF_ID);
-        }
-
-        @Override
-        protected void setVariableSettings(final ObjectNode settingsJson,
-            final Map<SettingsType, ? extends VariableSettingsRO> previousSettings,
-            final Map<SettingsType, ? extends VariableSettingsWO> settings) {
-            copyScriptVariableSetting(previousSettings, settings);
-
-            try {
-                settings.get(SettingsType.MODEL).addUsedVariable(EXECUTABLE_SELECTION_CFG_KEY,
-                    settingsJson.get(EXEC_SELECTION_JSON_KEY).asText());
-            } catch (final InvalidSettingsException e) {
-                // Cannot happen because we have a setting with the key EXECUTABLE_SELECTION_CFG_KEY
-                throw new IllegalStateException(e);
-            }
-        }
+    public String getScript() {
+        return m_script;
     }
 }

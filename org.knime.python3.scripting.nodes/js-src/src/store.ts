@@ -1,4 +1,4 @@
-import { getScriptingService, consoleHandler } from "@knime/scripting-editor";
+import { consoleHandler, getInitialDataService } from "@knime/scripting-editor";
 import type { ExecutionResult, Workspace } from "./types/common";
 import { reactive } from "vue";
 
@@ -57,18 +57,18 @@ export const useSessionStatusStore = (): SessionStatusStore => {
 };
 
 // Check if inputs are available and set the the isRunningSupported flag accordingly
-(async () => {
-  const scriptingService = getScriptingService();
-  if (await scriptingService.inputsAvailable()) {
-    sessionStatus.isRunningSupported = true;
-  } else {
-    sessionStatus.isRunningSupported = false;
-    consoleHandler.writeln({
-      warning:
-        "Missing input data. Connect all input ports and execute preceding nodes to enable script execution.",
-    });
-  }
-})();
+getInitialDataService()
+  .getInitialData()
+  .then((initialData) => {
+    sessionStatus.isRunningSupported = initialData.inputsAvailable;
+
+    if (!initialData.inputsAvailable) {
+      consoleHandler.writeln({
+        warning:
+          "Missing input data. Connect all input ports and execute preceding nodes to enable script execution.",
+      });
+    }
+  });
 
 export type PythonViewStatus = {
   hasValidView: boolean;

@@ -1,3 +1,9 @@
+import type {
+  InputOutputModel,
+  KAIConfig,
+  PortConfigs,
+} from "@knime/scripting-editor";
+
 export type ExecutableOptionType =
   | "PREF_BUNDLED"
   | "PREF_CONDA"
@@ -31,6 +37,7 @@ export type ExecutionResult =
   | "KNIME_ERROR"
   | "FATAL_ERROR"
   | "CANCELLED";
+
 export type ExecutionInfo = {
   status: ExecutionResult;
   description: string;
@@ -42,4 +49,17 @@ export type ExecutionInfo = {
 export type KillSessionInfo = {
   status: "SUCCESS" | "ERROR";
   description: string;
+};
+
+export type PythonInitialData = {
+  settings: PythonScriptingNodeSettings;
+  inputObjects: InputOutputModel[];
+  inputPortConfigs: PortConfigs;
+  inputsAvailable: boolean;
+  flowVariables: InputOutputModel;
+  outputObjects: InputOutputModel[];
+  hasPreview: boolean;
+  executableOptionsList: ExecutableOption[];
+  initialLanguageServerConfig: any;
+  kAiConfig: KAIConfig;
 };
