@@ -1090,6 +1090,8 @@ class StringParameter(_BaseMultiChoiceParameter):
             since_version,
             is_advanced,
         )
+        if self._choices:
+            self._choices = lru_cache(maxsize=1)(self._choices)
 
     def _extract_schema(self, extension_version=None, dialog_creation_context=None):
         schema = super()._extract_schema(
