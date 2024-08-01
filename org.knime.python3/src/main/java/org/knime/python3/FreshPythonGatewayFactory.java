@@ -50,7 +50,6 @@ package org.knime.python3;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.Set;
 
 import org.knime.core.node.NodeLogger;
 
@@ -64,9 +63,6 @@ import py4j.Py4JException;
 public final class FreshPythonGatewayFactory implements PythonGatewayFactory {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(FreshPythonGatewayFactory.class);
-
-    // environment variables that common Python libraries use to resolve custom CAs (requests, httpx, ssl)
-    private static final Set<String> CA_CERT_ENV_VARS = Set.of("REQUESTS_CA_BUNDLE", "SSL_CERT_FILE");
 
     @Override
     @SuppressWarnings("resource")
@@ -100,20 +96,9 @@ public final class FreshPythonGatewayFactory implements PythonGatewayFactory {
     }
 
     private static void addCertificates(final Map<String, String> environment) {
-        if (CA_CERT_ENV_VARS.stream().anyMatch(environment::containsKey)) {
-            // don't change the environment if it already has any of the environment variables
-            return;
-        }
-
-        var tempCertFile = CertificateUtils.getCertificatePath();
-        if (tempCertFile.isEmpty()) {
-            // writing the certificates failed for some reason, so we leave the environment as is
-            return;
-        }
-        var pathString = tempCertFile.get().toAbsolutePath().toString();
-        for (var envVar : CA_CERT_ENV_VARS) {
-            environment.put(envVar, pathString);
-        }
+        var caCertMode = PythonCaCertsMode.fromProperty();
+        LOGGER.debug("Using CA cert mode " + caCertMode);
+        caCertMode.updateEnvironment(environment);
     }
 
 
