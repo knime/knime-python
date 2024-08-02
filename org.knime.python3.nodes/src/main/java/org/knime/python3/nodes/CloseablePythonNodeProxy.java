@@ -100,10 +100,12 @@ import org.knime.python3.arrow.PythonArrowDataUtils;
 import org.knime.python3.arrow.PythonArrowTableConverter;
 import org.knime.python3.nodes.CloseablePythonNodeProxyFactory.CloseableGatewayWithAttachments;
 import org.knime.python3.nodes.extension.ExtensionNode;
+import org.knime.python3.nodes.ports.ConversionContext;
 import org.knime.python3.nodes.ports.PythonPortObjectTypeRegistry;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonCredentialPortObjectSpec;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
+import org.knime.python3.nodes.ports.PythonPortTypeRegistry;
 import org.knime.python3.nodes.ports.PythonTransientConnectionPortObject;
 import org.knime.python3.nodes.ports.TableSpecSerializationUtils;
 import org.knime.python3.nodes.proxy.CloseableNodeFactoryProxy;
@@ -473,9 +475,14 @@ final class CloseablePythonNodeProxy
         };
         m_proxy.initializeJavaCallback(callback);
 
+        ConversionContext context = new ConversionContext(fileStoresByKey, m_tableManager, exec);
         final var pythonInputs =
-            Arrays.stream(inData).map(po -> PythonPortObjectTypeRegistry.convertToPythonPortObject(po, m_tableManager))
+            Arrays.stream(inData).map(po -> PythonPortTypeRegistry.convertToPythonPortObject(po, context))
                 .toArray(PythonPortObject[]::new);
+
+//        final var pythonInputs =
+//            Arrays.stream(inData).map(po -> PythonPortObjectTypeRegistry.convertToPythonPortObject(po, m_tableManager))
+//                .toArray(PythonPortObject[]::new);
         exec.setProgress(0.1, "Sending data to Python");
 
         exec.setMessage(""); // Reset the message -> Only show the message from Python
