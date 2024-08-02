@@ -137,9 +137,10 @@ enum PythonCaCertsMode {
 
     // By having the holder class, the Java class loading mechnanism ensures thread-safety.
     private static final class CertificateHolder {
-        private static final Path CERTIFICATE_PATH = getCertificatePath();
-
+        // initialized first so that it is available in the catch-clause of getCertificatePath
         private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonCaCertsMode.CertificateHolder.class);
+
+        private static final Path CERTIFICATE_PATH = getCertificatePath();
 
         /**
          * @return the path to a temporary cert file or null if the certificate file couldn't be created.
@@ -154,7 +155,7 @@ enum PythonCaCertsMode {
                 var tempCertFile = PathUtils.createTempFile("all_certs", ".crt");
                 writeCertificatesToFile(trustManager.getAcceptedIssuers(), tempCertFile);
                 return tempCertFile;
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 LOGGER.error("Failed to create the CA file for Python.", e);
                 return null;
             }
