@@ -49,11 +49,30 @@
 package org.knime.python3.nodes.ports.converters;
 
 import java.io.IOException;
+import java.util.Base64;
 
+import org.knime.base.data.xml.SvgCell;
+import org.knime.core.data.image.png.PNGImageContent;
 import org.knime.core.node.BufferedDataTable;
+import org.knime.core.node.port.image.ImagePortObject;
+import org.knime.core.node.port.image.ImagePortObjectSpec;
+import org.knime.credentials.base.CredentialPortObject;
 import org.knime.python3.arrow.PythonArrowDataSink;
+import org.knime.python3.nodes.ports.PythonBinaryBlobFileStorePortObject;
+import org.knime.python3.nodes.ports.PythonPortObjects.PurePythonBinaryPortObject;
+import org.knime.python3.nodes.ports.PythonPortObjects.PurePythonConnectionPortObject;
+import org.knime.python3.nodes.ports.PythonPortObjects.PurePythonCredentialPortObject;
+import org.knime.python3.nodes.ports.PythonPortObjects.PurePythonImagePortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PurePythonTablePortObject;
+import org.knime.python3.nodes.ports.PythonPortObjects.PythonBinaryPortObject;
+import org.knime.python3.nodes.ports.PythonPortObjects.PythonBinaryPortObjectSpec;
+import org.knime.python3.nodes.ports.PythonPortObjects.PythonConnectionPortObject;
+import org.knime.python3.nodes.ports.PythonPortObjects.PythonConnectionPortObjectSpec;
+import org.knime.python3.nodes.ports.PythonPortObjects.PythonCredentialPortObject;
+import org.knime.python3.nodes.ports.PythonPortObjects.PythonCredentialPortObjectSpec;
+import org.knime.python3.nodes.ports.PythonPortObjects.PythonImagePortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonTablePortObject;
+import org.knime.python3.nodes.ports.PythonTransientConnectionPortObject;
 import org.knime.python3.nodes.ports.converters.PortObjectConverterInterfaces.KnimeToPythonPortObjectConverter;
 import org.knime.python3.nodes.ports.converters.PortObjectConverterInterfaces.PythonToKnimePortObjectConverter;
 
@@ -99,5 +118,97 @@ public final class PortObjectConverters {
         }
     }
 
+    /**
+     * Bi-directional Port Object converter for {@link PythonBinaryPortObject}.
+     *
+     */
+    public static final class PythonBinaryPortObjectConverter implements KnimeToPythonPortObjectConverter<PythonBinaryBlobFileStorePortObject, PythonBinaryPortObject>,
+    PythonToKnimePortObjectConverter<PurePythonBinaryPortObject, PythonBinaryBlobFileStorePortObject> {
+
+        @Override
+        public PythonBinaryPortObject toPython(final PythonBinaryBlobFileStorePortObject binaryData, final PortObjectConversionContext context) {
+            return new PythonBinaryPortObject(binaryData);
+        }
+
+        @Override
+        public PythonBinaryBlobFileStorePortObject fromPython(final PurePythonBinaryPortObject purePythonPortObject, final PortObjectConversionContext context) {
+            try {
+                final var key = purePythonPortObject.getFileStoreKey();
+                final var fileStore = context.fileStoresByKey().get(key);
+                var spec = PythonBinaryPortObjectSpec.fromJsonString(purePythonPortObject.getSpec().toJsonString()).getPortObjectSpec();
+                var pythonPortObject = new PythonBinaryPortObject(PythonBinaryBlobFileStorePortObject.create(fileStore, spec));
+                return pythonPortObject.getPortObject();
+            } catch (IOException ex) {
+                throw new RuntimeException("Failed to convert Python binary data to KNIME", ex);
+            }
+
+        }
+    }
+
+    /**
+     * Bi-directional Port Object converter for {@link PythonTransientConnectionPortObject}.
+     *
+     */
+    public static final class PythonConnectionPortObjectConverter implements KnimeToPythonPortObjectConverter<PythonTransientConnectionPortObject, PythonConnectionPortObject>,
+    PythonToKnimePortObjectConverter<PurePythonConnectionPortObject, PythonTransientConnectionPortObject> {
+
+        @Override
+        public PythonConnectionPortObject toPython(final PythonTransientConnectionPortObject binaryData, final PortObjectConversionContext context) {
+            return new PythonConnectionPortObject(binaryData);
+        }
+
+        @Override
+        public PythonTransientConnectionPortObject fromPython(final PurePythonConnectionPortObject purePythonPortObject, final PortObjectConversionContext context) {
+            var spec = PythonConnectionPortObjectSpec.fromJsonString(purePythonPortObject.getSpec().toJsonString()).getPortObjectSpec();
+            final var pid = purePythonPortObject.getPid();
+            var pythonPortObject =  new PythonConnectionPortObject(PythonTransientConnectionPortObject.create(spec, pid));
+            return pythonPortObject.getPortObject();
+        }
+    }
+
+    /**
+     * Uni-directional Port Object converter for {@link ImagePortObject}.
+     *
+     */
+    public static final class ImagePortObjectConverter implements PythonToKnimePortObjectConverter<PurePythonImagePortObject, ImagePortObject> {
+
+        @Override
+        public ImagePortObject fromPython(final PurePythonImagePortObject purePythonPortObject, final PortObjectConversionContext context) {
+            final var bytes = Base64.getDecoder().decode(purePythonPortObject.getImageBytes().getBytes());
+            ImagePortObjectSpec spec;
+
+            if (PythonImagePortObject.isPngBytes(bytes)) {
+                spec = new ImagePortObjectSpec(PNGImageContent.TYPE);
+            } else if (PythonImagePortObject.isSvgBytes(bytes)) {
+                spec = new ImagePortObjectSpec(SvgCell.TYPE);
+            } else {
+                throw new UnsupportedOperationException("Unsupported image format detected.");
+            }
+
+            var pythonPortObject = new PythonImagePortObject(bytes, spec);
+            return pythonPortObject.getPortObject();
+        }
+    }
+
+    /**
+     * Bi-directional Port Object converter for {@link CredentialPortObject}.
+     *
+     */
+    public static final class PythonCredentialsPortObjectConverter implements KnimeToPythonPortObjectConverter<CredentialPortObject, PythonCredentialPortObject>,
+    PythonToKnimePortObjectConverter<PurePythonCredentialPortObject, CredentialPortObject> {
+
+        @Override
+        public PythonCredentialPortObject toPython(final CredentialPortObject portObject, final PortObjectConversionContext context) {
+            return new PythonCredentialPortObject(portObject);
+        }
+
+        @Override
+        public CredentialPortObject fromPython(final PurePythonCredentialPortObject purePythonPortObject, final PortObjectConversionContext context) {
+            var spec = PythonCredentialPortObjectSpec.fromJsonString(purePythonPortObject.getSpec().toJsonString()).getPortObjectSpec();
+            var pythonPortObject = PythonCredentialPortObject.createFromKnimeSpec(spec);
+            return pythonPortObject.getPortObject();
+
+        }
+    }
 
 }

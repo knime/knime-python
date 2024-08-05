@@ -52,8 +52,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import java.util.Map;
 import java.util.Optional;
 
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -61,11 +59,9 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import org.knime.base.data.xml.SvgCell;
 import org.knime.base.data.xml.SvgImageContent;
 import org.knime.core.data.DataTableSpec;
-import org.knime.core.data.filestore.FileStore;
 import org.knime.core.data.image.ImageContent;
 import org.knime.core.data.image.png.PNGImageContent;
 import org.knime.core.node.BufferedDataTable;
-import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ModelContent;
 import org.knime.core.node.ModelContentRO;
 import org.knime.core.node.port.AbstractSimplePortObjectSpec.AbstractSimplePortObjectSpecSerializer;
@@ -251,40 +247,14 @@ public final class PythonPortObjects {
          * Create a {@link PythonBinaryPortObject} with data
          *
          * @param binaryData The data to wrap in this port object
-         * @param tableConverter Unused here, but required because fromPurePython is called via reflection from
-         *            {@link PythonPortObjectTypeRegistry}
          */
-        public PythonBinaryPortObject( //
-            final PythonBinaryBlobFileStorePortObject binaryData, //
-            final PythonArrowTableConverter tableConverter) { // NOSONAR
+        public PythonBinaryPortObject(final PythonBinaryBlobFileStorePortObject binaryData) {
             m_data = binaryData;
             m_spec = new PythonBinaryPortObjectSpec(binaryData.getSpec());
         }
 
-        /**
-         * Create a PythonBinaryPortObject from a PurePythonBinaryPortObject
-         *
-         * @param portObject The {@link PurePythonBinaryPortObject} coming from Python
-         * @param fileStoresByKey A map of {@link String} keys to {@link FileStore}s holding binary data
-         * @param tableConverter Not used here, just needed because fromPurePython is called via reflection from
-         *            {@link PythonPortObjectTypeRegistry}
-         * @param execContext The current {@link ExecutionContext}
-         * @return new {@link PythonBinaryPortObject} wrapping the binary data
-         * @throws IOException if the object could not be converted
-         */
-        public static PythonBinaryPortObject fromPurePython( //
-            final PurePythonBinaryPortObject portObject, //
-            final Map<String, FileStore> fileStoresByKey, //
-            final PythonArrowTableConverter tableConverter, // NOSONAR
-            final ExecutionContext execContext) throws IOException {
-            final var key = portObject.getFileStoreKey();
-            final var fileStore = fileStoresByKey.get(key);
-            var spec = PythonBinaryPortObjectSpec.fromJsonString(portObject.getSpec().toJsonString()).m_spec;
-            return new PythonBinaryPortObject(PythonBinaryBlobFileStorePortObject.create(fileStore, spec), null);
-        }
-
         @Override
-        public PortObject getPortObject() {
+        public PythonBinaryBlobFileStorePortObject getPortObject() {
             return m_data;
         }
 
@@ -325,38 +295,14 @@ public final class PythonPortObjects {
          * Create a {@link PythonBinaryPortObject} with data
          *
          * @param binaryData The data to wrap in this port object
-         * @param tableConverter Unused here, but required because fromPurePython is called via reflection from
-         *            {@link PythonPortObjectTypeRegistry}
          */
-        public PythonConnectionPortObject(//
-            final PythonTransientConnectionPortObject binaryData, //
-            final PythonArrowTableConverter tableConverter) { // NOSONAR
+        public PythonConnectionPortObject(final PythonTransientConnectionPortObject binaryData) {
             m_data = binaryData;
             m_spec = new PythonConnectionPortObjectSpec(binaryData.getSpec());
         }
 
-        /**
-         * Create a PythonConnectionPortObject from a PurePythonConnectionPortObject
-         *
-         * @param portObject The {@link PurePythonBinaryPortObject} coming from Python
-         * @param fileStoresByKey Not used here, just needed because fromPurePython is called via reflection
-         * @param tableConverter Not used here, just needed because fromPurePython is called via reflection from
-         *            {@link PythonPortObjectTypeRegistry}
-         * @param execContext The current {@link ExecutionContext}
-         * @return new {@link PythonBinaryPortObject} wrapping the binary data
-         */
-        public static PythonConnectionPortObject fromPurePython(//
-            final PurePythonConnectionPortObject portObject, //
-            final Map<String, FileStore> fileStoresByKey, // NOSONAR
-            final PythonArrowTableConverter tableConverter, // NOSONAR
-            final ExecutionContext execContext) {
-            var spec = PythonConnectionPortObjectSpec.fromJsonString(portObject.getSpec().toJsonString()).m_spec;
-            final var pid = portObject.getPid();
-            return new PythonConnectionPortObject(PythonTransientConnectionPortObject.create(spec, pid), null);
-        }
-
         @Override
-        public PortObject getPortObject() {
+        public PythonTransientConnectionPortObject getPortObject() {
             return m_data;
         }
 
@@ -400,34 +346,12 @@ public final class PythonPortObjects {
         }
 
         /**
-         * Create a PythonImagePortObject from a PurePythonImagePortObject.
+         * Check whether the provided array of bytes represents a PNG image.
          *
-         * @param portObject The {@link PurePythonImagePortObject} coming from Python
-         * @param fileStoresByKey Not currently used by this port object type but required due to reflection
-         * @param tableConverter Not needed for this port object type but required due to reflection
-         * @param execContext The current {@link ExecutionContext}
-         * @return new {@link PythonImagePortObject} containing the image data
+         * @param bytes
+         * @return True if bytes represent a PNG image, False otherwise
          */
-        public static PythonImagePortObject fromPurePython(//
-            final PurePythonImagePortObject portObject, //
-            final Map<String, FileStore> fileStoresByKey, // NOSONAR
-            final PythonArrowTableConverter tableConverter, // NOSONAR
-            final ExecutionContext execContext) { // NOSONAR
-            final var bytes = Base64.getDecoder().decode(portObject.getImageBytes().getBytes());
-            ImagePortObjectSpec spec;
-
-            if (isPngBytes(bytes)) {
-                spec = new ImagePortObjectSpec(PNGImageContent.TYPE);
-            } else if (isSvgBytes(bytes)) {
-                spec = new ImagePortObjectSpec(SvgCell.TYPE);
-            } else {
-                throw new UnsupportedOperationException("Unsupported image format detected.");
-            }
-
-            return new PythonImagePortObject(bytes, spec);
-        }
-
-        private static boolean isPngBytes(final byte[] bytes) {
+        public static boolean isPngBytes(final byte[] bytes) {
             if (bytes.length < 8) {
                 return false;
             }
@@ -441,7 +365,13 @@ public final class PythonPortObjects {
             return true;
         }
 
-        private static boolean isSvgBytes(final byte[] bytes) {
+        /**
+         * Check whether the provided array of bytes represents an SVG image.
+         *
+         * @param bytes
+         * @return True if bytes represent an SVG image, False otherwise
+         */
+        public static boolean isSvgBytes(final byte[] bytes) {
             try {
                 ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
                 Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(byteArrayInputStream);
@@ -454,7 +384,7 @@ public final class PythonPortObjects {
         }
 
         @Override
-        public PortObject getPortObject() {
+        public ImagePortObject getPortObject() {
             try {
                 if (m_spec.isPng()) {
                     return convertBytesToPNG();
@@ -506,11 +436,8 @@ public final class PythonPortObjects {
          * Constructor for creating a PythonCredentialPortObject.
          *
          * @param credentialPortObject The CredentialPortObject to be used for initialization.
-         * @param tableConverter Not used
          */
-        public PythonCredentialPortObject( //
-            final CredentialPortObject credentialPortObject, //
-            final PythonArrowTableConverter tableConverter) { // NOSONAR
+        public PythonCredentialPortObject(final CredentialPortObject credentialPortObject) {
             var cpos = credentialPortObject.getSpec();
             m_spec = new PythonCredentialPortObjectSpec(cpos);
         }
@@ -540,26 +467,17 @@ public final class PythonPortObjects {
         }
 
         /**
-         * Create a PythonCredentialPortObject from a PurePythonCredentialPortObject.
+         * Exposes the private constructor for creating an instance with a KNIME-native Port Object Spec.
          *
-         * @param portObject The {@link PurePythonCredentialPortObject} coming from Python
-         * @param fileStoresByKey Not currently used by this port object type but required due to reflection
-         * @param tableConverter Not needed for this port object type but required due to reflection
-         * @param execContext The current {@link ExecutionContext}
-         * @return new {@link PythonCredentialPortObject} containing the Credentials
+         * @param spec
+         * @return An instance of the Python Port Object
          */
-        public static PythonCredentialPortObject fromPurePython(//
-            final PurePythonCredentialPortObject portObject, //
-            final Map<String, FileStore> fileStoresByKey, // NOSONAR
-            final PythonArrowTableConverter tableConverter, // NOSONAR
-            final ExecutionContext execContext) { // NOSONAR
-
-            var spec = PythonCredentialPortObjectSpec.fromJsonString(portObject.getSpec().toJsonString()).m_spec;
+        public static PythonCredentialPortObject createFromKnimeSpec(final CredentialPortObjectSpec spec) {
             return new PythonCredentialPortObject(spec);
         }
 
         @Override
-        public PortObject getPortObject() {
+        public CredentialPortObject getPortObject() {
             return new CredentialPortObject(m_spec.m_spec);
         }
 
@@ -852,7 +770,7 @@ public final class PythonPortObjects {
         }
 
         @Override
-        public PortObjectSpec getPortObjectSpec() {
+        public CredentialPortObjectSpec getPortObjectSpec() {
             return m_spec;
         }
 

@@ -54,6 +54,8 @@ import java.util.Map;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.port.PortObject;
+import org.knime.core.node.port.image.ImagePortObject;
+import org.knime.credentials.base.CredentialPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
 import org.knime.python3.nodes.ports.converters.PortObjectConversionContext;
 import org.knime.python3.nodes.ports.converters.PortObjectConverterInterfaces.KnimeToPythonPortObjectConverter;
@@ -74,12 +76,16 @@ public final class PythonPortTypeRegistry {
         private static final PythonPortTypeRegistry INSTANCE = new PythonPortTypeRegistry();
     }
 
-    private final Map<String, PortObjectConverterMarker> m_converterMap;
+    private final Map<String, PortObjectConverterMarker> m_portObjectConverterMap;
 
     private PythonPortTypeRegistry() {
-        m_converterMap = new HashMap<>();
+        m_portObjectConverterMap = new HashMap<>();
 
-        m_converterMap.put(BufferedDataTable.class.getName(), new PortObjectConverters.TablePortObjectConverter());
+        m_portObjectConverterMap.put(BufferedDataTable.class.getName(), new PortObjectConverters.TablePortObjectConverter());
+        m_portObjectConverterMap.put(PythonBinaryBlobFileStorePortObject.class.getName(), new PortObjectConverters.PythonBinaryPortObjectConverter());
+        m_portObjectConverterMap.put(ImagePortObject.class.getName(), new PortObjectConverters.ImagePortObjectConverter());
+        m_portObjectConverterMap.put(PythonTransientConnectionPortObject.class.getName(), new PortObjectConverters.PythonConnectionPortObjectConverter());
+        m_portObjectConverterMap.put(CredentialPortObject.class.getName(), new PortObjectConverters.PythonCredentialsPortObjectConverter());
     }
 
 
@@ -95,13 +101,14 @@ public final class PythonPortTypeRegistry {
             throw new IllegalStateException("Cannot convert `null` portObject from KNIME to Python");
         }
         var registry = InstanceHolder.INSTANCE;
-        PortObjectConverterMarker converter = registry.m_converterMap.get(portObject.getClass().getName());
+        PortObjectConverterMarker converter = registry.m_portObjectConverterMap.get(portObject.getClass().getName());
 
         if (converter == null) {
             throw new IllegalStateException("No converter found for " + portObject.getClass().getName());
         }
 
         if (converter instanceof KnimeToPythonPortObjectConverter) {
+            @SuppressWarnings("unchecked")
             KnimeToPythonPortObjectConverter<PortObject, PythonPortObject> knimeToPythonConverter =
                     (KnimeToPythonPortObjectConverter<PortObject, PythonPortObject>) converter;
             return knimeToPythonConverter.toPython(portObject, context);
@@ -125,13 +132,14 @@ public final class PythonPortTypeRegistry {
         }
 
         var registry = InstanceHolder.INSTANCE;
-        PortObjectConverterMarker converter = registry.m_converterMap.get(purePythonPortObject.getJavaClassName());
+        PortObjectConverterMarker converter = registry.m_portObjectConverterMap.get(purePythonPortObject.getJavaClassName());
 
         if (converter == null) {
             throw new IllegalStateException("No converter found for " + purePythonPortObject.getJavaClassName());
         }
 
         if (converter instanceof PythonToKnimePortObjectConverter) {
+            @SuppressWarnings("unchecked")
             PythonToKnimePortObjectConverter<PythonPortObject, PortObject> pythonToKnimeConverter =
                     (PythonToKnimePortObjectConverter<PythonPortObject, PortObject>) converter;
             return pythonToKnimeConverter.fromPython(purePythonPortObject, context);

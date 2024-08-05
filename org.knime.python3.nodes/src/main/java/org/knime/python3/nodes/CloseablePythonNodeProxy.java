@@ -475,14 +475,11 @@ final class CloseablePythonNodeProxy
         };
         m_proxy.initializeJavaCallback(callback);
 
-        PortObjectConversionContext knimeToPythonConversionontext = new PortObjectConversionContext(fileStoresByKey, m_tableManager, exec);
+        PortObjectConversionContext knimeToPythonConversionContext = new PortObjectConversionContext(fileStoresByKey, m_tableManager, exec);
         final var pythonInputs =
-            Arrays.stream(inData).map(po -> PythonPortTypeRegistry.convertToPython(po, knimeToPythonConversionontext))
+            Arrays.stream(inData).map(po -> PythonPortTypeRegistry.convertToPython(po, knimeToPythonConversionContext))
                 .toArray(PythonPortObject[]::new);
 
-//        final var pythonInputs =
-//            Arrays.stream(inData).map(po -> PythonPortObjectTypeRegistry.convertToPythonPortObject(po, m_tableManager))
-//                .toArray(PythonPortObject[]::new);
         exec.setProgress(0.1, "Sending data to Python");
 
         exec.setMessage(""); // Reset the message -> Only show the message from Python
@@ -574,10 +571,6 @@ final class CloseablePythonNodeProxy
         executionResult.m_portObjects = pythonOutputs.stream()//
             .map(ppo -> PythonPortTypeRegistry.convertFromPython(ppo, pythonToKnimeConversionContext))//
             .toArray(PortObject[]::new);
-//        executionResult.m_portObjects = pythonOutputs.stream()//
-//            .map(ppo -> PythonPortObjectTypeRegistry.convertFromPythonPortObject(ppo, fileStoresByKey, m_tableManager,
-//                outputExec))//
-//            .toArray(PortObject[]::new);
 
         return executionResult;
     }
