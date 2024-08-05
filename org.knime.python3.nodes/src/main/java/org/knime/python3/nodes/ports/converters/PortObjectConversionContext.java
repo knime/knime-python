@@ -46,18 +46,23 @@
  * History
  *   2 August 2024 (Ivan Prigarin): created
  */
-package org.knime.python3.nodes.ports;
+package org.knime.python3.nodes.ports.converters;
 
 import java.util.Map;
 
 import org.knime.core.data.filestore.FileStore;
 import org.knime.core.node.ExecutionContext;
+import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.arrow.PythonArrowTableConverter;
 
 /**
- * TODO
+ * A record meant to encapsulate objects used during Port Object conversions from KNIME to Python and vice versa.
+ *
+ * @param fileStoresByKey A map of {@link String} keys to {@link FileStore}s holding binary data
+ * @param tableConverter The {@link PythonArrowTableConverter} used to convert tables from {@link PythonArrowDataSink}s
+ * @param execContext The current {@link ExecutionContext}
  */
-public record ConversionContext(
+public record PortObjectConversionContext(
     Map<String, FileStore> fileStoresByKey,
     PythonArrowTableConverter tableConverter,
     ExecutionContext execContext

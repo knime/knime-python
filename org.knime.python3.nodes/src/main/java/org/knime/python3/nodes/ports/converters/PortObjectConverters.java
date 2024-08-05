@@ -46,17 +46,58 @@
  * History
  *   2 August 2024 (Ivan Prigarin): created
  */
-package org.knime.python3.nodes.ports;
+package org.knime.python3.nodes.ports.converters;
 
-import org.knime.core.node.port.PortObject;
-import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
+import java.io.IOException;
+
+import org.knime.core.node.BufferedDataTable;
+import org.knime.python3.arrow.PythonArrowDataSink;
+import org.knime.python3.nodes.ports.PythonPortObjects.PurePythonTablePortObject;
+import org.knime.python3.nodes.ports.PythonPortObjects.PythonTablePortObject;
+import org.knime.python3.nodes.ports.converters.PortObjectConverterInterfaces.KnimeToPythonPortObjectConverter;
+import org.knime.python3.nodes.ports.converters.PortObjectConverterInterfaces.PythonToKnimePortObjectConverter;
 
 /**
- * TODO
+ * Concrete implementations of Port Object Converters.
+ *
+ * Most Port Objects' converters will need to implement both {@link KnimeToPythonPortObjectConverter} and {@link PythonToKnimePortObjectConverter}
+ * to allow bi-directional flow of Port Object data.
+ *
+ * @author Ivan Prigarin, KNIME GmbH, Konstanz, Germany
  */
-public interface PortObjectConverter<T extends PortObject, U extends PythonPortObject, V extends PythonPortObject> {
-    U toPython(T portObject, ConversionContext context);
-    U fromPython(V pythonPortObject, ConversionContext context);
+public final class PortObjectConverters {
+
+    private PortObjectConverters() {
+    }
+
+
+    /**
+     * Bi-directional Port Object converter for {@link BufferedDataTable}.
+     *
+     */
+    public static final class TablePortObjectConverter implements KnimeToPythonPortObjectConverter<BufferedDataTable, PythonTablePortObject>,
+    PythonToKnimePortObjectConverter<PurePythonTablePortObject, BufferedDataTable> {
+
+        @Override
+        public PythonTablePortObject toPython(final BufferedDataTable portObject, final PortObjectConversionContext context) {
+            return new PythonTablePortObject(portObject, context.tableConverter());
+        }
+
+        @Override
+        public BufferedDataTable fromPython(final PurePythonTablePortObject purePythonPortObject, final PortObjectConversionContext context) {
+            try {
+                PythonArrowDataSink sink = purePythonPortObject.getPythonArrowDataSink();
+                var bdt = context.tableConverter().convertToTable(sink, context.execContext());
+                var pythonPortObject = new PythonTablePortObject(bdt, context.tableConverter());
+                return pythonPortObject.getPortObject();
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("Interrupted while converting from Python", ex);
+            } catch (IOException ex) {
+                throw new RuntimeException("Failed to convert Python table to KNIME BufferedDataTable", ex);
+            }
+        }
+    }
+
+
 }
-
-

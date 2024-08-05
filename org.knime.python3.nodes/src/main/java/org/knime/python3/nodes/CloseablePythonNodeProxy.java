@@ -100,7 +100,6 @@ import org.knime.python3.arrow.PythonArrowDataUtils;
 import org.knime.python3.arrow.PythonArrowTableConverter;
 import org.knime.python3.nodes.CloseablePythonNodeProxyFactory.CloseableGatewayWithAttachments;
 import org.knime.python3.nodes.extension.ExtensionNode;
-import org.knime.python3.nodes.ports.ConversionContext;
 import org.knime.python3.nodes.ports.PythonPortObjectTypeRegistry;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonCredentialPortObjectSpec;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
@@ -108,6 +107,7 @@ import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
 import org.knime.python3.nodes.ports.PythonPortTypeRegistry;
 import org.knime.python3.nodes.ports.PythonTransientConnectionPortObject;
 import org.knime.python3.nodes.ports.TableSpecSerializationUtils;
+import org.knime.python3.nodes.ports.converters.PortObjectConversionContext;
 import org.knime.python3.nodes.proxy.CloseableNodeFactoryProxy;
 import org.knime.python3.nodes.proxy.NodeDialogProxy;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy;
@@ -475,9 +475,9 @@ final class CloseablePythonNodeProxy
         };
         m_proxy.initializeJavaCallback(callback);
 
-        ConversionContext context = new ConversionContext(fileStoresByKey, m_tableManager, exec);
+        PortObjectConversionContext knimeToPythonConversionontext = new PortObjectConversionContext(fileStoresByKey, m_tableManager, exec);
         final var pythonInputs =
-            Arrays.stream(inData).map(po -> PythonPortTypeRegistry.convertToPythonPortObject(po, context))
+            Arrays.stream(inData).map(po -> PythonPortTypeRegistry.convertToPython(po, knimeToPythonConversionontext))
                 .toArray(PythonPortObject[]::new);
 
 //        final var pythonInputs =
@@ -569,10 +569,15 @@ final class CloseablePythonNodeProxy
         failure.throwIfFailure();
 
         final var outputExec = exec.createSubExecutionContext(0.1);
+
+        PortObjectConversionContext pythonToKnimeConversionContext = new PortObjectConversionContext(fileStoresByKey, m_tableManager, outputExec);
         executionResult.m_portObjects = pythonOutputs.stream()//
-            .map(ppo -> PythonPortObjectTypeRegistry.convertFromPythonPortObject(ppo, fileStoresByKey, m_tableManager,
-                outputExec))//
+            .map(ppo -> PythonPortTypeRegistry.convertFromPython(ppo, pythonToKnimeConversionContext))//
             .toArray(PortObject[]::new);
+//        executionResult.m_portObjects = pythonOutputs.stream()//
+//            .map(ppo -> PythonPortObjectTypeRegistry.convertFromPythonPortObject(ppo, fileStoresByKey, m_tableManager,
+//                outputExec))//
+//            .toArray(PortObject[]::new);
 
         return executionResult;
     }
