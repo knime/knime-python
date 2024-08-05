@@ -197,6 +197,11 @@ the following parameter types. For a more detailed description see
    :noindex:
    :inherited-members:
 
+.. autoclass:: knime.extension.ParameterArray
+   :members:
+   :noindex:
+   :inherited-members:
+
 
 Validation
 ++++++++++
