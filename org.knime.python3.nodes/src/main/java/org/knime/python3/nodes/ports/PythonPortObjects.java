@@ -52,11 +52,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -219,34 +216,8 @@ public final class PythonPortObjects {
             m_tableConverter = tableConverter;
         }
 
-        /**
-         * Construct a {@link PythonTablePortObject} from a {@link PurePythonTablePortObject}
-         *
-         * @param portObject The {@link PurePythonTablePortObject} received from Python
-         * @param fileStoresByKey Not used here, needed for the Reflection API
-         * @param tableConverter The {@link PythonArrowTableConverter} used to convert tables from
-         *            {@link PythonArrowDataSink}s
-         * @param execContext The current {@link ExecutionContext}
-         * @return the {@link PythonTablePortObject}
-         * @throws IOException if the table could not be converted
-         */
-        public static PythonTablePortObject fromPurePython( //
-            final PurePythonTablePortObject portObject, //
-            final Map<String, FileStore> fileStoresByKey, // NOSONAR
-            final PythonArrowTableConverter tableConverter, //
-            final ExecutionContext execContext) throws IOException {
-            try {
-                final var sink = portObject.getPythonArrowDataSink();
-                final var bdt = tableConverter.convertToTable(sink, execContext);
-                return new PythonTablePortObject(bdt, tableConverter);
-            } catch (final InterruptedException ex) {
-                Thread.currentThread().interrupt(); // Re-interrupt
-                throw new IllegalStateException("Interrupted retrieving BufferedDataTable from Python", ex);
-            }
-        }
-
         @Override
-        public PortObject getPortObject() {
+        public BufferedDataTable getPortObject() {
             return m_data;
         }
 

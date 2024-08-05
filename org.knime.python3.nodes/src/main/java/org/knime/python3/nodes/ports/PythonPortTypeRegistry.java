@@ -55,6 +55,11 @@ import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.port.PortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
+import org.knime.python3.nodes.ports.converters.PortObjectConversionContext;
+import org.knime.python3.nodes.ports.converters.PortObjectConverterInterfaces.KnimeToPythonPortObjectConverter;
+import org.knime.python3.nodes.ports.converters.PortObjectConverterInterfaces.PortObjectConverterMarker;
+import org.knime.python3.nodes.ports.converters.PortObjectConverterInterfaces.PythonToKnimePortObjectConverter;
+import org.knime.python3.nodes.ports.converters.PortObjectConverters;
 
 /**
  *
@@ -69,38 +74,70 @@ public final class PythonPortTypeRegistry {
         private static final PythonPortTypeRegistry INSTANCE = new PythonPortTypeRegistry();
     }
 
-    private final Map<Class<? extends PortObject>, PortObjectConverter<? extends PortObject, ? extends PythonPortObject, ? extends PythonPortObject>> m_converterMap;
+    private final Map<String, PortObjectConverterMarker> m_converterMap;
 
     private PythonPortTypeRegistry() {
         m_converterMap = new HashMap<>();
 
-        m_converterMap.put(BufferedDataTable.class, new PortObjectConverters.TablePortObjectConverter());
+        m_converterMap.put(BufferedDataTable.class.getName(), new PortObjectConverters.TablePortObjectConverter());
     }
 
 
     /**
-     * TODO
+     * Converts the provided {@link PortObject} implementor to the corresponding {@link PythonPortObject} wrapper.
+     *
+     * @param portObject KNIME-native {@link PortObject}
+     * @param context The conversion context providing objects needed during the conversion process
+     * @return The Port Object wrapped in {@link PythonPortObject}, which can be provided to the Python proxy
      */
-    public static PythonPortObject convertToPythonPortObject(final PortObject portObject, final ConversionContext context) {
+    public static PythonPortObject convertToPython(final PortObject portObject, final PortObjectConversionContext context) {
         if (portObject == null) {
-            throw new IllegalStateException("Cannot convert null portObject from KNIME to Python");
+            throw new IllegalStateException("Cannot convert `null` portObject from KNIME to Python");
         }
         var registry = InstanceHolder.INSTANCE;
-        PortObjectConverter converter = registry.m_converterMap.get(portObject.getClass());
+        PortObjectConverterMarker converter = registry.m_converterMap.get(portObject.getClass().getName());
 
         if (converter == null) {
             throw new IllegalStateException("No converter found for " + portObject.getClass().getName());
         }
 
-        return converter.toPython(portObject, context);
+        if (converter instanceof KnimeToPythonPortObjectConverter) {
+            KnimeToPythonPortObjectConverter<PortObject, PythonPortObject> knimeToPythonConverter =
+                    (KnimeToPythonPortObjectConverter<PortObject, PythonPortObject>) converter;
+            return knimeToPythonConverter.toPython(portObject, context);
+        } else {
+            throw new IllegalStateException("Registered converter for " + portObject.getClass().getName() +
+                " does not implement KNIME to Python conversion.");
+        }
     }
 
     /**
-     * TODO
+     * Converts the provided PurePythonPortObject-interfaced object received from Python to the corresponding KNIME-native
+     * {@link PortObject}.
+     *
+     * @param purePythonPortObject The `PurePython` Port Object to be converted back to its KNIME-native {@link PortObject} counterpart
+     * @param context The conversion context providing objects needed during the conversion process
+     * @return The KNIME-native {@link PortObject} extracted from the `PurePython` object
      */
-    public static void convertFromPythonPortObject(final PythonPortObject pythonPortObject, final ConversionContext context) {
-        // nothing here yet.
-        // the converter takes over the responsibility of implementing the fromPython method which
-        // was previously implemented as part of the PythonPortObject interface implementation
+    public static PortObject convertFromPython(final PythonPortObject purePythonPortObject, final PortObjectConversionContext context) {
+        if (purePythonPortObject == null) {
+            throw new IllegalStateException("Cannot convert 'null' portObject from Python to KNIME");
+        }
+
+        var registry = InstanceHolder.INSTANCE;
+        PortObjectConverterMarker converter = registry.m_converterMap.get(purePythonPortObject.getJavaClassName());
+
+        if (converter == null) {
+            throw new IllegalStateException("No converter found for " + purePythonPortObject.getJavaClassName());
+        }
+
+        if (converter instanceof PythonToKnimePortObjectConverter) {
+            PythonToKnimePortObjectConverter<PythonPortObject, PortObject> pythonToKnimeConverter =
+                    (PythonToKnimePortObjectConverter<PythonPortObject, PortObject>) converter;
+            return pythonToKnimeConverter.fromPython(purePythonPortObject, context);
+        } else {
+            throw new IllegalStateException("Registered converter for " + purePythonPortObject.getJavaClassName() +
+                " does not implement Python to KNIME conversion.");
+        }
     }
 }
