@@ -1,12 +1,13 @@
 {
   "extends": "@vue/tsconfig/tsconfig.dom.json",
-  "include": ["src/**/*"],
-  "exclude": ["**/__tests__/*"],
+  "include": ["src/**/*", "src/**/*.vue"],
+  "exclude": ["**/__tests__/*", "**/__mocks__/*"],
   "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
     },
-    "allowJs": true
+    "strict": true
   }
 }
