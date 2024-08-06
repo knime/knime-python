@@ -28,12 +28,12 @@
   },
   "dependencies": {
     "@knime/components": "^1.0.12",
-    "@knime/scripting-editor": "0.0.70",
+    "@knime/scripting-editor": "0.0.74",
     "@knime/styles": "^1.0.3",
     "@knime/ui-extension-service": "0.33.0",
     "@vueuse/core": "10.9.0",
     "consola": "2.15.3",
-    "vue": "3.4.21"
+    "vue": "3.4.27"
   },
   "devDependencies": {
     "@cyclonedx/cyclonedx-npm": "1.19.0",
