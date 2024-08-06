@@ -23,7 +23,8 @@
     "test:unit": "vitest",
     "coverage": "vitest run --coverage",
     "prepare": "cd ../.. && husky ./org.knime.python3.scripting.nodes/js-src/.husky",
-    "sbom": "npx @cyclonedx/cyclonedx-npm --output-file bom.json --ignore-npm-errors --omit dev"
+    "sbom": "npx @cyclonedx/cyclonedx-npm --output-file bom.json --ignore-npm-errors --omit dev",
+    "postinstall": "license-check -c"
   },
   "dependencies": {
     "@knime/components": "^1.0.12",
@@ -37,6 +38,7 @@
   "devDependencies": {
     "@cyclonedx/cyclonedx-npm": "1.19.0",
     "@knime/eslint-config": "8.1.0",
+    "@knime/licenses": "^1.0.4",
     "@rushstack/eslint-patch": "1.10.3",
     "@tsconfig/node18": "18.2.4",
     "@types/jsdom": "21.1.7",
