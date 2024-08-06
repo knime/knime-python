@@ -57,11 +57,12 @@ const executionStatusText = computed(() => {
 .status-wrapper {
   width: 180px;
   display: flex;
-  flex-direction: row;
+  flex-flow: row nowrap;
   gap: 10px;
   align-items: center;
   justify-content: left;
   color: var(--status-color);
+  font-size: 12px;
 }
 
 .dot {
