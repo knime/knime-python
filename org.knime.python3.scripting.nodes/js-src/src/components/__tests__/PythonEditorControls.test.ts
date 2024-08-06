@@ -51,7 +51,7 @@ describe("PythonEditorControls", () => {
   };
 
   beforeEach(() => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({ toFake: ["nextTick"] });
     useSessionStatusStore().status = "IDLE";
   });
 
