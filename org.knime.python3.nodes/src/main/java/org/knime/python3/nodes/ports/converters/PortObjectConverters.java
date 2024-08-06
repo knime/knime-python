@@ -92,7 +92,6 @@ public final class PortObjectConverters {
 
     /**
      * Bi-directional Port Object converter for {@link BufferedDataTable}.
-     *
      */
     public static final class TablePortObjectConverter implements KnimeToPythonPortObjectConverter<BufferedDataTable, PythonTablePortObject>,
     PythonToKnimePortObjectConverter<PurePythonTablePortObject, BufferedDataTable> {
@@ -120,7 +119,6 @@ public final class PortObjectConverters {
 
     /**
      * Bi-directional Port Object converter for {@link PythonBinaryPortObject}.
-     *
      */
     public static final class PythonBinaryPortObjectConverter implements KnimeToPythonPortObjectConverter<PythonBinaryBlobFileStorePortObject, PythonBinaryPortObject>,
     PythonToKnimePortObjectConverter<PurePythonBinaryPortObject, PythonBinaryBlobFileStorePortObject> {
@@ -147,7 +145,6 @@ public final class PortObjectConverters {
 
     /**
      * Bi-directional Port Object converter for {@link PythonTransientConnectionPortObject}.
-     *
      */
     public static final class PythonConnectionPortObjectConverter implements KnimeToPythonPortObjectConverter<PythonTransientConnectionPortObject, PythonConnectionPortObject>,
     PythonToKnimePortObjectConverter<PurePythonConnectionPortObject, PythonTransientConnectionPortObject> {
@@ -168,7 +165,6 @@ public final class PortObjectConverters {
 
     /**
      * Uni-directional Port Object converter for {@link ImagePortObject}.
-     *
      */
     public static final class ImagePortObjectConverter implements PythonToKnimePortObjectConverter<PurePythonImagePortObject, ImagePortObject> {
 
@@ -192,7 +188,6 @@ public final class PortObjectConverters {
 
     /**
      * Bi-directional Port Object converter for {@link CredentialPortObject}.
-     *
      */
     public static final class PythonCredentialsPortObjectConverter implements KnimeToPythonPortObjectConverter<CredentialPortObject, PythonCredentialPortObject>,
     PythonToKnimePortObjectConverter<PurePythonCredentialPortObject, CredentialPortObject> {

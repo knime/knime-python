@@ -100,7 +100,6 @@ import org.knime.python3.arrow.PythonArrowDataUtils;
 import org.knime.python3.arrow.PythonArrowTableConverter;
 import org.knime.python3.nodes.CloseablePythonNodeProxyFactory.CloseableGatewayWithAttachments;
 import org.knime.python3.nodes.extension.ExtensionNode;
-import org.knime.python3.nodes.ports.PythonPortObjectTypeRegistry;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonCredentialPortObjectSpec;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
@@ -274,9 +273,10 @@ final class CloseablePythonNodeProxy
 
             @Override
             public PythonPortObjectSpec[] get_input_specs() {
-                return Arrays.stream(specs).map(PythonPortObjectTypeRegistry::convertToPythonPortObjectSpec)
+                return Arrays.stream(specs).map(PythonPortTypeRegistry::convertPortObjectSpecToPython)
                     .toArray(PythonPortObjectSpec[]::new);
             }
+
             @Override
             public Map<String, int[]> get_input_port_map(){
                 return ((DelegatingNodeModel)getNode().getNodeModel()).getInputPortMap();
@@ -477,7 +477,7 @@ final class CloseablePythonNodeProxy
 
         PortObjectConversionContext knimeToPythonConversionContext = new PortObjectConversionContext(fileStoresByKey, m_tableManager, exec);
         final var pythonInputs =
-            Arrays.stream(inData).map(po -> PythonPortTypeRegistry.convertToPython(po, knimeToPythonConversionContext))
+            Arrays.stream(inData).map(po -> PythonPortTypeRegistry.convertPortObjectToPython(po, knimeToPythonConversionContext))
                 .toArray(PythonPortObject[]::new);
 
         exec.setProgress(0.1, "Sending data to Python");
@@ -569,7 +569,7 @@ final class CloseablePythonNodeProxy
 
         PortObjectConversionContext pythonToKnimeConversionContext = new PortObjectConversionContext(fileStoresByKey, m_tableManager, outputExec);
         executionResult.m_portObjects = pythonOutputs.stream()//
-            .map(ppo -> PythonPortTypeRegistry.convertFromPython(ppo, pythonToKnimeConversionContext))//
+            .map(ppo -> PythonPortTypeRegistry.convertPortObjectFromPython(ppo, pythonToKnimeConversionContext))//
             .toArray(PortObject[]::new);
 
         return executionResult;
@@ -722,7 +722,7 @@ final class CloseablePythonNodeProxy
         };
 
         final var serializedInSpecs = Stream.of(inSpecs)//
-            .map(PythonPortObjectTypeRegistry::convertToPythonPortObjectSpec)//
+            .map(PythonPortTypeRegistry::convertPortObjectSpecToPython)//
             .toArray(PythonPortObjectSpec[]::new);
 
         final var serializedOutSpecs = m_proxy.configure(serializedInSpecs, pythonConfigContext);
@@ -737,7 +737,7 @@ final class CloseablePythonNodeProxy
         }
 
         return serializedOutSpecs.stream()//
-            .map(PythonPortObjectTypeRegistry::convertFromPythonPortObjectSpec)//
+            .map(PythonPortTypeRegistry::convertPortObjectSpecFromPython)//
             .toArray(PortObjectSpec[]::new);
     }
 

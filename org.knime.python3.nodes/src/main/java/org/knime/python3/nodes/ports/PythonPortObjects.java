@@ -71,7 +71,6 @@ import org.knime.core.node.port.PortType;
 import org.knime.core.node.port.image.ImagePortObject;
 import org.knime.core.node.port.image.ImagePortObjectSpec;
 import org.knime.core.node.workflow.capture.WorkflowPortObject;
-import org.knime.core.table.virtual.serialization.AnnotatedColumnarSchemaSerializer;
 import org.knime.credentials.base.Credential;
 import org.knime.credentials.base.CredentialPortObject;
 import org.knime.credentials.base.CredentialPortObjectSpec;
@@ -79,7 +78,6 @@ import org.knime.credentials.base.oauth.api.HttpAuthorizationHeaderCredentialVal
 import org.knime.python3.PythonDataSource;
 import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.arrow.PythonArrowDataSource;
-import org.knime.python3.arrow.PythonArrowDataUtils;
 import org.knime.python3.arrow.PythonArrowTableConverter;
 import org.knime.workflowservices.connection.AbstractHubAuthenticationPortObject;
 import org.w3c.dom.Document;
@@ -478,7 +476,7 @@ public final class PythonPortObjects {
 
         @Override
         public CredentialPortObject getPortObject() {
-            return new CredentialPortObject(m_spec.m_spec);
+            return new CredentialPortObject(m_spec.getPortObjectSpec());
         }
 
         @Override
@@ -527,29 +525,6 @@ public final class PythonPortObjects {
             m_spec = spec;
         }
 
-        /**
-         * Create a {@link PythonTablePortObjectSpec} by parsing the given JSON data.
-         *
-         * Note: Objects created this way cannot be converted to JSON again because the writeFileStoreHandler is not
-         * set!
-         *
-         * @param jsonData The JSON encoded data table spec
-         * @return A new {@link PythonTablePortObjectSpec}
-         */
-        public static PythonTablePortObjectSpec fromJsonString(final String jsonData) {
-            final var om = new ObjectMapper();
-            try {
-                final var rootNode = om.readTree(jsonData);
-                final var acs = AnnotatedColumnarSchemaSerializer.load(rootNode);
-                return new PythonTablePortObjectSpec(
-                    PythonArrowDataUtils.createDataTableSpec(acs, acs.getColumnNames()));
-            } catch (JsonMappingException ex) {
-                throw new IllegalStateException("Could not parse PythonTablePortObjectSpec from given JSON data", ex);
-            } catch (JsonProcessingException ex) { // NOSONAR: if we don't split this block up, Eclipse doesn't like it for some reason
-                throw new IllegalStateException("Could not parse PythonTablePortObjectSpec from given JSON data", ex);
-            }
-        }
-
         @Override
         public String toJsonString() {
             return TableSpecSerializationUtils.serializeTableSpec(m_spec);
@@ -561,7 +536,7 @@ public final class PythonPortObjects {
         }
 
         @Override
-        public PortObjectSpec getPortObjectSpec() {
+        public DataTableSpec getPortObjectSpec() {
             return m_spec;
         }
     }
@@ -686,7 +661,7 @@ public final class PythonPortObjects {
         }
 
         @Override
-        public PortObjectSpec getPortObjectSpec() {
+        public ImagePortObjectSpec getPortObjectSpec() {
             return m_spec;
         }
 
@@ -724,31 +699,6 @@ public final class PythonPortObjects {
                 return om.writeValueAsString(rootNode);
             } catch (JsonProcessingException ex) {
                 throw new IllegalStateException("Could not generate JSON data for PythonImagePortObjectSpec", ex);
-            }
-        }
-
-        /**
-         * @param jsonData the spec serialized as JSON
-         * @return the corresponding ImagePortObjectSpec for either PNG or SVG
-         * @throws IllegalStateException if either an unsupported image format is detected or a problem is encountered
-         *             during the parsing of the JSON data
-         */
-        public static PythonImagePortObjectSpec fromJsonString(final String jsonData) {
-            final var om = new ObjectMapper();
-            try {
-                final var rootNode = om.readTree(jsonData);
-                final var format = rootNode.get("format").asText();
-                if (format.equals("png")) {
-                    return new PythonImagePortObjectSpec(new ImagePortObjectSpec(PNGImageContent.TYPE));
-                } else if (format.equals("svg")) {
-                    return new PythonImagePortObjectSpec(new ImagePortObjectSpec(SvgCell.TYPE));
-                } else {
-                    throw new IllegalStateException("Unsupported image format: " + format + ".");
-                }
-            } catch (JsonMappingException ex) {
-                throw new IllegalStateException("Could not parse PythonImagePortObjectSpec from given JSON data", ex);
-            } catch (JsonProcessingException ex) { // NOSONAR: Eclipse requires explicit handling of this exception
-                throw new IllegalStateException("Could not parse PythonImagePortObjectSpec from given Json data", ex);
             }
         }
 
