@@ -12,12 +12,11 @@ definitions:
           - ruff format --check .
     - step: &js-lint-test-build
         name: JS lint, tests, and build
-        image: node:18.19.0
+        image: node:20.15.0
         caches:
           - node
         size: 2x # more memory to accomodate docker container for sonarcloud
         script:
-          - git submodule update --init --recursive
           - cd org.knime.python3.scripting.nodes/js-src
           - npm ci
           - npm run type-check
