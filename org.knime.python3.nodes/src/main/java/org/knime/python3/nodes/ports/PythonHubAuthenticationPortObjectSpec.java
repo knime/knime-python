@@ -56,7 +56,7 @@ import org.knime.workflowservices.connection.AbstractHubAuthenticationPortObject
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-final class PythonHubAuthenticationPortObjectSpec extends PythonCredentialPortObjectSpec {
+public final class PythonHubAuthenticationPortObjectSpec extends PythonCredentialPortObjectSpec {
 
     private final AbstractHubAuthenticationPortObjectSpec m_spec;
 
