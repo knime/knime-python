@@ -56,9 +56,11 @@ import org.knime.core.data.image.png.PNGImageContent;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.port.image.ImagePortObject;
 import org.knime.core.node.port.image.ImagePortObjectSpec;
+import org.knime.core.node.workflow.capture.WorkflowPortObject;
 import org.knime.credentials.base.CredentialPortObject;
 import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.nodes.ports.PythonBinaryBlobFileStorePortObject;
+import org.knime.python3.nodes.ports.PythonHubAuthenticationPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PurePythonBinaryPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PurePythonConnectionPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PurePythonCredentialPortObject;
@@ -73,8 +75,10 @@ import org.knime.python3.nodes.ports.PythonPortObjects.PythonCredentialPortObjec
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonImagePortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonTablePortObject;
 import org.knime.python3.nodes.ports.PythonTransientConnectionPortObject;
+import org.knime.python3.nodes.ports.PythonWorkflowPortObject;
 import org.knime.python3.nodes.ports.converters.PortObjectConverterInterfaces.KnimeToPythonPortObjectConverter;
 import org.knime.python3.nodes.ports.converters.PortObjectConverterInterfaces.PythonToKnimePortObjectConverter;
+import org.knime.workflowservices.connection.AbstractHubAuthenticationPortObject;
 
 /**
  * Concrete implementations of Port Object Converters.
@@ -189,7 +193,7 @@ public final class PortObjectConverters {
     /**
      * Bi-directional Port Object converter for {@link CredentialPortObject}.
      */
-    public static final class PythonCredentialsPortObjectConverter implements KnimeToPythonPortObjectConverter<CredentialPortObject, PythonCredentialPortObject>,
+    public static final class PythonCredentialPortObjectConverter implements KnimeToPythonPortObjectConverter<CredentialPortObject, PythonCredentialPortObject>,
     PythonToKnimePortObjectConverter<PurePythonCredentialPortObject, CredentialPortObject> {
 
         @Override
@@ -203,6 +207,31 @@ public final class PortObjectConverters {
             var pythonPortObject = PythonCredentialPortObject.createFromKnimeSpec(spec);
             return pythonPortObject.getPortObject();
 
+        }
+    }
+
+    /**
+     * Uni-directional Port Object converter for {@link WorkflowPortObject}.
+     */
+    public static final class PythonWorkflowPortObjectConverter implements KnimeToPythonPortObjectConverter<WorkflowPortObject, PythonWorkflowPortObject> {
+
+        @Override
+        public PythonWorkflowPortObject toPython(final WorkflowPortObject workflow, final PortObjectConversionContext context) {
+            return new PythonWorkflowPortObject(workflow, context.tableConverter());
+        }
+    }
+
+    /**
+     * Uni-directional Port Object converter for `HubAuthenticationPortObject`.
+     *
+     * The actual class of the Port Object is not available to us due to being closed-source, so we use the open source
+     * {@link AbstractHubAuthenticationPortObject} interface instead.
+     */
+    public static final class PythonHubAuthenticationPortObjectConverter implements KnimeToPythonPortObjectConverter<AbstractHubAuthenticationPortObject, PythonHubAuthenticationPortObject> {
+
+        @Override
+        public PythonHubAuthenticationPortObject toPython(final AbstractHubAuthenticationPortObject credentialsPortObject, final PortObjectConversionContext context) {
+            return new PythonHubAuthenticationPortObject(credentialsPortObject);
         }
     }
 

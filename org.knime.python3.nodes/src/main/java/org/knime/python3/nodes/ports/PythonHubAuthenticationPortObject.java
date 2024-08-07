@@ -48,7 +48,6 @@
  */
 package org.knime.python3.nodes.ports;
 
-import org.knime.python3.arrow.PythonArrowTableConverter;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonCredentialPortObject;
 import org.knime.workflowservices.connection.AbstractHubAuthenticationPortObject;
 
@@ -57,14 +56,12 @@ import org.knime.workflowservices.connection.AbstractHubAuthenticationPortObject
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-final class PythonHubAuthenticationPortObject extends PythonCredentialPortObject {
+public final class PythonHubAuthenticationPortObject extends PythonCredentialPortObject {
 
     /**
      * @param credentialPortObject hub authentication port object
-     * @param tableConverter not used but needed to match the expected signature
      */
-    public PythonHubAuthenticationPortObject(final AbstractHubAuthenticationPortObject credentialPortObject,
-        final PythonArrowTableConverter tableConverter) {
+    public PythonHubAuthenticationPortObject(final AbstractHubAuthenticationPortObject credentialPortObject) {
         super(new PythonHubAuthenticationPortObjectSpec(credentialPortObject.getSpec()));
     }
 
