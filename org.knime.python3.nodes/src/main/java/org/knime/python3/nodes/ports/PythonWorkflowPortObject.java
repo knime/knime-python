@@ -69,6 +69,7 @@ import org.knime.core.node.workflow.capture.WorkflowSegmentExecutor;
 import org.knime.python3.arrow.PythonArrowTableConverter;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
+import org.knime.python3.nodes.ports.converters.PortObjectConversionContext;
 import org.knime.python3.utils.FlowVariableUtils;
 import org.knime.shared.workflow.storage.text.util.ObjectMapperUtil;
 
@@ -126,10 +127,10 @@ public final class PythonWorkflowPortObject implements PythonPortObject {
         // TODO if we want to support port types that need the filestoreMap for deserialization
         Map<String, FileStore> dummyFileStoreMap = Map.of();
         var workflowInputIDs = m_workflow.getSpec().getInputIDs();
+        var inportObjectConversionContext = new PortObjectConversionContext(dummyFileStoreMap, m_tableConverter, exec);
         PortObject[] portObjects = workflowInputIDs.stream()//
             .map(inputs::get)// get inputs in order defined by workflow spec
-            .map(p -> PythonPortObjectTypeRegistry.convertFromPythonPortObject(p, dummyFileStoreMap, m_tableConverter,
-                exec))
+            .map(p -> PythonPortTypeRegistry.convertPortObjectFromPython(p, inportObjectConversionContext))
             .toArray(PortObject[]::new);
         var executable = createExecutable(warningConsumer);
         try {
@@ -138,8 +139,9 @@ public final class PythonWorkflowPortObject implements PythonPortObject {
                 // a null array currently indicates a failed execution
                 throw new IllegalStateException("Workflow execution failed.");
             }
+            var outportConversionContext = new PortObjectConversionContext(dummyFileStoreMap, m_tableConverter, null);
             var outputs = Stream.of(result.getFirst())//
-                .map(p -> PythonPortObjectTypeRegistry.convertToPythonPortObject(p, m_tableConverter))//
+                .map(p -> PythonPortTypeRegistry.convertPortObjectToPython(p, outportConversionContext))//
                 .toArray(PythonPortObject[]::new);
             var flowVariables = FlowVariableUtils.convertToMap(result.getSecond());
             return new WorkflowExecutionResult(outputs, flowVariables);
@@ -237,7 +239,7 @@ public final class PythonWorkflowPortObject implements PythonPortObject {
         static WorkflowPortDef fromIOInfo(final IOInfo ioInfo) {
             var portType = ioInfo.getType().orElseThrow();
             var tableSpec = ioInfo.getSpec()//
-                .map(PythonPortObjectTypeRegistry::convertToPythonPortObjectSpec)//
+                .map(PythonPortTypeRegistry::convertPortObjectSpecToPython)//
                 .map(PythonPortObjectSpec::toJsonString)//
                 .orElse(null);
             return new WorkflowPortDef(portType.getName(), portType.getPortObjectClass().getName(), tableSpec);
