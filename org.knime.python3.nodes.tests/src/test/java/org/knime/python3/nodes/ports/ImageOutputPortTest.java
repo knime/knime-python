@@ -55,7 +55,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Base64;
-import java.util.HashMap;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -66,6 +65,8 @@ import org.knime.core.node.port.image.ImagePortObject;
 import org.knime.core.node.port.image.ImagePortObjectSpec;
 import org.knime.python3.nodes.ports.PythonPortObjects.PurePythonImagePortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonImagePortObject;
+import org.knime.python3.nodes.ports.converters.PortObjectConversionContext;
+import org.knime.python3.nodes.ports.converters.PortObjectConverters;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
@@ -92,12 +93,15 @@ public class ImageOutputPortTest {
      */
     @Test
     public void testFromPurePythonPng() {
-        when(purePythonImagePortObject.getImageBytes()).thenReturn(toBase64String(PNG_BYTES));
+        byte[] pngBytes = getPngBytes();
+        when(purePythonImagePortObject.getImageBytes()).thenReturn(toBase64String(pngBytes));
 
-        PythonImagePortObject result = PythonImagePortObject.fromPurePython(
-            purePythonImagePortObject, new HashMap<>(), null, null
-        );
-        final ImagePortObjectSpec imgSpec = (ImagePortObjectSpec)result.getSpec().getPortObjectSpec();
+        var converter = new PortObjectConverters.ImagePortObjectConverter();
+        var conversionContext = new PortObjectConversionContext(null, null, null);
+
+        ImagePortObject result = converter.fromPython(purePythonImagePortObject, conversionContext);
+
+        final ImagePortObjectSpec imgSpec = result.getSpec();
 
         assertEquals(PNGImageContent.TYPE, imgSpec.getDataType()); // NOSONAR
     }
@@ -109,11 +113,12 @@ public class ImageOutputPortTest {
     public void testFromPurePythonSvg() {
         when(purePythonImagePortObject.getImageBytes()).thenReturn(toBase64String(SVG_BYTES));
 
-        PythonImagePortObject result = PythonImagePortObject.fromPurePython(
-            purePythonImagePortObject, new HashMap<>(), null, null
-        );
+        var converter = new PortObjectConverters.ImagePortObjectConverter();
+        var conversionContext = new PortObjectConversionContext(null, null, null);
 
-        final ImagePortObjectSpec imgSpec = (ImagePortObjectSpec)result.getSpec().getPortObjectSpec();
+        ImagePortObject result = converter.fromPython(purePythonImagePortObject, conversionContext);
+
+        final ImagePortObjectSpec imgSpec = result.getSpec();
 
         assertEquals(SvgCell.TYPE, imgSpec.getDataType()); // NOSONAR
     }
@@ -125,9 +130,10 @@ public class ImageOutputPortTest {
     public void testFromPurePythonUnsupported() {
         when(purePythonImagePortObject.getImageBytes()).thenReturn(toBase64String(UNSUPPORTED_BYTES));
 
-        PythonImagePortObject.fromPurePython(
-            purePythonImagePortObject, new HashMap<>(), null, null
-        );
+        var converter = new PortObjectConverters.ImagePortObjectConverter();
+        var conversionContext = new PortObjectConversionContext(null, null, null);
+
+        converter.fromPython(purePythonImagePortObject, conversionContext);
     }
 
 
@@ -141,7 +147,7 @@ public class ImageOutputPortTest {
         ImagePortObjectSpec spec = new ImagePortObjectSpec(PNGImageContent.TYPE);
         PythonImagePortObject pythonImagePortObject = new PythonImagePortObject(pngBytes, spec);
 
-        ImagePortObject result = (ImagePortObject)pythonImagePortObject.getPortObject();
+        ImagePortObject result = pythonImagePortObject.getPortObject();
 
         assertEquals(PNGImageContent.TYPE, result.getSpec().getDataType()); // NOSONAR
     }
@@ -154,7 +160,7 @@ public class ImageOutputPortTest {
         ImagePortObjectSpec spec = new ImagePortObjectSpec(SvgCell.TYPE);
         PythonImagePortObject pythonImagePortObject = new PythonImagePortObject(SVG_BYTES, spec);
 
-        ImagePortObject result = (ImagePortObject)pythonImagePortObject.getPortObject();
+        ImagePortObject result = pythonImagePortObject.getPortObject();
 
         assertEquals(SvgCell.TYPE, result.getSpec().getDataType()); // NOSONAR
     }
