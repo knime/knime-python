@@ -67,9 +67,11 @@ import org.knime.core.node.workflow.capture.WorkflowPortObjectSpec;
 import org.knime.core.node.workflow.capture.WorkflowSegment.IOInfo;
 import org.knime.core.node.workflow.capture.WorkflowSegmentExecutor;
 import org.knime.python3.arrow.PythonArrowTableConverter;
-import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
-import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
-import org.knime.python3.nodes.ports.converters.PortObjectConversionContext;
+import org.knime.python3.nodes.ports.converters.PortObjectConversionContextImpl;
+import org.knime.python3.nodes.ports.converters.PortObjectSpecConversionContextImpl;
+import org.knime.python3.types.port.PythonPortObject;
+import org.knime.python3.types.port.PythonPortObjectSpec;
+import org.knime.python3.types.port.PythonPortTypeRegistry;
 import org.knime.python3.utils.FlowVariableUtils;
 import org.knime.shared.workflow.storage.text.util.ObjectMapperUtil;
 
@@ -127,7 +129,7 @@ public final class PythonWorkflowPortObject implements PythonPortObject {
         // TODO if we want to support port types that need the filestoreMap for deserialization
         Map<String, FileStore> dummyFileStoreMap = Map.of();
         var workflowInputIDs = m_workflow.getSpec().getInputIDs();
-        var inportObjectConversionContext = new PortObjectConversionContext(dummyFileStoreMap, m_tableConverter, exec);
+        var inportObjectConversionContext = new PortObjectConversionContextImpl(dummyFileStoreMap, m_tableConverter, exec);
         PortObject[] portObjects = workflowInputIDs.stream()//
             .map(inputs::get)// get inputs in order defined by workflow spec
             .map(p -> PythonPortTypeRegistry.convertPortObjectFromPython(p, inportObjectConversionContext))
@@ -139,7 +141,7 @@ public final class PythonWorkflowPortObject implements PythonPortObject {
                 // a null array currently indicates a failed execution
                 throw new IllegalStateException("Workflow execution failed.");
             }
-            var outportConversionContext = new PortObjectConversionContext(dummyFileStoreMap, m_tableConverter, null);
+            var outportConversionContext = new PortObjectConversionContextImpl(dummyFileStoreMap, m_tableConverter, null);
             var outputs = Stream.of(result.getFirst())//
                 .map(p -> PythonPortTypeRegistry.convertPortObjectToPython(p, outportConversionContext))//
                 .toArray(PythonPortObject[]::new);
@@ -239,7 +241,7 @@ public final class PythonWorkflowPortObject implements PythonPortObject {
         static WorkflowPortDef fromIOInfo(final IOInfo ioInfo) {
             var portType = ioInfo.getType().orElseThrow();
             var tableSpec = ioInfo.getSpec()//
-                .map(PythonPortTypeRegistry::convertPortObjectSpecToPython)//
+                .map(s -> PythonPortTypeRegistry.convertPortObjectSpecToPython(s, new PortObjectSpecConversionContextImpl()))//
                 .map(PythonPortObjectSpec::toJsonString)//
                 .orElse(null);
             return new WorkflowPortDef(portType.getName(), portType.getPortObjectClass().getName(), tableSpec);

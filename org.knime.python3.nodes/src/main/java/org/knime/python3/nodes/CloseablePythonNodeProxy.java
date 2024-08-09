@@ -101,12 +101,10 @@ import org.knime.python3.arrow.PythonArrowTableConverter;
 import org.knime.python3.nodes.CloseablePythonNodeProxyFactory.CloseableGatewayWithAttachments;
 import org.knime.python3.nodes.extension.ExtensionNode;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonCredentialPortObjectSpec;
-import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
-import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
-import org.knime.python3.nodes.ports.PythonPortTypeRegistry;
 import org.knime.python3.nodes.ports.PythonTransientConnectionPortObject;
 import org.knime.python3.nodes.ports.TableSpecSerializationUtils;
-import org.knime.python3.nodes.ports.converters.PortObjectConversionContext;
+import org.knime.python3.nodes.ports.converters.PortObjectConversionContextImpl;
+import org.knime.python3.nodes.ports.converters.PortObjectSpecConversionContextImpl;
 import org.knime.python3.nodes.proxy.CloseableNodeFactoryProxy;
 import org.knime.python3.nodes.proxy.NodeDialogProxy;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy;
@@ -119,6 +117,9 @@ import org.knime.python3.nodes.proxy.model.NodeConfigurationProxy;
 import org.knime.python3.nodes.proxy.model.NodeExecutionProxy;
 import org.knime.python3.nodes.settings.JsonNodeSettings;
 import org.knime.python3.nodes.settings.JsonNodeSettingsSchema;
+import org.knime.python3.types.port.PythonPortObject;
+import org.knime.python3.types.port.PythonPortObjectSpec;
+import org.knime.python3.types.port.PythonPortTypeRegistry;
 import org.knime.python3.utils.FlowVariableUtils;
 import org.knime.python3.views.PythonNodeViewSink;
 
@@ -273,9 +274,11 @@ final class CloseablePythonNodeProxy
 
             @Override
             public PythonPortObjectSpec[] get_input_specs() {
-                return Arrays.stream(specs).map(PythonPortTypeRegistry::convertPortObjectSpecToPython)
+                return Arrays.stream(specs)//
+                        .map(s -> PythonPortTypeRegistry.convertPortObjectSpecToPython(s, new PortObjectSpecConversionContextImpl()))//
                     .toArray(PythonPortObjectSpec[]::new);
             }
+
 
             @Override
             public Map<String, int[]> get_input_port_map(){
@@ -475,7 +478,7 @@ final class CloseablePythonNodeProxy
         };
         m_proxy.initializeJavaCallback(callback);
 
-        PortObjectConversionContext knimeToPythonConversionContext = new PortObjectConversionContext(fileStoresByKey, m_tableManager, exec);
+        PortObjectConversionContextImpl knimeToPythonConversionContext = new PortObjectConversionContextImpl(fileStoresByKey, m_tableManager, exec);
         final var pythonInputs =
             Arrays.stream(inData).map(po -> PythonPortTypeRegistry.convertPortObjectToPython(po, knimeToPythonConversionContext))
                 .toArray(PythonPortObject[]::new);
@@ -567,7 +570,7 @@ final class CloseablePythonNodeProxy
 
         final var outputExec = exec.createSubExecutionContext(0.1);
 
-        PortObjectConversionContext pythonToKnimeConversionContext = new PortObjectConversionContext(fileStoresByKey, m_tableManager, outputExec);
+        PortObjectConversionContextImpl pythonToKnimeConversionContext = new PortObjectConversionContextImpl(fileStoresByKey, m_tableManager, outputExec);
         executionResult.m_portObjects = pythonOutputs.stream()//
             .map(ppo -> PythonPortTypeRegistry.convertPortObjectFromPython(ppo, pythonToKnimeConversionContext))//
             .toArray(PortObject[]::new);
@@ -722,7 +725,7 @@ final class CloseablePythonNodeProxy
         };
 
         final var serializedInSpecs = Stream.of(inSpecs)//
-            .map(PythonPortTypeRegistry::convertPortObjectSpecToPython)//
+            .map(s -> PythonPortTypeRegistry.convertPortObjectSpecToPython(s, new PortObjectSpecConversionContextImpl()))//
             .toArray(PythonPortObjectSpec[]::new);
 
         final var serializedOutSpecs = m_proxy.configure(serializedInSpecs, pythonConfigContext);
@@ -737,7 +740,7 @@ final class CloseablePythonNodeProxy
         }
 
         return serializedOutSpecs.stream()//
-            .map(PythonPortTypeRegistry::convertPortObjectSpecFromPython)//
+            .map(s -> PythonPortTypeRegistry.convertPortObjectSpecFromPython(s, new PortObjectSpecConversionContextImpl()))//
             .toArray(PortObjectSpec[]::new);
     }
 

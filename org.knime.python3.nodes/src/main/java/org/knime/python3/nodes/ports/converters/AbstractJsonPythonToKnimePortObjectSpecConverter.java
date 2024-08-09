@@ -44,27 +44,43 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   2 August 2024 (Ivan Prigarin): created
+ *   Aug 9, 2024 (adrian.nembach): created
  */
 package org.knime.python3.nodes.ports.converters;
 
-import java.util.Map;
+import org.knime.core.node.port.PortObjectSpec;
+import org.knime.python3.types.port.PortObjectSpecConversionContext;
+import org.knime.python3.types.port.PythonPortObjectSpec;
+import org.knime.python3.types.port.PythonToKnimePortObjectSpecConverter;
 
-import org.knime.core.data.filestore.FileStore;
-import org.knime.core.node.ExecutionContext;
-import org.knime.python3.arrow.PythonArrowDataSink;
-import org.knime.python3.arrow.PythonArrowTableConverter;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * A record meant to encapsulate objects used during Port Object conversions from KNIME to Python and vice versa.
  *
- * @param fileStoresByKey A map of {@link String} keys to {@link FileStore}s holding binary data
- * @param tableConverter The {@link PythonArrowTableConverter} used to convert tables from {@link PythonArrowDataSink}s
- * @param execContext The current {@link ExecutionContext}
+ * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-public record PortObjectConversionContext(
-    Map<String, FileStore> fileStoresByKey,
-    PythonArrowTableConverter tableConverter,
-    ExecutionContext execContext
-) {}
+public abstract class AbstractJsonPythonToKnimePortObjectSpecConverter<S extends PythonPortObjectSpec, T extends PortObjectSpec>
+    implements PythonToKnimePortObjectSpecConverter<S, T> {
 
+    @Override
+    public T convert(final S source, final PortObjectSpecConversionContext context) {
+        final var om = new ObjectMapper();
+        try {
+            final var rootNode = om.readTree(source.toJsonString());
+            return parse(rootNode);
+        } catch (JsonProcessingException ex) { // NOSONAR: if we don't split this block up, Eclipse doesn't like it for some reason
+            throw new IllegalStateException(
+                "Could not parse %s from given JSON data".formatted(getClass().getSimpleName()), ex);
+        }
+    }
+
+    /**
+     * @param rootNode of the JSON object received from the Python side
+     * @return the parsed PortObjectSpec
+     * @throws JsonProcessingException if the JSON can't be parsed
+     */
+    protected abstract T parse(final JsonNode rootNode) throws JsonProcessingException;
+
+}

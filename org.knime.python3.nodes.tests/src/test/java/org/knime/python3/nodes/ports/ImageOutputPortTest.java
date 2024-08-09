@@ -65,7 +65,7 @@ import org.knime.core.node.port.image.ImagePortObject;
 import org.knime.core.node.port.image.ImagePortObjectSpec;
 import org.knime.python3.nodes.ports.PythonPortObjects.PurePythonImagePortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonImagePortObject;
-import org.knime.python3.nodes.ports.converters.PortObjectConversionContext;
+import org.knime.python3.nodes.ports.converters.PortObjectConversionContextImpl;
 import org.knime.python3.nodes.ports.converters.PortObjectConverters;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
@@ -97,7 +97,7 @@ public class ImageOutputPortTest {
         when(purePythonImagePortObject.getImageBytes()).thenReturn(toBase64String(pngBytes));
 
         var converter = new PortObjectConverters.ImagePortObjectConverter();
-        var conversionContext = new PortObjectConversionContext(null, null, null);
+        var conversionContext = new PortObjectConversionContextImpl(null, null, null);
 
         ImagePortObject result = converter.fromPython(purePythonImagePortObject, conversionContext);
 
@@ -114,7 +114,7 @@ public class ImageOutputPortTest {
         when(purePythonImagePortObject.getImageBytes()).thenReturn(toBase64String(SVG_BYTES));
 
         var converter = new PortObjectConverters.ImagePortObjectConverter();
-        var conversionContext = new PortObjectConversionContext(null, null, null);
+        var conversionContext = new PortObjectConversionContextImpl(null, null, null);
 
         ImagePortObject result = converter.fromPython(purePythonImagePortObject, conversionContext);
 
@@ -131,7 +131,7 @@ public class ImageOutputPortTest {
         when(purePythonImagePortObject.getImageBytes()).thenReturn(toBase64String(UNSUPPORTED_BYTES));
 
         var converter = new PortObjectConverters.ImagePortObjectConverter();
-        var conversionContext = new PortObjectConversionContext(null, null, null);
+        var conversionContext = new PortObjectConversionContextImpl(null, null, null);
 
         converter.fromPython(purePythonImagePortObject, conversionContext);
     }

@@ -57,8 +57,8 @@ import org.knime.core.table.schema.AnnotatedColumnarSchema;
 import org.knime.core.util.auth.CouldNotAuthorizeException;
 import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.nodes.LogCallback;
-import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
-import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
+import org.knime.python3.types.port.PythonPortObject;
+import org.knime.python3.types.port.PythonPortObjectSpec;
 import org.knime.python3.views.PythonNodeViewSink;
 
 /**

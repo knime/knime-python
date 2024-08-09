@@ -79,6 +79,8 @@ import org.knime.python3.PythonDataSource;
 import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.arrow.PythonArrowDataSource;
 import org.knime.python3.arrow.PythonArrowTableConverter;
+import org.knime.python3.types.port.PythonPortObject;
+import org.knime.python3.types.port.PythonPortObjectSpec;
 import org.knime.workflowservices.connection.AbstractHubAuthenticationPortObject;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -97,19 +99,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 public final class PythonPortObjects {
 
     private PythonPortObjects() {
-    }
-
-    /**
-     * General PortObject interface used to pass data between Python and KNIME
-     *
-     * @author Carsten Haubold
-     */
-    public interface PythonPortObject {
-        /**
-         * @return the class name of the Java {@link PortObject} that is being wrapped here. Used for registration
-         */
-        String getJavaClassName();
-
     }
 
     /**
@@ -483,21 +472,6 @@ public final class PythonPortObjects {
         public String getJavaClassName() {
             return PythonCredentialPortObject.class.getName();
         }
-    }
-
-    /**
-     * A {@link PortObjectSpec} variant that is used to communicate between Python and KNIME
-     */
-    public interface PythonPortObjectSpec {
-        /**
-         * @return the class name of the Java PortObjectSpec that is being wrapped here. Used for registration
-         */
-        String getJavaClassName();
-
-        /**
-         * @return a JSON string representation of this spec
-         */
-        String toJsonString();
     }
 
     /**
