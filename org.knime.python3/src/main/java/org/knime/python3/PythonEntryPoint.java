@@ -128,4 +128,7 @@ public interface PythonEntryPoint {
      * @param valueTypeName
      */
     void registerFromPandasColumnConverter(String pythonModule, String pythonClassName, String valueTypeName);
+
+    // TODO default necessary?
+    void registerJavaPortType(String name, String javaClassName, String pythonModule, String pythonObjectClassName, String pythonSpecClassName);
 }

@@ -378,11 +378,20 @@ class _PortTypeRegistry:
     # One global dictionary for all connections
     _connection_port_data = {}
 
-    def __init__(self, extension_id: str) -> None:
-        self._extension_id = extension_id
+    def __init__(self) -> None:
+        self._extension_id = None
         self._port_types_by_object_class = {}
         self._port_types_by_spec_class = {}
         self._port_types_by_id = {}
+
+    @property
+    def extension_id(self):
+        return self._extension_id
+
+    @extension_id.setter
+    def extension_id(self, extension_id: str):
+        # TODO assert that no extension id is set?
+        self._extension_id = extension_id
 
     def register_port_type(
         self,
@@ -400,7 +409,8 @@ class _PortTypeRegistry:
                 f"There is already a port type with the provided spec class '{spec_class}' registered."
             )
         if id is None:
-            id = f"{self._extension_id}.{object_class.__module__}.{object_class.__qualname__}"
+            assert self.extension_id, "No extension is loaded."
+            id = f"{self.extension_id}.{object_class.__module__}.{object_class.__qualname__}"
 
         if id in self._port_types_by_id:
             raise ValueError(
@@ -1157,8 +1167,35 @@ class _KnimeNodeBackend(kg.EntryPoint, kn._KnimeNodeBackend):
     def __init__(self) -> None:
         super().__init__()
         self._main_loop = MainLoop()
-        self._port_type_registry = None
+        self._port_type_registry = _PortTypeRegistry()
         kn._backend = self
+
+    def registerJavaPortType(
+        self,
+        name: str,
+        java_class_name: str,
+        python_module: str,
+        python_obj_class_name: str,
+        python_spec_class_name: str,
+    ):
+        # TODO load python type from python_module and python_class_name
+        # call register_port_type and str
+        try:
+            python_module = importlib.import_module(python_module)
+            python_obj_class = getattr(python_module, python_obj_class_name)
+            python_spec_class = getattr(python_module, python_spec_class_name)
+            self.register_port_type(
+                name=name,
+                object_class=python_obj_class,
+                spec_class=python_spec_class,
+                id=java_class_name,
+            )
+        except Exception:
+            # TODO make sure the error is properly formatted
+            error = traceback.format_exc(limit=1, chain=True)
+            raise RuntimeError(
+                f"Failed to register port type {name} from {python_module} with error: {error}"
+            )
 
     def register_port_type(
         self,
@@ -1167,7 +1204,6 @@ class _KnimeNodeBackend(kg.EntryPoint, kn._KnimeNodeBackend):
         spec_class: Type[kn.PortObjectSpec],
         id: Optional[str] = None,
     ):
-        assert self._port_type_registry is not None, "No extension is loaded."
         return self._port_type_registry.register_port_type(
             name, object_class, spec_class, id
         )
@@ -1184,7 +1220,7 @@ class _KnimeNodeBackend(kg.EntryPoint, kn._KnimeNodeBackend):
         self, extension_id: str, extension_module: str, extension_version: str
     ) -> None:
         try:
-            self._port_type_registry = _PortTypeRegistry(extension_id)
+            self._port_type_registry.extension_id = extension_id
             # load the extension, so that it registers its nodes, categories and port types
             importlib.import_module(extension_module)
             kp.set_extension_version(extension_version)

@@ -248,6 +248,16 @@ class EntryPoint:
             python_class_name,
         )
 
+    def registerJavaPortType(
+        self,
+        name: str,
+        java_class_name: str,
+        python_module: str,
+        python_obj_class_name: str,
+        python_spec_class_name: str,
+    ):
+        pass
+
     class Java:
         implements = ["org.knime.python3.PythonEntryPoint"]
 
