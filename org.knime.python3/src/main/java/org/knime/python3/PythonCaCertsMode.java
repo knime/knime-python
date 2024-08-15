@@ -70,12 +70,12 @@ import org.knime.core.node.NodeLogger;
 import org.knime.core.util.PathUtils;
 
 /**
- * Controls where the CAs that Python trusts when using SSL. The mode can be set via the system property
- * {@code knime.python.cacerts} which can be set to either {@link PythonCaCertsMode#ENV} to trust the CAs of the Python
- * environment or {@link PythonCaCertsMode#AP} to trust the CAs that the AP trusts.
- * The property match is done case-insensitive and defaults to ENV, also if the property isn't set at all.
+ * Controls how the the CAs that Python trusts when using SSL are determined. The mode can be set via the system
+ * property {@code knime.python.cacerts} which can be set to either {@link PythonCaCertsMode#ENV} to trust the CAs of
+ * the Python environment or {@link PythonCaCertsMode#AP} to trust the CAs that the AP trusts. The property match is
+ * done case-insensitive and defaults to ENV, also if the property isn't set at all.
  *
- * @author adrian.nembach
+ * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
 @SuppressWarnings("javadoc")
 enum PythonCaCertsMode {
@@ -86,7 +86,7 @@ enum PythonCaCertsMode {
             // leave as is
         }),
         /**
-         * Trust the CAs that the AP trusts. Creates a file .crt file with the CAs that Java trusts and points the
+         * Trust the CAs that the AP trusts. Creates a .crt file with the CAs that Java trusts and points the
          * following environment variables to it:
          * <ul>
          * <li>{@code REQUESTS_CA_BUNDLE}: Respected by requests, httpx and packages that use them.
@@ -155,7 +155,7 @@ enum PythonCaCertsMode {
                 var tempCertFile = PathUtils.createTempFile("all_certs", ".crt");
                 writeCertificatesToFile(trustManager.getAcceptedIssuers(), tempCertFile);
                 return tempCertFile;
-            } catch (Throwable e) {
+            } catch (Throwable e) {// NOSONAR here we want to catch all Throwables including Errors
                 LOGGER.error("Failed to create the CA file for Python.", e);
                 return null;
             }
