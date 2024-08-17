@@ -1796,6 +1796,10 @@ class MultiColumnParameter(_BaseColumnParameter):
             value = [c for c in value if c != ""]
         return super()._inject(obj, value, name, version, exclude_validations)
 
+    def _get_default(self, version: Version = None):
+        default_value = []
+        return default_value
+
 
 def _pick_spec(specs: List[ks.PortObjectSpec], port_index: Union[int, Tuple[int, int]]):
     try:
@@ -3071,7 +3075,7 @@ class ParameterArray(_BaseParameter):
             param_schema = param_obj._extract_schema(
                 extension_version, dialog_creation_context
             )
-            param_schema["default"] = param_obj._get_default()
+            param_schema["default"] = param_obj._to_dict(param_obj._get_default())
             item_properties[name] = param_schema
 
         schema["type"] = "array"
@@ -3132,8 +3136,8 @@ class ParameterArray(_BaseParameter):
         if value is None:
             value = [{}]
             for param_name, param_obj in _get_parameters(param_holder).items():
-                def_val = param_obj._get_value(obj, param_name)
-                value[0][param_name] = def_val
+                default_val = param_obj._to_dict(param_obj._get_default())
+                value[0][param_name] = default_val
         return super()._inject(obj, value, name, version, exclude_validations)
 
 
