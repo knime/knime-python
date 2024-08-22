@@ -51,7 +51,7 @@ Provides base implementations and utilities for the development of KNIME nodes i
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, asdict
 from enum import Enum
-from typing import Any, Dict, List, Optional, Callable, Tuple, Type, Union
+from typing import Any, Dict, List, Optional, Callable, Tuple, Type, TypeVar, Union
 import os.path
 
 import knime.extension.parameter as kp
@@ -200,12 +200,35 @@ def save_port_object(port_object: PortObject, file_path: str) -> None:
             f.write(port_object.serialize())
 
 
+class JavaPortObjectConverter(ABC):
+    # TODO port is only used by the old binary objects and for assertions
+    def obj_to_python(self, obj, port, **kwargs) -> Any:
+        pass
+
+    # TODO port is only used for assertions
+    def spec_to_python(self, spec, port, **kwargs) -> PortObjectSpec:
+        pass
+
+    def obj_from_python(self, obj, port, **kwargs):
+        pass
+
+    def spec_from_python(self, spec, port, **kwargs):
+        pass
+
+
+def port_object_to_python_converter(java_class_name: str):
+    def register(fn):
+        # TODO register in registry
+        return fn
+
+
 @dataclass
 class PortType:
     id: str
     name: str
     object_class: type
     spec_class: type
+    java_class_name: str
 
     def is_super_type_of(self, port_type: "PortType") -> bool:
         """

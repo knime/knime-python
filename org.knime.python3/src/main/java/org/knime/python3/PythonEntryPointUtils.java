@@ -48,12 +48,14 @@
  */
 package org.knime.python3;
 
-import java.util.List;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.List;
 
 import org.knime.python3.types.PythonValueFactoryModule;
 import org.knime.python3.types.PythonValueFactoryRegistry;
+import org.knime.python3.types.port.PythonPortType;
+import org.knime.python3.types.port.PythonPortTypeRegistry;
 
 import py4j.Py4JException;
 
@@ -104,6 +106,23 @@ public final class PythonEntryPointUtils {
         }
 
         registerColumnConverters(entryPoint, modules);
+    }
+
+    public static void registerPortTypes(final PythonEntryPoint entryPoint) {
+        var portTypes = PythonPortTypeRegistry.getPortTypes();
+        portTypes.forEach(p -> registerPortType(p, entryPoint));
+    }
+
+    private static void registerPortType(final PythonPortType pythonPortType, final PythonEntryPoint entryPoint) {
+        var portType = pythonPortType.getPortType();
+        // TODO or should it be the canonicalName?
+        var javaClassName = portType.getPortObjectClass().getName();
+        var name = portType.getName();
+        var pythonModule = pythonPortType.getModuleName();
+        var pythonObjClass = pythonPortType.getPythonObjClass();
+        var pythonSpecClass = pythonPortType.getPythonSpecClass();
+
+        entryPoint.registerJavaPortType(name, javaClassName, pythonModule, pythonObjClass, pythonSpecClass);
     }
 
     private static void registerColumnConverters(final PythonEntryPoint entryPoint,

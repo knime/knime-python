@@ -48,7 +48,7 @@ Backend for KNIME nodes written in Python. Handles the communication with Java.
 @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
 """
 
-from typing import Any, Dict, List, Optional, Type, Union, Callable
+from typing import Any, Dict, List, Optional, Type, Union, Callable, TypeVar
 
 from knime._backend._mainloop import MainLoop
 
@@ -176,8 +176,7 @@ class _PythonBinaryPortObject:
 
 
 class _PythonConnectionPortObject:
-    def __init__(self, java_class_name, spec):
-        self._java_class_name = java_class_name
+    def __init__(self, spec):
         self._spec = spec
 
     def getPid(self) -> int:  # NOSONAR - Java naming conventions
@@ -187,7 +186,7 @@ class _PythonConnectionPortObject:
         return os.getpid()
 
     def getJavaClassName(self) -> str:  # NOSONAR - Java naming conventions
-        return self._java_class_name
+        return "org.knime.python3.nodes.ports.PythonTransientConnectionPortObject"
 
     def getSpec(self) -> _PythonPortObjectSpec:  # NOSONAR - Java naming conventions
         return self._spec
@@ -202,26 +201,14 @@ class _PythonConnectionPortObject:
         ]
 
 
-class _PythonImagePortObject:
-    def __init__(self, java_class_name, data):
-        import base64
+class _RawPortObject(kn.PortObject):
+    """Port objects that users don't create directly but that are created from objects returned by the user.
+    Not meant for extensions."""
 
-        if isinstance(data, str):  # string potentially representing an SVG image
-            data = data.encode("utf-8")
-
-        self._java_class_name = java_class_name
-        self._img_bytes = base64.b64encode(data).decode("utf-8")
-
-    def getJavaClassName(self) -> str:  # NOSONAR
-        return self._java_class_name
-
-    def getImageBytes(self) -> str:  # NOSONAR
-        return self._img_bytes
-
-    class Java:
-        implements = [
-            "org.knime.python3.nodes.ports.PythonPortObjects$PurePythonImagePortObject"
-        ]
+    # TODO abstract?
+    @classmethod
+    def from_raw_obj(self, obj) -> "_RawPortObject":
+        pass
 
 
 class _WorkflowExecutionWarningConsumer:
@@ -342,15 +329,6 @@ class _PythonCredentialPortObject:
         return f"PythonCredentialPortObject[spec={self._spec.serialize()}]"
 
 
-class _PythonHubAuthenticationPortObject(_PythonCredentialPortObject):
-    def __init__(self, spec: ks.HubAuthenticationPortObjectSpec):
-        super().__init__(spec)
-
-    @property
-    def spec(self) -> ks.HubAuthenticationPortObjectSpec:
-        return self._spec
-
-
 class _FlowVariablesDict(collections.UserDict):
     def __init__(self):
         super().__init__({})
@@ -383,6 +361,12 @@ class _PortTypeRegistry:
         self._port_types_by_object_class = {}
         self._port_types_by_spec_class = {}
         self._port_types_by_id = {}
+        # TODO use type aliases to make clear that this maps from java class names to converters
+        self._knime_to_py_spec_converter: Dict[str, kn.JavaPortObjectConverter] = {}
+        self._knime_to_py_obj_converter: Dict[str, kn.JavaPortObjectConverter] = {}
+        # TODO use type aliases to make clear that this maps from types extending spec/obj classes to converters
+        self._py_to_knime_spec_converter: Dict[type, kn.JavaPortObjectConverter] = {}
+        self._py_to_knime_obj_converter: Dict[type, kn.JavaPortObjectConverter] = {}
 
     @property
     def extension_id(self):
@@ -399,6 +383,8 @@ class _PortTypeRegistry:
         object_class: Type[kn.PortObject],
         spec_class: Type[kn.PortObjectSpec],
         id: Optional[str] = None,
+        # TODO in case of a java port type, id and java_class_name are the same
+        java_class_name: Optional[str] = None,
     ) -> kn.PortType:
         if object_class in self._port_types_by_object_class:
             raise ValueError(
@@ -417,7 +403,16 @@ class _PortTypeRegistry:
                 f"There is already a port type with the provided id '{id}' registered."
             )
 
-        port_type = kn.PortType(id, name, object_class, spec_class)
+        # the java_class_name is only given for port objects coming from the java side
+        if java_class_name is None:
+            if issubclass(object_class, kn.ConnectionPortObject):
+                java_class_name = "org.knime.python3.nodes.ports.PythonTransientConnectionPortObjectSpec"
+            else:
+                java_class_name = (
+                    "org.knime.python3.nodes.ports.PythonBinaryBlobPortObjectSpec"
+                )
+
+        port_type = kn.PortType(id, name, object_class, spec_class, java_class_name)
 
         self._port_types_by_object_class[object_class] = port_type
         self._port_types_by_spec_class[spec_class] = port_type
@@ -436,65 +431,61 @@ class _PortTypeRegistry:
             return self._port_types_by_id[id]
         raise KeyError(f"No PortType for id '{id}' registered.")
 
-    def spec_to_python(self, spec: _PythonPortObjectSpec, port: kn.Port, java_callback):
+    def spec_to_python(
+        self, spec: Optional[_PythonPortObjectSpec], port: kn.Port, java_callback
+    ):
         if spec is None:
-            return None
+            return
         class_name = spec.getJavaClassName()
-        data = json.loads(spec.toJsonString())
 
-        def deserialize_custom_spec() -> kn.PortObjectSpec:
-            incoming_port_type = self._extract_port_type_from_spec_data(data, port)
-            spec_data = data["data"]
-            try:
-                return incoming_port_type.spec_class.deserialize(
-                    spec_data, java_callback
-                )
-            except TypeError:
-                # Many existing spec classes don't accept a java_callback argument
-                return incoming_port_type.spec_class.deserialize(spec_data)
+        converter = self._knime_to_py_spec_converter.get(class_name)
+
+        if converter is None:
+            raise ValueError(f"No converter registered for {class_name}.")
+
+        # TODO assert compatibility of converted type
+        # return converter.spec_to_python(spec, port, java_callback)
+
+        data = json.loads(spec.toJsonString())
 
         if class_name == "org.knime.core.data.DataTableSpec":
             assert port.type == kn.PortType.TABLE
             return ks.Schema.deserialize(data)
         elif (
             class_name == "org.knime.python3.nodes.ports.PythonBinaryBlobPortObjectSpec"
-        ):
-            if port.type == kn.PortType.BINARY:
-                bpos = ks.BinaryPortObjectSpec.deserialize(data)
-                assert (
-                    bpos.id == port.id
-                ), f"Expected binary input port ID {port.id} but got {bpos.id}"
-                return bpos
-            else:  # custom spec
-                return deserialize_custom_spec()
+        ) and port.type == kn.PortType.BINARY:
+            bpos = ks.BinaryPortObjectSpec.deserialize(data)
+            assert (
+                bpos.id == port.id
+            ), f"Expected binary input port ID {port.id} but got {bpos.id}"
+            return bpos
         elif (
             class_name
             == "org.knime.python3.nodes.ports.PythonTransientConnectionPortObjectSpec"
         ):
+            # TODO also capture by default below?
             assert port.type not in [kn.PortType.TABLE, kn.PortType.BINARY]
             assert issubclass(port.type.object_class, kn.ConnectionPortObject)
-            return deserialize_custom_spec()
-        elif port.type == kn.PortType.CREDENTIAL:
-            assert class_name in [
-                "org.knime.credentials.base.CredentialPortObjectSpec",
-                "org.knime.workflowservices.connection.AbstractHubAuthenticationPortObjectSpec",
-            ]
-            return ks.CredentialPortObjectSpec.deserialize(data, java_callback)
-        elif port.type == kn.PortType.HUB_AUTHENTICATION:
-            assert (
-                class_name
-                == "org.knime.workflowservices.connection.AbstractHubAuthenticationPortObjectSpec"
-            ), "Expected Hub Authentication."
-            return ks.HubAuthenticationPortObjectSpec.deserialize(data, java_callback)
-        elif (
-            class_name == "org.knime.core.node.workflow.capture.WorkflowPortObjectSpec"
-        ):
+            return self.deserialize_custom_spec(data, port, java_callback)
+
+        return self.deserialize_custom_spec(data, port, java_callback)
+
+        if class_name == "org.knime.core.node.workflow.capture.WorkflowPortObjectSpec":
             assert (
                 port.type == kn.PortType.WORKFLOW
             ), f"Expected a {port.type} but got a Workflow instead."
             return ks.WorkflowPortObjectSpec.deserialize(data)
 
         raise TypeError("Unsupported PortObjectSpec found in Python, got " + class_name)
+
+    def _deserialize_custom_spec(self, data, port, java_callback):
+        incoming_port_type = self._extract_port_type_from_spec_data(data, port)
+        spec_data = data["data"]
+        try:
+            return incoming_port_type.spec_class.deserialize(spec_data, java_callback)
+        except TypeError:
+            # Many existing spec classes don't accept a java_callback argument
+            return incoming_port_type.spec_class.deserialize(spec_data)
 
     def _extract_port_type_from_spec_data(
         self, data, expected_port: kn.Port
@@ -516,9 +507,20 @@ class _PortTypeRegistry:
             )
         return incoming_port_type
 
+    def _spec_converter_for(self, spec_type: Type[ks.PortObjectSpec]):
+        # TODO both ks.Schema and ks.Column are allowed for table ports
+        converter = self._py_to_knime_spec_converter.get(spec_type)
+        # TODO do we need to consider some special types here?
+        if converter is None:
+            raise ValueError(f"No converter registered for {type(spec_type)}.")
+        return self._py_to_knime_spec_converter.get(spec_type)
+
     def spec_from_python(
-        self, spec, port: kn.Port, node_id: str, port_idx: int
+        self, spec: ks.PortObjectSpec, port: kn.Port, node_id: str, port_idx: int
     ) -> _PythonPortObjectSpec:
+        converter = self._spec_converter_for(type(spec))
+        # return converter.spec_from_pyton(spec, port, node_id, port_idx)
+
         if port.type == kn.PortType.TABLE:
             if isinstance(spec, ks.Column):
                 spec = ks.Schema.from_columns(spec)
@@ -533,23 +535,11 @@ class _PortTypeRegistry:
 
             data = spec.serialize()
             class_name = "org.knime.python3.nodes.ports.PythonBinaryBlobPortObjectSpec"
-        elif port.type == kn.PortType.IMAGE:
-            assert isinstance(spec, ks.ImagePortObjectSpec)
-            assert any(
-                spec.format == option.value for option in kn.ImageFormat
-            ), f"Expected image formats are: {kn.ImageFormat.available_options()}."
-
-            data = spec.serialize()
-            class_name = "org.knime.core.node.port.image.ImagePortObjectSpec"
-        elif port.type == kn.PortType.CREDENTIAL:
-            assert isinstance(spec, ks.CredentialPortObjectSpec)
-            data = spec.serialize()
-            class_name = "org.knime.credentials.base.CredentialPortObjectSpec"
         elif port.type == kn.PortType.WORKFLOW:
             raise AssertionError(
                 "WorkflowPortObjectSpecs can't be created in a Python node."
             )
-        else:  # custom spec
+        else:  # java extension point or custom spec
             assert (
                 port.type.id in self._port_types_by_id
             ), f"Invalid output spec, no port type with id '{port.type.id}' registered. Please register the port type."
@@ -561,76 +551,91 @@ class _PortTypeRegistry:
             if issubclass(port.type.object_class, kn.ConnectionPortObject):
                 data["node_id"] = node_id
                 data["port_idx"] = port_idx
-                class_name = "org.knime.python3.nodes.ports.PythonTransientConnectionPortObjectSpec"
-            else:
-                class_name = (
-                    "org.knime.python3.nodes.ports.PythonBinaryBlobPortObjectSpec"
-                )
 
+            # TODO does the java_class_name come from the port or from the spec?
+            class_name = port.type.java_class_name
         return _PythonPortObjectSpec(class_name, data)
 
     def port_object_to_python(
         self, port_object: _PythonPortObject, port: kn.Port, java_callback
     ):
         class_name = port_object.getJavaClassName()
+        converter = self._knime_to_py_obj_converter.get(class_name)
 
-        def read_port_object_data() -> Union[Any, kn.PortObject]:
-            file = port_object.getFilePath()
-            with open(file, "rb") as f:
-                return f.read()
+        if converter is None:
+            raise ValueError(f"No converter registered for {class_name}.")
+
+        # return converter.obj_to_python(port_object, port, java_callback)
+
+        special_port_object = self._special_port_object_to_python(
+            port_object, port, java_callback
+        )
+        if special_port_object:
+            return special_port_object
+
+        java_spec = port_object.getSpec()
+        spec = self.spec_to_python(java_spec, port, java_callback)
+
+        incoming_port_type = self._extract_port_type_from_spec_data(
+            json.loads(java_spec.toJsonString()), port
+        )
+        if issubclass(incoming_port_type.object_class, kn.FilestorePortObject):
+            return incoming_port_type.object_class.read_from(
+                spec, port_object.getFilePath()
+            )
+        data = self._read_port_object_data(port_object)
+        return incoming_port_type.object_class.deserialize(spec, data)
+
+        raise TypeError("Unsupported PortObject found in Python, got " + class_name)
+
+    def _special_port_object_to_python(
+        self, port_object: _PythonPortObject, port: kn.Port, java_callback
+    ):
+        class_name = port_object.getJavaClassName()
 
         if class_name == _bdt_java_type:
             assert port.type == kn.PortType.TABLE
             java_source = port_object.getDataSource()
             return kat.ArrowSourceTable(kg.data_source_mapper(java_source))
-        elif (
+        if (
             class_name
             == "org.knime.python3.nodes.ports.PythonBinaryBlobFileStorePortObject"
-        ):
-            if port.type == kn.PortType.BINARY:
-                return read_port_object_data()
-            else:
-                java_spec = port_object.getSpec()
-                spec = self.spec_to_python(java_spec, port, java_callback)
-                incoming_port_type = self._extract_port_type_from_spec_data(
-                    json.loads(java_spec.toJsonString()), port
-                )
-                if issubclass(incoming_port_type.object_class, kn.FilestorePortObject):
-                    return incoming_port_type.object_class.read_from(
-                        spec, port_object.getFilePath()
-                    )
-                data = read_port_object_data()
-                return incoming_port_type.object_class.deserialize(spec, data)
-        elif (
+        ) and port.type == kn.PortType.BINARY:
+            return self._read_port_object_data(port_object)
+        if (
             class_name
             == "org.knime.python3.nodes.ports.PythonTransientConnectionPortObject"
         ):
-            assert issubclass(
-                port.type.object_class, kn.ConnectionPortObject
-            ), f"unexpected port type {port.type}"
-            spec = self.spec_to_python(port_object.getSpec(), port, java_callback)
-
-            data = json.loads(port_object.getSpec().toJsonString())
-            key = f'{data["node_id"]}:{data["port_idx"]}'
-            if key not in _PortTypeRegistry._connection_port_data:
-                raise KeyError(
-                    f'No connection data found for node {data["node_id"]}, port {data["port_idx"]}. '
-                    + "Please re-execute the upstream node providing the connection."
-                )
-
-            connection_data = _PortTypeRegistry._connection_port_data[key]
-            return port.type.object_class.from_connection_data(spec, connection_data)
-        elif port.type == kn.PortType.CREDENTIAL:
-            spec = self.spec_to_python(port_object.getSpec(), port, java_callback)
-            return _PythonCredentialPortObject(spec)
-        elif port.type == kn.PortType.HUB_AUTHENTICATION:
-            spec = self.spec_to_python(port_object.getSpec(), port, java_callback)
-            return _PythonHubAuthenticationPortObject(spec)
-        elif class_name == "org.knime.core.node.workflow.capture.WorkflowPortObject":
+            return self._connection_to_python(
+                port, port_object.getSpec(), java_callback
+            )
+        if class_name == "org.knime.core.node.workflow.capture.WorkflowPortObject":
             spec = self.spec_to_python(port_object.getSpec(), port, java_callback)
             return _PythonWorkflowPortObject(port_object, spec, self)
 
-        raise TypeError("Unsupported PortObject found in Python, got " + class_name)
+    def _read_port_object_data(self, port_object) -> bytes:
+        file = port_object.getFilePath()
+        with open(file, "rb") as f:
+            return f.read()
+
+    def _connection_to_python(
+        self, port: kn.Port, java_spec, java_callback
+    ) -> kn.ConnectionPortObject:
+        assert issubclass(
+            port.type.object_class, kn.ConnectionPortObject
+        ), f"unexpected port type {port.type}"
+        spec = self.spec_to_python(java_spec, port, java_callback)
+
+        data = json.loads(java_spec.toJsonString())
+        key = f'{data["node_id"]}:{data["port_idx"]}'
+        if key not in _PortTypeRegistry._connection_port_data:
+            raise KeyError(
+                f'No connection data found for node {data["node_id"]}, port {data["port_idx"]}. '
+                + "Please re-execute the upstream node providing the connection."
+            )
+
+        connection_data = _PortTypeRegistry._connection_port_data[key]
+        return port.type.object_class.from_connection_data(spec, connection_data)
 
     def table_from_python(self, obj):  # -> tuple[_PythonTablePortObject, Any]:
         java_data_sink = None
@@ -653,72 +658,91 @@ class _PortTypeRegistry:
     ) -> Union[
         _PythonPortObject,
         _PythonBinaryPortObject,
-        _PythonImagePortObject,
         _PythonCredentialPortObject,
     ]:
+        # TODO ensure that obj is a valid output for the port
+
+        # TODO handle bytes which are used both by binary and image ports
+
+        converter = self._py_to_knime_obj_converter.get(type(obj))
+
+        if converter is None:
+            raise ValueError(f"No converter registered for {type(obj)}.")
+
+        return converter.obj_from_python(
+            obj=obj,
+            port=port,
+            file_creator=file_creator,
+            node_id=node_id,
+            port_idx=port_idx,
+        )
+
+        port_object = self._special_port_object_from_python(
+            obj, file_creator, port, node_id, port_idx
+        )
+        if port_object:
+            return port_object
+
+        if port.type == kn.PortType.CREDENTIAL:
+            return _PythonCredentialPortObject(obj.spec)
+
+        assert (
+            port.type.id in self._port_types_by_id
+        ), f"Invalid output port value, no port type with id '{id}' registered. Please register the port type."
+        assert isinstance(
+            obj, port.type.object_class
+        ), f"Expected output object of type {port.type.object_class}, got object of type {type(obj)}"
+        spec = self.spec_from_python(obj.spec, port, node_id, port_idx)
+
+        if issubclass(port.type.object_class, kn.ConnectionPortObject):
+            # We store the port object data in a global dict referenced by nodeID and portIdx
+            key = f"{node_id}:{port_idx}"
+            _PortTypeRegistry._connection_port_data[key] = obj.to_connection_data()
+            return _PythonConnectionPortObject(spec)
+        else:
+            class_name = (
+                "org.knime.python3.nodes.ports.PythonBinaryBlobFileStorePortObject"
+            )
+
+            if issubclass(port.type.object_class, kn.FilestorePortObject):
+                filestore = file_creator()
+                file_path = filestore.get_file_path()
+                obj.write_to(file_path)
+                return _PythonBinaryPortObject(class_name, filestore, spec)
+            else:
+                serialized = obj.serialize()
+                return _PythonBinaryPortObject.from_bytes(
+                    class_name, file_creator(), serialized, spec
+                )
+
+    def _special_port_object_from_python(
+        self, obj, file_creator, port: kn.Port, node_id: str, port_idx: int
+    ):
         if port.type == kn.PortType.TABLE:
             if not isinstance(obj, (kat.ArrowTable, kat.ArrowBatchOutputTable)):
                 raise TypeError(
                     f"Object for port {port} should be of type Table or BatchOutputTable, but got {type(obj)}"
                 )
             return self.table_from_python(obj)[0]
-        elif port.type == kn.PortType.BINARY:
-            if not isinstance(obj, bytes):
-                tb = None
-                raise TypeError(
-                    f"Binary Port can only process objects of type bytes, not {type(obj)}"
-                ).with_traceback(tb)
-
-            class_name = (
-                "org.knime.python3.nodes.ports.PythonBinaryBlobFileStorePortObject"
-            )
-            spec = _PythonPortObjectSpec(
-                "org.knime.python3.nodes.ports.PythonBinaryBlobPortObjectSpec",
-                {"id": port.id},
-            )
-            return _PythonBinaryPortObject.from_bytes(
-                class_name, file_creator(), obj, spec
-            )
-        elif port.type == kn.PortType.IMAGE:
-            class_name = "org.knime.core.node.port.image.ImagePortObject"
-            return _PythonImagePortObject(class_name, obj)
-        elif port.type == kn.PortType.CREDENTIAL:
-            return _PythonCredentialPortObject(obj.spec)
-        elif port.type == kn.PortType.WORKFLOW:
+        if port.type == kn.PortType.BINARY:
+            return self._binary_from_python(obj, file_creator, port)
+        if port.type == kn.PortType.WORKFLOW:
             raise AssertionError("WorkflowPortObjects can't be created in Python.")
-        else:
-            assert (
-                port.type.id in self._port_types_by_id
-            ), f"Invalid output port value, no port type with id '{id}' registered. Please register the port type."
-            assert isinstance(
-                obj, port.type.object_class
-            ), f"Expected output object of type {port.type.object_class}, got object of type {type(obj)}"
-            spec = self.spec_from_python(obj.spec, port, node_id, port_idx)
 
-            if issubclass(port.type.object_class, kn.ConnectionPortObject):
-                class_name = (
-                    "org.knime.python3.nodes.ports.PythonTransientConnectionPortObject"
-                )
+    def _binary_from_python(self, obj, file_creator, port: kn.Port):
+        if not isinstance(obj, bytes):
+            tb = None
+            raise TypeError(
+                f"Binary Port can only process objects of type bytes, not {type(obj)}"
+            ).with_traceback(tb)
 
-                # We store the port object data in a global dict referenced by nodeID and portIdx
-                key = f"{node_id}:{port_idx}"
-                _PortTypeRegistry._connection_port_data[key] = obj.to_connection_data()
-                return _PythonConnectionPortObject(class_name, spec)
-            else:
-                class_name = (
-                    "org.knime.python3.nodes.ports.PythonBinaryBlobFileStorePortObject"
-                )
+        class_name = "org.knime.python3.nodes.ports.PythonBinaryBlobFileStorePortObject"
+        spec = _PythonPortObjectSpec(
+            "org.knime.python3.nodes.ports.PythonBinaryBlobPortObjectSpec",
+            {"id": port.id},
+        )
 
-                if issubclass(port.type.object_class, kn.FilestorePortObject):
-                    filestore = file_creator()
-                    file_path = filestore.get_file_path()
-                    obj.write_to(file_path)
-                    return _PythonBinaryPortObject(class_name, filestore, spec)
-                else:
-                    serialized = obj.serialize()
-                    return _PythonBinaryPortObject.from_bytes(
-                        class_name, file_creator(), serialized, spec
-                    )
+        return _PythonBinaryPortObject.from_bytes(class_name, file_creator(), obj, spec)
 
 
 def _get_port_indices(
