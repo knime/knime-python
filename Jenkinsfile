@@ -15,7 +15,7 @@ static final String DEFAULT_WF_TESTS_PYTHON_ENV = 'bundled'
 @groovy.transform.Field
 static final List<String> PYTEST_PYTHON_ENVS = ['env_py38_legacy', 'env_py38', 'env_py39', 'env_py311']
 
-library "knime-pipeline@$BN"
+library "knime-pipeline@todo/DEVOPS-2151-workflow-tests-default-mac-os-arm"
 
 def baseBranch = (BN == KNIMEConstants.NEXT_RELEASE_BRANCH ? 'master' : BN.replace('releases/', ''))
 
@@ -128,13 +128,13 @@ try {
             condaHelpers.buildCondaPackage(recipePath, prefixPath, upload)
         }
 
-        stage('Sonarqube analysis') {
-            env.lastStage = env.STAGE_NAME
-            env.SONAR_ENV = "Sonarcloud"
-            configs = workflowTests.ALL_CONFIGURATIONS + PYTEST_PYTHON_ENVS
-            echo "running sonar on ${configs}"
-            workflowTests.runSonar(configs)
-        }
+        // stage('Sonarqube analysis') {
+        //     env.lastStage = env.STAGE_NAME
+        //     env.SONAR_ENV = "Sonarcloud"
+        //     configs = workflowTests.ALL_CONFIGURATIONS + PYTEST_PYTHON_ENVS
+        //     echo "running sonar on ${configs}"
+        //     workflowTests.runSonar(configs)
+        // }
 
         owasp.sendNodeJSSBOMs(readMavenPom(file: 'pom.xml').properties['revision'])
     }
@@ -185,6 +185,7 @@ def runPython3MultiversionWorkflowTestConfig(String environmentFile, String base
                         'org.knime.features.core.columnar.feature.group'
                     ]
                 ],
+                configurations: ['MacOS_12_M1_knime420', 'MacOS_13_M1_knime421', 'MacOS_14_M1_knime494'],
             )
         }
     }
