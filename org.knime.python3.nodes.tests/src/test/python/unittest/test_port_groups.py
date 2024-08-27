@@ -1,6 +1,9 @@
+from typing import Optional
 import unittest
+import pandas as pd
 import pytest
 import knime.extension.nodes as kn
+import knime.api.schema as ks
 import _node_backend_launcher as knb
 
 
@@ -114,3 +117,59 @@ class TestPortIndices(unittest.TestCase):
             expected_indices,
             "Non-existent port group should return an empty list of indices",
         )
+
+
+class TestOptionalPorts(unittest.TestCase):
+    @kn.node("Test node", kn.NodeType.OTHER, "", "")
+    @kn.input_table("Input table", "The non-optional input table.")
+    @kn.input_table("Optional input table", "The optional input table.", optional=True)
+    @kn.output_table("Output table", "The output table.")
+    class NodeWithOptionalInputPort:
+        def configure(
+            self, ctx, input_port: ks.Schema, optional_port: Optional[ks.Schema]
+        ) -> ks.Schema:
+            columns = [c for c in input_port]
+            if optional_port:
+                columns += [c for c in optional_port]
+            return ks.Schema.from_columns(columns)
+
+        def execute(
+            self, ctx, input_table: kn.Table, optional_table: Optional[kn.Table]
+        ) -> kn.Table:
+            df = input_table.to_pandas()
+            if optional_table:
+                df = pd.concat([df, optional_table.to_pandas()])
+            return kn.Table.from_pandas(df)
+
+    def test_port_configuration(self):
+        node = TestOptionalPorts.NodeWithOptionalInputPort()
+        self.assertEqual(len(node.input_ports), 2, "There should be two input ports.")
+        self.assertEqual(
+            len(node.output_ports), 1, "There should be only one output table."
+        )
+        first_input = node.input_ports[0]
+        self.assertEqual(
+            first_input.name, "Input table", "First input should be name 'Input table'"
+        )
+        self.assertEqual(first_input.optional, False, "The first input is not optional")
+        second_input = node.input_ports[1]
+        self.assertEqual(
+            second_input.name,
+            "Optional input table",
+            "The second input table should be named 'Optional input table'.",
+        )
+        self.assertEqual(second_input.optional, True, "The second input is optional")
+
+        output = node.output_ports[0]
+        self.assertEqual(
+            output.name,
+            "Output table",
+            "The output table should be named 'Output table'.",
+        )
+        self.assertEqual(
+            output.optional,
+            False,
+            "The output table is not optional (and optional outputs aren't supported yet).",
+        )
+
+    # TODO add tests for spec and port object handling

@@ -223,7 +223,7 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
             consumeIfPresent(options, o -> builder.withOption(o.name, o.description));
 
             consumeIfPresent(input_port_specifier, port -> {
-                if (port.group) {
+                if (port.group || port.optional) {
                     builder.withDynamicInputPorts(port.name, port.description, port.description_index,
                         port.type_string);
                 } else {
@@ -279,8 +279,10 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
 
         protected int description_index;
 
+        protected boolean optional;
+
         PortSpecifier toPortSpecifier() {
-            return new PortSpecifier(name, type_string, description, group, defaults, description_index);
+            return new PortSpecifier(name, type_string, description, group, defaults, description_index, optional);
         }
     }
 

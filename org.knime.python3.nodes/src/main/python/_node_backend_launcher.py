@@ -733,6 +733,10 @@ def _get_port_indices(
         # Easy case as PortGroup Names have to be unique
         return portmap[port.name]
     elif isinstance(port, kn.Port):
+        if (
+            port.optional
+        ):  # optional ports are treated similar to port groups on the java side
+            return portmap.get(port.name, [])
 
         def extract_number(key):
             match = re.search(r"# (\d+)$", key)
@@ -816,11 +820,19 @@ class _PythonNodeProxy:
         inputs = self._map_ports(
             portmap, specs, self._port_type_registry.spec_to_python
         )
+
         # unpacks inputs that come from a Port not a PortGroup
-        return [
-            i[0] if isinstance(port, kn.Port) else i
-            for i, port in zip(inputs, self._node.input_ports)
-        ]
+        return self._unpack_non_port_groups(inputs)
+
+    def _unpack_non_port_groups(self, inputs: List[List]):
+        def unpack(inputs: List, port: Union[kn.Port, kn.PortGroup]):
+            if isinstance(port, kn.PortGroup):
+                return inputs
+            if port.optional and len(inputs) == 0:
+                return None
+            return inputs[0]
+
+        return [unpack(i, port) for i, port in zip(inputs, self._node.input_ports)]
 
     def _map_ports(
         self,
@@ -895,29 +907,29 @@ class _PythonNodeProxy:
     def initializeJavaCallback(self, java_callback: JavaClass) -> None:
         self._java_callback = java_callback
 
+    def _port_objs_to_python(
+        self, port_map: Dict[str, List[int]], input_objects: List[_PythonPortObject]
+    ):
+        inputs = self._map_ports(
+            port_map, input_objects, self._port_type_registry.port_object_to_python
+        )
+
+        # inject preferred_value_types as these are not part of a column's metadata
+        for table_list in inputs:
+            for table in [i for i in table_list if isinstance(i, kat.ArrowSourceTable)]:
+                table._inject_metadata(
+                    self._java_callback.get_preferred_value_types_as_json
+                )
+        # unpacks inputs that come from a Port not a PortGroup
+        return self._unpack_non_port_groups(inputs)
+
     def execute(
         self, input_objects: List[_PythonPortObject], java_exec_context
     ) -> List[_PythonPortObject]:
         _push_log_callback(lambda msg, sev: self._java_callback.log(msg, sev))
         try:
             port_map = java_exec_context.get_input_port_map()
-            inputs = self._map_ports(
-                port_map, input_objects, self._port_type_registry.port_object_to_python
-            )
-
-            # inject preferred_value_types as these are not part of a column's metadata
-            for table_list in inputs:
-                for table in [
-                    i for i in table_list if isinstance(i, kat.ArrowSourceTable)
-                ]:
-                    table._inject_metadata(
-                        self._java_callback.get_preferred_value_types_as_json
-                    )
-            # unpacks inputs that come from a Port not a PortGroup
-            inputs = [
-                i[0] if isinstance(port, kn.Port) else i
-                for i, port in zip(inputs, self._node.input_ports)
-            ]
+            inputs = self._port_objs_to_python(port_map, input_objects)
 
             # prepare output table creation
             def create_python_sink():
