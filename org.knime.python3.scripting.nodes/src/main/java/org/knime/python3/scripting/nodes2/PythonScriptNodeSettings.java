@@ -59,6 +59,8 @@ import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.webui.node.dialog.NodeAndVariableSettingsRO;
 import org.knime.core.webui.node.dialog.NodeAndVariableSettingsWO;
 import org.knime.core.webui.node.dialog.SettingsType;
+import org.knime.core.webui.node.dialog.VariableSettingsRO;
+import org.knime.core.webui.node.dialog.VariableSettingsWO;
 import org.knime.scripting.editor.GenericSettingsIOManager;
 import org.knime.scripting.editor.ScriptingNodeSettings;
 
@@ -74,7 +76,8 @@ final class PythonScriptNodeSettings extends ScriptingNodeSettings implements Ge
 
     private static final String JSON_KEY_EXECUTABLE_SELECTION = "executableSelection";
 
-    private static final String JSON_KEY_ARE_SETTINGS_OVERRIDDEN_BY_FLOW_VARIABLES = "settingsAreOverriddenByFlowVariable";
+    private static final String JSON_KEY_ARE_SETTINGS_OVERRIDDEN_BY_FLOW_VARIABLES =
+        "settingsAreOverriddenByFlowVariable";
 
     private static final String JSON_KEY_OVERRIDING_FLOW_VARIABLE = "scriptUsedFlowVariable";
 
@@ -89,6 +92,10 @@ final class PythonScriptNodeSettings extends ScriptingNodeSettings implements Ge
 
         m_executableSelection = EXEC_SELECTION_PREF_ID;
         m_script = PythonScriptNodeDefaultScripts.getDefaultScript(portsConfiguration);
+    }
+
+    public String getScript() {
+        return m_script;
     }
 
     String getExecutableSelection() {
@@ -117,13 +124,17 @@ final class PythonScriptNodeSettings extends ScriptingNodeSettings implements Ge
 
         loadSettingsFrom(nodeSettings);
 
+        Map<String, Object> ret = new HashMap<>(Map.of(CFG_KEY_SCRIPT, m_script));
+
+        // Add the name of the variable that is used to override the executable selection to the map
+        var modelSettings = settings.get(SettingsType.MODEL);
+        if (modelSettings.isVariableSetting(CFG_KEY_EXECUTABLE_SELECTION)) {
+            ret.put(JSON_KEY_EXECUTABLE_SELECTION, modelSettings.getUsedVariable(CFG_KEY_EXECUTABLE_SELECTION));
+        } else {
+            ret.put(JSON_KEY_EXECUTABLE_SELECTION, m_executableSelection);
+        }
+
         // Check if the script is overridden by a flow variable, and if so, pass the var name to the frontend
-
-        Map<String, Object> ret = new HashMap<>(Map.of( //
-            CFG_KEY_SCRIPT, m_script, //
-            JSON_KEY_EXECUTABLE_SELECTION, m_executableSelection //
-        ));
-
         var scriptUsedFlowVariable = getOverridingFlowVariableName(nodeSettings, CFG_KEY_SCRIPT);
         if (scriptUsedFlowVariable.isPresent()) {
             ret.put(JSON_KEY_OVERRIDING_FLOW_VARIABLE, scriptUsedFlowVariable.get());
@@ -137,15 +148,31 @@ final class PythonScriptNodeSettings extends ScriptingNodeSettings implements Ge
 
     @Override
     public void writeMapToNodeSettings(final Map<String, Object> data,
+        final Map<SettingsType, NodeAndVariableSettingsRO> previousSettings,
         final Map<SettingsType, NodeAndVariableSettingsWO> settings) throws InvalidSettingsException {
-
-        m_executableSelection = (String)data.get(JSON_KEY_EXECUTABLE_SELECTION);
+        // NB: We leave m_executableSelection as is, as it is only configurable via flow variables (happening below)
         m_script = (String)data.get(CFG_KEY_SCRIPT);
-
         saveSettingsTo(settings);
+
+        // Copy the variable setting for the script configuration from the previous settings to the new settings
+        copyScriptVariableSetting(previousSettings, settings);
+
+        // Set the flow variable that overrides the executable selection
+        var modelSettings = settings.get(SettingsType.MODEL);
+        modelSettings.addUsedVariable(CFG_KEY_EXECUTABLE_SELECTION, (String)data.get(JSON_KEY_EXECUTABLE_SELECTION));
     }
 
-    public String getScript() {
-        return m_script;
+    /** Copy the variable setting for the script configuration to from the previous settings to the new settings */
+    private void copyScriptVariableSetting(final Map<SettingsType, ? extends VariableSettingsRO> previousSettings,
+        final Map<SettingsType, ? extends VariableSettingsWO> settings) {
+        try {
+            var from = previousSettings.get(m_scriptSettingsType);
+            if (from.isVariableSetting(CFG_KEY_SCRIPT)) {
+                copyVariableSetting(from, settings.get(m_scriptSettingsType), CFG_KEY_SCRIPT);
+            }
+        } catch (InvalidSettingsException e) {
+            // should never happen
+            throw new IllegalStateException(e);
+        }
     }
 }
