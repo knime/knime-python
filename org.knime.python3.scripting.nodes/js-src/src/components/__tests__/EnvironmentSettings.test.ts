@@ -9,7 +9,6 @@ import EnvironmentSettings from "../EnvironmentSettings.vue";
 import { getPythonInitialDataService } from "@/python-initial-data-service";
 import { DEFAULT_INITIAL_DATA } from "@/__mocks__/mock-data";
 import type { ExecutableOption } from "@/types/common";
-import { ref } from "vue";
 
 describe("EnvironmentSettings", () => {
   const executableOptions = executableOptionsMock;
@@ -36,7 +35,6 @@ describe("EnvironmentSettings", () => {
           ...DEFAULT_INITIAL_DATA,
           executableOptionsList: executableOptions as ExecutableOption[],
         }),
-      isInitialDataLoaded: () => ref(true),
     });
 
     setSelectedExecutable({ id: "", isMissing: false });
@@ -107,7 +105,6 @@ describe("EnvironmentSettings", () => {
             ...DEFAULT_INITIAL_DATA,
             executableOptionsList: [],
           }),
-        isInitialDataLoaded: () => ref(true),
       });
 
       const wrapper = await doMount();
@@ -135,7 +132,6 @@ describe("EnvironmentSettings", () => {
               },
             ] as ExecutableOption[],
           }),
-        isInitialDataLoaded: () => ref(true),
       });
 
       const wrapper = await doMount();
@@ -163,7 +159,6 @@ describe("EnvironmentSettings", () => {
               },
             ] as ExecutableOption[],
           }),
-        isInitialDataLoaded: () => ref(true),
       });
 
       const wrapper = await doMount();

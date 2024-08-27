@@ -37,7 +37,6 @@ vi.mock("@knime/scripting-editor", async (importActual) => {
     }),
     getInitialDataService: vi.fn(() => ({
       getInitialData: vi.fn(() => Promise.resolve(DEFAULT_INITIAL_DATA)),
-      isInitialDataLoaded: vi.fn(() => true),
     })),
   };
 });

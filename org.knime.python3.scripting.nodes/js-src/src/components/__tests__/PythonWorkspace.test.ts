@@ -4,7 +4,7 @@ import { vi, afterEach, beforeEach, describe, expect, it } from "vitest";
 import { useSessionStatusStore, useWorkspaceStore } from "@/store";
 import { getScriptingService } from "@knime/scripting-editor";
 import { flushPromises, mount } from "@vue/test-utils";
-import { ref, type Ref } from "vue";
+import { type Ref } from "vue";
 import { Button } from "@knime/components";
 import PythonWorkspace from "../PythonWorkspace.vue";
 import { type ColumnSizes } from "../PythonWorkspaceHeader.vue";
@@ -124,7 +124,6 @@ describe("PythonWorkspace", () => {
           ...DEFAULT_INITIAL_DATA,
           inputsAvailable: false,
         }),
-      isInitialDataLoaded: () => ref(true),
     });
 
     const { wrapper } = await doMount();

@@ -5,7 +5,6 @@ import {
 } from "@/__mocks__/mock-data";
 import { vi } from "vitest";
 import { Consola, LogLevel } from "consola";
-import { ref } from "vue";
 
 export const consola = new Consola({
   level: LogLevel.Log,
@@ -14,14 +13,12 @@ export const consola = new Consola({
 vi.mock("@/python-initial-data-service", () => ({
   getPythonInitialDataService: vi.fn(() => ({
     getInitialData: vi.fn(() => Promise.resolve(DEFAULT_INITIAL_DATA)),
-    isInitialDataLoaded: vi.fn(() => true),
   })),
 }));
 
 vi.mock("@/python-settings-service", () => ({
   getPythonSettingsService: vi.fn(() => ({
     getSettings: vi.fn(() => Promise.resolve(DEFAULT_INITIAL_SETTINGS)),
-    areSettingsLoaded: vi.fn(() => ref(true)),
     registerSettingsGetterForApply: vi.fn(() => Promise.resolve()),
   })),
 }));

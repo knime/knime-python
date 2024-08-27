@@ -2,7 +2,6 @@ import { DEFAULT_INITIAL_DATA } from "@/__mocks__/mock-data";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { consoleHandler } from "@knime/scripting-editor";
 import { getPythonInitialDataService } from "@/python-initial-data-service";
-import { ref } from "vue";
 
 describe("store.ts", () => {
   beforeEach(() => {
@@ -29,7 +28,6 @@ describe("store.ts", () => {
             ...DEFAULT_INITIAL_DATA,
             inputsAvailable: false,
           }),
-        isInitialDataLoaded: () => ref(true),
       });
       const sessionStatus = await importSessionStatusStore();
       expect(sessionStatus.isRunningSupported).toBe(false);
@@ -42,7 +40,6 @@ describe("store.ts", () => {
             ...DEFAULT_INITIAL_DATA,
             inputsAvailable: false,
           }),
-        isInitialDataLoaded: () => ref(true),
       });
 
       const consoleSpy = vi.spyOn(consoleHandler, "writeln");

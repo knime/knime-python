@@ -19,7 +19,7 @@ import {
 } from "@vue/test-utils";
 import { executableOptionsMock } from "../../__mocks__/executable-options";
 import App from "../App.vue";
-import { nextTick, ref } from "vue";
+import { nextTick } from "vue";
 import { pythonScriptingService } from "@/python-scripting-service";
 import type {
   ExecutableOption,
@@ -60,12 +60,10 @@ describe("App.vue", () => {
           executableOptionsList: executableOptions as ExecutableOption[],
           hasPreview: viewAvailable,
         }),
-      isInitialDataLoaded: () => ref(true),
     });
     vi.mocked(getPythonSettingsService).mockReturnValue({
       getSettings: () =>
         Promise.resolve(settings as PythonScriptingNodeSettings),
-      areSettingsLoaded: () => ref(true),
       registerSettingsGetterForApply: () => Promise.resolve(),
     });
     setSelectedExecutable({ id: "", isMissing: false });
