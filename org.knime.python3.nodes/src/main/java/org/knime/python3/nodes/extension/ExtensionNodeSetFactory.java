@@ -312,12 +312,13 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
             for (int i = 0; i < inputPorts.length; i++) {
 
                 PortSpecifier portSpecifier = inputPorts[i];
+                var portType = PythonPortObjects.getPortTypeForIdentifier(portSpecifier.typeString());
                 if (portSpecifier.isGroup()) {
-                    b.addExtendableInputPortGroup(portSpecifier.name(),
-                        PythonPortObjects.getPortTypeForIdentifier(portSpecifier.typeString()));
+                    b.addExtendableInputPortGroup(portSpecifier.name(), portType);
+                } else if (portSpecifier.isOptional()) {
+                    b.addOptionalInputPortGroup(portSpecifier.name(), portType);
                 } else {
-                    b.addFixedInputPortGroup(String.format("Input %s # %d", portSpecifier.name(), i),
-                        PythonPortObjects.getPortTypeForIdentifier(portSpecifier.typeString()));
+                    b.addFixedInputPortGroup(String.format("Input %s # %d", portSpecifier.name(), i), portType);
                 }
             }
 
@@ -373,6 +374,6 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
      * @param descriptionIndex the index where to insert in the description.
      */
     public record PortSpecifier(String name, String typeString, String description, boolean isGroup, int defaults,
-        int descriptionIndex) {
+        int descriptionIndex, boolean isOptional) {
     }
 }

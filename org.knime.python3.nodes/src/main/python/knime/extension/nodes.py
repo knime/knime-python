@@ -350,6 +350,8 @@ class Port:
         The description of the port.
     id : Optional[str], default=None
         The unique identifier for the port. Required for ports of type BINARY or CONNECTION.
+    optional : Optional[bool], default=False
+        Whether the port is optional
 
     Raises
     ------
@@ -364,6 +366,7 @@ class Port:
     id: Optional[str] = (
         None  # can be used by BINARY and CONNECTION ports to only allow linking ports with matching IDs
     )
+    optional: Optional[bool] = False
 
     def __post_init__(self):
         """
@@ -973,9 +976,9 @@ def _port_specifier_list_from_port_list(
         port_specifier_list.append(
             asdict(_PortSpecifier.from_port(port, description_index))
         )
-        # we only increment the description index if the port is a Port object, as PortGroups
-        # are inserted in between two Ports.
-        if isinstance(port, Port):
+        # we only increment the description index if the port is a Port object and non-optional, as PortGroups
+        # and optional ports are inserted in between two Ports.
+        if isinstance(port, Port) and not port.optional:
             description_index += 1
     return port_specifier_list
 
@@ -1296,7 +1299,9 @@ def _get_view(node_factory) -> Optional[ViewDeclaration]:
     return _get_attr_from_instance_or_factory(node_factory, "output_view")
 
 
-def input_binary(name: str, description: str, id: str):
+def input_binary(
+    name: str, description: str, id: str, optional: Optional[bool] = False
+):
     """
     Use this decorator to define a bytes-serialized port object input of a node.
 
@@ -1310,11 +1315,13 @@ def input_binary(name: str, description: str, id: str):
         A unique ID identifying the type of the Port. Only Ports with equal ID can be connected in KNIME.
     """
     return lambda node_factory: _add_port(
-        node_factory, "input_ports", Port(PortType.BINARY, name, description, id)
+        node_factory,
+        "input_ports",
+        Port(PortType.BINARY, name, description, id, optional=optional),
     )
 
 
-def input_table(name: str, description: str):
+def input_table(name: str, description: str, optional: Optional[bool] = False):
     """
     Use this decorator to define an input port of type "Table" of a node.
 
@@ -1324,13 +1331,19 @@ def input_table(name: str, description: str):
             The name of the input port.
         description : str
             A description of the input port.
+        optional: bool
+            Whether the port is optional i.e. can be added by the user
     """
     return lambda node_factory: _add_port(
-        node_factory, "input_ports", Port(PortType.TABLE, name, description)
+        node_factory,
+        "input_ports",
+        Port(PortType.TABLE, name, description, optional=optional),
     )
 
 
-def input_port(name: str, description: str, port_type: PortType):
+def input_port(
+    name: str, description: str, port_type: PortType, optional: Optional[bool] = False
+):
     """
     Use this decorator to add an input port of the provided type to a node.
 
@@ -1342,9 +1355,13 @@ def input_port(name: str, description: str, port_type: PortType):
             A description of the input port.
         port_type : PortType
             The type of the input port.
+        optional: bool
+            Whether the port is optional i.e. can be added by the user
     """
     return lambda node_factory: _add_port(
-        node_factory, "input_ports", Port(port_type, name, description)
+        node_factory,
+        "input_ports",
+        Port(port_type, name, description, optional=optional),
     )
 
 
@@ -1691,6 +1708,8 @@ class _PortSpecifier:
         The description index of the port specifier. Where to insert in the description.
     group : bool = False
         Whether the port is a group or not.
+    optional : bool = False
+        Whether the port is optional or not.
     """
 
     name: str
@@ -1698,15 +1717,19 @@ class _PortSpecifier:
     description: str
     description_index: int
     group: bool = False
+    optional: bool = False
 
     @classmethod
-    def from_port(cls, port: Port, description_index: int) -> "_PortSpecifier":
+    def from_port(
+        cls, port: Union[Port, PortGroup], description_index: int
+    ) -> "_PortSpecifier":
         return cls(
             name=port.name,
             type_string=_port_to_str(port),
             description=port.description,
             description_index=description_index,
             group=isinstance(port, PortGroup),
+            optional=port.optional if isinstance(port, Port) else False,
         )
 
     def __post_init__(self):
