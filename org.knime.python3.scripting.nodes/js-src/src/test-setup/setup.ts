@@ -10,6 +10,19 @@ export const consola = new Consola({
   level: LogLevel.Log,
 });
 
+vi.mock("@knime/ui-extension-service", async () => ({
+  ...(await vi.importActual("@knime/ui-extension-service")),
+  JsonDataService: {
+    getInstance: vi.fn().mockResolvedValue({
+      initialData: vi.fn().mockResolvedValue({
+        settings: DEFAULT_INITIAL_SETTINGS,
+        initialData: DEFAULT_INITIAL_DATA,
+      }),
+    }),
+  },
+  ReportingService: vi.fn(() => ({})),
+}));
+
 vi.mock("@/python-initial-data-service", () => ({
   getPythonInitialDataService: vi.fn(() => ({
     getInitialData: vi.fn(() => Promise.resolve(DEFAULT_INITIAL_DATA)),
