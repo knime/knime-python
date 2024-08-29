@@ -95,7 +95,6 @@ export const DEFAULT_INITIAL_DATA: PythonInitialData = {
     codeAssistantEnabled: true,
     codeAssistantInstalled: true,
     hubId: "my mocked KNIME hub id",
-    loggedIn: true,
   },
   inputsAvailable: true,
   inputPortConfigs: {
