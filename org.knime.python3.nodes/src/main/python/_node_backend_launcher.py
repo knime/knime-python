@@ -791,6 +791,17 @@ def _get_port_indices(
     return []
 
 
+class _JavaConverter:
+    def convert_list(self, list_: List):
+        return ListConverter().convert(list_, kg.client_server._gateway_client)
+
+    def create_linked_hashmap(self):
+        LinkedHashMap = JavaClass(  # NOSONAR Java naming conventions apply.
+            "java.util.LinkedHashMap", kg.client_server._gateway_client
+        )
+        return LinkedHashMap()
+
+
 class _PythonNodeProxy:
     def __init__(
         self,
@@ -798,6 +809,7 @@ class _PythonNodeProxy:
         port_type_registry: _PortTypeRegistry,
         knime_parser,
         extension_version,
+        java_converter: Optional[_JavaConverter] = None,
     ) -> None:
         _check_attr_is_available(node, "input_ports")
         _check_attr_is_available(node, "output_ports")
@@ -807,6 +819,9 @@ class _PythonNodeProxy:
         self._port_type_registry = port_type_registry
         self._knime_parser = knime_parser
         self._extension_version = extension_version
+        if not java_converter:
+            java_converter = _JavaConverter()
+        self._java_converter = java_converter
 
     def getDialogRepresentation(
         self,
@@ -1006,7 +1021,7 @@ class _PythonNodeProxy:
 
             _pop_log_callback()
 
-        return ListConverter().convert(java_outputs, kg.client_server._gateway_client)
+        return self._java_converter.convert_list(java_outputs)
 
     def configure(
         self,
@@ -1035,7 +1050,7 @@ class _PythonNodeProxy:
         java_outputs = self.postprocess_configure_outputs(java_config_context, outputs)
 
         _pop_log_callback()
-        return ListConverter().convert(java_outputs, kg.client_server._gateway_client)
+        return self._java_converter.convert_list(java_outputs)
 
     def postprocess_configure_outputs(
         self, java_config_context: JavaClass, outputs: Optional[List]
@@ -1171,10 +1186,7 @@ class _PythonNodeProxy:
         return flow_variables
 
     def _check_flow_variables(self, flow_variables):
-        LinkedHashMap = JavaClass(  # NOSONAR Java naming conventions apply.
-            "java.util.LinkedHashMap", kg.client_server._gateway_client
-        )
-        java_flow_variables = LinkedHashMap()
+        java_flow_variables = self._java_converter.create_linked_hashmap()
         for key in flow_variables.keys():
             fv = flow_variables[key]
             try:
@@ -1189,11 +1201,7 @@ class _PythonNodeProxy:
 
     def _set_flow_variables(self, flow_variables):
         self._check_flow_variables(flow_variables)
-
-        LinkedHashMap = JavaClass(  # NOSONAR Java naming conventions apply.
-            "java.util.LinkedHashMap", kg.client_server._gateway_client
-        )
-        java_flow_variables = LinkedHashMap()
+        java_flow_variables = self._java_converter.create_linked_hashmap()
         for key in flow_variables.keys():
             flow_variable = flow_variables[key]
             java_flow_variables[key] = flow_variable
