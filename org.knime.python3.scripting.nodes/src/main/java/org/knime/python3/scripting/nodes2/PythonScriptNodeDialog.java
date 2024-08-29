@@ -114,8 +114,13 @@ public final class PythonScriptNodeDialog implements NodeDialog {
         DataSupplier inputObjectSupplier =
             () -> PythonScriptingInputOutputModelUtils.getInputObjects(workflowControl.getInputInfo());
 
-        DataSupplier flowVariableSupplier = () -> PythonScriptingInputOutputModelUtils
-            .getFlowVariableInputs(workflowControl.getFlowObjectStack().getAllAvailableFlowVariables().values());
+        DataSupplier flowVariableSupplier = () -> {
+            var flowObjectStack = workflowControl.getFlowObjectStack();
+            return flowObjectStack == null //
+                ? null //
+                : PythonScriptingInputOutputModelUtils
+                    .getFlowVariableInputs(flowObjectStack.getAllAvailableFlowVariables().values());
+        };
 
         DataSupplier outputObjectSupplier = () -> PythonScriptingInputOutputModelUtils
             .getOutputObjects(workflowControl.getOutputPortTypes(), m_hasView);
