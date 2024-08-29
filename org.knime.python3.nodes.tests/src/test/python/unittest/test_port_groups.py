@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Any, Dict, List, Optional
 import unittest
 import pandas as pd
 import pytest
@@ -141,6 +141,41 @@ class TestOptionalPorts(unittest.TestCase):
                 df = pd.concat([df, optional_table.to_pandas()])
             return kn.Table.from_pandas(df)
 
+    class MockJavaConfigContext:
+        def __init__(self, port_map: Dict[str, List[int]]) -> None:
+            self._port_map = port_map
+
+        def get_input_port_map(self) -> Dict[str, List[int]]:
+            return self._port_map
+
+        def get_node_id(self):
+            return "0:1"
+
+    class MockPortTypeRegistry:
+        def spec_to_python(
+            self, spec: knb._PythonPortObjectSpec, port, java_callback
+        ) -> ks.Schema:
+            return ks.Schema.deserialize(spec.data)
+
+        def spec_from_python(self, spec: ks.Schema, port, node_id, port_idx):
+            return knb._PythonPortObjectSpec(
+                "org.knime.core.data.DataTableSpec", spec.serialize()
+            )
+
+    class MockJavaCallback:
+        def get_flow_variables(self) -> Dict[str, Any]:
+            return {}
+
+        def set_flow_variables(self, flow_variables):
+            pass
+
+    class MockJavaConverter:
+        def convert_list(self, list_):
+            return list_
+
+        def create_linked_hashmap(self):
+            return {}
+
     def test_port_configuration(self):
         node = TestOptionalPorts.NodeWithOptionalInputPort()
         self.assertEqual(len(node.input_ports), 2, "There should be two input ports.")
@@ -172,4 +207,62 @@ class TestOptionalPorts(unittest.TestCase):
             "The output table is not optional (and optional outputs aren't supported yet).",
         )
 
-    # TODO add tests for spec and port object handling
+    def test_configure_optional_present(self):
+        self._test_configure(True)
+
+    def test_configure_optional_absent(self):
+        self._test_configure(False)
+
+    def _setup_python_node_proxy(self):
+        node = TestOptionalPorts.NodeWithOptionalInputPort()
+        port_type_registry = TestOptionalPorts.MockPortTypeRegistry()
+        python_node_proxy = knb._PythonNodeProxy(
+            node=node,
+            port_type_registry=port_type_registry,
+            knime_parser=None,  # not needed for configure
+            extension_version="0.0.1",
+            java_converter=TestOptionalPorts.MockJavaConverter(),
+        )
+        python_node_proxy.initializeJavaCallback(TestOptionalPorts.MockJavaCallback())
+
+        return python_node_proxy
+
+    def _test_configure(self, optional_present: bool):
+        python_node_proxy = self._setup_python_node_proxy()
+        mandatory_schema = ks.Schema([ks.string()], ["Foo"])
+        optional_schema = ks.Schema([ks.string()], ["Bar"])
+        input_specs = [
+            knb._PythonPortObjectSpec(
+                java_class_name="org.knime.core.data.DataTableSpec",
+                data_dict=mandatory_schema.serialize(),
+            ),
+        ]
+        port_map = {"Input Input table # 0": [0]}
+        if optional_present:
+            input_specs.append(
+                knb._PythonPortObjectSpec(
+                    java_class_name="org.knime.core.data.DataTableSpec",
+                    data_dict=optional_schema.serialize(),
+                )
+            )
+            port_map["Optional input table"] = [1]
+
+        java_config_context = TestOptionalPorts.MockJavaConfigContext(port_map)
+        output = python_node_proxy.configure(
+            input_specs=input_specs, java_config_context=java_config_context
+        )[0]
+
+        expected_columns = [ks.Column(ks.string(), "Foo")]
+
+        if optional_present:
+            expected_columns.append(ks.Column(ks.string(), "Bar"))
+
+        expected_schema = ks.Schema.from_columns(expected_columns)
+        self.assertEqual(
+            output.getJavaClassName(),
+            "org.knime.core.data.DataTableSpec",
+            "The should return a table spec.",
+        )
+        self.assertEqual(
+            output.data, expected_schema.serialize(), "Output schema doesn't match."
+        )
