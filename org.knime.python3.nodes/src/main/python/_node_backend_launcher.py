@@ -48,6 +48,7 @@ Backend for KNIME nodes written in Python. Handles the communication with Java.
 @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
 """
 
+from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Type, Union, Callable
 
 from knime._backend._mainloop import MainLoop
@@ -372,6 +373,42 @@ class _FlowVariablesDict(collections.UserDict):
 def _check_attr_is_available(node, attr_name):
     if not hasattr(node, attr_name) or getattr(node, attr_name) is None:
         raise ValueError(f"Attribute {attr_name} is missing in node {node}")
+
+
+class _JavaBaseContext(ABC):
+    def get_credential_names(self) -> List[str]:
+        """Identifiers of the available credentials."""
+
+    def get_credentials(self, identifier: str) -> List[str]:
+        """Returns the string array containing username, password and identifier"""
+
+    @abstractmethod
+    def get_input_port_map(self) -> Dict[str, List[int]]:
+        """The port map defining which input ports of the node are present."""
+
+    @abstractmethod
+    def get_output_port_map(self) -> Dict[str, List[int]]:
+        """The port map defining which output ports of the node are present."""
+
+    class Java:
+        implements = [
+            "org.knime.python3.nodes.proxy.PythonNodeModelProxy$PythonConfigurationContext"
+        ]
+
+
+class _JavaConfigContext(_JavaBaseContext):
+    @abstractmethod
+    def set_warning(self, message: str) -> None:
+        """Sets a warning message on the node."""
+
+    @abstractmethod
+    def get_node_id(self) -> str:
+        """The ID of the node."""
+
+    class Java:
+        implements = [
+            "org.knime.python3.nodes.proxy.PythonNodeModelProxy$PythonConfigurationContext"
+        ]
 
 
 class _PortTypeRegistry:
@@ -972,7 +1009,9 @@ class _PythonNodeProxy:
         return ListConverter().convert(java_outputs, kg.client_server._gateway_client)
 
     def configure(
-        self, input_specs: List[_PythonPortObjectSpec], java_config_context
+        self,
+        input_specs: List[_PythonPortObjectSpec],
+        java_config_context: _JavaConfigContext,
     ) -> List[_PythonPortObjectSpec]:
         _push_log_callback(lambda msg, sev: self._java_callback.log(msg, sev))
         try:
