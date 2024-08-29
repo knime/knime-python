@@ -13,12 +13,16 @@ export const consola = new Consola({
 vi.mock("@knime/ui-extension-service", async () => ({
   ...(await vi.importActual("@knime/ui-extension-service")),
   JsonDataService: {
-    getInstance: vi.fn().mockResolvedValue({
-      initialData: vi.fn().mockResolvedValue({
-        settings: DEFAULT_INITIAL_SETTINGS,
-        initialData: DEFAULT_INITIAL_DATA,
+    getInstance: vi.fn(() =>
+      Promise.resolve({
+        initialData: vi.fn(() =>
+          Promise.resolve({
+            settings: DEFAULT_INITIAL_SETTINGS,
+            initialData: DEFAULT_INITIAL_DATA,
+          }),
+        ),
       }),
-    }),
+    ),
   },
   ReportingService: vi.fn(() => ({})),
 }));
