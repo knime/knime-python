@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: KNIME Python 3 - Scripting Nodes
 Bundle-SymbolicName: org.knime.python3.scripting.nodes;singleton:=true
-Bundle-Version: 5.3.1.qualifier
+Bundle-Version: 5.3.2.qualifier
 Bundle-ClassPath: knime-python3-scripting-nodes.jar
 Bundle-Vendor: KNIME AG, Zurich, Switzerland
 Bundle-RequiredExecutionEnvironment: JavaSE-17
