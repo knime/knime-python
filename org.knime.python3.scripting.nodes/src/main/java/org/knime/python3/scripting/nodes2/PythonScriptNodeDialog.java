@@ -48,6 +48,7 @@
  */
 package org.knime.python3.scripting.nodes2;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -115,11 +116,10 @@ public final class PythonScriptNodeDialog implements NodeDialog {
             () -> PythonScriptingInputOutputModelUtils.getInputObjects(workflowControl.getInputInfo());
 
         DataSupplier flowVariableSupplier = () -> {
-            var flowObjectStack = workflowControl.getFlowObjectStack();
-            return flowObjectStack == null //
-                ? null //
-                : PythonScriptingInputOutputModelUtils
-                    .getFlowVariableInputs(flowObjectStack.getAllAvailableFlowVariables().values());
+            var flowVariables = Optional.ofNullable(workflowControl.getFlowObjectStack()) //
+                .map(stack -> stack.getAllAvailableFlowVariables().values()) //
+                .orElseGet(List::of);
+            return PythonScriptingInputOutputModelUtils.getFlowVariableInputs(flowVariables);
         };
 
         DataSupplier outputObjectSupplier = () -> PythonScriptingInputOutputModelUtils
