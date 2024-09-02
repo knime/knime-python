@@ -86,6 +86,7 @@ public final class FreshPythonGatewayFactory implements PythonGatewayFactory {
                 }
             } catch (Py4JException ex) {
                 gateway.close();
+                PythonProcessTerminatedException.throwIfTerminated(gateway, ex);
                 throw new IOException(ex.getMessage(), ex);
             } catch (Exception ex) {
                 gateway.close();
