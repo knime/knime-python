@@ -61,6 +61,7 @@ import java.util.stream.Stream;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.extension.CategoryExtension;
 import org.knime.python3.PythonGatewayUtils;
+import org.knime.python3.PythonProcessTerminatedException;
 import org.knime.python3.nodes.KnimeNodeBackend;
 import org.knime.python3.nodes.PurePythonNodeSetFactory.PythonExtensionParser;
 import org.knime.python3.nodes.PyNodeExtension;
@@ -74,6 +75,8 @@ import org.knime.python3.views.ViewResources;
 import org.yaml.snakeyaml.Yaml;
 
 import com.google.gson.Gson;
+
+import py4j.Py4JException;
 
 /**
  * Parses a Python Extension of the following format:
@@ -128,7 +131,18 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
             staticInfo.m_version, staticInfo.m_modulePath);
         try (var gateway = gatewayFactory.create();
                 var outputConsumer = PythonGatewayUtils.redirectGatewayOutput(gateway, LOGGER::debug, LOGGER::debug)) {
-            return createNodeExtension(gateway.getEntryPoint(), staticInfo, gatewayFactory);
+            try {
+                return createNodeExtension(gateway.getEntryPoint(), staticInfo, gatewayFactory);
+            } catch (Py4JException ex) {
+                // TODO(AP-23257) can we give a hint to the user? There could be something wrong with the Python
+                // extension but this is mostly relevant to the developer. If the process was killed by the watchdog
+                // this is most likely due to the system configuration so we could give a hint to the user about that.
+                var terminatedEx = PythonProcessTerminatedException.ifTerminated(gateway, ex);
+                if (terminatedEx.isPresent()) {
+                    throw new IOException(terminatedEx.get().getMessage(), terminatedEx.get());
+                }
+                throw new IOException(ex.getMessage(), ex);
+            }
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
             throw new IOException("Python gateway creation was interrupted.", ex);

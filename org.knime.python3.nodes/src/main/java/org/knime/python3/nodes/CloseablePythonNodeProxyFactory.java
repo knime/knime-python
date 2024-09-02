@@ -55,8 +55,12 @@ import java.util.Map;
 import org.knime.core.node.NodeLogger;
 import org.knime.python3.PythonGateway;
 import org.knime.python3.PythonGatewayUtils;
+import org.knime.python3.PythonProcessTerminatedException;
 import org.knime.python3.nodes.PurePythonNodeSetFactory.ResolvedPythonExtension;
+import org.knime.python3.nodes.proxy.PythonNodeProxy;
 import org.knime.python3.utils.ProxyUtils;
+
+import py4j.Py4JException;
 
 /**
  * Creates CloseablePythonNodeProxy objects for NodeProxyProvider implementations.
@@ -157,7 +161,15 @@ final class CloseablePythonNodeProxyFactory {
             }
         };
         backend.initializeJavaCallback(callback);
-        var nodeProxy = m_extension.createProxy(backend, m_nodeId);
+        final PythonNodeProxy nodeProxy;
+        try {
+            // TODO(AP-23257) we do not have access to the gateway when using the proxy
+            // so we cannot check if the Python process was terminated if a proxy call fails
+            nodeProxy = m_extension.createProxy(backend, m_nodeId);
+        } catch (Py4JException ex) {
+            PythonProcessTerminatedException.throwIfTerminated(gateway, ex);
+            throw ex;
+        }
         // close the gateway after the retriever because the retriever might otherwise
         // get stuck reading the output of the already dead process
         var closer = new CloseableGatewayWithAttachments(gateway, outputRetrieverHandle);
