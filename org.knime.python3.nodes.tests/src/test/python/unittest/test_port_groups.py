@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 from typing import Any, Dict, List, Optional
 import unittest
 import pandas as pd
@@ -169,12 +170,17 @@ class TestOptionalPorts(unittest.TestCase):
         def set_flow_variables(self, flow_variables):
             pass
 
-    class MockJavaConverter:
-        def convert_list(self, list_):
-            return list_
-
-        def create_linked_hashmap(self):
-            return {}
+    @contextmanager
+    def _monkey_patch_java_converters(self):
+        _to_java_list = knb._to_java_list
+        _create_linked_hashmap = knb._create_linked_hashmap
+        knb._to_java_list = lambda list_: list_
+        knb._create_linked_hashmap = lambda: {}
+        try:
+            yield
+        finally:
+            knb._to_java_list = _to_java_list
+            knb._create_linked_hashmap = _create_linked_hashmap
 
     def test_port_configuration(self):
         node = TestOptionalPorts.NodeWithOptionalInputPort()
@@ -221,7 +227,6 @@ class TestOptionalPorts(unittest.TestCase):
             port_type_registry=port_type_registry,
             knime_parser=None,  # not needed for configure
             extension_version="0.0.1",
-            java_converter=TestOptionalPorts.MockJavaConverter(),
         )
         python_node_proxy.initializeJavaCallback(TestOptionalPorts.MockJavaCallback())
 
@@ -248,9 +253,10 @@ class TestOptionalPorts(unittest.TestCase):
             port_map["Optional input table"] = [1]
 
         java_config_context = TestOptionalPorts.MockJavaConfigContext(port_map)
-        output = python_node_proxy.configure(
-            input_specs=input_specs, java_config_context=java_config_context
-        )[0]
+        with self._monkey_patch_java_converters():
+            output = python_node_proxy.configure(
+                input_specs=input_specs, java_config_context=java_config_context
+            )[0]
 
         expected_columns = [ks.Column(ks.string(), "Foo")]
 
