@@ -192,14 +192,14 @@ class TestOptionalPorts(unittest.TestCase):
         self.assertEqual(
             first_input.name, "Input table", "First input should be name 'Input table'"
         )
-        self.assertEqual(first_input.optional, False, "The first input is not optional")
+        self.assertFalse(first_input.optional, "The first input is not optional")
         second_input = node.input_ports[1]
         self.assertEqual(
             second_input.name,
             "Optional input table",
             "The second input table should be named 'Optional input table'.",
         )
-        self.assertEqual(second_input.optional, True, "The second input is optional")
+        self.assertTrue(second_input.optional, "The second input is optional")
 
         output = node.output_ports[0]
         self.assertEqual(
@@ -207,9 +207,8 @@ class TestOptionalPorts(unittest.TestCase):
             "Output table",
             "The output table should be named 'Output table'.",
         )
-        self.assertEqual(
+        self.assertFalse(
             output.optional,
-            False,
             "The output table is not optional (and optional outputs aren't supported yet).",
         )
 
