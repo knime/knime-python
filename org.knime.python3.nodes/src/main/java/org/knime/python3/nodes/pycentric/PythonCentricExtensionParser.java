@@ -48,6 +48,7 @@
  */
 package org.knime.python3.nodes.pycentric;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -58,13 +59,14 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.eclipse.core.runtime.Platform;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.extension.CategoryExtension;
 import org.knime.python3.PythonGatewayUtils;
 import org.knime.python3.PythonProcessTerminatedException;
-import org.knime.python3.nodes.KnimeNodeBackend;
 import org.knime.python3.nodes.PurePythonNodeSetFactory.PythonExtensionParser;
 import org.knime.python3.nodes.PyNodeExtension;
+import org.knime.python3.nodes.PythonExtensionPreferences;
 import org.knime.python3.nodes.PythonNode;
 import org.knime.python3.nodes.PythonNodeGatewayFactory;
 import org.knime.python3.nodes.extension.ExtensionNodeSetFactory.PortSpecifier;
@@ -104,6 +106,7 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
     @Override
     public PyNodeExtension parseExtension(final Path path) throws IOException {
         var staticInfo = readStaticInformation(path);
+
         return retrieveDynamicInformationFromPython(staticInfo);
     }
 
@@ -129,10 +132,34 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
         throws IOException {
         var gatewayFactory = new PythonNodeGatewayFactory(staticInfo.m_id, staticInfo.m_environmentName,
             staticInfo.m_version, staticInfo.m_modulePath);
+
+        // Extension info is cached in the Eclipse configuration area, keyed by {id}_{version} so that version updates
+        // don't use old cached info.
+        // TODO: use a hash over the source code folder, so our nightly updates also cause cache misses?
+        var cachePath = Path.of(Platform.getConfigurationLocation().getURL().getPath(),
+            staticInfo.m_id + "_" + staticInfo.m_version);
+
+        // If the extension has a custom source code path set, we don't want to load cached info because new nodes could have been
+        // added in the source.
+        if (!PythonExtensionPreferences.hasCustomSrcPath(staticInfo.m_id)) {
+            try (var cachedExtensionReader = Files.newBufferedReader(cachePath)) {
+                return loadCachedExtension(staticInfo, gatewayFactory, cachedExtensionReader);
+            } catch (IOException e) {
+                LOGGER.debug("Didn't find cached info for extension '" + staticInfo.m_id
+                    + "'. Parsing Python extension instead.");
+            }
+        }
+
         try (var gateway = gatewayFactory.create();
                 var outputConsumer = PythonGatewayUtils.redirectGatewayOutput(gateway, LOGGER::debug, LOGGER::debug)) {
             try {
-                return createNodeExtension(gateway.getEntryPoint(), staticInfo, gatewayFactory);
+                var backend = gateway.getEntryPoint();
+                var categoriesJson = backend.retrieveCategoriesAsJson();
+                var nodesJson = backend.retrieveNodesAsJson();
+
+                cacheExtension(cachePath, categoriesJson, nodesJson);
+
+                return createNodeExtension(categoriesJson, nodesJson, staticInfo, gatewayFactory);
             } catch (Py4JException ex) {
                 // TODO(AP-23257) can we give a hint to the user? There could be something wrong with the Python
                 // extension but this is mostly relevant to the developer. If the process was killed by the watchdog
@@ -153,10 +180,30 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
         }
     }
 
-    private static PyNodeExtension createNodeExtension(final KnimeNodeBackend backend,
+    private static void cacheExtension(final Path cachePath, final String categoriesJson, final String nodesJson)
+        throws IOException {
+        // we have the plain strings of JSON encoded categories and nodes, so we construct the string for a combined JSON by hand.
+        StringBuilder sb = new StringBuilder();
+        sb.append("{\"categories\": ");
+        sb.append(categoriesJson);
+        sb.append(",\n\"nodes\": ");
+        sb.append(nodesJson);
+        sb.append("\n}");
+        Files.writeString(cachePath, sb.toString());
+    }
+
+    private static PyNodeExtension loadCachedExtension(final StaticExtensionInfo staticInfo,
+        final PythonNodeGatewayFactory gatewayFactory, final BufferedReader cachedExtensionReader) {
+        JsonExtension cachedExt = new Gson().fromJson(cachedExtensionReader, JsonExtension.class);
+        return new FluentPythonNodeExtension(staticInfo.m_id, //
+            parseNodes(cachedExt.nodes, staticInfo.m_extensionPath), //
+            parseCategories(cachedExt.categories, staticInfo.m_extensionPath), //
+            gatewayFactory, //
+            staticInfo.m_version);
+    }
+
+    private static PyNodeExtension createNodeExtension(final String categoriesJson, final String nodesJson,
         final StaticExtensionInfo staticInfo, final PythonNodeGatewayFactory gatewayFactory) {
-        var categoriesJson = backend.retrieveCategoriesAsJson();
-        var nodesJson = backend.retrieveNodesAsJson();
         return new FluentPythonNodeExtension(staticInfo.m_id, parseNodes(nodesJson, staticInfo.m_extensionPath),
             parseCategories(categoriesJson, staticInfo.m_extensionPath), gatewayFactory, staticInfo.m_version);
     }
@@ -164,6 +211,11 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
     private static List<CategoryExtension.Builder> parseCategories(final String categoriesJson,
         final Path pathToExtension) {
         JsonCategory[] categories = new Gson().fromJson(categoriesJson, JsonCategory[].class);
+        return parseCategories(categories, pathToExtension);
+    }
+
+    private static List<CategoryExtension.Builder> parseCategories(final JsonCategory[] categories,
+        final Path pathToExtension) {
         return Stream.of(categories) //
             .map(c -> c.toExtension(pathToExtension)) //
             .collect(Collectors.toUnmodifiableList());
@@ -171,6 +223,10 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
 
     private static PythonNode[] parseNodes(final String nodesJson, final Path extensionPath) {
         JsonNodeDescription[] nodes = new Gson().fromJson(nodesJson, JsonNodeDescription[].class);
+        return parseNodes(nodes, extensionPath);
+    }
+
+    private static PythonNode[] parseNodes(final JsonNodeDescription[] nodes, final Path extensionPath) {
         return Stream.of(nodes)//
             .map(n -> n.toPythonNode(extensionPath))//
             .toArray(PythonNode[]::new);
@@ -348,6 +404,14 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
         }
     }
 
+    @SuppressWarnings("java:S116") // the fields are named this way for JSON deserialization
+    private static class JsonExtension {
+        protected JsonCategory[] categories;
+
+        protected JsonNodeDescription[] nodes;
+
+    }
+
     /**
      * Struct-like POJO that is filled by SnakeYaml. Contains static information on the extension. The critical fields
      * are id, environment_name and extension_module.
@@ -392,6 +456,5 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
                 m_moduleName = relativeModulePath.getFileName().toString();
             }
         }
-
     }
 }
