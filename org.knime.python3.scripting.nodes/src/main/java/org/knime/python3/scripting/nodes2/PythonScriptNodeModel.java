@@ -88,6 +88,7 @@ import org.knime.core.node.workflow.VariableTypeRegistry;
 import org.knime.core.util.PathUtils;
 import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
 import org.knime.python3.PythonCommand;
+import org.knime.python3.PythonProcessTerminatedException;
 import org.knime.python3.scripting.nodes2.ConsoleOutputUtils.ConsoleOutputStorage;
 import org.knime.python3.scripting.nodes2.PythonScriptingSession.ExecutionInfo;
 import org.knime.python3.scripting.nodes2.PythonScriptingSession.ExecutionStatus;
@@ -96,7 +97,6 @@ import org.knime.python3.utils.FlowVariableUtils;
 import org.knime.scripting.editor.ScriptingService.ConsoleText;
 
 import py4j.Py4JException;
-import py4j.Py4JNetworkException;
 
 /**
  * The node model of a Python scripting node.
@@ -192,6 +192,8 @@ public final class PythonScriptNodeModel extends NodeModel {
 
             m_sessionShutdownTracker.closeAsynchronously(session);
             return outputs;
+        } catch (final PythonProcessTerminatedException ex) {
+            throw ex.toKNIMEException(createMessageBuilder());
         } catch (final Py4JException ex) {
             handleNewCommunicationChannelError(ex);
             throw new KNIMEException(StringUtils.removeStart(ex.getMessage(),
@@ -218,44 +220,18 @@ public final class PythonScriptNodeModel extends NodeModel {
         }
     }
 
-    /**
-     * Throw a nicer error message if the exception we are seeing is an "error while sending a command".
-     *
-     * If the provided {@link PythonScriptingSession} knows a reason for termination, we show that. Otherwise we just
-     * say that the Python process got terminated.
-     *
-     * @param session The current Python scripting session
-     * @param exception The exception we're seeing
-     * @throws KNIMEException
-     */
-    private void handleErrorWhileSendingCommandError(final PythonScriptingSession session, final Throwable exception)
-        throws KNIMEException {
-        if (exception.getCause() instanceof Py4JNetworkException) {
-            var message = session.getTerminationReason() != null ? session.getTerminationReason()
-                : "The Python process got terminated.";
-
-            var messageBuilder = createMessageBuilder();
-            messageBuilder.withSummary(message);
-            // This resolution is true in any case that the Python process got killed, be it from the outside or our
-            // Watchdog
-            messageBuilder.addResolutions(
-                "This can happen if the system ran out of memory, increase the system resources and try again.");
-            throw KNIMEException.of(messageBuilder.build().orElseThrow(), exception);
-        }
-    }
-
     private void runUserScript(final PythonScriptingSession session)
         throws Py4JException, InterruptedException, KNIMEException {
         ExecutionInfo ans;
         try {
             ans = KNIMEConstants.GLOBAL_THREAD_POOL.enqueue(() -> session.execute(m_settings.getScript(), true)).get();
         } catch (ExecutionException ex) { // NOSONAR - we either log or re-throw the cause
-            // We only expect Py4J exceptions to happen
+            // We only expect Py4J or PythonProcessTermination exceptions to happen
             // everything else we just unwrap from the ExecutionException and wrap in a KNIMEException
             var cause = ex.getCause();
-            if (cause instanceof Py4JException py4jException) {
-                handleErrorWhileSendingCommandError(session, cause);
-
+            if (cause instanceof PythonProcessTerminatedException terminatedException) {
+                throw terminatedException.toKNIMEException(createMessageBuilder());
+            } else if (cause instanceof Py4JException py4jException) {
                 throw py4jException;
             } else {
                 throw new KNIMEException(cause.getMessage(), cause);
