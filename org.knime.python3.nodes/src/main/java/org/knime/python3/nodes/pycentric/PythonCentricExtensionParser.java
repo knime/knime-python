@@ -101,6 +101,7 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
     @Override
     public PyNodeExtension parseExtension(final Path path) throws IOException {
         var staticInfo = readStaticInformation(path);
+
         return retrieveDynamicInformationFromPython(staticInfo);
     }
 
@@ -128,7 +129,15 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
             staticInfo.m_version, staticInfo.m_modulePath);
         try (var gateway = gatewayFactory.create();
                 var outputConsumer = PythonGatewayUtils.redirectGatewayOutput(gateway, LOGGER::debug, LOGGER::debug)) {
-            return createNodeExtension(gateway.getEntryPoint(), staticInfo, gatewayFactory);
+
+            var backend = (KnimeNodeBackend)gateway;
+            var categoriesJson = backend.retrieveCategoriesAsJson();
+            var nodesJson = backend.retrieveNodesAsJson();
+
+            // TODO: cache categories and nodes, using the static info as key.
+            // QUESTION: where can we cache this stuff?
+
+            return createNodeExtension(categoriesJson, nodesJson, staticInfo, gatewayFactory);
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
             throw new IOException("Python gateway creation was interrupted.", ex);
@@ -139,10 +148,8 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
         }
     }
 
-    private static PyNodeExtension createNodeExtension(final KnimeNodeBackend backend,
+    private static PyNodeExtension createNodeExtension(final String categoriesJson, final String nodesJson,
         final StaticExtensionInfo staticInfo, final PythonNodeGatewayFactory gatewayFactory) {
-        var categoriesJson = backend.retrieveCategoriesAsJson();
-        var nodesJson = backend.retrieveNodesAsJson();
         return new FluentPythonNodeExtension(staticInfo.m_id, parseNodes(nodesJson, staticInfo.m_extensionPath),
             parseCategories(categoriesJson, staticInfo.m_extensionPath), gatewayFactory, staticInfo.m_version);
     }
