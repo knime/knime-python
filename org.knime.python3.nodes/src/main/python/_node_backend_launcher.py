@@ -877,12 +877,12 @@ class _PythonNodeProxy:
         return self._unpack_non_port_groups(inputs)
 
     def _unpack_non_port_groups(self, inputs: List[List]):
-        def unpack(inputs: List, port: Union[kn.Port, kn.PortGroup]):
+        def unpack(port_slots: List, port: Union[kn.Port, kn.PortGroup]):
             if isinstance(port, kn.PortGroup):
-                return inputs
-            if port.optional and len(inputs) == 0:
+                return port_slots
+            if port.optional and len(port_slots) == 0:
                 return None
-            return inputs[0]
+            return port_slots[0]
 
         return [unpack(i, port) for i, port in zip(inputs, self._node.input_ports)]
 
