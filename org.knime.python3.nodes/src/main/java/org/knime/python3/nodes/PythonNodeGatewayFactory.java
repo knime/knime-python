@@ -63,12 +63,15 @@ import org.knime.python3.PythonGateway;
 import org.knime.python3.PythonGatewayFactory;
 import org.knime.python3.PythonGatewayFactory.EntryPointCustomizer;
 import org.knime.python3.PythonGatewayFactory.PythonGatewayDescription;
+import org.knime.python3.PythonProcessTerminatedException;
 import org.knime.python3.arrow.Python3ArrowSourceDirectory;
 import org.knime.python3.arrow.PythonArrowExtension;
 import org.knime.python3.types.PythonValueFactoryModule;
 import org.knime.python3.types.PythonValueFactoryRegistry;
 import org.knime.python3.views.Python3ViewsSourceDirectory;
 import org.knime.python3.views.PythonViewsExtension;
+
+import py4j.Py4JException;
 
 /**
  * Creates {@link PythonGateway PythonGateways} for nodes written purely in Python.
@@ -135,7 +138,12 @@ public final class PythonNodeGatewayFactory {
         var factory = PythonExtensionPreferences.debugMode(m_extensionId) ? DEBUG_FACTORY : FACTORY;
         var gateway = factory.create(gatewayDescriptionBuilder.build());
         final var backend = gateway.getEntryPoint();
-        PythonEntryPointUtils.registerPythonValueFactories(backend);
+        try {
+            PythonEntryPointUtils.registerPythonValueFactories(backend);
+        } catch (Py4JException ex) {
+            PythonProcessTerminatedException.throwIfTerminated(gateway, ex);
+            throw ex;
+        }
         return gateway;
     }
 
