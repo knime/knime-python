@@ -1646,6 +1646,8 @@ class ColumnParameter(_BaseColumnParameter):
     Parameter class for single columns.
     """
 
+    NONE = "<none>"
+
     def __init__(
         self,
         label: Optional[str] = None,
@@ -1657,6 +1659,7 @@ class ColumnParameter(_BaseColumnParameter):
         since_version: Optional[str] = None,
         is_advanced: bool = False,
         schema_provider=None,
+        default_value: Optional[Union[str, DefaultValueProvider[str]]] = None,
     ):
         """
         Parameters
@@ -1683,7 +1686,7 @@ class ColumnParameter(_BaseColumnParameter):
             description,
             port_index,
             column_filter,
-            None,
+            default_value,
             since_version,
             is_advanced,
             schema_provider,
