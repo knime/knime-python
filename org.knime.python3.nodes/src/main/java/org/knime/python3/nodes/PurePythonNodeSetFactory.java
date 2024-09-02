@@ -91,10 +91,11 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
          * Parses the extension found at the provided path.
          *
          * @param path to the extension
+         * @param bundleName the name of the bundle providing the extension
          * @return the parsed extension
          * @throws IOException if parsing failed
          */
-        PyNodeExtension parseExtension(final Path path) throws IOException;
+        PyNodeExtension parseExtension(final Path path, final String bundleName) throws IOException;
     }
 
     private static final List<PyExtensionEntry> PYTHON_NODE_EXTENSION_PATHS = PythonExtensionRegistry.PY_EXTENSIONS;
@@ -129,7 +130,7 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
 
     private static KnimeExtension parseExtension(final Path extensionPath, final String bundleName) {
         try {
-            var extension = EXTENSION_PARSER.parseExtension(extensionPath);
+            var extension = EXTENSION_PARSER.parseExtension(extensionPath, bundleName);
             return new ResolvedPythonExtension(extension, bundleName);
         } catch (Exception ex) { //NOSONAR
             // any kind of exception must be prevented, otherwise a single corrupted extension would prevent the whole

@@ -70,7 +70,7 @@ import org.yaml.snakeyaml.Yaml;
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-final class PythonExtensionPreferences {
+public final class PythonExtensionPreferences {
 
     private PythonExtensionPreferences() {
 
@@ -96,11 +96,26 @@ final class PythonExtensionPreferences {
 
     static boolean debugMode(final String extensionId) {
         return loadConfigs()//
-                .filter(e -> extensionId.equals(e.m_id))//
-                .map(ExtensionConfig::debugMode)//
-                .findFirst()//
-                // cache the gateway if not told otherwise
-                .orElse(false);
+            .filter(e -> extensionId.equals(e.m_id))//
+            .map(ExtensionConfig::debugMode)//
+            .findFirst()//
+            // cache the gateway if not told otherwise
+            .orElse(false);
+    }
+
+    /**
+     * Whether the extension has a custom source path set. Used to determine whether the node list can be cached.
+     *
+     * @param extensionId
+     * @return True if a custom source path is set.
+     */
+    public static boolean hasCustomSrcPath(final String extensionId) {
+        return loadConfigs()//
+            .filter(e -> extensionId.equals(e.m_id))//
+            .map(ExtensionConfig::getSrcPath)//
+            .map(Optional::isPresent)//
+            .findFirst()//
+            .orElse(false);
     }
 
     private static Stream<ExtensionConfig> loadConfigs() {
@@ -122,8 +137,8 @@ final class PythonExtensionPreferences {
             var yml = new Yaml();
             Map<String, Object> configs = yml.load(inputStream);
             return configs.entrySet().stream()//
-                    .map(PythonExtensionPreferences::mapToConfig)//
-                    .filter(Objects::nonNull);
+                .map(PythonExtensionPreferences::mapToConfig)//
+                .filter(Objects::nonNull);
         }
     }
 
@@ -137,9 +152,9 @@ final class PythonExtensionPreferences {
                 configEntry.getKey(), //
                 (String)map.get("src"), //
                 (String)map.get("conda_env_path"), //
-                (String)map.get("python_executable"),//
+                (String)map.get("python_executable"), //
                 debugMode//
-                    );
+            );
         } catch (RuntimeException ex) {
             LOGGER.errorWithFormat("Failed to parse Python extension config.", ex);
             return null;
