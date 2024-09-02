@@ -91,6 +91,7 @@ import org.knime.python3.PythonGateway;
 import org.knime.python3.PythonGatewayFactory.EntryPointCustomizer;
 import org.knime.python3.PythonGatewayFactory.PythonGatewayDescription;
 import org.knime.python3.PythonGatewayUtils;
+import org.knime.python3.PythonProcessTerminatedException;
 import org.knime.python3.arrow.Python3ArrowSourceDirectory;
 import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.arrow.PythonArrowDataUtils;
@@ -106,6 +107,8 @@ import org.knime.scripting.editor.ScriptingService.ConsoleText;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.gson.Gson;
+
+import py4j.Py4JException;
 
 /**
  * A running Python process that is used to execute scripts in the context of the Python scripting node.
@@ -178,7 +181,12 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
         final var sources = PythonIOUtils.createSources(inData, m_tableConverter, exec);
         final var flowVars = FlowVariableUtils.convertToMap(flowVariables);
         final var callback = new PythonScriptingCallback();
-        m_entryPoint.setupIO(sources, flowVars, numOutTables, numOutImages, numOutObjects, hasView, callback);
+        try {
+            m_entryPoint.setupIO(sources, flowVars, numOutTables, numOutImages, numOutObjects, hasView, callback);
+        } catch (Py4JException ex) {
+            PythonProcessTerminatedException.throwIfTerminated(m_gateway, ex);
+            throw ex;
+        }
     }
 
     private final class PythonScriptingCallback implements PythonScriptingEntryPoint.Callback {
@@ -259,7 +267,13 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
      *   can be also an error since we tunnel errors from python side as JSON
      */
     ExecutionInfo execute(final String script, final boolean checkOutputs) {
-        String jsonFromExecution = m_entryPoint.execute(script, checkOutputs);
+        final String jsonFromExecution;
+        try {
+            jsonFromExecution = m_entryPoint.execute(script, checkOutputs);
+        } catch (Py4JException ex) {
+            PythonProcessTerminatedException.throwIfTerminated(m_gateway, ex);
+            throw ex;
+        }
         return new Gson().fromJson(jsonFromExecution, ExecutionInfo.class);
     }
 
@@ -340,35 +354,45 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
     }
 
     Collection<FlowVariable> getFlowVariables() {
-        return FlowVariableUtils.convertFromMap(m_entryPoint.getFlowVariables(), LOGGER);
+        try {
+            return FlowVariableUtils.convertFromMap(m_entryPoint.getFlowVariables(), LOGGER);
+        } catch (Py4JException ex) {
+            PythonProcessTerminatedException.throwIfTerminated(m_gateway, ex);
+            throw ex;
+        }
 
     }
 
     PortObject[] getOutputs(final ExecutionContext exec) throws IOException, CanceledExecutionException {
-        m_entryPoint.closeOutputs(true);
+        try {
+            m_entryPoint.closeOutputs(true);
 
-        // Progress handling
-        final var totalProgress = 3 * m_numOutTables + m_numOutImages + m_numOutObjects;
-        final var tableProgress = (3 * m_numOutTables) / (double)totalProgress;
-        final var imageProgress = m_numOutImages / (double)totalProgress;
-        final var objectProgress = m_numOutObjects / (double)totalProgress;
+            // Progress handling
+            final var totalProgress = 3 * m_numOutTables + m_numOutImages + m_numOutObjects;
+            final var tableProgress = (3 * m_numOutTables) / (double)totalProgress;
+            final var imageProgress = m_numOutImages / (double)totalProgress;
+            final var objectProgress = m_numOutObjects / (double)totalProgress;
 
-        // Retrieve the tables
-        var execTables = exec.createSubExecutionContext(tableProgress);
-        var tables = PythonIOUtils.getOutputTables(m_numOutTables, m_entryPoint, m_tableConverter, execTables);
+            // Retrieve the tables
+            var execTables = exec.createSubExecutionContext(tableProgress);
+            var tables = PythonIOUtils.getOutputTables(m_numOutTables, m_entryPoint, m_tableConverter, execTables);
 
-        // Retrieve the images
-        var execImages = exec.createSubProgress(imageProgress);
-        var images = PythonIOUtils.getOutputImages(m_numOutImages, m_entryPoint, execImages);
+            // Retrieve the images
+            var execImages = exec.createSubProgress(imageProgress);
+            var images = PythonIOUtils.getOutputImages(m_numOutImages, m_entryPoint, execImages);
 
-        // Retrieve the objects
-        var execObjects = exec.createSubExecutionContext(objectProgress);
-        var objects = PythonIOUtils.getOutputObjects(m_numOutObjects, m_entryPoint, execObjects);
+            // Retrieve the objects
+            var execObjects = exec.createSubExecutionContext(objectProgress);
+            var objects = PythonIOUtils.getOutputObjects(m_numOutObjects, m_entryPoint, execObjects);
 
-        // NB: The output ports always have the order tables, images, objects
-        return Stream.of(tables, images, objects) //
-            .flatMap(Stream::of) //
-            .toArray(PortObject[]::new);
+            // NB: The output ports always have the order tables, images, objects
+            return Stream.of(tables, images, objects) //
+                .flatMap(Stream::of) //
+                .toArray(PortObject[]::new);
+        } catch (Py4JException ex) {
+            PythonProcessTerminatedException.throwIfTerminated(m_gateway, ex);
+            throw ex;
+        }
     }
 
     /**
@@ -378,15 +402,12 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
      * @throws IOException if the temporary file could not be created
      */
     Optional<Path> getOutputView() throws IOException {
-        return PythonIOUtils.getOutputView(m_entryPoint);
-    }
-
-    /**
-     * @return If the Python session was terminated abnormally, returns a user friendly string explaining why that
-     *         happened. null otherwise.
-     */
-    String getTerminationReason() {
-        return m_gateway.getTerminationReason();
+        try {
+            return PythonIOUtils.getOutputView(m_entryPoint);
+        } catch (Py4JException ex) {
+            PythonProcessTerminatedException.throwIfTerminated(m_gateway, ex);
+            throw ex;
+        }
     }
 
     private static PythonGateway<PythonScriptingEntryPoint> createGateway(final PythonCommand pythonCommand)
@@ -461,6 +482,9 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
             var workflowDirRef = NodeContext.getContext().getWorkflowManager().getNodeContainerDirectory();
             Optional.ofNullable(workflowDirRef).map(r -> r.getFile().toString())
                 .ifPresent(m_entryPoint::setCurrentWorkingDirectory);
+        } catch (Py4JException ex) {
+            PythonProcessTerminatedException.throwIfTerminated(m_gateway, ex);
+            throw ex;
         } catch (Exception ex) { // NOSONAR: We want to catch any exception here
             // Do not propagate exception since setting the CWD is merely for convenience.
             LOGGER.warn("Python's current working directory could not be set to the workflow directory.", ex);
