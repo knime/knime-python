@@ -392,7 +392,7 @@ class _JavaBaseContext(ABC):
 
     class Java:
         implements = [
-            "org.knime.python3.nodes.proxy.PythonNodeModelProxy$PythonConfigurationContext"
+            "org.knime.python3.nodes.proxy.PythonNodeModelProxy$PythonBaseContext"
         ]
 
 
