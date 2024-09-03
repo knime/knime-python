@@ -134,7 +134,7 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
         } catch (Exception ex) { //NOSONAR
             // any kind of exception must be prevented, otherwise a single corrupted extension would prevent the whole
             // class from loading
-            LOGGER.error(String.format("Failed to parse Python node extension at path '%s'.\n%s", extensionPath,
+            LOGGER.error(String.format("Failed to parse Python node extension at path '%s'. %s", extensionPath,
                 ex.getMessage().replaceAll("[\n\r]$", "")), ex);
             return null;
         }
