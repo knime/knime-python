@@ -63,6 +63,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.SystemUtils;
 import org.knime.core.data.util.memory.ExternalProcessMemoryWatchdog;
 import org.knime.core.node.NodeLogger;
+import org.knime.python3.PythonProcessTerminatedException.PythonProcessOOMException;
 
 import py4j.ClientServer;
 import py4j.ClientServer.ClientServerBuilder;
@@ -126,7 +127,7 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
     /**
      * The termination reason is set if the watchdog killed the Python process
      */
-    private String m_terminationReason;
+    private volatile String m_terminationReason;
 
     /**
      * Creates a {@link PythonGateway} to a new Python process.
@@ -188,8 +189,8 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
 
             ExternalProcessMemoryWatchdog.getInstance().trackProcess(m_process.toHandle(), memoryUsed -> {
                 m_terminationReason =
-                        "The Python process was killed to prevent the system from running out of memory (it used "
-                            + memoryUsed / 1024 + "MB).";
+                    "The Python process was killed to prevent the system from running out of memory (it used "
+                        + memoryUsed / 1024 + "MB).";
                 LOGGER.error(m_terminationReason);
             });
 
@@ -212,6 +213,12 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
                 close();
             } catch (final Exception ex) { // NOSONAR We want to propagate the original error.
                 th.addSuppressed(ex);
+            }
+            if (m_terminationReason != null) {
+                // TODO(AP-23257) make the distinction between OOM and other termination reasons more explicit
+                // Note: We only use the termination reason if the watchdog killed the process - therefore, we can throw
+                // a PythonProcessOOMException here
+                throw new PythonProcessOOMException(m_terminationReason, th);
             }
             if (th instanceof ConnectException) {
                 // A ConnectException doesn't contain useful information itself
@@ -389,6 +396,10 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
         }
     }
 
+    /* TODO(AP-23257) we should replace this method with (throw|get)TerminationException that also handles the
+     * resolution hint. According to the method name this can be anything. However, we might want to handle different
+     * kinds of termination differently. Maybe this should replace the static factories for
+     * PythonProcessTerminatedException. */
     @Override
     public String getTerminationReason() {
         return m_terminationReason;
