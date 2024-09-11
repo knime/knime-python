@@ -3125,23 +3125,42 @@ class ParameterArray(_BaseParameter):
         return options
 
     def _get_value(self, obj, name, for_dialog: bool = False):
-        value = super()._get_value(obj, name, for_dialog)
-        if value is None:
+        values = super()._get_value(obj, name, for_dialog)
+        if values is None:
             return []
         else:
-            return value
+            return values
 
-    def _inject(self, obj, value, name, version, exclude_validations: bool = False):
+    def _to_dict(self, values):
+        param_holder = self._parameters._get_param_holder(self._parameters)
+        extracted_values = []
+        for value in values:
+            extracted_value = {}
+            for param_name, param_obj in _get_parameters(param_holder).items():
+                if param_name in value:
+                    extracted_value[param_name] = param_obj._to_dict(value[param_name])
+            extracted_values.append(extracted_value)
+        return extracted_values
+
+    def _from_dict(self, values):
+        param_holder = self._parameters._get_param_holder(self._parameters)
+        for value in values:
+            for param_name, param_obj in _get_parameters(param_holder).items():
+                if param_name in value:
+                    value[param_name] = param_obj._from_dict(value[param_name])
+        return values
+
+    def _inject(self, obj, values, name, version, exclude_validations: bool = False):
         param_holder = self._parameters._get_param_holder(self._parameters)
 
         # Default values are provided by the first item (i.e. how parameters are set in the parameter group).
-        # Therefore, we only set the first item here, and not a list of values.
-        if value is None:
-            value = [{}]
+        # Therefore, we only set the first item here at the beginning, and not a list of values.
+        if values is None:
+            values = [{}]
             for param_name, param_obj in _get_parameters(param_holder).items():
                 default_val = param_obj._to_dict(param_obj._get_default())
-                value[0][param_name] = default_val
-        return super()._inject(obj, value, name, version, exclude_validations)
+                values[0][param_name] = default_val
+        return super()._inject(obj, values, name, version, exclude_validations)
 
 
 def _get_indent_level(lines):
