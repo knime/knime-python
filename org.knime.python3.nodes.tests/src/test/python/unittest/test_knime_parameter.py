@@ -1220,8 +1220,8 @@ class ParameterTest(unittest.TestCase):
             1,
             [
                 {"first": 1, "second": 2},
-                {"third": 3, "fourth": 4},
-                {"fifth": 5, "sixth": 6},
+                {"first": 3, "second": 4},
+                {"first": 5, "second": 6},
             ],
         )
 
