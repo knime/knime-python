@@ -48,24 +48,31 @@
  */
 package org.knime.python3.nodes.ports;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.StringUtils;
 import org.knime.core.data.filestore.FileStore;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.KNIMEException;
+import org.knime.core.node.Node;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortTypeRegistry;
 import org.knime.core.node.util.CheckUtils;
 import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContainer;
 import org.knime.core.node.workflow.NodeContext;
+import org.knime.core.node.workflow.NodeMessage.Type;
 import org.knime.core.node.workflow.capture.WorkflowPortObject;
 import org.knime.core.node.workflow.capture.WorkflowPortObjectSpec;
 import org.knime.core.node.workflow.capture.WorkflowSegment.IOInfo;
 import org.knime.core.node.workflow.capture.WorkflowSegmentExecutor;
+import org.knime.core.node.workflow.capture.WorkflowSegmentExecutor.WorkflowSegmentExecutionResult;
+import org.knime.core.node.workflow.capture.WorkflowSegmentExecutor.WorkflowSegmentNodeMessage;
 import org.knime.python3.arrow.PythonArrowTableConverter;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
@@ -134,20 +141,74 @@ public final class PythonWorkflowPortObject implements PythonPortObject {
             .toArray(PortObject[]::new);
         var executable = createExecutable(warningConsumer);
         try {
-            var result = executable.executeWorkflow(portObjects, exec);
-            if (result.getFirst() == null) {
+            var result = executable.executeWorkflowAndCollectNodeMessages(portObjects, exec);
+            if (result.portObjectCopies() == null) {
                 // a null array currently indicates a failed execution
-                throw new IllegalStateException("Workflow execution failed.");
+                throwErrorMessage(result);
             }
             var outportConversionContext = new PortObjectConversionContext(dummyFileStoreMap, m_tableConverter, null);
-            var outputs = Stream.of(result.getFirst())//
+            var outputs = Stream.of(result.portObjectCopies())//
                 .map(p -> PythonPortTypeRegistry.convertPortObjectToPython(p, outportConversionContext))//
                 .toArray(PythonPortObject[]::new);
-            var flowVariables = FlowVariableUtils.convertToMap(result.getSecond());
+            var flowVariables = FlowVariableUtils.convertToMap(result.flowVariables());
             return new WorkflowExecutionResult(outputs, flowVariables);
         } finally {
             executable.dispose();
         }
+    }
+
+    private static void throwErrorMessage(
+        final WorkflowSegmentExecutionResult result)
+        throws KNIMEException {
+        var errorMessages =
+            result.nodeMessages().stream().filter(msg -> msg.message().getMessageType() == Type.ERROR).toList();
+        // determine the number of failed nodes that are not containers
+        List<WorkflowSegmentNodeMessage> leafErrorMessages = new ArrayList<>();
+        for (WorkflowSegmentNodeMessage message : errorMessages) {
+            recursivelyExtractLeafNodeErrorMessages(message, leafErrorMessages);
+        }
+        var numberOfFailedNodes = leafErrorMessages.size();
+        // construct error message
+        var message = String.format("Workflow contains %s with execution failure:%n%s",
+            ((numberOfFailedNodes == 1) ? "one node" : (String.valueOf(numberOfFailedNodes) + " nodes")),
+            errorMessages.stream().map(msg -> recursivelyConstructErrorMessage(msg, ""))
+                .collect(Collectors.joining(",\n")));
+        throw new KNIMEException(message);
+    }
+
+    private static void recursivelyExtractLeafNodeErrorMessages(final WorkflowSegmentNodeMessage message,
+        final List<WorkflowSegmentNodeMessage> result) {
+        if (message.message().getMessageType() != Type.ERROR) {
+            return;
+        }
+        if (message.recursiveMessages().isEmpty()) {
+            result.add(message);
+        } else {
+            for (WorkflowSegmentNodeMessage nestedMessage : message.recursiveMessages()) {
+                recursivelyExtractLeafNodeErrorMessages(nestedMessage, result);
+            }
+        }
+    }
+
+    private static String recursivelyConstructErrorMessage(final WorkflowSegmentNodeMessage message,
+        final String prefix) {
+        if (message.recursiveMessages().isEmpty()) {
+            return prefix + message.nodeName() + " #" + message.nodeID().getIndex() + ": "
+                + removeErrorPrefix(message.message().getMessage());
+        } else {
+            String newPrefix = prefix + message.nodeName() + " #" + message.nodeID().getIndex() + " > ";
+            return message.recursiveMessages().stream().filter(msg -> msg.message().getMessageType() == Type.ERROR)
+                .map(ms -> recursivelyConstructErrorMessage(ms, newPrefix))
+                .collect(Collectors.joining(",\n"));
+            // WorkflowSegmentNodeMessage of type ERROR can contain messages of type WARNING
+        }
+    }
+
+    private static String removeErrorPrefix(final String msg) {
+        if (msg.startsWith(Node.EXECUTE_FAILED_PREFIX)) {
+            return StringUtils.removeStart(msg, Node.EXECUTE_FAILED_PREFIX);
+        }
+        return msg;
     }
 
     // NOSONAR only used as transport container to Python
