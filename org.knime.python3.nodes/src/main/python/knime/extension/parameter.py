@@ -3036,6 +3036,20 @@ class ParameterArray(_BaseParameter):
             since_version,
             is_advanced,
         )
+        self._parameter_group_class = type(self._parameters)
+
+    def __get__(self, obj, objtype=None):
+        if obj is None:
+            return self
+        values = self._get_value(obj, self._name)
+        return [self._create_param_group_instance(value) for value in values]
+
+    def _create_param_group_instance(self, value):
+        instance = self._parameter_group_class()
+        param_holder = instance._get_param_holder(instance)
+        for param_name, param_value in value.items():
+            setattr(param_holder, param_name, param_value)
+        return param_holder
 
     def _generate_options_description(
         self, docstring: str, parent_scope: _Scope = None
