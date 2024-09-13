@@ -619,7 +619,12 @@ class _UISchemaExtractor:
             element_schema = {
                 "type": "Section" if element_scope.level() == 1 else "Group",
                 **param_obj._extract_ui_schema(),
-                "elements": self._extract_elements(param_obj, element_scope),
+                "elements": [
+                    {
+                        "type": param_obj._layout_type,
+                        "elements": self._extract_elements(param_obj, element_scope),
+                    }
+                ],
             }
 
         elif is_array:
@@ -2615,6 +2620,7 @@ def parameter_group(
     label: str,
     since_version: Optional[Union[Version, str]] = None,
     is_advanced: bool = False,
+    layout_type: Optional[str] = None,
 ):
     """
     Decorator for classes implementing parameter groups. Parameter group classes can define parameters
@@ -2693,12 +2699,19 @@ def parameter_group(
                 self._validator = self._parse_kwarg(kwargs, "validator", None)
                 self._override_internal_validator = False
                 self._label = label
+                self._layout_type = self._get_layout_type(layout_type)
                 self.__parameters__ = {}
 
                 # preserve the docstring describing the parameter group
                 self.__doc__ = original_class.__doc__
 
                 super().__init__(*args, **kwargs)
+
+            def _get_layout_type(self, layout_type):
+                if layout_type == "horizontal":
+                    return "HorizontalLayout"
+                else:
+                    return "VerticalLayout"
 
             def _check_keyword_compliance(self):
                 """
