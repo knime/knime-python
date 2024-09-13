@@ -181,6 +181,10 @@ def generate_values_dict(
                 "subgroup": {"first": first, "second": second},
                 "third": third,
             },
+            "parameter_group_layout": {
+                "string_param": string_param,
+                "double_param": double_param,
+            },
             "parameter_array": parameter_array,
         }
     }
@@ -515,6 +519,12 @@ class ParameterGroupAdvanced:
             raise ValueError("Detected a forbidden number.")
 
 
+@kp.parameter_group("Test group with layout type", layout_type="horizontal")
+class TestGroupWithLayoutType:
+    string_param = kp.StringParameter("String Parameter", "A string parameter", "foo")
+    double_param = kp.DoubleParameter("Double Parameter", "A double parameter", 1.5)
+
+
 class Parameterized:
     int_param = kp.IntParameter("Int Parameter", "An integer parameter", 3)
     double_param = kp.DoubleParameter("Double Parameter", "A double parameter", 1.5)
@@ -547,6 +557,8 @@ class Parameterized:
         layout_type="vertical",
         array_title="First Array Title",
     )
+
+    parameter_group_layout = TestGroupWithLayoutType()
 
     @string_param.validator
     def validate_string_param(value):
@@ -1531,6 +1543,22 @@ class ParameterTest(unittest.TestCase):
                                 },
                             },
                         },
+                        "parameter_group_layout": {
+                            "type": "object",
+                            "properties": {
+                                "string_param": {
+                                    "title": "String Parameter",
+                                    "description": "A string parameter",
+                                    "type": "string",
+                                },
+                                "double_param": {
+                                    "title": "Double Parameter",
+                                    "description": "A double parameter",
+                                    "type": "number",
+                                    "format": "double",
+                                },
+                            },
+                        },
                     },
                 }
             },
@@ -1573,7 +1601,6 @@ class ParameterTest(unittest.TestCase):
             self.parameterized_with_dialog_creation_context,
             dialog_creation_context=dummy_dialog,
         )
-
         self.assertEqual(expected, extracted)
 
     def test_extract_ui_schema(self):
@@ -1660,30 +1687,40 @@ class ParameterTest(unittest.TestCase):
                     "options": {},
                     "elements": [
                         {
-                            "type": "Group",
-                            "label": "Subgroup",
-                            "options": {},
+                            "type": "VerticalLayout",
                             "elements": [
                                 {
-                                    "scope": "#/properties/model/properties/parameter_group/properties/subgroup/properties/first",
-                                    "type": "Control",
-                                    "label": "First Parameter",
-                                    "options": {"format": "integer"},
+                                    "type": "Group",
+                                    "label": "Subgroup",
+                                    "options": {},
+                                    "elements": [
+                                        {
+                                            "type": "VerticalLayout",
+                                            "elements": [
+                                                {
+                                                    "scope": "#/properties/model/properties/parameter_group/properties/subgroup/properties/first",
+                                                    "type": "Control",
+                                                    "label": "First Parameter",
+                                                    "options": {"format": "integer"},
+                                                },
+                                                {
+                                                    "scope": "#/properties/model/properties/parameter_group/properties/subgroup/properties/second",
+                                                    "type": "Control",
+                                                    "label": "Second Parameter",
+                                                    "options": {"format": "integer"},
+                                                },
+                                            ],
+                                        }
+                                    ],
                                 },
                                 {
-                                    "scope": "#/properties/model/properties/parameter_group/properties/subgroup/properties/second",
+                                    "scope": "#/properties/model/properties/parameter_group/properties/third",
                                     "type": "Control",
-                                    "label": "Second Parameter",
+                                    "label": "Internal int Parameter",
                                     "options": {"format": "integer"},
                                 },
                             ],
-                        },
-                        {
-                            "scope": "#/properties/model/properties/parameter_group/properties/third",
-                            "type": "Control",
-                            "label": "Internal int Parameter",
-                            "options": {"format": "integer"},
-                        },
+                        }
                     ],
                 },
                 {
@@ -1721,9 +1758,32 @@ class ParameterTest(unittest.TestCase):
                         }
                     ],
                 },
+                {
+                    "type": "Section",
+                    "label": "Test group with layout type",
+                    "options": {},
+                    "elements": [
+                        {
+                            "type": "HorizontalLayout",
+                            "elements": [
+                                {
+                                    "scope": "#/properties/model/properties/parameter_group_layout/properties/string_param",
+                                    "type": "Control",
+                                    "label": "String Parameter",
+                                    "options": {"format": "string"},
+                                },
+                                {
+                                    "scope": "#/properties/model/properties/parameter_group_layout/properties/double_param",
+                                    "type": "Control",
+                                    "label": "Double Parameter",
+                                    "options": {"format": "number"},
+                                },
+                            ],
+                        }
+                    ],
+                },
             ],
         }
-
         extracted = kp.extract_ui_schema(
             self.parameterized, DummyDialogCreationContext()
         )
@@ -1926,30 +1986,40 @@ class ParameterTest(unittest.TestCase):
                     "options": {},
                     "elements": [
                         {
-                            "type": "Group",
-                            "label": "Subgroup",
-                            "options": {},
+                            "type": "VerticalLayout",
                             "elements": [
                                 {
-                                    "scope": "#/properties/model/properties/parameter_group/properties/subgroup/properties/first",
-                                    "type": "Control",
-                                    "label": "First Parameter",
-                                    "options": {"format": "integer"},
+                                    "type": "Group",
+                                    "label": "Subgroup",
+                                    "options": {},
+                                    "elements": [
+                                        {
+                                            "type": "VerticalLayout",
+                                            "elements": [
+                                                {
+                                                    "scope": "#/properties/model/properties/parameter_group/properties/subgroup/properties/first",
+                                                    "type": "Control",
+                                                    "label": "First Parameter",
+                                                    "options": {"format": "integer"},
+                                                },
+                                                {
+                                                    "scope": "#/properties/model/properties/parameter_group/properties/subgroup/properties/second",
+                                                    "type": "Control",
+                                                    "label": "Second Parameter",
+                                                    "options": {"format": "integer"},
+                                                },
+                                            ],
+                                        }
+                                    ],
                                 },
                                 {
-                                    "scope": "#/properties/model/properties/parameter_group/properties/subgroup/properties/second",
+                                    "scope": "#/properties/model/properties/parameter_group/properties/third",
                                     "type": "Control",
-                                    "label": "Second Parameter",
+                                    "label": "Internal int Parameter",
                                     "options": {"format": "integer"},
                                 },
                             ],
-                        },
-                        {
-                            "scope": "#/properties/model/properties/parameter_group/properties/third",
-                            "type": "Control",
-                            "label": "Internal int Parameter",
-                            "options": {"format": "integer"},
-                        },
+                        }
                     ],
                 },
                 {
@@ -1958,30 +2028,40 @@ class ParameterTest(unittest.TestCase):
                     "options": {"isAdvanced": True},
                     "elements": [
                         {
-                            "type": "Group",
-                            "label": "Subgroup",
-                            "options": {},
+                            "type": "VerticalLayout",
                             "elements": [
                                 {
-                                    "scope": "#/properties/model/properties/parameter_group_advanced/properties/subgroup/properties/first",
-                                    "type": "Control",
-                                    "label": "First Parameter",
-                                    "options": {"format": "integer"},
+                                    "type": "Group",
+                                    "label": "Subgroup",
+                                    "options": {},
+                                    "elements": [
+                                        {
+                                            "type": "VerticalLayout",
+                                            "elements": [
+                                                {
+                                                    "scope": "#/properties/model/properties/parameter_group_advanced/properties/subgroup/properties/first",
+                                                    "type": "Control",
+                                                    "label": "First Parameter",
+                                                    "options": {"format": "integer"},
+                                                },
+                                                {
+                                                    "scope": "#/properties/model/properties/parameter_group_advanced/properties/subgroup/properties/second",
+                                                    "type": "Control",
+                                                    "label": "Second Parameter",
+                                                    "options": {"format": "integer"},
+                                                },
+                                            ],
+                                        }
+                                    ],
                                 },
                                 {
-                                    "scope": "#/properties/model/properties/parameter_group_advanced/properties/subgroup/properties/second",
+                                    "scope": "#/properties/model/properties/parameter_group_advanced/properties/third",
                                     "type": "Control",
-                                    "label": "Second Parameter",
+                                    "label": "Internal int Parameter",
                                     "options": {"format": "integer"},
                                 },
                             ],
-                        },
-                        {
-                            "scope": "#/properties/model/properties/parameter_group_advanced/properties/third",
-                            "type": "Control",
-                            "label": "Internal int Parameter",
-                            "options": {"format": "integer"},
-                        },
+                        }
                     ],
                 },
             ],
@@ -2442,17 +2522,22 @@ class ParameterTest(unittest.TestCase):
                     "options": {},
                     "elements": [
                         {
-                            "type": "Control",
-                            "label": "Plain int param",
-                            "scope": "#/properties/model/properties/first_group/properties/first_param",
-                            "options": {"format": "integer"},
-                        },
-                        {
-                            "type": "Control",
-                            "label": "Second int param",
-                            "scope": "#/properties/model/properties/first_group/properties/second_param",
-                            "options": {"format": "integer"},
-                        },
+                            "type": "VerticalLayout",
+                            "elements": [
+                                {
+                                    "scope": "#/properties/model/properties/first_group/properties/first_param",
+                                    "type": "Control",
+                                    "label": "Plain int param",
+                                    "options": {"format": "integer"},
+                                },
+                                {
+                                    "scope": "#/properties/model/properties/first_group/properties/second_param",
+                                    "type": "Control",
+                                    "label": "Second int param",
+                                    "options": {"format": "integer"},
+                                },
+                            ],
+                        }
                     ],
                 },
                 {
@@ -2461,17 +2546,22 @@ class ParameterTest(unittest.TestCase):
                     "options": {},
                     "elements": [
                         {
-                            "type": "Control",
-                            "label": "Plain int param",
-                            "scope": "#/properties/model/properties/second_group/properties/first_param",
-                            "options": {"format": "integer"},
-                        },
-                        {
-                            "type": "Control",
-                            "label": "Second int param",
-                            "scope": "#/properties/model/properties/second_group/properties/second_param",
-                            "options": {"format": "integer"},
-                        },
+                            "type": "VerticalLayout",
+                            "elements": [
+                                {
+                                    "scope": "#/properties/model/properties/second_group/properties/first_param",
+                                    "type": "Control",
+                                    "label": "Plain int param",
+                                    "options": {"format": "integer"},
+                                },
+                                {
+                                    "scope": "#/properties/model/properties/second_group/properties/second_param",
+                                    "type": "Control",
+                                    "label": "Second int param",
+                                    "options": {"format": "integer"},
+                                },
+                            ],
+                        }
                     ],
                 },
             ],
@@ -2527,6 +2617,14 @@ class ParameterTest(unittest.TestCase):
                         "name": "Internal int Parameter",
                         "description": "Internal int parameter description",
                     },
+                ],
+            },
+            {
+                "name": "Test group with layout type",
+                "description": None,
+                "options": [
+                    {"name": "String Parameter", "description": "A string parameter"},
+                    {"name": "Double Parameter", "description": "A double parameter"},
                 ],
             },
         ]

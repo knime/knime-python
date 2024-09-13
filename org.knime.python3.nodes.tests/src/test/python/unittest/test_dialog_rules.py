@@ -273,106 +273,119 @@ class RulesTest(unittest.TestCase):
                     "options": {},
                     "elements": [
                         {
-                            "type": "Control",
-                            "label": "String Parameter",
-                            "scope": "#/properties/model/properties/group/properties/string_param",
-                            "options": {"format": "string"},
-                        },
-                        {
-                            "type": "Control",
-                            "label": "Int Parameter",
-                            "scope": "#/properties/model/properties/group/properties/int_param",
-                            "options": {"format": "integer"},
-                            "rule": {
-                                "effect": "HIDE",
-                                "condition": {
+                            "type": "VerticalLayout",
+                            "elements": [
+                                {
                                     "scope": "#/properties/model/properties/group/properties/string_param",
-                                    "schema": {"oneOf": [{"const": "foo"}]},
+                                    "type": "Control",
+                                    "label": "String Parameter",
+                                    "options": {"format": "string"},
                                 },
-                            },
-                        },
-                        {
-                            "type": "Control",
-                            "label": "Bool Parameter",
-                            "scope": "#/properties/model/properties/group/properties/statement_1",
-                            "options": {"format": "boolean"},
-                        },
-                        {
-                            "type": "Control",
-                            "label": "Bool Parameter",
-                            "scope": "#/properties/model/properties/group/properties/statement_2",
-                            "options": {"format": "boolean"},
-                        },
-                        {
-                            "type": "Control",
-                            "label": "Bool Parameter",
-                            "scope": "#/properties/model/properties/group/properties/bool_param_or",
-                            "options": {"format": "boolean"},
-                            "rule": {
-                                "condition": {
-                                    "conditions": [
-                                        {
-                                            "schema": {"oneOf": [{"const": True}]},
-                                            "scope": "#/properties/model/properties/group/properties/statement_1",
+                                {
+                                    "scope": "#/properties/model/properties/group/properties/int_param",
+                                    "type": "Control",
+                                    "label": "Int Parameter",
+                                    "options": {"format": "integer"},
+                                    "rule": {
+                                        "effect": "HIDE",
+                                        "condition": {
+                                            "scope": "#/properties/model/properties/group/properties/string_param",
+                                            "schema": {"oneOf": [{"const": "foo"}]},
                                         },
-                                        {
-                                            "schema": {"oneOf": [{"const": True}]},
-                                            "scope": "#/properties/model/properties/group/properties/statement_2",
-                                        },
-                                    ],
-                                    "type": "OR",
+                                    },
                                 },
-                                "effect": "HIDE",
-                            },
-                        },
-                        {
-                            "type": "Control",
-                            "label": "Bool Parameter",
-                            "scope": "#/properties/model/properties/group/properties/bool_param_and",
-                            "options": {"format": "boolean"},
-                            "rule": {
-                                "condition": {
-                                    "conditions": [
-                                        {
-                                            "schema": {"oneOf": [{"const": True}]},
-                                            "scope": "#/properties/model/properties/group/properties/statement_1",
-                                        },
-                                        {
-                                            "schema": {"oneOf": [{"const": True}]},
-                                            "scope": "#/properties/model/properties/group/properties/statement_2",
-                                        },
-                                    ],
-                                    "type": "AND",
+                                {
+                                    "scope": "#/properties/model/properties/group/properties/statement_1",
+                                    "type": "Control",
+                                    "label": "Bool Parameter",
+                                    "options": {"format": "boolean"},
                                 },
-                                "effect": "HIDE",
-                            },
-                        },
-                        {
-                            "label": "EnumSet Parameter",
-                            "options": {
-                                "format": "twinList",
-                                "possibleValues": [
-                                    {"id": "FOO", "text": "Foo"},
-                                    {"id": "BAR", "text": "Bar"},
-                                    {"id": "BAZ", "text": "Baz"},
-                                ],
-                            },
-                            "scope": "#/properties/model/properties/group/properties/enum_set_param",
-                            "type": "Control",
-                        },
-                        {
-                            "label": "Bool Parameter",
-                            "options": {"format": "boolean"},
-                            "rule": {
-                                "condition": {
-                                    "schema": {"contains": {"const": "FOO"}},
+                                {
+                                    "scope": "#/properties/model/properties/group/properties/statement_2",
+                                    "type": "Control",
+                                    "label": "Bool Parameter",
+                                    "options": {"format": "boolean"},
+                                },
+                                {
+                                    "scope": "#/properties/model/properties/group/properties/bool_param_or",
+                                    "type": "Control",
+                                    "label": "Bool Parameter",
+                                    "options": {"format": "boolean"},
+                                    "rule": {
+                                        "effect": "HIDE",
+                                        "condition": {
+                                            "type": "OR",
+                                            "conditions": [
+                                                {
+                                                    "scope": "#/properties/model/properties/group/properties/statement_1",
+                                                    "schema": {
+                                                        "oneOf": [{"const": True}]
+                                                    },
+                                                },
+                                                {
+                                                    "scope": "#/properties/model/properties/group/properties/statement_2",
+                                                    "schema": {
+                                                        "oneOf": [{"const": True}]
+                                                    },
+                                                },
+                                            ],
+                                        },
+                                    },
+                                },
+                                {
+                                    "scope": "#/properties/model/properties/group/properties/bool_param_and",
+                                    "type": "Control",
+                                    "label": "Bool Parameter",
+                                    "options": {"format": "boolean"},
+                                    "rule": {
+                                        "effect": "HIDE",
+                                        "condition": {
+                                            "type": "AND",
+                                            "conditions": [
+                                                {
+                                                    "scope": "#/properties/model/properties/group/properties/statement_1",
+                                                    "schema": {
+                                                        "oneOf": [{"const": True}]
+                                                    },
+                                                },
+                                                {
+                                                    "scope": "#/properties/model/properties/group/properties/statement_2",
+                                                    "schema": {
+                                                        "oneOf": [{"const": True}]
+                                                    },
+                                                },
+                                            ],
+                                        },
+                                    },
+                                },
+                                {
                                     "scope": "#/properties/model/properties/group/properties/enum_set_param",
+                                    "type": "Control",
+                                    "label": "EnumSet Parameter",
+                                    "options": {
+                                        "format": "twinList",
+                                        "possibleValues": [
+                                            {"id": "FOO", "text": "Foo"},
+                                            {"id": "BAR", "text": "Bar"},
+                                            {"id": "BAZ", "text": "Baz"},
+                                        ],
+                                    },
                                 },
-                                "effect": "HIDE",
-                            },
-                            "scope": "#/properties/model/properties/group/properties/bool_param_contains",
-                            "type": "Control",
-                        },
+                                {
+                                    "scope": "#/properties/model/properties/group/properties/bool_param_contains",
+                                    "type": "Control",
+                                    "label": "Bool Parameter",
+                                    "options": {"format": "boolean"},
+                                    "rule": {
+                                        "effect": "HIDE",
+                                        "condition": {
+                                            "scope": "#/properties/model/properties/group/properties/enum_set_param",
+                                            "schema": {"contains": {"const": "FOO"}},
+                                        },
+                                    },
+                                },
+                            ],
+                        }
                     ],
                 },
             ],
@@ -393,110 +406,126 @@ class RulesTest(unittest.TestCase):
                     "options": {},
                     "elements": [
                         {
-                            "type": "Control",
-                            "label": "String parameter",
-                            "scope": "#/properties/model/properties/group/properties/string_param",
-                            "options": {"format": "string"},
-                        },
-                        {
-                            "type": "Control",
-                            "label": "Int parameter",
-                            "scope": "#/properties/model/properties/group/properties/int_param",
-                            "options": {"format": "integer"},
-                            "rule": {
-                                "effect": "DISABLE",
-                                "condition": {
+                            "type": "VerticalLayout",
+                            "elements": [
+                                {
                                     "scope": "#/properties/model/properties/group/properties/string_param",
-                                    "schema": {
-                                        "oneOf": [{"const": "foo"}, {"const": "bar"}]
+                                    "type": "Control",
+                                    "label": "String parameter",
+                                    "options": {"format": "string"},
+                                },
+                                {
+                                    "scope": "#/properties/model/properties/group/properties/int_param",
+                                    "type": "Control",
+                                    "label": "Int parameter",
+                                    "options": {"format": "integer"},
+                                    "rule": {
+                                        "effect": "DISABLE",
+                                        "condition": {
+                                            "scope": "#/properties/model/properties/group/properties/string_param",
+                                            "schema": {
+                                                "oneOf": [
+                                                    {"const": "foo"},
+                                                    {"const": "bar"},
+                                                ]
+                                            },
+                                        },
                                     },
                                 },
-                            },
-                        },
-                        {
-                            "type": "Control",
-                            "label": "Bool Parameter",
-                            "scope": "#/properties/model/properties/group/properties/statement_1",
-                            "options": {"format": "boolean"},
-                        },
-                        {
-                            "type": "Control",
-                            "label": "Bool Parameter",
-                            "scope": "#/properties/model/properties/group/properties/statement_2",
-                            "options": {"format": "boolean"},
-                        },
-                        {
-                            "type": "Control",
-                            "label": "Bool Parameter",
-                            "scope": "#/properties/model/properties/group/properties/bool_param_or",
-                            "options": {"format": "boolean"},
-                            "rule": {
-                                "condition": {
-                                    "conditions": [
-                                        {
-                                            "schema": {"oneOf": [{"const": True}]},
-                                            "scope": "#/properties/model/properties/group/properties/statement_1",
-                                        },
-                                        {
-                                            "schema": {"oneOf": [{"const": True}]},
-                                            "scope": "#/properties/model/properties/group/properties/statement_2",
-                                        },
-                                    ],
-                                    "type": "OR",
+                                {
+                                    "scope": "#/properties/model/properties/group/properties/statement_1",
+                                    "type": "Control",
+                                    "label": "Bool Parameter",
+                                    "options": {"format": "boolean"},
                                 },
-                                "effect": "DISABLE",
-                            },
-                        },
-                        {
-                            "type": "Control",
-                            "label": "Bool Parameter",
-                            "scope": "#/properties/model/properties/group/properties/bool_param_and",
-                            "options": {"format": "boolean"},
-                            "rule": {
-                                "condition": {
-                                    "conditions": [
-                                        {
-                                            "schema": {"oneOf": [{"const": True}]},
-                                            "scope": "#/properties/model/properties/group/properties/statement_1",
-                                        },
-                                        {
-                                            "schema": {"oneOf": [{"const": True}]},
-                                            "scope": "#/properties/model/properties/group/properties/statement_2",
-                                        },
-                                    ],
-                                    "type": "AND",
+                                {
+                                    "scope": "#/properties/model/properties/group/properties/statement_2",
+                                    "type": "Control",
+                                    "label": "Bool Parameter",
+                                    "options": {"format": "boolean"},
                                 },
-                                "effect": "DISABLE",
-                            },
-                        },
-                        {
-                            "label": "EnumSet Parameter",
-                            "options": {
-                                "format": "twinList",
-                                "possibleValues": [
-                                    {"id": "FOO", "text": "Foo"},
-                                    {"id": "BAR", "text": "Bar"},
-                                    {"id": "BAZ", "text": "Baz"},
-                                ],
-                            },
-                            "scope": "#/properties/model/properties/group/properties/enum_set_param",
-                            "type": "Control",
-                        },
-                        {
-                            "label": "Bool Parameter",
-                            "options": {"format": "boolean"},
-                            "rule": {
-                                "condition": {
-                                    "schema": {"contains": {"const": "FOO"}},
+                                {
+                                    "scope": "#/properties/model/properties/group/properties/bool_param_or",
+                                    "type": "Control",
+                                    "label": "Bool Parameter",
+                                    "options": {"format": "boolean"},
+                                    "rule": {
+                                        "effect": "DISABLE",
+                                        "condition": {
+                                            "type": "OR",
+                                            "conditions": [
+                                                {
+                                                    "scope": "#/properties/model/properties/group/properties/statement_1",
+                                                    "schema": {
+                                                        "oneOf": [{"const": True}]
+                                                    },
+                                                },
+                                                {
+                                                    "scope": "#/properties/model/properties/group/properties/statement_2",
+                                                    "schema": {
+                                                        "oneOf": [{"const": True}]
+                                                    },
+                                                },
+                                            ],
+                                        },
+                                    },
+                                },
+                                {
+                                    "scope": "#/properties/model/properties/group/properties/bool_param_and",
+                                    "type": "Control",
+                                    "label": "Bool Parameter",
+                                    "options": {"format": "boolean"},
+                                    "rule": {
+                                        "effect": "DISABLE",
+                                        "condition": {
+                                            "type": "AND",
+                                            "conditions": [
+                                                {
+                                                    "scope": "#/properties/model/properties/group/properties/statement_1",
+                                                    "schema": {
+                                                        "oneOf": [{"const": True}]
+                                                    },
+                                                },
+                                                {
+                                                    "scope": "#/properties/model/properties/group/properties/statement_2",
+                                                    "schema": {
+                                                        "oneOf": [{"const": True}]
+                                                    },
+                                                },
+                                            ],
+                                        },
+                                    },
+                                },
+                                {
                                     "scope": "#/properties/model/properties/group/properties/enum_set_param",
+                                    "type": "Control",
+                                    "label": "EnumSet Parameter",
+                                    "options": {
+                                        "format": "twinList",
+                                        "possibleValues": [
+                                            {"id": "FOO", "text": "Foo"},
+                                            {"id": "BAR", "text": "Bar"},
+                                            {"id": "BAZ", "text": "Baz"},
+                                        ],
+                                    },
                                 },
-                                "effect": "DISABLE",
-                            },
-                            "scope": "#/properties/model/properties/group/properties/bool_param_contains",
-                            "type": "Control",
-                        },
+                                {
+                                    "scope": "#/properties/model/properties/group/properties/bool_param_contains",
+                                    "type": "Control",
+                                    "label": "Bool Parameter",
+                                    "options": {"format": "boolean"},
+                                    "rule": {
+                                        "effect": "DISABLE",
+                                        "condition": {
+                                            "scope": "#/properties/model/properties/group/properties/enum_set_param",
+                                            "schema": {"contains": {"const": "FOO"}},
+                                        },
+                                    },
+                                },
+                            ],
+                        }
                     ],
-                },
+                }
             ],
         }
         extracted = kp.extract_ui_schema(
