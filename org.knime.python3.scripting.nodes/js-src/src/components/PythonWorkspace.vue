@@ -43,7 +43,13 @@ const resetWorkspace = async () => {
 
 onMounted(async () => {
   useTotalWidth();
-  if ((await getPythonInitialDataService().getInitialData()).inputsAvailable) {
+
+  const initialData = await getPythonInitialDataService().getInitialData();
+  if (
+    initialData.inputConnectionInfo.every(
+      (port) => port.isOptional || port.status === "OK",
+    )
+  ) {
     resetButtonEnabled.value = true;
   }
 });

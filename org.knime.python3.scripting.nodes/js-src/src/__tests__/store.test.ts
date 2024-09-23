@@ -26,7 +26,10 @@ describe("store.ts", () => {
         getInitialData: () =>
           Promise.resolve({
             ...DEFAULT_INITIAL_DATA,
-            inputsAvailable: false,
+            inputConnectionInfo: [
+              { status: "OK", isOptional: false },
+              { status: "UNEXECUTED_CONNECTION", isOptional: false },
+            ],
           }),
       });
       const sessionStatus = await importSessionStatusStore();
@@ -38,7 +41,10 @@ describe("store.ts", () => {
         getInitialData: () =>
           Promise.resolve({
             ...DEFAULT_INITIAL_DATA,
-            inputsAvailable: false,
+            inputConnectionInfo: [
+              { status: "OK", isOptional: false },
+              { status: "UNEXECUTED_CONNECTION", isOptional: false },
+            ],
           }),
       });
 

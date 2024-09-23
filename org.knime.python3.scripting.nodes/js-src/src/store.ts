@@ -57,13 +57,15 @@ export const useSessionStatusStore = (): SessionStatusStore => {
   return sessionStatus;
 };
 
-// Check if inputs are available and set the the isRunningSupported flag accordingly
+// Check if inputs are available and set the isRunningSupported flag accordingly
 getPythonInitialDataService()
   .getInitialData()
   .then((initialData) => {
-    sessionStatus.isRunningSupported = initialData.inputsAvailable;
+    sessionStatus.isRunningSupported = initialData.inputConnectionInfo.every(
+      (port) => port.isOptional || port.status === "OK",
+    );
 
-    if (!initialData.inputsAvailable) {
+    if (!sessionStatus.isRunningSupported) {
       consoleHandler.writeln({
         warning:
           "Missing input data. Connect all input ports and execute preceding nodes to enable script execution.",

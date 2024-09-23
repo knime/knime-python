@@ -1,20 +1,14 @@
 import {
+  type GenericInitialData,
   getInitialDataService,
   type InputOutputModel,
-  type KAIConfig,
-  type PortConfigs,
 } from "@knime/scripting-editor";
 import type { ExecutableOption } from "./types/common";
 
-export type PythonInitialData = {
-  inputObjects: InputOutputModel[];
-  inputPortConfigs: PortConfigs;
-  inputsAvailable: boolean;
-  flowVariables: InputOutputModel;
-  outputObjects: InputOutputModel[];
+export type PythonInitialData = GenericInitialData & {
   hasPreview: boolean;
+  outputObjects: InputOutputModel[];
   executableOptionsList: ExecutableOption[];
-  kAiConfig: KAIConfig;
 };
 
 export const getPythonInitialDataService = () => ({

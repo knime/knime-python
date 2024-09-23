@@ -76,11 +76,7 @@ watch(
 );
 
 const initialDataLoaded = ref(false);
-getPythonInitialDataService()
-  .getInitialData()
-  .then(() => {
-    initialDataLoaded.value = true;
-  });
+
 // Register the completion items for the inputs
 pythonScriptingService.registerInputCompletions();
 
@@ -103,12 +99,13 @@ const rightPaneOptions = [
 onMounted(async () => {
   pythonScriptingService.sendLastConsoleOutput();
 
-  pythonScriptingService.initExecutableSelection();
+  await pythonScriptingService.initExecutableSelection();
 
+  const initialData = await getPythonInitialDataService().getInitialData();
+
+  initialDataLoaded.value = true;
   // Check if the preview is available
-  hasPreview.value = (
-    await getPythonInitialDataService().getInitialData()
-  ).hasPreview;
+  hasPreview.value = initialData.hasPreview;
 
   if (hasPreview.value) {
     // wait until preview is mounted to DOM
@@ -123,11 +120,10 @@ onMounted(async () => {
     <template v-if="initialDataLoaded">
       <ScriptingEditor
         :title="`Python ${hasPreview ? 'View' : 'Script'}`"
-        :menu-items="menuItems"
-        :show-run-buttons="true"
-        :to-settings="toSettings"
         language="python"
         file-name="main.py"
+        :menu-items="menuItems"
+        :to-settings="toSettings"
         @menu-item-clicked="onMenuItemClicked"
       >
         <template #settings-title>

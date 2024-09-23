@@ -122,7 +122,10 @@ describe("PythonWorkspace", () => {
       getInitialData: () =>
         Promise.resolve({
           ...DEFAULT_INITIAL_DATA,
-          inputsAvailable: false,
+          inputConnectionInfo: [
+            { status: "OK", isOptional: false },
+            { status: "UNEXECUTED_CONNECTION", isOptional: false },
+          ],
         }),
     });
 
