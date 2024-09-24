@@ -1,6 +1,6 @@
 {
   "extends": "./tsconfig.app.json",
-  "exclude": [],
+  "exclude": ["node_modules/@knime/scripting-editor/**/*"],
   "compilerOptions": {
     "composite": true,
     "lib": ["ES2022"],

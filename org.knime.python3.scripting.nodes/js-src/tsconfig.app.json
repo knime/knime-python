@@ -1,7 +1,11 @@
 {
   "extends": "@vue/tsconfig/tsconfig.dom.json",
   "include": ["src/**/*", "src/**/*.vue", "node_modules/@knime/**/*.vue"],
-  "exclude": ["**/__tests__/*", "**/__mocks__/*"],
+  "exclude": [
+    "**/__tests__/*",
+    "**/__mocks__/*",
+    "node_modules/@knime/scripting-editor/**/*"
+  ],
   "compilerOptions": {
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "baseUrl": ".",
