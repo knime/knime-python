@@ -2616,11 +2616,22 @@ class GetSetBase:
                 super().__setattr__(name, value)
 
 
+class LayoutDirection(Enum):
+    """
+    LayoutDirection defines the possible layout directions
+    for parameteter groups and parameter arrays. It specifies whether the layout should be
+    arranged vertically or horizontally.
+    """
+
+    VERTICAL = "VerticalLayout"
+    HORIZONTAL = "HorizontalLayout"
+
+
 def parameter_group(
     label: str,
     since_version: Optional[Union[Version, str]] = None,
     is_advanced: bool = False,
-    layout_type: Optional[str] = None,
+    layout_type: LayoutDirection = LayoutDirection.VERTICAL,
 ):
     """
     Decorator for classes implementing parameter groups. Parameter group classes can define parameters
@@ -2699,19 +2710,13 @@ def parameter_group(
                 self._validator = self._parse_kwarg(kwargs, "validator", None)
                 self._override_internal_validator = False
                 self._label = label
-                self._layout_type = self._get_layout_type(layout_type)
+                self._layout_type = layout_type.value
                 self.__parameters__ = {}
 
                 # preserve the docstring describing the parameter group
                 self.__doc__ = original_class.__doc__
 
                 super().__init__(*args, **kwargs)
-
-            def _get_layout_type(self, layout_type):
-                if layout_type == "horizontal":
-                    return "HorizontalLayout"
-                else:
-                    return "VerticalLayout"
 
             def _check_keyword_compliance(self):
                 """
@@ -3004,7 +3009,7 @@ class ParameterArray(_BaseParameter):
         since_version: Optional[Union[Version, str]] = None,
         is_advanced: bool = False,
         allow_reorder: bool = True,
-        layout_type: Optional[str] = None,
+        layout_type: LayoutDirection = LayoutDirection.VERTICAL,
         button_text: Optional[str] = None,
         array_title: Optional[str] = None,
     ):
@@ -3029,8 +3034,8 @@ class ParameterArray(_BaseParameter):
             A boolean indicating if the object is advanced (default is False).
         allow_reorder : bool, optional
             Whether the order of parameters in the array can be changed. Defaults to True.
-        layout_type : str, optional
-            Layout type for the array. Can be "horizontal" or "vertical". Defaults to "horizontal".
+        layout_type : LayoutDirection, VERTICAL or HORIZONTAL
+            Layout type for the array. Can be  HORIZONTAL or VERTICAL. Defaults to VERTICAL.
         button_text : str, optional
             Text to display on the button for adding new parameters.
         array_title : str, optional
@@ -3128,16 +3133,13 @@ class ParameterArray(_BaseParameter):
 
         schema["type"] = "array"
         schema["items"] = {"type": "object", "properties": item_properties}
-
         return schema
 
     def _extract_ui_schema(self, dialog_creation_context):
         base_schema = super()._extract_ui_schema(dialog_creation_context)
         base_schema["options"] = self._get_options(dialog_creation_context)
-
         nested_elements = base_schema["options"]["detail"]["layout"]["elements"]
         param_holder = self._parameters._get_param_holder(self._parameters)
-
         for name, param_obj in _get_parameters(param_holder).items():
             element_schema = param_obj._extract_ui_schema(
                 dialog_creation_context=dialog_creation_context
@@ -3152,11 +3154,7 @@ class ParameterArray(_BaseParameter):
             "addButtonText": self._button_text,
             "detail": {
                 "layout": {
-                    "type": (
-                        "VerticalLayout"
-                        if self._layout_type == "vertical"
-                        else "HorizontalLayout"
-                    ),
+                    "type": (self._layout_type.value),
                     "elements": [],
                 }
             },
