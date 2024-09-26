@@ -519,7 +519,9 @@ class ParameterGroupAdvanced:
             raise ValueError("Detected a forbidden number.")
 
 
-@kp.parameter_group("Test group with layout type", layout_type="horizontal")
+@kp.parameter_group(
+    "Test group with layout type", layout_type=kp.LayoutDirection.HORIZONTAL
+)
 class TestGroupWithLayoutType:
     string_param = kp.StringParameter("String Parameter", "A string parameter", "foo")
     double_param = kp.DoubleParameter("Double Parameter", "A double parameter", 1.5)
@@ -554,7 +556,6 @@ class Parameterized:
     parameter_group = ParameterGroup()
     parameter_array = kp.ParameterArray(
         parameters=ParameterArrayGroup(),
-        layout_type="vertical",
         array_title="First Array Title",
     )
 
@@ -563,7 +564,7 @@ class Parameterized:
     @string_param.validator
     def validate_string_param(value):
         if len(value) > 10:
-            raise ValueError(f"Length of string must not exceed 10!")
+            raise ValueError("Length of string must not exceed 10!")
 
 
 class ParameterizedIndentation:
@@ -612,7 +613,7 @@ class ParameterizedParameterArray:
         description="A vertical array",
         parameters=ParameterArrayGroup(),
         allow_reorder=True,
-        layout_type="vertical",
+        layout_type=kp.LayoutDirection.VERTICAL,
         array_title="Second Array Title",
     )
 
@@ -621,6 +622,7 @@ class ParameterizedParameterArray:
         description="A horizontal array",
         parameters=ParameterArrayGroup(),
         allow_reorder=False,
+        layout_type=kp.LayoutDirection.HORIZONTAL,
         button_text="Add new parameter",
         validator=_validate_parameter_array,
     )
@@ -670,7 +672,7 @@ class ParameterizedWithOneGroup:
     @string_param.validator
     def validate_string_param(value):
         if len(value) > 10:
-            raise ValueError(f"Length of string must not exceed 10!")
+            raise ValueError("Length of string must not exceed 10!")
 
 
 class ParameterizedWithAdvancedOption:
