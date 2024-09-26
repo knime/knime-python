@@ -93,8 +93,8 @@ class TestEnumSetOptions(kp.EnumParameterOptions):
     BAZ = ("Baz", "The baz")
 
 
-@kp.parameter_group("Parameter Group Array")
-class ParameterGroupArray:
+@kp.parameter_group("Parameter Group for Parameter Array")
+class ParameterArrayGroup:
     """A parameter group which contains two parameters and passed to a ParameterArray."""
 
     first = kp.IntParameter(
@@ -106,6 +106,46 @@ class ParameterGroupArray:
         label="Second Parameter",
         description="Second parameter description",
         default_value=5,
+    )
+
+
+@kp.parameter_group("Parameter Group with Nested Group")
+class ParameterGroupWithGroup:
+    """A parameter group which contains two parameters and a parameter group
+    and passed to a ParameterArray."""
+
+    first = kp.IntParameter(
+        label="First Parameter",
+        description="First parameter description",
+        default_value=1,
+    )
+    second = kp.IntParameter(
+        label="Second Parameter",
+        description="Second parameter description",
+        default_value=5,
+    )
+
+    group = ParameterArrayGroup()
+
+
+@kp.parameter_group("Parameter Group with Nested Group")
+class ParameterGroupWithArray:
+    """A parameter group which contains two parameters and a parameter array
+    and passed to a ParameterArray."""
+
+    first = kp.IntParameter(
+        label="First Parameter",
+        description="First parameter description",
+        default_value=1,
+    )
+    second = kp.IntParameter(
+        label="Second Parameter",
+        description="Second parameter description",
+        default_value=5,
+    )
+
+    third = kp.ParameterArray(
+        parameters=ParameterArrayGroup(),
     )
 
 
@@ -503,7 +543,7 @@ class Parameterized:
     )
     parameter_group = ParameterGroup()
     parameter_array = kp.ParameterArray(
-        parameters=ParameterGroupArray(),
+        parameters=ParameterArrayGroup(),
         layout_type="vertical",
         array_title="First Array Title",
     )
@@ -552,7 +592,7 @@ class ParameterizedParameterArray:
     parameter_array_vertical = kp.ParameterArray(
         label="Vertical Array",
         description="A vertical array",
-        parameters=ParameterGroupArray(),
+        parameters=ParameterArrayGroup(),
         allow_reorder=True,
         layout_type="vertical",
         array_title="Second Array Title",
@@ -561,9 +601,25 @@ class ParameterizedParameterArray:
     parameter_array_horizontal = kp.ParameterArray(
         label="Horizontal Array",
         description="A horizontal array",
-        parameters=ParameterGroupArray(),
+        parameters=ParameterArrayGroup(),
         allow_reorder=False,
         button_text="Add new parameter",
+    )
+
+
+class ParameterizedParameterArrayNested:
+    """Provides checks for invalid ParameterArray initialisation"""
+
+    parameter_array_first = kp.ParameterArray(
+        label="First Array",
+        description="First array",
+        parameters=ParameterGroupWithGroup(),
+    )
+
+    parameter_array_second = kp.ParameterArray(
+        label="Second Array",
+        description="Second array",
+        parameters=ParameterGroupWithArray(),
     )
 
 
@@ -1061,7 +1117,9 @@ class ParameterTest(unittest.TestCase):
         self.parameterized_with_indented_docstring = ParameterizedIndentation()
         self.parameterized_with_enum_set_params = ParameterizedEnumSet()
         self.parameterized_with_parameter_array = ParameterizedParameterArray()
-
+        self.parameterized_with_parameter_array_nested = (
+            ParameterizedParameterArrayNested()
+        )
         self.maxDiff = None
 
     def test_forbidden_keywords_not_allowed(self):
@@ -1909,7 +1967,7 @@ class ParameterTest(unittest.TestCase):
         )
         self.assertEqual(expected, extracted)
 
-    def test_extract_ui_schema_array_parameter(self):
+    def test_extract_ui_schema_parameter_array(self):
         expected = {
             "type": "VerticalLayout",
             "elements": [
@@ -2005,6 +2063,16 @@ class ParameterTest(unittest.TestCase):
 
         with self.assertRaises(TypeError):
             self.parameterized.enum_set_param = 1
+
+        with self.assertRaises(ValueError):
+            self.parameterized_with_parameter_array_nested.parameter_array_first = [
+                {"first": 1, "second": 5, "group": {"first": 1, "second": 5}}
+            ]
+
+        with self.assertRaises(ValueError):
+            self.parameterized_with_parameter_array_nested.parameter_array_second = [
+                {"first": 1, "second": 5, "third": [{"first": 1, "second": 5}]}
+            ]
 
     def test_custom_validators(self):
         """
