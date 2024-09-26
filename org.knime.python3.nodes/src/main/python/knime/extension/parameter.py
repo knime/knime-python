@@ -2976,6 +2976,10 @@ class ParameterArray(_BaseParameter):
                 raise ValueError(
                     "ParameterArray instances cannot be nested within another ParameterArray."
                 )
+            if _is_group(param_obj):
+                raise ValueError(
+                    "ParameterGroup instances cannot be nested within another ParameterGroup."
+                )
 
     def __init__(
         self,
@@ -3003,7 +3007,8 @@ class ParameterArray(_BaseParameter):
         description : str, optional
             The description of the parameter in the node description.
         validator : Optional[Callable]
-            A function which checks if there are any nested ParameterArray instances defined.
+            A function which by default checks if there are any nested ParameterArray or ParameterGroup
+            instances defined.
         since_version : Union[Version, str], optional
             A string or Version object representing the version since when the object is available (default is None).
         is_advanced : bool, optional
@@ -3021,12 +3026,12 @@ class ParameterArray(_BaseParameter):
 
         self._allow_reorder = allow_reorder
         self._layout_type = layout_type
+        if validator is None:
+            validator = self._default_validator
+
         self._parameters = parameters
         self._button_text = button_text
         self._array_title = array_title if array_title else "Group"
-
-        if validator is None:
-            validator = self._default_validator
 
         super().__init__(
             label,
@@ -3089,11 +3094,14 @@ class ParameterArray(_BaseParameter):
         param_holder = self._parameters._get_param_holder(self._parameters)
         item_properties = {}
         for name, param_obj in _get_parameters(param_holder).items():
-            param_schema = param_obj._extract_schema(
-                extension_version, dialog_creation_context
-            )
-            param_schema["default"] = param_obj._to_dict(param_obj._get_default())
-            item_properties[name] = param_schema
+            # this check is here to avoid _to_dict conversion errors if a
+            # parameter is a group or an array
+            if not (_is_group(param_obj) or _is_array(param_obj)):
+                param_schema = param_obj._extract_schema(
+                    extension_version, dialog_creation_context
+                )
+                param_schema["default"] = param_obj._to_dict(param_obj._get_default())
+                item_properties[name] = param_schema
 
         schema["type"] = "array"
         schema["items"] = {"type": "object", "properties": item_properties}
