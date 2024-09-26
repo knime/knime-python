@@ -81,7 +81,9 @@ onUnmounted(() => {
 
 const updateLiveExecutableSelection = () => {
   const newSelection =
-    selectedEnv.value === "default" ? "" : selectedExecutableOption.value ?? "";
+    selectedEnv.value === "default"
+      ? ""
+      : (selectedExecutableOption.value ?? "");
 
   if (isMissingVarSelected.value && selectedEnv.value === "conda") {
     return;

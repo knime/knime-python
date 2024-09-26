@@ -41,6 +41,7 @@ export default defineConfig({
     reporters: ["default"],
     root: fileURLToPath(new URL("./", import.meta.url)),
     server: { deps: { inline: ["@knime/scripting-editor"] } },
+    pool: "threads",
     alias: {
       "monaco-editor": fileURLToPath(
         new URL("./src/__mocks__/monaco-editor", import.meta.url),
