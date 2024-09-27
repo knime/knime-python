@@ -1177,6 +1177,15 @@ class ParameterTest(unittest.TestCase):
         self.assertEqual(obj.double_param, 1.5)
         self.assertEqual(obj.group.first, 1)
 
+    def test_create_param_group_instance_param_array(self):
+        obj = Parameterized()
+        params = {"model": {"parameter_array": [{"first": 1, "second": 5}]}}
+
+        kp.inject_parameters(obj, params)
+        for param in obj.parameter_array:
+            self.assertEqual(param.first, 1)
+            self.assertEqual(param.second, 5)
+
     #### Test central functionality: ####
     def test_getting_parameters(self):
         """
