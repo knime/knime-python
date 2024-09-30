@@ -7,18 +7,24 @@ import {
   editor,
   type SettingsMenuItem,
   type GenericNodeSettings,
+  type ConsoleHandler,
+  setConsoleHandler,
+  initConsoleEventHandler,
+  OutputConsole,
+  consoleHandler,
 } from "@knime/scripting-editor";
 import { getPythonInitialDataService } from "@/python-initial-data-service";
 import { nextTick, onMounted, ref, watch, type Ref } from "vue";
 import SettingsIcon from "@knime/styles/img/icons/cog.svg";
 import FileCogIcon from "@knime/styles/img/icons/file-cog.svg";
 import FileTextIcon from "@knime/styles/img/icons/file-text.svg";
-import { type MenuItem, LoadingIcon } from "@knime/components";
+import { type MenuItem, LoadingIcon, FunctionButton } from "@knime/components";
 import EnvironmentSettings from "@/components/EnvironmentSettings.vue";
 import LastActionStatus from "@/components/LastActionStatus.vue";
 import PythonEditorControls from "@/components/PythonEditorControls.vue";
 import PythonViewPreview from "@/components/PythonViewPreview.vue";
 import PythonWorkspace from "@/components/PythonWorkspace.vue";
+import TrashIcon from "@knime/styles/img/icons/trash.svg";
 
 const menuItems: MenuItem[] = [
   {
@@ -124,6 +130,13 @@ onMounted(async () => {
         file-name="main.py"
         :menu-items="menuItems"
         :to-settings="toSettings"
+        :additional-bottom-pane-tab-content="[
+          {
+            slotName: 'bottomPaneTabSlot:console',
+            label: 'Console',
+            associatedControlsSlotName: 'bottomPaneTabControlsSlot:console',
+          },
+        ]"
         @menu-item-clicked="onMenuItemClicked"
       >
         <template #settings-title>
@@ -153,8 +166,24 @@ onMounted(async () => {
           </div>
           <PythonWorkspace v-if="!hasPreview" />
         </template>
-        <template #console-status>
+        <template #bottom-pane-status-label>
           <LastActionStatus />
+        </template>
+        <template #bottomPaneTabSlot:console>
+          <OutputConsole
+            class="console"
+            @console-created="
+              (console: ConsoleHandler) => {
+                setConsoleHandler(console);
+                initConsoleEventHandler();
+              }
+            "
+          />
+        </template>
+        <template #bottomPaneTabControlsSlot:console>
+          <FunctionButton class="clear-button" @click="consoleHandler.clear">
+            <TrashIcon />
+          </FunctionButton>
         </template>
       </ScriptingEditor>
     </template>
