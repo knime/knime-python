@@ -293,7 +293,7 @@ final class CloseablePythonNodeProxy
         try {
             failure.throwIfFailure();
         } catch (InvalidSettingsException ex) {
-            throw new IllegalStateException(ex);
+            throw new IllegalStateException(ex.getMessage(), ex);
         }
         return dialogRepresentation;
     }
