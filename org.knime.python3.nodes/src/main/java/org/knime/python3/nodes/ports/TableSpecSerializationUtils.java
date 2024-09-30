@@ -57,8 +57,6 @@ import java.util.UUID;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.DataType;
 import org.knime.core.data.IDataRepository;
-import org.knime.core.data.columnar.schema.ColumnarValueSchema;
-import org.knime.core.data.columnar.schema.ColumnarValueSchemaUtils;
 import org.knime.core.data.filestore.FileStore;
 import org.knime.core.data.filestore.FileStoreKey;
 import org.knime.core.data.filestore.internal.FileStoreProxy.FlushCallback;
@@ -201,7 +199,6 @@ public final class TableSpecSerializationUtils {
 
     private static AnnotatedColumnarSchema specToSchema(final DataTableSpec spec) {
         final var vs = ValueSchemaUtils.create(spec, RowKeyType.CUSTOM, new DummyFileStoreHandler());
-        final var cvs = ColumnarValueSchemaUtils.create(vs);
         var columnNames = new String[spec.getNumColumns() + 1];
         columnNames[0] = "RowKey";
         var columnMetaData = new ColumnMetaData[columnNames.length];
@@ -211,7 +208,7 @@ public final class TableSpecSerializationUtils {
             columnMetaData[i + 1] = new PythonColumnMetaData(spec.getColumnSpec(i).getType());
         }
         System.arraycopy(spec.getColumnNames(), 0, columnNames, 1, spec.getNumColumns());
-        return DefaultAnnotatedColumnarSchema.annotate(cvs, columnNames, columnMetaData);
+        return DefaultAnnotatedColumnarSchema.annotate(vs, columnNames, columnMetaData);
     }
 
     private static final class PythonColumnMetaData implements ColumnMetaData {

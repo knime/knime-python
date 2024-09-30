@@ -75,8 +75,6 @@ import org.knime.core.data.IDataRepository;
 import org.knime.core.data.columnar.ColumnStoreFactoryRegistry;
 import org.knime.core.data.columnar.domain.DefaultDomainWritableConfig;
 import org.knime.core.data.columnar.domain.DomainWritableConfig;
-import org.knime.core.data.columnar.schema.ColumnarValueSchema;
-import org.knime.core.data.columnar.schema.ColumnarValueSchemaUtils;
 import org.knime.core.data.columnar.table.ColumnarRowReadTable;
 import org.knime.core.data.columnar.table.ColumnarRowWriteTable;
 import org.knime.core.data.columnar.table.ColumnarRowWriteTableSettings;
@@ -85,6 +83,7 @@ import org.knime.core.data.meta.DataColumnMetaData;
 import org.knime.core.data.v2.RowKeyValueFactory;
 import org.knime.core.data.v2.ValueFactory;
 import org.knime.core.data.v2.ValueFactoryUtils;
+import org.knime.core.data.v2.schema.ValueSchema;
 import org.knime.core.data.v2.schema.ValueSchemaUtils;
 import org.knime.core.data.v2.value.DefaultRowKeyValueFactory;
 import org.knime.core.data.v2.value.VoidRowKeyFactory;
@@ -109,8 +108,8 @@ public final class PythonArrowDataUtils {
     private static final ColumnarRowWriteTableSettings EMPTY_TABLE_SETTINGS =
         new ColumnarRowWriteTableSettings(false, 0, false, false, 100, 4);
 
-    private static final ColumnarValueSchema EMPTY_SCHEMA = ColumnarValueSchemaUtils
-        .create(ValueSchemaUtils.create(new DataTableSpec(), new ValueFactory<?, ?>[]{VoidRowKeyFactory.INSTANCE}));
+    private static final ValueSchema EMPTY_SCHEMA =
+        ValueSchemaUtils.create(new DataTableSpec(), new ValueFactory<?, ?>[]{VoidRowKeyFactory.INSTANCE});
 
     private PythonArrowDataUtils() {
     }
@@ -242,7 +241,7 @@ public final class PythonArrowDataUtils {
         final Supplier<SequentialBatchReadable> batchReadableSupplier = () -> createReadable(sink, storeFactory);
         final Supplier<DomainWritableConfig> configSupplier = () -> {
             // NB: The schema will be known when this method is called
-            final ColumnarValueSchema schema =
+            final ValueSchema schema =
                 PythonArrowDataUtils.createColumnarValueSchema(sink, TableDomainAndMetadata.empty(), dataRepository);
             return new DefaultDomainWritableConfig(schema, maxPossibleNominalDomainValues, false);
         };
@@ -329,7 +328,7 @@ public final class PythonArrowDataUtils {
      * @param dataRepository the {@link IDataRepository} to use for this table
      * @return The {@link ColumnarValueSchema} of the data coming from the {@link PythonDataSink}
      */
-    public static ColumnarValueSchema createColumnarValueSchema(final DefaultPythonArrowDataSink dataSink,
+    public static ValueSchema createColumnarValueSchema(final DefaultPythonArrowDataSink dataSink,
         final TableDomainAndMetadata domainAndMetadata, final IDataRepository dataRepository) {
         final var schema = ArrowReaderWriterUtils.readSchema(dataSink.getPath().toFile());
         final var columnarSchema = ArrowSchemaUtils.convertSchema(schema);
@@ -349,9 +348,8 @@ public final class PythonArrowDataUtils {
      *
      * @return The {@link ColumnarValueSchema} of the data coming from the {@link PythonDataSink}
      */
-    public static ColumnarValueSchema createColumnarValueSchema(final ColumnarSchema columnarSchema,
-        final String[] columnNames, final IDataRepository dataRepository,
-        final TableDomainAndMetadata domainAndMetadata) {
+    public static ValueSchema createColumnarValueSchema(final ColumnarSchema columnarSchema, final String[] columnNames,
+        final IDataRepository dataRepository, final TableDomainAndMetadata domainAndMetadata) {
         final List<ValueFactory<?, ?>> factories = new ArrayList<>(columnarSchema.numColumns());
         final List<DataColumnSpec> specs = new ArrayList<>(columnarSchema.numColumns() - 1);
 
@@ -378,20 +376,19 @@ public final class PythonArrowDataUtils {
             specs.add(specCreator.createSpec());
         }
         var tableSpec = new DataTableSpec(specs.toArray(DataColumnSpec[]::new));
-        return ColumnarValueSchemaUtils
-            .create(ValueSchemaUtils.create(tableSpec, factories.toArray(ValueFactory<?, ?>[]::new)));
+        return ValueSchemaUtils.create(tableSpec, factories.toArray(ValueFactory<?, ?>[]::new));
     }
 
     /**
-     * Create a {@link DataTableSpec} from a {@link ColumnarSchema}. No metadata or domains will be attached to the returned {@link DataTableSpec}.
+     * Create a {@link DataTableSpec} from a {@link ColumnarSchema}. No metadata or domains will be attached to the
+     * returned {@link DataTableSpec}.
      *
      * @param columnNames The names of the columns in the table
      * @param columnarSchema The schema of the table for which to create a {@link ColumnarValueSchema}.
      *
      * @return The {@link DataTableSpec}
      */
-    public static DataTableSpec createDataTableSpec(final ColumnarSchema columnarSchema,
-        final String[] columnNames) {
+    public static DataTableSpec createDataTableSpec(final ColumnarSchema columnarSchema, final String[] columnNames) {
         final List<DataColumnSpec> specs = new ArrayList<>(columnarSchema.numColumns() - 1);
 
         // Loop and get factory and spec for each column
