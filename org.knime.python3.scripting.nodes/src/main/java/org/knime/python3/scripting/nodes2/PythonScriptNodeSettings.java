@@ -51,9 +51,11 @@ package org.knime.python3.scripting.nodes2;
 import static org.knime.python3.scripting.nodes2.ExecutableSelectionUtils.EXEC_SELECTION_PREF_ID;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NodeSettings;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.webui.node.dialog.NodeAndVariableSettingsRO;
@@ -61,6 +63,8 @@ import org.knime.core.webui.node.dialog.NodeAndVariableSettingsWO;
 import org.knime.core.webui.node.dialog.SettingsType;
 import org.knime.core.webui.node.dialog.VariableSettingsRO;
 import org.knime.core.webui.node.dialog.VariableSettingsWO;
+import org.knime.core.webui.node.dialog.configmapping.ConfigMappings;
+import org.knime.core.webui.node.dialog.configmapping.NodeSettingsCorrectionUtil;
 import org.knime.scripting.editor.GenericSettingsIOManager;
 import org.knime.scripting.editor.ScriptingNodeSettings;
 
@@ -152,10 +156,15 @@ final class PythonScriptNodeSettings extends ScriptingNodeSettings implements Ge
         final Map<SettingsType, NodeAndVariableSettingsWO> settings) throws InvalidSettingsException {
         // NB: We leave m_executableSelection as is, as it is only configurable via flow variables (happening below)
         m_script = (String)data.get(CFG_KEY_SCRIPT);
-        saveSettingsTo(settings);
 
-        // Copy the variable setting for the script configuration from the previous settings to the new settings
+        final var extractedSettings = new NodeSettings("extracted settings");
         copyScriptVariableSetting(previousSettings, settings);
+        saveSettingsTo(extractedSettings);
+
+        NodeSettingsCorrectionUtil.correctNodeSettingsRespectingFlowVariables(new ConfigMappings(List.of()),
+            extractedSettings, previousSettings.get(SettingsType.MODEL), previousSettings.get(SettingsType.MODEL));
+
+        extractedSettings.copyTo(settings.get(SettingsType.MODEL));
 
         // Set the flow variable that overrides the executable selection
         var modelSettings = settings.get(SettingsType.MODEL);
