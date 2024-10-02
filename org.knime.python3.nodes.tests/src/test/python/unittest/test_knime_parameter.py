@@ -520,7 +520,7 @@ class ParameterGroupAdvanced:
 
 
 @kp.parameter_group(
-    "Test group with layout type", layout_type=kp.LayoutDirection.HORIZONTAL
+    "Test group with layout type", layout_direction=kp.LayoutDirection.HORIZONTAL
 )
 class TestGroupWithLayoutType:
     string_param = kp.StringParameter("String Parameter", "A string parameter", "foo")
@@ -613,7 +613,7 @@ class ParameterizedParameterArray:
         description="A vertical array",
         parameters=ParameterArrayGroup(),
         allow_reorder=True,
-        layout_type=kp.LayoutDirection.VERTICAL,
+        layout_direction=kp.LayoutDirection.VERTICAL,
         array_title="Second Array Title",
     )
 
@@ -622,7 +622,7 @@ class ParameterizedParameterArray:
         description="A horizontal array",
         parameters=ParameterArrayGroup(),
         allow_reorder=False,
-        layout_type=kp.LayoutDirection.HORIZONTAL,
+        layout_direction=kp.LayoutDirection.HORIZONTAL,
         button_text="Add new parameter",
         validator=_validate_parameter_array,
     )

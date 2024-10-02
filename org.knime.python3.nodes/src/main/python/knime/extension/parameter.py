@@ -621,7 +621,7 @@ class _UISchemaExtractor:
                 **param_obj._extract_ui_schema(),
                 "elements": [
                     {
-                        "type": param_obj._layout_type,
+                        "type": param_obj._layout_direction,
                         "elements": self._extract_elements(param_obj, element_scope),
                     }
                 ],
@@ -2631,7 +2631,7 @@ def parameter_group(
     label: str,
     since_version: Optional[Union[Version, str]] = None,
     is_advanced: bool = False,
-    layout_type: LayoutDirection = LayoutDirection.VERTICAL,
+    layout_direction: LayoutDirection = LayoutDirection.VERTICAL,
 ):
     """
     Decorator for classes implementing parameter groups. Parameter group classes can define parameters
@@ -2710,7 +2710,7 @@ def parameter_group(
                 self._validator = self._parse_kwarg(kwargs, "validator", None)
                 self._override_internal_validator = False
                 self._label = label
-                self._layout_type = layout_type.value
+                self._layout_direction = layout_direction.value
                 self.__parameters__ = {}
 
                 # preserve the docstring describing the parameter group
@@ -3009,7 +3009,7 @@ class ParameterArray(_BaseParameter):
         since_version: Optional[Union[Version, str]] = None,
         is_advanced: bool = False,
         allow_reorder: bool = True,
-        layout_type: LayoutDirection = LayoutDirection.VERTICAL,
+        layout_direction: LayoutDirection = LayoutDirection.VERTICAL,
         button_text: Optional[str] = None,
         array_title: Optional[str] = None,
     ):
@@ -3034,8 +3034,8 @@ class ParameterArray(_BaseParameter):
             A boolean indicating if the object is advanced (default is False).
         allow_reorder : bool, optional
             Whether the order of parameters in the array can be changed. Defaults to True.
-        layout_type : LayoutDirection, VERTICAL or HORIZONTAL
-            Layout type for the array. Can be  HORIZONTAL or VERTICAL. Defaults to VERTICAL.
+        layout_direction : LayoutDirection, VERTICAL or HORIZONTAL
+            Layout direction for the array. Can be  HORIZONTAL or VERTICAL. Defaults to VERTICAL.
         button_text : str, optional
             Text to display on the button for adding new parameters.
         array_title : str, optional
@@ -3044,7 +3044,6 @@ class ParameterArray(_BaseParameter):
         """
 
         self._allow_reorder = allow_reorder
-        self._layout_type = layout_type
         validator = (
             _combine_validators(validator, self._default_validator)
             if validator
@@ -3053,6 +3052,7 @@ class ParameterArray(_BaseParameter):
 
         self._parameters = parameters
         self._button_text = button_text
+        self._layout_direction = layout_direction
         self._array_title = array_title if array_title else "Group"
 
         super().__init__(
@@ -3154,7 +3154,7 @@ class ParameterArray(_BaseParameter):
             "addButtonText": self._button_text,
             "detail": {
                 "layout": {
-                    "type": (self._layout_type.value),
+                    "type": (self._layout_direction.value),
                     "elements": [],
                 }
             },
