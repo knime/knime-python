@@ -82,6 +82,7 @@ OneOf = _kp.OneOf
 Contains = _kp.Contains
 DialogContextCondition = _kp.DialogContextCondition
 Condition = _kp.Condition
+LayoutDirection = _kp.LayoutDirection
 
 ## knime.extension.nodes
 PortType = _kn.PortType
