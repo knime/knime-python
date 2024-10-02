@@ -3099,9 +3099,11 @@ class ParameterArray(_BaseParameter):
         param_holder = self._parameters._get_param_holder(self._parameters)
         item_properties = {}
         for name, param_obj in _get_parameters(param_holder).items():
-            # this check is here to avoid _to_dict conversion errors if a
-            # parameter is a group or an array
             if not (_is_group(param_obj) or _is_array(param_obj)):
+                # _to_dict fails if the parameter is a group or an array. The validator already
+                # complains about these cases as we don't allow that. However, when the node is
+                # instantiated, the schema is retrieved during configuration, so this method still
+                # needs to work to allow developers to actually see the validation failure.
                 param_schema = param_obj._extract_schema(
                     extension_version, dialog_creation_context
                 )
