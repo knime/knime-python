@@ -2987,7 +2987,7 @@ class ParameterArray(_BaseParameter):
         parameters,
         label: Optional[str] = None,
         description: Optional[str] = None,
-        validator: Optional[Callable[[_BaseParameter], None]] = None,
+        validator: Optional[Callable[[Any], None]] = None,
         since_version: Optional[Union[Version, str]] = None,
         is_advanced: bool = False,
         allow_reorder: bool = True,
@@ -3027,8 +3027,11 @@ class ParameterArray(_BaseParameter):
 
         self._allow_reorder = allow_reorder
         self._layout_type = layout_type
-        if validator is None:
-            validator = self._default_validator
+        validator = (
+            _combine_validators(validator, self._default_validator)
+            if validator
+            else self._default_validator
+        )
 
         self._parameters = parameters
         self._button_text = button_text
