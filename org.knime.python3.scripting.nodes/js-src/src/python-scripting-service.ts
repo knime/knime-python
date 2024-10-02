@@ -1,9 +1,9 @@
 import { watch } from "vue";
 
 import {
+  consoleHandler,
   editor,
   getScriptingService,
-  consoleHandler,
 } from "@knime/scripting-editor";
 import { registerInputCompletions } from "./input-completions";
 import {
@@ -83,12 +83,15 @@ const mainEditorState = editor.useMainCodeEditorStore();
 export const pythonScriptingService = {
   initExecutableSelection: async (): Promise<void> => {
     const settings = await getPythonSettingsService().getSettings();
+    const initialData = await getPythonInitialDataService().getInitialData();
 
     setSelectedExecutable({ id: settings.executableSelection ?? "" });
     pythonScriptingService.updateExecutableSelection(executableSelection.id);
-    const executableInfo = (
-      await getPythonInitialDataService().getInitialData()
-    ).executableOptionsList.find(({ id }) => id === executableSelection.id);
+
+    const executableInfo = initialData.executableOptionsList.find(
+      ({ id }) => id === executableSelection.id,
+    );
+
     if (
       typeof executableInfo === "undefined" ||
       executableInfo.type === "MISSING_VAR"

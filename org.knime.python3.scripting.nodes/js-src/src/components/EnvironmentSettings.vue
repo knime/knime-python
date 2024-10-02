@@ -5,6 +5,8 @@ import { useExecutableSelectionStore, setSelectedExecutable } from "@/store";
 import { pythonScriptingService } from "@/python-scripting-service";
 import type { ExecutableOption } from "@/types/common";
 import { getPythonInitialDataService } from "@/python-initial-data-service";
+import { getSettingsService } from "@knime/scripting-editor";
+import type { SettingState } from "@knime/ui-extension-service";
 
 const executableSelection = useExecutableSelectionStore();
 const selectedEnv: Ref<"default" | "conda"> = ref(
@@ -33,6 +35,8 @@ const getExecutableById = (executableId: string): ExecutableOption | null => {
   return executableOptions?.find(({ id }) => id === executableId) ?? null;
 };
 
+const onExecutableSettingsChange = ref<SettingState<string> | null>();
+
 onMounted(async () => {
   executableOptions = (await getPythonInitialDataService().getInitialData())
     .executableOptionsList;
@@ -51,6 +55,9 @@ onMounted(async () => {
     // @ts-ignore - null check is in if condition
     selectedExecutableOption.value = dropDownOptions.value[0].id;
   }
+
+  const register = await getSettingsService().registerSettings("model");
+  onExecutableSettingsChange.value = register(executableSelection);
 });
 
 // Note that the Ok button will not trigger this function
@@ -89,6 +96,10 @@ const updateLiveExecutableSelection = () => {
     return;
   }
   executableSelection.livePrefValue = newSelection;
+
+  onExecutableSettingsChange.value?.setValue(
+    JSON.stringify(executableSelection),
+  );
 };
 
 watch(selectedEnv, updateLiveExecutableSelection);

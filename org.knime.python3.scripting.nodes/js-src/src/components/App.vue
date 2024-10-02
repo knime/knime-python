@@ -12,6 +12,7 @@ import {
   initConsoleEventHandler,
   OutputConsole,
   consoleHandler,
+  registerScriptSettingsChange,
 } from "@knime/scripting-editor";
 import { getPythonInitialDataService } from "@/python-initial-data-service";
 import { nextTick, onMounted, ref, watch, type Ref } from "vue";
@@ -132,14 +133,20 @@ onMounted(async () => {
   const initialData = await getPythonInitialDataService().getInitialData();
 
   initialDataLoaded.value = true;
+
+  // wait until the next tick to ensure the editor is fully loaded
+  await nextTick();
+
   // Check if the preview is available
   hasPreview.value = initialData.hasPreview;
-
   if (hasPreview.value) {
-    // wait until preview is mounted to DOM
-    await nextTick();
     rightPaneActiveTab.value = "preview";
   }
+
+  await registerScriptSettingsChange(
+    "model",
+    () => mainEditorState.value?.text.value ?? "",
+  );
 });
 </script>
 
@@ -156,7 +163,7 @@ onMounted(async () => {
           {
             slotName: 'bottomPaneTabSlot:console',
             label: 'Console',
-            associatedControlsSlotName: 'bottomPaneTabControlsSlot:console',
+            associatedControlsSlotName: 'bottomPaneControlsTabSlot:console',
           },
         ]"
         @menu-item-clicked="onMenuItemClicked"
