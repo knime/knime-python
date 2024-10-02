@@ -1,4 +1,5 @@
 import {
+  createPythonSettingsServiceMock,
   DEFAULT_INITIAL_DATA,
   DEFAULT_INITIAL_SETTINGS,
 } from "@/__mocks__/mock-data";
@@ -17,7 +18,7 @@ import {
   flushPromises,
   mount,
 } from "@vue/test-utils";
-import { executableOptionsMock } from "../../__mocks__/executable-options";
+import { executableOptionsMock } from "@/__mocks__/executable-options";
 import App from "../App.vue";
 import { nextTick } from "vue";
 import { pythonScriptingService } from "@/python-scripting-service";
@@ -38,7 +39,7 @@ describe("App.vue", () => {
   }: {
     viewAvailable?: boolean;
     executableOptions?: any[];
-    settings?: { [key: string]: any };
+    settings?: PythonScriptingNodeSettings;
   } = {}) => {
     vi.mocked(getScriptingService().sendToService).mockImplementation(
       (methodName: string): any => {
@@ -62,11 +63,9 @@ describe("App.vue", () => {
           hasPreview: viewAvailable,
         }),
     });
-    vi.mocked(getPythonSettingsService).mockReturnValue({
-      getSettings: () =>
-        Promise.resolve(settings as PythonScriptingNodeSettings),
-      registerSettingsGetterForApply: () => Promise.resolve(),
-    });
+    vi.mocked(getPythonSettingsService).mockReturnValue(
+      createPythonSettingsServiceMock(settings),
+    );
     setSelectedExecutable({ id: "", isMissing: false });
     const wrapper = mount(App, {
       global: {

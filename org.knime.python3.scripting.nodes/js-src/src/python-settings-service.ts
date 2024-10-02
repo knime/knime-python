@@ -6,3 +6,5 @@ export const getPythonSettingsService = () => ({
   getSettings: async () =>
     (await getSettingsService().getSettings()) as PythonScriptingNodeSettings,
 });
+
+export type PythonSettingsService = ReturnType<typeof getPythonSettingsService>;
