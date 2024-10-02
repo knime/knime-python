@@ -606,6 +606,12 @@ class ParameterizedParameterArray:
         button_text="Add new parameter",
     )
 
+    @parameter_array_vertical.validator
+    def validate_parameter_array(values):
+        for value in values:
+            if value["first"] + value["second"] > 8:
+                raise ValueError("The sum of 'first' and 'second' must not exceed 8.")
+
 
 class ParameterizedParameterArrayNested:
     """Provides checks for invalid ParameterArray initialisation"""
@@ -621,6 +627,12 @@ class ParameterizedParameterArrayNested:
         description="Second array",
         parameters=ParameterGroupWithArray(),
     )
+
+    @parameter_array_first.validator
+    def validate_parameter_array(values):
+        for value in values:
+            if value["first"] + value["second"] > 8:
+                raise ValueError("The sum of 'first' and 'second' must not exceed 8.")
 
 
 class ParameterizedWithOneGroup:
@@ -2108,6 +2120,24 @@ class ParameterTest(unittest.TestCase):
 
         with self.assertRaises(TypeError):
             self.parameterized.enum_set_param = 1
+
+        # Test custom validator for a valid parameter array (no nested groups or parameter arrays)
+        with self.assertRaises(ValueError):
+            self.parameterized_with_parameter_array.parameter_array_vertical = [
+                {"first": 3, "second": 6}
+            ]
+
+        # Test default validator for an invalid parameter array
+        with self.assertRaises(ValueError):
+            self.parameterized_with_parameter_array_nested.parameter_array_first = [
+                {"first": 1, "second": 5, "group": {"first": 1, "second": 5}}
+            ]
+
+        # Test custom validator for an invalid parameter array
+        with self.assertRaises(ValueError):
+            self.parameterized_with_parameter_array_nested.parameter_array_first = [
+                {"first": 3, "second": 6, "group": [{"first": 1, "second": 5}]}
+            ]
 
     def test_group_validation(self):
         """
