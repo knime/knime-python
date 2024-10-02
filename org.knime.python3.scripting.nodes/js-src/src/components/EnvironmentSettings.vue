@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, type Ref, watch } from "vue";
 import { RadioButtons, Dropdown, Label } from "@knime/components";
-import { useExecutableSelectionStore, setSelectedExecutable } from "@/store";
+import {
+  useExecutableSelectionStore,
+  setSelectedExecutable,
+  useExecutableSettingStore,
+} from "@/store";
 import { pythonScriptingService } from "@/python-scripting-service";
 import type { ExecutableOption } from "@/types/common";
 import { getPythonInitialDataService } from "@/python-initial-data-service";
+import { getSettingsService } from "@knime/scripting-editor";
 
 const executableSelection = useExecutableSelectionStore();
 const selectedEnv: Ref<"default" | "conda"> = ref(
@@ -51,6 +56,22 @@ onMounted(async () => {
     // @ts-ignore - null check is in if condition
     selectedExecutableOption.value = dropDownOptions.value[0].id;
   }
+
+  // Set the settings store to the initially selected flow variable
+  const executableSettingState = useExecutableSettingStore();
+  if (executableSettingState.value === null) {
+    const register = await getSettingsService().registerSettings("model");
+    const environmentSettingState = register("");
+    if (executableSelection.livePrefValue === "") {
+      executableSettingState.value =
+        environmentSettingState.addControllingFlowVariable(null);
+    } else {
+      executableSettingState.value =
+        environmentSettingState.addControllingFlowVariable(
+          executableSelection.livePrefValue,
+        );
+    }
+  }
 });
 
 // Note that the Ok button will not trigger this function
@@ -89,6 +110,16 @@ const updateLiveExecutableSelection = () => {
     return;
   }
   executableSelection.livePrefValue = newSelection;
+
+  // Update the settings store to let the parent know about the dirty state
+  if (
+    executableSelection.livePrefValue === "" ||
+    executableSelection.livePrefValue === null
+  ) {
+    useExecutableSettingStore().value?.unset();
+  } else {
+    useExecutableSettingStore().value?.set(executableSelection.livePrefValue);
+  }
 };
 
 watch(selectedEnv, updateLiveExecutableSelection);

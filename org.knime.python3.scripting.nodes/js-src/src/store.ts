@@ -1,7 +1,8 @@
 import { consoleHandler } from "@knime/scripting-editor";
 import type { ExecutionResult, Workspace } from "./types/common";
-import { reactive } from "vue";
+import { reactive, type Ref, ref } from "vue";
 import { getPythonInitialDataService } from "./python-initial-data-service";
+import type { SettingState } from "@knime/ui-extension-service";
 
 export type WorkspaceStore = {
   workspace?: Workspace;
@@ -26,9 +27,19 @@ const selectedExecutable: ExecutableStore = reactive<ExecutableStore>({
   isMissing: false,
 });
 
+type ControllingFlowVariableSetter = ReturnType<
+  SettingState<string>["addControllingFlowVariable"]
+>;
+const executableSettingState = ref<ControllingFlowVariableSetter | null>(null);
+
 export const useExecutableSelectionStore = (): ExecutableStore => {
   return selectedExecutable;
 };
+
+export const useExecutableSettingStore =
+  (): Ref<ControllingFlowVariableSetter | null> => {
+    return executableSettingState;
+  };
 
 export const setSelectedExecutable = (args: Partial<ExecutableStore>): void => {
   if (typeof args.id !== "undefined") {
