@@ -186,6 +186,14 @@ def _validate_parameters(obj, parameters: dict, saved_version: Version) -> None:
                 raise ValueError(f'Parameter missing for key "{name}".')
 
 
+def _combine_validators(new_validator, old_validator):
+    def combined_validator(value):
+        old_validator(value)
+        new_validator(value)
+
+    return combined_validator
+
+
 def validate_specs(obj, specs) -> None:
     """
     Checks if the provided specs are compatible with the parameter of obj.
@@ -1444,16 +1452,9 @@ class EnumParameter(_BaseMultiChoiceParameter):
     def _extract_description(self, name, parent_scope: _Scope):
         return {"name": self._label, "description": self._generate_description()}
 
-    def _add_default_validator(self, func):
-        def combined_validator(value):
-            # we retain the default validator to ensure that value is always one of the available options
-            self._default_validator(value)
-            func(value)
-
-        return combined_validator
-
     def validator(self, func):
-        self._validator = self._add_default_validator(func)
+        # we retain the default validator to ensure that value is always one of the available options
+        self._validator = _combine_validators(func, self._default_validator)
 
 
 class EnumSetParameter(_BaseMultiChoiceParameter):
@@ -3048,6 +3049,10 @@ class ParameterArray(_BaseParameter):
             return self
         values = self._get_value(obj, self._name)
         return [self._create_param_group_instance(value) for value in values]
+
+    def validator(self, func):
+        # we retain the default validator to ensure that we don't allow nested parameter arrays and groups
+        self._validator = _combine_validators(func, self._default_validator)
 
     def _create_param_group_instance(self, value):
         instance = self._parameter_group_class()
