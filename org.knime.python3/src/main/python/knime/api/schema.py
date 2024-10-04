@@ -390,10 +390,19 @@ class LogicalType(KnimeType):
                 f"extension<logical={self.logical_type}, storage={self.storage_type}>"
             )
         type_name = bundle.python_type
+
         proxy_type = self.proxy_type
         if proxy_type:
             return f"extension<proxy={proxy_type}, internal={type_name}>"
-        return f"extension<{type_name}>"
+
+        return self._cut_type_from_python_module(bundle.python_module)
+
+    def _cut_type_from_python_module(self, module: str):
+        """
+        Returns the readable type name from the python module name.
+        e.g. 'knime.types.json' -> 'json'
+        """
+        return module.split(".")[-1]
 
     def __hash__(self):
         return hash(str(self))
