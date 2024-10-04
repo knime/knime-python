@@ -502,14 +502,14 @@ class PythonValueFactoryBundle:
     @property
     def python_type(self):
         """
-        String representation of the Python type.
+        String representation of the Python type e.g. 'builtins.dict'
         """
         return self._python_value_type_name
 
     @property
     def python_module(self):
         """
-        String representation of the KNIME module e.g. 'knime.types.json'.
+        String representation of the KNIME type e.g. 'knime.types.json'.
         """
         return self._python_module
 
