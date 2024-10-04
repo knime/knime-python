@@ -26,6 +26,7 @@ import type {
   PythonScriptingNodeSettings,
 } from "@/types/common";
 import { getPythonSettingsService } from "@/python-settings-service";
+import * as monaco from "monaco-editor";
 
 describe("App.vue", () => {
   enableAutoUnmount(afterEach);
@@ -277,5 +278,25 @@ describe("App.vue", () => {
       error:
         'Flow variable "conda.environment1" is missing, therefore no Python executable could be started',
     });
+  });
+
+  it("registers a keyboard shortcut for running the script", async () => {
+    await doMount();
+
+    expect(
+      editor.useMainCodeEditorStore().value?.editor.value?.addCommand,
+    ).toHaveBeenCalledWith(
+      // eslint-disable-next-line no-bitwise
+      monaco.KeyMod.Shift | monaco.KeyCode.Enter,
+      expect.anything(),
+    );
+
+    expect(
+      editor.useMainCodeEditorStore().value?.editor.value?.addCommand,
+    ).toHaveBeenCalledWith(
+      // eslint-disable-next-line no-bitwise
+      monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.Enter,
+      expect.anything(),
+    );
   });
 });

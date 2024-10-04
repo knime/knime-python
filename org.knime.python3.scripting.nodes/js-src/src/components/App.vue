@@ -25,6 +25,7 @@ import PythonEditorControls from "@/components/PythonEditorControls.vue";
 import PythonViewPreview from "@/components/PythonViewPreview.vue";
 import PythonWorkspace from "@/components/PythonWorkspace.vue";
 import TrashIcon from "@knime/styles/img/icons/trash.svg";
+import * as monaco from "monaco-editor";
 
 const menuItems: MenuItem[] = [
   {
@@ -65,13 +66,34 @@ watch(
   },
 );
 
-// Replace tabs by spaces on paste
 watch(
   () => mainEditorState.value?.editor.value,
   (newEditor) => {
+    // Replace tabs by spaces on paste
     newEditor?.onDidPaste(() => {
       newEditor?.getAction("editor.action.indentationToSpaces")?.run();
     });
+
+    // Register respective commands to run script and selected lines
+    newEditor?.addCommand(
+      // eslint-disable-next-line no-bitwise
+      monaco.KeyMod.Shift | monaco.KeyCode.Enter,
+      () => {
+        if (newEditor?.hasTextFocus()) {
+          pythonScriptingService.runScript();
+        }
+      },
+    );
+
+    newEditor?.addCommand(
+      // eslint-disable-next-line no-bitwise
+      monaco.KeyMod.Shift | monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter,
+      () => {
+        if (newEditor?.hasTextFocus()) {
+          pythonScriptingService.runSelectedLines();
+        }
+      },
+    );
   },
 );
 
