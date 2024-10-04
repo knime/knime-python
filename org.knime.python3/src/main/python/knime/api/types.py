@@ -506,6 +506,13 @@ class PythonValueFactoryBundle:
         """
         return self._python_value_type_name
 
+    @property
+    def python_module(self):
+        """
+        String representation of the KNIME module e.g. 'knime.types.json'.
+        """
+        return self._python_module
+
 
 def _get_module(module_name):
     """
