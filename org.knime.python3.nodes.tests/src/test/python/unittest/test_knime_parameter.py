@@ -586,6 +586,12 @@ class ParameterizedEnumSet:
     )
 
 
+def _validate_parameter_array(values):
+    for value in values:
+        if value["first"] + value["second"] > 8:
+            raise ValueError("The sum of 'first' and 'second' must not exceed 8.")
+
+
 class ParameterizedParameterArray:
     """Provides checks for other ParameterArray parameters"""
 
@@ -604,13 +610,12 @@ class ParameterizedParameterArray:
         parameters=ParameterArrayGroup(),
         allow_reorder=False,
         button_text="Add new parameter",
+        validator=_validate_parameter_array,
     )
 
     @parameter_array_vertical.validator
     def validate_parameter_array(values):
-        for value in values:
-            if value["first"] + value["second"] > 8:
-                raise ValueError("The sum of 'first' and 'second' must not exceed 8.")
+        _validate_parameter_array(values)
 
 
 class ParameterizedParameterArrayNested:
@@ -626,13 +631,12 @@ class ParameterizedParameterArrayNested:
         label="Second Array",
         description="Second array",
         parameters=ParameterGroupWithArray(),
+        validator=_validate_parameter_array,
     )
 
     @parameter_array_first.validator
     def validate_parameter_array(values):
-        for value in values:
-            if value["first"] + value["second"] > 8:
-                raise ValueError("The sum of 'first' and 'second' must not exceed 8.")
+        _validate_parameter_array(values)
 
 
 class ParameterizedWithOneGroup:
@@ -2122,22 +2126,38 @@ class ParameterTest(unittest.TestCase):
             self.parameterized.enum_set_param = 1
 
         # Test custom validator for a valid parameter array (no nested groups or parameter arrays)
-        with self.assertRaises(ValueError):
+        expected_msg = "The sum of 'first' and 'second' must not exceed 8."
+        with self.assertRaises(ValueError) as ve:
             self.parameterized_with_parameter_array.parameter_array_vertical = [
                 {"first": 3, "second": 6}
             ]
+        self.assertEqual(expected_msg, str(ve.exception))
 
-        # Test default validator for an invalid parameter array
-        with self.assertRaises(ValueError):
+        # Test custom validator set via constructor for a valid parameter array
+        expected_msg = "The sum of 'first' and 'second' must not exceed 8."
+        with self.assertRaises(ValueError) as ve:
+            self.parameterized_with_parameter_array.parameter_array_horizontal = [
+                {"first": 3, "second": 6}
+            ]
+        self.assertEqual(expected_msg, str(ve.exception))
+
+        # Test default validator for an invalid parameter array, while a custom validator is set via decorator
+        with self.assertRaises(ValueError) as ve:
             self.parameterized_with_parameter_array_nested.parameter_array_first = [
                 {"first": 1, "second": 5, "group": {"first": 1, "second": 5}}
             ]
+        self.assertNotEqual(
+            expected_msg, str(ve.exception)
+        )  # complains about nested array
 
-        # Test custom validator for an invalid parameter array
-        with self.assertRaises(ValueError):
-            self.parameterized_with_parameter_array_nested.parameter_array_first = [
+        # Test default validator for an invalid parameter array, while a custom validator is set via constructor
+        with self.assertRaises(ValueError) as ve:
+            self.parameterized_with_parameter_array_nested.parameter_array_second = [
                 {"first": 3, "second": 6, "group": [{"first": 1, "second": 5}]}
             ]
+        self.assertNotEqual(
+            expected_msg, str(ve.exception)
+        )  # complains about nested array
 
     def test_group_validation(self):
         """
