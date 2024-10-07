@@ -2938,7 +2938,7 @@ def parameter_group(
 
 class ParameterArray(_BaseParameter):
     """
-    Parameter class that takes a parameter group as a parameter to create array of parameters.
+    A parameter that represents an array of parameters. Each element in the array is an instance of a parameter group.
 
     Example
     --------
