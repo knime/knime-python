@@ -19,7 +19,7 @@ export const DEFAULT_INITIAL_DATA: PythonInitialData = {
         {{~#if subItems.[1]~}}
           [{{#each subItems}}"{{{escapeDblQuotes this}}}"{{#unless @last}},{{/unless}}{{/each}}]
         {{~else~}}
-          "{{{escapeDblQuotes subItems.[0]}}}"
+          "{{{escapeDblQuotes subItems.[0].name}}}"
           {{~/if~}}
       ].to_pandas()`,
     },
@@ -30,9 +30,9 @@ export const DEFAULT_INITIAL_DATA: PythonInitialData = {
       multiSelection: true,
       subItemCodeAliasTemplate: `knio.input_tables[1][
         {{~#if subItems.[1]~}}
-          [{{#each subItems}}"{{{escapeDblQuotes this}}}"{{#unless @last}},{{/unless}}{{/each}}]
+          [{{#each subItems}}"{{{escapeDblQuotes this.name}}}"{{#unless @last}},{{/unless}}{{/each}}]
         {{~else~}}
-          "{{{escapeDblQuotes subItems.[0]}}}"
+          "{{{escapeDblQuotes subItems.[0].name}}}"
           {{~/if~}}
       ].to_pandas()`,
       subItems: [
@@ -77,7 +77,7 @@ export const DEFAULT_INITIAL_DATA: PythonInitialData = {
     requiredImport: "import knio.scripting.io as knio",
     multiSelection: false,
     subItemCodeAliasTemplate:
-      'knio.flow_variables["{{{escapeDblQuotes subItems.[0]}}}"]',
+      'knio.flow_variables["{{{escapeDblQuotes subItems.[0].name}}}"]',
     subItems: [
       {
         name: "Flow var 1",
