@@ -393,7 +393,8 @@ class LogicalType(KnimeType):
         proxy_type = self.proxy_type
         if proxy_type:
             return f"extension<proxy={proxy_type}, internal={type_name}>"
-        return f"extension<{type_name}>"
+
+        return bundle.data_type
 
     def __hash__(self):
         return hash(str(self))
