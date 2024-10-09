@@ -48,9 +48,9 @@
  */
 package org.knime.python3;
 
-import java.util.List;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.List;
 
 import org.knime.python3.types.PythonValueFactoryModule;
 import org.knime.python3.types.PythonValueFactoryRegistry;
@@ -85,8 +85,8 @@ public final class PythonEntryPointUtils {
                     continue;
                 }
                 entryPoint.registerPythonValueFactory(pythonModule, factory.getPythonValueFactoryName(),
-                    factory.getDataSpecRepresentation(), factory.getDataTraitsJson(), factory.getValueTypeName(),
-                    factory.isDefaultPythonRepresentation());
+                    factory.getValueFactoryDataType(), factory.getDataSpecRepresentation(), factory.getDataTraitsJson(),
+                    factory.getValueTypeName(), factory.isDefaultPythonRepresentation());
             }
         }
 
@@ -98,8 +98,8 @@ public final class PythonEntryPointUtils {
                     continue;
                 }
                 entryPoint.registerPythonValueFactory(pythonModule, factory.getPythonValueFactoryName(),
-                    factory.getDataSpecRepresentation(), factory.getDataTraitsJson(), factory.getValueTypeName(),
-                    false);
+                    factory.getValueFactoryDataType(), factory.getDataSpecRepresentation(), factory.getDataTraitsJson(),
+                    factory.getValueTypeName(), false);
             }
         }
 

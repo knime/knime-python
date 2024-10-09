@@ -50,6 +50,7 @@ package org.knime.python3;
 
 import java.util.List;
 
+import org.knime.core.data.DataType;
 import org.knime.core.data.v2.ValueFactory;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.traits.DataTraits;
@@ -105,6 +106,7 @@ public interface PythonEntryPoint {
      *
      * @param pythonModule The module in which the PythonValueFactory is defined
      * @param pythonValueFactoryName The name of the PythonValueFactory
+     * @param valueFactoryDataType Human readable string representation of the factory {@link DataType}
      * @param dataSpec String representation of the {@link DataSpec} created by the {@link ValueFactory}
      * @param dataTraits String representation of the {@link DataTraits} created by the {@link ValueFactory}
      * @param pythonValueTypeName String representation of the value type
@@ -112,8 +114,8 @@ public interface PythonEntryPoint {
      *            representation for the java {@link ValueFactory}
      */
     void registerPythonValueFactory(final String pythonModule, final String pythonValueFactoryName,
-        final String dataSpec, final String dataTraits, final String pythonValueTypeName,
-        final boolean isDefaultPythonRepresentation);
+        final String valueFactoryDataType, final String dataSpec, final String dataTraits,
+        final String pythonValueTypeName, final boolean isDefaultPythonRepresentation);
 
     /**
      * @param pythonModule The module in which the ToPandasColumnConverter is defined
