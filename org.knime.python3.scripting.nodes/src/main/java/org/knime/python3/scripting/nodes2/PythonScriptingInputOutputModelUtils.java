@@ -71,7 +71,6 @@ import org.knime.scripting.editor.WorkflowControl.InputPortInfo;
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
-@SuppressWarnings("restriction") // scripting editor API is still restricted
 final class PythonScriptingInputOutputModelUtils {
 
     private static final String INPUT_OUTPUT_TYPE_TABLE = "Table";
@@ -94,13 +93,12 @@ final class PythonScriptingInputOutputModelUtils {
     }
 
     static InputOutputModel getFlowVariableInputs(final Collection<FlowVariable> flowVariables) {
-        return InputOutputModel.createFromFlowVariables(flowVariables, //
-            CODE_ALIAS_FLOW_VARS, //
-            CODE_ALIAS_TEMPLATE_FLOW_VARS, //
-            REQUIRED_IMPORT, //
-            false, //
-            PythonScriptNodeModel.KNOWN_FLOW_VARIABLE_TYPES_SET::contains //
-        );
+        return InputOutputModel.flowVariables() //
+            .codeAlias(CODE_ALIAS_FLOW_VARS) //
+            .subItemCodeAliasTemplate(CODE_ALIAS_TEMPLATE_FLOW_VARS) //
+            .requiredImport(REQUIRED_IMPORT) //
+            .subItems(flowVariables, PythonScriptNodeModel.KNOWN_FLOW_VARIABLE_TYPES_SET::contains) //
+            .build();
     }
 
     static List<InputOutputModel> getInputObjects(final InputPortInfo[] inputPorts) {
@@ -113,16 +111,16 @@ final class PythonScriptingInputOutputModelUtils {
             final var spec = inputPorts[i].portSpec();
             if (spec instanceof DataTableSpec dataTableSpec) {
                 // Table with specs available
-                inputInfos.add(InputOutputModel.createFromTableSpec( //
-                    inputName(tableIdx, INPUT_OUTPUT_TYPE_TABLE), //
-                    dataTableSpec, //
-                    getInputObjectCodeAlias(tableIdx, INPUT_OUTPUT_TYPE_TABLE), //
-                    getSubItemCodeAliasTemplate(tableIdx, INPUT_OUTPUT_TYPE_TABLE), //
-                    true, //
-                    REQUIRED_IMPORT, //
-                    DataType::getName, //
-                    t -> true //
-                ));
+                inputInfos.add( //
+                    InputOutputModel.table() //
+                        .name(inputName(tableIdx, INPUT_OUTPUT_TYPE_TABLE)) //
+                        .codeAlias(getInputObjectCodeAlias(tableIdx, INPUT_OUTPUT_TYPE_TABLE)) //
+                        .subItemCodeAliasTemplate(getSubItemCodeAliasTemplate(tableIdx, INPUT_OUTPUT_TYPE_TABLE)) //
+                        .multiSelection(true) //
+                        .requiredImport(REQUIRED_IMPORT) //
+                        .subItems(dataTableSpec, DataType::getName) //
+                        .build() //
+                );
                 tableIdx++;
             } else if (type.acceptsPortObjectClass(BufferedDataTable.class)) {
                 // Table but no spec available
@@ -147,28 +145,20 @@ final class PythonScriptingInputOutputModelUtils {
             var type = portTypeToInputOutputType(relevantPortTypes.get(i));
             var index = portTypeCounter.computeIfAbsent(type, t -> 0);
             portTypeCounter.put(type, index + 1);
-            return new InputOutputModel( //
-                outputName(index, type), //
-                getOutputObjectCodeAlias(index, type), //
-                null, //
-                REQUIRED_IMPORT, //
-                false, //
-                null, //
-                getPortObjectTypeId(type), //
-                getPortObjectColor(type) //
-            );
+            return builderForType(type) //
+                .name(outputName(index, type)) //
+                .codeAlias(getOutputObjectCodeAlias(index, type)) //
+                .requiredImport(REQUIRED_IMPORT) //
+                .build();
         }).toList();
         if (hasView) {
             outputPortInfos = new ArrayList<>(outputPortInfos);
-            outputPortInfos.add(new InputOutputModel("Output View", //
-                CODE_ALIAS_OUTPUT_VIEW, //
-                null, //
-                REQUIRED_IMPORT, //
-                false, //
-                null, //
-                InputOutputModel.VIEW_PORT_TYPE_NAME, //
-                null //
-            ));
+            outputPortInfos.add(InputOutputModel.view() //
+                .name("Output View") //
+                .codeAlias(CODE_ALIAS_OUTPUT_VIEW) //
+                .requiredImport(REQUIRED_IMPORT) //
+                .build() //
+            );
         }
         return outputPortInfos;
     }
@@ -181,17 +171,14 @@ final class PythonScriptingInputOutputModelUtils {
         return String.format("Output %s %d", displayName, index + 1);
     }
 
-    private static InputOutputModel createInputModel(final int index, final String displayName) {
-        return new InputOutputModel( //
-            inputName(index, displayName), //
-            getInputObjectCodeAlias(index, displayName), //
-            getSubItemCodeAliasTemplate(index, displayName), //
-            REQUIRED_IMPORT, //
-            true, //
-            null, //
-            getPortObjectTypeId(displayName), //
-            getPortObjectColor(displayName) //
-        );
+    private static InputOutputModel createInputModel(final int index, final String type) {
+        return builderForType(type) //
+            .name(inputName(index, type)) //
+            .codeAlias(getInputObjectCodeAlias(index, type)) //
+            .subItemCodeAliasTemplate(getSubItemCodeAliasTemplate(index, type)) //
+            .requiredImport(REQUIRED_IMPORT) //
+            .multiSelection(true) //
+            .build();
     }
 
     private static boolean isNoFlowVariablePort(final PortType portType) {
@@ -264,20 +251,13 @@ final class PythonScriptingInputOutputModelUtils {
         }
     }
 
-    private static String getPortObjectTypeId(final String type) {
+    private static InputOutputModel.RequiresNameBuilder builderForType(final String type) {
         return switch (type) {
-            case INPUT_OUTPUT_TYPE_TABLE -> InputOutputModel.TABLE_PORT_TYPE_NAME;
-            case INPUT_OUTPUT_TYPE_OBJECT, INPUT_OUTPUT_TYPE_IMAGE -> InputOutputModel.OBJECT_PORT_TYPE_NAME;
-            default -> throw new IllegalArgumentException("Unexpected input object type: " + type);
-        };
-    }
-
-    private static String getPortObjectColor(final String type) {
-        return switch (type) {
-            case INPUT_OUTPUT_TYPE_TABLE -> null;
-            case INPUT_OUTPUT_TYPE_OBJECT -> toHexColor(PickledObjectFileStorePortObject.TYPE.getColor());
-            case INPUT_OUTPUT_TYPE_IMAGE -> toHexColor(ImagePortObject.TYPE.getColor());
-            default -> throw new IllegalArgumentException("Unexpected input object type: " + type);
+            case INPUT_OUTPUT_TYPE_TABLE -> InputOutputModel.table();
+            case INPUT_OUTPUT_TYPE_OBJECT -> InputOutputModel
+                .portObject(toHexColor(PickledObjectFileStorePortObject.TYPE.getColor()));
+            case INPUT_OUTPUT_TYPE_IMAGE -> InputOutputModel.portObject(toHexColor(ImagePortObject.TYPE.getColor()));
+            default -> throw new IllegalArgumentException("Unexpected port object type: " + type);
         };
     }
 
