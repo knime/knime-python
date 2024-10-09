@@ -136,6 +136,7 @@ class EntryPoint:
         self,
         python_module,
         python_value_factory_name,
+        data_type,
         data_spec,
         data_traits,
         python_value_type_name,
@@ -173,6 +174,7 @@ class EntryPoint:
         types.register_python_value_factory(
             python_module,
             python_value_factory_name,
+            data_type,
             data_spec,
             data_traits,
             python_value_type_name,
