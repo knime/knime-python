@@ -435,6 +435,7 @@ class PythonValueFactoryBundle:
     def __init__(
         self,
         java_value_factory: str,
+        data_type: str,
         data_spec_json: str,
         data_traits: str,
         python_module: str,
@@ -442,6 +443,7 @@ class PythonValueFactoryBundle:
         python_value_type_name: str,
     ):
         self._java_value_factory = java_value_factory
+        self._data_type = data_type
         self._data_spec_json = json.loads(data_spec_json)
         self._value_factory = None
         self._data_traits = json.loads(data_traits)
@@ -507,11 +509,11 @@ class PythonValueFactoryBundle:
         return self._python_value_type_name
 
     @property
-    def python_module(self):
+    def data_type(self):
         """
-        String representation of the KNIME type e.g. 'knime.types.json'.
+        String representation of the data type e.g. 'SMILES'.
         """
-        return self._python_module
+        return self._data_type
 
 
 def _get_module(module_name):
@@ -679,6 +681,7 @@ def get_python_type_list():
 def register_python_value_factory(
     python_module,
     python_value_factory_name,
+    data_type: str,
     data_spec_json,
     data_traits,
     python_value_type_name,
@@ -695,6 +698,8 @@ def register_python_value_factory(
         The module containing the factory.
     python_value_factory_name : str
         The factory to be registered.
+    data_type : str
+        The human readable data type e.g. 'SMILES' instead of 'org.knime.chem.types.SmilesValue'.
     data_spec_json : dict
         A dict used to create a PythonValueFactoryBundle.
     data_traits : dict
@@ -713,6 +718,7 @@ def register_python_value_factory(
     if is_default_python_representation:
         value_factory_bundle = PythonValueFactoryBundle(
             logical_type,
+            data_type,
             data_spec_json,
             data_traits,
             python_module,
