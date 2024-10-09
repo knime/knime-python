@@ -64,6 +64,7 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.SystemUtils;
+import org.knime.conda.CondaEnvironmentIdentifier;
 import org.knime.core.columnar.arrow.ArrowColumnStoreFactory;
 import org.knime.core.data.filestore.FileStoreKey;
 import org.knime.core.data.filestore.FileStoreUtil;
@@ -412,6 +413,11 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
 
     private static PythonGateway<PythonScriptingEntryPoint> createGateway(final PythonCommand pythonCommand)
         throws IOException, InterruptedException {
+        if (pythonCommand.getPythonExecutablePath()
+            .startsWith(CondaEnvironmentIdentifier.NOT_EXECUTED_PATH_PLACEHOLDER)) {
+            throw new IOException(CondaEnvironmentIdentifier.NOT_EXECUTED_PATH_PLACEHOLDER);
+        }
+
         final var gatewayDescriptionBuilder =
             PythonGatewayDescription.builder(pythonCommand, LAUNCHER.toAbsolutePath(), PythonScriptingEntryPoint.class);
 
