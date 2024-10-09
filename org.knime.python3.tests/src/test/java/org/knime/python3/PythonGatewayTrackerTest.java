@@ -88,8 +88,8 @@ public class PythonGatewayTrackerTest {
 
         @Override
         public void registerPythonValueFactory(final String pythonModule, final String pythonValueFactoryName,
-            final String dataSpec, final String dataTraits, final String pythonValueTypeName,
-            final boolean isDefaultPythonRepresentation) {
+            final String valueFactoryDataType, final String dataSpec, final String dataTraits,
+            final String pythonValueTypeName, final boolean isDefaultPythonRepresentation) {
         }
 
         @Override
