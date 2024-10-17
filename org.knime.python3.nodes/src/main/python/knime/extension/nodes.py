@@ -292,6 +292,21 @@ class _KnimeNodeBackend(ABC):
             The port type that corresponds to the given ID.
         """
 
+    @abstractmethod
+    def has_port_type_for_id(self, id: str) -> bool:
+        """
+        Returns True if a port type with the given ID exists.
+
+        Note
+        ----
+        This is an experimental API and might change without warning in future releases.
+
+        Returns
+        -------
+        bool
+            True if a port type with the given ID exists, False otherwise.
+        """
+
 
 _backend: _KnimeNodeBackend = None
 
@@ -333,6 +348,15 @@ def get_port_type_for_id(id: str) -> PortType:
     Experimental API. Might change without warning in future releases.
     """
     return _backend.get_port_type_for_id(id)
+
+
+def has_port_type_for_id(id: str) -> bool:
+    """
+    Returns True if a port type with the given ID exists.
+
+    Experimental API. Might change without warning in future releases.
+    """
+    return _backend.has_port_type_for_id(id)
 
 
 @dataclass
@@ -1757,12 +1781,15 @@ class _PortSpecifier:
             raise TypeError(f"group must be of type bool. Got {type(self.group)}.")
 
 
-def _port_to_str(port):
+def _port_to_str(port: Port):
     if port.type == PortType.BINARY:
         return f"{port.type}"
     elif hasattr(port.type, "object_class") and issubclass(
         port.type.object_class, ConnectionPortObject
     ):
         return "Connection" + str(port.type)
+    elif isinstance(port.type, PortType):
+        # TODO figure out how to properly distinguish python defined and java defined port types
+        return port.type.id
     else:
         return str(port.type)

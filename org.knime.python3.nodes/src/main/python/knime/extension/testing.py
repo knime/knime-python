@@ -312,6 +312,9 @@ class _TestingNodeBackend(knodes._KnimeNodeBackend):
     def get_port_type_for_id(self, id: str):
         raise RuntimeError("Port type retrieval not implemented for testing")
 
+    def has_port_type_for_id(self, id: str):
+        raise RuntimeError("Port type retrieval not implemented for testing")
+
 
 class TestingBaseContest:
     def __init__(self) -> None:

@@ -1307,6 +1307,9 @@ class _KnimeNodeBackend(kg.EntryPoint, kn._KnimeNodeBackend):
     def get_port_type_for_id(self, id: str) -> kn.PortType:
         return self._port_type_registry.get_port_type_for_id(id)
 
+    def has_port_type_for_id(self, id: str) -> bool:
+        return self._port_type_registry.has_port_type_for_id(id)
+
     def loadExtension(
         self, extension_id: str, extension_module: str, extension_version: str
     ) -> None:
