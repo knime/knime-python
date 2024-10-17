@@ -70,7 +70,6 @@ import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.PortType;
 import org.knime.core.node.port.image.ImagePortObject;
 import org.knime.core.node.port.image.ImagePortObjectSpec;
-import org.knime.core.node.workflow.capture.WorkflowPortObject;
 import org.knime.credentials.base.Credential;
 import org.knime.credentials.base.CredentialPortObject;
 import org.knime.credentials.base.CredentialPortObjectSpec;
@@ -79,7 +78,6 @@ import org.knime.python3.PythonDataSource;
 import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.arrow.PythonArrowDataSource;
 import org.knime.python3.arrow.PythonArrowTableConverter;
-import org.knime.workflowservices.connection.AbstractHubAuthenticationPortObject;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -845,25 +843,9 @@ public final class PythonPortObjects {
      * @param identifier Port type identifier (TABLE, BINARY, IMAGE or CREDENTIAL currently).
      * @return {@link PortType}
      */
+    @Deprecated
     public static PortType getPortTypeForIdentifier(final String identifier) {
-        if (identifier.equals("PortType.TABLE")) {
-            return BufferedDataTable.TYPE;
-        } else if (identifier.startsWith("PortType.BINARY")) {
-            return PythonBinaryBlobFileStorePortObject.TYPE;
-        } else if (identifier.startsWith("ConnectionPortType")) {
-            return PythonTransientConnectionPortObject.TYPE;
-        } else if (identifier.startsWith("PortType.IMAGE")) {
-            return ImagePortObject.TYPE;
-        } else if (identifier.startsWith("PortType.CREDENTIAL")) {
-            return CredentialPortObject.TYPE;
-        } else if (identifier.startsWith("PortType.HUB_AUTHENTICATION")) {
-            return AbstractHubAuthenticationPortObject.TYPE;
-        } else if (identifier.startsWith("PortType.WORKFLOW")) {
-            return WorkflowPortObject.TYPE;
-        } else {
-            // for other custom ports
-            return PythonBinaryBlobFileStorePortObject.TYPE;
-        }
+        return PythonPortTypeRegistry.getPortTypeForIdentifier(identifier);
     }
 
 }

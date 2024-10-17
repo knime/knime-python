@@ -89,7 +89,7 @@ import org.knime.core.webui.node.view.NodeViewFactory;
 import org.knime.python3.nodes.DelegatingNodeModel;
 import org.knime.python3.nodes.dialog.DelegatingJsonSettingsDataService;
 import org.knime.python3.nodes.dialog.JsonFormsNodeDialog;
-import org.knime.python3.nodes.ports.PythonPortObjects;
+import org.knime.python3.nodes.ports.PythonPortTypeRegistry;
 import org.knime.python3.nodes.proxy.NodeProxyProvider;
 import org.knime.python3.views.HtmlFileNodeView;
 
@@ -312,7 +312,7 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
             for (int i = 0; i < inputPorts.length; i++) {
 
                 PortSpecifier portSpecifier = inputPorts[i];
-                var portType = PythonPortObjects.getPortTypeForIdentifier(portSpecifier.typeString());
+                var portType = PythonPortTypeRegistry.getPortTypeForIdentifier(portSpecifier.typeString());
                 if (portSpecifier.isGroup()) {
                     b.addExtendableInputPortGroup(portSpecifier.name(), portType);
                 } else if (portSpecifier.isOptional()) {
@@ -328,10 +328,10 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
                 PortSpecifier portSpecifier = outputPorts[i];
                 if (portSpecifier.isGroup()) {
                     b.addExtendableOutputPortGroup(portSpecifier.name(),
-                        PythonPortObjects.getPortTypeForIdentifier(portSpecifier.typeString()));
+                        PythonPortTypeRegistry.getPortTypeForIdentifier(portSpecifier.typeString()));
                 } else {
                     b.addFixedOutputPortGroup(String.format("Output %s # %d", portSpecifier.name(), i),
-                        PythonPortObjects.getPortTypeForIdentifier(portSpecifier.typeString()));
+                        PythonPortTypeRegistry.getPortTypeForIdentifier(portSpecifier.typeString()));
                 }
             }
 
