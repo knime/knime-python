@@ -12,7 +12,6 @@ import {
   initConsoleEventHandler,
   OutputConsole,
   consoleHandler,
-  useRegisterScriptSettingsChange,
 } from "@knime/scripting-editor";
 import { getPythonInitialDataService } from "@/python-initial-data-service";
 import { nextTick, onMounted, ref, watch, type Ref } from "vue";
@@ -142,11 +141,6 @@ onMounted(async () => {
     rightPaneActiveTab.value = "preview";
   }
 });
-
-useRegisterScriptSettingsChange(
-  "model",
-  () => mainEditorState.value?.text.value ?? "",
-);
 </script>
 
 <template>
