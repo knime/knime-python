@@ -48,28 +48,22 @@
  */
 package org.knime.python3.nodes.ports.converters;
 
-import java.io.IOException;
-
 import org.knime.base.data.xml.SvgCell;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.image.png.PNGImageContent;
 import org.knime.core.node.port.image.ImagePortObjectSpec;
 import org.knime.core.node.workflow.capture.WorkflowPortObjectSpec;
 import org.knime.core.table.virtual.serialization.AnnotatedColumnarSchemaSerializer;
-import org.knime.credentials.base.CredentialPortObjectSpec;
 import org.knime.python3.arrow.PythonArrowDataUtils;
 import org.knime.python3.nodes.ports.PythonBinaryBlobPortObjectSpec;
-import org.knime.python3.nodes.ports.PythonHubAuthenticationPortObjectSpec;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonBinaryPortObjectSpec;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonConnectionPortObjectSpec;
-import org.knime.python3.nodes.ports.PythonPortObjects.PythonCredentialPortObjectSpec;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonImagePortObjectSpec;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonTablePortObjectSpec;
 import org.knime.python3.nodes.ports.PythonTransientConnectionPortObjectSpec;
 import org.knime.python3.nodes.ports.PythonWorkflowPortObject.PythonWorkflowPortObjectSpec;
 import org.knime.python3.nodes.ports.converters.PortObjectSpecConverterInterfaces.KnimeToPythonPortObjectSpecConverter;
 import org.knime.python3.nodes.ports.converters.PortObjectSpecConverterInterfaces.PythonToKnimePortObjectSpecConverter;
-import org.knime.workflowservices.connection.AbstractHubAuthenticationPortObjectSpec;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -206,34 +200,6 @@ public final class PortObjectSpecConverters {
         }
     }
 
-    /**
-     * Bi-directional Port Object Spec converter for {@link CredentialPortObjectSpec}.
-     */
-    public static final class PythonCredentialPortObjectSpecConverter implements KnimeToPythonPortObjectSpecConverter<CredentialPortObjectSpec, PythonCredentialPortObjectSpec>,
-    PythonToKnimePortObjectSpecConverter<CredentialPortObjectSpec> {
-
-        @Override
-        public PythonCredentialPortObjectSpec toPython(final CredentialPortObjectSpec spec) {
-            return new PythonCredentialPortObjectSpec(spec);
-        }
-
-        @Override
-        public CredentialPortObjectSpec fromJsonString(final String jsonData) {
-            final var om = new ObjectMapper();
-            try {
-                final var rootNode = om.readTree(jsonData);
-                final String serializedXMLString = rootNode.get("data").asText();
-
-                CredentialPortObjectSpec credentialPortObjectSpec =
-                        PythonCredentialPortObjectSpec.loadFromXMLCredentialPortObjectSpecString(serializedXMLString);
-                var spec = new PythonCredentialPortObjectSpec(credentialPortObjectSpec);
-                return spec.getPortObjectSpec();
-
-            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | IOException ex) {
-                throw new IllegalStateException("Could not parse PythonCredentialPortObject from given JSON data", ex);
-            }
-        }
-    }
 
     /**
      * Uni-directional Port Object Spec converter for {@link WorkflowPortObjectSpec}.
@@ -243,17 +209,6 @@ public final class PortObjectSpecConverters {
         @Override
         public PythonWorkflowPortObjectSpec toPython(final WorkflowPortObjectSpec spec) {
             return new PythonWorkflowPortObjectSpec(spec);
-        }
-    }
-
-    /**
-     * Uni-directional Port Object Spec converter for `HubAuthenticationPortObjectSpec`.
-     */
-    public static final class PythonHubAuthenticationPortObjectSpecConverter implements KnimeToPythonPortObjectSpecConverter<AbstractHubAuthenticationPortObjectSpec, PythonHubAuthenticationPortObjectSpec>{
-
-        @Override
-        public PythonHubAuthenticationPortObjectSpec toPython(final AbstractHubAuthenticationPortObjectSpec spec) {
-            return new PythonHubAuthenticationPortObjectSpec(spec);
         }
     }
 
