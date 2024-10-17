@@ -965,6 +965,7 @@ class _PythonNodeProxy:
 
     def initializeJavaCallback(self, java_callback: JavaClass) -> None:
         self._java_callback = java_callback
+        ks.CredentialPortObjectSpec._java_callback = java_callback
 
     def _port_objs_to_python(
         self, port_map: Dict[str, List[int]], input_objects: List[_PythonPortObject]

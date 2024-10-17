@@ -830,7 +830,9 @@ class CredentialPortObjectSpec(PortObjectSpec):
     Port object spec for credential port objects.
     """
 
-    def __init__(self, xml_data: Optional[str], java_callback) -> None:
+    _java_callback = None
+
+    def __init__(self, xml_data: Optional[str]) -> None:
         """
         Create a CredentialPortObjectSpec.
 
@@ -840,7 +842,6 @@ class CredentialPortObjectSpec(PortObjectSpec):
             The xml data of the credentials.
         """
         self._xml_data = xml_data
-        self._java_callback = java_callback
 
     def _get_auth_schema(self) -> str:
         """
@@ -991,12 +992,12 @@ class CredentialPortObjectSpec(PortObjectSpec):
         """
         # spec is optional therefore we use get instead of __get_item__
         xml_data = data.get("data")
-        return cls(xml_data, java_callback)
+        return cls(xml_data)
 
 
 class HubAuthenticationPortObjectSpec(CredentialPortObjectSpec):
-    def __init__(self, xml_data: Optional[str], java_callback, hub_url: str) -> None:
-        super().__init__(xml_data, java_callback)
+    def __init__(self, xml_data: Optional[str], hub_url: str) -> None:
+        super().__init__(xml_data)
         self._hub_url = hub_url
 
     @property
@@ -1009,10 +1010,10 @@ class HubAuthenticationPortObjectSpec(CredentialPortObjectSpec):
         return data
 
     @classmethod
-    def deserialize(cls, data: dict, java_callback=None):
+    def deserialize(cls, data: dict):
         xml_data = data.get("data")
         hub_url = data.get("hub_url")
-        return cls(xml_data, java_callback, hub_url)
+        return cls(xml_data, hub_url)
 
 
 class WorkflowPortInfo:
