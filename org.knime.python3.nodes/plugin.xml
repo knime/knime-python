@@ -44,4 +44,22 @@
             name="Python-based Extensions">
       </page>
    </extension>
+   <extension
+         point="org.knime.python3.types.PythonNodesFrameworkExtension">
+      <KnimeToPythonPortObjectConverter
+            JavaConverterClass="org.knime.python3.nodes.ports.converters.credentials.CredentialPythonConverter"
+            PythonConverterClass="CredentialConverter"
+            PythonModule="src/main/python/_port_impl.py">
+      </KnimeToPythonPortObjectConverter>
+      <PythonToKnimePortObjectConverter
+            JavaConverterClass="org.knime.python3.nodes.ports.converters.credentials.CredentialPythonConverter"
+            PythonConverterClass="CredentialConverter"
+            PythonModule="src/main/python/_port_impl.py">
+      </PythonToKnimePortObjectConverter>
+      <KnimeToPythonPortObjectConverter
+            JavaConverterClass="org.knime.python3.nodes.ports.converters.credentials.HubCredentialPythonConverter"
+            PythonConverterClass="HubAuthenticationConverter"
+            PythonModule="src/main/python/_port_impl.py">
+      </KnimeToPythonPortObjectConverter>
+   </extension>
 </plugin>
