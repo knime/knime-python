@@ -44,29 +44,62 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   2 August 2024 (Ivan Prigarin): created
+ *   Oct 14, 2024 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
-package org.knime.python3.nodes.ports.converters;
+package org.knime.python3.nodes.ports.extension;
 
+import java.util.HashMap;
 import java.util.Map;
-
-import org.knime.core.data.filestore.FileStore;
-import org.knime.core.node.ExecutionContext;
-import org.knime.python3.arrow.PythonArrowDataSink;
-import org.knime.python3.arrow.PythonArrowTableConverter;
+import java.util.Objects;
+import java.util.stream.Stream;
 
 /**
- * A record meant to encapsulate objects used during Port Object conversions from KNIME to Python and vice versa.
+ * A map from {@link Class} to values that searches for matches in the class hierarchy if there is not exact match. The
+ * search first recursively searches all interfaces and only if that produces no results moves up to the super class.
  *
- * @param fileStoresByKey A map of {@link String} keys to {@link FileStore}s holding binary data
- * @param tableConverter The {@link PythonArrowTableConverter} used to convert tables from {@link PythonArrowDataSink}s
- * @param execContext The current {@link ExecutionContext}
+ * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-@SuppressWarnings("restriction")
-public record PortObjectConversionContext(
-    Map<String, FileStore> fileStoresByKey,
-    PythonArrowTableConverter tableConverter,
-    ExecutionContext execContext
-) implements org.knime.python3.types.port.api.convert.PortObjectConversionContext {
-}
+final class ClassHierarchyMap<T, V> {
 
+    private final Map<Class<? extends T>, V> m_byType = new HashMap<>();
+
+    private final Class<T> m_upperTypeBound;
+
+    ClassHierarchyMap(final Class<T> upperTypeBound) {
+        m_upperTypeBound = upperTypeBound;
+    }
+
+    V put(final Class<? extends T> type, final V value) {
+        return m_byType.put(type, value);
+    }
+
+    /**
+     * Gets the value for type. First checks if there is a value for the exact type. If there is no exact match, all
+     * direct interfaces of the type that satisfy the upper type bound are (recursively) checked. If that does not
+     * succeed, the super process is recursively repeated for the super class.
+     *
+     * @param type to get the corresponding value for
+     * @return the value for type
+     */
+    V getHierarchyAware(final Class<? extends T> type) {
+        V value = m_byType.get(type);
+        if (value != null) {
+            return value;
+        }
+
+        var valueForInterface = Stream.of(type.getInterfaces())//
+            .filter(m_upperTypeBound::isAssignableFrom)//
+            .map(i -> getHierarchyAware(i.asSubclass(m_upperTypeBound)))//
+            .filter(Objects::nonNull)//
+            .findFirst();
+        if (valueForInterface.isPresent()) {
+            return valueForInterface.get();
+        }
+        var superClass = type.getSuperclass();
+        if (superClass != null && m_upperTypeBound.isAssignableFrom(superClass)) {
+            return getHierarchyAware(superClass.asSubclass(m_upperTypeBound));
+        }
+        return null;
+    }
+
+}

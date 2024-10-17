@@ -44,29 +44,43 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   2 August 2024 (Ivan Prigarin): created
+ *   Sep 4, 2024 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
-package org.knime.python3.nodes.ports.converters;
+package org.knime.python3.nodes.ports.extension;
 
-import java.util.Map;
-
-import org.knime.core.data.filestore.FileStore;
-import org.knime.core.node.ExecutionContext;
-import org.knime.python3.arrow.PythonArrowDataSink;
-import org.knime.python3.arrow.PythonArrowTableConverter;
+import org.knime.python3.nodes.ports.PythonPortObjects;
+import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
+import org.knime.python3.types.port.api.transfer.PythonPortObjectTransfer;
 
 /**
- * A record meant to encapsulate objects used during Port Object conversions from KNIME to Python and vice versa.
  *
- * @param fileStoresByKey A map of {@link String} keys to {@link FileStore}s holding binary data
- * @param tableConverter The {@link PythonArrowTableConverter} used to convert tables from {@link PythonArrowDataSink}s
- * @param execContext The current {@link ExecutionContext}
+ * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-@SuppressWarnings("restriction")
-public record PortObjectConversionContext(
-    Map<String, FileStore> fileStoresByKey,
-    PythonArrowTableConverter tableConverter,
-    ExecutionContext execContext
-) implements org.knime.python3.types.port.api.convert.PortObjectConversionContext {
-}
+public final class KnimeToPyObjContainer implements PythonPortObject {
 
+    private final KnimeToPySpecContainer m_specContainer;
+
+    private final String m_javaClassName;
+
+    private final PythonPortObjectTransfer m_transfer;
+
+    KnimeToPyObjContainer(final String javaClassName, final PythonPortObjectTransfer transfer,
+        final KnimeToPySpecContainer specContainer) {
+        m_javaClassName = javaClassName;
+        m_transfer = transfer;
+        m_specContainer = specContainer;
+    }
+
+    @Override
+    public String getJavaClassName() {
+        return m_javaClassName;
+    }
+
+    public KnimeToPySpecContainer getSpecContainer() {
+        return m_specContainer;
+    }
+
+    public PythonPortObjectTransfer getTransfer() {
+        return m_transfer;
+    }
+}
