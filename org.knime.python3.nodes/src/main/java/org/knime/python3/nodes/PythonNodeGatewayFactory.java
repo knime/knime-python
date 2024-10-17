@@ -63,15 +63,13 @@ import org.knime.python3.PythonGateway;
 import org.knime.python3.PythonGatewayFactory;
 import org.knime.python3.PythonGatewayFactory.EntryPointCustomizer;
 import org.knime.python3.PythonGatewayFactory.PythonGatewayDescription;
-import org.knime.python3.PythonProcessTerminatedException;
 import org.knime.python3.arrow.Python3ArrowSourceDirectory;
 import org.knime.python3.arrow.PythonArrowExtension;
 import org.knime.python3.types.PythonValueFactoryModule;
 import org.knime.python3.types.PythonValueFactoryRegistry;
+import org.knime.python3.types.port.framework.PythonNodesFrameworkExtensionPointParser;
 import org.knime.python3.views.Python3ViewsSourceDirectory;
 import org.knime.python3.views.PythonViewsExtension;
-
-import py4j.Py4JException;
 
 /**
  * Creates {@link PythonGateway PythonGateways} for nodes written purely in Python.
@@ -97,6 +95,8 @@ public final class PythonNodeGatewayFactory {
 
     private final String m_extensionVersion;
 
+    private final PythonPortConverterExtensionRegistrator m_extensionPortTypeRegistrator;
+
     /**
      * @param extensionId the extension's id
      * @param environmentName the name of the environment the extension uses
@@ -110,6 +110,11 @@ public final class PythonNodeGatewayFactory {
         m_extensionId = extensionId;
         m_environmentName = environmentName;
         m_extensionVersion = extensionVersion;
+        // TODO inject? filter out converters that aren't used by the extension?
+        m_extensionPortTypeRegistrator =
+            new PythonPortConverterExtensionRegistrator(
+                PythonNodesFrameworkExtensionPointParser.getKnimeToPyConverters(),
+                PythonNodesFrameworkExtensionPointParser.getPyToKnimeConverters());
     }
 
     /**
@@ -127,23 +132,21 @@ public final class PythonNodeGatewayFactory {
             .addToPythonPath(Python3ArrowSourceDirectory.getPath()) //
             .addToPythonPath(Python3ViewsSourceDirectory.getPath())//
             .addToPythonPath(m_modulePath)//
+            // TODO preloading is just a special kind of a customizer
             .withPreloaded(PythonArrowExtension.INSTANCE)//
             .withPreloaded(PythonViewsExtension.INSTANCE)//
-            .withCustomizer(new KnimeNodeBackendCustomizer(m_extensionId, m_module, m_extensionVersion));
+            .withCustomizer(new KnimeNodeBackendCustomizer(m_extensionId, m_module, m_extensionVersion,
+                m_extensionPortTypeRegistrator));
         PythonValueFactoryRegistry.getModules().stream().map(PythonValueFactoryModule::getParentDirectory)
             .forEach(gatewayDescriptionBuilder::addToPythonPath);
+        m_extensionPortTypeRegistrator.getPythonPaths().forEach(gatewayDescriptionBuilder::addToPythonPath);
         // For debugging it is best to always start a new process, so that changes in the code are immediately reflected
         // in the node
         // The factory is not held as member, so that it is possible to toggle debug mode without a restart
         var factory = PythonExtensionPreferences.debugMode(m_extensionId) ? DEBUG_FACTORY : FACTORY;
         var gateway = factory.create(gatewayDescriptionBuilder.build());
         final var backend = gateway.getEntryPoint();
-        try {
-            PythonEntryPointUtils.registerPythonValueFactories(backend);
-        } catch (Py4JException ex) {
-            PythonProcessTerminatedException.throwIfTerminated(gateway, ex);
-            throw ex;
-        }
+        PythonEntryPointUtils.registerPythonValueFactories(backend);
         return gateway;
     }
 
@@ -157,6 +160,8 @@ public final class PythonNodeGatewayFactory {
         return new BundledPythonCommand(environment.getPath().toAbsolutePath().toString());
     }
 
+    // TODO if an EntryPointCustomizer would know the PythonPaths it needs, then we could compose EntryPointCustomizers
+    // and implement the entire logic of this class.
     private static final class KnimeNodeBackendCustomizer implements EntryPointCustomizer<KnimeNodeBackend> {
 
         private final String m_extensionId;
@@ -165,16 +170,20 @@ public final class PythonNodeGatewayFactory {
 
         private final String m_extensionVersion;
 
+        private final PythonPortConverterExtensionRegistrator m_extensionPortTypeRegistrator;
+
         KnimeNodeBackendCustomizer(final String extensionId, final String extensionModule,
-            final String extensionVersion) {
+            final String extensionVersion, final PythonPortConverterExtensionRegistrator extensionPortTypeRegistrator) {
             m_extensionId = extensionId;
             m_extensionModule = extensionModule;
             m_extensionVersion = extensionVersion;
+            m_extensionPortTypeRegistrator = extensionPortTypeRegistrator;
         }
 
         @Override
         public void customize(final KnimeNodeBackend entryPoint) {
             PythonEntryPointUtils.registerPythonValueFactories(entryPoint);
+            m_extensionPortTypeRegistrator.customize(entryPoint);
             entryPoint.loadExtension(m_extensionId, m_extensionModule, m_extensionVersion);
         }
 
