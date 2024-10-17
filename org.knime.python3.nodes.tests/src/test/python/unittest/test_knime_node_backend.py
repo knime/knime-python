@@ -1,6 +1,7 @@
 import unittest
 
 import _node_backend_launcher as knb
+from _ports import JavaPortTypeRegistry
 import knime_extension as knext  # old import to test the forwarding import
 import knime.extension.nodes as kn
 import tempfile
@@ -124,7 +125,14 @@ class PortTypeRegistryTest(unittest.TestCase):
             return self._data
 
     def setUp(self) -> None:
-        self.registry = knb._PortTypeRegistry("test.extension")
+        java_port_type_registry: JavaPortTypeRegistry = unittest.mock.create_autospec(
+            JavaPortTypeRegistry
+        )
+        java_port_type_registry.can_convert_obj_from_python.return_value = False
+        java_port_type_registry.can_convert_obj_to_python.return_value = False
+        java_port_type_registry.can_convert_spec_from_python.return_value = False
+        java_port_type_registry.can_convert_spec_to_python.return_value = False
+        self.registry = knb._PortTypeRegistry("test.extension", java_port_type_registry)
 
     def test_default_port_type_id(self):
         # id is intentionally None to test the default id generation

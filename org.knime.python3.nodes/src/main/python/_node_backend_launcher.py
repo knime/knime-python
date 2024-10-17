@@ -76,6 +76,8 @@ import py4j.clientserver
 
 from knime.api.env import _set_proxy_settings
 
+from _ports import JavaPortTypeRegistry
+
 
 # TODO: register extension types
 
@@ -426,11 +428,14 @@ class _PortTypeRegistry:
     # One global dictionary for all connections
     _connection_port_data = {}
 
-    def __init__(self, extension_id: str) -> None:
+    def __init__(
+        self, extension_id: str, extension_port_type_registry: JavaPortTypeRegistry
+    ) -> None:
         self._extension_id = extension_id
         self._port_types_by_object_class = {}
         self._port_types_by_spec_class = {}
         self._port_types_by_id = {}
+        self._extension_port_type_registry = extension_port_type_registry
 
     def register_port_type(
         self,
@@ -472,12 +477,25 @@ class _PortTypeRegistry:
     def get_port_type_for_id(self, id: str) -> kn.PortType:
         if id in self._port_types_by_id:
             return self._port_types_by_id[id]
+        port_type = self._extension_port_type_registry.get_port_type_for_id(id)
+        if port_type is not None:
+            return port_type
         raise KeyError(f"No PortType for id '{id}' registered.")
+
+    def has_port_type_for_id(self, id: str) -> bool:
+        return (
+            id in self._port_types_by_id
+            or self._extension_port_type_registry.get_port_type_for_id(id) is not None
+        )
 
     def spec_to_python(self, spec: _PythonPortObjectSpec, port: kn.Port, java_callback):
         if spec is None:
             return None
         class_name = spec.getJavaClassName()
+        if self._extension_port_type_registry.can_convert_spec_to_python(class_name):
+            return self._extension_port_type_registry.spec_to_python(
+                spec,
+            )
         data = json.loads(spec.toJsonString())
 
         def deserialize_custom_spec() -> kn.PortObjectSpec:
@@ -557,6 +575,9 @@ class _PortTypeRegistry:
     def spec_from_python(
         self, spec, port: kn.Port, node_id: str, port_idx: int
     ) -> _PythonPortObjectSpec:
+        if self._extension_port_type_registry.can_convert_spec_from_python(spec):
+            return self._extension_port_type_registry.spec_from_python(spec)
+
         if port.type == kn.PortType.TABLE:
             if isinstance(spec, ks.Column):
                 spec = ks.Schema.from_columns(spec)
@@ -611,6 +632,9 @@ class _PortTypeRegistry:
         self, port_object: _PythonPortObject, port: kn.Port, java_callback
     ):
         class_name = port_object.getJavaClassName()
+
+        if self._extension_port_type_registry.can_convert_obj_to_python(class_name):
+            return self._extension_port_type_registry.port_object_to_python(port_object)
 
         def read_port_object_data() -> Union[Any, kn.PortObject]:
             file = port_object.getFilePath()
@@ -694,6 +718,9 @@ class _PortTypeRegistry:
         _PythonImagePortObject,
         _PythonCredentialPortObject,
     ]:
+        if self._extension_port_type_registry.can_convert_obj_from_python(obj):
+            return self._extension_port_type_registry.port_object_from_python(obj)
+
         if port.type == kn.PortType.TABLE:
             if not isinstance(obj, (kat.ArrowTable, kat.ArrowBatchOutputTable)):
                 raise TypeError(
@@ -1226,6 +1253,7 @@ class _KnimeNodeBackend(kg.EntryPoint, kn._KnimeNodeBackend):
         self._main_loop = MainLoop()
         self._port_type_registry = None
         kn._backend = self
+        self._java_port_type_registry = JavaPortTypeRegistry()
 
     def register_port_type(
         self,
@@ -1237,6 +1265,38 @@ class _KnimeNodeBackend(kg.EntryPoint, kn._KnimeNodeBackend):
         assert self._port_type_registry is not None, "No extension is loaded."
         return self._port_type_registry.register_port_type(
             name, object_class, spec_class, id
+        )
+
+    def registerKnimeToPyPortObjectConverter(
+        self,
+        module_name: str,
+        python_class_name: str,
+        obj_class_name: str,
+        spec_class_name: str,
+        port_type_name: str,
+    ):
+        self._java_port_type_registry.register_knime_to_py_converter(
+            module_name,
+            python_class_name,
+            obj_class_name,
+            spec_class_name,
+            port_type_name,
+        )
+
+    def registerPyToKnimePortObjectConverter(
+        self,
+        module_name: str,
+        python_class_name: str,
+        obj_class_name: str,
+        spec_class_name: str,
+        port_type_name: str,
+    ):
+        self._java_port_type_registry.register_py_to_knime_converter(
+            module_name,
+            python_class_name,
+            obj_class_name,
+            spec_class_name,
+            port_type_name,
         )
 
     def get_port_type_for_spec_type(
@@ -1251,7 +1311,9 @@ class _KnimeNodeBackend(kg.EntryPoint, kn._KnimeNodeBackend):
         self, extension_id: str, extension_module: str, extension_version: str
     ) -> None:
         try:
-            self._port_type_registry = _PortTypeRegistry(extension_id)
+            self._port_type_registry = _PortTypeRegistry(
+                extension_id, self._java_port_type_registry
+            )
             # load the extension, so that it registers its nodes, categories and port types
             importlib.import_module(extension_module)
             kp.set_extension_version(extension_version)
