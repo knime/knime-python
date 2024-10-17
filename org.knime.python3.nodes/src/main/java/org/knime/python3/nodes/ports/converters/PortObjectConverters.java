@@ -57,28 +57,22 @@ import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.port.image.ImagePortObject;
 import org.knime.core.node.port.image.ImagePortObjectSpec;
 import org.knime.core.node.workflow.capture.WorkflowPortObject;
-import org.knime.credentials.base.CredentialPortObject;
 import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.nodes.ports.PythonBinaryBlobFileStorePortObject;
-import org.knime.python3.nodes.ports.PythonHubAuthenticationPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PurePythonBinaryPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PurePythonConnectionPortObject;
-import org.knime.python3.nodes.ports.PythonPortObjects.PurePythonCredentialPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PurePythonImagePortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PurePythonTablePortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonBinaryPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonBinaryPortObjectSpec;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonConnectionPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonConnectionPortObjectSpec;
-import org.knime.python3.nodes.ports.PythonPortObjects.PythonCredentialPortObject;
-import org.knime.python3.nodes.ports.PythonPortObjects.PythonCredentialPortObjectSpec;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonImagePortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonTablePortObject;
 import org.knime.python3.nodes.ports.PythonTransientConnectionPortObject;
 import org.knime.python3.nodes.ports.PythonWorkflowPortObject;
 import org.knime.python3.nodes.ports.converters.PortObjectConverterInterfaces.KnimeToPythonPortObjectConverter;
 import org.knime.python3.nodes.ports.converters.PortObjectConverterInterfaces.PythonToKnimePortObjectConverter;
-import org.knime.workflowservices.connection.AbstractHubAuthenticationPortObject;
 
 /**
  * Concrete implementations of Port Object Converters.
@@ -190,25 +184,6 @@ public final class PortObjectConverters {
         }
     }
 
-    /**
-     * Bi-directional Port Object converter for {@link CredentialPortObject}.
-     */
-    public static final class PythonCredentialPortObjectConverter implements KnimeToPythonPortObjectConverter<CredentialPortObject, PythonCredentialPortObject>,
-    PythonToKnimePortObjectConverter<PurePythonCredentialPortObject, CredentialPortObject> {
-
-        @Override
-        public PythonCredentialPortObject toPython(final CredentialPortObject portObject, final PortObjectConversionContext context) {
-            return new PythonCredentialPortObject(portObject);
-        }
-
-        @Override
-        public CredentialPortObject fromPython(final PurePythonCredentialPortObject purePythonPortObject, final PortObjectConversionContext context) {
-            var spec = PythonCredentialPortObjectSpec.fromJsonString(purePythonPortObject.getSpec().toJsonString()).getPortObjectSpec();
-            var pythonPortObject = PythonCredentialPortObject.createFromKnimeSpec(spec);
-            return pythonPortObject.getPortObject();
-
-        }
-    }
 
     /**
      * Uni-directional Port Object converter for {@link WorkflowPortObject}.
@@ -221,18 +196,5 @@ public final class PortObjectConverters {
         }
     }
 
-    /**
-     * Uni-directional Port Object converter for `HubAuthenticationPortObject`.
-     *
-     * The actual class of the Port Object is not available to us due to being closed-source, so we use the open source
-     * {@link AbstractHubAuthenticationPortObject} interface instead.
-     */
-    public static final class PythonHubAuthenticationPortObjectConverter implements KnimeToPythonPortObjectConverter<AbstractHubAuthenticationPortObject, PythonHubAuthenticationPortObject> {
-
-        @Override
-        public PythonHubAuthenticationPortObject toPython(final AbstractHubAuthenticationPortObject credentialsPortObject, final PortObjectConversionContext context) {
-            return new PythonHubAuthenticationPortObject(credentialsPortObject);
-        }
-    }
 
 }

@@ -64,7 +64,6 @@ import org.knime.core.node.port.image.ImagePortObjectSpec;
 import org.knime.core.node.workflow.capture.WorkflowPortObject;
 import org.knime.core.node.workflow.capture.WorkflowPortObjectSpec;
 import org.knime.credentials.base.CredentialPortObject;
-import org.knime.credentials.base.CredentialPortObjectSpec;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
 import org.knime.python3.nodes.ports.converters.PortObjectConversionContext;
@@ -83,7 +82,6 @@ import org.knime.python3.nodes.ports.extension.PythonPortObjectConverterRegistry
 import org.knime.python3.types.port.api.convert.PortObjectSpecConversionContext;
 import org.knime.python3.types.port.framework.PythonPortConverterExtension;
 import org.knime.workflowservices.connection.AbstractHubAuthenticationPortObject;
-import org.knime.workflowservices.connection.AbstractHubAuthenticationPortObjectSpec;
 
 /**
  * A registry that manages conversion of {@link PortObject}s and {@link PortObjectSpec}s from KNIME to Python and back.
@@ -145,14 +143,9 @@ public final class PythonPortTypeRegistry {
         m_portObjectConverterMap.put(PythonTransientConnectionPortObject.class, new PortObjectConverters.PythonConnectionPortObjectConverter());
         m_portObjectSpecConverterMap.put(PythonTransientConnectionPortObjectSpec.class, new PortObjectSpecConverters.PythonConnectionPortObjectSpecConverter());
 
-        m_portObjectConverterMap.put(CredentialPortObject.class, new PortObjectConverters.PythonCredentialPortObjectConverter());
-        m_portObjectSpecConverterMap.put(CredentialPortObjectSpec.class, new PortObjectSpecConverters.PythonCredentialPortObjectSpecConverter());
-
         m_portObjectConverterMap.put(WorkflowPortObject.class, new PortObjectConverters.PythonWorkflowPortObjectConverter());
         m_portObjectSpecConverterMap.put(WorkflowPortObjectSpec.class, new PortObjectSpecConverters.PythonWorkflowPortObjectSpecConverter());
 
-        m_portObjectConverterMap.put(AbstractHubAuthenticationPortObject.class, new PortObjectConverters.PythonHubAuthenticationPortObjectConverter());
-        m_portObjectSpecConverterMap.put(AbstractHubAuthenticationPortObjectSpec.class, new PortObjectSpecConverters.PythonHubAuthenticationPortObjectSpecConverter());
     }
 
     public static PortType getPortTypeForIdentifier(final String identifier) {
