@@ -65,6 +65,7 @@ public interface KnimeNodeBackend extends PythonEntryPoint {
      */
     void initializeJavaCallback(Callback callback);
 
+
     /**
      * Global callbacks for this entry point
      */
@@ -84,4 +85,10 @@ public interface KnimeNodeBackend extends PythonEntryPoint {
     String retrieveNodesAsJson();
 
     PythonNodeProxy createNodeFromExtension(final String nodeId);
+
+    void registerKnimeToPyPortObjectConverter(String moduleName, String pythonClassName, String objClassName,
+        String specClassName, String portTypeName);
+
+    void registerPyToKnimePortObjectConverter(String moduleName, String pythonClassName, String objClassName,
+        String specClassName, String portTypeName);
 }
