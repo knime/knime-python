@@ -54,7 +54,7 @@ import org.knime.core.node.NodeDescription;
 import org.knime.core.node.port.PortType;
 import org.knime.python3.nodes.extension.ExtensionNode;
 import org.knime.python3.nodes.extension.ExtensionNodeSetFactory.PortSpecifier;
-import org.knime.python3.nodes.ports.PythonPortObjects;
+import org.knime.python3.nodes.ports.PythonPortTypeRegistry;
 import org.knime.python3.views.ViewResources;
 
 /**
@@ -210,7 +210,7 @@ public final class PythonNode implements ExtensionNode {
      */
     public PortType[] getInputPortTypes() {
         return m_inputPortSpecifiers.stream() //
-            .map(portSpecifier -> PythonPortObjects.getPortTypeForIdentifier(portSpecifier.typeString()))
+            .map(portSpecifier -> PythonPortTypeRegistry.getPortTypeForIdentifier(portSpecifier.typeString()))
             .toArray(PortType[]::new);
     }
 
@@ -221,7 +221,7 @@ public final class PythonNode implements ExtensionNode {
      */
     public PortType[] getOutputPortTypes() {
         return m_outputPortSpecifiers.stream() //
-            .map(portSpecifier -> PythonPortObjects.getPortTypeForIdentifier(portSpecifier.typeString()))
+            .map(portSpecifier -> PythonPortTypeRegistry.getPortTypeForIdentifier(portSpecifier.typeString()))
             .toArray(PortType[]::new);
     }
 
