@@ -86,7 +86,6 @@ import org.knime.core.columnar.access.ColumnarWriteAccess;
 import org.knime.core.columnar.arrow.ArrowColumnStoreFactory;
 import org.knime.core.columnar.arrow.compress.ArrowCompressionUtil;
 import org.knime.core.columnar.batch.BatchWriter;
-import org.knime.core.columnar.batch.RandomAccessBatchReadable;
 import org.knime.core.columnar.batch.ReadBatch;
 import org.knime.core.columnar.batch.SequentialBatchReadable;
 import org.knime.core.columnar.data.IntData.IntWriteData;
@@ -294,7 +293,8 @@ public class KnimeArrowExtensionTypesTest {
 		for (final var module : factoryModules) {
 			final var pythonModule = module.getModuleName();
 			for (final var factory : module) {
-				entryPoint.registerPythonValueFactory(pythonModule, factory.getPythonValueFactoryName(),
+                entryPoint.registerPythonValueFactory(pythonModule, factory.getPythonValueFactoryName(),
+                    factory.getValueFactoryDataType(),
 						factory.getDataSpecRepresentation(), factory.getDataTraitsJson(), factory.getValueTypeName(),
 						factory.isDefaultPythonRepresentation());
 			}
@@ -334,8 +334,8 @@ public class KnimeArrowExtensionTypesTest {
 
 	}
 
-	private Consumer<SequentialBatchReadable> createSingleFsLocationTester(String category, String specifier,
-			String path) {
+	private Consumer<SequentialBatchReadable> createSingleFsLocationTester(final String category, final String specifier,
+			final String path) {
 		return createSingleDataTester(0, StructReadData.class, d -> {
 			assertEquals(category, d.<StringReadData>getReadDataAt(0).getString(0));
 			assertEquals(specifier, d.<StringReadData>getReadDataAt(1).getString(0));
@@ -354,8 +354,8 @@ public class KnimeArrowExtensionTypesTest {
 	}
 
 	@SuppressWarnings("unchecked")
-	private static <W extends WriteAccess> WriteValue<?> createWriteValue(ValueFactory<?, W> valueFactory,
-			WriteAccess access) {
+	private static <W extends WriteAccess> WriteValue<?> createWriteValue(final ValueFactory<?, W> valueFactory,
+			final WriteAccess access) {
 		return valueFactory.createWriteValue((W) access);
 	}
 
@@ -363,7 +363,7 @@ public class KnimeArrowExtensionTypesTest {
 		return new RowFiller() {
 
 			@Override
-			public void accept(RowWrite r) {
+			public void accept(final RowWrite r) {
 				r.setRowKey(rowKey);
 				valueFiller.accept(r);
 			}
@@ -376,7 +376,7 @@ public class KnimeArrowExtensionTypesTest {
 		};
 	}
 
-	private static DataTableSpec dataTableSpec(String name, DataType type) {
+	private static DataTableSpec dataTableSpec(final String name, final DataType type) {
 		return new DataTableSpec(new DataColumnSpecCreator(name, type).createSpec());
 	}
 
@@ -523,7 +523,7 @@ public class KnimeArrowExtensionTypesTest {
 		);
 	}
 
-	private static boolean isWithinMicrosecond(Duration first, Duration second) {
+	private static boolean isWithinMicrosecond(final Duration first, final Duration second) {
 		var absDiff = first.minus(second).abs();
 		return absDiff.getSeconds() == 0L && absDiff.getNano() < 1000;
 	}
@@ -545,7 +545,7 @@ public class KnimeArrowExtensionTypesTest {
 
 		private final ValueFactory<?, ?> m_valueFactory;
 
-		private TypeAndFactory(DataType type, ValueFactory<?, ?> valueFactory) {
+		private TypeAndFactory(final DataType type, final ValueFactory<?, ?> valueFactory) {
 			m_type = type;
 			m_valueFactory = valueFactory;
 		}
@@ -569,15 +569,15 @@ public class KnimeArrowExtensionTypesTest {
 		JAVA_PYTHON_PANDAS_PYTHON_JAVA((e, source, sink) -> e.copyThroughPandas(source, sink));
 
 		private CopyPathway(
-				TriConsumer<KnimeArrowExtensionTypeEntryPoint, PythonDataSource, PythonDataSink> entryPointSelector) {
+				final TriConsumer<KnimeArrowExtensionTypeEntryPoint, PythonDataSource, PythonDataSink> entryPointSelector) {
 			this.entryPointSelector = entryPointSelector;
 		}
 
 		private final TriConsumer<KnimeArrowExtensionTypeEntryPoint, PythonDataSource, PythonDataSink> entryPointSelector;
 	}
 
-	private <D extends DataValue, W extends WriteValue<D>> void testCopySingleCell(TypeAndFactory<D, W> typeAndFactory,
-			Consumer<W> valueFiller, Consumer<D> valueTester, EnumSet<CopyPathway> pathways) throws Exception {
+	private <D extends DataValue, W extends WriteValue<D>> void testCopySingleCell(final TypeAndFactory<D, W> typeAndFactory,
+			final Consumer<W> valueFiller, final Consumer<D> valueTester, final EnumSet<CopyPathway> pathways) throws Exception {
 		var rowFiller = singleRowFiller("row key", w -> valueFiller.accept(w.getWriteValue(0)));
 		var tableTester = singleRowTableTester(dataTableSpec("single column", typeAndFactory.getType()), "row key",
 				r -> valueTester.accept(r.getValue(0)));
@@ -586,7 +586,7 @@ public class KnimeArrowExtensionTypesTest {
 	}
 
 	private <D extends DataValue, W extends WriteValue<D>> void testCopySingleMissingCell(
-			TypeAndFactory<D, W> typeAndFactory, EnumSet<CopyPathway> pathways) throws Exception {
+			final TypeAndFactory<D, W> typeAndFactory, final EnumSet<CopyPathway> pathways) throws Exception {
 		var rowFiller = singleRowFiller("row key", w -> w.setMissing(0));
 		var tableTester = singleRowTableTester(dataTableSpec("single column", typeAndFactory.getType()), "row key",
 				r -> assertTrue(r.isMissing(0)));
@@ -594,7 +594,7 @@ public class KnimeArrowExtensionTypesTest {
 				List.of(typeAndFactory.getValueFactory()), pathways);
 	}
 
-	private static DataTableSpec dataTableSpec(List<String> names, List<DataType> types) {
+	private static DataTableSpec dataTableSpec(final List<String> names, final List<DataType> types) {
 		return new DataTableSpec("default", names.toArray(String[]::new), types.toArray(DataType[]::new));
 	}
 
@@ -621,9 +621,9 @@ public class KnimeArrowExtensionTypesTest {
 				EnumSet.allOf(CopyPathway.class));
 	}
 
-	private void testCopyingData(Supplier<RowFiller> rowFillerSupplier,
-			Consumer<UnsavedColumnarContainerTable> tableTester, List<String> columnNames,
-			List<ValueFactory<?, ?>> valueFactories, EnumSet<CopyPathway> pathways) throws Exception {
+	private void testCopyingData(final Supplier<RowFiller> rowFillerSupplier,
+			final Consumer<UnsavedColumnarContainerTable> tableTester, final List<String> columnNames,
+			final List<ValueFactory<?, ?>> valueFactories, final EnumSet<CopyPathway> pathways) throws Exception {
 		try (var tester = createTester()) {
 			for (CopyPathway pathway : pathways) {
 				tester.runJavaToPythonToJavaTest(pathway.entryPointSelector, rowFillerSupplier.get(), tableTester,
@@ -632,8 +632,8 @@ public class KnimeArrowExtensionTypesTest {
 		}
 	}
 
-	private static Consumer<UnsavedColumnarContainerTable> singleRowTableTester(DataTableSpec expectedSpec,
-			String expectedRowKey, final Consumer<RowValueRead> rowTester) {
+	private static Consumer<UnsavedColumnarContainerTable> singleRowTableTester(final DataTableSpec expectedSpec,
+			final String expectedRowKey, final Consumer<RowValueRead> rowTester) {
 		return table -> {
 			DataTableSpec spec = table.getDataTableSpec();
 			assertEquals(String.format("Expected: %s Got: %s", colsToString(expectedSpec), colsToString(spec)),
@@ -662,8 +662,8 @@ public class KnimeArrowExtensionTypesTest {
 	}
 
 	@SuppressWarnings("unchecked")
-	private static <D extends NullableReadData> Consumer<SequentialBatchReadable> createSingleDataTester(int colIdx,
-			Class<D> dataClass, final Consumer<D> dataTester) {
+	private static <D extends NullableReadData> Consumer<SequentialBatchReadable> createSingleDataTester(final int colIdx,
+			final Class<D> dataClass, final Consumer<D> dataTester) {
 		return createSingleBatchTester(b -> dataTester.accept((D) b.get(colIdx)));
 	}
 
@@ -753,8 +753,8 @@ public class KnimeArrowExtensionTypesTest {
 			}
 		}
 
-		void runPythonToJavaTest(BiConsumer<E, PythonDataSink> pythonCommand,
-				Consumer<SequentialBatchReadable> storeTester) throws IOException {
+		void runPythonToJavaTest(final BiConsumer<E, PythonDataSink> pythonCommand,
+				final Consumer<SequentialBatchReadable> storeTester) throws IOException {
 			final var writePath = createTmpKNIMEArrowPath();
 			final var dataSink = PythonArrowDataUtils.createSink(writePath);
 			pythonCommand.accept(getEntryPoint(), dataSink);
@@ -763,9 +763,9 @@ public class KnimeArrowExtensionTypesTest {
 			}
 		}
 
-		void runJavaToPythonToJavaTest(TriConsumer<E, PythonDataSource, PythonDataSink> entryPointSelector,
-				RowFiller rowFiller, Consumer<UnsavedColumnarContainerTable> javaResultTester, List<String> columnNames,
-				List<ValueFactory<?, ?>> valueFactories) throws Exception {
+		void runJavaToPythonToJavaTest(final TriConsumer<E, PythonDataSource, PythonDataSink> entryPointSelector,
+				final RowFiller rowFiller, final Consumer<UnsavedColumnarContainerTable> javaResultTester, final List<String> columnNames,
+				final List<ValueFactory<?, ?>> valueFactories) throws Exception {
 			final var inputPath = createTmpKNIMEArrowFileHandle();
 			final var outputPath = createTmpKNIMEArrowPath();
 			var valueFactoriesWithRowKey = new ArrayList<>(valueFactories);
@@ -810,7 +810,7 @@ public class KnimeArrowExtensionTypesTest {
 		}
 	}
 
-	private static ColumnarSchema buildSchemaWithLogicalTypeTraits(List<ValueFactory<?, ?>> valueFactories) {
+	private static ColumnarSchema buildSchemaWithLogicalTypeTraits(final List<ValueFactory<?, ?>> valueFactories) {
 		var builder = DefaultColumnarSchema.builder();
 		// row key doesn't have any special traits (at least not right now)
 		var rowKeyValueFactory = valueFactories.get(0);
@@ -842,21 +842,21 @@ public class KnimeArrowExtensionTypesTest {
 
 		private final RowKeyWriteValue m_rowKeyWrite;
 
-		ArrayRowWrite(WriteValue<?>[] writes, WriteAccess[] accesses) {
+		ArrayRowWrite(final WriteValue<?>[] writes, final WriteAccess[] accesses) {
 			m_writes = writes;
 			m_accesses = accesses;
 			m_rowKeyWrite = (RowKeyWriteValue) writes[0];
 		}
 
 		@Override
-		public void setFrom(RowRead values) {
+		public void setFrom(final RowRead values) {
 			setRowKey(values.getRowKey());
 			IntStream.range(1, m_writes.length).forEach(i -> m_writes[i].setValue(values.getValue(i - 1)));
 		}
 
 		@SuppressWarnings("unchecked")
 		@Override
-		public <W extends WriteValue<?>> W getWriteValue(int index) {
+		public <W extends WriteValue<?>> W getWriteValue(final int index) {
 			return (W) m_writes[index + 1];
 		}
 
@@ -866,17 +866,17 @@ public class KnimeArrowExtensionTypesTest {
 		}
 
 		@Override
-		public void setMissing(int index) {
+		public void setMissing(final int index) {
 			m_accesses[index + 1].setMissing();
 		}
 
 		@Override
-		public void setRowKey(String rowKey) {
+		public void setRowKey(final String rowKey) {
 			m_rowKeyWrite.setRowKey(rowKey);
 		}
 
 		@Override
-		public void setRowKey(RowKeyValue rowKey) {
+		public void setRowKey(final RowKeyValue rowKey) {
 			m_rowKeyWrite.setRowKey(rowKey);
 		}
 
