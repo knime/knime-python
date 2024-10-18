@@ -211,6 +211,10 @@ class LogicalTimeTest(TypeTest, unittest.TestCase):
             str(dt.date.__module__) + "." + str(dt.date.__name__), t.value_type
         )
 
+    def test_data_type_name(self):
+        t = self.create_type()
+        self.assertEqual("Local Date", str(t))
+
     def is_singleton(self):
         return False
 
