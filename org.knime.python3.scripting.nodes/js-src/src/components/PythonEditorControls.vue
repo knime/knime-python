@@ -83,6 +83,7 @@ const onHoverRunButton = (
         !hasSelection
       "
       class="run-selected-button"
+      title="Run selected lines – Ctrl Shift Enter"
       @click="runButtonClicked('runSelected')"
       @mouseover="onHoverRunButton('runSelected', 'mouseover')"
       @mouseleave="onHoverRunButton('runSelected', 'mouseleave')"
@@ -95,6 +96,7 @@ const onHoverRunButton = (
       </div>
     </Button>
     <Button
+      title="Run – Shift Enter"
       :disabled="
         !sessionStatus.isRunningSupported ||
         (running && !runningAll) ||
