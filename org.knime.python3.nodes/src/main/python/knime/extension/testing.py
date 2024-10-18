@@ -371,7 +371,7 @@ class TestingExecutionContext(TestingBaseContest, knext.ExecutionContext):
         raise RuntimeError(_NOT_AVAILABLE)
 
 
-def register_extension(plugin_xml: str):
+def register_extension(plugin_xml: str, value_factory_to_type_name_map: dict = None):
     """
     Registers the Python extension types found in the given plugin.xml file
     and puts all modules with extension types on the Pythonpath.
@@ -380,6 +380,9 @@ def register_extension(plugin_xml: str):
     ----------
     plugin_xml : str
         Provide the path to a plugin.xml that registers Python types at the extension point.
+    value_factory_to_type_name_map: dict = None
+        An optional mapping from value factory to readable type names e.g.
+        org.knime.chem.types.SmilesAdapterCellValueFactory -> Smiles
     """
     import xml.etree.ElementTree as ET
     import sys
@@ -405,9 +408,19 @@ def register_extension(plugin_xml: str):
                     + python_value_factory.get("ValueTypeName")
                     + '\\"}'
                 )
+
+                type_name = (
+                    value_factory_to_type_name_map.get(
+                        python_value_factory.get("ValueFactory")
+                    )
+                    if value_factory_to_type_name_map
+                    else "MyDummyTypeName"
+                )
+
                 kt.register_python_value_factory(
                     module_name,
                     python_value_factory.get("PythonClassName"),
+                    type_name,
                     '{"type": "struct", "inner_types": ["string", "variable_width_binary"]}',
                     "{"  #
                     + '"type": "struct",'  #
