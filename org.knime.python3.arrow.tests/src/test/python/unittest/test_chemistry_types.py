@@ -103,6 +103,7 @@ def _register_chemistry_value_factories():
     kt.register_python_value_factory(
         chem_module,
         "SmilesAdapterValueFactory",
+        "Smiles",
         '{"type": "struct", "inner_types": ["string", "variable_width_binary"]}',
         """
         {
@@ -119,6 +120,7 @@ def _register_chemistry_value_factories():
     kt.register_python_value_factory(
         chem_module,
         "SmilesValueFactory",
+        "Smiles",
         '{"type": "struct", "inner_types": ["string", "variable_width_binary"]}',
         """
         {
@@ -144,6 +146,7 @@ def _register_chemistry_value_factories():
     kt.register_python_value_factory(
         __name__,
         "FingerprintValueFactory",
+        "Byte vector",
         dense_byte_vector_spec,
         dense_byte_vector_traits,
         "test_chemistry_types.Fingerprint",

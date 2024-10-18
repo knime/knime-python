@@ -69,6 +69,7 @@ class TypesTest(unittest.TestCase):
         kt.register_python_value_factory(
             "testing_module",
             "TestValueFactory",
+            "TestTypeName",
             '"long"',
             data_traits_mockup,
             python_type_name,

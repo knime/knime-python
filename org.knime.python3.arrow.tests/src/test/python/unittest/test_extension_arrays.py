@@ -565,6 +565,7 @@ class ProxyArrayTest(unittest.TestCase):
         kt.register_python_value_factory(
             __name__,
             "MyLocalTimeValueFactory",
+            "Local Time",
             data_spec_json,
             data_traits,
             "test_extension_arrays.MyTime",
@@ -583,6 +584,7 @@ class ProxyArrayTest(unittest.TestCase):
         kt.register_python_value_factory(
             __name__,
             "MyLocalTimeValueFactory",
+            "Local Time",
             data_spec_json,
             data_traits,
             "test_extension_arrays.MyTime",

@@ -62,21 +62,24 @@ import knime.api.types as kt
 def _register_extension_types():
     ext_types = "knime.types.builtin"
     kt.register_python_value_factory(
-        ext_types,
-        "LocalTimeValueFactory",
-        '"long"',
-        """
+        python_module=ext_types,
+        python_value_factory_name="LocalTimeValueFactory",
+        data_type="Local Time",
+        data_spec_json='"long"',
+        data_traits="""
                     {
                         "type": "simple",
                         "traits": { "logical_type": "{\\"value_factory_class\\":\\"org.knime.core.data.v2.time.LocalTimeValueFactory\\"}" }
                     }
                     """,
-        "datetime.time",
+        python_value_type_name="datetime.time",
+        is_default_python_representation=True,
     )
 
     kt.register_python_value_factory(
         ext_types,
         "LocalDateValueFactory",
+        "Local Date",
         '"long"',
         """
                     {
@@ -89,6 +92,7 @@ def _register_extension_types():
     kt.register_python_value_factory(
         ext_types,
         "LocalDateTimeValueFactory",
+        "Local Date Time",
         '{"type": "struct", "inner_types": ["long", "long"]}',
         """
                     {
@@ -105,6 +109,7 @@ def _register_extension_types():
     kt.register_python_value_factory(
         ext_types,
         "ZonedDateTimeValueFactory2",
+        "Zoned Date Time",
         '{"type": "struct", "inner_types": ["long", "long", "int", "string"]}',
         """
                     {
@@ -123,6 +128,7 @@ def _register_extension_types():
     kt.register_python_value_factory(
         ext_types,
         "ZonedDateTimeValueFactory2",
+        "Zoned Date Time",
         '{"type": "struct", "inner_types": ["long", "long", "int", "string"]}',
         """
                     {
@@ -142,6 +148,7 @@ def _register_extension_types():
     kt.register_python_value_factory(
         ext_types,
         "DurationValueFactory",
+        "Duration",
         '{"type": "struct", "inner_types": ["long", "int"]}',
         """
                     {
@@ -158,6 +165,7 @@ def _register_extension_types():
     kt.register_python_value_factory(
         ext_types,
         "DurationValueFactory",
+        "Duration",
         '{"type": "struct", "inner_types": ["long", "int"]}',
         """
                     {
@@ -175,6 +183,7 @@ def _register_extension_types():
     kt.register_python_value_factory(
         ext_types,
         "FSLocationValueFactory",
+        "Path",
         '{"type": "struct", "inner_types": ["string", "string", "string"]}',
         """
                     {
@@ -189,10 +198,10 @@ def _register_extension_types():
                     """,
         "knime.types.builtin.FSLocationValue",
     )
-
     kt.register_python_value_factory(
         "knime.types.builtin",
         "DenseByteVectorValueFactory",
+        "Byte vector",
         '"variable_width_binary"',
         """
                 {
@@ -205,6 +214,7 @@ def _register_extension_types():
     kt.register_python_value_factory(
         "knime.types.builtin",
         "DenseBitVectorValueFactory",
+        "Bit vector",
         '"variable_width_binary"',
         """
                 {
