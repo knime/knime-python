@@ -261,6 +261,7 @@ def _register_extension_types():
     kt.register_python_value_factory(
         "knime.types.builtin",
         "LocalTimeValueFactory",
+        "Local Time",
         '"long"',
         """
                 {
@@ -274,6 +275,7 @@ def _register_extension_types():
     kt.register_python_value_factory(
         "knime.types.builtin",
         "LocalDateValueFactory",
+        "Local Date",
         '"long"',
         """
                 {
@@ -287,6 +289,7 @@ def _register_extension_types():
     kt.register_python_value_factory(
         "knime.types.builtin",
         "LocalDateTimeValueFactory",
+        "Local Date and Time",
         '{"type": "struct", "inner_types": ["long", "long"]}',
         """
                 {
@@ -304,6 +307,7 @@ def _register_extension_types():
     kt.register_python_value_factory(
         "knime.types.builtin",
         "DenseByteVectorValueFactory",
+        "Dense Byte Vector",
         '"variable_width_binary"',
         """
                 {
@@ -807,6 +811,7 @@ class ProxyTests(unittest.TestCase):
         kt.register_python_value_factory(
             __name__,
             "MyLocalTimeValueFactory",
+            "MyLocalTimeType",
             data_spec_json,
             data_traits,
             "test_knime_schema.MyTime",
@@ -861,6 +866,7 @@ class ProxyTests(unittest.TestCase):
         kt.register_python_value_factory(
             __name__,
             "MyLocalTimeValueFactory",
+            "MyLocalTimeType",
             data_spec_json,
             data_traits,
             "test_knime_schema.MyTime",
