@@ -360,8 +360,6 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
 
         private String m_environmentName;
 
-        private String m_moduleName;
-
         private String m_version;
 
         private Path m_modulePath;
@@ -384,12 +382,10 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
             var relativeModulePath = Path.of(extensionModule);
             if (relativeModulePath.getParent() == null) {
                 // the extension module is top level in the extension folder next to the knime.yml
-                m_moduleName = extensionModule;
                 m_modulePath = extensionPath.resolve(extensionModule);
             } else {
                 // the extension module is in a potentially nested subfolder
                 m_modulePath = extensionPath.resolve(relativeModulePath);
-                m_moduleName = relativeModulePath.getFileName().toString();
             }
         }
 
