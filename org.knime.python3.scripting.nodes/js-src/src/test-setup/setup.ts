@@ -10,22 +10,40 @@ export const consola = new Consola({
   level: LogLevel.Log,
 });
 
-vi.mock("@knime/ui-extension-service", async () => ({
-  ...(await vi.importActual("@knime/ui-extension-service")),
-  JsonDataService: {
-    getInstance: vi.fn(() =>
-      Promise.resolve({
-        initialData: vi.fn(() =>
-          Promise.resolve({
-            settings: DEFAULT_INITIAL_SETTINGS,
-            initialData: DEFAULT_INITIAL_DATA,
-          }),
-        ),
-      }),
+// NB: We do not use importActual here, because we want to ensure everything is mocked.
+// Not mocking something can lead randomly appearing timeout errors because of the
+// `getConfig` call of the ui-extension-service.
+vi.mock("@knime/ui-extension-service", () => {
+  const dialogService = {
+    registerSettings: vi.fn(() =>
+      vi.fn(() => ({
+        setValue: vi.fn(),
+        addControllingFlowVariable: vi.fn(() => ({
+          set: vi.fn(),
+          unset: vi.fn(),
+        })),
+      })),
     ),
-  },
-  ReportingService: vi.fn(() => ({})),
-}));
+    setApplyListener: vi.fn(),
+  };
+
+  return {
+    JsonDataService: {
+      getInstance: vi.fn(() =>
+        Promise.resolve({
+          initialData: vi.fn(() =>
+            Promise.resolve({
+              settings: DEFAULT_INITIAL_SETTINGS,
+              initialData: DEFAULT_INITIAL_DATA,
+            }),
+          ),
+        }),
+      ),
+    },
+    ReportingService: vi.fn(() => ({})),
+    DialogService: { getInstance: vi.fn(() => dialogService) },
+  };
+});
 
 vi.mock("@/python-initial-data-service", () => ({
   getPythonInitialDataService: vi.fn(() => ({
