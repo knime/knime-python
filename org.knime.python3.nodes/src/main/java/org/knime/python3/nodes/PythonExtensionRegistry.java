@@ -66,6 +66,7 @@ import org.eclipse.core.runtime.IExtensionRegistry;
 import org.eclipse.core.runtime.Platform;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.util.FileUtil;
+import org.osgi.framework.Version;
 
 /**
  * Registry for the PythonExtension extension point at which bundled extensions are registered.
@@ -98,6 +99,8 @@ final class PythonExtensionRegistry {
         var contributor = extension.getContributor();
         final var bundleName = contributor.getName();
         var bundle = Platform.getBundle(bundleName);
+        final var bundleVersion = bundle.getVersion();
+
         return Stream.of(extension.getConfigurationElements())//
             .filter(PythonExtensionRegistry::isPyExtension)//
             .map(PythonExtensionRegistry::extractPluginRelativePath)//
@@ -106,7 +109,7 @@ final class PythonExtensionRegistry {
             .map(PythonExtensionRegistry::toPath)//
             .filter(Optional::isPresent)//
             .map(Optional::get)//
-            .map(p -> new PyExtensionEntry(p, bundleName));
+            .map(p -> new PyExtensionEntry(p, bundleName, bundleVersion));
     }
 
     private static boolean filterWithError(final URL url, final IContributor contributor) {
@@ -138,23 +141,7 @@ final class PythonExtensionRegistry {
         return new org.eclipse.core.runtime.Path(pathInPlugin);
     }
 
-    static final class PyExtensionEntry {
-        private final Path m_path;
-        private final String m_bundleName;
-
-        PyExtensionEntry(final Path path, final String bundleName) {
-            m_path = path;
-            m_bundleName = bundleName;
-        }
-
-        Path getPath() {
-            return m_path;
-        }
-
-        String getBundleName() {
-            return m_bundleName;
-        }
-
+    public static final record PyExtensionEntry(Path path, String bundleName, Version bundleVersion) {
     }
 
     private PythonExtensionRegistry() {

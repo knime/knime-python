@@ -68,6 +68,7 @@ import org.knime.python3.nodes.extension.KnimeExtension;
 import org.knime.python3.nodes.proxy.NodeProxyProvider;
 import org.knime.python3.nodes.proxy.PythonNodeProxy;
 import org.knime.python3.nodes.pycentric.PythonCentricExtensionParser;
+import org.osgi.framework.Version;
 
 /**
  * {@link ExtensionNodeSetFactory} for ALL nodes written purely in Python. On startup, it collects all registered Python
@@ -91,11 +92,11 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
          * Parses the extension found at the provided path.
          *
          * @param path to the extension
-         * @param bundleName the name of the bundle providing the extension
+         * @param bundleVersion the version of the bundle providing the extension
          * @return the parsed extension
          * @throws IOException if parsing failed
          */
-        PyNodeExtension parseExtension(final Path path, final String bundleName) throws IOException;
+        PyNodeExtension parseExtension(final Path path, final Version bundleVersion) throws IOException;
     }
 
     private static final List<PyExtensionEntry> PYTHON_NODE_EXTENSION_PATHS = PythonExtensionRegistry.PY_EXTENSIONS;
@@ -120,17 +121,18 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
 
     private static Stream<KnimeExtension> getExtensionsFromPreferences() {
         return PythonExtensionPreferences.getPathsToCustomExtensions()//
-            .map(p -> parseExtension(p, "unknown"));
+            .map(p -> parseExtension(p, "unknown", null));
     }
 
     private static Stream<KnimeExtension> getExtensionsFromExtensionPoint() {
         return PYTHON_NODE_EXTENSION_PATHS.stream()//
-            .map(e -> parseExtension(e.getPath(), e.getBundleName()));
+            .map(e -> parseExtension(e.path(), e.bundleName(), e.bundleVersion()));
     }
 
-    private static KnimeExtension parseExtension(final Path extensionPath, final String bundleName) {
+    private static KnimeExtension parseExtension(final Path extensionPath, final String bundleName,
+        final Version bundleVersion) {
         try {
-            var extension = EXTENSION_PARSER.parseExtension(extensionPath, bundleName);
+            var extension = EXTENSION_PARSER.parseExtension(extensionPath, bundleVersion);
             return new ResolvedPythonExtension(extension, bundleName);
         } catch (Exception ex) { //NOSONAR
             // any kind of exception must be prevented, otherwise a single corrupted extension would prevent the whole

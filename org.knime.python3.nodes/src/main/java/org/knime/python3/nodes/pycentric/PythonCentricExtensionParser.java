@@ -74,6 +74,7 @@ import org.knime.python3.nodes.extension.NodeDescriptionBuilder;
 import org.knime.python3.nodes.extension.NodeDescriptionBuilder.Tab;
 import org.knime.python3.views.FolderViewResources;
 import org.knime.python3.views.ViewResources;
+import org.osgi.framework.Version;
 import org.yaml.snakeyaml.Yaml;
 
 import com.google.gson.Gson;
@@ -110,13 +111,13 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
     private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonCentricExtensionParser.class);
 
     @Override
-    public PyNodeExtension parseExtension(final Path path, final String bundleName) throws IOException {
-        var staticInfo = readStaticInformation(path, bundleName);
+    public PyNodeExtension parseExtension(final Path path, final Version bundleVersion) throws IOException {
+        var staticInfo = readStaticInformation(path, bundleVersion);
 
         return retrieveDynamicInformationFromPython(staticInfo);
     }
 
-    private static StaticExtensionInfo readStaticInformation(final Path path, final String bundleName)
+    private static StaticExtensionInfo readStaticInformation(final Path path, final Version bundleVersion)
         throws IOException {
         var yaml = new Yaml();
         try (var inputStream = Files.newInputStream(path.resolve("knime.yml"))) {
@@ -132,7 +133,7 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
                 (String)map.get("extension_module"), //
                 path, //
                 version, //
-                bundleName);
+                bundleVersion);
         }
     }
 
@@ -145,11 +146,13 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
 
         if (cachePath != null) {
             try (var cachedExtensionReader = Files.newBufferedReader(cachePath)) {
-                LOGGER.info("Loading cached extension " + staticInfo.m_id + " from " + cachePath);
-                return loadCachedExtension(staticInfo, gatewayFactory, cachedExtensionReader);
+                LOGGER.info("Trying to load cached extension '" + staticInfo.m_id + "_" + staticInfo.m_bundleVersion
+                    + "' from " + cachePath);
+                return loadCachedExtension(staticInfo, gatewayFactory, cachedExtensionReader,
+                    staticInfo.m_bundleVersion);
             } catch (IOException e) {
-                LOGGER.debug("Didn't find cached info for extension '" + staticInfo.m_id
-                    + "'. Parsing Python extension instead.");
+                LOGGER.debug("Didn't find cached info for extension '" + staticInfo.m_id + "_"
+                    + staticInfo.m_bundleVersion + "'. Parsing Python extension instead.");
             }
         }
 
@@ -160,11 +163,15 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
                 var categoriesJson = backend.retrieveCategoriesAsJson();
                 var nodesJson = backend.retrieveNodesAsJson();
 
-                try {
-                    cacheExtension(cachePath, categoriesJson, nodesJson);
-                    LOGGER.info("Saving extension " + staticInfo.m_id + " cache to " + cachePath);
-                } catch (IOException e) {
-                    LOGGER.debug("Could not write extension " + staticInfo.m_id + " cache to " + cachePath, e);
+                if (staticInfo.m_bundleVersion != null) {
+                    try {
+                        cacheExtension(cachePath, staticInfo.m_bundleVersion, categoriesJson, nodesJson);
+                        LOGGER.info("Saved extension '" + staticInfo.m_id + "_" + staticInfo.m_bundleVersion
+                            + "' cache to " + cachePath);
+                    } catch (IOException e) {
+                        LOGGER.debug("Could not write extension '" + staticInfo.m_id + "_" + staticInfo.m_bundleVersion
+                            + "' cache to " + cachePath, e);
+                    }
                 }
 
                 return createNodeExtension(categoriesJson, nodesJson, staticInfo, gatewayFactory);
@@ -205,24 +212,25 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
         }
 
         Path cachePath = null;
-        for (Path component : staticInfo.m_extensionPath) {
-            if (component.toString().startsWith(staticInfo.m_id + "_" + staticInfo.m_version)) {
-                cachePath = Path.of(Platform.getConfigurationLocation().getURL().getPath(), component.toString());
-                break;
-            }
+
+        if (staticInfo.m_bundleVersion != null) {
+            cachePath = Path.of(Platform.getConfigurationLocation().getURL().getPath(), staticInfo.m_id);
         }
+
         return cachePath;
     }
 
-    private static void cacheExtension(final Path cachePath, final String categoriesJson, final String nodesJson)
-        throws IOException {
+    private static void cacheExtension(final Path cachePath, final Version bundleVersion, final String categoriesJson,
+        final String nodesJson) throws IOException {
         if (cachePath == null) {
             return;
         }
 
         // we have the plain strings of JSON encoded categories and nodes, so we construct the string for a combined JSON by hand.
         StringBuilder sb = new StringBuilder();
-        sb.append("{\"categories\": ");
+        sb.append("{ \"bundleVersion\": \"");
+        sb.append(bundleVersion);
+        sb.append("\",\n\"categories\": ");
         sb.append(categoriesJson);
         sb.append(",\n\"nodes\": ");
         sb.append(nodesJson);
@@ -231,8 +239,15 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
     }
 
     private static PyNodeExtension loadCachedExtension(final StaticExtensionInfo staticInfo,
-        final PythonNodeGatewayFactory gatewayFactory, final BufferedReader cachedExtensionReader) {
+        final PythonNodeGatewayFactory gatewayFactory, final BufferedReader cachedExtensionReader,
+        final Version expectedVersion) throws IOException {
         JsonExtension cachedExt = new Gson().fromJson(cachedExtensionReader, JsonExtension.class);
+
+        if (!cachedExt.bundleVersion.equals(expectedVersion.toString())) {
+            throw new IOException("Extension cache has wrong version, expected " + expectedVersion + " but found "
+                + cachedExt.bundleVersion);
+        }
+
         return new FluentPythonNodeExtension(staticInfo.m_id, //
             parseNodes(cachedExt.nodes, staticInfo.m_extensionPath), //
             parseCategories(cachedExt.categories, staticInfo.m_extensionPath), //
@@ -448,6 +463,7 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
 
         protected JsonNodeDescription[] nodes;
 
+        protected String bundleVersion;
     }
 
     /**
@@ -468,15 +484,15 @@ public final class PythonCentricExtensionParser implements PythonExtensionParser
 
         private Path m_extensionPath;
 
-        private String m_bundleName; // null if the extension is not provided by a bundle
+        private Version m_bundleVersion; // null if the extension is not provided by a bundle
 
         StaticExtensionInfo(final String name, final String group_id, final String environmentName,
-            final String extensionModule, final Path extensionPath, final String version, final String bundleName) {
+            final String extensionModule, final Path extensionPath, final String version, final Version bundleVersion) {
             m_id = group_id + "." + name;
             m_environmentName = environmentName;
             m_extensionPath = extensionPath;
             m_version = version;
-            m_bundleName = bundleName;
+            m_bundleVersion = bundleVersion;
 
             if (m_version == null || m_version.isBlank()) {
                 m_version = "0.0.0";
