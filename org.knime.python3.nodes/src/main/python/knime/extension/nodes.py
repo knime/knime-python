@@ -1192,6 +1192,16 @@ class InvalidParametersError(Exception):
         super().__init__(message)
 
 
+class WorkflowExecutionError(RuntimeError):
+    """
+    Error that is raised if executing the PythonWorkflowPortObject's workflow did not produce a
+    result due to failed nodes.
+    """
+
+    def __init__(self, message) -> None:
+        super().__init__(message)
+
+
 def _unwrap_results(func: Callable) -> Callable:
     """
     Configure and view can both return _ColumnarView or _TabularView respectively, which have a virtual

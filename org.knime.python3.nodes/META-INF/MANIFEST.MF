@@ -36,7 +36,7 @@ Require-Bundle:
  org.knime.credentials.base.oauth;bundle-version="[5.4.0,6.0.0)",
  com.fasterxml.jackson.core.jackson-annotations;bundle-version="[2.13.2,3.0.0)",
  org.knime.workflowservices;bundle-version="[5.4.0,6.0.0)",
- org.apache.commons.lang3;bundle-version="3.14.0"
+ org.apache.commons.lang3;bundle-version="[3.9.0,4.0.0)"
 Automatic-Module-Name: org.knime.python3.nodes
 Eclipse-RegisterBuddy: org.knime.ext.py4j
 Eclipse-BundleShape: dir

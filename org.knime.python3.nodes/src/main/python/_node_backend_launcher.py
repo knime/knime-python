@@ -261,6 +261,12 @@ class _PythonWorkflowPortObject:
         inputs: Dict[str, kn.Table],
         warning_consumer: Callable[[str], None] = None,
     ) -> List[kn.Table]:
+        """
+        Raises
+        ------
+            WorkflowExecutionError: if execution did not produce a result due to failed nodes.
+        """
+
         if warning_consumer is None:
 
             def no_op_warning_consumer(warning: str) -> None:
@@ -284,8 +290,13 @@ class _PythonWorkflowPortObject:
                 prepared_inputs, _WorkflowExecutionWarningConsumer(warning_consumer)
             )
         except Py4JJavaError as error:
-            raise RuntimeError(str(error.java_exception.getMessage()))
-
+            if (
+                error.java_exception.getClass().getName()
+                == "org.knime.python3.nodes.ports.WorkflowExecutionException"
+            ):
+                raise kn.WorkflowExecutionError(str(error.java_exception.getMessage()))
+            else:
+                raise RuntimeError(str(error.java_exception.getMessage()))
         return (
             [
                 self._type_registry.port_object_to_python(output, port, None)

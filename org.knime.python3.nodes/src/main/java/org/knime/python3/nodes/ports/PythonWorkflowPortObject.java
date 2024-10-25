@@ -158,8 +158,7 @@ public final class PythonWorkflowPortObject implements PythonPortObject {
     }
 
     private static void throwErrorMessage(
-        final WorkflowSegmentExecutionResult result)
-        throws KNIMEException {
+        final WorkflowSegmentExecutionResult result) {
         var errorMessages =
             result.nodeMessages().stream().filter(msg -> msg.message().getMessageType() == Type.ERROR).toList();
         // determine the number of failed nodes that are not containers
@@ -167,13 +166,8 @@ public final class PythonWorkflowPortObject implements PythonPortObject {
         for (WorkflowSegmentNodeMessage message : errorMessages) {
             recursivelyExtractLeafNodeErrorMessages(message, leafErrorMessages);
         }
-        var numberOfFailedNodes = leafErrorMessages.size();
-        // construct error message
-        var message = String.format("Workflow contains %s with execution failure:%n%s",
-            ((numberOfFailedNodes == 1) ? "one node" : (String.valueOf(numberOfFailedNodes) + " nodes")),
-            errorMessages.stream().map(msg -> recursivelyConstructErrorMessage(msg, ""))
-                .collect(Collectors.joining(",\n")));
-        throw new KNIMEException(message);
+        var message = constructErrorMessage(leafErrorMessages.size(), errorMessages);
+        throw new WorkflowExecutionException(message);
     }
 
     private static void recursivelyExtractLeafNodeErrorMessages(final WorkflowSegmentNodeMessage message,
@@ -188,6 +182,21 @@ public final class PythonWorkflowPortObject implements PythonPortObject {
                 recursivelyExtractLeafNodeErrorMessages(nestedMessage, result);
             }
         }
+    }
+
+    private static String constructErrorMessage(final int numberOfFailedNodes,
+        final List<WorkflowSegmentNodeMessage> errorMessages) {
+        String iNodes;
+        if (numberOfFailedNodes == 1) {
+            iNodes = "one node";
+        } else {
+            iNodes = String.valueOf(numberOfFailedNodes) + " nodes";
+        }
+        return String.format("Workflow contains %s with execution failure:%n%s",
+            iNodes,
+            errorMessages.stream()//
+                .map(msg -> recursivelyConstructErrorMessage(msg, ""))//
+                .collect(Collectors.joining(",\n")));
     }
 
     private static String recursivelyConstructErrorMessage(final WorkflowSegmentNodeMessage message,

@@ -115,6 +115,7 @@ output_table_group = _kn.output_table_group
 output_binary_group = _kn.output_binary_group
 output_image_group = _kn.output_image_group
 output_port_group = _kn.output_port_group
+WorkflowExecutionError = _kn.WorkflowExecutionError
 ## knime.api.table
 Table = _kt.Table
 BatchOutputTable = _kt.BatchOutputTable
