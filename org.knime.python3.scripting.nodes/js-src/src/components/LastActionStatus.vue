@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { useSessionStatusStore } from "@/store";
 import { computed } from "vue";
+
+import { useSessionStatusStore } from "@/store";
 
 const sessionStatus = useSessionStatusStore();
 

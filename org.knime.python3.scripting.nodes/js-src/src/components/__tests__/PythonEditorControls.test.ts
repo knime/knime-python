@@ -1,13 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
-import { useSessionStatusStore } from "@/store";
-import { editor, getScriptingService } from "@knime/scripting-editor";
+import { nextTick, ref } from "vue";
 import { DOMWrapper, VueWrapper, flushPromises, mount } from "@vue/test-utils";
+
+import { Button, LoadingIcon } from "@knime/components";
+import { editor, getScriptingService } from "@knime/scripting-editor";
 import CancelIcon from "@knime/styles/img/icons/circle-close.svg";
 import PlayIcon from "@knime/styles/img/icons/play.svg";
-import { Button, LoadingIcon } from "@knime/components";
+
+import { useSessionStatusStore } from "@/store";
 import PythonEditorControls from "../PythonEditorControls.vue";
-import { nextTick, ref } from "vue";
 
 describe("PythonEditorControls", () => {
   const doMount = async ({ props } = { props: {} }) => {

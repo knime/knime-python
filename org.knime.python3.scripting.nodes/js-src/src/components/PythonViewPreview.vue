@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { onMounted, ref } from "vue";
+
+import { Button } from "@knime/components";
+
 import { pythonScriptingService } from "@/python-scripting-service";
 import { usePythonPreviewStatusStore, useSessionStatusStore } from "@/store";
-import { onMounted, ref } from "vue";
-import { Button } from "@knime/components";
 
 const IFRAME_SOURCE = "./preview.html";
 

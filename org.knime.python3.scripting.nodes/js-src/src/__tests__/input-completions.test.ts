@@ -1,5 +1,6 @@
+import { describe, expect, it, vi } from "vitest";
 import * as monaco from "monaco-editor";
-import { describe, it, expect, vi } from "vitest";
+
 import { registerInputCompletions } from "../input-completions";
 
 describe("registerInputCompletions", () => {

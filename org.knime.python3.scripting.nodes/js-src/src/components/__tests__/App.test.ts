@@ -1,33 +1,35 @@
-import {
-  createPythonSettingsServiceMock,
-  DEFAULT_INITIAL_DATA,
-  DEFAULT_INITIAL_SETTINGS,
-} from "@/__mocks__/mock-data";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { setSelectedExecutable, useExecutableSelectionStore } from "@/store";
-import {
-  ScriptingEditor,
-  getScriptingService,
-  editor,
-  consoleHandler,
-} from "@knime/scripting-editor";
-import { getPythonInitialDataService } from "@/python-initial-data-service";
+import { nextTick } from "vue";
 import {
   VueWrapper,
   enableAutoUnmount,
   flushPromises,
   mount,
 } from "@vue/test-utils";
+import * as monaco from "monaco-editor";
+
+import {
+  ScriptingEditor,
+  consoleHandler,
+  editor,
+  getScriptingService,
+} from "@knime/scripting-editor";
+
 import { executableOptionsMock } from "@/__mocks__/executable-options";
-import App from "../App.vue";
-import { nextTick } from "vue";
+import {
+  DEFAULT_INITIAL_DATA,
+  DEFAULT_INITIAL_SETTINGS,
+  createPythonSettingsServiceMock,
+} from "@/__mocks__/mock-data";
+import { getPythonInitialDataService } from "@/python-initial-data-service";
 import { pythonScriptingService } from "@/python-scripting-service";
+import { getPythonSettingsService } from "@/python-settings-service";
+import { setSelectedExecutable, useExecutableSelectionStore } from "@/store";
 import type {
   ExecutableOption,
   PythonScriptingNodeSettings,
 } from "@/types/common";
-import { getPythonSettingsService } from "@/python-settings-service";
-import * as monaco from "monaco-editor";
+import App from "../App.vue";
 
 describe("App.vue", () => {
   enableAutoUnmount(afterEach);

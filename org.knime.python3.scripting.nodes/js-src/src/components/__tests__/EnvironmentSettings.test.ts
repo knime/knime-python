@@ -1,14 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { flushPromises, mount } from "@vue/test-utils";
+
+import { Dropdown } from "@knime/components";
+import { consoleHandler, getScriptingService } from "@knime/scripting-editor";
 
 import { executableOptionsMock } from "@/__mocks__/executable-options";
-import { setSelectedExecutable } from "@/store";
-import { getScriptingService, consoleHandler } from "@knime/scripting-editor";
-import { flushPromises, mount } from "@vue/test-utils";
-import { Dropdown } from "@knime/components";
-import EnvironmentSettings from "../EnvironmentSettings.vue";
-import { getPythonInitialDataService } from "@/python-initial-data-service";
 import { DEFAULT_INITIAL_DATA } from "@/__mocks__/mock-data";
+import { getPythonInitialDataService } from "@/python-initial-data-service";
+import { setSelectedExecutable } from "@/store";
 import type { ExecutableOption } from "@/types/common";
+import EnvironmentSettings from "../EnvironmentSettings.vue";
 
 describe("EnvironmentSettings", () => {
   const executableOptions = executableOptionsMock;

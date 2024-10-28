@@ -1,15 +1,17 @@
 <script setup lang="ts">
+import { type Ref, onMounted, onUnmounted, ref } from "vue";
 import { useDebounceFn, useResizeObserver } from "@vueuse/core";
-import { onMounted, onUnmounted, ref, type Ref } from "vue";
+
 import { Button } from "@knime/components";
 
+import { getPythonInitialDataService } from "@/python-initial-data-service";
 import { pythonScriptingService } from "@/python-scripting-service";
 import { usePythonPreviewStatusStore, useSessionStatusStore } from "@/store";
+
 import PythonWorkspaceBody from "./PythonWorkspaceBody.vue";
 import PythonWorkspaceHeader, {
   type ColumnSizes,
 } from "./PythonWorkspaceHeader.vue";
-import { getPythonInitialDataService } from "@/python-initial-data-service";
 
 const resizeContainer = ref<HTMLElement | null>(null);
 const totalWidth: Ref<number> = ref(0);

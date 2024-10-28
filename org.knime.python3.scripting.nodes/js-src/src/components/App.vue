@@ -1,31 +1,33 @@
 <script setup lang="ts">
-import { pythonScriptingService } from "@/python-scripting-service";
-import { useExecutableSelectionStore } from "@/store";
+import { type Ref, nextTick, onMounted, ref, watch } from "vue";
+import * as monaco from "monaco-editor";
+
+import { FunctionButton, LoadingIcon, type MenuItem } from "@knime/components";
 import {
   CompactTabBar,
-  ScriptingEditor,
-  editor,
-  type SettingsMenuItem,
-  type GenericNodeSettings,
   type ConsoleHandler,
-  setConsoleHandler,
-  initConsoleEventHandler,
+  type GenericNodeSettings,
   OutputConsole,
+  ScriptingEditor,
+  type SettingsMenuItem,
   consoleHandler,
+  editor,
+  initConsoleEventHandler,
+  setConsoleHandler,
 } from "@knime/scripting-editor";
-import { getPythonInitialDataService } from "@/python-initial-data-service";
-import { nextTick, onMounted, ref, watch, type Ref } from "vue";
 import SettingsIcon from "@knime/styles/img/icons/cog.svg";
 import FileCogIcon from "@knime/styles/img/icons/file-cog.svg";
 import FileTextIcon from "@knime/styles/img/icons/file-text.svg";
-import { type MenuItem, LoadingIcon, FunctionButton } from "@knime/components";
+import TrashIcon from "@knime/styles/img/icons/trash.svg";
+
 import EnvironmentSettings from "@/components/EnvironmentSettings.vue";
 import LastActionStatus from "@/components/LastActionStatus.vue";
 import PythonEditorControls from "@/components/PythonEditorControls.vue";
 import PythonViewPreview from "@/components/PythonViewPreview.vue";
 import PythonWorkspace from "@/components/PythonWorkspace.vue";
-import TrashIcon from "@knime/styles/img/icons/trash.svg";
-import * as monaco from "monaco-editor";
+import { getPythonInitialDataService } from "@/python-initial-data-service";
+import { pythonScriptingService } from "@/python-scripting-service";
+import { useExecutableSelectionStore } from "@/store";
 
 const menuItems: MenuItem[] = [
   {

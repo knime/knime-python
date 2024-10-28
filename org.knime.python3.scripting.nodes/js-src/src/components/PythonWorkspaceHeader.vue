@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, onMounted, watch } from "vue";
+import { onMounted, reactive, watch } from "vue";
 
 export type ColumnSizes = [number, number, number];
 

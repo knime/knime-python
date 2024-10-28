@@ -1,8 +1,9 @@
 import {
   type GenericInitialData,
-  getInitialDataService,
   type InputOutputModel,
+  getInitialDataService,
 } from "@knime/scripting-editor";
+
 import type { ExecutableOption } from "./types/common";
 
 export type PythonInitialData = GenericInitialData & {

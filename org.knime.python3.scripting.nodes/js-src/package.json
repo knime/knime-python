@@ -37,7 +37,7 @@
   },
   "devDependencies": {
     "@cyclonedx/cyclonedx-npm": "1.19.3",
-    "@knime/eslint-config": "8.1.0",
+    "@knime/eslint-config": "8.2.0",
     "@knime/licenses": "^1.0.6",
     "@rushstack/eslint-patch": "1.10.4",
     "@tsconfig/node20": "20.1.4",

@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { computed, ref, type Ref } from "vue";
+import { type Ref, computed, ref } from "vue";
+
+import { Button, LoadingIcon } from "@knime/components";
+import { editor } from "@knime/scripting-editor";
 import CancelIcon from "@knime/styles/img/icons/circle-close.svg";
 import PlayIcon from "@knime/styles/img/icons/play.svg";
-import { Button, LoadingIcon } from "@knime/components";
-import { pythonScriptingService } from "../python-scripting-service";
+
 import { useExecutableSelectionStore, useSessionStatusStore } from "@/store";
-import { editor } from "@knime/scripting-editor";
+import { pythonScriptingService } from "../python-scripting-service";
 
 const mainEditorState = editor.useMainCodeEditorStore();
 const hasSelection = computed(

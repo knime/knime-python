@@ -1,4 +1,5 @@
 import { vi } from "vitest";
+
 export const MarkerTag = {};
 export const MarkerSeverity = {};
 export const languages = {

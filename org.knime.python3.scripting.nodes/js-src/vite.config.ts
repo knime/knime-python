@@ -1,6 +1,6 @@
 // eslint-disable-next-line spaced-comment
 /// <reference types="vitest" />
-import { fileURLToPath, URL } from "node:url";
+import { URL, fileURLToPath } from "node:url";
 
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
@@ -8,6 +8,7 @@ import monacoEditorPlugin, {
   type IMonacoEditorOpts,
 } from "vite-plugin-monaco-editor";
 import svgLoader from "vite-svg-loader";
+
 // @ts-ignore
 import { svgoConfig } from "@knime/styles/config/svgo.config";
 

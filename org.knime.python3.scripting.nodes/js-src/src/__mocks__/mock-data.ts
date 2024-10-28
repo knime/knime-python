@@ -1,7 +1,8 @@
-import type { PythonInitialData } from "@/python-initial-data-service";
-import type { PythonScriptingNodeSettings } from "@/types/common";
 import { createSettingsServiceMock } from "@knime/scripting-editor/settings-service-browser-mock";
+
+import type { PythonInitialData } from "@/python-initial-data-service";
 import type { PythonSettingsService } from "@/python-settings-service";
+import type { PythonScriptingNodeSettings } from "@/types/common";
 
 export const DEFAULT_INITIAL_SETTINGS: PythonScriptingNodeSettings = {
   script: "mocked python script (from browser mock)",

@@ -1,9 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
+import { mount } from "@vue/test-utils";
+
+import { getScriptingService } from "@knime/scripting-editor";
 
 import { pythonScriptingService } from "@/python-scripting-service";
-import { useWorkspaceStore, type WorkspaceStore } from "@/store";
-import { getScriptingService } from "@knime/scripting-editor";
-import { mount } from "@vue/test-utils";
+import { type WorkspaceStore, useWorkspaceStore } from "@/store";
 import PythonWorkspaceBody from "../PythonWorkspaceBody.vue";
 
 const mockStore = vi.hoisted(

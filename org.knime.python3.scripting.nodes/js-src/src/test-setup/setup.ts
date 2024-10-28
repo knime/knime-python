@@ -1,10 +1,11 @@
 import "vitest-canvas-mock";
+import { vi } from "vitest";
+import { Consola, LogLevel } from "consola";
+
 import {
   DEFAULT_INITIAL_DATA,
   DEFAULT_INITIAL_SETTINGS,
 } from "@/__mocks__/mock-data";
-import { vi } from "vitest";
-import { Consola, LogLevel } from "consola";
 
 export const consola = new Consola({
   level: LogLevel.Log,

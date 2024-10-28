@@ -1,12 +1,13 @@
-import { createScriptingServiceMock } from "@knime/scripting-editor/scripting-service-browser-mock";
 import {
   getInitialDataService,
   getScriptingService,
   getSettingsService,
 } from "@knime/scripting-editor";
-import { DEFAULT_INITIAL_DATA, DEFAULT_INITIAL_SETTINGS } from "./mock-data";
 import { createInitialDataServiceMock } from "@knime/scripting-editor/initial-data-service-browser-mock";
+import { createScriptingServiceMock } from "@knime/scripting-editor/scripting-service-browser-mock";
 import { createSettingsServiceMock } from "@knime/scripting-editor/settings-service-browser-mock";
+
+import { DEFAULT_INITIAL_DATA, DEFAULT_INITIAL_SETTINGS } from "./mock-data";
 
 if (import.meta.env.MODE === "development.browser") {
   const scriptingService = createScriptingServiceMock({

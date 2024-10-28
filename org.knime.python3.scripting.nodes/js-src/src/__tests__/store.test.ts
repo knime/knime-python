@@ -1,6 +1,8 @@
-import { DEFAULT_INITIAL_DATA } from "@/__mocks__/mock-data";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import { consoleHandler } from "@knime/scripting-editor";
+
+import { DEFAULT_INITIAL_DATA } from "@/__mocks__/mock-data";
 import { getPythonInitialDataService } from "@/python-initial-data-service";
 
 describe("store.ts", () => {

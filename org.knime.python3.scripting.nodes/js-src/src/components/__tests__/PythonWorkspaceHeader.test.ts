@@ -1,5 +1,6 @@
-import { mount } from "@vue/test-utils";
 import { beforeAll, describe, expect, it, vi } from "vitest";
+import { mount } from "@vue/test-utils";
+
 import PythonWorkspaceHeader, {
   type ColumnSizes,
   type ColumnState,

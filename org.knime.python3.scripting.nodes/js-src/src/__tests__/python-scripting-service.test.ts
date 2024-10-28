@@ -1,15 +1,16 @@
-import { DEFAULT_INITIAL_DATA } from "@/__mocks__/mock-data";
-import { describe, it, vi, expect, beforeEach, beforeAll } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { ref } from "vue";
 
 import {
-  getScriptingService,
-  editor,
   consoleHandler,
+  editor,
+  getScriptingService,
 } from "@knime/scripting-editor";
+
+import { DEFAULT_INITIAL_DATA } from "@/__mocks__/mock-data";
 import { pythonScriptingService } from "@/python-scripting-service";
 import { useSessionStatusStore, useWorkspaceStore } from "@/store";
 import type { ExecutionInfo, KillSessionInfo } from "@/types/common";
-import { ref } from "vue";
 
 const mockScriptingService = vi.hoisted(() => {
   const languageServerConnection = { changeConfiguration: vi.fn() };

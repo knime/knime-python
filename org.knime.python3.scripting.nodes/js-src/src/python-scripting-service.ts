@@ -1,11 +1,14 @@
 import { watch } from "vue";
 
 import {
+  consoleHandler,
   editor,
   getScriptingService,
-  consoleHandler,
 } from "@knime/scripting-editor";
+
 import { registerInputCompletions } from "./input-completions";
+import { getPythonInitialDataService } from "./python-initial-data-service";
+import { getPythonSettingsService } from "./python-settings-service";
 import {
   setSelectedExecutable,
   useExecutableSelectionStore,
@@ -14,8 +17,6 @@ import {
   useWorkspaceStore,
 } from "./store";
 import type { ExecutionInfo, KillSessionInfo } from "./types/common";
-import { getPythonInitialDataService } from "./python-initial-data-service";
-import { getPythonSettingsService } from "./python-settings-service";
 
 const scriptingService = getScriptingService();
 const executableSelection = useExecutableSelectionStore();

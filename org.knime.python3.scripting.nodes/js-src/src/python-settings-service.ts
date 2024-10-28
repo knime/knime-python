@@ -1,4 +1,5 @@
 import { getSettingsService } from "@knime/scripting-editor";
+
 import type { PythonScriptingNodeSettings } from "./types/common";
 
 export const getPythonSettingsService = () => ({

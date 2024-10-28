@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, type Ref, watch } from "vue";
-import { RadioButtons, Dropdown, Label } from "@knime/components";
+import { type Ref, computed, onMounted, onUnmounted, ref, watch } from "vue";
+
+import { Dropdown, Label, RadioButtons } from "@knime/components";
+import { getSettingsService } from "@knime/scripting-editor";
+
+import { getPythonInitialDataService } from "@/python-initial-data-service";
+import { pythonScriptingService } from "@/python-scripting-service";
 import {
-  useExecutableSelectionStore,
   setSelectedExecutable,
+  useExecutableSelectionStore,
   useExecutableSettingStore,
 } from "@/store";
-import { pythonScriptingService } from "@/python-scripting-service";
 import type { ExecutableOption } from "@/types/common";
-import { getPythonInitialDataService } from "@/python-initial-data-service";
-import { getSettingsService } from "@knime/scripting-editor";
 
 const executableSelection = useExecutableSelectionStore();
 const selectedEnv: Ref<"default" | "conda"> = ref(
