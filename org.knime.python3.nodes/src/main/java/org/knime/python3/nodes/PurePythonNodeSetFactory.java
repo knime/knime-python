@@ -61,13 +61,12 @@ import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.extension.CategoryExtension;
 import org.knime.python3.PythonGateway;
-import org.knime.python3.nodes.PythonExtensionRegistry.PyExtensionEntry;
+import org.knime.python3.nodes.PythonExtensionRegistry.PythonExtensionEntry;
 import org.knime.python3.nodes.extension.ExtensionNode;
 import org.knime.python3.nodes.extension.ExtensionNodeSetFactory;
 import org.knime.python3.nodes.extension.KnimeExtension;
 import org.knime.python3.nodes.proxy.NodeProxyProvider;
 import org.knime.python3.nodes.proxy.PythonNodeProxy;
-import org.knime.python3.nodes.pycentric.PythonCentricExtensionParser;
 import org.osgi.framework.Version;
 
 /**
@@ -80,28 +79,7 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(PurePythonNodeSetFactory.class);
 
-    /**
-     * Implementing classes allow to create a {@link PyNodeExtension} from a {@link Path} where the Python part of the
-     * extension resides.
-     *
-     * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
-     */
-    public interface PythonExtensionParser {
-
-        /**
-         * Parses the extension found at the provided path.
-         *
-         * @param path to the extension
-         * @param bundleVersion the version of the bundle providing the extension
-         * @return the parsed extension
-         * @throws IOException if parsing failed
-         */
-        PyNodeExtension parseExtension(final Path path, final Version bundleVersion) throws IOException;
-    }
-
-    private static final List<PyExtensionEntry> PYTHON_NODE_EXTENSION_PATHS = PythonExtensionRegistry.PY_EXTENSIONS;
-
-    private static final PythonExtensionParser EXTENSION_PARSER = new PythonCentricExtensionParser();
+    private static final List<PythonExtensionEntry> PYTHON_NODE_EXTENSION_PATHS = PythonExtensionRegistry.PY_EXTENSIONS;
 
     /**
      * Constructor.
@@ -132,7 +110,7 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
     private static KnimeExtension parseExtension(final Path extensionPath, final String bundleName,
         final Version bundleVersion) {
         try {
-            var extension = EXTENSION_PARSER.parseExtension(extensionPath, bundleVersion);
+            var extension = PythonExtensionParser.parseExtension(extensionPath, bundleVersion);
             return new ResolvedPythonExtension(extension, bundleName);
         } catch (Exception ex) { //NOSONAR
             // any kind of exception must be prevented, otherwise a single corrupted extension would prevent the whole
@@ -150,11 +128,11 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
         // conda-environment.
         private Map<Integer, PythonGateway<KnimeNodeBackend>> m_gatewayCache = new ConcurrentHashMap<>();
 
-        private final PyNodeExtension m_extension;
+        private final PythonNodeExtension m_extension;
 
         private final String m_bundleName;
 
-        ResolvedPythonExtension(final PyNodeExtension extension, final String bundleName) {
+        ResolvedPythonExtension(final PythonNodeExtension extension, final String bundleName) {
             m_extension = extension;
             m_bundleName = bundleName;
         }
@@ -188,8 +166,8 @@ public final class PurePythonNodeSetFactory extends ExtensionNodeSetFactory {
             return m_extension.createGateway();
         }
 
-        PythonNodeProxy createProxy(final KnimeNodeBackend backend, final String nodeId) {
-            return m_extension.createNodeProxy(backend, nodeId);
+        static PythonNodeProxy createProxy(final KnimeNodeBackend backend, final String nodeId) {
+            return PythonNodeExtension.createNodeProxy(backend, nodeId);
         }
 
         PythonGateway<KnimeNodeBackend> getGatewayByPid(final int pid) {

@@ -70,7 +70,7 @@ import org.yaml.snakeyaml.Yaml;
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-public final class PythonExtensionPreferences {
+final class PythonExtensionPreferences {
 
     private PythonExtensionPreferences() {
 

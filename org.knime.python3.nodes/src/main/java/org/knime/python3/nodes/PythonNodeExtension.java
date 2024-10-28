@@ -48,7 +48,12 @@
  */
 package org.knime.python3.nodes;
 
+import static java.util.stream.Collectors.toMap;
+
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.knime.core.node.extension.CategoryExtension;
@@ -61,29 +66,73 @@ import org.knime.python3.nodes.proxy.PythonNodeProxy;
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-public interface PyNodeExtension {
+final class PythonNodeExtension {
+
+    private final List<CategoryExtension.Builder> m_categoryBuilders;
+
+    private final Map<String, PythonNode> m_nodes;
+
+    private final String m_id;
+
+    private final PythonNodeGatewayFactory m_gatewayFactory;
+
+    private final String m_version;
+
+    PythonNodeExtension(final String id, final PythonNode[] nodes,
+        final List<CategoryExtension.Builder> categoryBuilders, final PythonNodeGatewayFactory gatewayFactory,
+        final String version) {
+        m_id = id;
+        m_nodes = Stream.of(nodes).collect(toMap(PythonNode::getId, Function.identity()));
+        m_categoryBuilders = categoryBuilders;
+        m_gatewayFactory = gatewayFactory;
+        m_version = version;
+    }
 
     /**
      * @return id of the extension
      */
-    String getId();
+    public String getId() {
+        return m_id;
+    }
 
     /**
      * @return version of the extension
      */
-    String getVersion();
+    public String getVersion() {
+        return m_version;
+    }
 
     /**
      * @return a stream of builders that will build the category declarations defined for the extension. The caller is
      *         supposed to set the pluginId of the extension.
      */
-    Stream<CategoryExtension.Builder> getCategories();
+    public Stream<CategoryExtension.Builder> getCategories() {
+        return m_categoryBuilders.stream();
+    }
 
     /**
      * @param id of the node
      * @return the node identified by id
      */
-    PythonNode getNode(String id);
+    public PythonNode getNode(final String id) {
+        return m_nodes.get(id);
+    }
+
+    /**
+     * @param backend Python proxy for node creation
+     * @param nodeId id of the node to create a Python proxy for
+     * @return the NodeProxy for the node identified by nodeId
+     */
+    public static PythonNodeProxy createNodeProxy(final KnimeNodeBackend backend, final String nodeId) {
+        return backend.createNodeFromExtension(nodeId);
+    }
+
+    /**
+     * @return the contained nodes
+     */
+    public Stream<ExtensionNode> getNodeStream() {
+        return m_nodes.values().stream().map(Function.identity());
+    }
 
     /**
      * Create a gateway for this Python node extension.
@@ -92,18 +141,7 @@ public interface PyNodeExtension {
      * @throws IOException
      * @throws InterruptedException
      */
-    PythonGateway<KnimeNodeBackend> createGateway()
-        throws IOException, InterruptedException;
-
-    /**
-     * @param backend Python proxy for node creation
-     * @param nodeId id of the node to create a Python proxy for
-     * @return the NodeProxy for the node identified by nodeId
-     */
-    PythonNodeProxy createNodeProxy(final KnimeNodeBackend backend, final String nodeId);
-
-    /**
-     * @return the contained nodes
-     */
-    Stream<ExtensionNode> getNodeStream();
+    public PythonGateway<KnimeNodeBackend> createGateway() throws IOException, InterruptedException {
+        return m_gatewayFactory.create();
+    }
 }

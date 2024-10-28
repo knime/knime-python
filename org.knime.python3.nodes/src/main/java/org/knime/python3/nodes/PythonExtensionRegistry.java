@@ -79,9 +79,9 @@ final class PythonExtensionRegistry {
 
     private static final String EXT_POINT_ID = "org.knime.python3.nodes.PythonExtension";
 
-    static final List<PyExtensionEntry> PY_EXTENSIONS = collectPathsToPyExtensions();
+    static final List<PythonExtensionEntry> PY_EXTENSIONS = collectPathsToPyExtensions();
 
-    private static List<PyExtensionEntry> collectPathsToPyExtensions() {
+    private static List<PythonExtensionEntry> collectPathsToPyExtensions() {
         var extPoint = getExtensionPoint();
         return Stream.of(extPoint.getExtensions())//
             .flatMap(PythonExtensionRegistry::extractPathsToExtensions)//
@@ -95,7 +95,7 @@ final class PythonExtensionRegistry {
         return point;
     }
 
-    private static Stream<PyExtensionEntry> extractPathsToExtensions(final IExtension extension) {
+    private static Stream<PythonExtensionEntry> extractPathsToExtensions(final IExtension extension) {
         var contributor = extension.getContributor();
         final var bundleName = contributor.getName();
         var bundle = Platform.getBundle(bundleName);
@@ -109,7 +109,7 @@ final class PythonExtensionRegistry {
             .map(PythonExtensionRegistry::toPath)//
             .filter(Optional::isPresent)//
             .map(Optional::get)//
-            .map(p -> new PyExtensionEntry(p, bundleName, bundleVersion));
+            .map(p -> new PythonExtensionEntry(p, bundleName, bundleVersion));
     }
 
     private static boolean filterWithError(final URL url, final IContributor contributor) {
@@ -141,7 +141,8 @@ final class PythonExtensionRegistry {
         return new org.eclipse.core.runtime.Path(pathInPlugin);
     }
 
-    public static final record PyExtensionEntry(Path path, String bundleName, Version bundleVersion) {
+    static record PythonExtensionEntry
+    (Path path, String bundleName, Version bundleVersion) {
     }
 
     private PythonExtensionRegistry() {
