@@ -51,9 +51,9 @@ package org.knime.python3.nodes.ports.converters;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
 
-
 /**
- * Collection of Port Object Spec Converter interfaces. Converters are used to translate Port Object Specs from KNIME to Python, and back.
+ * Collection of Port Object Spec Converter interfaces. Converters are used to translate Port Object Specs from KNIME to
+ * Python, and back.
  *
  * @author Ivan Prigarin, KNIME GmbH, Konstanz, Germany
  */
@@ -69,33 +69,37 @@ public final class PortObjectSpecConverterInterfaces {
     }
 
     /**
-     * Used to translate KNIME-native {@link PortObjectSpec} implementations to their corresponding {@link PythonPortObjectSpec} wrapper
-     * implementations that can be passed to the Python process.
+     * Used to translate KNIME-native {@link PortObjectSpec} implementations to their corresponding
+     * {@link PythonPortObjectSpec} wrapper implementations that can be passed to the Python process.
      *
      * @param <T> The concrete implementation of the KNIME-native {@link PortObjectSpec}
      * @param <P> The concrete implementation of the Python-ready wrapper {@link PythonPortObjectSpec}
      */
-    public interface KnimeToPythonPortObjectSpecConverter<T extends PortObjectSpec, P extends PythonPortObjectSpec> extends PortObjectSpecConverterMarker {
+    public interface KnimeToPythonPortObjectSpecConverter<T extends PortObjectSpec, P extends PythonPortObjectSpec>
+        extends PortObjectSpecConverterMarker {
 
         /**
          * Converts from KNIME-native {@link PortObjectSpec} implementors to {@link PythonPortObjectSpec} implementors.
          *
          * @param portObjectSpec The KNIME-native Port Object Spec to be made Python-ready
-         * @return The Port Object Spec wrapped in {@link PythonPortObjectSpec}, which can be provided to the Python proxy
+         * @return The Port Object Spec wrapped in {@link PythonPortObjectSpec}, which can be provided to the Python
+         *         proxy
          */
         P toPython(T portObjectSpec);
     }
 
-
     /**
-     * Used to translate JSON-encoded Port Object Specs received from Python back into KNIME-native {@link PortObjectSpec}s.
+     * Used to translate JSON-encoded Port Object Specs received from Python back into KNIME-native
+     * {@link PortObjectSpec}s.
      *
      * @param <T> The concrete implementation of the KNIME-native {@link PortObjectSpec}
      */
-    public interface PythonToKnimePortObjectSpecConverter<T extends PortObjectSpec> extends PortObjectSpecConverterMarker {
+    public interface PythonToKnimePortObjectSpecConverter<T extends PortObjectSpec>
+        extends PortObjectSpecConverterMarker {
 
         /**
-         * Converts JSON-encoded Port Object Specs received from Python to KNIME-native {@link PortObjectSpec} implementors.
+         * Converts JSON-encoded Port Object Specs received from Python to KNIME-native {@link PortObjectSpec}
+         * implementors.
          *
          * @param jsonData The JSON string containing the Port Object Spec from the Python side
          * @return The KNIME-native {@link PortObjectSpec} extracted from the JSON string

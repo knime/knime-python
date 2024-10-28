@@ -74,7 +74,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
 @SuppressWarnings("restriction")
-public final class CredentialPythonConverter implements KnimeToPyPortObjectConverter<CredentialPortObject, CredentialPortObjectSpec>,
+public final class CredentialPythonConverter
+    implements KnimeToPyPortObjectConverter<CredentialPortObject, CredentialPortObjectSpec>,
     PyToKnimePortObjectConverter<CredentialPortObject, EmptyIntermediateRepresentation, CredentialPortObjectSpec, StringIntermediateRepresentation> {
 
     @Override
@@ -96,8 +97,7 @@ public final class CredentialPythonConverter implements KnimeToPyPortObjectConve
 
     @Override
     public CredentialPortObject convertPortObjectFromPython(final EmptyIntermediateRepresentation source,
-        final CredentialPortObjectSpec spec,
-        final PortObjectConversionContext context) {
+        final CredentialPortObjectSpec spec, final PortObjectConversionContext context) {
         return new CredentialPortObject(spec);
     }
 

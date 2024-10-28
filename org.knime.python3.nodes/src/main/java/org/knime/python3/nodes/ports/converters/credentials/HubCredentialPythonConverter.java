@@ -69,12 +69,12 @@ import org.knime.workflowservices.connection.AbstractHubAuthenticationPortObject
  */
 // TODO also implement py to knime
 @SuppressWarnings("restriction")
-public final class HubCredentialPythonConverter
-    implements KnimeToPyPortObjectConverter<AbstractHubAuthenticationPortObject, AbstractHubAuthenticationPortObjectSpec> {
+public final class HubCredentialPythonConverter implements
+    KnimeToPyPortObjectConverter<AbstractHubAuthenticationPortObject, AbstractHubAuthenticationPortObjectSpec> {
 
     @Override
-    public PortObjectSpecIntermediateRepresentation convertSpecToPython(final AbstractHubAuthenticationPortObjectSpec spec,
-        final PortObjectSpecConversionContext context) {
+    public PortObjectSpecIntermediateRepresentation convertSpecToPython(
+        final AbstractHubAuthenticationPortObjectSpec spec, final PortObjectSpecConversionContext context) {
         var xmlContent = CredentialPythonConverter.getXmlContent((CredentialPortObjectSpec)spec);
         var json = JsonConverterUtils.createObjectNode();
         json.put("data", xmlContent);
@@ -83,8 +83,8 @@ public final class HubCredentialPythonConverter
     }
 
     @Override
-    public PortObjectIntermediateRepresentation convertPortObjectToPython(final AbstractHubAuthenticationPortObject portObject,
-        final PortObjectConversionContext context) {
+    public PortObjectIntermediateRepresentation convertPortObjectToPython(
+        final AbstractHubAuthenticationPortObject portObject, final PortObjectConversionContext context) {
         return EmptyIntermediateRepresentation.INSTANCE;
     }
 

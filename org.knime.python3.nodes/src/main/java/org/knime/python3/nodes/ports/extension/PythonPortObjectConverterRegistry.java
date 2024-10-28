@@ -79,8 +79,7 @@ public final class PythonPortObjectConverterRegistry {
 
     private final Map<String, UntypedPyToKnimePortObjectConverter> m_pyToKnimeBySpecClass = new HashMap<>();
 
-    public PythonPortObjectConverterRegistry(
-        final Stream<UntypedKnimeToPyPortObjectConverter> knimeToPy,
+    public PythonPortObjectConverterRegistry(final Stream<UntypedKnimeToPyPortObjectConverter> knimeToPy,
         final Stream<UntypedPyToKnimePortObjectConverter> pyToKnime) {
         knimeToPy.forEach(this::registerKnimeToPy);
         pyToKnime.forEach(this::registerPyToKnime);

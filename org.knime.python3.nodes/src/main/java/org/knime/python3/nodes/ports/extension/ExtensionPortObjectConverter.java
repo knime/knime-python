@@ -85,20 +85,23 @@ public final class ExtensionPortObjectConverter {
         return m_converterRegistry.getPyToKnimeForObject(objClassName) != null;
     }
 
-    public KnimeToPySpecContainer convertSpecToPython(final PortObjectSpec spec, final PortObjectSpecConversionContext context) {
+    public KnimeToPySpecContainer convertSpecToPython(final PortObjectSpec spec,
+        final PortObjectSpecConversionContext context) {
         var converter = m_converterRegistry.getKnimeToPyForSpec(spec.getClass());
         var transfer = converter.convertSpecToPython(spec, context);
         return new KnimeToPySpecContainer(converter.getPortObjectSpecClass().getName(), transfer);
     }
 
-    public KnimeToPyObjContainer convertObjectToPython(final PortObject portObject, final PortObjectConversionContext context) {
+    public KnimeToPyObjContainer convertObjectToPython(final PortObject portObject,
+        final PortObjectConversionContext context) {
         var specContainer = convertSpecToPython(portObject.getSpec(), context);
         var converter = m_converterRegistry.getKnimeToPyForObject(portObject.getClass());
         var transfer = converter.convertPortObjectToPython(portObject, context); // TODO obtain from converter
         return new KnimeToPyObjContainer(converter.getPortObjectClass().getName(), transfer, specContainer);
     }
 
-    public PortObjectSpec convertSpecFromPython(final PyToKnimeSpecContainer spec, final PortObjectSpecConversionContext context) {
+    public PortObjectSpec convertSpecFromPython(final PyToKnimeSpecContainer spec,
+        final PortObjectSpecConversionContext context) {
         var converter = m_converterRegistry.getPyToKnimeForSpec(spec.getJavaClassName());
         return converter.convertSpecFromPython(spec.getTransfer(), context);
     }
@@ -112,6 +115,7 @@ public final class ExtensionPortObjectConverter {
     public interface PyToKnimeContainer {
         /**
          * Used as ID to pick the converter that turns the transfer into the actual PortObject(Spec)
+         *
          * @return the java class name of the object
          */
         String getJavaClassName();

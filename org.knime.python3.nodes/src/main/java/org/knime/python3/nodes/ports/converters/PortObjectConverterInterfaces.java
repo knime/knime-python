@@ -52,9 +52,9 @@ import org.knime.core.node.port.PortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PurePythonTablePortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
 
-
 /**
- * Collection of Port Object Converter interfaces. Converters are used to translate Port Objects from KNIME to Python, and back.
+ * Collection of Port Object Converter interfaces. Converters are used to translate Port Objects from KNIME to Python,
+ * and back.
  *
  * @author Ivan Prigarin, KNIME GmbH, Konstanz, Germany
  */
@@ -70,13 +70,14 @@ public final class PortObjectConverterInterfaces {
     }
 
     /**
-     * Used to translate KNIME-native {@link PortObject} implementations to their corresponding {@link PythonPortObject} wrapper
-     * implementations that can be passed to the Python process.
+     * Used to translate KNIME-native {@link PortObject} implementations to their corresponding {@link PythonPortObject}
+     * wrapper implementations that can be passed to the Python process.
      *
      * @param <T> The concrete implementation of the KNIME-native {@link PortObject}
      * @param <P> The concrete implementation of the Python-ready wrapper {@link PythonPortObject}
      */
-    public interface KnimeToPythonPortObjectConverter<T extends PortObject, P extends PythonPortObject> extends PortObjectConverterMarker {
+    public interface KnimeToPythonPortObjectConverter<T extends PortObject, P extends PythonPortObject>
+        extends PortObjectConverterMarker {
 
         /**
          * Converts from KNIME-native {@link PortObject} implementors to {@link PythonPortObject} implementors.
@@ -88,20 +89,22 @@ public final class PortObjectConverterInterfaces {
         P toPython(T portObject, PortObjectConversionContext context);
     }
 
-
     /**
-     * Used to translate objects received from Python described by the `PurePython` interfaces (e.g. {@link PurePythonTablePortObject}
-     * back into KNIME-native {@link PortObject}s.
+     * Used to translate objects received from Python described by the `PurePython` interfaces (e.g.
+     * {@link PurePythonTablePortObject} back into KNIME-native {@link PortObject}s.
      *
      * @param <P> The `PurePython` interface representing the object returned from the Python side
      * @param <T> The concrete implementation of the KNIME-native {@link PortObject}
      */
-    public interface PythonToKnimePortObjectConverter<P extends PythonPortObject, T extends PortObject> extends PortObjectConverterMarker {
+    public interface PythonToKnimePortObjectConverter<P extends PythonPortObject, T extends PortObject>
+        extends PortObjectConverterMarker {
 
         /**
-         * Converts PurePythonPortObject-interfaced objects received from Python to KNIME-native {@link PortObject} implementors.
+         * Converts PurePythonPortObject-interfaced objects received from Python to KNIME-native {@link PortObject}
+         * implementors.
          *
-         * @param purePythonPortObject The `PurePython` Port Object to be converted back to its KNIME-native {@link PortObject} counterpart
+         * @param purePythonPortObject The `PurePython` Port Object to be converted back to its KNIME-native
+         *            {@link PortObject} counterpart
          * @param context The conversion context providing objects needed during the conversion process
          * @return The KNIME-native {@link PortObject} extracted from the `PurePython` object
          */

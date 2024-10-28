@@ -72,8 +72,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 /**
  * Concrete implementations of Port Object Spec Converters.
  *
- * Most Port Object Specs' converters will need to implement both {@link KnimeToPythonPortObjectSpecConverter} and {@link PythonToKnimePortObjectSpecConverter}
- * to allow bi-directional flow of Port Object Specs.
+ * Most Port Object Specs' converters will need to implement both {@link KnimeToPythonPortObjectSpecConverter} and
+ * {@link PythonToKnimePortObjectSpecConverter} to allow bi-directional flow of Port Object Specs.
  *
  * @author Ivan Prigarin, KNIME GmbH, Konstanz, Germany
  */
@@ -82,12 +82,12 @@ public final class PortObjectSpecConverters {
     private PortObjectSpecConverters() {
     }
 
-
     /**
      * Bi-directional Port Object Spec converter for {@link DataTableSpec}.
      */
-    public static final class TablePortObjectSpecConverter implements KnimeToPythonPortObjectSpecConverter<DataTableSpec, PythonTablePortObjectSpec>,
-    PythonToKnimePortObjectSpecConverter<DataTableSpec> {
+    public static final class TablePortObjectSpecConverter
+        implements KnimeToPythonPortObjectSpecConverter<DataTableSpec, PythonTablePortObjectSpec>,
+        PythonToKnimePortObjectSpecConverter<DataTableSpec> {
 
         @Override
         public PythonTablePortObjectSpec toPython(final DataTableSpec spec) {
@@ -100,8 +100,8 @@ public final class PortObjectSpecConverters {
             try {
                 final var rootNode = om.readTree(jsonData);
                 final var acs = AnnotatedColumnarSchemaSerializer.load(rootNode);
-                var spec = new PythonTablePortObjectSpec(
-                    PythonArrowDataUtils.createDataTableSpec(acs, acs.getColumnNames()));
+                var spec =
+                    new PythonTablePortObjectSpec(PythonArrowDataUtils.createDataTableSpec(acs, acs.getColumnNames()));
                 return spec.getPortObjectSpec();
             } catch (JsonMappingException ex) {
                 throw new IllegalStateException("Could not parse PythonTablePortObjectSpec from given JSON data", ex);
@@ -114,8 +114,9 @@ public final class PortObjectSpecConverters {
     /**
      * Bi-directional Port Object Spec converter for {@link PythonBinaryBlobPortObjectSpec}.
      */
-    public static final class PythonBinaryPortObjectSpecConverter implements KnimeToPythonPortObjectSpecConverter<PythonBinaryBlobPortObjectSpec, PythonBinaryPortObjectSpec>,
-    PythonToKnimePortObjectSpecConverter<PythonBinaryBlobPortObjectSpec> {
+    public static final class PythonBinaryPortObjectSpecConverter
+        implements KnimeToPythonPortObjectSpecConverter<PythonBinaryBlobPortObjectSpec, PythonBinaryPortObjectSpec>,
+        PythonToKnimePortObjectSpecConverter<PythonBinaryBlobPortObjectSpec> {
 
         @Override
         public PythonBinaryPortObjectSpec toPython(final PythonBinaryBlobPortObjectSpec spec) {
@@ -140,8 +141,9 @@ public final class PortObjectSpecConverters {
     /**
      * Bi-directional Port Object Spec converter for {@link ImagePortObjectSpec}.
      */
-    public static final class PythonImagePortObjectSpecConverter implements KnimeToPythonPortObjectSpecConverter<ImagePortObjectSpec, PythonImagePortObjectSpec>,
-    PythonToKnimePortObjectSpecConverter<ImagePortObjectSpec> {
+    public static final class PythonImagePortObjectSpecConverter
+        implements KnimeToPythonPortObjectSpecConverter<ImagePortObjectSpec, PythonImagePortObjectSpec>,
+        PythonToKnimePortObjectSpecConverter<ImagePortObjectSpec> {
 
         @Override
         public PythonImagePortObjectSpec toPython(final ImagePortObjectSpec spec) {
@@ -171,12 +173,12 @@ public final class PortObjectSpecConverters {
         }
     }
 
-
     /**
      * Bi-directional Port Object Spec converter for {@link PythonTransientConnectionPortObjectSpec}.
      */
-    public static final class PythonConnectionPortObjectSpecConverter implements KnimeToPythonPortObjectSpecConverter<PythonTransientConnectionPortObjectSpec, PythonConnectionPortObjectSpec>,
-    PythonToKnimePortObjectSpecConverter<PythonTransientConnectionPortObjectSpec> {
+    public static final class PythonConnectionPortObjectSpecConverter implements
+        KnimeToPythonPortObjectSpecConverter<PythonTransientConnectionPortObjectSpec, PythonConnectionPortObjectSpec>,
+        PythonToKnimePortObjectSpecConverter<PythonTransientConnectionPortObjectSpec> {
 
         @Override
         public PythonConnectionPortObjectSpec toPython(final PythonTransientConnectionPortObjectSpec spec) {
@@ -188,7 +190,8 @@ public final class PortObjectSpecConverters {
             final var om = new ObjectMapper();
             try {
                 final var rootNode = om.readTree(jsonData);
-                var spec = new PythonConnectionPortObjectSpec(PythonTransientConnectionPortObjectSpec.fromJson(rootNode));
+                var spec =
+                    new PythonConnectionPortObjectSpec(PythonTransientConnectionPortObjectSpec.fromJson(rootNode));
                 return spec.getPortObjectSpec();
             } catch (JsonMappingException ex) {
                 throw new IllegalStateException("Could not parse PythonConnectionPortObjectSpec from given Json data",
@@ -200,11 +203,11 @@ public final class PortObjectSpecConverters {
         }
     }
 
-
     /**
      * Uni-directional Port Object Spec converter for {@link WorkflowPortObjectSpec}.
      */
-    public static final class PythonWorkflowPortObjectSpecConverter implements KnimeToPythonPortObjectSpecConverter<WorkflowPortObjectSpec, PythonWorkflowPortObjectSpec>{
+    public static final class PythonWorkflowPortObjectSpecConverter
+        implements KnimeToPythonPortObjectSpecConverter<WorkflowPortObjectSpec, PythonWorkflowPortObjectSpec> {
 
         @Override
         public PythonWorkflowPortObjectSpec toPython(final WorkflowPortObjectSpec spec) {

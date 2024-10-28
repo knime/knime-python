@@ -72,6 +72,7 @@ final class PortObjectSpecUtils {
 
     /**
      * Generate a simple {@link JComponent} showing the given string
+     *
      * @param text The text to show
      * @return a JComponent that can be used as PortObject view
      */

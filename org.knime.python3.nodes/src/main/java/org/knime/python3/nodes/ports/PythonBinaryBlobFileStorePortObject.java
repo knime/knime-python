@@ -86,6 +86,7 @@ public final class PythonBinaryBlobFileStorePortObject extends FileStorePortObje
 
     /**
      * Deserialization constructor
+     *
      * @param spec The {@link PythonBinaryBlobPortObjectSpec} of this port object
      */
     private PythonBinaryBlobFileStorePortObject(final PythonBinaryBlobPortObjectSpec spec) {
@@ -98,8 +99,7 @@ public final class PythonBinaryBlobFileStorePortObject extends FileStorePortObje
      * @param fileStore the {@link FileStore} holding the data
      * @param spec of the port object
      */
-    private PythonBinaryBlobFileStorePortObject(final FileStore fileStore,
-        final PythonBinaryBlobPortObjectSpec spec) {
+    private PythonBinaryBlobFileStorePortObject(final FileStore fileStore, final PythonBinaryBlobPortObjectSpec spec) {
         super(Arrays.asList(fileStore));
         m_spec = spec;
     }

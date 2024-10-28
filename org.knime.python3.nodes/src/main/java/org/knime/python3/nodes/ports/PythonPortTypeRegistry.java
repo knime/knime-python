@@ -87,18 +87,16 @@ import org.knime.workflowservices.connection.AbstractHubAuthenticationPortObject
  * A registry that manages conversion of {@link PortObject}s and {@link PortObjectSpec}s from KNIME to Python and back.
  * This is done by using {@link PortObjectConverters} and {@link PortObjectSpecConverters} respectively.
  *
- * The registry maintains two maps with converters for Port Objects and Port Object Specs, as well
- * as a map linking fully qualified Java class names of KNIME-native Port Objects and Port Object Specs to their actual
- * {@link Class}es. The latter is needed since we get the string of the class name from objects returned from Python, and
- * we need the corresponding class for inheritance resolution in the converter maps.
+ * The registry maintains two maps with converters for Port Objects and Port Object Specs, as well as a map linking
+ * fully qualified Java class names of KNIME-native Port Objects and Port Object Specs to their actual {@link Class}es.
+ * The latter is needed since we get the string of the class name from objects returned from Python, and we need the
+ * corresponding class for inheritance resolution in the converter maps.
  *
  ** @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  ** @author Ivan Prigarin, KNIME GmbH, Konstanz, Germany
  */
 @SuppressWarnings("restriction")
 public final class PythonPortTypeRegistry {
-
-//    private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonPortObjectTypeRegistry.class);
 
     // Lazy-loaded singleton initialised on first access
     private static class InstanceHolder {
@@ -110,9 +108,10 @@ public final class PythonPortTypeRegistry {
     private final PythonPortObjectConverterRegistry m_extensionConverterRegistry;
 
     private final Map<Class<?>, PortObjectConverterMarker> m_portObjectConverterMap;
-    private final Map<Class<?>, PortObjectSpecConverterMarker> m_portObjectSpecConverterMap;
-    private final Map<String, Class<?>> m_classNameToClassMap;
 
+    private final Map<Class<?>, PortObjectSpecConverterMarker> m_portObjectSpecConverterMap;
+
+    private final Map<String, Class<?>> m_classNameToClassMap;
 
     private PythonPortTypeRegistry() {
         m_portObjectConverterMap = new HashMap<>();
@@ -126,25 +125,32 @@ public final class PythonPortTypeRegistry {
         registerStandardPortTypeConverters();
     }
 
-
     /**
      * Register converters for Port Types that are implemented in the `knime-python` repository.
      */
     private void registerStandardPortTypeConverters() {
         m_portObjectConverterMap.put(BufferedDataTable.class, new PortObjectConverters.TablePortObjectConverter());
-        m_portObjectSpecConverterMap.put(DataTableSpec.class, new PortObjectSpecConverters.TablePortObjectSpecConverter());
+        m_portObjectSpecConverterMap.put(DataTableSpec.class,
+            new PortObjectSpecConverters.TablePortObjectSpecConverter());
 
-        m_portObjectConverterMap.put(PythonBinaryBlobFileStorePortObject.class, new PortObjectConverters.PythonBinaryPortObjectConverter());
-        m_portObjectSpecConverterMap.put(PythonBinaryBlobPortObjectSpec.class, new PortObjectSpecConverters.PythonBinaryPortObjectSpecConverter());
+        m_portObjectConverterMap.put(PythonBinaryBlobFileStorePortObject.class,
+            new PortObjectConverters.PythonBinaryPortObjectConverter());
+        m_portObjectSpecConverterMap.put(PythonBinaryBlobPortObjectSpec.class,
+            new PortObjectSpecConverters.PythonBinaryPortObjectSpecConverter());
 
         m_portObjectConverterMap.put(ImagePortObject.class, new PortObjectConverters.ImagePortObjectConverter());
-        m_portObjectSpecConverterMap.put(ImagePortObjectSpec.class, new PortObjectSpecConverters.PythonImagePortObjectSpecConverter());
+        m_portObjectSpecConverterMap.put(ImagePortObjectSpec.class,
+            new PortObjectSpecConverters.PythonImagePortObjectSpecConverter());
 
-        m_portObjectConverterMap.put(PythonTransientConnectionPortObject.class, new PortObjectConverters.PythonConnectionPortObjectConverter());
-        m_portObjectSpecConverterMap.put(PythonTransientConnectionPortObjectSpec.class, new PortObjectSpecConverters.PythonConnectionPortObjectSpecConverter());
+        m_portObjectConverterMap.put(PythonTransientConnectionPortObject.class,
+            new PortObjectConverters.PythonConnectionPortObjectConverter());
+        m_portObjectSpecConverterMap.put(PythonTransientConnectionPortObjectSpec.class,
+            new PortObjectSpecConverters.PythonConnectionPortObjectSpecConverter());
 
-        m_portObjectConverterMap.put(WorkflowPortObject.class, new PortObjectConverters.PythonWorkflowPortObjectConverter());
-        m_portObjectSpecConverterMap.put(WorkflowPortObjectSpec.class, new PortObjectSpecConverters.PythonWorkflowPortObjectSpecConverter());
+        m_portObjectConverterMap.put(WorkflowPortObject.class,
+            new PortObjectConverters.PythonWorkflowPortObjectConverter());
+        m_portObjectSpecConverterMap.put(WorkflowPortObjectSpec.class,
+            new PortObjectSpecConverters.PythonWorkflowPortObjectSpecConverter());
 
     }
 
@@ -174,7 +180,8 @@ public final class PythonPortTypeRegistry {
     }
 
     /**
-     * Converts the provided {@link PortObjectSpec} implementor to the corresponding {@link PythonPortObjectSpec} wrapper.
+     * Converts the provided {@link PortObjectSpec} implementor to the corresponding {@link PythonPortObjectSpec}
+     * wrapper.
      *
      * @param spec KNIME-native {@link PortObjectSpec}
      * @return The Port Object Spec wrapped in {@link PythonPortObjectSpec}, which can be provided to the Python proxy
@@ -191,7 +198,8 @@ public final class PythonPortTypeRegistry {
             });
         }
 
-        PortObjectSpecConverterMarker converter = findConverterForClass(spec.getClass(), registry.m_portObjectSpecConverterMap);
+        PortObjectSpecConverterMarker converter =
+            findConverterForClass(spec.getClass(), registry.m_portObjectSpecConverterMap);
 
         if (converter == null) {
             throw new IllegalStateException("No Port Object Spec converter found for " + spec.getClass().getName());
@@ -200,11 +208,11 @@ public final class PythonPortTypeRegistry {
         if (converter instanceof KnimeToPythonPortObjectSpecConverter) {
             @SuppressWarnings("unchecked")
             KnimeToPythonPortObjectSpecConverter<PortObjectSpec, PythonPortObjectSpec> knimeToPythonConverter =
-                    (KnimeToPythonPortObjectSpecConverter<PortObjectSpec, PythonPortObjectSpec>) converter;
+                (KnimeToPythonPortObjectSpecConverter<PortObjectSpec, PythonPortObjectSpec>)converter;
             return knimeToPythonConverter.toPython(spec);
         } else {
-            throw new IllegalStateException("Registered Port Object Spec converter for " + spec.getClass().getName() +
-                " does not implement KNIME to Python conversion.");
+            throw new IllegalStateException("Registered Port Object Spec converter for " + spec.getClass().getName()
+                + " does not implement KNIME to Python conversion.");
         }
     }
 
@@ -212,8 +220,10 @@ public final class PythonPortTypeRegistry {
      * Converts the provided {@link PythonPortObjectSpec} received from Python to the corresponding KNIME-native
      * {@link PortObjectSpec}.
      *
-     * @param pythonSpec The Port Object Spec to be converted back to its KNIME-native {@link PortObjectSpec} counterpart
-     * @return The KNIME-native {@link PortObjectSpec} extracted from the JSON encoding of the {@link PythonPortObjectSpec}
+     * @param pythonSpec The Port Object Spec to be converted back to its KNIME-native {@link PortObjectSpec}
+     *            counterpart
+     * @return The KNIME-native {@link PortObjectSpec} extracted from the JSON encoding of the
+     *         {@link PythonPortObjectSpec}
      */
     public static PortObjectSpec convertPortObjectSpecFromPython(final PythonPortObjectSpec pythonSpec) {
         if (pythonSpec == null) {
@@ -225,10 +235,11 @@ public final class PythonPortTypeRegistry {
         if (registry.m_extensionConverter.canConvertSpecFromPython(specClassName)) {
             return registry.m_extensionConverter.convertSpecFromPython((PyToKnimeSpecContainer)pythonSpec,
                 new PortObjectSpecConversionContext() {
-            });
+                });
         }
         var specClass = registry.getClassFromClassName(specClassName);
-        PortObjectSpecConverterMarker converter = findConverterForClass(specClass, registry.m_portObjectSpecConverterMap);
+        PortObjectSpecConverterMarker converter =
+            findConverterForClass(specClass, registry.m_portObjectSpecConverterMap);
 
         if (converter == null) {
             throw new IllegalStateException("No Port Object Spec converter found for " + specClassName);
@@ -239,14 +250,13 @@ public final class PythonPortTypeRegistry {
         if (converter instanceof PythonToKnimePortObjectSpecConverter) {
             @SuppressWarnings("unchecked")
             PythonToKnimePortObjectSpecConverter<PortObjectSpec> pythonToKnimeConverter =
-                    (PythonToKnimePortObjectSpecConverter<PortObjectSpec>) converter;
+                (PythonToKnimePortObjectSpecConverter<PortObjectSpec>)converter;
             return pythonToKnimeConverter.fromJsonString(payload);
         } else {
-            throw new IllegalStateException("Registered Port Object Spec converter for " + specClassName +
-                " does not implement Python to KNIME conversion.");
+            throw new IllegalStateException("Registered Port Object Spec converter for " + specClassName
+                + " does not implement Python to KNIME conversion.");
         }
     }
-
 
     /**
      * Converts the provided {@link PortObject} implementor to the corresponding {@link PythonPortObject} wrapper.
@@ -255,7 +265,8 @@ public final class PythonPortTypeRegistry {
      * @param context The conversion context providing objects needed during the conversion process
      * @return The Port Object wrapped in {@link PythonPortObject}, which can be provided to the Python proxy
      */
-    public static PythonPortObject convertPortObjectToPython(final PortObject portObject, final PortObjectConversionContext context) {
+    public static PythonPortObject convertPortObjectToPython(final PortObject portObject,
+        final PortObjectConversionContext context) {
         if (portObject == null) {
             throw new IllegalStateException("Cannot convert `null` portObject from KNIME to Python");
         }
@@ -265,7 +276,8 @@ public final class PythonPortTypeRegistry {
             return registry.m_extensionConverter.convertObjectToPython(portObject, context);
         }
 
-        PortObjectConverterMarker converter = findConverterForClass(portObject.getClass(), registry.m_portObjectConverterMap);
+        PortObjectConverterMarker converter =
+            findConverterForClass(portObject.getClass(), registry.m_portObjectConverterMap);
 
         if (converter == null) {
             throw new IllegalStateException("No Port Object converter found for " + portObject.getClass().getName());
@@ -274,23 +286,25 @@ public final class PythonPortTypeRegistry {
         if (converter instanceof KnimeToPythonPortObjectConverter) {
             @SuppressWarnings("unchecked")
             KnimeToPythonPortObjectConverter<PortObject, PythonPortObject> knimeToPythonConverter =
-                    (KnimeToPythonPortObjectConverter<PortObject, PythonPortObject>) converter;
+                (KnimeToPythonPortObjectConverter<PortObject, PythonPortObject>)converter;
             return knimeToPythonConverter.toPython(portObject, context);
         } else {
-            throw new IllegalStateException("Registered Port Object converter for " + portObject.getClass().getName() +
-                " does not implement KNIME to Python conversion.");
+            throw new IllegalStateException("Registered Port Object converter for " + portObject.getClass().getName()
+                + " does not implement KNIME to Python conversion.");
         }
     }
 
     /**
-     * Converts the provided PurePythonPortObject-interfaced object received from Python to the corresponding KNIME-native
-     * {@link PortObject}.
+     * Converts the provided PurePythonPortObject-interfaced object received from Python to the corresponding
+     * KNIME-native {@link PortObject}.
      *
-     * @param purePythonPortObject The `PurePython` Port Object to be converted back to its KNIME-native {@link PortObject} counterpart
+     * @param purePythonPortObject The `PurePython` Port Object to be converted back to its KNIME-native
+     *            {@link PortObject} counterpart
      * @param context The conversion context providing objects needed during the conversion process
      * @return The KNIME-native {@link PortObject} extracted from the `PurePython` object
      */
-    public static PortObject convertPortObjectFromPython(final PythonPortObject purePythonPortObject, final PortObjectConversionContext context) {
+    public static PortObject convertPortObjectFromPython(final PythonPortObject purePythonPortObject,
+        final PortObjectConversionContext context) {
         if (purePythonPortObject == null) {
             throw new IllegalStateException("Cannot convert 'null' portObject from Python to KNIME");
         }
@@ -300,7 +314,8 @@ public final class PythonPortTypeRegistry {
         String javaClassName = purePythonPortObject.getJavaClassName();
 
         if (registry.m_extensionConverter.canConvertObjFromPython(javaClassName)) {
-            return registry.m_extensionConverter.convertObjFromPython((PyToKnimeObjContainer)purePythonPortObject, context);
+            return registry.m_extensionConverter.convertObjFromPython((PyToKnimeObjContainer)purePythonPortObject,
+                context);
         }
 
         var portObjectClass = registry.getClassFromClassName(javaClassName);
@@ -313,20 +328,19 @@ public final class PythonPortTypeRegistry {
         if (converter instanceof PythonToKnimePortObjectConverter) {
             @SuppressWarnings("unchecked")
             PythonToKnimePortObjectConverter<PythonPortObject, PortObject> pythonToKnimeConverter =
-                    (PythonToKnimePortObjectConverter<PythonPortObject, PortObject>) converter;
+                (PythonToKnimePortObjectConverter<PythonPortObject, PortObject>)converter;
             return pythonToKnimeConverter.fromPython(purePythonPortObject, context);
         } else {
-            throw new IllegalStateException("Registered Port Object converter for " + javaClassName +
-                " does not implement Python to KNIME conversion.");
+            throw new IllegalStateException("Registered Port Object converter for " + javaClassName
+                + " does not implement Python to KNIME conversion.");
         }
     }
 
     /**
-     * Searches for a registered converter for the given Port Object or Port Object Spec class by
-     * traversing its class hierarchy until a match is found.
+     * Searches for a registered converter for the given Port Object or Port Object Spec class by traversing its class
+     * hierarchy until a match is found.
      *
-     * If no exact match is found, interfaces the class implements are considered first, then the
-     * next superclass.
+     * If no exact match is found, interfaces the class implements are considered first, then the next superclass.
      *
      * @param <T> Converter type specified by the caller
      * @param targetClass The class object whose converter is to be found
@@ -359,11 +373,11 @@ public final class PythonPortTypeRegistry {
     }
 
     /**
-     * Retrieves a {@link Class} object associated with the specified class name.
-     * If the class is not found in the cache map, it attempts to load the class dynamically.
+     * Retrieves a {@link Class} object associated with the specified class name. If the class is not found in the cache
+     * map, it attempts to load the class dynamically.
      *
-     * We receive Java class names as strings from the Python side, and this method allows us to
-     * get the corresponding Class object to then perform a class hieararchy-aware converter lookup.
+     * We receive Java class names as strings from the Python side, and this method allows us to get the corresponding
+     * Class object to then perform a class hieararchy-aware converter lookup.
      *
      * @param className The fully qualified name of the class to retrieve
      * @return The {@link Class} object corresponding to the given class name

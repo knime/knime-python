@@ -454,7 +454,6 @@ public final class PythonPortObjects {
             m_spec = spec;
         }
 
-
         /**
          * @return the spec of this {@link PythonCredentialPortObjectSpec}
          */
