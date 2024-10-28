@@ -55,10 +55,10 @@ import org.knime.python3.nodes.ports.converters.JsonConverterUtils;
 import org.knime.python3.types.port.api.convert.KnimeToPyPortObjectConverter;
 import org.knime.python3.types.port.api.convert.PortObjectConversionContext;
 import org.knime.python3.types.port.api.convert.PortObjectSpecConversionContext;
-import org.knime.python3.types.port.api.transfer.NonePythonTransfer;
-import org.knime.python3.types.port.api.transfer.PythonPortObjectSpecTransfer;
-import org.knime.python3.types.port.api.transfer.PythonPortObjectTransfer;
-import org.knime.python3.types.port.api.transfer.StringPythonTransfer;
+import org.knime.python3.types.port.api.ir.EmptyIntermediateRepresentation;
+import org.knime.python3.types.port.api.ir.PortObjectIntermediateRepresentation;
+import org.knime.python3.types.port.api.ir.PortObjectSpecIntermediateRepresentation;
+import org.knime.python3.types.port.api.ir.StringIntermediateRepresentation;
 import org.knime.workflowservices.connection.AbstractHubAuthenticationPortObject;
 import org.knime.workflowservices.connection.AbstractHubAuthenticationPortObjectSpec;
 
@@ -73,19 +73,19 @@ public final class HubCredentialPythonConverter
     implements KnimeToPyPortObjectConverter<AbstractHubAuthenticationPortObject, AbstractHubAuthenticationPortObjectSpec> {
 
     @Override
-    public PythonPortObjectSpecTransfer convertSpecToPython(final AbstractHubAuthenticationPortObjectSpec spec,
+    public PortObjectSpecIntermediateRepresentation convertSpecToPython(final AbstractHubAuthenticationPortObjectSpec spec,
         final PortObjectSpecConversionContext context) {
         var xmlContent = CredentialPythonConverter.getXmlContent((CredentialPortObjectSpec)spec);
         var json = JsonConverterUtils.createObjectNode();
         json.put("data", xmlContent);
         json.put("hub_url", spec.getHubURL().map(URI::toString).orElse(null));
-        return new StringPythonTransfer(json.toString());
+        return new StringIntermediateRepresentation(json.toString());
     }
 
     @Override
-    public PythonPortObjectTransfer convertPortObjectToPython(final AbstractHubAuthenticationPortObject portObject,
+    public PortObjectIntermediateRepresentation convertPortObjectToPython(final AbstractHubAuthenticationPortObject portObject,
         final PortObjectConversionContext context) {
-        return NonePythonTransfer.INSTANCE;
+        return EmptyIntermediateRepresentation.INSTANCE;
     }
 
     @Override

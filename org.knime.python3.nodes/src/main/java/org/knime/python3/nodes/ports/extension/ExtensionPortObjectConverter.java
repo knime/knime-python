@@ -54,8 +54,8 @@ import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
 import org.knime.python3.nodes.ports.converters.PortObjectConversionContext;
 import org.knime.python3.types.port.api.convert.PortObjectSpecConversionContext;
-import org.knime.python3.types.port.api.transfer.PythonPortObjectSpecTransfer;
-import org.knime.python3.types.port.api.transfer.PythonPortObjectTransfer;
+import org.knime.python3.types.port.api.ir.PortObjectIntermediateRepresentation;
+import org.knime.python3.types.port.api.ir.PortObjectSpecIntermediateRepresentation;
 
 /**
  *
@@ -120,13 +120,13 @@ public final class ExtensionPortObjectConverter {
 
     public interface PyToKnimeSpecContainer extends PyToKnimeContainer, PythonPortObjectSpec {
 
-        PythonPortObjectSpecTransfer getTransfer();
+        PortObjectSpecIntermediateRepresentation getTransfer();
 
     }
 
     public interface PyToKnimeObjContainer extends PyToKnimeContainer, PythonPortObject {
 
-        PythonPortObjectTransfer getTransfer();
+        PortObjectIntermediateRepresentation getTransfer();
 
         PyToKnimeSpecContainer getSpecContainer();
 

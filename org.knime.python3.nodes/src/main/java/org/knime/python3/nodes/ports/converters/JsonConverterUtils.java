@@ -48,7 +48,7 @@
  */
 package org.knime.python3.nodes.ports.converters;
 
-import org.knime.python3.types.port.api.transfer.StringPythonTransfer;
+import org.knime.python3.types.port.api.ir.StringIntermediateRepresentation;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -66,12 +66,12 @@ public final class JsonConverterUtils {
     }
 
     /**
-     * Parses a {@link StringPythonTransfer} into JSON.
+     * Parses a {@link StringIntermediateRepresentation} into JSON.
      *
      * @param source the transfer to parse
      * @return the {@link JsonNode} contained in the source
      */
-    public static JsonNode parseJson(final StringPythonTransfer source) {
+    public static JsonNode parseJson(final StringIntermediateRepresentation source) {
         try {
             return new ObjectMapper().readTree(source.getStringRepresentation());
         } catch (JsonProcessingException ex) {

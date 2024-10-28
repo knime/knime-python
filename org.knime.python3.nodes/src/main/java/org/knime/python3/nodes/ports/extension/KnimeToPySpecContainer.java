@@ -50,7 +50,7 @@ package org.knime.python3.nodes.ports.extension;
 
 import org.knime.python3.nodes.ports.PythonPortObjects;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
-import org.knime.python3.types.port.api.transfer.PythonPortObjectSpecTransfer;
+import org.knime.python3.types.port.api.ir.PortObjectSpecIntermediateRepresentation;
 
 /**
  *
@@ -60,9 +60,9 @@ public final class KnimeToPySpecContainer implements PythonPortObjectSpec {
 
     private final String m_javaClassName;
 
-    private final PythonPortObjectSpecTransfer m_transfer;
+    private final PortObjectSpecIntermediateRepresentation m_transfer;
 
-    KnimeToPySpecContainer(final String javaClassName, final PythonPortObjectSpecTransfer transfer) {
+    KnimeToPySpecContainer(final String javaClassName, final PortObjectSpecIntermediateRepresentation transfer) {
         m_javaClassName = javaClassName;
         m_transfer = transfer;
     }
@@ -72,7 +72,7 @@ public final class KnimeToPySpecContainer implements PythonPortObjectSpec {
         return m_javaClassName;
     }
 
-    public PythonPortObjectSpecTransfer getTransfer() {
+    public PortObjectSpecIntermediateRepresentation getTransfer() {
         return m_transfer;
     }
 

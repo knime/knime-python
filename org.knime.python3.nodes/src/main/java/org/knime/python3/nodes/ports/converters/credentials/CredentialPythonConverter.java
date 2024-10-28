@@ -62,10 +62,10 @@ import org.knime.python3.types.port.api.convert.KnimeToPyPortObjectConverter;
 import org.knime.python3.types.port.api.convert.PortObjectConversionContext;
 import org.knime.python3.types.port.api.convert.PortObjectSpecConversionContext;
 import org.knime.python3.types.port.api.convert.PyToKnimePortObjectConverter;
-import org.knime.python3.types.port.api.transfer.NonePythonTransfer;
-import org.knime.python3.types.port.api.transfer.PythonPortObjectSpecTransfer;
-import org.knime.python3.types.port.api.transfer.PythonPortObjectTransfer;
-import org.knime.python3.types.port.api.transfer.StringPythonTransfer;
+import org.knime.python3.types.port.api.ir.EmptyIntermediateRepresentation;
+import org.knime.python3.types.port.api.ir.PortObjectIntermediateRepresentation;
+import org.knime.python3.types.port.api.ir.PortObjectSpecIntermediateRepresentation;
+import org.knime.python3.types.port.api.ir.StringIntermediateRepresentation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -75,10 +75,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 @SuppressWarnings("restriction")
 public final class CredentialPythonConverter implements KnimeToPyPortObjectConverter<CredentialPortObject, CredentialPortObjectSpec>,
-    PyToKnimePortObjectConverter<CredentialPortObject, NonePythonTransfer, CredentialPortObjectSpec, StringPythonTransfer> {
+    PyToKnimePortObjectConverter<CredentialPortObject, EmptyIntermediateRepresentation, CredentialPortObjectSpec, StringIntermediateRepresentation> {
 
     @Override
-    public CredentialPortObjectSpec convertSpecFromPython(final StringPythonTransfer source,
+    public CredentialPortObjectSpec convertSpecFromPython(final StringIntermediateRepresentation source,
         final PortObjectSpecConversionContext context) {
         var rootNode = JsonConverterUtils.parseJson(source);
         try {
@@ -95,18 +95,18 @@ public final class CredentialPythonConverter implements KnimeToPyPortObjectConve
     }
 
     @Override
-    public CredentialPortObject convertPortObjectFromPython(final NonePythonTransfer source,
+    public CredentialPortObject convertPortObjectFromPython(final EmptyIntermediateRepresentation source,
         final CredentialPortObjectSpec spec,
         final PortObjectConversionContext context) {
         return new CredentialPortObject(spec);
     }
 
     @Override
-    public PythonPortObjectSpecTransfer convertSpecToPython(final CredentialPortObjectSpec spec,
+    public PortObjectSpecIntermediateRepresentation convertSpecToPython(final CredentialPortObjectSpec spec,
         final PortObjectSpecConversionContext context) {
         var json = new ObjectMapper().createObjectNode();
         json.put("data", getXmlContent(spec));
-        return new StringPythonTransfer(json.toString());
+        return new StringIntermediateRepresentation(json.toString());
     }
 
     static String getXmlContent(final CredentialPortObjectSpec spec) {
@@ -123,9 +123,9 @@ public final class CredentialPythonConverter implements KnimeToPyPortObjectConve
     }
 
     @Override
-    public PythonPortObjectTransfer convertPortObjectToPython(final CredentialPortObject portObject,
+    public PortObjectIntermediateRepresentation convertPortObjectToPython(final CredentialPortObject portObject,
         final PortObjectConversionContext context) {
-        return NonePythonTransfer.INSTANCE;
+        return EmptyIntermediateRepresentation.INSTANCE;
     }
 
     @Override
