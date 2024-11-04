@@ -52,13 +52,13 @@ import java.net.URI;
 
 import org.knime.credentials.base.CredentialPortObjectSpec;
 import org.knime.python3.nodes.ports.converters.JsonConverterUtils;
-import org.knime.python3.types.port.api.convert.KnimeToPyPortObjectConverter;
-import org.knime.python3.types.port.api.convert.PortObjectConversionContext;
-import org.knime.python3.types.port.api.convert.PortObjectSpecConversionContext;
-import org.knime.python3.types.port.api.ir.EmptyIntermediateRepresentation;
-import org.knime.python3.types.port.api.ir.PortObjectIntermediateRepresentation;
-import org.knime.python3.types.port.api.ir.PortObjectSpecIntermediateRepresentation;
-import org.knime.python3.types.port.api.ir.StringIntermediateRepresentation;
+import org.knime.python3.types.port.converter.PortObjectEncoder;
+import org.knime.python3.types.port.converter.PortObjectConversionContext;
+import org.knime.python3.types.port.converter.PortObjectSpecConversionContext;
+import org.knime.python3.types.port.ir.EmptyIntermediateRepresentation;
+import org.knime.python3.types.port.ir.PortObjectIntermediateRepresentation;
+import org.knime.python3.types.port.ir.PortObjectSpecIntermediateRepresentation;
+import org.knime.python3.types.port.ir.StringIntermediateRepresentation;
 import org.knime.workflowservices.connection.AbstractHubAuthenticationPortObject;
 import org.knime.workflowservices.connection.AbstractHubAuthenticationPortObjectSpec;
 
@@ -70,10 +70,10 @@ import org.knime.workflowservices.connection.AbstractHubAuthenticationPortObject
 // TODO also implement py to knime
 @SuppressWarnings("restriction")
 public final class HubCredentialPythonConverter implements
-    KnimeToPyPortObjectConverter<AbstractHubAuthenticationPortObject, AbstractHubAuthenticationPortObjectSpec> {
+    PortObjectEncoder<AbstractHubAuthenticationPortObject, AbstractHubAuthenticationPortObjectSpec> {
 
     @Override
-    public PortObjectSpecIntermediateRepresentation convertSpecToPython(
+    public PortObjectSpecIntermediateRepresentation encodePortObjectSpec(
         final AbstractHubAuthenticationPortObjectSpec spec, final PortObjectSpecConversionContext context) {
         var xmlContent = CredentialPythonConverter.getXmlContent((CredentialPortObjectSpec)spec);
         var json = JsonConverterUtils.createObjectNode();
@@ -83,7 +83,7 @@ public final class HubCredentialPythonConverter implements
     }
 
     @Override
-    public PortObjectIntermediateRepresentation convertPortObjectToPython(
+    public PortObjectIntermediateRepresentation encodePortObject(
         final AbstractHubAuthenticationPortObject portObject, final PortObjectConversionContext context) {
         return EmptyIntermediateRepresentation.INSTANCE;
     }

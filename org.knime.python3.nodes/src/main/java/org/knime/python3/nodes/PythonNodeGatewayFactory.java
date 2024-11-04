@@ -67,7 +67,6 @@ import org.knime.python3.arrow.Python3ArrowSourceDirectory;
 import org.knime.python3.arrow.PythonArrowExtension;
 import org.knime.python3.types.PythonValueFactoryModule;
 import org.knime.python3.types.PythonValueFactoryRegistry;
-import org.knime.python3.types.port.framework.PythonNodesFrameworkExtensionPointParser;
 import org.knime.python3.views.Python3ViewsSourceDirectory;
 import org.knime.python3.views.PythonViewsExtension;
 
@@ -95,8 +94,6 @@ public final class PythonNodeGatewayFactory {
 
     private final String m_extensionVersion;
 
-    private final PythonPortConverterExtensionRegistrator m_extensionPortTypeRegistrator;
-
     /**
      * @param extensionId the extension's id
      * @param environmentName the name of the environment the extension uses
@@ -110,11 +107,6 @@ public final class PythonNodeGatewayFactory {
         m_extensionId = extensionId;
         m_environmentName = environmentName;
         m_extensionVersion = extensionVersion;
-        // TODO inject? filter out converters that aren't used by the extension?
-        m_extensionPortTypeRegistrator =
-            new PythonPortConverterExtensionRegistrator(
-                PythonNodesFrameworkExtensionPointParser.getKnimeToPyConverters(),
-                PythonNodesFrameworkExtensionPointParser.getPyToKnimeConverters());
     }
 
     /**
@@ -124,8 +116,7 @@ public final class PythonNodeGatewayFactory {
      * @throws IOException if creation fails due to I/O problems
      * @throws InterruptedException if the creation is interrupted
      */
-    public PythonGateway<KnimeNodeBackend> create()
-        throws IOException, InterruptedException {
+    public PythonGateway<KnimeNodeBackend> create() throws IOException, InterruptedException {
         var command = createCommand(m_extensionId, m_environmentName);
         var gatewayDescriptionBuilder = PythonGatewayDescription.builder(command, LAUNCHER, KnimeNodeBackend.class)//
             .addToPythonPath(Python3SourceDirectory.getPath())//
@@ -135,11 +126,11 @@ public final class PythonNodeGatewayFactory {
             // TODO preloading is just a special kind of a customizer
             .withPreloaded(PythonArrowExtension.INSTANCE)//
             .withPreloaded(PythonViewsExtension.INSTANCE)//
-            .withCustomizer(new KnimeNodeBackendCustomizer(m_extensionId, m_module, m_extensionVersion,
-                m_extensionPortTypeRegistrator));
+            .withCustomizer(new KnimeNodeBackendCustomizer(m_extensionId, m_module, m_extensionVersion));
         PythonValueFactoryRegistry.getModules().stream().map(PythonValueFactoryModule::getParentDirectory)
             .forEach(gatewayDescriptionBuilder::addToPythonPath);
-        m_extensionPortTypeRegistrator.getPythonPaths().forEach(gatewayDescriptionBuilder::addToPythonPath);
+        PortObjectExtensionPointUtils.getInstance().getPythonPaths()
+            .forEach(gatewayDescriptionBuilder::addToPythonPath);
         // For debugging it is best to always start a new process, so that changes in the code are immediately reflected
         // in the node
         // The factory is not held as member, so that it is possible to toggle debug mode without a restart
@@ -170,20 +161,19 @@ public final class PythonNodeGatewayFactory {
 
         private final String m_extensionVersion;
 
-        private final PythonPortConverterExtensionRegistrator m_extensionPortTypeRegistrator;
-
         KnimeNodeBackendCustomizer(final String extensionId, final String extensionModule,
-            final String extensionVersion, final PythonPortConverterExtensionRegistrator extensionPortTypeRegistrator) {
+            final String extensionVersion) {
             m_extensionId = extensionId;
             m_extensionModule = extensionModule;
             m_extensionVersion = extensionVersion;
-            m_extensionPortTypeRegistrator = extensionPortTypeRegistrator;
         }
 
         @Override
         public void customize(final KnimeNodeBackend entryPoint) {
             PythonEntryPointUtils.registerPythonValueFactories(entryPoint);
-            m_extensionPortTypeRegistrator.customize(entryPoint);
+
+            // TODO filter out converters that aren't used by the extension?
+            PortObjectExtensionPointUtils.getInstance().registerPortObjectConverters(entryPoint);
             entryPoint.loadExtension(m_extensionId, m_extensionModule, m_extensionVersion);
         }
 

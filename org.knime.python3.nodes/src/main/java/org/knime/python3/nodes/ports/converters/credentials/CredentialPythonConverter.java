@@ -58,14 +58,14 @@ import org.knime.credentials.base.CredentialPortObject;
 import org.knime.credentials.base.CredentialPortObjectSpec;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonCredentialPortObjectSpec;
 import org.knime.python3.nodes.ports.converters.JsonConverterUtils;
-import org.knime.python3.types.port.api.convert.KnimeToPyPortObjectConverter;
-import org.knime.python3.types.port.api.convert.PortObjectConversionContext;
-import org.knime.python3.types.port.api.convert.PortObjectSpecConversionContext;
-import org.knime.python3.types.port.api.convert.PyToKnimePortObjectConverter;
-import org.knime.python3.types.port.api.ir.EmptyIntermediateRepresentation;
-import org.knime.python3.types.port.api.ir.PortObjectIntermediateRepresentation;
-import org.knime.python3.types.port.api.ir.PortObjectSpecIntermediateRepresentation;
-import org.knime.python3.types.port.api.ir.StringIntermediateRepresentation;
+import org.knime.python3.types.port.converter.PortObjectEncoder;
+import org.knime.python3.types.port.converter.PortObjectConversionContext;
+import org.knime.python3.types.port.converter.PortObjectSpecConversionContext;
+import org.knime.python3.types.port.converter.PortObjectDecoder;
+import org.knime.python3.types.port.ir.EmptyIntermediateRepresentation;
+import org.knime.python3.types.port.ir.PortObjectIntermediateRepresentation;
+import org.knime.python3.types.port.ir.PortObjectSpecIntermediateRepresentation;
+import org.knime.python3.types.port.ir.StringIntermediateRepresentation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -75,11 +75,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 @SuppressWarnings("restriction")
 public final class CredentialPythonConverter
-    implements KnimeToPyPortObjectConverter<CredentialPortObject, CredentialPortObjectSpec>,
-    PyToKnimePortObjectConverter<CredentialPortObject, EmptyIntermediateRepresentation, CredentialPortObjectSpec, StringIntermediateRepresentation> {
+    implements PortObjectEncoder<CredentialPortObject, CredentialPortObjectSpec>,
+    PortObjectDecoder<CredentialPortObject, EmptyIntermediateRepresentation, CredentialPortObjectSpec, StringIntermediateRepresentation> {
 
     @Override
-    public CredentialPortObjectSpec convertSpecFromPython(final StringIntermediateRepresentation source,
+    public CredentialPortObjectSpec decodePortObjectSpec(final StringIntermediateRepresentation source,
         final PortObjectSpecConversionContext context) {
         var rootNode = JsonConverterUtils.parseJson(source);
         try {
@@ -96,13 +96,13 @@ public final class CredentialPythonConverter
     }
 
     @Override
-    public CredentialPortObject convertPortObjectFromPython(final EmptyIntermediateRepresentation source,
+    public CredentialPortObject decodePortObject(final EmptyIntermediateRepresentation source,
         final CredentialPortObjectSpec spec, final PortObjectConversionContext context) {
         return new CredentialPortObject(spec);
     }
 
     @Override
-    public PortObjectSpecIntermediateRepresentation convertSpecToPython(final CredentialPortObjectSpec spec,
+    public PortObjectSpecIntermediateRepresentation encodePortObjectSpec(final CredentialPortObjectSpec spec,
         final PortObjectSpecConversionContext context) {
         var json = new ObjectMapper().createObjectNode();
         json.put("data", getXmlContent(spec));
@@ -123,7 +123,7 @@ public final class CredentialPythonConverter
     }
 
     @Override
-    public PortObjectIntermediateRepresentation convertPortObjectToPython(final CredentialPortObject portObject,
+    public PortObjectIntermediateRepresentation encodePortObject(final CredentialPortObject portObject,
         final PortObjectConversionContext context) {
         return EmptyIntermediateRepresentation.INSTANCE;
     }

@@ -65,7 +65,7 @@ public final class PortObjectSpecConverterInterfaces {
     /**
      * Type marker used for unifying the below two interfaces as a type parameter.
      */
-    public interface PortObjectSpecConverterMarker {
+    public interface PythonPortObjectSpecConverter {
     }
 
     /**
@@ -76,7 +76,7 @@ public final class PortObjectSpecConverterInterfaces {
      * @param <P> The concrete implementation of the Python-ready wrapper {@link PythonPortObjectSpec}
      */
     public interface KnimeToPythonPortObjectSpecConverter<T extends PortObjectSpec, P extends PythonPortObjectSpec>
-        extends PortObjectSpecConverterMarker {
+        extends PythonPortObjectSpecConverter {
 
         /**
          * Converts from KNIME-native {@link PortObjectSpec} implementors to {@link PythonPortObjectSpec} implementors.
@@ -95,7 +95,7 @@ public final class PortObjectSpecConverterInterfaces {
      * @param <T> The concrete implementation of the KNIME-native {@link PortObjectSpec}
      */
     public interface PythonToKnimePortObjectSpecConverter<T extends PortObjectSpec>
-        extends PortObjectSpecConverterMarker {
+        extends PythonPortObjectSpecConverter {
 
         /**
          * Converts JSON-encoded Port Object Specs received from Python to KNIME-native {@link PortObjectSpec}

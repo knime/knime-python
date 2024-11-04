@@ -57,49 +57,61 @@ import java.util.stream.Stream;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortTypeRegistry;
-import org.knime.python3.PythonGatewayFactory.EntryPointCustomizer;
-import org.knime.python3.types.port.framework.PythonImplementation;
-import org.knime.python3.types.port.framework.PythonPortConverterExtension;
-import org.knime.python3.types.port.framework.UntypedKnimeToPyPortObjectConverter;
-import org.knime.python3.types.port.framework.UntypedPyToKnimePortObjectConverter;
+import org.knime.python3.types.port.PortObjectConverterExtensionPoint;
+import org.knime.python3.types.port.PythonImplementation;
+import org.knime.python3.types.port.PythonPortObjectConverterExtension;
+import org.knime.python3.types.port.converter.UntypedDelegatingPortObjectDecoder;
+import org.knime.python3.types.port.converter.UntypedDelegatingPortObjectEncoder;
 
 import py4j.Py4JException;
 
 /**
- * Registers the extension port types in a {@link KnimeNodeBackend}.
+ * This singleton provides methods to register extension port types in a {@link KnimeNodeBackend} and to get all the
+ * paths that need to be put on the PYTHONPATH for the Python process to import the modules that contribute these
+ * extension port objects.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-final class PythonPortConverterExtensionRegistrator implements EntryPointCustomizer<KnimeNodeBackend> {
+final class PortObjectExtensionPointUtils {
 
-    private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonPortConverterExtensionRegistrator.class);
-
-    private final List<PythonPortConverterExtension<UntypedKnimeToPyPortObjectConverter>> m_knimeToPy;
-
-    private final List<PythonPortConverterExtension<UntypedPyToKnimePortObjectConverter>> m_pyToKnime;
-
-    PythonPortConverterExtensionRegistrator(
-        final List<PythonPortConverterExtension<UntypedKnimeToPyPortObjectConverter>> knimeToPy,
-        final List<PythonPortConverterExtension<UntypedPyToKnimePortObjectConverter>> pyToKnime) {
-        m_knimeToPy = new ArrayList<>(knimeToPy);
-        m_pyToKnime = new ArrayList<>(pyToKnime);
+    public static PortObjectExtensionPointUtils getInstance() {
+        if (INSTANCE == null) {
+            INSTANCE = new PortObjectExtensionPointUtils( //
+                PortObjectConverterExtensionPoint.getKnimeToPyConverters(), //
+                PortObjectConverterExtensionPoint.getPyToKnimeConverters() //
+            );
+        }
+        return INSTANCE;
     }
 
-    Stream<Path> getPythonPaths() {
+    public Stream<Path> getPythonPaths() {
         return Stream.concat(m_knimeToPy.stream(), m_pyToKnime.stream())//
-            .map(PythonPortConverterExtension::pythonImplementation)//
+            .map(PythonPortObjectConverterExtension::pythonImplementation)//
             .map(PythonImplementation::parentFolder);
-
     }
 
-    @Override
-    public void customize(final KnimeNodeBackend backend) {
+    public void registerPortObjectConverters(final KnimeNodeBackend backend) {
         m_knimeToPy.forEach(catchAndLog(e -> registerKnimeToPyPortObjectConverter(e, backend)));
         m_pyToKnime.forEach(catchAndLog(e -> registerPyToKnimePortObjectConverter(e, backend)));
     }
 
-    private static Consumer<PythonPortConverterExtension<?>>
-        catchAndLog(final Consumer<PythonPortConverterExtension<?>> register) {
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(PortObjectExtensionPointUtils.class);
+
+    private final List<PythonPortObjectConverterExtension<UntypedDelegatingPortObjectEncoder>> m_knimeToPy;
+
+    private final List<PythonPortObjectConverterExtension<UntypedDelegatingPortObjectDecoder>> m_pyToKnime;
+
+    private PortObjectExtensionPointUtils(
+        final List<PythonPortObjectConverterExtension<UntypedDelegatingPortObjectEncoder>> knimeToPy,
+        final List<PythonPortObjectConverterExtension<UntypedDelegatingPortObjectDecoder>> pyToKnime) {
+        m_knimeToPy = new ArrayList<>(knimeToPy);
+        m_pyToKnime = new ArrayList<>(pyToKnime);
+    }
+
+    private static PortObjectExtensionPointUtils INSTANCE;
+
+    private static Consumer<PythonPortObjectConverterExtension<?>>
+        catchAndLog(final Consumer<PythonPortObjectConverterExtension<?>> register) {
         return e -> {
             try {
                 register.accept(e);
@@ -110,7 +122,7 @@ final class PythonPortConverterExtensionRegistrator implements EntryPointCustomi
         };
     }
 
-    private static void registerKnimeToPyPortObjectConverter(final PythonPortConverterExtension<?> extension,
+    private static void registerKnimeToPyPortObjectConverter(final PythonPortObjectConverterExtension<?> extension,
         final KnimeNodeBackend backend) {
         var converter = extension.converter();
         var pythonImplementation = extension.pythonImplementation();
@@ -124,7 +136,7 @@ final class PythonPortConverterExtensionRegistrator implements EntryPointCustomi
             portTypeName);
     }
 
-    private static void registerPyToKnimePortObjectConverter(final PythonPortConverterExtension<?> extension,
+    private static void registerPyToKnimePortObjectConverter(final PythonPortObjectConverterExtension<?> extension,
         final KnimeNodeBackend backend) {
         var converter = extension.converter();
         var pythonImplementation = extension.pythonImplementation();

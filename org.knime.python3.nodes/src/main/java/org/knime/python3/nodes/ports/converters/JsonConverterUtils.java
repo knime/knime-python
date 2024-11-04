@@ -48,7 +48,7 @@
  */
 package org.knime.python3.nodes.ports.converters;
 
-import org.knime.python3.types.port.api.ir.StringIntermediateRepresentation;
+import org.knime.python3.types.port.ir.StringIntermediateRepresentation;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;

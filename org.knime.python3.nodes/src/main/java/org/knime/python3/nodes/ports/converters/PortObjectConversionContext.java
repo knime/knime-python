@@ -65,5 +65,5 @@ import org.knime.python3.arrow.PythonArrowTableConverter;
 @SuppressWarnings("restriction")
 public record PortObjectConversionContext(Map<String, FileStore> fileStoresByKey,
     PythonArrowTableConverter tableConverter, ExecutionContext execContext)
-    implements org.knime.python3.types.port.api.convert.PortObjectConversionContext {
+    implements org.knime.python3.types.port.converter.PortObjectConversionContext {
 }

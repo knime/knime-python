@@ -50,25 +50,25 @@ package org.knime.python3.nodes.ports.extension;
 
 import org.knime.python3.nodes.ports.PythonPortObjects;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
-import org.knime.python3.types.port.api.ir.PortObjectIntermediateRepresentation;
+import org.knime.python3.types.port.ir.PortObjectIntermediateRepresentation;
 
 /**
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-public final class KnimeToPyObjContainer implements PythonPortObject {
+public final class ExtensionPortObject implements PythonPortObject {
 
-    private final KnimeToPySpecContainer m_specContainer;
+    private final ExtensionPortObjectSpec m_spec;
 
     private final String m_javaClassName;
 
-    private final PortObjectIntermediateRepresentation m_transfer;
+    private final PortObjectIntermediateRepresentation m_representation;
 
-    KnimeToPyObjContainer(final String javaClassName, final PortObjectIntermediateRepresentation transfer,
-        final KnimeToPySpecContainer specContainer) {
+    ExtensionPortObject(final String javaClassName, final PortObjectIntermediateRepresentation representation,
+        final ExtensionPortObjectSpec specContainer) {
         m_javaClassName = javaClassName;
-        m_transfer = transfer;
-        m_specContainer = specContainer;
+        m_representation = representation;
+        m_spec = specContainer;
     }
 
     @Override
@@ -76,11 +76,11 @@ public final class KnimeToPyObjContainer implements PythonPortObject {
         return m_javaClassName;
     }
 
-    public KnimeToPySpecContainer getSpecContainer() {
-        return m_specContainer;
+    public ExtensionPortObjectSpec getSpec() {
+        return m_spec;
     }
 
-    public PortObjectIntermediateRepresentation getTransfer() {
-        return m_transfer;
+    public PortObjectIntermediateRepresentation getIntermediateRepresentation() {
+        return m_representation;
     }
 }
