@@ -128,10 +128,10 @@ class PortTypeRegistryTest(unittest.TestCase):
         java_port_type_registry: JavaPortTypeRegistry = unittest.mock.create_autospec(
             JavaPortTypeRegistry
         )
-        java_port_type_registry.can_convert_obj_from_python.return_value = False
-        java_port_type_registry.can_convert_obj_to_python.return_value = False
-        java_port_type_registry.can_convert_spec_from_python.return_value = False
-        java_port_type_registry.can_convert_spec_to_python.return_value = False
+        java_port_type_registry.can_decode_port_object.return_value = False
+        java_port_type_registry.can_encode_port_object.return_value = False
+        java_port_type_registry.can_decode_spec.return_value = False
+        java_port_type_registry.can_encode_spec.return_value = False
         self.registry = knb._PortTypeRegistry("test.extension", java_port_type_registry)
 
     def test_default_port_type_id(self):

@@ -2,19 +2,21 @@ from abc import ABC, abstractmethod
 from typing import Generic, Optional, Type, TypeVar
 
 
-class PythonTransfer(ABC):
+class IntermediateRepresentation(ABC):
     pass
 
 
-class PythonPortObjectSpecTransfer(PythonTransfer):
+class PortObjectSpecIntermediateRepresentation(IntermediateRepresentation):
     pass
 
 
-class PythonPortObjectTransfer(PythonTransfer):
+class PortObjectIntermediateRepresentation(IntermediateRepresentation):
     pass
 
 
-class StringPythonTransfer(PythonPortObjectSpecTransfer, PythonPortObjectTransfer):
+class StringIntermediateRepresentation(
+    PortObjectSpecIntermediateRepresentation, PortObjectIntermediateRepresentation
+):
     def __init__(self, representation: str) -> None:
         self._representation = representation
 
@@ -22,19 +24,17 @@ class StringPythonTransfer(PythonPortObjectSpecTransfer, PythonPortObjectTransfe
         return self._representation
 
 
-class NonePythonTransfer(PythonPortObjectTransfer):
+class EmptyIntermediateRepresentation(PortObjectIntermediateRepresentation):
     pass
 
 
 SPEC = TypeVar("SPEC")
 OBJ = TypeVar("OBJ")
-SPEC_TRANSFER = TypeVar("SPEC_TRANSFER", bound=PythonPortObjectSpecTransfer)
-OBJ_TRANSFER = TypeVar("OBJ_TRANSFER", bound=PythonPortObjectTransfer)
+SPEC_IR = TypeVar("SPEC_IR", bound=PortObjectSpecIntermediateRepresentation)
+OBJ_IR = TypeVar("OBJ_IR", bound=PortObjectIntermediateRepresentation)
 
 
-class KnimeToPyPortObjectConverter(
-    ABC, Generic[OBJ, OBJ_TRANSFER, SPEC, SPEC_TRANSFER]
-):
+class PortObjectDecoder(ABC, Generic[OBJ, OBJ_IR, SPEC, SPEC_IR]):
     # TODO allow to specify the types via init, or make them abstract properties or both?
     # I also investigated if we can extract the types from the generics but it seems more tricky than I thought
     def __init__(
@@ -46,11 +46,11 @@ class KnimeToPyPortObjectConverter(
         self._object_type = object_type
 
     @abstractmethod
-    def convert_spec_to_python(self, transfer: SPEC_TRANSFER) -> SPEC:
+    def decode_spec(self, intermediate_representation: SPEC_IR) -> SPEC:
         pass
 
     @abstractmethod
-    def convert_obj_to_python(self, transfer: OBJ_TRANSFER, spec: SPEC) -> OBJ:
+    def decode_object(self, intermediate_representation: OBJ_IR, spec: SPEC) -> OBJ:
         pass
 
     @property
@@ -63,9 +63,7 @@ class KnimeToPyPortObjectConverter(
         return self._spec_type
 
 
-class PyToKnimePortObjectConverter(
-    ABC, Generic[OBJ, OBJ_TRANSFER, SPEC, SPEC_TRANSFER]
-):
+class PortObjectEncoder(ABC, Generic[OBJ, OBJ_IR, SPEC, SPEC_IR]):
     def __init__(
         self, object_type: Optional[Type[OBJ]] = None, spec_type: Optional[Type] = None
     ) -> None:
@@ -73,7 +71,7 @@ class PyToKnimePortObjectConverter(
         self._spec_type = spec_type
 
     @abstractmethod
-    def convert_obj_from_python(self, port_object: OBJ) -> OBJ_TRANSFER:
+    def encode_object(self, port_object: OBJ) -> OBJ_IR:
         pass
 
     @property
@@ -81,7 +79,7 @@ class PyToKnimePortObjectConverter(
         return self._object_type
 
     @abstractmethod
-    def convert_spec_from_python(self, spec: SPEC, port_info) -> SPEC_TRANSFER:
+    def encode_spec(self, spec: SPEC, port_info) -> SPEC_IR:
         pass
 
     @property
@@ -89,8 +87,8 @@ class PyToKnimePortObjectConverter(
         return self._spec_type
 
 
-class BidirectionalPortObjectConverter(
-    KnimeToPyPortObjectConverter[OBJ, OBJ_TRANSFER, SPEC, SPEC_TRANSFER],
-    PyToKnimePortObjectConverter[OBJ, OBJ_TRANSFER, SPEC, SPEC_TRANSFER],
+class PortObjectConverter(
+    PortObjectDecoder[OBJ, OBJ_IR, SPEC, SPEC_IR],
+    PortObjectEncoder[OBJ, OBJ_IR, SPEC, SPEC_IR],
 ):
     pass

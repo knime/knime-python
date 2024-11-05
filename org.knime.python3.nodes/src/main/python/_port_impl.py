@@ -33,11 +33,11 @@ CREDENTIAL_SPEC = TypeVar("CREDENTIAL_SPEC", bound=ks.CredentialPortObjectSpec)
 
 class CredentialConverter(
     Generic[CREDENTIAL_OBJ, CREDENTIAL_SPEC],
-    kpo.BidirectionalPortObjectConverter[
+    kpo.PortObjectConverter[
         CREDENTIAL_OBJ,
-        kpo.StringPythonTransfer,
+        kpo.StringIntermediateRepresentation,
         CREDENTIAL_SPEC,
-        kpo.StringPythonTransfer,
+        kpo.StringIntermediateRepresentation,
     ],
 ):
     def __init__(
@@ -47,26 +47,28 @@ class CredentialConverter(
     ) -> None:
         super().__init__(obj_type, spec_type)
 
-    def convert_obj_to_python(
-        self, transfer: kpo.NonePythonTransfer, spec: CREDENTIAL_SPEC
+    def decode_object(
+        self,
+        intermediate_representation: kpo.EmptyIntermediateRepresentation,
+        spec: CREDENTIAL_SPEC,
     ) -> CREDENTIAL_OBJ:
         return self.object_type(spec)
 
-    def convert_obj_from_python(
+    def encode_object(
         self, port_object: CREDENTIAL_OBJ
-    ) -> kpo.NonePythonTransfer:
-        return kpo.NonePythonTransfer()
+    ) -> kpo.EmptyIntermediateRepresentation:
+        return kpo.EmptyIntermediateRepresentation()
 
-    def convert_spec_to_python(
-        self, transfer: kpo.StringPythonTransfer
+    def decode_spec(
+        self, intermediate_representation: kpo.StringIntermediateRepresentation
     ) -> CREDENTIAL_SPEC:
-        data = transfer.getStringRepresentation()
+        data = intermediate_representation.getStringRepresentation()
         return self.spec_type.deserialize(json.loads(data))
 
-    def convert_spec_from_python(
+    def encode_spec(
         self, spec: CREDENTIAL_SPEC
-    ) -> kpo.StringPythonTransfer:
-        return kpo.StringPythonTransfer(json.dumps(spec.serialize()))
+    ) -> kpo.StringIntermediateRepresentation:
+        return kpo.StringIntermediateRepresentation(json.dumps(spec.serialize()))
 
 
 #### Hub Authentication

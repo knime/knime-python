@@ -9,66 +9,66 @@ from typing import (
 )
 import knime.extension.nodes as kn
 from knime.extension.ports import (
-    KnimeToPyPortObjectConverter,
-    PyToKnimePortObjectConverter,
-    PythonPortObjectSpecTransfer,
-    PythonPortObjectTransfer,
+    PortObjectDecoder,
+    PortObjectEncoder,
+    PortObjectSpecIntermediateRepresentation,
+    PortObjectIntermediateRepresentation,
 )
 
 
 JavaClassName = str
 
 
-class _PortObjectSpecContainer:
+class _ExtensionPortObjectSpec:
     def __init__(
         self,
-        transfer: PythonPortObjectSpecTransfer,
+        intermediate_representation: PortObjectSpecIntermediateRepresentation,
         java_class_name: JavaClassName,
     ) -> None:
-        self._transfer = transfer
+        self._intermediate_representation = intermediate_representation
         self._java_class_name = java_class_name
 
-    def getJavaClassName(self) -> str:
+    def getJavaClassName(self) -> JavaClassName:
         return self._java_class_name
 
-    def getTransfer(self) -> PythonPortObjectSpecTransfer:
-        return self._transfer
+    def getIntermediateRepresentation(self) -> PortObjectSpecIntermediateRepresentation:
+        return self._intermediate_representation
 
     class Java:
         implements = [
-            "org.knime.python3.nodes.ports.ExtensionPortObjectConverter$PyToKnimeSpecContainer"
+            "org.knime.python3.nodes.ports.ExtensionPortObjectConverters$PythonExtensionPortObjectSpec"
         ]
 
 
-class _PortObjectContainer:
+class _ExtensionPortObject:
     def __init__(
         self,
-        transfer: PythonPortObjectTransfer,
+        intermediate_representation: PortObjectIntermediateRepresentation,
         java_class_name: JavaClassName,
-        spec_container: Optional[_PortObjectSpecContainer] = None,
+        extension_spec: Optional[_ExtensionPortObjectSpec] = None,
     ) -> None:
-        self._transfer = transfer
-        self._spec_container = spec_container
+        self._intermediate_representation = intermediate_representation
+        self._extension_spec = extension_spec
         self._java_class_name = java_class_name
 
-    def getJavaClassName(self) -> str:
+    def getJavaClassName(self) -> JavaClassName:
         return self._java_class_name
 
-    def getTransfer(self) -> PythonPortObjectTransfer:
-        return self._transfer
+    def getIntermediateRepresentation(self) -> PortObjectIntermediateRepresentation:
+        return self._intermediate_representation
 
-    def getSpecContainer(self) -> _PortObjectSpecContainer:
-        return self._spec_container
+    def getSpec(self) -> _ExtensionPortObjectSpec:
+        return self._extension_spec
 
     class Java:
         implements = [
-            "org.knime.python3.nodes.ports.ExtensionPortObjectConverter$PyToKnimeObjContainer"
+            "org.knime.python3.nodes.ports.ExtensionPortObjectConverters$PythonExtensionPortObject"
         ]
 
 
 @dataclass
 class PyToKnimeConverterEntry:
-    converter: PyToKnimePortObjectConverter
+    converter: PortObjectEncoder
     java_obj_class_name: JavaClassName
     java_spec_class_name: JavaClassName
 
@@ -77,12 +77,8 @@ class JavaPortTypeRegistry:
     def __init__(
         self,
     ) -> None:
-        self._knime_to_py_by_obj_class: Dict[
-            JavaClassName, KnimeToPyPortObjectConverter
-        ] = {}
-        self._knime_to_py_by_spec_class: Dict[
-            JavaClassName, KnimeToPyPortObjectConverter
-        ] = {}
+        self._knime_to_py_by_obj_class: Dict[JavaClassName, PortObjectDecoder] = {}
+        self._knime_to_py_by_spec_class: Dict[JavaClassName, PortObjectDecoder] = {}
         self._py_to_knime_for_spec_type: Dict[Type, PyToKnimeConverterEntry] = {}
         self._py_to_knime_for_obj_type: Dict[Type, PyToKnimeConverterEntry] = {}
 
@@ -104,7 +100,7 @@ class JavaPortTypeRegistry:
             raise ValueError(
                 f"Converter for spec class {java_spec_class_name} already registered."
             )
-        converter: KnimeToPyPortObjectConverter = self._load_converter_from_module(
+        converter: PortObjectDecoder = self._load_converter_from_module(
             module_name, converter_class_name
         )
         self._knime_to_py_by_obj_class[java_obj_class_name] = converter
@@ -123,7 +119,7 @@ class JavaPortTypeRegistry:
         java_spec_class_name: JavaClassName,
         port_type_name: str,
     ) -> kn.PortType:
-        converter: PyToKnimePortObjectConverter = self._load_converter_from_module(
+        converter: PortObjectEncoder = self._load_converter_from_module(
             module_name, converter_class_name
         )
         if converter.object_type in self._py_to_knime_for_obj_type:
@@ -151,7 +147,7 @@ class JavaPortTypeRegistry:
         self,
         java_class_name: JavaClassName,
         port_type_name: str,
-        converter: Union[PyToKnimePortObjectConverter, KnimeToPyPortObjectConverter],
+        converter: Union[PortObjectEncoder, PortObjectDecoder],
     ) -> kn.PortType:
         if java_class_name not in self._port_types_by_id:
             self._port_types_by_id[java_class_name] = kn.PortType(
@@ -167,7 +163,7 @@ class JavaPortTypeRegistry:
         self,
         module_name: str,
         converter_class_name: str,
-    ) -> Union[KnimeToPyPortObjectConverter, PyToKnimePortObjectConverter]:
+    ) -> Union[PortObjectDecoder, PortObjectEncoder]:
         python_module = importlib.import_module(module_name)
         converter_class = getattr(python_module, converter_class_name)
         return converter_class()
@@ -175,22 +171,22 @@ class JavaPortTypeRegistry:
     def get_port_type_for_id(self, id: str) -> kn.PortType:
         return self._port_types_by_id.get(id)
 
-    def spec_to_python(
+    def decode_spec(
         self,
-        container: _PortObjectSpecContainer,
+        container: _ExtensionPortObjectSpec,
     ) -> kn.PortObjectSpec:
         converter = self._knime_to_py_by_spec_class.get(container.getJavaClassName())
-        return converter.convert_spec_to_python(
-            transfer=container.getTransfer(),
+        return converter.decode_spec(
+            intermediate_representation=container.getIntermediateRepresentation(),
         )
 
-    def can_convert_spec_to_python(self, java_class_name: JavaClassName) -> bool:
+    def can_encode_spec(self, java_class_name: JavaClassName) -> bool:
         return java_class_name in self._knime_to_py_by_spec_class
 
-    def can_convert_obj_to_python(self, java_class_name: JavaClassName) -> bool:
+    def can_encode_port_object(self, java_class_name: JavaClassName) -> bool:
         return java_class_name in self._knime_to_py_by_obj_class
 
-    def can_convert_spec_from_python(self, spec: kn.PortObjectSpec) -> bool:
+    def can_decode_spec(self, spec: kn.PortObjectSpec) -> bool:
         return (
             self._find_py_to_knime_converter_for_type(
                 type(spec), self._py_to_knime_for_spec_type
@@ -198,7 +194,7 @@ class JavaPortTypeRegistry:
             is not None
         )
 
-    def can_convert_obj_from_python(self, obj: kn.PortObject) -> bool:
+    def can_decode_port_object(self, obj: kn.PortObject) -> bool:
         return (
             self._find_py_to_knime_converter_for_type(
                 type(obj), self._py_to_knime_for_obj_type
@@ -206,44 +202,49 @@ class JavaPortTypeRegistry:
             is not None
         )
 
-    def port_object_to_python(
+    def decode_port_object(
         self,
-        container: _PortObjectContainer,
+        extension_port_object: _ExtensionPortObject,
     ) -> kn.PortObject:
-        converter = self._knime_to_py_by_obj_class[container.getJavaClassName()]
-        spec_container = container.getSpecContainer()
-        spec = self.spec_to_python(spec_container) if spec_container else None
-        return converter.convert_obj_to_python(
-            transfer=container.getTransfer(), spec=spec
+        converter = self._knime_to_py_by_obj_class[
+            extension_port_object.getJavaClassName()
+        ]
+        extension_spec = extension_port_object.getSpec()
+        spec = self.decode_spec(extension_spec) if extension_spec else None
+        return converter.decode_object(
+            intermediate_representation=extension_port_object.getIntermediateRepresentation(),
+            spec=spec,
         )
 
-    def spec_from_python(
+    def encode_spec(
         self,
         spec: kn.PortObjectSpec,
-    ) -> _PortObjectSpecContainer:
+    ) -> _ExtensionPortObjectSpec:
         entry = self._find_py_to_knime_converter_for_type(
             type(spec), self._py_to_knime_for_spec_type
         )
         if entry is None:
             raise ValueError(f"No converter found for type {type(spec)}")
-        transfer = entry.converter.convert_spec_from_python(
+        intermediate_representation = entry.converter.encode_spec(
             spec=spec,
         )
-        return _PortObjectSpecContainer(transfer, entry.java_spec_class_name)
+        return _ExtensionPortObjectSpec(
+            intermediate_representation, entry.java_spec_class_name
+        )
 
-    def port_object_from_python(self, obj: kn.PortObject) -> _PortObjectContainer:
+    def encode_port_object(self, obj: kn.PortObject) -> _ExtensionPortObject:
         entry = self._find_py_to_knime_converter_for_type(
             type(obj), self._py_to_knime_for_obj_type
         )
         if entry is None:
             raise ValueError(f"No converter found for type {type(obj)}")
-        transfer = entry.converter.convert_obj_from_python(
+        intermediate_representation = entry.converter.encode_object(
             port_object=obj,
         )
-        spec_container = (
-            self.spec_from_python(obj.spec) if hasattr(obj, "spec") else None
+        spec_container = self.encode_spec(obj.spec) if hasattr(obj, "spec") else None
+        return _ExtensionPortObject(
+            intermediate_representation, entry.java_obj_class_name, spec_container
         )
-        return _PortObjectContainer(transfer, entry.java_obj_class_name, spec_container)
 
     def _find_py_to_knime_converter_for_type(
         self, type_: Type, registry: Dict[Type, PyToKnimeConverterEntry]

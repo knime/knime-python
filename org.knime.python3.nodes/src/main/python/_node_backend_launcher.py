@@ -492,8 +492,8 @@ class _PortTypeRegistry:
         if spec is None:
             return None
         class_name = spec.getJavaClassName()
-        if self._extension_port_type_registry.can_convert_spec_to_python(class_name):
-            return self._extension_port_type_registry.spec_to_python(
+        if self._extension_port_type_registry.can_encode_spec(class_name):
+            return self._extension_port_type_registry.decode_spec(
                 spec,
             )
         data = json.loads(spec.toJsonString())
@@ -563,8 +563,8 @@ class _PortTypeRegistry:
     def spec_from_python(
         self, spec, port: kn.Port, node_id: str, port_idx: int
     ) -> _PythonPortObjectSpec:
-        if self._extension_port_type_registry.can_convert_spec_from_python(spec):
-            return self._extension_port_type_registry.spec_from_python(spec)
+        if self._extension_port_type_registry.can_decode_spec(spec):
+            return self._extension_port_type_registry.encode_spec(spec)
 
         if port.type == kn.PortType.TABLE:
             if isinstance(spec, ks.Column):
@@ -617,8 +617,8 @@ class _PortTypeRegistry:
     ):
         class_name = port_object.getJavaClassName()
 
-        if self._extension_port_type_registry.can_convert_obj_to_python(class_name):
-            return self._extension_port_type_registry.port_object_to_python(port_object)
+        if self._extension_port_type_registry.can_encode_port_object(class_name):
+            return self._extension_port_type_registry.decode_port_object(port_object)
 
         def read_port_object_data() -> Union[Any, kn.PortObject]:
             file = port_object.getFilePath()
@@ -696,8 +696,8 @@ class _PortTypeRegistry:
         _PythonImagePortObject,
         _PythonCredentialPortObject,
     ]:
-        if self._extension_port_type_registry.can_convert_obj_from_python(obj):
-            return self._extension_port_type_registry.port_object_from_python(obj)
+        if self._extension_port_type_registry.can_decode_port_object(obj):
+            return self._extension_port_type_registry.encode_port_object(obj)
 
         if port.type == kn.PortType.TABLE:
             if not isinstance(obj, (kat.ArrowTable, kat.ArrowBatchOutputTable)):

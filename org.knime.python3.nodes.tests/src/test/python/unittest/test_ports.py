@@ -3,14 +3,14 @@ import json
 import unittest
 from _ports import (
     JavaPortTypeRegistry,
-    _PortObjectContainer,
-    _PortObjectSpecContainer,
+    _ExtensionPortObject,
+    _ExtensionPortObjectSpec,
     PyToKnimeConverterEntry,
 )
 from knime.extension.ports import (
-    NonePythonTransfer,
-    StringPythonTransfer,
-    BidirectionalPortObjectConverter,
+    EmptyIntermediateRepresentation,
+    StringIntermediateRepresentation,
+    PortObjectConverter,
 )
 from knime.extension.nodes import (
     PortObjectSpec,
@@ -35,39 +35,43 @@ class MockExtensionPortObject:
 
 
 class MockExtensionPortObjectConverter(
-    BidirectionalPortObjectConverter[
+    PortObjectConverter[
         MockExtensionPortObject,
-        StringPythonTransfer,
+        StringIntermediateRepresentation,
         MockExtensionPortObjectSpec,
-        StringPythonTransfer,
+        StringIntermediateRepresentation,
     ]
 ):
     def __init__(self) -> None:
         super().__init__(MockExtensionPortObject, MockExtensionPortObjectSpec)
 
-    def convert_obj_to_python(
+    def decode_object(
         self,
-        transfer: StringPythonTransfer,
+        intermediate_representation: StringIntermediateRepresentation,
         spec: MockExtensionPortObjectSpec,
     ) -> MockExtensionPortObject:
-        return MockExtensionPortObject(transfer.getStringRepresentation(), spec)
+        return MockExtensionPortObject(
+            intermediate_representation.getStringRepresentation(), spec
+        )
 
-    def convert_obj_from_python(
+    def encode_object(
         self, port_object: MockExtensionPortObject
-    ) -> StringPythonTransfer:
-        return StringPythonTransfer(port_object.data)
+    ) -> StringIntermediateRepresentation:
+        return StringIntermediateRepresentation(port_object.data)
 
-    def convert_spec_to_python(
+    def decode_spec(
         self,
-        transfer: StringPythonTransfer,
+        intermediate_representation: StringIntermediateRepresentation,
     ) -> MockExtensionPortObjectSpec:
-        return MockExtensionPortObjectSpec(transfer.getStringRepresentation())
+        return MockExtensionPortObjectSpec(
+            intermediate_representation.getStringRepresentation()
+        )
 
-    def convert_spec_from_python(
+    def encode_spec(
         self,
         spec: MockExtensionPortObjectSpec,
-    ) -> StringPythonTransfer:
-        return StringPythonTransfer(spec.data)
+    ) -> StringIntermediateRepresentation:
+        return StringIntermediateRepresentation(spec.data)
 
 
 class TestPortTypeRegistryRegistration(unittest.TestCase):
@@ -258,79 +262,85 @@ class TestPortTypeRegistryConversion(unittest.TestCase):
         return port_type
 
     def test_can_convert_spec_to_python(self):
-        self.assertTrue(
-            self.registry.can_convert_spec_to_python(self.extension_java_spec)
-        )
-        self.assertFalse(self.registry.can_convert_spec_to_python("some.other.Spec"))
+        self.assertTrue(self.registry.can_encode_spec(self.extension_java_spec))
+        self.assertFalse(self.registry.can_encode_spec("some.other.Spec"))
 
     def test_can_convert_obj_to_python(self):
         self.assertTrue(
-            self.registry.can_convert_obj_to_python(self.extension_port_type.id)
+            self.registry.can_encode_port_object(self.extension_port_type.id)
         )
-        self.assertFalse(self.registry.can_convert_obj_to_python("some.other.Class"))
+        self.assertFalse(self.registry.can_encode_port_object("some.other.Class"))
 
     def test_can_convert_spec_from_python(self):
         self.assertTrue(
-            self.registry.can_convert_spec_from_python(
-                MockExtensionPortObjectSpec("foo")
-            )
+            self.registry.can_decode_spec(MockExtensionPortObjectSpec("foo"))
         )
-        self.assertFalse(self.registry.can_convert_spec_from_python("foo"))
+        self.assertFalse(self.registry.can_decode_spec("foo"))
 
     def test_can_convert_obj_from_python(self):
         self.assertTrue(
-            self.registry.can_convert_obj_from_python(
+            self.registry.can_decode_port_object(
                 MockExtensionPortObject("foo", MockExtensionPortObjectSpec("bar"))
             )
         )
-        self.assertFalse(self.registry.can_convert_obj_from_python("foo"))
+        self.assertFalse(self.registry.can_decode_port_object("foo"))
 
     def test_extension_port_object_from_python(self):
-        obj_container = self.registry.port_object_from_python(
+        obj_container = self.registry.encode_port_object(
             MockExtensionPortObject("foo", MockExtensionPortObjectSpec("bar")),
         )
 
-        self.assertIsInstance(obj_container, _PortObjectContainer)
-        transfer = obj_container.getTransfer()
-        self.assertIsInstance(transfer, StringPythonTransfer)
-        self.assertEqual(transfer.getStringRepresentation(), "foo")
+        self.assertIsInstance(obj_container, _ExtensionPortObject)
+        intermediate_representation = obj_container.getIntermediateRepresentation()
+        self.assertIsInstance(
+            intermediate_representation, StringIntermediateRepresentation
+        )
+        self.assertEqual(intermediate_representation.getStringRepresentation(), "foo")
 
     def test_extension_port_object_to_python(self):
         obj = self._obj_to_python(
-            StringPythonTransfer("foo"),
-            StringPythonTransfer("bar"),
+            StringIntermediateRepresentation("foo"),
+            StringIntermediateRepresentation("bar"),
             self.extension_java_spec,
         )
         self.assertIsInstance(obj, MockExtensionPortObject)
         self.assertEqual(obj.data, "foo")
 
     def test_extension_spec_from_python(self):
-        spec_container = self.registry.spec_from_python(
-            MockExtensionPortObjectSpec("bar")
-        )
+        spec_container = self.registry.encode_spec(MockExtensionPortObjectSpec("bar"))
 
-        self.assertIsInstance(spec_container, _PortObjectSpecContainer)
-        transfer = spec_container.getTransfer()
-        self.assertIsInstance(transfer, StringPythonTransfer)
-        self.assertEqual(transfer.getStringRepresentation(), "bar")
+        self.assertIsInstance(spec_container, _ExtensionPortObjectSpec)
+        intermediate_representation = spec_container.getIntermediateRepresentation()
+        self.assertIsInstance(
+            intermediate_representation, StringIntermediateRepresentation
+        )
+        self.assertEqual(intermediate_representation.getStringRepresentation(), "bar")
 
     def test_extension_spec_to_python(self):
-        transfer = StringPythonTransfer("boink")
-        spec = self._spec_to_python(transfer, self.extension_java_spec)
+        intermediate_representation = StringIntermediateRepresentation("boink")
+        spec = self._spec_to_python(
+            intermediate_representation, self.extension_java_spec
+        )
         self.assertIsInstance(spec, MockExtensionPortObjectSpec)
         self.assertEqual(spec.data, "boink")
 
     def test_credential_spec_to_python(self):
-        transfer = StringPythonTransfer(json.dumps({"data": "<dummy_xml>"}))
-        spec = self._spec_to_python(transfer, self.credential_java_spec)
+        intermediate_representation = StringIntermediateRepresentation(
+            json.dumps({"data": "<dummy_xml>"})
+        )
+        spec = self._spec_to_python(
+            intermediate_representation, self.credential_java_spec
+        )
         self.assertIsInstance(spec, ks.CredentialPortObjectSpec)
         self.assertEqual(spec._xml_data, "<dummy_xml>")
 
     def test_credential_obj_to_python(self):
-        transfer = StringPythonTransfer("")
-        spec_transfer = StringPythonTransfer(json.dumps({"data": "<dummy_xml>"}))
+        intermediate_representation = StringIntermediateRepresentation("")
+        spec_transfer = StringIntermediateRepresentation(
+            json.dumps({"data": "<dummy_xml>"})
+        )
         obj = self._obj_to_python(
-            transfer,
+            intermediate_representation,
             spec_transfer,
             self.credential_java_spec,
         )
@@ -340,11 +350,13 @@ class TestPortTypeRegistryConversion(unittest.TestCase):
         spec_container = self._spec_from_python(
             ks.CredentialPortObjectSpec("<dummy_xml>")
         )
-        self.assertIsInstance(spec_container, _PortObjectSpecContainer)
-        transfer = spec_container.getTransfer()
-        self.assertIsInstance(transfer, StringPythonTransfer)
+        self.assertIsInstance(spec_container, _ExtensionPortObjectSpec)
+        intermediate_representation = spec_container.getIntermediateRepresentation()
+        self.assertIsInstance(
+            intermediate_representation, StringIntermediateRepresentation
+        )
         self.assertEqual(
-            transfer.getStringRepresentation(),
+            intermediate_representation.getStringRepresentation(),
             json.dumps(
                 {
                     "data": "<dummy_xml>",
@@ -356,24 +368,30 @@ class TestPortTypeRegistryConversion(unittest.TestCase):
         container = self._obj_from_python(
             pi._PythonCredentialPortObject(ks.CredentialPortObjectSpec("<dummy_xml>")),
         )
-        transfer = container.getTransfer()
-        self.assertIsInstance(transfer, NonePythonTransfer)
+        intermediate_representation = container.getIntermediateRepresentation()
+        self.assertIsInstance(
+            intermediate_representation, EmptyIntermediateRepresentation
+        )
 
     def test_hub_auth_spec_to_python(self):
-        transfer = StringPythonTransfer(
+        intermediate_representation = StringIntermediateRepresentation(
             json.dumps({"data": "<dummy_xml>", "hub_url": "https://hub.knime.com"})
         )
-        spec = self._spec_to_python(transfer, self.hub_auth_java_spec)
+        spec = self._spec_to_python(
+            intermediate_representation, self.hub_auth_java_spec
+        )
         self.assertIsInstance(spec, ks.HubAuthenticationPortObjectSpec)
         self.assertEqual(spec._xml_data, "<dummy_xml>")
         self.assertEqual(spec._hub_url, "https://hub.knime.com")
 
     def test_hub_auth_obj_to_python(self):
-        transfer = StringPythonTransfer("")
-        spec_transfer = StringPythonTransfer(
+        intermediate_representation = StringIntermediateRepresentation("")
+        spec_transfer = StringIntermediateRepresentation(
             json.dumps({"data": "<dummy_xml>", "hub_url": "https://hub.knime.com"})
         )
-        obj = self._obj_to_python(transfer, spec_transfer, self.hub_auth_java_spec)
+        obj = self._obj_to_python(
+            intermediate_representation, spec_transfer, self.hub_auth_java_spec
+        )
         self.assertEqual(obj.spec._xml_data, "<dummy_xml>")
         self.assertEqual(obj.spec._hub_url, "https://hub.knime.com")
 
@@ -381,11 +399,13 @@ class TestPortTypeRegistryConversion(unittest.TestCase):
         spec_container = self._spec_from_python(
             ks.HubAuthenticationPortObjectSpec("<dummy_xml>", "https://hub.knime.com"),
         )
-        self.assertIsInstance(spec_container, _PortObjectSpecContainer)
-        transfer = spec_container.getTransfer()
-        self.assertIsInstance(transfer, StringPythonTransfer)
+        self.assertIsInstance(spec_container, _ExtensionPortObjectSpec)
+        intermediate_representation = spec_container.getIntermediateRepresentation()
+        self.assertIsInstance(
+            intermediate_representation, StringIntermediateRepresentation
+        )
         self.assertEqual(
-            transfer.getStringRepresentation(),
+            intermediate_representation.getStringRepresentation(),
             json.dumps(
                 {
                     "data": "<dummy_xml>",
@@ -402,23 +422,29 @@ class TestPortTypeRegistryConversion(unittest.TestCase):
                 )
             ),
         )
-        transfer = container.getTransfer()
-        self.assertIsInstance(transfer, NonePythonTransfer)
+        intermediate_representation = container.getIntermediateRepresentation()
+        self.assertIsInstance(
+            intermediate_representation, EmptyIntermediateRepresentation
+        )
 
-    def _spec_to_python(self, transfer, java_spec: str) -> PortObjectSpec:
-        spec_container = _PortObjectSpecContainer(transfer, java_spec)
-        return self.registry.spec_to_python(spec_container)
+    def _spec_to_python(
+        self, intermediate_representation, java_spec: str
+    ) -> PortObjectSpec:
+        spec_container = _ExtensionPortObjectSpec(
+            intermediate_representation, java_spec
+        )
+        return self.registry.decode_spec(spec_container)
 
-    def _spec_from_python(self, spec: PortObjectSpec) -> _PortObjectSpecContainer:
-        return self.registry.spec_from_python(spec)
+    def _spec_from_python(self, spec: PortObjectSpec) -> _ExtensionPortObjectSpec:
+        return self.registry.encode_spec(spec)
 
     def _obj_to_python(self, obj_transfer, spec_transfer, java_spec: str) -> PortObject:
-        obj_container = _PortObjectContainer(
+        obj_container = _ExtensionPortObject(
             obj_transfer,
             self.extension_port_type.id,
-            _PortObjectSpecContainer(spec_transfer, java_class_name=java_spec),
+            _ExtensionPortObjectSpec(spec_transfer, java_class_name=java_spec),
         )
-        return self.registry.port_object_to_python(obj_container)
+        return self.registry.decode_port_object(obj_container)
 
-    def _obj_from_python(self, obj: PortObject) -> _PortObjectContainer:
-        return self.registry.port_object_from_python(obj)
+    def _obj_from_python(self, obj: PortObject) -> _ExtensionPortObject:
+        return self.registry.encode_port_object(obj)
