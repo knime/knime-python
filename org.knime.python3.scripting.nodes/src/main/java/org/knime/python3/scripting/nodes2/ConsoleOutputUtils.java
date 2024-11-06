@@ -306,19 +306,18 @@ final class ConsoleOutputUtils {
         }
 
         @SuppressWarnings("resource") // We do not want to close the write cursor
-        void write(final ConsoleText text) {
+        void write(final ConsoleText text) throws IOException {
             Objects.requireNonNull(m_writeCursor, "Writing to a read-only store. This is an implementation error.");
-            m_writeCursor.forward();
             final var access = m_writeCursor.access();
             ((LongWriteAccess)access.getWriteAccess(0)).setLongValue(System.currentTimeMillis());
             ((StringWriteAccess)access.getWriteAccess(1)).setStringValue(text.text);
             ((BooleanWriteAccess)access.getWriteAccess(2)).setBooleanValue(text.stderr);
+            m_writeCursor.commit();
             m_size++;
         }
 
         void finish() throws IOException {
             if (m_writeCursor != null) {
-                m_writeCursor.forward(); // to commit the last row
                 m_writeCursor.finish();
                 m_writeCursor.close();
                 m_writeCursor = null;

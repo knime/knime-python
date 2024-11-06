@@ -191,7 +191,7 @@ public final class PythonArrowDataSourceFactory implements Closeable {
             try (final RowCursor inCursor = table.cursor();
                     final RowWriteCursor outCursor = columnarTable.createCursor()) {
                 while (inCursor.canForward()) {
-                    outCursor.forward().setFrom(inCursor.forward());
+                    outCursor.commit(inCursor.forward());
                 }
                 return columnarTable.finish();
             }
