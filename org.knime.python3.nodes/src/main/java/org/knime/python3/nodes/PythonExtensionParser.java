@@ -48,7 +48,9 @@
  */
 package org.knime.python3.nodes;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -202,7 +204,13 @@ public final class PythonExtensionParser {
         Path cachePath = null;
 
         if (staticInfo.m_bundleVersion != null) {
-            cachePath = Path.of(Platform.getConfigurationLocation().getURL().getPath(), staticInfo.m_id);
+
+            try {
+                var configAreaURI = Platform.getConfigurationLocation().getURL().toURI();
+                cachePath = new File(configAreaURI).toPath().resolve(staticInfo.m_id);
+            } catch (URISyntaxException ex) { // NOSONAR
+                return null;
+            }
         }
 
         return cachePath;
