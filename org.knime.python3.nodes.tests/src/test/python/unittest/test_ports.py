@@ -5,7 +5,7 @@ from _ports import (
     JavaPortTypeRegistry,
     _ExtensionPortObject,
     _ExtensionPortObjectSpec,
-    PyToKnimeConverterEntry,
+    RegisteredPortObjectEncoder,
 )
 from knime.extension.ports import (
     EmptyIntermediateRepresentation,
@@ -98,9 +98,9 @@ class TestPortTypeRegistryRegistration(unittest.TestCase):
         )
 
         # Assert
-        self.assertIn(obj_java_class_name, self.registry._knime_to_py_by_obj_class)
+        self.assertIn(obj_java_class_name, self.registry._decoder_for_obj_class)
         self.assertIsInstance(
-            self.registry._knime_to_py_by_obj_class[obj_java_class_name],
+            self.registry._decoder_for_obj_class[obj_java_class_name],
             MockExtensionPortObjectConverter,
         )
         self.assertIn(obj_java_class_name, self.registry._port_types_by_id)
@@ -126,16 +126,16 @@ class TestPortTypeRegistryRegistration(unittest.TestCase):
 
         # Assert
         self.assertIn(obj_java_class_name, self.registry._port_types_by_id)
-        entry = self.registry._py_to_knime_for_obj_type[MockExtensionPortObject]
+        entry = self.registry._encoder_for_obj_type[MockExtensionPortObject]
         self.assertIsInstance(
             entry,
-            PyToKnimeConverterEntry,
+            RegisteredPortObjectEncoder,
         )
         self.assertIsInstance(entry.converter, MockExtensionPortObjectConverter)
-        entry = self.registry._py_to_knime_for_spec_type[MockExtensionPortObjectSpec]
+        entry = self.registry._encoder_for_spec_type[MockExtensionPortObjectSpec]
         self.assertIsInstance(
             entry,
-            PyToKnimeConverterEntry,
+            RegisteredPortObjectEncoder,
         )
         self.assertIsInstance(
             entry.converter,
@@ -262,28 +262,28 @@ class TestPortTypeRegistryConversion(unittest.TestCase):
         return port_type
 
     def test_can_convert_spec_to_python(self):
-        self.assertTrue(self.registry.can_encode_spec(self.extension_java_spec))
-        self.assertFalse(self.registry.can_encode_spec("some.other.Spec"))
+        self.assertTrue(self.registry.can_decode_spec(self.extension_java_spec))
+        self.assertFalse(self.registry.can_decode_spec("some.other.Spec"))
 
     def test_can_convert_obj_to_python(self):
         self.assertTrue(
-            self.registry.can_encode_port_object(self.extension_port_type.id)
+            self.registry.can_decode_port_object(self.extension_port_type.id)
         )
-        self.assertFalse(self.registry.can_encode_port_object("some.other.Class"))
+        self.assertFalse(self.registry.can_decode_port_object("some.other.Class"))
 
     def test_can_convert_spec_from_python(self):
         self.assertTrue(
-            self.registry.can_decode_spec(MockExtensionPortObjectSpec("foo"))
+            self.registry.can_encode_spec(MockExtensionPortObjectSpec("foo"))
         )
-        self.assertFalse(self.registry.can_decode_spec("foo"))
+        self.assertFalse(self.registry.can_encode_spec("foo"))
 
     def test_can_convert_obj_from_python(self):
         self.assertTrue(
-            self.registry.can_decode_port_object(
+            self.registry.can_encode_port_object(
                 MockExtensionPortObject("foo", MockExtensionPortObjectSpec("bar"))
             )
         )
-        self.assertFalse(self.registry.can_decode_port_object("foo"))
+        self.assertFalse(self.registry.can_encode_port_object("foo"))
 
     def test_extension_port_object_from_python(self):
         obj_container = self.registry.encode_port_object(

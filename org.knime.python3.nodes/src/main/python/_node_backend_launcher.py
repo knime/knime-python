@@ -492,7 +492,7 @@ class _PortTypeRegistry:
         if spec is None:
             return None
         class_name = spec.getJavaClassName()
-        if self._extension_port_type_registry.can_encode_spec(class_name):
+        if self._extension_port_type_registry.can_decode_spec(class_name):
             return self._extension_port_type_registry.decode_spec(
                 spec,
             )
@@ -563,7 +563,7 @@ class _PortTypeRegistry:
     def spec_from_python(
         self, spec, port: kn.Port, node_id: str, port_idx: int
     ) -> _PythonPortObjectSpec:
-        if self._extension_port_type_registry.can_decode_spec(spec):
+        if self._extension_port_type_registry.can_encode_spec(spec):
             return self._extension_port_type_registry.encode_spec(spec)
 
         if port.type == kn.PortType.TABLE:
@@ -617,7 +617,7 @@ class _PortTypeRegistry:
     ):
         class_name = port_object.getJavaClassName()
 
-        if self._extension_port_type_registry.can_encode_port_object(class_name):
+        if self._extension_port_type_registry.can_decode_port_object(class_name):
             return self._extension_port_type_registry.decode_port_object(port_object)
 
         def read_port_object_data() -> Union[Any, kn.PortObject]:
@@ -696,7 +696,7 @@ class _PortTypeRegistry:
         _PythonImagePortObject,
         _PythonCredentialPortObject,
     ]:
-        if self._extension_port_type_registry.can_decode_port_object(obj):
+        if self._extension_port_type_registry.can_encode_port_object(obj):
             return self._extension_port_type_registry.encode_port_object(obj)
 
         if port.type == kn.PortType.TABLE:

@@ -67,7 +67,7 @@ class _ExtensionPortObject:
 
 
 @dataclass
-class PyToKnimeConverterEntry:
+class RegisteredPortObjectEncoder:
     converter: PortObjectEncoder
     java_obj_class_name: JavaClassName
     java_spec_class_name: JavaClassName
@@ -77,10 +77,10 @@ class JavaPortTypeRegistry:
     def __init__(
         self,
     ) -> None:
-        self._knime_to_py_by_obj_class: Dict[JavaClassName, PortObjectDecoder] = {}
-        self._knime_to_py_by_spec_class: Dict[JavaClassName, PortObjectDecoder] = {}
-        self._py_to_knime_for_spec_type: Dict[Type, PyToKnimeConverterEntry] = {}
-        self._py_to_knime_for_obj_type: Dict[Type, PyToKnimeConverterEntry] = {}
+        self._decoder_for_obj_class: Dict[JavaClassName, PortObjectDecoder] = {}
+        self._decoder_for_spec_class: Dict[JavaClassName, PortObjectDecoder] = {}
+        self._encoder_for_spec_type: Dict[Type, RegisteredPortObjectEncoder] = {}
+        self._encoder_for_obj_type: Dict[Type, RegisteredPortObjectEncoder] = {}
 
         self._port_types_by_id: Dict[str, kn.PortType] = {}
 
@@ -92,23 +92,23 @@ class JavaPortTypeRegistry:
         java_spec_class_name: JavaClassName,
         port_type_name: str,
     ) -> kn.PortType:
-        if java_obj_class_name in self._knime_to_py_by_obj_class:
+        if java_obj_class_name in self._decoder_for_obj_class:
             raise ValueError(
                 f"Converter for object class {java_obj_class_name} already registered."
             )
-        if java_spec_class_name in self._knime_to_py_by_spec_class:
+        if java_spec_class_name in self._decoder_for_spec_class:
             raise ValueError(
                 f"Converter for spec class {java_spec_class_name} already registered."
             )
-        converter: PortObjectDecoder = self._load_converter_from_module(
+        decoder: PortObjectDecoder = self._load_converter_from_module(
             module_name, converter_class_name
         )
-        self._knime_to_py_by_obj_class[java_obj_class_name] = converter
+        self._decoder_for_obj_class[java_obj_class_name] = decoder
 
-        self._knime_to_py_by_spec_class[java_spec_class_name] = converter
+        self._decoder_for_spec_class[java_spec_class_name] = decoder
 
         return self._register_java_port_type(
-            java_obj_class_name, port_type_name, converter
+            java_obj_class_name, port_type_name, decoder
         )
 
     def register_py_to_knime_converter(
@@ -119,27 +119,27 @@ class JavaPortTypeRegistry:
         java_spec_class_name: JavaClassName,
         port_type_name: str,
     ) -> kn.PortType:
-        converter: PortObjectEncoder = self._load_converter_from_module(
+        encoder: PortObjectEncoder = self._load_converter_from_module(
             module_name, converter_class_name
         )
-        if converter.object_type in self._py_to_knime_for_obj_type:
+        if encoder.object_type in self._encoder_for_obj_type:
             raise ValueError(
-                f"Converter for object type {converter.object_type} already registered."
+                f"Converter for object type {encoder.object_type} already registered."
             )
-        if converter.spec_type in self._py_to_knime_for_spec_type:
+        if encoder.spec_type in self._encoder_for_spec_type:
             raise ValueError(
-                f"Converter for spec type {converter.spec_type} already registered."
+                f"Converter for spec type {encoder.spec_type} already registered."
             )
         port_type = self._register_java_port_type(
-            java_obj_class_name, port_type_name, converter
+            java_obj_class_name, port_type_name, encoder
         )
-        converter_entry = PyToKnimeConverterEntry(
-            converter,
+        registered_encoder = RegisteredPortObjectEncoder(
+            encoder,
             java_obj_class_name,
             java_spec_class_name,
         )
-        self._py_to_knime_for_obj_type[converter.object_type] = converter_entry
-        self._py_to_knime_for_spec_type[converter.spec_type] = converter_entry
+        self._encoder_for_obj_type[encoder.object_type] = registered_encoder
+        self._encoder_for_spec_type[encoder.spec_type] = registered_encoder
 
         return port_type
 
@@ -175,30 +175,26 @@ class JavaPortTypeRegistry:
         self,
         container: _ExtensionPortObjectSpec,
     ) -> kn.PortObjectSpec:
-        converter = self._knime_to_py_by_spec_class.get(container.getJavaClassName())
+        converter = self._decoder_for_spec_class.get(container.getJavaClassName())
         return converter.decode_spec(
             intermediate_representation=container.getIntermediateRepresentation(),
         )
 
-    def can_encode_spec(self, java_class_name: JavaClassName) -> bool:
-        return java_class_name in self._knime_to_py_by_spec_class
+    def can_decode_spec(self, java_class_name: JavaClassName) -> bool:
+        return java_class_name in self._decoder_for_spec_class
 
-    def can_encode_port_object(self, java_class_name: JavaClassName) -> bool:
-        return java_class_name in self._knime_to_py_by_obj_class
+    def can_decode_port_object(self, java_class_name: JavaClassName) -> bool:
+        return java_class_name in self._decoder_for_obj_class
 
-    def can_decode_spec(self, spec: kn.PortObjectSpec) -> bool:
+    def can_encode_spec(self, spec: kn.PortObjectSpec) -> bool:
         return (
-            self._find_py_to_knime_converter_for_type(
-                type(spec), self._py_to_knime_for_spec_type
-            )
+            self._find_encoder_for_type(type(spec), self._encoder_for_spec_type)
             is not None
         )
 
-    def can_decode_port_object(self, obj: kn.PortObject) -> bool:
+    def can_encode_port_object(self, obj: kn.PortObject) -> bool:
         return (
-            self._find_py_to_knime_converter_for_type(
-                type(obj), self._py_to_knime_for_obj_type
-            )
+            self._find_encoder_for_type(type(obj), self._encoder_for_obj_type)
             is not None
         )
 
@@ -206,12 +202,10 @@ class JavaPortTypeRegistry:
         self,
         extension_port_object: _ExtensionPortObject,
     ) -> kn.PortObject:
-        converter = self._knime_to_py_by_obj_class[
-            extension_port_object.getJavaClassName()
-        ]
+        decoder = self._decoder_for_obj_class[extension_port_object.getJavaClassName()]
         extension_spec = extension_port_object.getSpec()
         spec = self.decode_spec(extension_spec) if extension_spec else None
-        return converter.decode_object(
+        return decoder.decode_object(
             intermediate_representation=extension_port_object.getIntermediateRepresentation(),
             spec=spec,
         )
@@ -220,9 +214,7 @@ class JavaPortTypeRegistry:
         self,
         spec: kn.PortObjectSpec,
     ) -> _ExtensionPortObjectSpec:
-        entry = self._find_py_to_knime_converter_for_type(
-            type(spec), self._py_to_knime_for_spec_type
-        )
+        entry = self._find_encoder_for_type(type(spec), self._encoder_for_spec_type)
         if entry is None:
             raise ValueError(f"No converter found for type {type(spec)}")
         intermediate_representation = entry.converter.encode_spec(
@@ -233,9 +225,7 @@ class JavaPortTypeRegistry:
         )
 
     def encode_port_object(self, obj: kn.PortObject) -> _ExtensionPortObject:
-        entry = self._find_py_to_knime_converter_for_type(
-            type(obj), self._py_to_knime_for_obj_type
-        )
+        entry = self._find_encoder_for_type(type(obj), self._encoder_for_obj_type)
         if entry is None:
             raise ValueError(f"No converter found for type {type(obj)}")
         intermediate_representation = entry.converter.encode_object(
@@ -246,9 +236,9 @@ class JavaPortTypeRegistry:
             intermediate_representation, entry.java_obj_class_name, spec_container
         )
 
-    def _find_py_to_knime_converter_for_type(
-        self, type_: Type, registry: Dict[Type, PyToKnimeConverterEntry]
-    ) -> PyToKnimeConverterEntry:
+    def _find_encoder_for_type(
+        self, type_: Type, registry: Dict[Type, RegisteredPortObjectEncoder]
+    ) -> RegisteredPortObjectEncoder:
         super_types = inspect.getmro(type_)
         for super_type in super_types:
             if super_type in registry:
