@@ -83,7 +83,7 @@ public final class ExtensionPortObjectConverters {
 
     public ExtensionPortObjectSpec convertSpecToPython(final PortObjectSpec spec,
         final PortObjectSpecConversionContext context) throws NoConverterFoundException {
-        var converter = m_converterRegistry.getKnimeToPyForSpec(spec.getClass());
+        var converter = m_converterRegistry.getEncoderForSpec(spec.getClass());
         if (converter == null) {
             throw new NoConverterFoundException();
         }
@@ -93,7 +93,7 @@ public final class ExtensionPortObjectConverters {
 
     public ExtensionPortObject convertObjectToPython(final PortObject portObject,
         final PortObjectConversionContext context) throws NoConverterFoundException {
-        var converter = m_converterRegistry.getKnimeToPyForObject(portObject.getClass());
+        var converter = m_converterRegistry.getEncoderForPortObject(portObject.getClass());
         if (converter == null) {
             throw new NoConverterFoundException();
         }
@@ -104,7 +104,7 @@ public final class ExtensionPortObjectConverters {
 
     public PortObjectSpec convertSpecFromPython(final PythonExtensionPortObjectSpec spec,
         final PortObjectSpecConversionContext context) throws NoConverterFoundException {
-        var converter = m_converterRegistry.getPyToKnimeForSpec(spec.getJavaClassName());
+        var converter = m_converterRegistry.getDecoderForSpec(spec.getJavaClassName());
         if (converter == null) {
             throw new NoConverterFoundException();
         }
@@ -113,7 +113,7 @@ public final class ExtensionPortObjectConverters {
 
     public PortObject convertObjFromPython(final PythonExtensionPortObject obj,
         final PortObjectConversionContext context) throws NoConverterFoundException {
-        var converter = m_converterRegistry.getPyToKnimeForObject(obj.getJavaClassName());
+        var converter = m_converterRegistry.getDecoderForObject(obj.getJavaClassName());
         if (converter == null) {
             throw new NoConverterFoundException();
         }
