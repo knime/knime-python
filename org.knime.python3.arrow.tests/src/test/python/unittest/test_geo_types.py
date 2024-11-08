@@ -78,6 +78,7 @@ def _register_geospatial_value_factories():
     kt.register_python_value_factory(
         geo_module,
         geo_valfac,
+        "Geometry",
         '{"type": "struct", "inner_types": ["variable_width_binary", "string"]}',
         """
         {
@@ -94,6 +95,7 @@ def _register_geospatial_value_factories():
     kt.register_python_value_factory(
         geo_module,
         geo_valfac,
+        "Point",
         '{"type": "struct", "inner_types": ["variable_width_binary", "string"]}',
         """
         {
