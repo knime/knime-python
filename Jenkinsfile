@@ -163,6 +163,7 @@ def runPython3MultiversionWorkflowTestConfig(String environmentFile, String base
                         'knime-js-base',
                         'knime-kerberos',
                         'knime-python',
+                        'knime-python-types',
                         'knime-core-columnar',
                         'knime-testing-internal',
                         'knime-xml',
