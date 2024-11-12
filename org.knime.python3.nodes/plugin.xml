@@ -45,7 +45,7 @@
       </page>
    </extension>
    <extension
-         point="org.knime.python3.types.PythonNodesFrameworkExtension">
+         point="org.knime.python3.types.PythonPortObjectConverter">
       <KnimeToPythonPortObjectConverter
             JavaConverterClass="org.knime.python3.nodes.ports.converters.credentials.CredentialPythonConverter"
             PythonConverterClass="CredentialConverter"
