@@ -239,14 +239,15 @@ public final class PythonPortTypeRegistry {
 
         var instance = InstanceHolder.INSTANCE;
         String specClassName = pythonSpec.getJavaClassName();
-
-        try {
-            return instance.m_extensionConverters.convertSpecFromPython((PythonExtensionPortObjectSpec)pythonSpec,
-                new PortObjectSpecConversionContext() {
+        if (pythonSpec instanceof PythonExtensionPortObjectSpec extensionSpec) {
+            try {
+                return instance.m_extensionConverters.convertSpecFromPython(extensionSpec,
+                    new PortObjectSpecConversionContext() {
                 });
-        } catch (NoConverterFoundException ex) { // NOSONAR
-            // fine, the code below checks whether we have a builtin converter available
-        }
+            } catch (NoConverterFoundException ex) { // NOSONAR
+                // fine, the code below checks whether we have a builtin converter available
+            }
+    }
 
         var specClass = instance.getClassFromClassName(specClassName);
         PythonPortObjectSpecConverter converter =
@@ -327,11 +328,13 @@ public final class PythonPortTypeRegistry {
 
         String javaClassName = purePythonPortObject.getJavaClassName();
 
-        try {
-            return instance.m_extensionConverters.convertObjFromPython((PythonExtensionPortObject)purePythonPortObject,
-                context);
-        } catch (NoConverterFoundException ex) { // NOSONAR
-            // fine, the code below checks whether we have a builtin converter available
+        if (purePythonPortObject instanceof PythonExtensionPortObject extensionPortObject) {
+            try {
+                return instance.m_extensionConverters.convertObjFromPython(extensionPortObject,
+                    context);
+            } catch (NoConverterFoundException ex) { // NOSONAR
+                // fine, the code below checks whether we have a builtin converter available
+            }
         }
 
         var portObjectClass = instance.getClassFromClassName(javaClassName);
