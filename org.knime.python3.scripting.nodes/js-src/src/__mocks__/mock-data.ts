@@ -95,8 +95,7 @@ export const DEFAULT_INITIAL_DATA: PythonInitialData = {
     ],
   },
   kAiConfig: {
-    codeAssistantEnabled: true,
-    codeAssistantInstalled: true,
+    isKaiEnabled: true,
     hubId: "my mocked KNIME hub id",
   },
   inputConnectionInfo: [
