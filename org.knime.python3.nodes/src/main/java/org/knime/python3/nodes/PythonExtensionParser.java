@@ -50,7 +50,10 @@ package org.knime.python3.nodes;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -206,7 +209,14 @@ public final class PythonExtensionParser {
         if (staticInfo.m_bundleVersion != null) {
 
             try {
-                var configAreaURI = Platform.getConfigurationLocation().getURL().toURI();
+                // The config area path can contain spaces and umlauts. These need to be URL encoded to be able to create
+                // a URI from it. And we need a URI so we can get a File and from that a Path. This seems to be the safest
+                // way to do it so it works across operating systems.
+                var configAreaURL = Platform.getConfigurationLocation().getURL();
+                String encodedURL = URLEncoder.encode(configAreaURL.toString(), StandardCharsets.UTF_8)
+                    .replace("+", "%20").replace("%2F", "/") // Preserve slashes in the path
+                    .replace("%3A", ":"); // Preserve colons
+                var configAreaURI = new URI(encodedURL);
                 cachePath = new File(configAreaURI).toPath().resolve(staticInfo.m_id);
             } catch (NullPointerException | URISyntaxException ex) { // NOSONAR
                 LOGGER.debug("Could not find configuration area path to cache " + staticInfo.m_id + "_"
