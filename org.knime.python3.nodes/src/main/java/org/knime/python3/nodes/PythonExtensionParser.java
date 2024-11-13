@@ -208,9 +208,13 @@ public final class PythonExtensionParser {
             try {
                 var configAreaURI = Platform.getConfigurationLocation().getURL().toURI();
                 cachePath = new File(configAreaURI).toPath().resolve(staticInfo.m_id);
-            } catch (URISyntaxException ex) { // NOSONAR
-                return null;
+            } catch (NullPointerException | URISyntaxException ex) { // NOSONAR
+                LOGGER.debug("Could not find configuration area path to cache " + staticInfo.m_id + "_"
+                    + staticInfo.m_bundleVersion, ex);
             }
+        } else {
+            LOGGER
+                .debug("Not caching extension " + staticInfo.m_id + " info because it doesn't have a bundle version.");
         }
 
         return cachePath;
