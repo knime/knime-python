@@ -89,11 +89,11 @@ class PrimitiveTypeId(Enum):
     Primitive data types known to KNIME
     """
 
-    INT = "int32"
-    LONG = "int64"
-    STRING = "string"
-    DOUBLE = "double"
-    BOOL = "bool"
+    INT = "Number (integer)"  # int32
+    LONG = "Number (long)"  # int64
+    STRING = "String"  # string
+    DOUBLE = "Number (double)"  # double
+    BOOL = "Boolean value"  # bool
     BLOB = "blob"
     NULL = "null"
 
@@ -238,7 +238,7 @@ class ListType(KnimeType):
         )
 
     def __str__(self) -> str:
-        return f"list<{str(self._inner_type)}>"
+        return f"List (Collection of: {str(self._inner_type)})"
 
     def __hash__(self):
         return hash(str(self))
