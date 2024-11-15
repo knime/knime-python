@@ -240,16 +240,16 @@ class KnimeType(unittest.TestCase):
 class KnimeTypeInDict(unittest.TestCase):
     def test_knime_types_are_hashable(self):
         d = {
-            k.int32(): "int32",
-            k.int64(): "int64",
-            k.double(): "double",
-            k.string(): "string",
-            k.string(k.DictEncodingKeyType.BYTE): "string[dict_encoding=BYTE_KEY]",
-            k.bool_(): "bool",
+            k.int32(): "Number (integer)",
+            k.int64(): "Number (long)",
+            k.double(): "Number (double)",
+            k.string(): "String",
+            k.string(k.DictEncodingKeyType.BYTE): "String[dict_encoding=BYTE_KEY]",
+            k.bool_(): "Boolean value",
             k.blob(): "blob",
             k.null(): "null",
-            k.list_(k.int32()): "list<int32>",
-            k.struct(k.int32(), k.string()): "struct<int32, string>",
+            k.list_(k.int32()): "List (Collection of: Number (integer))",
+            k.struct(k.int32(), k.string()): "struct<Number (integer), String>",
         }
 
         for key, v in d.items():
@@ -531,13 +531,15 @@ class SchemaTest(unittest.TestCase):
         ]
         names = ["Ints", "Longs", "Doubles", "Strings", "List", "Struct"]
         s = k.Schema(types, names)
-        self.assertEqual("int32", str(k.int32()))
-        self.assertEqual("int64", str(k.int64()))
-        self.assertEqual("string", str(k.string()))
-        self.assertEqual("double", str(k.double()))
-        self.assertEqual("bool", str(k.bool_()))
-        self.assertEqual("list<bool>", str(k.list_(k.bool_())))
-        self.assertEqual("struct<int64, string>", str(k.struct(k.int64(), k.string())))
+        self.assertEqual("Number (integer)", str(k.int32()))
+        self.assertEqual("Number (long)", str(k.int64()))
+        self.assertEqual("String", str(k.string()))
+        self.assertEqual("Number (double)", str(k.double()))
+        self.assertEqual("Boolean value", str(k.bool_()))
+        self.assertEqual("List (Collection of: Boolean value)", str(k.list_(k.bool_())))
+        self.assertEqual(
+            "struct<Number (long), String>", str(k.struct(k.int64(), k.string()))
+        )
 
         sep = ",\n\t"
         self.assertEqual(
