@@ -547,6 +547,54 @@ class SchemaTest(unittest.TestCase):
             f"Schema<\n\t{sep.join(str(k.Column(t, n, None)) for t, n in zip(types, names))}>",
         )
 
+    def test_logical_type_to_str(self):
+        """Tests the string representation of LogicalTypes. Fetching types from the gateway (when no
+        PythonValueFactory is registered) is mocked, so this test validates the recursive logic of handling
+        LogicalTypes that are collections instead of validating for each type whether the gateway call returns
+        the correct type name."""
+        # Registered PythonValueFactory
+
+        datetime_type = k.logical(dt.datetime)
+        datetime_repr = "Local Date and Time"
+        self.assertEqual(str(datetime_type), datetime_repr)
+
+        datetime_list_type = k.ListType(k.logical(dt.datetime))
+        datetime_list_repr = "List (Collection of: Local Date and Time)"
+        self.assertEqual(str(datetime_list_type), datetime_list_repr)
+
+        # PythonValueFactory not registered and storage_type has no inner_type
+
+        uri_type = k.LogicalType(
+            '{"value_factory_class":"org.knime.core.data.v2.value.cell.DictEncodedDataCellValueFactory",'
+            '"data_type":{"cell_class":"org.knime.core.data.uri.URIDataCell"}}',
+            None,  # omitted because only relevant if type is a collection
+        )
+        uri_repr = "URI"
+        self.assertEqual(str(uri_type), uri_repr)
+
+        string_set_type = k.LogicalType(
+            '{"value_factory_class": "org.knime.core.data.v2.value.StringSetValueFactory"}',
+            None,
+        )
+        string_set_repr = "Set (Collection of: String)"
+        self.assertEqual(str(string_set_type), string_set_repr)
+
+        # PythonValueFactory not registered and storage_type has inner_type (LogicalType is a collection)
+
+        timestamp_set_storage_type = k.ListType(
+            k.LogicalType(
+                '{"value_factory_class":"org.knime.core.data.v2.value.cell.DictEncodedDataCellValueFactory",'
+                '"data_type":{"cell_class":"org.knime.core.data.date.DateAndTimeCell"}}',
+                None,
+            )
+        )
+        timestamp_set_type = k.LogicalType(
+            '{"value_factory_class":"org.knime.core.data.v2.value.SetValueFactory"}',
+            timestamp_set_storage_type,
+        )
+        string_timestamp_set_repr = "Set (Collection of: Timestamp)"
+        self.assertEqual(str(timestamp_set_type), string_timestamp_set_repr)
+
     def test_logical_type_wrapping(self):
         types = [
             k.int32(),

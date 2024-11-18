@@ -788,13 +788,7 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
             )  # drop index as it messes up equality
 
             arrow_table = arrow_backend.write_table(df)
-            knime_ts_ext_str = (
-                "extension<logical={"
-                '"value_factory_class":"org.knime.core.data.v2.value.cell.DictEncodedDataCellValueFactory",'
-                '"data_type":{"cell_class":"org.knime.core.data.date.DateAndTimeCell"}}, '
-                "storage=struct<extension<logical=structDictEncoded, storage=blob>, "
-                "extension<logical=structDictEncoded, storage=string>>>"
-            )
+            knime_ts_ext_str = "Timestamp"
 
             self.assertEqual(
                 "<class 'knime.scripting._deprecated._arrow_table.ArrowWriteTable'>",
