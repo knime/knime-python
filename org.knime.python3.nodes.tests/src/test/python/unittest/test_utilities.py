@@ -42,8 +42,33 @@ class ClientServerMock:
 
     @property
     def jvm(self):
+        def _getTypeNameForLogicalTypeString(logical_type: str):
+            if (
+                logical_type
+                == '{"value_factory_class":"org.knime.core.data.v2.value.cell.DictEncodedDataCellValueFactory","data_type":{"cell_class":"org.knime.core.data.uri.URIDataCell"}}'
+            ):
+                return "URI"
+            elif (
+                logical_type
+                == '{"value_factory_class": "org.knime.core.data.v2.value.StringSetValueFactory"}'
+            ):
+                return "Set (Collection of: String)"
+            elif (
+                logical_type
+                == '{"value_factory_class":"org.knime.core.data.v2.value.SetValueFactory"}'
+            ):
+                return "Set"
+            elif (
+                logical_type
+                == '{"value_factory_class":"org.knime.core.data.v2.value.cell.DictEncodedDataCellValueFactory","data_type":{"cell_class":"org.knime.core.data.date.DateAndTimeCell"}}'
+            ):
+                return "Timestamp"
+            else:
+                raise ValueError()
+
         mock = MagicMock()
         mock.org = MagicMock()
+        mock.org.knime.core.data.v2.ValueFactoryUtils.getTypeNameForLogicalTypeString = _getTypeNameForLogicalTypeString
         return mock
 
 

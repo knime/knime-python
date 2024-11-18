@@ -386,6 +386,26 @@ class LogicalType(KnimeType):
                 self.logical_type
             )
         except ValueError:
+            # try to get the type from Java
+            import knime._backend._gateway as kg
+
+            if kg.client_server != null:
+                try:
+                    type_name = kg.client_server.jvm.org.knime.core.data.v2.ValueFactoryUtils.getTypeNameForLogicalTypeString(
+                        self.logical_type
+                    )
+
+                    # we might want to cache these
+
+                    # if the logical type is a collection, we also extract the inner type
+                    if hasattr(self.storage_type, "inner_type"):
+                        inner_type = str(self.storage_type.inner_type)
+                        return type_name + " (Collection of: " + inner_type + ")"
+                    else:
+                        return type_name
+                except Exception:
+                    pass
+
             return (
                 f"extension<logical={self.logical_type}, storage={self.storage_type}>"
             )
