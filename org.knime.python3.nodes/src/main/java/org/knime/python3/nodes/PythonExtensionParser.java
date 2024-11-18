@@ -100,11 +100,14 @@ import py4j.Py4JException;
  * As parsing an extension needs to start a Python process and performing all the imports there, it can take a while. To
  * speed up collecting the extensions, we cache the information of the nodes in the configuration area specific to this
  * installation. The cached info is keyed by extension name and date, so it will be re-built whenever the extension is
- * updated.
+ * updated. To make sure we also capture new nodes that might become available because optional dependencies are
+ * installed, a {@link PythonExtensionInfoCacheCleaner} is registered during bundle activation and kicks in during
+ * install processes.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
+@SuppressWarnings("javadoc")
 public final class PythonExtensionParser {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonExtensionParser.class);
@@ -125,6 +128,22 @@ public final class PythonExtensionParser {
         var staticInfo = readStaticInformation(path, bundleVersion);
 
         return retrieveDynamicInformationFromPython(staticInfo);
+    }
+
+    /**
+     * Clear the cached file for a specific extension
+     *
+     * @param path to the extension
+     * @param bundleVersion the version of the bundle providing the extension
+     */
+    public static void clearCache(final Path path, final Version bundleVersion) {
+        try {
+            var staticInfo = readStaticInformation(path, bundleVersion);
+            Path cachePath = getExtensionCachePath(staticInfo);
+            cachePath.toFile().delete();
+        } catch (IOException ex) {
+            LOGGER.warn("Could not remove extension cache for extension at " + path, ex);
+        }
     }
 
     private static StaticExtensionInfo readStaticInformation(final Path path, final Version bundleVersion)

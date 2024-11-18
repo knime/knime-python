@@ -44,60 +44,48 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   May 30, 2022 (marcel): created
+ *   15 Nov 2024 (chaubold): created
  */
 package org.knime.python3.nodes;
 
-import java.util.function.Consumer;
+import java.util.EventObject;
 
-import org.eclipse.equinox.internal.provisional.p2.core.eventbus.IProvisioningEventBus;
-import org.eclipse.equinox.p2.core.IProvisioningAgent;
-import org.osgi.framework.BundleActivator;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.FrameworkUtil;
-import org.osgi.framework.ServiceReference;
+import org.eclipse.equinox.internal.p2.engine.PhaseEvent;
+import org.eclipse.equinox.internal.provisional.p2.core.eventbus.ProvisioningListener;
+import org.eclipse.equinox.p2.engine.PhaseSetFactory;
 
 /**
- * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
- * @author Carsten Habubold, KNIME GmbH, Konstanz, Germany
+ * We cache Python extension information to make AP startup and node repository loading faster. However, if nodes are
+ * only available based on the presence of optional dependencies, installing or uninstalling them might change the set
+ * of nodes.
+ *
+ * To fix that, this {@link PythonExtensionInfoCacheCleaner} will clear the cached extension information whenever an
+ * installation or uninstallation begins.
+ *
+ * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
-@SuppressWarnings("restriction") // because we are using internal Eclipse API to be notified for ongoing installations
-public final class Activator implements BundleActivator {
+@SuppressWarnings({"restriction", "javadoc"})
+final class PythonExtensionInfoCacheCleaner implements ProvisioningListener {
 
-    @Override
-    public void start(final BundleContext context) throws Exception {
-        registerProvisioningEventBusListener();
+    public static final PythonExtensionInfoCacheCleaner INSTANCE = new PythonExtensionInfoCacheCleaner();
+
+    private PythonExtensionInfoCacheCleaner() {
+
+    }
+
+    public static void clearExtensionCaches() {
+        PythonExtensionRegistry.PY_EXTENSIONS.stream()//
+            .forEach(e -> PythonExtensionParser.clearCache(e.path(), e.bundleVersion()));
     }
 
     @Override
-    public void stop(final BundleContext context) throws Exception {
-        deregisterProvisioningEventBusListener();
-        CachedNodeProxyProvider.close();
-    }
-
-    private void applyToProvisioningEventBus(final Consumer<IProvisioningEventBus> consumer) {
-        BundleContext context = FrameworkUtil.getBundle(getClass()).getBundleContext();
-        ServiceReference<IProvisioningAgent> ref = context.getServiceReference(IProvisioningAgent.class);
-        if (ref != null) {
-            IProvisioningAgent agent = context.getService(ref);
-            try {
-                IProvisioningEventBus eventBus =
-                    (IProvisioningEventBus)agent.getService(IProvisioningEventBus.SERVICE_NAME);
-                if (eventBus != null) {
-                    // is null if started from the SDK
-                    consumer.accept(eventBus);
-                }
-            } finally {
-                context.ungetService(ref);
+    public void notify(final EventObject o) {
+        if (o instanceof PhaseEvent phaseEvent) {
+            if (phaseEvent.getType() == PhaseEvent.TYPE_START
+                && (phaseEvent.getPhaseId().equals(PhaseSetFactory.PHASE_INSTALL)
+                    || phaseEvent.getPhaseId().equals(PhaseSetFactory.PHASE_UNINSTALL))) {
+                clearExtensionCaches();
             }
         }
-    }
-
-    private void registerProvisioningEventBusListener() {
-        applyToProvisioningEventBus(eventBus -> eventBus.addListener(PythonExtensionInfoCacheCleaner.INSTANCE));
-    }
-
-    private void deregisterProvisioningEventBusListener() {
-        applyToProvisioningEventBus(eventBus -> eventBus.removeListener(PythonExtensionInfoCacheCleaner.INSTANCE));
     }
 }
