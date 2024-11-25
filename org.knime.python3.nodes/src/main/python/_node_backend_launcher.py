@@ -548,7 +548,7 @@ class _PortTypeRegistry:
         if spec_id not in self._port_types_by_id:
             raise kn.InvalidParametersError(
                 f"""
-                The provided input port type is incompatible with the expected type '{expected_port.type.name}'
+                The provided input is unknown and therefore incompatible with the expected type {expected_port.type.name}
                 (got {spec_id}).
                 """
             )
@@ -556,7 +556,7 @@ class _PortTypeRegistry:
         incoming_port_type: kn.PortType = self._port_types_by_id[spec_id]
         if not expected_port.type.is_super_type_of(incoming_port_type):
             raise kn.InvalidParametersError(
-                f"The provided input port type {incoming_port_type.name} must be the same or a sub-type of the node's input port type {expected_port.type.name}."
+                f"The provided {incoming_port_type.name} is incompatible with the expected type {expected_port.type.name}."
             )
         return incoming_port_type
 
