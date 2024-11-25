@@ -550,15 +550,55 @@ class _PortTypeRegistry:
                 f"""
                 The provided input is unknown and therefore incompatible with the expected type {expected_port.type.name}
                 (got {spec_id}).
+                {self._get_compatible_nodes_message(expected_port.type)}
                 """
             )
 
         incoming_port_type: kn.PortType = self._port_types_by_id[spec_id]
         if not expected_port.type.is_super_type_of(incoming_port_type):
             raise kn.InvalidParametersError(
-                f"The provided {incoming_port_type.name} is incompatible with the expected type {expected_port.type.name}."
+                f"""The provided {incoming_port_type.name} is incompatible with the expected type {expected_port.type.name}.
+                {self._get_compatible_nodes_message(expected_port.type)}
+                """
             )
         return incoming_port_type
+
+    def _get_compatible_nodes_message(
+        self, expected_port_type: kn.PortType, number_of_nodes: int = 5
+    ) -> str:
+        nodes = self._get_compatible_nodes(expected_port_type)
+        if len(nodes) > number_of_nodes:
+            nodes = nodes[:number_of_nodes] + [
+                f"... and {len(nodes) - number_of_nodes} more"
+            ]
+        return f"Connect one of the following nodes: {', '.join(nodes)}."
+
+    def _get_compatible_nodes(self, expected_port_type: kn.PortType) -> List[str]:
+        return [
+            node.name
+            for node in kn._nodes.values()
+            if self._include_node(node)
+            and any(
+                self._is_compatible_port_type(expected_port_type, port.type)
+                for port in node.output_ports
+            )
+        ]
+
+    def _include_node(self, node: kn._Node):
+        return not (node.is_hidden or node.is_deprecated)
+
+    def _is_compatible_port_type(
+        self, expected_port_type: kn.PortType, incoming_port_type: kn.PortType
+    ) -> bool:
+        if isinstance(expected_port_type, str):
+            # builtin port types (e.g. tables) are represented by strings
+            return (
+                isinstance(incoming_port_type, str)
+                and expected_port_type == incoming_port_type
+            )
+        return not isinstance(
+            incoming_port_type, str
+        ) and expected_port_type.is_super_type_of(incoming_port_type)
 
     def spec_from_python(
         self, spec, port: kn.Port, node_id: str, port_idx: int
