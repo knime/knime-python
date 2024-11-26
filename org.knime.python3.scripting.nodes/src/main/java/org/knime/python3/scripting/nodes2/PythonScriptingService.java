@@ -358,8 +358,12 @@ final class PythonScriptingService extends ScriptingService {
          * @return the path to the Python executable. Only to be used for configuring the LSP server.
          */
         public String getLanguageServerConfig(final String executableSelection) {
-            var executablePath = ExecutableSelectionUtils.getPythonCommand(getExecutableOption(executableSelection))
-                .getPythonExecutablePath().toAbsolutePath().toString();
+            var executableOption = getExecutableOption(executableSelection);
+            String executablePath = null;
+            if (executableOption.type != ExecutableOptionType.MISSING_VAR) {
+                executablePath = ExecutableSelectionUtils.getPythonCommand(executableOption).getPythonExecutablePath()
+                    .toAbsolutePath().toString();
+            }
             var extraPaths = PythonScriptingSession.getExtraPythonPaths().stream() //
                 .map(Path::toAbsolutePath) //
                 .map(Path::toString) //
