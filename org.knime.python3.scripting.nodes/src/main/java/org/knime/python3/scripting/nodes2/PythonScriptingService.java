@@ -66,7 +66,7 @@ import org.knime.core.data.filestore.internal.NotInWorkflowWriteFileStoreHandler
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.NodeLogger;
-import org.knime.core.node.workflow.FlowVariable;
+import org.knime.core.node.workflow.FlowObjectStack;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.util.PathUtils;
 import org.knime.core.util.ThreadUtils;
@@ -118,8 +118,9 @@ final class PythonScriptingService extends ScriptingService {
 
     private ExecutableOption getExecutableOption(final String id) {
         if (!getExecutableOptions().containsKey(id)) {
-            final Map<String, FlowVariable> allFlowVars =
-                getWorkflowControl().getFlowObjectStack().getAllAvailableFlowVariables();
+            var allFlowVars = Optional.ofNullable(getWorkflowControl().getFlowObjectStack()) //
+                .map(FlowObjectStack::getAllAvailableFlowVariables) //
+                .orElseGet(Collections::emptyMap);
             if (allFlowVars.containsKey(id)) {
                 return getExecutableOptionFromVariable(id, allFlowVars.get(id).getStringValue());
             } else {
