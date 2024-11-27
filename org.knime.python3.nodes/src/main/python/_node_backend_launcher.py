@@ -567,6 +567,8 @@ class _PortTypeRegistry:
         self, expected_port_type: kn.PortType, number_of_nodes: int = 5
     ) -> str:
         nodes = self._get_compatible_nodes(expected_port_type)
+        if not nodes:
+            return "No compatible nodes found."
         if len(nodes) > number_of_nodes:
             nodes = nodes[:number_of_nodes] + [
                 f"... and {len(nodes) - number_of_nodes} more"
