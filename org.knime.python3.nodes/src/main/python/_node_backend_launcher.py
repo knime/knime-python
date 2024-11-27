@@ -591,6 +591,7 @@ class _PortTypeRegistry:
         self, expected_port_type: kn.PortType, incoming_port_type: kn.PortType
     ) -> bool:
         if isinstance(expected_port_type, str):
+            # TODO AP-23642: fix type hints or make builtin types also PortType instances
             # builtin port types (e.g. tables) are represented by strings
             return (
                 isinstance(incoming_port_type, str)
