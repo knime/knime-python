@@ -90,6 +90,7 @@ import org.knime.core.util.PathUtils;
 import org.knime.core.util.ThreadUtils;
 import org.knime.core.util.asynclose.AsynchronousCloseable;
 import org.knime.core.util.auth.CouldNotAuthorizeException;
+import org.knime.core.webui.data.DataServiceException;
 import org.knime.credentials.base.Credential;
 import org.knime.credentials.base.CredentialPortObjectSpec;
 import org.knime.credentials.base.oauth.api.AccessTokenAccessor;
@@ -293,7 +294,8 @@ final class CloseablePythonNodeProxy
         try {
             failure.throwIfFailure();
         } catch (InvalidSettingsException ex) {
-            throw new IllegalStateException(ex.getMessage(), ex);
+            // hides the stacktrace which isn't helpful to the user here.
+            throw new DataServiceException(ex.getMessage(), ex);
         }
         return dialogRepresentation;
     }
