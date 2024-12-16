@@ -163,7 +163,6 @@ public final class HtmlFileNodeView implements NodeTableView {
         }).build());
     }
 
-
     @Override
     @SuppressWarnings("unchecked")
     public Optional<ApplyDataService<?>> createApplyDataService() {
@@ -172,9 +171,9 @@ public final class HtmlFileNodeView implements NodeTableView {
 
     @Override
     public Page getPage() {
-        var pb = Page.builder(this::openPage, m_relativeHTMLPath, StandardCharsets.UTF_8);
-        m_resources.addToPageBuilder(pb);
-        return pb.build();
+        var pb = Page.create().fromString(this::openPage, StandardCharsets.UTF_8).relativePath("index.html");
+        m_resources.addToPage(pb);
+        return pb;
     }
 
     /** Open the HTML page */
