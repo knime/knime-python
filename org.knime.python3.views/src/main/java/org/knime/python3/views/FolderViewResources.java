@@ -55,7 +55,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.knime.core.node.NodeLogger;
-import org.knime.core.webui.page.PageBuilder;
+import org.knime.core.webui.page.Page;
 
 /**
  * A folder of resources for a view.
@@ -84,8 +84,8 @@ public final class FolderViewResources implements ViewResources {
     }
 
     @Override
-    public void addToPageBuilder(final PageBuilder pageBuilder) {
-        pageBuilder.addResources(this::openResource, m_relativePathPrefix, m_areStatic, StandardCharsets.UTF_8);
+    public void addToPage(final Page page) {
+        page.addResources(this::openResource, m_relativePathPrefix, m_areStatic, StandardCharsets.UTF_8);
     }
 
     private InputStream openResource(final String name) {

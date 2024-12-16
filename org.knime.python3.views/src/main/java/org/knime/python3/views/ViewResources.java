@@ -48,10 +48,10 @@
  */
 package org.knime.python3.views;
 
-import org.knime.core.webui.page.PageBuilder;
+import org.knime.core.webui.page.Page;
 
 /**
- * Resources for a view that can be added to the {@link PageBuilder} when creating a page.
+ * Resources for a view that can be added to the {@link Page} when creating a page.
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
@@ -62,9 +62,9 @@ public interface ViewResources {
     };
 
     /**
-     * Add all resources to the given {@link PageBuilder}.
+     * Add all resources to the given {@link Page}.
      *
-     * @param pageBuilder the {@link PageBuilder}
+     * @param page the {@link Page}
      */
-    void addToPageBuilder(PageBuilder pageBuilder);
+    void addToPage(Page page);
 }

@@ -93,12 +93,13 @@ public final class PythonScriptNodeDialog implements NodeDialog {
 
     @Override
     public Page getPage() {
-        return Page //
-            .builder(PythonScriptNodeDialog.class, "js-src/dist", "index.html") //
+        return Page.create().fromFile() //
+            .bundleClass(PythonScriptNodeDialog.class) //
+            .basePath("js-src/dist") //
+            .relativeFilePath("index.html") //
             .addResourceDirectory("assets") //
             .addResourceDirectory("monacoeditorwork") //
-            .addResource(m_scriptingService::openHtmlPreview, "preview.html", StandardCharsets.UTF_8) //
-            .build();
+            .addResource(m_scriptingService::openHtmlPreview, "preview.html", StandardCharsets.UTF_8);
     }
 
     @Override
