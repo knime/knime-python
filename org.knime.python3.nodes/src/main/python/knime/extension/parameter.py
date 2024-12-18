@@ -617,7 +617,7 @@ class _UISchemaExtractor:
         element_scope = scope.create_child(name, is_group)
         if is_group:
             element_schema = {
-                "type": "Section" if element_scope.level() == 1 else "Group",
+                "type": "Section",
                 **param_obj._extract_ui_schema(),
                 "elements": [
                     {

@@ -1692,7 +1692,7 @@ class ParameterTest(unittest.TestCase):
                             "type": "VerticalLayout",
                             "elements": [
                                 {
-                                    "type": "Group",
+                                    "type": "Section",
                                     "label": "Subgroup",
                                     "options": {},
                                     "elements": [
@@ -1991,7 +1991,7 @@ class ParameterTest(unittest.TestCase):
                             "type": "VerticalLayout",
                             "elements": [
                                 {
-                                    "type": "Group",
+                                    "type": "Section",
                                     "label": "Subgroup",
                                     "options": {},
                                     "elements": [
@@ -2033,7 +2033,7 @@ class ParameterTest(unittest.TestCase):
                             "type": "VerticalLayout",
                             "elements": [
                                 {
-                                    "type": "Group",
+                                    "type": "Section",
                                     "label": "Subgroup",
                                     "options": {},
                                     "elements": [
