@@ -48,6 +48,7 @@
  */
 package org.knime.python3.scripting.nodes2;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -96,7 +97,7 @@ public final class PythonScriptNodeDialog implements NodeDialog {
             .builder(PythonScriptNodeDialog.class, "js-src/dist", "index.html") //
             .addResourceDirectory("assets") //
             .addResourceDirectory("monacoeditorwork") //
-            .addResource(m_scriptingService::openHtmlPreview, "preview.html") //
+            .addResource(m_scriptingService::openHtmlPreview, "preview.html", StandardCharsets.UTF_8) //
             .build();
     }
 
