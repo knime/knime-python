@@ -728,7 +728,7 @@ propagated with or for interoperation with KNIME.
    </license>
 
    <requires>
-      <import feature="org.knime.features.core.columnar" version="5.4.0" match="greaterOrEqual"/>
+      <import feature="org.knime.features.core.columnar" version="5.5.0" match="greaterOrEqual"/>
    </requires>
 
    <plugin
