@@ -50,6 +50,7 @@ package org.knime.python3.views;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
@@ -120,7 +121,7 @@ public final class HtmlFileNodeView implements NodeTableView {
 
     @Override
     public Page getPage() {
-        var pb = Page.builder(this::openPage, "index.html");
+        var pb = Page.builder(this::openPage, "index.html", StandardCharsets.UTF_8);
         m_resources.addToPageBuilder(pb);
         return pb.build();
     }
