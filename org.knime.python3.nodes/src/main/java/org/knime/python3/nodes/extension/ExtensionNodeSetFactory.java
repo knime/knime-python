@@ -79,11 +79,11 @@ import org.knime.core.node.context.NodeCreationConfiguration;
 import org.knime.core.node.extension.CategoryExtension;
 import org.knime.core.node.extension.CategorySetFactory;
 import org.knime.core.node.util.CheckUtils;
-import org.knime.core.webui.node.dialog.NodeDialog;
 import org.knime.core.webui.node.dialog.NodeDialogFactory;
 import org.knime.core.webui.node.dialog.NodeDialogManager;
 import org.knime.core.webui.node.dialog.SettingsType;
-import org.knime.core.webui.node.dialog.defaultdialog.DefaultNodeSettingsServiceWithVariables;
+import org.knime.core.webui.node.dialog.kai.KaiNodeInterface;
+import org.knime.core.webui.node.dialog.kai.KaiNodeInterfaceFactory;
 import org.knime.core.webui.node.view.NodeView;
 import org.knime.core.webui.node.view.NodeViewFactory;
 import org.knime.python3.nodes.DelegatingNodeModel;
@@ -169,7 +169,8 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
      * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
      */
     public static final class DynamicExtensionNodeFactory extends ConfigurableNodeFactory<DelegatingNodeModel>
-        implements NodeDialogFactory, NodeViewFactory<DelegatingNodeModel>, BundleNameProvider, ParameterizedNodeFactory {
+        implements NodeDialogFactory, NodeViewFactory<DelegatingNodeModel>, BundleNameProvider,
+        ParameterizedNodeFactory, KaiNodeInterfaceFactory {
 
         private NodeProxyProvider m_proxyProvider;
 
@@ -258,9 +259,8 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
         }
 
         @Override
-        public NodeDialog createNodeDialog() {
-            return new JsonFormsNodeDialog(SettingsType.MODEL,
-                new DefaultNodeSettingsServiceWithVariables(m_dialogSettingsService), m_dialogSettingsService);
+        public JsonFormsNodeDialog createNodeDialog() {
+            return new JsonFormsNodeDialog(SettingsType.MODEL, m_dialogSettingsService);
         }
 
         @Override
@@ -358,6 +358,11 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
         @Override
         public String getFactoryIdUniquifier() {
             return m_factoryIdUniquifier;
+        }
+
+        @Override
+        public KaiNodeInterface createNodeInterface() {
+            return createNodeDialog();
         }
 
     }
