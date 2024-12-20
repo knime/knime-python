@@ -56,9 +56,10 @@ import org.knime.core.webui.node.dialog.NodeDialog;
 import org.knime.core.webui.node.dialog.NodeSettingsService;
 import org.knime.core.webui.node.dialog.SettingsType;
 import org.knime.core.webui.node.dialog.defaultdialog.DefaultNodeDialog;
-import org.knime.core.webui.node.dialog.defaultdialog.dataservice.DefaultDialogDataConverter;
+import org.knime.core.webui.node.dialog.defaultdialog.DefaultNodeSettingsServiceWithVariables;
 import org.knime.core.webui.node.dialog.defaultdialog.dataservice.FlowVariableDataServiceImpl;
 import org.knime.core.webui.node.dialog.defaultdialog.dataservice.filechooser.FileChooserDataService;
+import org.knime.core.webui.node.dialog.kai.KaiNodeInterface;
 import org.knime.core.webui.page.Page;
 
 /**
@@ -67,26 +68,22 @@ import org.knime.core.webui.page.Page;
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
 @SuppressWarnings("restriction")
-public final class JsonFormsNodeDialog implements NodeDialog {
+public final class JsonFormsNodeDialog implements NodeDialog, KaiNodeInterface {
 
     private final SettingsType m_settingsType;
 
-    private final NodeSettingsService m_settingsService;
-
-    private final DefaultDialogDataConverter m_dialogDataConverter;
+    private final DelegatingJsonSettingsDataService m_settingsService;
 
     /**
      * Constructor.
      *
      * @param settingsType the type of settings this dialog is for
      * @param settingsService providing settings to the dialog
-     * @param dialogDataConverter converter between Json settings data to NodeSettings for flow variable settings
      */
-    public JsonFormsNodeDialog(final SettingsType settingsType, final NodeSettingsService settingsService,
-        final DefaultDialogDataConverter dialogDataConverter) {
+    public JsonFormsNodeDialog(final SettingsType settingsType,
+        final DelegatingJsonSettingsDataService settingsService) {
         m_settingsType = settingsType;
         m_settingsService = settingsService;
-        m_dialogDataConverter = dialogDataConverter;
     }
 
     @Override
@@ -96,7 +93,7 @@ public final class JsonFormsNodeDialog implements NodeDialog {
 
     @Override
     public Optional<RpcDataService> createRpcDataService() {
-        var flowVariableDataService = new FlowVariableDataServiceImpl(m_dialogDataConverter);
+        var flowVariableDataService = new FlowVariableDataServiceImpl(m_settingsService);
         var fileChooserService = new FileChooserDataService();
         return Optional.of(RpcDataService.builder() //
             .addService("flowVariables", flowVariableDataService) //
@@ -111,6 +108,11 @@ public final class JsonFormsNodeDialog implements NodeDialog {
 
     @Override
     public NodeSettingsService getNodeSettingsService() {
+        return new DefaultNodeSettingsServiceWithVariables(m_settingsService);
+    }
+
+    @Override
+    public NodeSettingsService getKaiNodeSettingsService() {
         return m_settingsService;
     }
 
