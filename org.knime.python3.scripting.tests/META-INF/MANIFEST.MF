@@ -10,5 +10,5 @@ Fragment-Host: org.knime.python3.scripting;bundle-version="[5.5.0,6.0.0)"
 Automatic-Module-Name: org.knime.python3.scripting.tests
 Export-Package: org.knime.python3.scripting
 Require-Bundle: org.junit;bundle-version="[4.13.0,5.0.0)",
- org.apache.arrow.memory-core;bundle-version="[14.0.2,15.0.0)",
+ org.apache.arrow.memory-core;bundle-version="[18.1.0,19.0.0)",
  org.knime.python3.testing;bundle-version="[5.5.0,6.0.0)"
