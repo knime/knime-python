@@ -542,7 +542,7 @@ class SchemaTest(unittest.TestCase):
         sep = ",\n\t"
         self.assertEqual(
             str(s),
-            f"Schema<\n\t{sep.join(str(k.Column(t,n,None)) for t,n in zip(types, names))}>",
+            f"Schema<\n\t{sep.join(str(k.Column(t, n, None)) for t, n in zip(types, names))}>",
         )
 
     def test_logical_type_wrapping(self):

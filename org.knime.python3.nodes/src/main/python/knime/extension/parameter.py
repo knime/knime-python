@@ -2770,7 +2770,9 @@ def parameter_group(
 
                 Composed: return this instance.
                 """
-                assert self._is_descriptor(), "__get__ should only be called if the paramter_group is used as a descriptor."
+                assert self._is_descriptor(), (
+                    "__get__ should only be called if the paramter_group is used as a descriptor."
+                )
                 return self._get_param_holder(obj)
 
             def _get_value(self, obj, name, for_dialog: bool = False) -> Dict[str, Any]:

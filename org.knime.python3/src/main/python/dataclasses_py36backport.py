@@ -366,7 +366,7 @@ def _tuple_str(obj_name, fields):
     if not fields:
         return "()"
     # Note the trailing comma, needed if this turns out to be a 1-tuple.
-    return f'({",".join([f"{obj_name}.{f.name}" for f in fields])},)'
+    return f"({','.join([f'{obj_name}.{f.name}' for f in fields])},)"
 
 
 def _create_fn(name, args, body, *, globals=None, locals=None, return_type=MISSING):
@@ -412,9 +412,7 @@ def _field_init(f, frozen, globals, self_name):
             # given, use it.  If not, call the factory.
             globals[default_name] = f.default_factory
             value = (
-                f"{default_name}() "
-                f"if {f.name} is _HAS_DEFAULT_FACTORY "
-                f"else {f.name}"
+                f"{default_name}() if {f.name} is _HAS_DEFAULT_FACTORY else {f.name}"
             )
         else:
             # This is a field that's not in the __init__ params, but
@@ -492,7 +490,7 @@ def _init_fn(fields, frozen, has_post_init, self_name):
                 seen_default = True
             elif seen_default:
                 raise TypeError(
-                    f"non-default argument {f.name!r} " "follows default argument"
+                    f"non-default argument {f.name!r} follows default argument"
                 )
 
     globals = {"MISSING": MISSING, "_HAS_DEFAULT_FACTORY": _HAS_DEFAULT_FACTORY}
@@ -729,7 +727,7 @@ def _get_field(cls, a_name, a_type):
     # Special restrictions for ClassVar and InitVar.
     if f._field_type in (_FIELD_CLASSVAR, _FIELD_INITVAR):
         if f.default_factory is not MISSING:
-            raise TypeError(f"field {f.name} cannot have a " "default factory")
+            raise TypeError(f"field {f.name} cannot have a default factory")
         # Should I check for other field settings? default_factory
         # seems the most serious to check for.  Maybe add others.  For
         # example, how about init=False (or really,
@@ -772,7 +770,7 @@ def _hash_add(cls, fields):
 
 def _hash_exception(cls, fields):
     # Raise an exception.
-    raise TypeError(f"Cannot overwrite attribute __hash__ " f"in class {cls.__name__}")
+    raise TypeError(f"Cannot overwrite attribute __hash__ in class {cls.__name__}")
 
 
 #
@@ -878,11 +876,11 @@ def _process_class(cls, init, repr, eq, order, unsafe_hash, frozen):
     if has_dataclass_bases:
         # Raise an exception if any of our bases are frozen, but we're not.
         if any_frozen_base and not frozen:
-            raise TypeError("cannot inherit non-frozen dataclass from a " "frozen one")
+            raise TypeError("cannot inherit non-frozen dataclass from a frozen one")
 
         # Raise an exception if we're frozen, but none of our bases are.
         if not any_frozen_base and frozen:
-            raise TypeError("cannot inherit frozen dataclass from a " "non-frozen one")
+            raise TypeError("cannot inherit frozen dataclass from a non-frozen one")
 
     # Remember all of the fields on our class (including bases).  This
     # also marks this class as being a dataclass.
@@ -965,8 +963,7 @@ def _process_class(cls, init, repr, eq, order, unsafe_hash, frozen):
         for fn in _frozen_get_del_attr(cls, field_list):
             if _set_new_attribute(cls, fn.__name__, fn):
                 raise TypeError(
-                    f"Cannot overwrite attribute {fn.__name__} "
-                    f"in class {cls.__name__}"
+                    f"Cannot overwrite attribute {fn.__name__} in class {cls.__name__}"
                 )
 
     # Decide if/how we're going to create a hash function.
@@ -1262,9 +1259,7 @@ def replace(obj, **changes):
 
         if f.name not in changes:
             if f._field_type is _FIELD_INITVAR:
-                raise ValueError(
-                    f"InitVar {f.name!r} " "must be specified with replace()"
-                )
+                raise ValueError(f"InitVar {f.name!r} must be specified with replace()")
             changes[f.name] = getattr(obj, f.name)
 
     # Create the new object, which calls __init__() and

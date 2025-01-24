@@ -517,9 +517,9 @@ class _PortTypeRegistry:
         ):
             if port.type == kn.PortType.BINARY:
                 bpos = ks.BinaryPortObjectSpec.deserialize(data)
-                assert (
-                    bpos.id == port.id
-                ), f"Expected binary input port ID {port.id} but got {bpos.id}"
+                assert bpos.id == port.id, (
+                    f"Expected binary input port ID {port.id} but got {bpos.id}"
+                )
                 return bpos
             else:  # custom spec
                 return deserialize_custom_spec()
@@ -533,9 +533,9 @@ class _PortTypeRegistry:
         elif (
             class_name == "org.knime.core.node.workflow.capture.WorkflowPortObjectSpec"
         ):
-            assert (
-                port.type == kn.PortType.WORKFLOW
-            ), f"Expected a {port.type} but got a Workflow instead."
+            assert port.type == kn.PortType.WORKFLOW, (
+                f"Expected a {port.type} but got a Workflow instead."
+            )
             return ks.WorkflowPortObjectSpec.deserialize(data)
 
         raise TypeError("Unsupported PortObjectSpec found in Python, got " + class_name)
@@ -613,17 +613,17 @@ class _PortTypeRegistry:
             class_name = "org.knime.core.data.DataTableSpec"
         elif port.type == kn.PortType.BINARY:
             assert isinstance(spec, ks.BinaryPortObjectSpec)
-            assert (
-                port.id == spec.id
-            ), f"Expected binary output port ID {port.id} but got {spec.id}"
+            assert port.id == spec.id, (
+                f"Expected binary output port ID {port.id} but got {spec.id}"
+            )
 
             data = spec.serialize()
             class_name = "org.knime.python3.nodes.ports.PythonBinaryBlobPortObjectSpec"
         elif port.type == kn.PortType.IMAGE:
             assert isinstance(spec, ks.ImagePortObjectSpec)
-            assert any(
-                spec.format == option.value for option in kn.ImageFormat
-            ), f"Expected image formats are: {kn.ImageFormat.available_options()}."
+            assert any(spec.format == option.value for option in kn.ImageFormat), (
+                f"Expected image formats are: {kn.ImageFormat.available_options()}."
+            )
 
             data = spec.serialize()
             class_name = "org.knime.core.node.port.image.ImagePortObjectSpec"
@@ -632,12 +632,12 @@ class _PortTypeRegistry:
                 "WorkflowPortObjectSpecs can't be created in a Python node."
             )
         else:  # custom spec
-            assert (
-                port.type.id in self._port_types_by_id
-            ), f"Invalid output spec, no port type with id '{port.type.id}' registered. Please register the port type."
-            assert isinstance(
-                spec, port.type.spec_class
-            ), f"Expected output spec of type {port.type.spec_class} but got spec of type {type(spec)}"
+            assert port.type.id in self._port_types_by_id, (
+                f"Invalid output spec, no port type with id '{port.type.id}' registered. Please register the port type."
+            )
+            assert isinstance(spec, port.type.spec_class), (
+                f"Expected output spec of type {port.type.spec_class} but got spec of type {type(spec)}"
+            )
             data = {"id": port.type.id, "data": spec.serialize()}
 
             if issubclass(port.type.object_class, kn.ConnectionPortObject):
@@ -690,16 +690,16 @@ class _PortTypeRegistry:
             class_name
             == "org.knime.python3.nodes.ports.PythonTransientConnectionPortObject"
         ):
-            assert issubclass(
-                port.type.object_class, kn.ConnectionPortObject
-            ), f"unexpected port type {port.type}"
+            assert issubclass(port.type.object_class, kn.ConnectionPortObject), (
+                f"unexpected port type {port.type}"
+            )
             spec = self.spec_to_python(port_object.getSpec(), port, java_callback)
 
             data = json.loads(port_object.getSpec().toJsonString())
-            key = f'{data["node_id"]}:{data["port_idx"]}'
+            key = f"{data['node_id']}:{data['port_idx']}"
             if key not in _PortTypeRegistry._connection_port_data:
                 raise KeyError(
-                    f'No connection data found for node {data["node_id"]}, port {data["port_idx"]}. '
+                    f"No connection data found for node {data['node_id']}, port {data['port_idx']}. "
                     + "Please re-execute the upstream node providing the connection."
                 )
 
@@ -769,12 +769,12 @@ class _PortTypeRegistry:
         elif port.type == kn.PortType.WORKFLOW:
             raise AssertionError("WorkflowPortObjects can't be created in Python.")
         else:
-            assert (
-                port.type.id in self._port_types_by_id
-            ), f"Invalid output port value, no port type with id '{id}' registered. Please register the port type."
-            assert isinstance(
-                obj, port.type.object_class
-            ), f"Expected output object of type {port.type.object_class}, got object of type {type(obj)}"
+            assert port.type.id in self._port_types_by_id, (
+                f"Invalid output port value, no port type with id '{id}' registered. Please register the port type."
+            )
+            assert isinstance(obj, port.type.object_class), (
+                f"Expected output object of type {port.type.object_class}, got object of type {type(obj)}"
+            )
             spec = self.spec_from_python(obj.spec, port, node_id, port_idx)
 
             if issubclass(port.type.object_class, kn.ConnectionPortObject):

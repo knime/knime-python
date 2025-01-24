@@ -281,15 +281,15 @@ class EntryPoint(kg.EntryPoint):
 
             elif data_type == "float":
                 # Compare with epsilon
-                assert (
-                    abs(v.as_py() - expected) < FLOAT_COMPARISON_EPSILON
-                ), wrong_value_message(r, b, expected, v)
+                assert abs(v.as_py() - expected) < FLOAT_COMPARISON_EPSILON, (
+                    wrong_value_message(r, b, expected, v)
+                )
 
             elif data_type == "double":
                 # Compare with epsilon
-                assert (
-                    abs(v.as_py() - expected) < DOUBLE_COMPARISON_EPSILON
-                ), wrong_value_message(r, b, expected, v)
+                assert abs(v.as_py() - expected) < DOUBLE_COMPARISON_EPSILON, (
+                    wrong_value_message(r, b, expected, v)
+                )
 
             elif data_type in ["localdatetime", "localtime"]:
                 # We do not compare python values but arrow values for them
@@ -315,22 +315,22 @@ class EntryPoint(kg.EntryPoint):
             array = batch.column(0)
 
             # Check length
-            assert (
-                len(array) == NUM_ROWS
-            ), f"Array has the wrong length. Expected {NUM_ROWS} got {len(array)}."
+            assert len(array) == NUM_ROWS, (
+                f"Array has the wrong length. Expected {NUM_ROWS} got {len(array)}."
+            )
             # Check array type
-            assert isinstance(
-                array, expected_array_type
-            ), f"Array has wrong type. Expected '{expected_array_type}', got '{type(array)}'."
+            assert isinstance(array, expected_array_type), (
+                f"Array has wrong type. Expected '{expected_array_type}', got '{type(array)}'."
+            )
             for r, v in enumerate(array):
                 if r % 13 == 0:
                     # Check that every 13th value is missing
                     assert v.as_py() is None, wrong_value_message(r, b, None, v)
                 else:
                     # Check value type
-                    assert (
-                        v.type == expected_value_type
-                    ), f"Value has wrong type. Expected '{expected_value_type}', got '{v.type}'"
+                    assert v.type == expected_value_type, (
+                        f"Value has wrong type. Expected '{expected_value_type}', got '{v.type}'"
+                    )
                     # Check value
                     assert_value(r, b, v)
 

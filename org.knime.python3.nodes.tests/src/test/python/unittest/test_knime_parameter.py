@@ -367,7 +367,7 @@ def generate_versioned_schema_dict(extension_version):
                             "description": "An EnumSet Parameter\n\n**Available options:**\n\n- Foo: The "
                             "foo\n- Bar: The bar\n- Baz: The baz\n",
                             "items": {"type": "string"},
-                            "title": "EnumSet " "Parameter",
+                            "title": "EnumSet Parameter",
                             "type": "array",
                         },
                         "group": {
@@ -418,7 +418,7 @@ def generate_versioned_schema_dict(extension_version):
                             "description": "An EnumSet Parameter\n\n**Available options:**\n\n- Foo: The "
                             "foo\n- Bar: The bar\n- Baz: The baz\n",
                             "items": {"type": "string"},
-                            "title": "EnumSet " "Parameter",
+                            "title": "EnumSet Parameter",
                             "type": "array",
                         },
                         "group": {
@@ -1490,7 +1490,7 @@ class ParameterTest(unittest.TestCase):
                             "description": "An EnumSet Parameter\n\n**Available options:**\n\n- Foo: The "
                             "foo\n- Bar: The bar\n- Baz: The baz\n",
                             "items": {"type": "string"},
-                            "title": "EnumSet " "Parameter",
+                            "title": "EnumSet Parameter",
                             "type": "array",
                         },
                         "parameter_group": {
