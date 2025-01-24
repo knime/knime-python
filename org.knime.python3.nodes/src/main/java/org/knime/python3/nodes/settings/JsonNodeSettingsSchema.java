@@ -92,6 +92,13 @@ public final class JsonNodeSettingsSchema {
     }
 
     /**
+     * @return the JSON schema
+     */
+    public String getSchema() {
+        return m_schema;
+    }
+
+    /**
      * Creates a new instance of JsonNodeSettings with this schema and the settings stored in {@code settings}. The
      * version attached to the JsonNodeSettings object is either the version the settings were saved with, or the
      * current extension version, depending on how this JsonNodeSettingsSchema object is instantiated.

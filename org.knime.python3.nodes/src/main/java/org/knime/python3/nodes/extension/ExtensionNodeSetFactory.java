@@ -84,6 +84,8 @@ import org.knime.core.webui.node.dialog.NodeDialogFactory;
 import org.knime.core.webui.node.dialog.NodeDialogManager;
 import org.knime.core.webui.node.dialog.SettingsType;
 import org.knime.core.webui.node.dialog.defaultdialog.DefaultNodeSettingsServiceWithVariables;
+import org.knime.core.webui.node.dialog.kai.KaiNodeInterface;
+import org.knime.core.webui.node.dialog.kai.KaiNodeInterfaceFactory;
 import org.knime.core.webui.node.view.NodeView;
 import org.knime.core.webui.node.view.NodeViewFactory;
 import org.knime.python3.nodes.DelegatingNodeModel;
@@ -169,7 +171,8 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
      * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
      */
     public static final class DynamicExtensionNodeFactory extends ConfigurableNodeFactory<DelegatingNodeModel>
-        implements NodeDialogFactory, NodeViewFactory<DelegatingNodeModel>, BundleNameProvider, ParameterizedNodeFactory {
+        implements NodeDialogFactory, NodeViewFactory<DelegatingNodeModel>, BundleNameProvider,
+        ParameterizedNodeFactory, KaiNodeInterfaceFactory {
 
         private NodeProxyProvider m_proxyProvider;
 
@@ -188,6 +191,8 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
         private String m_extensionVersion;
 
         private String m_factoryIdUniquifier;
+
+        private ExtensionKaiNodeInterface m_kaiNodeInterface;
 
         /**
          * We use the lazy constructor of the {@link ConfigurableNodeFactory}.
@@ -213,6 +218,7 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
             m_proxyProvider = proxyProvider;
             m_dialogSettingsService =
                 new DelegatingJsonSettingsDataService(m_proxyProvider::getNodeDialogProxy, m_extensionVersion);
+            m_kaiNodeInterface = new ExtensionKaiNodeInterface(m_proxyProvider::getNodeDialogProxy, m_extensionVersion);
             m_factoryIdUniquifier = new NodeId(extensionId, nodeId).getCombinedId();
             super.loadAdditionalFactorySettings(config);
         }
@@ -358,6 +364,11 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
         @Override
         public String getFactoryIdUniquifier() {
             return m_factoryIdUniquifier;
+        }
+
+        @Override
+        public KaiNodeInterface createKaiNodeInterface() {
+            return m_kaiNodeInterface;
         }
 
     }
