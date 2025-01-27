@@ -61,7 +61,8 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.SystemUtils;
-import org.knime.core.data.util.memory.ExternalProcessMemoryWatchdog;
+import org.knime.core.monitor.ExternalProcessType;
+import org.knime.core.monitor.ProcessWatchdog;
 import org.knime.core.node.NodeLogger;
 import org.knime.python3.PythonProcessTerminatedException.PythonProcessOOMException;
 
@@ -186,7 +187,7 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
             m_stdOutputManager = new SingleClientInputStreamSupplier(() -> m_stdOutput);
             m_stdErrorManager = new SingleClientInputStreamSupplier(() -> m_stdError);
 
-            ExternalProcessMemoryWatchdog.getInstance().trackProcess(m_process.toHandle(), memoryUsed -> {
+            ProcessWatchdog.getInstance().trackProcess(m_process.toHandle(), ExternalProcessType.PYTHON, memoryUsed -> {
                 m_terminationReason =
                     "The Python process was killed to prevent the system from running out of memory (it used "
                         + memoryUsed / 1024 + "MB).";
