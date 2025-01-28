@@ -449,7 +449,7 @@ class ViewDeclaration:
     description : str
         The description of the view.
     static_resources : str, optional
-        The static resources associated with the view.
+        The static resources associated with the view. Must be UTF-8 encoded.
 
     Attributes
     ----------
@@ -1465,6 +1465,7 @@ def output_view(name: str, description: str, static_resources: Optional[str] = N
         The path to a folder of resources that will be available to the HTML page. The
         path given here must be relative to the root of the extension. The resources
         can be accessed by the same relative file path (e.g. "{static_resources}/{filename}").
+        All text-based resources must be UTF-8 encoded.
     """
 
     def add_view(node_factory):

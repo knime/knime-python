@@ -50,6 +50,7 @@ package org.knime.python3.views;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -84,7 +85,7 @@ public final class FolderViewResources implements ViewResources {
 
     @Override
     public void addToPageBuilder(final PageBuilder pageBuilder) {
-        pageBuilder.addResources(this::openResource, m_relativePathPrefix, m_areStatic);
+        pageBuilder.addResources(this::openResource, m_relativePathPrefix, m_areStatic, StandardCharsets.UTF_8);
     }
 
     private InputStream openResource(final String name) {
