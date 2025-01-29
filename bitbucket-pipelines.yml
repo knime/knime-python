@@ -30,8 +30,9 @@ definitions:
 pipelines:
   pull-requests:
     "**":
-      - step: *python-format
-      - step: *js-lint-test-build
+      - parallel:
+          - step: *python-format
+          - step: *js-lint-test-build
   branches:
     '{master,releases/*}':
       - step: *js-lint-test-build
