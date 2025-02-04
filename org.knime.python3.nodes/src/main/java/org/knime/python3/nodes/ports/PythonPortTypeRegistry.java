@@ -48,11 +48,13 @@
  */
 package org.knime.python3.nodes.ports;
 
+import static java.util.stream.Collectors.toMap;
 import static org.knime.python3.types.port.PortObjectConverterExtensionPoint.getKnimeToPyConverters;
 import static org.knime.python3.types.port.PortObjectConverterExtensionPoint.getPyToKnimeConverters;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.BufferedDataTable;
@@ -237,17 +239,24 @@ public final class PythonPortTypeRegistry {
             return null;
         }
 
+        var referencedSpecs = pythonSpec.getReferencedSpecs().entrySet().stream()//
+            .collect(toMap(//
+                e -> UUID.fromString(e.getKey()), //
+                e -> PythonPortTypeRegistry.convertPortObjectSpecFromPython(e.getValue())//
+            ));
+
         var instance = InstanceHolder.INSTANCE;
         String specClassName = pythonSpec.getJavaClassName();
         if (pythonSpec instanceof PythonExtensionPortObjectSpec extensionSpec) {
             try {
+                // TODO add referencedSpecs argument?
                 return instance.m_extensionConverters.convertSpecFromPython(extensionSpec,
                     new PortObjectSpecConversionContext() {
                 });
             } catch (NoConverterFoundException ex) { // NOSONAR
                 // fine, the code below checks whether we have a builtin converter available
             }
-    }
+        }
 
         var specClass = instance.getClassFromClassName(specClassName);
         PythonPortObjectSpecConverter converter =
@@ -261,9 +270,8 @@ public final class PythonPortTypeRegistry {
 
         if (converter instanceof PythonToKnimePortObjectSpecConverter) {
             @SuppressWarnings("unchecked")
-            PythonToKnimePortObjectSpecConverter<PortObjectSpec> pythonToKnimeConverter =
-                (PythonToKnimePortObjectSpecConverter<PortObjectSpec>)converter;
-            return pythonToKnimeConverter.fromJsonString(payload);
+            var pythonToKnimeConverter = (PythonToKnimePortObjectSpecConverter<PortObjectSpec>)converter;
+            return pythonToKnimeConverter.fromPython(payload, referencedSpecs);
         } else {
             throw new IllegalStateException("Registered Port Object Spec converter for " + specClassName
                 + " does not implement Python to KNIME conversion.");

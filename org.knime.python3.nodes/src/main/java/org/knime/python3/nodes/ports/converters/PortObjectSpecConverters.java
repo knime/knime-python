@@ -48,9 +48,13 @@
  */
 package org.knime.python3.nodes.ports.converters;
 
+import java.util.Map;
+import java.util.UUID;
+
 import org.knime.base.data.xml.SvgCell;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.image.png.PNGImageContent;
+import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.image.ImagePortObjectSpec;
 import org.knime.core.node.workflow.capture.WorkflowPortObjectSpec;
 import org.knime.core.table.virtual.serialization.AnnotatedColumnarSchemaSerializer;
@@ -128,13 +132,20 @@ public final class PortObjectSpecConverters {
             final var om = new ObjectMapper();
             try {
                 final var rootNode = om.readTree(jsonData);
-                var spec = new PythonBinaryPortObjectSpec(PythonBinaryBlobPortObjectSpec.fromJson(rootNode));
+                var spec = new PythonBinaryPortObjectSpec(PythonBinaryBlobPortObjectSpec.fromJson(rootNode, Map.of()));
                 return spec.getPortObjectSpec();
             } catch (JsonMappingException ex) {
                 throw new IllegalStateException("Could not parse PythonBinaryPortObjectSpec from given Json data", ex);
             } catch (JsonProcessingException ex) { // NOSONAR: if we don't split this block up, Eclipse doesn't like it for some reason
                 throw new IllegalStateException("Could not parse PythonBinaryPortObjectSpec from given Json data", ex);
             }
+        }
+
+        @Override
+        public PythonBinaryBlobPortObjectSpec fromPython(final String jsonData,
+            final Map<UUID, PortObjectSpec> referencedSpecs) {
+
+            return PythonToKnimePortObjectSpecConverter.super.fromPython(jsonData, referencedSpecs);
         }
     }
 
