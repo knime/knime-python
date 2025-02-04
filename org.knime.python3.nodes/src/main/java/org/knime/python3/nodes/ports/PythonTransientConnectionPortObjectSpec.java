@@ -48,6 +48,7 @@
  */
 package org.knime.python3.nodes.ports;
 
+import java.util.Map;
 import java.util.Objects;
 
 import javax.swing.JComponent;
@@ -93,7 +94,8 @@ public final class PythonTransientConnectionPortObjectSpec extends PythonBinaryB
      */
     PythonTransientConnectionPortObjectSpec(final String id, final String data, final String nodeId,
         final int portIdx) {
-        super(id, data);
+        // TODO support referencing
+        super(id, data, Map.of());
         m_nodeId = nodeId;
         m_portIdx = portIdx;
     }

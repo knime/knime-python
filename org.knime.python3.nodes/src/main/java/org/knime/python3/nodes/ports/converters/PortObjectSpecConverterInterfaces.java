@@ -48,6 +48,9 @@
  */
 package org.knime.python3.nodes.ports.converters;
 
+import java.util.Map;
+import java.util.UUID;
+
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
 
@@ -105,6 +108,10 @@ public final class PortObjectSpecConverterInterfaces {
          * @return The KNIME-native {@link PortObjectSpec} extracted from the JSON string
          */
         T fromJsonString(String jsonData);
+
+        default T fromPython(final String jsonData, final Map<UUID, PortObjectSpec> referencedSpecs) {
+            return fromJsonString(jsonData);
+        }
     }
 
 }

@@ -113,10 +113,16 @@ class _PythonTablePortObject:
 
 
 class _PythonPortObjectSpec:
-    def __init__(self, java_class_name, data_dict: Dict):
+    def __init__(
+        self,
+        java_class_name,
+        data_dict: Dict,
+        referenced_specs: Optional[Dict] = None,
+    ):
         self._java_class_name = java_class_name
         self._json_string_data = json.dumps(data_dict)
         self._data = data_dict
+        self._referenced_specs = referenced_specs if referenced_specs else {}
 
     def getJavaClassName(self) -> str:  # NOSONAR - Java naming conventions
         return self._java_class_name
@@ -127,6 +133,9 @@ class _PythonPortObjectSpec:
     def toString(self) -> str:  # NOSONAR - Java naming conventions
         """For debugging on the Java side"""
         return self._json_string_data
+
+    def getReferencedSpecs(self) -> Dict:  # NOSONAR - Java naming conventions
+        return self._referenced_specs
 
     @property
     def data(self) -> Dict:
@@ -656,6 +665,8 @@ class _PortTypeRegistry:
         if self._extension_port_type_registry.can_encode_spec(spec):
             return self._extension_port_type_registry.encode_spec(spec)
 
+        encoded_referenced_specs = None
+
         if port.type == kn.PortType.TABLE:
             if isinstance(spec, ks.Column):
                 spec = ks.Schema.from_columns(spec)
@@ -689,7 +700,19 @@ class _PortTypeRegistry:
             assert isinstance(spec, port.type.spec_class), (
                 f"Expected output spec of type {port.type.spec_class} but got spec of type {type(spec)}"
             )
-            data = {"id": port.type.id, "data": spec.serialize()}
+            custom_data = spec.serialize()
+
+            replaced_data, referenced_specs = self._extract_and_replace_referenced_pos(
+                custom_data, kn.PortObjectSpec
+            )
+
+            encoded_referenced_specs = {
+                # FIXME the reliance on port for identifying the spec type is problematic here
+                key: self.spec_from_python(value, port, node_id, port_idx)
+                for key, value in referenced_specs.items()
+            }
+
+            data = {"id": port.type.id, "data": replaced_data}
 
             if issubclass(port.type.object_class, kn.ConnectionPortObject):
                 data["node_id"] = node_id
@@ -700,7 +723,30 @@ class _PortTypeRegistry:
                     "org.knime.python3.nodes.ports.PythonBinaryBlobPortObjectSpec"
                 )
 
-        return _PythonPortObjectSpec(class_name, data)
+        return _PythonPortObjectSpec(class_name, data, encoded_referenced_specs)
+
+    def _extract_and_replace_referenced_pos(self, custom_data, replaced_types):
+        """Extracts all objects of the given types from the data and replaces them with UUID strings.
+        Returns the dictionary with the replaced data and a mapping from UUID strings to the original objects."""
+        from uuid import uuid4
+
+        def replace_pos(data, uuid_map):
+            if isinstance(data, dict):
+                return {
+                    key: replace_pos(value, uuid_map) for key, value in data.items()
+                }
+            elif isinstance(data, list):
+                return [replace_pos(value, uuid_map) for value in data]
+            elif isinstance(data, replaced_types):
+                uuid = str(uuid4())
+                uuid_map[uuid] = data
+                return uuid
+            else:
+                return data
+
+        uuid_map = {}
+        replaced_data = replace_pos(custom_data, uuid_map)
+        return replaced_data, uuid_map
 
     def port_object_to_python(
         self, port_object: _PythonPortObject, port: kn.Port, java_callback
