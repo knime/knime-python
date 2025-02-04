@@ -52,6 +52,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.Optional;
 
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -495,6 +496,13 @@ public final class PythonPortObjects {
          * @return a JSON string representation of this spec
          */
         String toJsonString();
+
+        /**
+         * @return the PortObjectSpecs referenced by this PortObjectSpec
+         */
+        default Map<String, PythonPortObjectSpec> getReferencedSpecs() {
+            return Map.of();
+        }
     }
 
     /**
@@ -564,7 +572,8 @@ public final class PythonPortObjects {
             final var om = new ObjectMapper();
             try {
                 final var rootNode = om.readTree(jsonData);
-                return new PythonBinaryPortObjectSpec(PythonBinaryBlobPortObjectSpec.fromJson(rootNode));
+                // TODO get referenced spec from python
+                return new PythonBinaryPortObjectSpec(PythonBinaryBlobPortObjectSpec.fromJson(rootNode, Map.of()));
             } catch (JsonMappingException ex) {
                 throw new IllegalStateException("Could not parse PythonBinaryPortObjectSpec from given Json data", ex);
             } catch (JsonProcessingException ex) { // NOSONAR: if we don't split this block up, Eclipse doesn't like it for some reason

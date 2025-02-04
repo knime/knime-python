@@ -13,5 +13,6 @@ Require-Bundle: org.junit;bundle-version="[4.13.0,5.0.0)",
  org.knime.core.columnar;bundle-version="[5.5.0,6.0.0)",
  org.knime.core.data.columnar;bundle-version="[5.5.0,6.0.0)",
  org.mockito.mockito-core;bundle-version="[2.28.2,3.0.0)",
- org.knime.python3.testing;bundle-version="[5.5.0,6.0.0)"
+ org.knime.python3.testing;bundle-version="[5.5.0,6.0.0)",
+ org.knime.core
 Automatic-Module-Name: org.knime.python3.nodes.tests
