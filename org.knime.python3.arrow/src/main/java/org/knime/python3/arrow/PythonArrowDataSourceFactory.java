@@ -67,7 +67,7 @@ import org.knime.core.data.filestore.internal.IWriteFileStoreHandler;
 import org.knime.core.data.v2.RowCursor;
 import org.knime.core.data.v2.RowKeyType;
 import org.knime.core.data.v2.RowWriteCursor;
-import org.knime.core.data.v2.schema.ValueSchemaUtils;
+import org.knime.core.data.v2.schema.DataTableValueSchemaUtils;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.BufferedDataTable.KnowsRowCountTable;
 import org.knime.core.node.Node;
@@ -154,7 +154,7 @@ public final class PythonArrowDataSourceFactory implements Closeable {
             final boolean isLegacyArrow;
             if (baseStore instanceof ArrowBatchReadStore) {
                 isLegacyArrow = ((ArrowBatchReadStore)baseStore).isUseLZ4BlockCompression()
-                    || ValueSchemaUtils.storesDataCellSerializersSeparately(columnarTable.getSchema());
+                    || DataTableValueSchemaUtils.storesDataCellSerializersSeparately(columnarTable.getSchema());
             } else if (baseStore instanceof ArrowBatchStore) {
                 // Write stores shouldn't be using the old compression format or the old ValueSchema anymore
                 isLegacyArrow = false;
@@ -185,7 +185,7 @@ public final class PythonArrowDataSourceFactory implements Closeable {
     }
 
     private ColumnarRowReadTable copyTable(final BufferedDataTable table) throws IOException {
-        final var schema = ValueSchemaUtils.create(table.getSpec(), RowKeyType.CUSTOM, m_fsHandler);
+        final var schema = DataTableValueSchemaUtils.create(table.getSpec(), RowKeyType.CUSTOM, m_fsHandler);
         try (final var columnarTable = new ColumnarRowWriteTable(schema, m_storeFactory,
             new ColumnarRowWriteTableSettings(true, false, -1, false, false, false, 100, 4))) {
             try (final RowCursor inCursor = table.cursor();
