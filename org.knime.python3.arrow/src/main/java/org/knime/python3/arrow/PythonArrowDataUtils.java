@@ -83,6 +83,7 @@ import org.knime.core.data.meta.DataColumnMetaData;
 import org.knime.core.data.v2.RowKeyValueFactory;
 import org.knime.core.data.v2.ValueFactory;
 import org.knime.core.data.v2.ValueFactoryUtils;
+import org.knime.core.data.v2.schema.DataTableValueSchema;
 import org.knime.core.data.v2.schema.ValueSchema;
 import org.knime.core.data.v2.schema.ValueSchemaUtils;
 import org.knime.core.data.v2.value.DefaultRowKeyValueFactory;
@@ -108,7 +109,7 @@ public final class PythonArrowDataUtils {
     private static final ColumnarRowWriteTableSettings EMPTY_TABLE_SETTINGS =
         new ColumnarRowWriteTableSettings(false, 0, false, false, 100, 4);
 
-    private static final ValueSchema EMPTY_SCHEMA =
+    private static final DataTableValueSchema EMPTY_SCHEMA =
         ValueSchemaUtils.create(new DataTableSpec(), new ValueFactory<?, ?>[]{VoidRowKeyFactory.INSTANCE});
 
     private PythonArrowDataUtils() {
@@ -294,7 +295,7 @@ public final class PythonArrowDataUtils {
         }
         final var schema = createColumnarValueSchema(dataSink, domainAndMetadata, dataRepository);
         final var readStore = storeFactory.createReadStore(path);
-        return UnsavedColumnarContainerTable.create(tableId,
+        return UnsavedColumnarContainerTable.create(tableId, schema,
             new ColumnarRowReadTable(schema, storeFactory, readStore, size), () -> {
                 /*Python already wrote everything to disk.*/});
     }
@@ -313,7 +314,7 @@ public final class PythonArrowDataUtils {
         try (var store = storeFactory.createStore(EMPTY_SCHEMA, new PathBackedFileHandle(path));
                 var writeTable = new ColumnarRowWriteTable(EMPTY_SCHEMA, storeFactory, EMPTY_TABLE_SETTINGS)) {
             var table = writeTable.finish();
-            return UnsavedColumnarContainerTable.create(tableId, table, writeTable.getStoreFlusher());
+            return UnsavedColumnarContainerTable.create(tableId, EMPTY_SCHEMA, table, writeTable.getStoreFlusher());
         } catch (IOException ex) {
             throw new IllegalStateException("Failed to create empty table.", ex);
         }
@@ -328,7 +329,7 @@ public final class PythonArrowDataUtils {
      * @param dataRepository the {@link IDataRepository} to use for this table
      * @return The {@link ColumnarValueSchema} of the data coming from the {@link PythonDataSink}
      */
-    public static ValueSchema createColumnarValueSchema(final DefaultPythonArrowDataSink dataSink,
+    public static DataTableValueSchema createColumnarValueSchema(final DefaultPythonArrowDataSink dataSink,
         final TableDomainAndMetadata domainAndMetadata, final IDataRepository dataRepository) {
         final var schema = ArrowReaderWriterUtils.readSchema(dataSink.getPath().toFile());
         final var columnarSchema = ArrowSchemaUtils.convertSchema(schema);
@@ -348,7 +349,8 @@ public final class PythonArrowDataUtils {
      *
      * @return The {@link ColumnarValueSchema} of the data coming from the {@link PythonDataSink}
      */
-    public static ValueSchema createColumnarValueSchema(final ColumnarSchema columnarSchema, final String[] columnNames,
+    public static DataTableValueSchema createColumnarValueSchema(final ColumnarSchema columnarSchema,
+        final String[] columnNames,
         final IDataRepository dataRepository, final TableDomainAndMetadata domainAndMetadata) {
         final List<ValueFactory<?, ?>> factories = new ArrayList<>(columnarSchema.numColumns());
         final List<DataColumnSpec> specs = new ArrayList<>(columnarSchema.numColumns() - 1);
