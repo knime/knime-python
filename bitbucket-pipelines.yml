@@ -12,7 +12,7 @@ definitions:
           - ruff format --check .
     - step: &js-lint-test-build
         name: JS lint, tests, and build
-        image: node:20.15.0
+        image: node:22.11.0 # using 22.11.0 because the experimental feature for importing ESM (enabled by default starting with node 22.12.0) significantly slows test execution in the pipeline (https://github.com/vitest-dev/vitest/issues/7302)
         caches:
           - node
         size: 2x # more memory to accomodate docker container for sonarcloud
