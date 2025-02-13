@@ -75,6 +75,7 @@ import org.knime.python3.scripting.nodes2.PythonScriptingService.ExecutableOptio
 import org.knime.python3.scripting.nodes2.PythonScriptingSession.ExecutionInfo;
 import org.knime.python3.scripting.nodes2.PythonScriptingSession.ExecutionStatus;
 import org.knime.python3.scripting.nodes2.PythonScriptingSession.FileStoreHandlerSupplier;
+import org.knime.scripting.editor.InputOutputModel;
 import org.knime.scripting.editor.ScriptingService;
 
 /**
@@ -373,13 +374,12 @@ final class PythonScriptingService extends ScriptingService {
         }
 
         @Override
-        protected String getCodeSuggestion(final String userPrompt, final String currentCode) throws IOException {
+        protected String getCodeSuggestion(final String userPrompt, final String currentCode,
+            final InputOutputModel[] inputOutputModels) throws IOException {
             return PythonCodeAssistant.generateCode(//
                 userPrompt, //
                 currentCode, //
-                getWorkflowControl().getInputSpec(), //
-                getWorkflowControl().getOutputPortTypes(), //
-                getSupportedFlowVariables(), //
+                inputOutputModels, //
                 m_hasView);
         }
     }

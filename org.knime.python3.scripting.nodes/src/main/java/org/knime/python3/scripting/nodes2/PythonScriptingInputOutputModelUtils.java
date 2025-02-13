@@ -73,11 +73,30 @@ import org.knime.scripting.editor.WorkflowControl.InputPortInfo;
  */
 final class PythonScriptingInputOutputModelUtils {
 
-    private static final String INPUT_OUTPUT_TYPE_TABLE = "Table";
+    /**
+     * The type string used for tables
+     */
+    static final String INPUT_OUTPUT_TYPE_TABLE = "Table";
 
-    private static final String INPUT_OUTPUT_TYPE_IMAGE = "Image";
+    /**
+     * The type string used for images
+     */
+    static final String INPUT_OUTPUT_TYPE_IMAGE = "Image";
 
-    private static final String INPUT_OUTPUT_TYPE_OBJECT = "Object";
+    /**
+     * The type string used for Objects
+     */
+    static final String INPUT_OUTPUT_TYPE_OBJECT = "Object";
+
+    /**
+     * The type prefix used for input ports
+     */
+    static final String INPUT_PREFIX = "Input";
+
+    /**
+     * The type prefix used for output ports
+     */
+    static final String OUTPUT_PREFIX = "Output";
 
     private static final String REQUIRED_IMPORT = "import knime.scripting.io as knio";
 
@@ -164,11 +183,11 @@ final class PythonScriptingInputOutputModelUtils {
     }
 
     private static String inputName(final int index, final String displayName) {
-        return String.format("Input %s %d", displayName, index + 1);
+        return String.format("%s %s %d", INPUT_PREFIX, displayName, index + 1);
     }
 
     private static String outputName(final int index, final String displayName) {
-        return String.format("Output %s %d", displayName, index + 1);
+        return String.format("%s %s %d", OUTPUT_PREFIX, displayName, index + 1);
     }
 
     private static InputOutputModel createInputModel(final int index, final String type) {

@@ -49,18 +49,10 @@
 package org.knime.python3.scripting.nodes2;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
 
-import org.knime.core.data.DataColumnSpec;
-import org.knime.core.data.DataTableSpec;
-import org.knime.core.node.BufferedDataTable;
-import org.knime.core.node.port.PortObjectSpec;
-import org.knime.core.node.port.PortType;
-import org.knime.core.node.port.image.ImagePortObject;
-import org.knime.core.node.workflow.FlowVariable;
-import org.knime.python2.port.PickledObjectFileStorePortObject;
-import org.knime.python2.port.PickledObjectPortObjectSpec;
+import org.knime.scripting.editor.InputOutputModel;
+import org.knime.scripting.editor.InputOutputModelNameAndTypeUtils;
+import org.knime.scripting.editor.InputOutputModelNameAndTypeUtils.NameAndType;
 import org.knime.scripting.editor.ai.HubConnection;
 
 /**
@@ -77,9 +69,7 @@ public final class PythonCodeAssistant {
      *
      * @param userPrompt The user prompt to instruct the AI what to do
      * @param oldCode The current code. Should not be null, but may be an empty string.
-     * @param inputPortSpecs The input port configuration of the node
-     * @param outputPortTypes The output port types of the node
-     * @param flowVariables The incoming flow variables
+     * @param inputOutputModels The input output models that give context to this AI query
      * @param hasView Whether a view should be populated
      * @return The newly generated code
      * @throws IOException
@@ -87,60 +77,45 @@ public final class PythonCodeAssistant {
     public static String generateCode( //
         final String userPrompt, //
         final String oldCode, //
-        final PortObjectSpec[] inputPortSpecs, //
-        final PortType[] outputPortTypes, //
-        final Collection<FlowVariable> flowVariables, //
+        final InputOutputModel[] inputOutputModels, //
         final boolean hasView //
     ) throws IOException {
+        var inputTables = InputOutputModelNameAndTypeUtils.getTablesMatchingNamePrefix(inputOutputModels,
+            String.format("%s %s", PythonScriptingInputOutputModelUtils.INPUT_PREFIX,
+                PythonScriptingInputOutputModelUtils.INPUT_OUTPUT_TYPE_TABLE));
+        var inputObjects = InputOutputModelNameAndTypeUtils.getModelsMatchingNamePrefix(inputOutputModels,
+            InputOutputModel.OBJECT_PORT_TYPE_NAME,
+            String.format("%s %s", PythonScriptingInputOutputModelUtils.INPUT_PREFIX,
+                PythonScriptingInputOutputModelUtils.INPUT_OUTPUT_TYPE_OBJECT));
+
+        var outputTables = InputOutputModelNameAndTypeUtils.getTablesMatchingNamePrefix(inputOutputModels,
+            String.format("%s %s", PythonScriptingInputOutputModelUtils.OUTPUT_PREFIX,
+                PythonScriptingInputOutputModelUtils.INPUT_OUTPUT_TYPE_TABLE));
+        var outputObjects = InputOutputModelNameAndTypeUtils.getModelsMatchingNamePrefix(inputOutputModels,
+            InputOutputModel.OBJECT_PORT_TYPE_NAME,
+            String.format("%s %s", PythonScriptingInputOutputModelUtils.OUTPUT_PREFIX,
+                PythonScriptingInputOutputModelUtils.INPUT_OUTPUT_TYPE_OBJECT));
+        var outputImages = InputOutputModelNameAndTypeUtils.getModelsMatchingNamePrefix(inputOutputModels,
+            InputOutputModel.OBJECT_PORT_TYPE_NAME, // Images are also of object type
+            String.format("%s %s", PythonScriptingInputOutputModelUtils.OUTPUT_PREFIX,
+                PythonScriptingInputOutputModelUtils.INPUT_OUTPUT_TYPE_IMAGE));
+
         var request = new CodeGenerationRequest(//
             oldCode, //
             userPrompt, //
-            new Inputs(toTableSpecs(inputPortSpecs), //
-                getNumObjects(inputPortSpecs), //
-                toFlowVariableList(flowVariables) //
+            new Inputs( //
+                inputTables, //
+                inputObjects.length, //
+                InputOutputModelNameAndTypeUtils.getSupportedFlowVariables(inputOutputModels) //
             ), //
-            new Outputs(getNumTables(outputPortTypes), getNumObjects(outputPortTypes), getNumImages(outputPortTypes),
-                hasView));
+            new Outputs( //
+                outputTables.length, //
+                outputObjects.length, //
+                outputImages.length, //
+                hasView //
+            ));
 
         return HubConnection.INSTANCE.sendRequest("/code_generation/python", request);
-    }
-
-    private static NameAndType[] toColumnNameTypeList(final DataColumnSpec... dataColumnSpecs) {
-        return Arrays.stream(dataColumnSpecs).map(dcs -> new NameAndType(dcs.getName(), dcs.getType().getName()))
-            .toArray(NameAndType[]::new);
-    }
-
-    private static NameAndType[][] toTableSpecs(final PortObjectSpec... portObjects) {
-        return Arrays.stream(portObjects).filter(po -> po.getClass() == DataTableSpec.class)
-            .map(tableSpec -> toColumnNameTypeList(((DataTableSpec)tableSpec).stream().toArray(DataColumnSpec[]::new)))
-            .toArray(NameAndType[][]::new);
-    }
-
-    private static long getNumTables(final PortType... portTypes) {
-        return Arrays.stream(portTypes).filter(pt -> pt.acceptsPortObjectClass(BufferedDataTable.class)).count();
-    }
-
-    private static long getNumImages(final PortType... portTypes) {
-        return Arrays.stream(portTypes).filter(pt -> pt.acceptsPortObjectClass(ImagePortObject.class)).count();
-    }
-
-    private static long getNumObjects(final PortType... portTypes) {
-        return Arrays.stream(portTypes).filter(pt -> pt.acceptsPortObjectClass(PickledObjectFileStorePortObject.class))
-            .count();
-    }
-
-    private static long getNumObjects(final PortObjectSpec... portObjectSpecs) {
-        return Arrays.stream(portObjectSpecs).filter(PickledObjectPortObjectSpec.class::isInstance).count();
-    }
-
-    private static NameAndType[] toFlowVariableList(final Collection<FlowVariable> flowVariables) {
-        return flowVariables.stream()
-            .map(flowVar -> new NameAndType(flowVar.getName(), flowVar.getVariableType().getIdentifier()))
-            .toArray(NameAndType[]::new);
-    }
-
-    private record NameAndType(String name, String type) {
-
     }
 
     private record Outputs(long num_tables, long num_objects, long num_images, boolean has_view) {
