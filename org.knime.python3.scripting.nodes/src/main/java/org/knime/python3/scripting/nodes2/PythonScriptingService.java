@@ -56,9 +56,11 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.knime.conda.CondaEnvironmentDirectory;
+import org.knime.core.data.IDataRepository;
 import org.knime.core.data.filestore.FileStoreKey;
 import org.knime.core.data.filestore.internal.IFileStoreHandler;
 import org.knime.core.data.filestore.internal.IWriteFileStoreHandler;
@@ -466,19 +468,23 @@ final class PythonScriptingService extends ScriptingService {
         @Override
         public IWriteFileStoreHandler getWriteFileStoreHandler() {
             if (m_temporaryWriteFileStoreHandler == null) {
-                m_temporaryWriteFileStoreHandler = NotInWorkflowWriteFileStoreHandler.create();
+                m_temporaryWriteFileStoreHandler =
+                    new NotInWorkflowWriteFileStoreHandler(UUID.randomUUID(), getDataRepositoryFromContext());
             }
             return m_temporaryWriteFileStoreHandler;
+        }
+
+        private static IDataRepository getDataRepositoryFromContext() {
+            return NodeContext.getContext().getWorkflowManager().getWorkflowDataRepository();
         }
 
         @Override
         public IFileStoreHandler getFileStoreHandler(final FileStoreKey key) {
             // The file store can be coming from a previously written table -- then it is part of
-            // the WorkflowDataRepositoryor it could have been created during execution of the Python
+            // the WorkflowDataRepository or it could have been created during execution of the Python
             // script, then it was using the NotInWorkflowWriteFileStoreHandler
 
-            var dataRepository = NodeContext.getContext().getWorkflowManager().getWorkflowDataRepository();
-            var handler = dataRepository.getHandler(key.getStoreUUID());
+            var handler = getDataRepositoryFromContext().getHandler(key.getStoreUUID());
 
             if (handler != null) {
                 return handler;
