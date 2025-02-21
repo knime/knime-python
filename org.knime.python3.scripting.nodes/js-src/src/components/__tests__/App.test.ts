@@ -38,10 +38,12 @@ describe("App.vue", () => {
     viewAvailable = false,
     executableOptions = executableOptionsMock,
     settings = DEFAULT_INITIAL_SETTINGS,
+    stubScriptingEditorComponent = false,
   }: {
     viewAvailable?: boolean;
     executableOptions?: any[];
     settings?: PythonScriptingNodeSettings;
+    stubScriptingEditorComponent?: boolean;
   } = {}) => {
     vi.mocked(getScriptingService().sendToService).mockImplementation(
       (methodName: string): any => {
@@ -69,9 +71,22 @@ describe("App.vue", () => {
       createPythonSettingsServiceMock(settings),
     );
     setSelectedExecutable({ id: "", isMissing: false });
+
+    // Note: The panel management of the Scripting Editor hides the right panel
+    // in the test environment. We stub the ScriptingEditor component to render
+    // the right panel, such that we can test it.
+    const scriptingEditorStub = stubScriptingEditorComponent
+      ? {
+          ScriptingEditor: {
+            template: '<div><slot name="right-pane" /></div>',
+          },
+        }
+      : ({} as {});
+
     const wrapper = mount(App, {
       global: {
         stubs: {
+          ...scriptingEditorStub,
           TabBar: true,
           OutputConsole: true,
           PythonEditorControls: true,
@@ -105,7 +120,10 @@ describe("App.vue", () => {
     };
 
     it("renders only the workspace if no preview is available", async () => {
-      const { wrapper } = await doMount({ viewAvailable: false });
+      const { wrapper } = await doMount({
+        viewAvailable: false,
+        stubScriptingEditorComponent: true,
+      });
       const { tabbar, workspace, preview } = findComponents(wrapper);
 
       expect(tabbar.exists()).toBeFalsy();
@@ -114,7 +132,10 @@ describe("App.vue", () => {
     });
 
     it("renders workspace and preview if preview is available", async () => {
-      const { wrapper } = await doMount({ viewAvailable: true });
+      const { wrapper } = await doMount({
+        viewAvailable: true,
+        stubScriptingEditorComponent: true,
+      });
       const { tabbar, workspace, preview } = findComponents(wrapper);
       expect(tabbar.exists()).toBeTruthy();
       expect(workspace.exists()).toBeTruthy();
@@ -122,7 +143,10 @@ describe("App.vue", () => {
     });
 
     it("shows workspace if active tab", async () => {
-      const { wrapper } = await doMount({ viewAvailable: true });
+      const { wrapper } = await doMount({
+        viewAvailable: true,
+        stubScriptingEditorComponent: true,
+      });
       const { tabbar, workspace, preview } = findComponents(wrapper);
 
       // Select the workspace tab
@@ -134,7 +158,10 @@ describe("App.vue", () => {
     });
 
     it("shows preview if active tab", async () => {
-      const { wrapper } = await doMount({ viewAvailable: true });
+      const { wrapper } = await doMount({
+        viewAvailable: true,
+        stubScriptingEditorComponent: true,
+      });
       const { tabbar, workspace, preview } = findComponents(wrapper);
 
       // Select the preview tab
