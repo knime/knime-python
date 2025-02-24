@@ -87,7 +87,7 @@ final class PortObjectExtensionPointUtils {
     public Stream<Path> getPythonPaths() {
         return Stream.concat(m_knimeToPy.stream(), m_pyToKnime.stream())//
             .map(PythonPortObjectConverterExtension::pythonImplementation)//
-            .map(PythonImplementation::parentFolder);
+            .map(PythonImplementation::pythonModulePath);
     }
 
     public void registerPortObjectConverters(final KnimeNodeBackend backend) {
@@ -126,7 +126,7 @@ final class PortObjectExtensionPointUtils {
         final KnimeNodeBackend backend) {
         var converter = extension.converter();
         var pythonImplementation = extension.pythonImplementation();
-        var moduleName = pythonImplementation.moduleName();
+        var moduleName = pythonImplementation.pythonModuleName();
         var pythonConverter = pythonImplementation.pythonClassName();
         var objClass = converter.getPortObjectClass();
         var objClassName = objClass.getName();
@@ -140,7 +140,7 @@ final class PortObjectExtensionPointUtils {
         final KnimeNodeBackend backend) {
         var converter = extension.converter();
         var pythonImplementation = extension.pythonImplementation();
-        var moduleName = pythonImplementation.moduleName();
+        var moduleName = pythonImplementation.pythonModuleName();
         var pythonConverter = pythonImplementation.pythonClassName();
         Class<? extends PortObject> objClass = converter.getPortObjectClass();
         var objClassName = objClass.getName();

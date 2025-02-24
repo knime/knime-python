@@ -46,20 +46,21 @@
    </extension>
    <extension
          point="org.knime.python3.types.PythonPortObjectConverter">
-      <KnimeToPythonPortObjectConverter
-            JavaConverterClass="org.knime.python3.nodes.ports.converters.credentials.CredentialPythonConverter"
-            PythonConverterClass="CredentialConverter"
-            PythonModule="src/main/python/_port_impl.py">
-      </KnimeToPythonPortObjectConverter>
-      <PythonToKnimePortObjectConverter
-            JavaConverterClass="org.knime.python3.nodes.ports.converters.credentials.CredentialPythonConverter"
-            PythonConverterClass="CredentialConverter"
-            PythonModule="src/main/python/_port_impl.py">
-      </PythonToKnimePortObjectConverter>
-      <KnimeToPythonPortObjectConverter
-            JavaConverterClass="org.knime.python3.nodes.ports.converters.credentials.HubCredentialPythonConverter"
-            PythonConverterClass="HubAuthenticationConverter"
-            PythonModule="src/main/python/_port_impl.py">
-      </KnimeToPythonPortObjectConverter>
+      <Module
+            moduleName="_port_impl"
+            modulePath="src/main/python/">
+          <KnimeToPythonPortObjectConverter
+                JavaConverterClass="org.knime.python3.nodes.ports.converters.credentials.CredentialPythonConverter"
+                PythonConverterClass="CredentialConverter">
+          </KnimeToPythonPortObjectConverter>
+          <PythonToKnimePortObjectConverter
+                JavaConverterClass="org.knime.python3.nodes.ports.converters.credentials.CredentialPythonConverter"
+                PythonConverterClass="CredentialConverter">
+          </PythonToKnimePortObjectConverter>
+          <KnimeToPythonPortObjectConverter
+                JavaConverterClass="org.knime.python3.nodes.ports.converters.credentials.HubCredentialPythonConverter"
+                PythonConverterClass="HubAuthenticationConverter">
+          </KnimeToPythonPortObjectConverter>
+      </Module>
    </extension>
 </plugin>
