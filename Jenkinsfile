@@ -4,16 +4,15 @@ def BN = (BRANCH_NAME == 'master' || BRANCH_NAME.startsWith('releases/')) ? BRAN
 @groovy.transform.Field
 static final String[] WF_TESTS_PYTHON_ENVS = [
     'bundled',
-    'env_py36_pa5.yml',
-    'env_py38_pa7.yml',
-    'env_py39_kn47.yml',
+    'env_py312_kn55.yml',
+    'env_py313_kn55.yml'
 ]
 
 @groovy.transform.Field
 static final String DEFAULT_WF_TESTS_PYTHON_ENV = 'bundled'
 
 @groovy.transform.Field
-static final List<String> PYTEST_PYTHON_ENVS = ['env_py38_legacy', 'env_py38', 'env_py39', 'env_py311']
+static final List<String> PYTEST_PYTHON_ENVS = ['env_py312', 'env_py313']
 
 library "knime-pipeline@$BN"
 

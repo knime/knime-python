@@ -1,0 +1,10 @@
+name: python_test_environment
+channels:
+  - conda-forge
+  - knime/label/nightly
+dependencies:
+  - python=3.12
+  - knime-python-base=5.5
+  - nbformat # Jupyter nodebook loading
+  - ipython # Jupyter nodebook loading
+  - matplotlib # Used in default script
