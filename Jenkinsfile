@@ -9,7 +9,7 @@ static final String[] WF_TESTS_PYTHON_ENVS = [
 ]
 
 @groovy.transform.Field
-static final String DEFAULT_WF_TESTS_PYTHON_ENV = 'bundled'
+static final String DEFAULT_WF_TESTS_PYTHON_ENV = 'env_py312_kn55.yml'
 
 @groovy.transform.Field
 static final List<String> PYTEST_PYTHON_ENVS = ['env_py312', 'env_py313']
