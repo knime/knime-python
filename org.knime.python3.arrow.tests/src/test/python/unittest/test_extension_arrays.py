@@ -505,8 +505,17 @@ class StructDictArrayTest(AbstractArrayTest, unittest.TestCase):
         lru = kasde.LRUCacheDict(cache_len=n)
         for i in range(n + 1):
             lru[str(i)] = i
-        correct = "LRUCacheDict([('1', 1), ('2', 2), ('3', 3), ('4', 4), ('5', 5), ('6', 6), ('7', 7), ('8', 8)])"
-        self.assertEqual(str(lru), correct)
+        expectedItems = [
+            ("1", 1),
+            ("2", 2),
+            ("3", 3),
+            ("4", 4),
+            ("5", 5),
+            ("6", 6),
+            ("7", 7),
+            ("8", 8),
+        ]
+        self.assertEqual(expectedItems, list(lru.items()))
 
         # test lru strategy
         l = [0, 1, 2, 3, 4]
@@ -514,9 +523,8 @@ class StructDictArrayTest(AbstractArrayTest, unittest.TestCase):
         for i in l:
             lru[str(i)] = i
         self.assertEqual(lru[str(0)], 0)
-        self.assertEqual(
-            str(lru), "LRUCacheDict([('1', 1), ('2', 2), ('3', 3), ('4', 4), ('0', 0)])"
-        )
+        expectedItems = [("1", 1), ("2", 2), ("3", 3), ("4", 4), ("0", 0)]
+        self.assertListEqual(expectedItems, list(lru.items()))
 
 
 class MyTime:
