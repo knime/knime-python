@@ -448,7 +448,6 @@ class _DefaultPythonKernelTester(PythonKernelTester):
         self.check_module("traceback")
         self.check_module("os")
         self.check_module("pickle")
-        self.check_module("imp")
         self.check_module("types")
         # Non-standard modules.
         self.check_module("numpy")
