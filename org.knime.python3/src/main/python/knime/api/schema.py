@@ -90,10 +90,10 @@ class PrimitiveTypeId(Enum):
     """
 
     INT = "Number (integer)"  # int32
-    LONG = "Number (long)"  # int64
+    LONG = "Number (Long Integer)"  # int64
     STRING = "String"  # string
-    DOUBLE = "Number (double)"  # double
-    BOOL = "Boolean value"  # bool
+    DOUBLE = "Number (Floating Decimal)"  # double
+    BOOL = "Boolean"  # bool
     BLOB = "blob"
     NULL = "null"
 
