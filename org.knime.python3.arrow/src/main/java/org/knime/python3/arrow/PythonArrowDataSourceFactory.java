@@ -211,11 +211,9 @@ public final class PythonArrowDataSourceFactory implements Closeable {
             ((Flushable)columnarStore).flush();
         }
         final var baseStore = columnarStore.getDelegateBatchReadStore();
-        if (baseStore instanceof ArrowBatchReadStore) {
-            final ArrowBatchReadStore store = (ArrowBatchReadStore)baseStore;
+        if (baseStore instanceof ArrowBatchReadStore store) {
             return PythonArrowDataUtils.createSource(store, columnNames);
-        } else if (baseStore instanceof ArrowBatchStore) {
-            final ArrowBatchStore store = (ArrowBatchStore)baseStore;
+        } else if (baseStore instanceof ArrowBatchStore store) {
             return PythonArrowDataUtils.createSource(store, store.numBatches(), columnNames);
         } else {
             // Any non-Arrow store should already have been copied into an Arrow store further above.
