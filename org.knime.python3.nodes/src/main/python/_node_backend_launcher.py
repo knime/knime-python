@@ -1339,7 +1339,7 @@ class _KnimeNodeBackend(kg.EntryPoint, kn._KnimeNodeBackend):
             kp.set_extension_version(extension_version)
             self._extension_version = extension_version
         except Exception:
-            error = traceback.format_exc(limit=1, chain=True)
+            error = traceback.format_exc(chain=True)
             raise RuntimeError(
                 f"Failed to load extension {extension_id} from {extension_module} with error: {error}"
             ) from None
