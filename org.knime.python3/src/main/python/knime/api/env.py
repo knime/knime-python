@@ -202,7 +202,9 @@ class ProxySettings:
         if proxy_env_variable and proxy_env_string:
             os.environ[proxy_env_variable] = proxy_env_string
         if self.exclude_hosts:
-            os.environ["NO_PROXY"] = self.exclude_hosts
+            # Replace '|' with ',' in NO_PROXY because Java uses '|' as a separator,
+            # but python-httpx expects ',' for the NO_PROXY environment variable.
+            os.environ["NO_PROXY"] = self.exclude_hosts.replace("|", ",")
 
     @classmethod
     def from_string(cls, proxy_string, exclude_hosts: Optional[str] = None):
