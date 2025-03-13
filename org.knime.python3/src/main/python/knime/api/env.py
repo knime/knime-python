@@ -200,9 +200,11 @@ class ProxySettings:
             proxy_env_string,
         ) = self.create_proxy_environment_key_value_pair()
         if proxy_env_variable and proxy_env_string:
-            os.environ[proxy_env_variable] = proxy_env_string
+            # Replace java separator with python separator
+            os.environ[proxy_env_variable] = proxy_env_string.replace("|", ",")
         if self.exclude_hosts:
-            os.environ["NO_PROXY"] = self.exclude_hosts
+            # Replace java separator with python separator
+            os.environ["NO_PROXY"] = self.exclude_hosts.replace("|", ",")
 
     @classmethod
     def from_string(cls, proxy_string, exclude_hosts: Optional[str] = None):
