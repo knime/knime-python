@@ -200,9 +200,11 @@ class ProxySettings:
             proxy_env_string,
         ) = self.create_proxy_environment_key_value_pair()
         if proxy_env_variable and proxy_env_string:
-            os.environ[proxy_env_variable] = proxy_env_string
+            # Replacement of java '|' separator with python ',' separator
+            os.environ[proxy_env_variable] = proxy_env_string.replace("|", ",")
         if self.exclude_hosts:
-            os.environ["NO_PROXY"] = self.exclude_hosts
+            # Replacement of java '|' separator with python ',' separator
+            os.environ["NO_PROXY"] = self.exclude_hosts.replace("|", ",")
 
     @classmethod
     def from_string(cls, proxy_string, exclude_hosts: Optional[str] = None):
@@ -339,6 +341,7 @@ def get_proxy_settings(protocol_name: Optional[str] = None) -> Optional[ProxySet
         return None
 
     exclude_hosts = os.environ.get("NO_PROXY", None)
+    raise RuntimeError(exclude_hosts)
     return ProxySettings.from_string(proxy_env_string, exclude_hosts)
 
 
