@@ -225,56 +225,56 @@ This is a placeholder for future architectural requirements.
 
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
-| **3.1.1** | Verify the application never reveals session tokens in URL parameters. | | | |
+| **3.1.1** | Verify the application never reveals session tokens in URL parameters. | No session | 2025-03-26 | ✅ |
 
 ## V3.2 Session Binding
 
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
-| **3.2.1** | Verify the application generates a new session token on user authentication. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
-| **3.2.2** | Verify that session tokens possess at least 64 bits of entropy. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
-| **3.2.3** | Verify the application only stores session tokens in the browser using secure methods such as appropriately secured cookies (see section 3.4) or HTML 5 session storage. | | | |
-| **3.2.4** | Verify that session tokens are generated using approved cryptographic algorithms. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
+| **3.2.1** | Verify the application generates a new session token on user authentication. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | No session | 2025-03-26 | ✅ |
+| **3.2.2** | Verify that session tokens possess at least 64 bits of entropy. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | No session | 2025-03-26 | ✅ |
+| **3.2.3** | Verify the application only stores session tokens in the browser using secure methods such as appropriately secured cookies (see section 3.4) or HTML 5 session storage. | No session | 2025-03-26 | ✅ |
+| **3.2.4** | Verify that session tokens are generated using approved cryptographic algorithms. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | No session | 2025-03-26 | ✅ |
 
 ## V3.3 Session Termination
 
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
-| **3.3.1** | Verify that logout and expiration invalidate the session token, such that the back button or a downstream relying party does not resume an authenticated session, including across relying parties. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
-| **3.3.2** | If authenticators permit users to remain logged in, verify that re-authentication occurs periodically both when actively used or after an idle period. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
-| **3.3.3** | Verify that the application gives the option to terminate all other active sessions after a successful password change (including change via password reset/recovery), and that this is effective across the application, federated login (if present), and any relying parties. | | | |
-| **3.3.4** | Verify that users are able to view and (having re-entered login credentials) log out of any or all currently active sessions and devices. | | | |
+| **3.3.1** | Verify that logout and expiration invalidate the session token, such that the back button or a downstream relying party does not resume an authenticated session, including across relying parties. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | No session | 2025-03-26 | ✅ |
+| **3.3.2** | If authenticators permit users to remain logged in, verify that re-authentication occurs periodically both when actively used or after an idle period. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | No session | 2025-03-26 | ✅ |
+| **3.3.3** | Verify that the application gives the option to terminate all other active sessions after a successful password change (including change via password reset/recovery), and that this is effective across the application, federated login (if present), and any relying parties. | No session | 2025-03-26 | ✅ |
+| **3.3.4** | Verify that users are able to view and (having re-entered login credentials) log out of any or all currently active sessions and devices. | No session | 2025-03-26 | ✅ |
 
-## V3.4 Cookie-based Session Managementgit rebase --abort
+## V3.4 Cookie-based Session Management
 
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
-| **3.4.1** | Verify that cookie-based session tokens have the 'Secure' attribute set. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
-| **3.4.2** | Verify that cookie-based session tokens have the 'HttpOnly' attribute set. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
-| **3.4.3** | Verify that cookie-based session tokens utilize the 'SameSite' attribute to limit exposure to cross-site request forgery attacks. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
+| **3.4.1** | Verify that cookie-based session tokens have the 'Secure' attribute set. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | No session | 2025-03-26 | ✅ |
+| **3.4.2** | Verify that cookie-based session tokens have the 'HttpOnly' attribute set. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | No session | 2025-03-26 | ✅ |
+| **3.4.3** | Verify that cookie-based session tokens utilize the 'SameSite' attribute to limit exposure to cross-site request forgery attacks. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | No session | 2025-03-26 | ✅ |
 | **3.4.4** | _(not applicable to KNIME)_ | | | ✅ |
-| **3.4.5** | Verify that if the application is published under a domain name with other applications that set or use session cookies that might disclose the session cookies, set the path attribute in cookie-based session tokens using the most precise path possible. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
+| **3.4.5** | Verify that if the application is published under a domain name with other applications that set or use session cookies that might disclose the session cookies, set the path attribute in cookie-based session tokens using the most precise path possible. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | No session | 2025-03-26 | ✅ |
 
 ## V3.5 Token-based Session Management
 
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
-| **3.5.1** | Verify the application allows users to revoke OAuth tokens that form trust relationships with linked applications. | | | |
-| **3.5.2** | Verify the application uses session tokens rather than static API secrets and keys, except with legacy implementations. | | | |
-| **3.5.3** | Verify that stateless session tokens use digital signatures, encryption, and other countermeasures to protect against tampering, enveloping, replay, null cipher, and key substitution attacks. | | | |
+| **3.5.1** | Verify the application allows users to revoke OAuth tokens that form trust relationships with linked applications. | No session | 2025-03-26 | ✅ |
+| **3.5.2** | Verify the application uses session tokens rather than static API secrets and keys, except with legacy implementations. | No session | 2025-03-26 | ✅ |
+| **3.5.3** | Verify that stateless session tokens use digital signatures, encryption, and other countermeasures to protect against tampering, enveloping, replay, null cipher, and key substitution attacks. | No session | 2025-03-26 | ✅ |
 
 ## V3.6 Federated Re-authentication
 
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
-| **3.6.1** | Verify that Relying Parties (RPs) specify the maximum authentication time to Credential Service Providers (CSPs) and that CSPs re-authenticate the user if they haven't used a session within that period. | | | |
+| **3.6.1** | Verify that Relying Parties (RPs) specify the maximum authentication time to Credential Service Providers (CSPs) and that CSPs re-authenticate the user if they haven't used a session within that period. | No session | 2025-03-26 | ✅ |
 | **3.6.2** | _(not applicable to KNIME)_ | | | ✅ |
 
 ## V3.7 Defenses Against Session Management Exploits
 
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
-| **3.7.1** | Verify the application ensures a full, valid login session or requires re-authentication or secondary verification before allowing any sensitive transactions or account modifications. | | | |
+| **3.7.1** | Verify the application ensures a full, valid login session or requires re-authentication or secondary verification before allowing any sensitive transactions or account modifications. | No session | 2025-03-26 | ✅ |
 
 # V4 Access Control
 
@@ -282,25 +282,25 @@ This is a placeholder for future architectural requirements.
 
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
-| **4.1.1** | Verify that the application enforces access control rules on a trusted service layer, especially if client-side access control is present and could be bypassed. | | | |
-| **4.1.2** | Verify that all user and data attributes and policy information used by access controls cannot be manipulated by end users unless specifically authorized. | | | |
-| **4.1.3** | Verify that the principle of least privilege exists - users should only be able to access functions, data files, URLs, controllers, services, and other resources, for which they possess specific authorization. This implies protection against spoofing and elevation of privilege. ([C7](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
-| **4.1.4** | [DELETED, DUPLICATE OF 4.1.3] | | | |
-| **4.1.5** | Verify that access controls fail securely including when an exception occurs. ([C10](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
+| **4.1.1** | Verify that the application enforces access control rules on a trusted service layer, especially if client-side access control is present and could be bypassed. | | 2025-03-26 | ✅ |
+| **4.1.2** | Verify that all user and data attributes and policy information used by access controls cannot be manipulated by end users unless specifically authorized. | | 2025-03-26 | ✅ |
+| **4.1.3** | Verify that the principle of least privilege exists - users should only be able to access functions, data files, URLs, controllers, services, and other resources, for which they possess specific authorization. This implies protection against spoofing and elevation of privilege. ([C7](https://owasp.org/www-project-proactive-controls/#div-numbering)) | Script node deliberately allows users full access | 2025-03-26 | ✅ |
+| **4.1.4** | [DELETED, DUPLICATE OF 4.1.3] | | 2025-03-26 | ✅ |
+| **4.1.5** | Verify that access controls fail securely including when an exception occurs. ([C10](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | 2025-03-26 | ✅ |
 
 ## V4.2 Operation Level Access Control
 
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
-| **4.2.1** | Verify that sensitive data and APIs are protected against Insecure Direct Object Reference (IDOR) attacks targeting creation, reading, updating and deletion of records, such as creating or updating someone else's record, viewing everyone's records, or deleting all records. | | | |
-| **4.2.2** | Verify that the application or framework enforces a strong anti-CSRF mechanism to protect authenticated functionality, and effective anti-automation or anti-CSRF protects unauthenticated functionality.<br>_This only applies to web pages that our application control. For web pages created by data apps we cannot ensure this._ | | | |
+| **4.2.1** | Verify that sensitive data and APIs are protected against Insecure Direct Object Reference (IDOR) attacks targeting creation, reading, updating and deletion of records, such as creating or updating someone else's record, viewing everyone's records, or deleting all records. | Script node deliberately allows users full access | 2025-03-26 | ✅ |
+| **4.2.2** | Verify that the application or framework enforces a strong anti-CSRF mechanism to protect authenticated functionality, and effective anti-automation or anti-CSRF protects unauthenticated functionality.<br>_This only applies to web pages that our application control. For web pages created by data apps we cannot ensure this._ | | 2025-03-26 | ✅ |
 
 ## V4.3 Other Access Control Considerations
 
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
-| **4.3.1** | Verify administrative interfaces use appropriate multi-factor authentication to prevent unauthorized use. | | | |
-| **4.3.2** | Verify that directory browsing is disabled unless deliberately desired. Additionally, applications should not allow discovery or disclosure of file or directory metadata, such as Thumbs.db, .DS_Store, .git or .svn folders. | | | |
+| **4.3.1** | Verify administrative interfaces use appropriate multi-factor authentication to prevent unauthorized use. | | 2025-03-26 | ✅ |
+| **4.3.2** | Verify that directory browsing is disabled unless deliberately desired. Additionally, applications should not allow discovery or disclosure of file or directory metadata, such as Thumbs.db, .DS_Store, .git or .svn folders. | | 2025-03-26 | ✅ |
 | **4.3.3** | _(not applicable to KNIME)_ | | | ✅ |
 
 # V5 Validation, Sanitization and Encoding
@@ -400,34 +400,34 @@ _(not applicable to KNIME)_
 
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
-| **7.1.1** | Verify that the application does not log credentials or payment details. Session tokens should only be stored in logs in an irreversible, hashed form. ([C9, C10](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
-| **7.1.2** | Verify that the application does not log other sensitive data as defined under local privacy laws or relevant security policy. ([C9](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
-| **7.1.3** | Verify that the application logs security relevant events including successful and failed authentication events, access control failures, deserialization failures and input validation failures. ([C5, C7](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
-| **7.1.4** | Verify that each log event includes necessary information that would allow for a detailed investigation of the timeline when an event happens. ([C9](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
+| **7.1.1** | Verify that the application does not log credentials or payment details. Session tokens should only be stored in logs in an irreversible, hashed form. ([C9, C10](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | 2025-03-26 | |
+| **7.1.2** | Verify that the application does not log other sensitive data as defined under local privacy laws or relevant security policy. ([C9](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | 2025-03-26 | |
+| **7.1.3** | Verify that the application logs security relevant events including successful and failed authentication events, access control failures, deserialization failures and input validation failures. ([C5, C7](https://owasp.org/www-project-proactive-controls/#div-numbering)) | No user login. If script tries to connect to an external service, that needs to log security relevant events. | 2025-03-26 | ✅ |
+| **7.1.4** | Verify that each log event includes necessary information that would allow for a detailed investigation of the timeline when an event happens. ([C9](https://owasp.org/www-project-proactive-controls/#div-numbering)) | See above. | 2025-03-26 | ✅ |
 
 ## V7.2 Log Processing
 
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
-| **7.2.1** | Verify that all authentication decisions are logged, without storing sensitive session tokens or passwords. This should include requests with relevant metadata needed for security investigations. | | | |
-| **7.2.2** | Verify that all access control decisions can be logged and all failed decisions are logged. This should include requests with relevant metadata needed for security investigations. | | | |
+| **7.2.1** | Verify that all authentication decisions are logged, without storing sensitive session tokens or passwords. This should include requests with relevant metadata needed for security investigations. | | 2025-03-26 | ✅ |
+| **7.2.2** | Verify that all access control decisions can be logged and all failed decisions are logged. This should include requests with relevant metadata needed for security investigations. | | 2025-03-26 | ✅ |
 
 ## V7.3 Log Protection
 
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
-| **7.3.1** | Verify that all logging components appropriately encode data to prevent log injection. ([C9](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
+| **7.3.1** | Verify that all logging components appropriately encode data to prevent log injection. ([C9](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | 2025-03-26  | |
 | **7.3.2** | [DELETED, DUPLICATE OF 7.3.1] | | | |
-| **7.3.3** | Verify that security logs are protected from unauthorized access and modification. ([C9](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
-| **7.3.4** | Verify that time sources are synchronized to the correct time and time zone. Strongly consider logging only in UTC if systems are global to assist with post-incident forensic analysis. ([C9](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
+| **7.3.3** | Verify that security logs are protected from unauthorized access and modification. ([C9](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | 2025-03-26 | ✅ |
+| **7.3.4** | Verify that time sources are synchronized to the correct time and time zone. Strongly consider logging only in UTC if systems are global to assist with post-incident forensic analysis. ([C9](https://owasp.org/www-project-proactive-controls/#div-numbering)) | Python script logs have a `System.currentTimeMillis()` timestamp ✅, other logs use the KNIME log | 2025-03-26 | |
 
 ## V7.4 Error Handling
 
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
-| **7.4.1** | Verify that a generic message is shown when an unexpected or security sensitive error occurs, potentially with a unique ID which support personnel can use to investigate. ([C10](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
-| **7.4.2** | Verify that exception handling (or a functional equivalent) is used across the codebase to account for expected and unexpected error conditions. ([C10](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
-| **7.4.3** | Verify that a "last resort" error handler is defined which will catch all unhandled exceptions. ([C10](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
+| **7.4.1** | Verify that a generic message is shown when an unexpected or security sensitive error occurs, potentially with a unique ID which support personnel can use to investigate. ([C10](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | 2025-03-26  | ✅ |
+| **7.4.2** | Verify that exception handling (or a functional equivalent) is used across the codebase to account for expected and unexpected error conditions. ([C10](https://owasp.org/www-project-proactive-controls/#div-numbering)) | User-friendliness of messages could be improved. | 2025-03-26 | |
+| **7.4.3** | Verify that a "last resort" error handler is defined which will catch all unhandled exceptions. ([C10](https://owasp.org/www-project-proactive-controls/#div-numbering)) | KNIME makes sure the application doesn't crash. | 2025-03-26 | |
 
 # V8 Data Protection
 
@@ -578,22 +578,22 @@ _(not applicable to KNIME)_
 
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
-| **13.1.1** | Verify that all application components use the same encodings and parsers to avoid parsing attacks that exploit different URI or file parsing behavior that could be used in SSRF and RFI attacks. | | | |
-| **13.1.2** | [DELETED, DUPLICATE OF 4.3.1] | | | |
-| **13.1.3** | Verify API URLs do not expose sensitive information, such as the API key, session tokens etc. | | | |
-| **13.1.4** | Verify that authorization decisions are made at both the URI, enforced by programmatic or declarative security at the controller or router, and at the resource level, enforced by model-based permissions. | | | |
-| **13.1.5** | Verify that requests containing unexpected or missing content types are rejected with appropriate headers (HTTP response status 406 Unacceptable or 415 Unsupported Media Type). | | | |
+| **13.1.1** | Verify that all application components use the same encodings and parsers to avoid parsing attacks that exploit different URI or file parsing behavior that could be used in SSRF and RFI attacks. | No Web API | 2025-03-26 | ✅ |
+| **13.1.2** | [DELETED, DUPLICATE OF 4.3.1] | No Web API | 2025-03-26 | ✅ |
+| **13.1.3** | Verify API URLs do not expose sensitive information, such as the API key, session tokens etc. | No Web API | 2025-03-26 | ✅ |
+| **13.1.4** | Verify that authorization decisions are made at both the URI, enforced by programmatic or declarative security at the controller or router, and at the resource level, enforced by model-based permissions. | No Web API | 2025-03-26 | ✅ |
+| **13.1.5** | Verify that requests containing unexpected or missing content types are rejected with appropriate headers (HTTP response status 406 Unacceptable or 415 Unsupported Media Type). | No Web API | 2025-03-26 | ✅ |
 
 ## V13.2 RESTful Web Service
 
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
-| **13.2.1** | Verify that enabled RESTful HTTP methods are a valid choice for the user or action, such as preventing normal users using DELETE or PUT on protected API or resources. | | | |
-| **13.2.2** | Verify that JSON schema validation is in place and verified before accepting input. | | | |
-| **13.2.3** | Verify that RESTful web services that utilize cookies are protected from Cross-Site Request Forgery via the use of at least one or more of the following: double submit cookie pattern, CSRF nonces, or Origin request header checks. | | | |
-| **13.2.4** | [DELETED, DUPLICATE OF 11.1.4] | | | |
-| **13.2.5** | Verify that REST services explicitly check the incoming Content-Type to be the expected one, such as application/xml or application/json. | | | |
-| **13.2.6** | Verify that the message headers and payload are trustworthy and not modified in transit. Requiring strong encryption for transport (TLS only) may be sufficient in many cases as it provides both confidentiality and integrity protection. Per-message digital signatures can provide additional assurance on top of the transport protections for high-security applications but bring with them additional complexity and risks to weigh against the benefits. | | | |
+| **13.2.1** | Verify that enabled RESTful HTTP methods are a valid choice for the user or action, such as preventing normal users using DELETE or PUT on protected API or resources. | No Web API | 2025-03-26 | ✅ |
+| **13.2.2** | Verify that JSON schema validation is in place and verified before accepting input. | No Web API | 2025-03-26 | ✅ |
+| **13.2.3** | Verify that RESTful web services that utilize cookies are protected from Cross-Site Request Forgery via the use of at least one or more of the following: double submit cookie pattern, CSRF nonces, or Origin request header checks. | No Web API | 2025-03-26 | ✅ |
+| **13.2.4** | [DELETED, DUPLICATE OF 11.1.4] | No Web API | 2025-03-26 | ✅ |
+| **13.2.5** | Verify that REST services explicitly check the incoming Content-Type to be the expected one, such as application/xml or application/json. | No Web API | 2025-03-26 | ✅ |
+| **13.2.6** | Verify that the message headers and payload are trustworthy and not modified in transit. Requiring strong encryption for transport (TLS only) may be sufficient in many cases as it provides both confidentiality and integrity protection. Per-message digital signatures can provide additional assurance on top of the transport protections for high-security applications but bring with them additional complexity and risks to weigh against the benefits. | No Web API | 2025-03-26 | ✅ |
 
 ## V13.3 SOAP Web Service
 _(not applicable to KNIME)_
