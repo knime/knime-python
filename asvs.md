@@ -86,7 +86,7 @@ This is a placeholder for future architectural requirements.
 | :---: | :--- | :---- | :---: | :---: |
 | **1.11.1** | Verify the definition and documentation of all application components in terms of the business or security functions they provide. | | | |
 | **1.11.2** | Verify that all high-value business logic flows, including authentication, session management and access control, do not share unsynchronized state. | | | |
-| **1.11.3** | _(not applicable to KNIME)_ | | | âœ“ |
+| **1.11.3** | _(not applicable to KNIME)_ | | | ✅ |
 
 ## V1.12 Secure File Upload Architecture
 
@@ -116,108 +116,108 @@ This is a placeholder for future architectural requirements.
 
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
-| **2.1.1** | Verify that user set passwords are at least 12 characters in length (after multiple spaces are combined). ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
-| **2.1.2** | Verify that passwords of at least 64 characters are permitted, and that passwords of more than 128 characters are denied. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
-| **2.1.3** | Verify that password truncation is not performed. However, consecutive multiple spaces may be replaced by a single space. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
-| **2.1.4** | Verify that any printable Unicode character, including language neutral characters such as spaces and Emojis are permitted in passwords. | | | |
-| **2.1.5** | Verify users can change their password. | | | |
-| **2.1.6** | _(not applicable to KNIME)_ | | | âœ“ |
-| **2.1.7** | Verify that passwords submitted during account registration, login, and password change are checked against a set of breached passwords either locally (such as the top 1,000 or 10,000 most common passwords which match the system's password policy) or using an external API. If using an API a zero knowledge proof or other mechanism should be used to ensure that the plain text password is not sent or used in verifying the breach status of the password. If the password is breached, the application must require the user to set a new non-breached password. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
-| **2.1.8** | Verify that a password strength meter is provided to help users set a stronger password. | | | |
-| **2.1.9** | Verify that there are no password composition rules limiting the type of characters permitted. There should be no requirement for upper or lower case or numbers or special characters. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
-| **2.1.10** | Verify that there are no periodic credential rotation or password history requirements. | | | |
-| **2.1.11** | Verify that "paste" functionality, browser password helpers, and external password managers are permitted. | | | |
-| **2.1.12** | Verify that the user can choose to either temporarily view the entire masked password, or temporarily view the last typed character of the password on platforms that do not have this as built-in functionality. | | | |
+| **2.1.1** | Verify that user set passwords are at least 12 characters in length (after multiple spaces are combined). ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | There's no password input | 2025-03-26 | ✅ |
+| **2.1.2** | Verify that passwords of at least 64 characters are permitted, and that passwords of more than 128 characters are denied. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | There's no password input | 2025-03-26 | ✅ |
+| **2.1.3** | Verify that password truncation is not performed. However, consecutive multiple spaces may be replaced by a single space. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | There's no password input | 2025-03-26 | ✅ |
+| **2.1.4** | Verify that any printable Unicode character, including language neutral characters such as spaces and Emojis are permitted in passwords. | There's no password input | 2025-03-26 | ✅ |
+| **2.1.5** | Verify users can change their password. | There's no password input | 2025-03-26 | ✅ |
+| **2.1.6** | _(not applicable to KNIME)_ | | | ✅ |
+| **2.1.7** | Verify that passwords submitted during account registration, login, and password change are checked against a set of breached passwords either locally (such as the top 1,000 or 10,000 most common passwords which match the system's password policy) or using an external API. If using an API a zero knowledge proof or other mechanism should be used to ensure that the plain text password is not sent or used in verifying the breach status of the password. If the password is breached, the application must require the user to set a new non-breached password. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | There's no password input | 2025-03-26 | ✅ |
+| **2.1.8** | Verify that a password strength meter is provided to help users set a stronger password. | There's no password input | 2025-03-26 | ✅ |
+| **2.1.9** | Verify that there are no password composition rules limiting the type of characters permitted. There should be no requirement for upper or lower case or numbers or special characters. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | There's no password input | 2025-03-26 | ✅ |
+| **2.1.10** | Verify that there are no periodic credential rotation or password history requirements. | There's no password input | 2025-03-26 | ✅ |
+| **2.1.11** | Verify that "paste" functionality, browser password helpers, and external password managers are permitted. | There's no password input | 2025-03-26 | ✅ |
+| **2.1.12** | Verify that the user can choose to either temporarily view the entire masked password, or temporarily view the last typed character of the password on platforms that do not have this as built-in functionality. | There's no password input | 2025-03-26 | ✅ |
 
 ## V2.2 General Authenticator Security
 
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
-| **2.2.1** | Verify that anti-automation controls are effective at mitigating breached credential testing, brute force, and account lockout attacks. Such controls include blocking the most common breached passwords, soft lockouts, rate limiting, CAPTCHA, ever increasing delays between attempts, IP address restrictions, or risk-based restrictions such as location, first login on a device, recent attempts to unlock the account, or similar. Verify that no more than 100 failed attempts per hour is possible on a single account. | | | |
-| **2.2.2** | Verify that the use of weak authenticators (such as SMS and email) is limited to secondary verification and transaction approval and not as a replacement for more secure authentication methods. Verify that stronger methods are offered before weak methods, users are aware of the risks, or that proper measures are in place to limit the risks of account compromise. | | | |
-| **2.2.3** | Verify that secure notifications are sent to users after updates to authentication details, such as credential resets, email or address changes, logging in from unknown or risky locations. The use of push notifications - rather than SMS or email - is preferred, but in the absence of push notifications, SMS or email is acceptable as long as no sensitive information is disclosed in the notification. | | | |
-| **2.2.4** | _(not applicable to KNIME)_ | | | âœ“ |
-| **2.2.5** | _(not applicable to KNIME)_ | | | âœ“ |
-| **2.2.6** | _(not applicable to KNIME)_ | | | âœ“ |
-| **2.2.7** | _(not applicable to KNIME)_ | | | âœ“ |
+| **2.2.1** | Verify that anti-automation controls are effective at mitigating breached credential testing, brute force, and account lockout attacks. Such controls include blocking the most common breached passwords, soft lockouts, rate limiting, CAPTCHA, ever increasing delays between attempts, IP address restrictions, or risk-based restrictions such as location, first login on a device, recent attempts to unlock the account, or similar. Verify that no more than 100 failed attempts per hour is possible on a single account. | There's no password input | 2025-03-26 | ✅ |
+| **2.2.2** | Verify that the use of weak authenticators (such as SMS and email) is limited to secondary verification and transaction approval and not as a replacement for more secure authentication methods. Verify that stronger methods are offered before weak methods, users are aware of the risks, or that proper measures are in place to limit the risks of account compromise. | There's no password input | 2025-03-26 | ✅ |
+| **2.2.3** | Verify that secure notifications are sent to users after updates to authentication details, such as credential resets, email or address changes, logging in from unknown or risky locations. The use of push notifications - rather than SMS or email - is preferred, but in the absence of push notifications, SMS or email is acceptable as long as no sensitive information is disclosed in the notification. | There's no password input | 2025-03-26 | ✅ |
+| **2.2.4** | _(not applicable to KNIME)_ | | | ✅ |
+| **2.2.5** | _(not applicable to KNIME)_ | | | ✅ |
+| **2.2.6** | _(not applicable to KNIME)_ | | | ✅ |
+| **2.2.7** | _(not applicable to KNIME)_ | | | ✅ |
 
 ## V2.3 Authenticator Lifecycle
 
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
-| **2.3.1** | Verify system generated initial passwords or activation codes SHOULD be securely randomly generated, SHOULD be at least 6 characters long, and MAY contain letters and numbers, and expire after a short period of time. These initial secrets must not be permitted to become the long term password. | | | |
-| **2.3.2** | Verify that enrollment and use of user-provided authentication devices are supported, such as a U2F or FIDO tokens. | | | |
-| **2.3.3** | Verify that renewal instructions are sent with sufficient time to renew time bound authenticators. | | | |
+| **2.3.1** | Verify system generated initial passwords or activation codes SHOULD be securely randomly generated, SHOULD be at least 6 characters long, and MAY contain letters and numbers, and expire after a short period of time. These initial secrets must not be permitted to become the long term password. | There's no login | 2025-03-26 | ✅ |
+| **2.3.2** | Verify that enrollment and use of user-provided authentication devices are supported, such as a U2F or FIDO tokens. | There's no login | 2025-03-26 | ✅ |
+| **2.3.3** | Verify that renewal instructions are sent with sufficient time to renew time bound authenticators. | There's no login | 2025-03-26 | ✅ |
 
 ## V2.4 Credential Storage
 
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
-| **2.4.1** | Verify that passwords are stored in a form that is resistant to offline attacks. Passwords SHALL be salted and hashed using an approved one-way key derivation or password hashing function. Key derivation and password hashing functions take a password, a salt, and a cost factor as inputs when generating a password hash. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
-| **2.4.2** | Verify that the salt is at least 32 bits in length and be chosen arbitrarily to minimize salt value collisions among stored hashes. For each credential, a unique salt value and the resulting hash SHALL be stored. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
-| **2.4.3** | Verify that if PBKDF2 is used, the iteration count SHOULD be as large as verification server performance will allow, typically at least 100,000 iterations. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
-| **2.4.4** | Verify that if bcrypt is used, the work factor SHOULD be as large as verification server performance will allow, with a minimum of 10. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
-| **2.4.5** | Verify that an additional iteration of a key derivation function is performed, using a salt value that is secret and known only to the verifier. Generate the salt value using an approved random bit generator [SP 800-90Ar1] and provide at least the minimum security strength specified in the latest revision of SP 800-131A. The secret salt value SHALL be stored separately from the hashed passwords (e.g., in a specialized device like a hardware security module). | | | |
+| **2.4.1** | Verify that passwords are stored in a form that is resistant to offline attacks. Passwords SHALL be salted and hashed using an approved one-way key derivation or password hashing function. Key derivation and password hashing functions take a password, a salt, and a cost factor as inputs when generating a password hash. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | No credentials are stored | 2025-03-26 | ✅ |
+| **2.4.2** | Verify that the salt is at least 32 bits in length and be chosen arbitrarily to minimize salt value collisions among stored hashes. For each credential, a unique salt value and the resulting hash SHALL be stored. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | No credentials are stored | 2025-03-26 | ✅ |
+| **2.4.3** | Verify that if PBKDF2 is used, the iteration count SHOULD be as large as verification server performance will allow, typically at least 100,000 iterations. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | No credentials are stored | 2025-03-26 | ✅ |
+| **2.4.4** | Verify that if bcrypt is used, the work factor SHOULD be as large as verification server performance will allow, with a minimum of 10. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | No credentials are stored | 2025-03-26 | ✅ |
+| **2.4.5** | Verify that an additional iteration of a key derivation function is performed, using a salt value that is secret and known only to the verifier. Generate the salt value using an approved random bit generator [SP 800-90Ar1] and provide at least the minimum security strength specified in the latest revision of SP 800-131A. The secret salt value SHALL be stored separately from the hashed passwords (e.g., in a specialized device like a hardware security module). | No credentials are stored | 2025-03-26 | ✅ |
 
 ## V2.5 Credential Recovery
 
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
-| **2.5.1** | Verify that a system generated initial activation or recovery secret is not sent in clear text to the user. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
-| **2.5.2** | Verify password hints or knowledge-based authentication (so-called "secret questions") are not present. | | | |
-| **2.5.3** | Verify password credential recovery does not reveal the current password in any way. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
-| **2.5.4** | Verify shared or default accounts are not present (e.g. "root", "admin", or "sa"). | | | |
-| **2.5.5** | Verify that if an authentication factor is changed or replaced, that the user is notified of this event. | | | |
-| **2.5.6** | Verify forgotten password, and other recovery paths use a secure recovery mechanism, such as time-based OTP (TOTP) or other soft token, mobile push, or another offline recovery mechanism. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
-| **2.5.7** | Verify that if OTP or multi-factor authentication factors are lost, that evidence of identity proofing is performed at the same level as during enrollment. | | | |
+| **2.5.1** | Verify that a system generated initial activation or recovery secret is not sent in clear text to the user. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | There's no login | 2025-03-26 | ✅ |
+| **2.5.2** | Verify password hints or knowledge-based authentication (so-called "secret questions") are not present. | There's no login | 2025-03-26 | ✅ |
+| **2.5.3** | Verify password credential recovery does not reveal the current password in any way. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | There's no login | 2025-03-26 | ✅ |
+| **2.5.4** | Verify shared or default accounts are not present (e.g. "root", "admin", or "sa"). | There's no login | 2025-03-26 | ✅ |
+| **2.5.5** | Verify that if an authentication factor is changed or replaced, that the user is notified of this event. | There's no login | 2025-03-26 | ✅ |
+| **2.5.6** | Verify forgotten password, and other recovery paths use a secure recovery mechanism, such as time-based OTP (TOTP) or other soft token, mobile push, or another offline recovery mechanism. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | There's no login | 2025-03-26 | ✅ |
+| **2.5.7** | Verify that if OTP or multi-factor authentication factors are lost, that evidence of identity proofing is performed at the same level as during enrollment. | There's no login | 2025-03-26 | ✅ |
 
 ## V2.6 Look-up Secret Verifier
 
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
-| **2.6.1** | Verify that lookup secrets can be used only once. | | | |
-| **2.6.2** | Verify that lookup secrets have sufficient randomness (112 bits of entropy), or if less than 112 bits of entropy, salted with a unique and random 32-bit salt and hashed with an approved one-way hash. | | | |
-| **2.6.3** | Verify that lookup secrets are resistant to offline attacks, such as predictable values. | | | |
+| **2.6.1** | Verify that lookup secrets can be used only once. | There's no login | 2025-03-26 | ✅ |
+| **2.6.2** | Verify that lookup secrets have sufficient randomness (112 bits of entropy), or if less than 112 bits of entropy, salted with a unique and random 32-bit salt and hashed with an approved one-way hash. | There's no login | 2025-03-26 | ✅ |
+| **2.6.3** | Verify that lookup secrets are resistant to offline attacks, such as predictable values. | There's no login | 2025-03-26 | ✅ |
 
 ## V2.7 Out of Band Verifier
 
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
-| **2.7.1** | Verify that clear text out of band (NIST "restricted") authenticators, such as SMS or PSTN, are not offered by default, and stronger alternatives such as push notifications are offered first. | | | |
-| **2.7.2** | Verify that the out of band verifier expires out of band authentication requests, codes, or tokens after 10 minutes. | | | |
-| **2.7.3** | Verify that the out of band verifier authentication requests, codes, or tokens are only usable once, and only for the original authentication request. | | | |
-| **2.7.4** | Verify that the out of band authenticator and verifier communicates over a secure independent channel. | | | |
-| **2.7.5** | Verify that the out of band verifier retains only a hashed version of the authentication code. | | | |
-| **2.7.6** | Verify that the initial authentication code is generated by a secure random number generator, containing at least 20 bits of entropy (typically a six digital random number is sufficient). | | | |
+| **2.7.1** | Verify that clear text out of band (NIST "restricted") authenticators, such as SMS or PSTN, are not offered by default, and stronger alternatives such as push notifications are offered first. | There's no login | 2025-03-26 | ✅ |
+| **2.7.2** | Verify that the out of band verifier expires out of band authentication requests, codes, or tokens after 10 minutes. | There's no login | 2025-03-26 | ✅ |
+| **2.7.3** | Verify that the out of band verifier authentication requests, codes, or tokens are only usable once, and only for the original authentication request. | There's no login | 2025-03-26 | ✅ |
+| **2.7.4** | Verify that the out of band authenticator and verifier communicates over a secure independent channel. | There's no login | 2025-03-26 | ✅ |
+| **2.7.5** | Verify that the out of band verifier retains only a hashed version of the authentication code. | There's no login | 2025-03-26 | ✅ |
+| **2.7.6** | Verify that the initial authentication code is generated by a secure random number generator, containing at least 20 bits of entropy (typically a six digital random number is sufficient). | There's no login | 2025-03-26 | ✅ |
 
 ## V2.8 One Time Verifier
 
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
-| **2.8.1** | Verify that time-based OTPs have a defined lifetime before expiring. | | | |
-| **2.8.2** | Verify that symmetric keys used to verify submitted OTPs are highly protected, such as by using a hardware security module or secure operating system based key storage. | | | |
-| **2.8.3** | Verify that approved cryptographic algorithms are used in the generation, seeding, and verification of OTPs. | | | |
-| **2.8.4** | Verify that time-based OTP can be used only once within the validity period. | | | |
-| **2.8.5** | Verify that if a time-based multi-factor OTP token is re-used during the validity period, it is logged and rejected with secure notifications being sent to the holder of the device. | | | |
-| **2.8.6** | Verify physical single-factor OTP generator can be revoked in case of theft or other loss. Ensure that revocation is immediately effective across logged in sessions, regardless of location. | | | |
-| **2.8.7** | Verify that biometric authenticators are limited to use only as secondary factors in conjunction with either something you have and something you know. | | | |
+| **2.8.1** | Verify that time-based OTPs have a defined lifetime before expiring. | There's no login | 2025-03-26 | ✅ |
+| **2.8.2** | Verify that symmetric keys used to verify submitted OTPs are highly protected, such as by using a hardware security module or secure operating system based key storage. | There's no login | 2025-03-26 | ✅ |
+| **2.8.3** | Verify that approved cryptographic algorithms are used in the generation, seeding, and verification of OTPs. | There's no login | 2025-03-26 | ✅ |
+| **2.8.4** | Verify that time-based OTP can be used only once within the validity period. | There's no login | 2025-03-26 | ✅ |
+| **2.8.5** | Verify that if a time-based multi-factor OTP token is re-used during the validity period, it is logged and rejected with secure notifications being sent to the holder of the device. | There's no login | 2025-03-26 | ✅ |
+| **2.8.6** | Verify physical single-factor OTP generator can be revoked in case of theft or other loss. Ensure that revocation is immediately effective across logged in sessions, regardless of location. | There's no login | 2025-03-26 | ✅ |
+| **2.8.7** | Verify that biometric authenticators are limited to use only as secondary factors in conjunction with either something you have and something you know. | There's no login | 2025-03-26 | ✅ |
 
 ## V2.9 Cryptographic Verifier
 
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
-| **2.9.1** | Verify that cryptographic keys used in verification are stored securely and protected against disclosure, such as using a Trusted Platform Module (TPM) or Hardware Security Module (HSM), or an OS service that can use this secure storage. | | | |
-| **2.9.2** | Verify that the challenge nonce is at least 64 bits in length, and statistically unique or unique over the lifetime of the cryptographic device. | | | |
-| **2.9.3** | Verify that approved cryptographic algorithms are used in the generation, seeding, and verification. | | | |
+| **2.9.1** | Verify that cryptographic keys used in verification are stored securely and protected against disclosure, such as using a Trusted Platform Module (TPM) or Hardware Security Module (HSM), or an OS service that can use this secure storage. | No verification needed | 2025-03-26 | ✅ |
+| **2.9.2** | Verify that the challenge nonce is at least 64 bits in length, and statistically unique or unique over the lifetime of the cryptographic device. | No verification needed | 2025-03-26 | ✅ |
+| **2.9.3** | Verify that approved cryptographic algorithms are used in the generation, seeding, and verification. | No verification needed | 2025-03-26 | ✅ |
 
 ## V2.10 Service Authentication
 
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
-| **2.10.1** | Verify that intra-service secrets do not rely on unchanging credentials such as passwords, API keys or shared accounts with privileged access. | | | |
-| **2.10.2** | Verify that if passwords are required for service authentication, the service account used is not a default credential. (e.g. root/root or admin/admin are default in some services during installation). | | | |
-| **2.10.3** | Verify that passwords are stored with sufficient protection to prevent offline recovery attacks, including local system access. | | | |
-| **2.10.4** | Verify passwords, integrations with databases and third-party systems, seeds and internal secrets, and API keys are managed securely and not included in the source code or stored within source code repositories. Such storage SHOULD resist offline attacks. The use of a secure software key store (L1), hardware TPM, or an HSM (L3) is recommended for password storage. | | | |
+| **2.10.1** | Verify that intra-service secrets do not rely on unchanging credentials such as passwords, API keys or shared accounts with privileged access. | Intra-service communication is unencrypted, no secrets in use yet | 2025-03-26 | ✅ |
+| **2.10.2** | Verify that if passwords are required for service authentication, the service account used is not a default credential. (e.g. root/root or admin/admin are default in some services during installation). | Intra-service communication is unencrypted, no secrets in use yet | 2025-03-26 | ✅ |
+| **2.10.3** | Verify that passwords are stored with sufficient protection to prevent offline recovery attacks, including local system access. | No passwords stored | 2025-03-26 | ✅ |
+| **2.10.4** | Verify passwords, integrations with databases and third-party systems, seeds and internal secrets, and API keys are managed securely and not included in the source code or stored within source code repositories. Such storage SHOULD resist offline attacks. The use of a secure software key store (L1), hardware TPM, or an HSM (L3) is recommended for password storage. | Intra-service communication between Java and Python is unencrypted, no secrets in use yet, no other integrations | 2025-03-26 | ✅ |
 
 # V3 Session Management
 
@@ -252,7 +252,7 @@ This is a placeholder for future architectural requirements.
 | **3.4.1** | Verify that cookie-based session tokens have the 'Secure' attribute set. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
 | **3.4.2** | Verify that cookie-based session tokens have the 'HttpOnly' attribute set. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
 | **3.4.3** | Verify that cookie-based session tokens utilize the 'SameSite' attribute to limit exposure to cross-site request forgery attacks. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
-| **3.4.4** | _(not applicable to KNIME)_ | | | âœ“ |
+| **3.4.4** | _(not applicable to KNIME)_ | | | ✅ |
 | **3.4.5** | Verify that if the application is published under a domain name with other applications that set or use session cookies that might disclose the session cookies, set the path attribute in cookie-based session tokens using the most precise path possible. ([C6](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
 
 ## V3.5 Token-based Session Management
@@ -268,7 +268,7 @@ This is a placeholder for future architectural requirements.
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
 | **3.6.1** | Verify that Relying Parties (RPs) specify the maximum authentication time to Credential Service Providers (CSPs) and that CSPs re-authenticate the user if they haven't used a session within that period. | | | |
-| **3.6.2** | _(not applicable to KNIME)_ | | | âœ“ |
+| **3.6.2** | _(not applicable to KNIME)_ | | | ✅ |
 
 ## V3.7 Defenses Against Session Management Exploits
 
@@ -301,7 +301,7 @@ This is a placeholder for future architectural requirements.
 | :---: | :--- | :---- | :---: | :---: |
 | **4.3.1** | Verify administrative interfaces use appropriate multi-factor authentication to prevent unauthorized use. | | | |
 | **4.3.2** | Verify that directory browsing is disabled unless deliberately desired. Additionally, applications should not allow discovery or disclosure of file or directory metadata, such as Thumbs.db, .DS_Store, .git or .svn folders. | | | |
-| **4.3.3** | _(not applicable to KNIME)_ | | | âœ“ |
+| **4.3.3** | _(not applicable to KNIME)_ | | | ✅ |
 
 # V5 Validation, Sanitization and Encoding
 
@@ -363,8 +363,8 @@ _(not applicable to KNIME)_
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
 | **6.1.1** | Verify that regulated private data is stored encrypted while at rest, such as Personally Identifiable Information (PII), sensitive personal information, or data assessed likely to be subject to EU's GDPR. | | | |
-| **6.1.2** | _(not applicable to KNIME)_ | | | âœ“ |
-| **6.1.3** | _(not applicable to KNIME)_ | | | âœ“ |
+| **6.1.2** | _(not applicable to KNIME)_ | | | ✅ |
+| **6.1.3** | _(not applicable to KNIME)_ | | | ✅ |
 
 ## V6.2 Algorithms
 
@@ -376,8 +376,8 @@ _(not applicable to KNIME)_
 | **6.2.4** | Verify that random number, encryption or hashing algorithms, key lengths, rounds, ciphers or modes, can be reconfigured, upgraded, or swapped at any time, to protect against cryptographic breaks. ([C8](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
 | **6.2.5** | Verify that known insecure block modes (i.e. ECB, etc.), padding modes (i.e. PKCS#1 v1.5, etc.), ciphers with small block sizes (i.e. Triple-DES, Blowfish, etc.), and weak hashing algorithms (i.e. MD5, SHA1, etc.) are not used unless required for backwards compatibility. | | | |
 | **6.2.6** | Verify that nonces, initialization vectors, and other single use numbers must not be used more than once with a given encryption key. The method of generation must be appropriate for the algorithm being used. | | | |
-| **6.2.7** | _(not applicable to KNIME)_ | | | âœ“ |
-| **6.2.8** | _(not applicable to KNIME)_ | | | âœ“ |
+| **6.2.7** | _(not applicable to KNIME)_ | | | ✅ |
+| **6.2.8** | _(not applicable to KNIME)_ | | | ✅ |
 
 ## V6.3 Random Values
 
@@ -385,7 +385,7 @@ _(not applicable to KNIME)_
 | :---: | :--- | :---- | :---: | :---: |
 | **6.3.1** | Verify that all random numbers, random file names, random GUIDs, and random strings are generated using the cryptographic module's approved cryptographically secure random number generator when these random values are intended to be not guessable by an attacker. | | | |
 | **6.3.2** | Verify that random GUIDs are created using the GUID v4 algorithm, and a Cryptographically-secure Pseudo-random Number Generator (CSPRNG). GUIDs created using other pseudo-random number generators may be predictable. | | | |
-| **6.3.3** | _(not applicable to KNIME)_ | | | âœ“ |
+| **6.3.3** | _(not applicable to KNIME)_ | | | ✅ |
 
 ## V6.4 Secret Management
 
@@ -459,7 +459,7 @@ _(not applicable to KNIME)_
 | **8.3.3** | Verify that users are provided clear language regarding collection and use of supplied personal information and that users have provided opt-in consent for the use of that data before it is used in any way. | | | |
 | **8.3.4** | Verify that all sensitive data created and processed by the application has been identified, and ensure that a policy is in place on how to deal with sensitive data. ([C8](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
 | **8.3.5** | Verify accessing sensitive data is audited (without logging the sensitive data itself), if the data is collected under relevant data protection directives or where logging of access is required. | | | |
-| **8.3.6** | _(not applicable to KNIME)_ | | | âœ“ |
+| **8.3.6** | _(not applicable to KNIME)_ | | | ✅ |
 | **8.3.7** | Verify that sensitive or private information that is required to be encrypted, is encrypted using approved algorithms that provide both confidentiality and integrity. ([C8](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
 | **8.3.8** | Verify that sensitive personal information is subject to data retention classification, such that old or out of date data is deleted automatically, on a schedule, or as the situation requires. | | | |
 
@@ -480,8 +480,8 @@ _(not applicable to KNIME)_
 | **9.2.1** | Verify that connections to and from the server use trusted TLS certificates. Where internally generated or self-signed certificates are used, the server must be configured to only trust specific internal CAs and specific self-signed certificates. All others should be rejected. | | | |
 | **9.2.2** | Verify that encrypted communications such as TLS is used for all inbound and outbound connections, including for management ports, monitoring, authentication, API, or web service calls, database, cloud, serverless, mainframe, external, and partner connections. The server must not fall back to insecure or unencrypted protocols. | | | |
 | **9.2.3** | Verify that all encrypted connections to external systems that involve sensitive information or functions are authenticated.<br>_Connections originating from nodes in workflows are out of our control._ | | | |
-| **9.2.4** | _(not applicable to KNIME)_ | | | âœ“ |
-| **9.2.5** | _(not applicable to KNIME)_ | | | âœ“ |
+| **9.2.4** | _(not applicable to KNIME)_ | | | ✅ |
+| **9.2.5** | _(not applicable to KNIME)_ | | | ✅ |
 
 # V10 Malicious Code
 
@@ -489,14 +489,14 @@ _(not applicable to KNIME)_
 
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
-| **10.1.1** | _(not applicable to KNIME)_ | | | âœ“ |
+| **10.1.1** | _(not applicable to KNIME)_ | | | ✅ |
 
 ## V10.2 Malicious Code Search
 
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
 | **10.2.1** | Verify that the application source code and third party libraries do not contain unauthorized phone home or data collection capabilities. Where such functionality exists, obtain the user's permission for it to operate before collecting any data. | | | |
-| **10.2.2** | _(not applicable to KNIME)_ | | | âœ“ |
+| **10.2.2** | _(not applicable to KNIME)_ | | | ✅ |
 | **10.2.3** | Verify that the application source code and third party libraries do not contain back doors, such as hard-coded or additional undocumented accounts or keys, code obfuscation, undocumented binary blobs, rootkits, or anti-debugging, insecure debugging features, or otherwise out of date, insecure, or hidden functionality that could be used maliciously if discovered. | | | |
 | **10.2.4** | Verify that the application source code and third party libraries do not contain time bombs by searching for date and time related functions. | | | |
 | **10.2.5** | Verify that the application source code and third party libraries do not contain malicious code, such as salami attacks, logic bypasses, or logic bombs. | | | |
@@ -608,10 +608,10 @@ _(not applicable to KNIME)_
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
 | **14.1.1** | Verify that the application build and deployment processes are performed in a secure and repeatable way, such as CI / CD automation, automated configuration management, and automated deployment scripts. | | | |
-| **14.1.2** | _(not applicable to KNIME)_ | | | âœ“ |
+| **14.1.2** | _(not applicable to KNIME)_ | | | ✅ |
 | **14.1.3** | Verify that server configuration is hardened as per the recommendations of the application server and frameworks in use. | | | |
 | **14.1.4** | Verify that the application, configuration, and all dependencies can be re-deployed using automated deployment scripts, built from a documented and tested runbook in a reasonable time, or restored from backups in a timely fashion. | | | |
-| **14.1.5** | _(not applicable to KNIME)_ | | | âœ“ |
+| **14.1.5** | _(not applicable to KNIME)_ | | | ✅ |
 
 ## V14.2 Dependency
 
