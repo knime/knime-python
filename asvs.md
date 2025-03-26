@@ -516,14 +516,14 @@ _(not applicable to KNIME)_
 
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
-| **11.1.1** | Verify that the application will only process business logic flows for the same user in sequential step order and without skipping steps.| | | |
-| **11.1.2** | Verify that the application will only process business logic flows with all steps being processed in realistic human time, i.e. transactions are not submitted too quickly.| | | |
-| **11.1.3** | Verify the application has appropriate limits for specific business actions or transactions which are correctly enforced on a per user basis. | | | |
-| **11.1.4** | Verify that the application has anti-automation controls to protect against excessive calls such as mass data exfiltration, business logic requests, file uploads or denial of service attacks. | | | |
-| **11.1.5** | Verify the application has business logic limits or validation to protect against likely business risks or threats, identified using threat modeling or similar methodologies. | | | |
-| **11.1.6** | Verify that the application does not suffer from "Time Of Check to Time Of Use" (TOCTOU) issues or other race conditions for sensitive operations. | | | |
-| **11.1.7** | Verify that the application monitors for unusual events or activity from a business logic perspective. For example, attempts to perform actions out of order or actions which a normal user would never attempt. ([C9](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
-| **11.1.8** | Verify that the application has configurable alerting when automated attacks or unusual activity is detected. | | | |
+| **11.1.1** | Verify that the application will only process business logic flows for the same user in sequential step order and without skipping steps.| | 2025-03-26 | |
+| **11.1.2** | Verify that the application will only process business logic flows with all steps being processed in realistic human time, i.e. transactions are not submitted too quickly.| | 2025-03-26 | |
+| **11.1.3** | Verify the application has appropriate limits for specific business actions or transactions which are correctly enforced on a per user basis. | | 2025-03-26 | |
+| **11.1.4** | Verify that the application has anti-automation controls to protect against excessive calls such as mass data exfiltration, business logic requests, file uploads or denial of service attacks. | | 2025-03-26 | |
+| **11.1.5** | Verify the application has business logic limits or validation to protect against likely business risks or threats, identified using threat modeling or similar methodologies. | | 2025-03-26 | |
+| **11.1.6** | Verify that the application does not suffer from "Time Of Check to Time Of Use" (TOCTOU) issues or other race conditions for sensitive operations. | | 2025-03-26 | |
+| **11.1.7** | Verify that the application monitors for unusual events or activity from a business logic perspective. For example, attempts to perform actions out of order or actions which a normal user would never attempt. ([C9](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | 2025-03-26 | |
+| **11.1.8** | Verify that the application has configurable alerting when automated attacks or unusual activity is detected. | | 2025-03-26 | |
 
 # V12 Files and Resources
 
@@ -531,46 +531,46 @@ _(not applicable to KNIME)_
 
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
-| **12.1.1** | Verify that the application will not accept large files that could fill up storage or cause a denial of service. | | | |
-| **12.1.2** | Verify that the application checks compressed files (e.g. zip, gz, docx, odt) against maximum allowed uncompressed size and against maximum number of files before uncompressing the file. | | | |
-| **12.1.3** | Verify that a file size quota and maximum number of files per user is enforced to ensure that a single user cannot fill up the storage with too many files, or excessively large files. | | | |
+| **12.1.1** | Verify that the application will not accept large files that could fill up storage or cause a denial of service. | No file upload. User is responsible for script | 2025-03-26 | ✅ |
+| **12.1.2** | Verify that the application checks compressed files (e.g. zip, gz, docx, odt) against maximum allowed uncompressed size and against maximum number of files before uncompressing the file. | No file upload. User is responsible for script | 2025-03-26 | ✅ |
+| **12.1.3** | Verify that a file size quota and maximum number of files per user is enforced to ensure that a single user cannot fill up the storage with too many files, or excessively large files. | No file upload. User is responsible for script | 2025-03-26 | ✅ |
 
 ## V12.2 File Integrity
 
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
-| **12.2.1** | Verify that files obtained from untrusted sources are validated to be of expected type based on the file's content. | | | |
+| **12.2.1** | Verify that files obtained from untrusted sources are validated to be of expected type based on the file's content. | No file upload. User is responsible for script | 2025-03-26 | ✅ |
 
 ## V12.3 File Execution
 
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
-| **12.3.1** | Verify that user-submitted filename metadata is not used directly by system or framework filesystems and that a URL API is used to protect against path traversal. | | | |
-| **12.3.2** | Verify that user-submitted filename metadata is validated or ignored to prevent the disclosure, creation, updating or removal of local files (LFI). | | | |
-| **12.3.3** | Verify that user-submitted filename metadata is validated or ignored to prevent the disclosure or execution of remote files via Remote File Inclusion (RFI) or Server-side Request Forgery (SSRF) attacks. | | | |
-| **12.3.4** | Verify that the application protects against Reflective File Download (RFD) by validating or ignoring user-submitted filenames in a JSON, JSONP, or URL parameter, the response Content-Type header should be set to text/plain, and the Content-Disposition header should have a fixed filename. | | | |
-| **12.3.5** | Verify that untrusted file metadata is not used directly with system API or libraries, to protect against OS command injection. | | | |
-| **12.3.6** | Verify that the application does not include and execute functionality from untrusted sources, such as unverified content distribution networks, JavaScript libraries, node npm libraries, or server-side DLLs. | | | |
+| **12.3.1** | Verify that user-submitted filename metadata is not used directly by system or framework filesystems and that a URL API is used to protect against path traversal. | | 2025-03-26 | ✅ |
+| **12.3.2** | Verify that user-submitted filename metadata is validated or ignored to prevent the disclosure, creation, updating or removal of local files (LFI). | | 2025-03-26 | ✅ |
+| **12.3.3** | Verify that user-submitted filename metadata is validated or ignored to prevent the disclosure or execution of remote files via Remote File Inclusion (RFI) or Server-side Request Forgery (SSRF) attacks. | | 2025-03-26 | ✅ |
+| **12.3.4** | Verify that the application protects against Reflective File Download (RFD) by validating or ignoring user-submitted filenames in a JSON, JSONP, or URL parameter, the response Content-Type header should be set to text/plain, and the Content-Disposition header should have a fixed filename. | | 2025-03-26 | ✅ |
+| **12.3.5** | Verify that untrusted file metadata is not used directly with system API or libraries, to protect against OS command injection. | | 2025-03-26 | ✅ |
+| **12.3.6** | Verify that the application does not include and execute functionality from untrusted sources, such as unverified content distribution networks, JavaScript libraries, node npm libraries, or server-side DLLs. | User is responsible for script | 2025-03-26 | ✅ |
 
 ## V12.4 File Storage
 
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
-| **12.4.1** | Verify that files obtained from untrusted sources are stored outside the web root, with limited permissions. | | | |
-| **12.4.2** | Verify that files obtained from untrusted sources are scanned by antivirus scanners to prevent upload and serving of known malicious content. | | | |
+| **12.4.1** | Verify that files obtained from untrusted sources are stored outside the web root, with limited permissions. | No web root | 2025-03-26 | ✅ |
+| **12.4.2** | Verify that files obtained from untrusted sources are scanned by antivirus scanners to prevent upload and serving of known malicious content. | Antivirus configuration is up to the user | 2025-03-26 | ✅ |
 
 ## V12.5 File Download
 
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
-| **12.5.1** | Verify that the web tier is configured to serve only files with specific file extensions to prevent unintentional information and source code leakage. For example, backup files (e.g. .bak), temporary working files (e.g. .swp), compressed files (.zip, .tar.gz, etc) and other extensions commonly used by editors should be blocked unless required. | | | |
-| **12.5.2** | Verify that direct requests to uploaded files will never be executed as HTML/JavaScript content. | | | |
+| **12.5.1** | Verify that the web tier is configured to serve only files with specific file extensions to prevent unintentional information and source code leakage. For example, backup files (e.g. .bak), temporary working files (e.g. .swp), compressed files (.zip, .tar.gz, etc) and other extensions commonly used by editors should be blocked unless required. | Only whitelisted files are served | 2025-03-26 | |
+| **12.5.2** | Verify that direct requests to uploaded files will never be executed as HTML/JavaScript content. | No upload possible | 2025-03-26 | ✅ |
 
 ## V12.6 SSRF Protection
 
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
-| **12.6.1** | Verify that the web or application server is configured with an allow list of resources or systems to which the server can send requests or load data/files from. | | | |
+| **12.6.1** | Verify that the web or application server is configured with an allow list of resources or systems to which the server can send requests or load data/files from. | | 2025-03-26 | ✅ |
 
 # V13 API and Web Service
 
@@ -607,48 +607,48 @@ _(not applicable to KNIME)_
 
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
-| **14.1.1** | Verify that the application build and deployment processes are performed in a secure and repeatable way, such as CI / CD automation, automated configuration management, and automated deployment scripts. | | | |
+| **14.1.1** | Verify that the application build and deployment processes are performed in a secure and repeatable way, such as CI / CD automation, automated configuration management, and automated deployment scripts. | | 2025-03-26 | |
 | **14.1.2** | _(not applicable to KNIME)_ | | | ✅ |
-| **14.1.3** | Verify that server configuration is hardened as per the recommendations of the application server and frameworks in use. | | | |
-| **14.1.4** | Verify that the application, configuration, and all dependencies can be re-deployed using automated deployment scripts, built from a documented and tested runbook in a reasonable time, or restored from backups in a timely fashion. | | | |
+| **14.1.3** | Verify that server configuration is hardened as per the recommendations of the application server and frameworks in use. | DevOps responsibility | 2025-03-26 | ✅ |
+| **14.1.4** | Verify that the application, configuration, and all dependencies can be re-deployed using automated deployment scripts, built from a documented and tested runbook in a reasonable time, or restored from backups in a timely fashion. | | 2025-03-26 | |
 | **14.1.5** | _(not applicable to KNIME)_ | | | ✅ |
 
 ## V14.2 Dependency
 
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
-| **14.2.1** | Verify that all components are up to date, preferably using a dependency checker during build or compile time. ([C2](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
-| **14.2.2** | Verify that all unneeded features, documentation, sample applications and configurations are removed. | | | |
-| **14.2.3** | Verify that if application assets, such as JavaScript libraries, CSS or web fonts, are hosted externally on a Content Delivery Network (CDN) or external provider, Subresource Integrity (SRI) is used to validate the integrity of the asset. | | | |
-| **14.2.4** | Verify that third party components come from pre-defined, trusted and continually maintained repositories. ([C2](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
-| **14.2.5** | Verify that a Software Bill of Materials (SBOM) is maintained of all third party libraries in use. ([C2](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
-| **14.2.6** | Verify that the attack surface is reduced by sandboxing or encapsulating third party libraries to expose only the required behaviour into the application. ([C2](https://owasp.org/www-project-proactive-controls/#div-numbering)) | | | |
+| **14.2.1** | Verify that all components are up to date, preferably using a dependency checker during build or compile time. ([C2](https://owasp.org/www-project-proactive-controls/#div-numbering)) | Frontend code is checked with `npm audit` for vulnerabilities, the Python environment is checked by DependencyTrack. | 2025-03-26 | |
+| **14.2.2** | Verify that all unneeded features, documentation, sample applications and configurations are removed. | | 2025-03-26 | |
+| **14.2.3** | Verify that if application assets, such as JavaScript libraries, CSS or web fonts, are hosted externally on a Content Delivery Network (CDN) or external provider, Subresource Integrity (SRI) is used to validate the integrity of the asset. | | 2025-03-26 | ✅ |
+| **14.2.4** | Verify that third party components come from pre-defined, trusted and continually maintained repositories. ([C2](https://owasp.org/www-project-proactive-controls/#div-numbering)) | Java dependencies come from the target platform or we have ship a fixed and trusted version. Frontend code uses packages from the trusted source https://npmjs.com, and Python packages (via `knime-conda-channels`) come from `conda-forge` with our self-maintained metapackages `knime-python-scripting`. | 2025-03-26 | |
+| **14.2.5** | Verify that a Software Bill of Materials (SBOM) is maintained of all third party libraries in use. ([C2](https://owasp.org/www-project-proactive-controls/#div-numbering)) | Frontend SBOM is exported during the build, Bundled Python environment SBOM is created in `knime-conda-channels` and Java code is checked via the `knime-full` docker image in DependencyTrack | 2025-03-26 | |
+| **14.2.6** | Verify that the attack surface is reduced by sandboxing or encapsulating third party libraries to expose only the required behaviour into the application. ([C2](https://owasp.org/www-project-proactive-controls/#div-numbering)) | Python scripts are sandboxed in the sense that they run in a dedicated process, but still on the same machine. Other third party libs like Py4J cannot be sandboxed as they are integral to the communication between Python and the JVM. | 2025-03-26 | |
 
 ## V14.3 Unintended Security Disclosure
 
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
 | **14.3.1** | [DELETED, DUPLICATE OF 7.4.1] | | | |
-| **14.3.2** | Verify that web or application server and application framework debug modes are disabled in production to eliminate debug features, developer consoles, and unintended security disclosures. | | | |
-| **14.3.3** | Verify that the HTTP headers or any part of the HTTP response do not expose detailed version information of system components. | | | |
+| **14.3.2** | Verify that web or application server and application framework debug modes are disabled in production to eliminate debug features, developer consoles, and unintended security disclosures. | | 2025-03-26 | |
+| **14.3.3** | Verify that the HTTP headers or any part of the HTTP response do not expose detailed version information of system components. | | 2025-03-26 | ✅ |
 
 ## V14.4 HTTP Security Headers
 
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
-| **14.4.1** | Verify that every HTTP response contains a Content-Type header. Also specify a safe character set (e.g., UTF-8, ISO-8859-1) if the content types are text/*, /+xml and application/xml. Content must match with the provided Content-Type header. | | | |
-| **14.4.2** | Verify that all API responses contain a Content-Disposition: attachment; filename="api.json" header (or other appropriate filename for the content type). | | | |
-| **14.4.3** | Verify that a Content Security Policy (CSP) response header is in place that helps mitigate impact for XSS attacks like HTML, DOM, JSON, and JavaScript injection vulnerabilities. | | | |
-| **14.4.4** | Verify that all responses contain a X-Content-Type-Options: nosniff header. | | | |
-| **14.4.5** | Verify that a Strict-Transport-Security header is included on all responses and for all subdomains, such as Strict-Transport-Security: max-age=15724800; includeSubdomains. | | | |
-| **14.4.6** | Verify that a suitable Referrer-Policy header is included to avoid exposing sensitive information in the URL through the Referer header to untrusted parties. | | | |
-| **14.4.7** | Verify that the content of a web application cannot be embedded in a third-party site by default and that embedding of the exact resources is only allowed where necessary by using suitable Content-Security-Policy: frame-ancestors and X-Frame-Options response headers. | | | |
+| **14.4.1** | Verify that every HTTP response contains a Content-Type header. Also specify a safe character set (e.g., UTF-8, ISO-8859-1) if the content types are text/*, /+xml and application/xml. Content must match with the provided Content-Type header. | | 2025-03-26 | |
+| **14.4.2** | Verify that all API responses contain a Content-Disposition: attachment; filename="api.json" header (or other appropriate filename for the content type). | Handled by UIExtension framework | 2025-03-26 | |
+| **14.4.3** | Verify that a Content Security Policy (CSP) response header is in place that helps mitigate impact for XSS attacks like HTML, DOM, JSON, and JavaScript injection vulnerabilities. | Handled by UIExtension framework | 2025-03-26 | |
+| **14.4.4** | Verify that all responses contain a X-Content-Type-Options: nosniff header. | Handled by UIExtension framework | 2025-03-26 | |
+| **14.4.5** | Verify that a Strict-Transport-Security header is included on all responses and for all subdomains, such as Strict-Transport-Security: max-age=15724800; includeSubdomains. | Handled by UIExtension framework | 2025-03-26 | |
+| **14.4.6** | Verify that a suitable Referrer-Policy header is included to avoid exposing sensitive information in the URL through the Referer header to untrusted parties. | Handled by UIExtension framework | 2025-03-26 | |
+| **14.4.7** | Verify that the content of a web application cannot be embedded in a third-party site by default and that embedding of the exact resources is only allowed where necessary by using suitable Content-Security-Policy: frame-ancestors and X-Frame-Options response headers. | Handled by UIExtension framework | 2025-03-26 | |
 
 ## V14.5 HTTP Request Header Validation
 
 | # | Description | Notes | Last Checked | N/A |
 | :---: | :--- | :---- | :---: | :---: |
-| **14.5.1** | Verify that the application server only accepts the HTTP methods in use by the application/API, including pre-flight OPTIONS, and logs/alerts on any requests that are not valid for the application context. | | | |
-| **14.5.2** | Verify that the supplied Origin header is not used for authentication or access control decisions, as the Origin header can easily be changed by an attacker. | | | |
-| **14.5.3** | Verify that the Cross-Origin Resource Sharing (CORS) Access-Control-Allow-Origin header uses a strict allow list of trusted domains and subdomains to match against and does not support the "null" origin. | | | |
-| **14.5.4** | Verify that HTTP headers added by a trusted proxy or SSO devices, such as a bearer token, are authenticated by the application. | | |  |
+| **14.5.1** | Verify that the application server only accepts the HTTP methods in use by the application/API, including pre-flight OPTIONS, and logs/alerts on any requests that are not valid for the application context. | Handled by UIExtension framework | 2025-03-26 | |
+| **14.5.2** | Verify that the supplied Origin header is not used for authentication or access control decisions, as the Origin header can easily be changed by an attacker. | | 2025-03-26 | ✅ |
+| **14.5.3** | Verify that the Cross-Origin Resource Sharing (CORS) Access-Control-Allow-Origin header uses a strict allow list of trusted domains and subdomains to match against and does not support the "null" origin. | | 2025-03-26 | ✅ |
+| **14.5.4** | Verify that HTTP headers added by a trusted proxy or SSO devices, such as a bearer token, are authenticated by the application. | | 2025-03-26 | ✅ |
