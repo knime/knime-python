@@ -52,8 +52,12 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+
+import org.knime.core.node.NodeLogger;
 
 /**
  * A representation of a PYTHONPATH with Python modules on it. The {@link PythonPath} contains a list of strings which
@@ -65,17 +69,17 @@ import java.util.Objects;
  */
 public final class PythonPath {
 
-    private final List<String> m_paths;
+    private final Set<String> m_paths = new LinkedHashSet<>();
 
     private PythonPath(final List<String> paths) {
-        m_paths = paths;
+        m_paths.addAll(paths);
     }
 
     /**
      * @return the list of absolute paths to the folders containing the Python modules
      */
     public List<String> getPaths() {
-        return Collections.unmodifiableList(m_paths);
+        return Collections.unmodifiableList(new ArrayList<>(m_paths));
     }
 
     /**
@@ -83,8 +87,7 @@ public final class PythonPath {
      *         platform specific separator.
      */
     public String getPythonPath() {
-        final String seperator = File.pathSeparator;
-        return String.join(seperator, m_paths);
+        return String.join(File.pathSeparator, m_paths);
     }
 
     @Override
@@ -120,11 +123,13 @@ public final class PythonPath {
     /** A builder for {@link PythonPath}. */
     public static final class PythonPathBuilder {
 
-        private final List<String> m_paths;
+        private final Set<String> m_paths;
+
+        private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonPathBuilder.class);
 
         /** Create a new builder for {@link PythonPath}. */
         public PythonPathBuilder() {
-            m_paths = new ArrayList<>();
+            m_paths = new LinkedHashSet<>();
         }
 
         /**
@@ -144,7 +149,10 @@ public final class PythonPath {
          * @return the builder
          */
         public PythonPathBuilder add(final Path path) {
-            m_paths.add(path.toAbsolutePath().toString());
+            if (!m_paths.add(path.toAbsolutePath().toString())) {
+                LOGGER.coding(String.format("The path '%s' is already present.",
+                    path.toAbsolutePath()));
+            }
             return this;
         }
 
