@@ -729,6 +729,7 @@ propagated with or for interoperation with KNIME.
 
    <requires>
       <import feature="org.knime.features.core.columnar" version="5.5.0" match="greaterOrEqual"/>
+      <import feature="org.knime.features.conda" version="5.5.0" match="greaterOrEqual"/>
    </requires>
 
    <plugin
@@ -781,11 +782,11 @@ propagated with or for interoperation with KNIME.
          install-size="0"
          version="0.0.0"/>
 
-   <plugin
+   <!-- <plugin
          id="org.knime.conda.envbundling"
          download-size="0"
          install-size="0"
          version="0.0.0"
-         unpack="false"/>
+         unpack="false"/> -->
 
 </feature>
