@@ -48,12 +48,12 @@
  */
 package org.knime.python3.scripting.nodes2;
 
-import java.io.IOException;
-
+import org.knime.scripting.editor.CodeGenerationRequest;
+import org.knime.scripting.editor.CodeGenerationRequest.RequestBody;
+import org.knime.scripting.editor.CodeGenerationRequest.Inputs;
+import org.knime.scripting.editor.CodeGenerationRequest.Outputs;
 import org.knime.scripting.editor.InputOutputModel;
 import org.knime.scripting.editor.InputOutputModelNameAndTypeUtils;
-import org.knime.scripting.editor.InputOutputModelNameAndTypeUtils.NameAndType;
-import org.knime.scripting.editor.ai.HubConnection;
 
 /**
  * This class provides methods to generate Python code with the help of AI
@@ -72,14 +72,13 @@ public final class PythonCodeAssistant {
      * @param inputOutputModels The input output models that give context to this AI query
      * @param hasView Whether a view should be populated
      * @return The newly generated code
-     * @throws IOException
      */
-    public static String generateCode( //
+    public static CodeGenerationRequest generateCode( //
         final String userPrompt, //
         final String oldCode, //
         final InputOutputModel[] inputOutputModels, //
         final boolean hasView //
-    ) throws IOException {
+    ) {
         var inputTables = InputOutputModelNameAndTypeUtils.getTablesMatchingNamePrefix(inputOutputModels,
             String.format("%s %s", PythonScriptingInputOutputModelUtils.INPUT_PREFIX,
                 PythonScriptingInputOutputModelUtils.INPUT_OUTPUT_TYPE_TABLE));
@@ -100,33 +99,23 @@ public final class PythonCodeAssistant {
             String.format("%s %s", PythonScriptingInputOutputModelUtils.OUTPUT_PREFIX,
                 PythonScriptingInputOutputModelUtils.INPUT_OUTPUT_TYPE_IMAGE));
 
-        var request = new CodeGenerationRequest(//
-            oldCode, //
-            userPrompt, //
-            new Inputs( //
-                inputTables, //
-                inputObjects.length, //
-                InputOutputModelNameAndTypeUtils.getSupportedFlowVariables(inputOutputModels) //
-            ), //
-            new Outputs( //
-                outputTables.length, //
-                outputObjects.length, //
-                outputImages.length, //
-                hasView //
-            ));
-
-        return HubConnection.INSTANCE.sendRequest("/code_generation/python", request);
-    }
-
-    private record Outputs(long num_tables, long num_objects, long num_images, boolean has_view) {
-
-    }
-
-    private record Inputs(NameAndType[][] tables, long num_objects, NameAndType[] flow_variables) { // NOSONAR: we don't need hash or equals here
-
-    }
-
-    private record CodeGenerationRequest(String code, String user_query, Inputs inputs, Outputs outputs) {
-
+        return new CodeGenerationRequest( //
+            "/code_generation/python", //
+            new RequestBody(//
+                oldCode, //
+                userPrompt, //
+                new Inputs( //
+                    inputTables, //
+                    inputObjects.length, //
+                    InputOutputModelNameAndTypeUtils.getSupportedFlowVariables(inputOutputModels) //
+                ), //
+                new Outputs( //
+                    outputTables.length, //
+                    outputObjects.length, //
+                    outputImages.length, //
+                    hasView //
+                ) //
+            ) //
+        );
     }
 }
