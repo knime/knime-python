@@ -55,12 +55,11 @@ import org.knime.core.webui.data.RpcDataService;
 import org.knime.core.webui.node.dialog.NodeDialog;
 import org.knime.core.webui.node.dialog.NodeSettingsService;
 import org.knime.core.webui.node.dialog.SettingsType;
-import org.knime.core.webui.node.dialog.defaultdialog.DefaultNodeDialog;
+import org.knime.core.webui.node.dialog.defaultdialog.DefaultNodeDialogUIExtension;
 import org.knime.core.webui.node.dialog.defaultdialog.dataservice.DefaultDialogDataConverter;
 import org.knime.core.webui.node.dialog.defaultdialog.dataservice.FlowVariableDataServiceImpl;
 import org.knime.core.webui.node.dialog.defaultdialog.dataservice.filechooser.FileChooserDataService;
 import org.knime.core.webui.node.dialog.defaultdialog.dataservice.filechooser.FileSystemConnector;
-import org.knime.core.webui.page.Page;
 
 /**
  * JSON Forms based dialog. Not exposed as API.
@@ -68,7 +67,7 @@ import org.knime.core.webui.page.Page;
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
 @SuppressWarnings("restriction")
-public final class JsonFormsNodeDialog implements NodeDialog {
+public final class JsonFormsNodeDialog implements NodeDialog, DefaultNodeDialogUIExtension {
 
     private final SettingsType m_settingsType;
 
@@ -105,11 +104,6 @@ public final class JsonFormsNodeDialog implements NodeDialog {
             .addService("fileChooser", fileChooserService) //
             .onDeactivate(fsConnector::clear) //
             .build());
-    }
-
-    @Override
-    public Page getPage() {
-        return DefaultNodeDialog.PAGE;
     }
 
     @Override
