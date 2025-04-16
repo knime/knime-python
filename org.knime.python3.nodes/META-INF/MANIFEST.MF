@@ -21,7 +21,7 @@ Require-Bundle:
  org.knime.core.table;bundle-version="[5.5.0,6.0.0)",
  org.knime.core.columnar.arrow;bundle-version="[5.5.0,6.0.0)",
  com.google.guava;bundle-version="[19.0.0,20.0.0)",
- org.yaml.snakeyaml;bundle-version="[1.23.0,2.0.0)",
+ org.yaml.snakeyaml;bundle-version="[2.4.0,3.0.0)",
  org.knime.conda.envbundling;bundle-version="[5.5.0,6.0.0)",
  org.knime.conda;bundle-version="[5.5.0,6.0.0)",
  com.google.gson;bundle-version="[2.8.6,3.0.0)",
