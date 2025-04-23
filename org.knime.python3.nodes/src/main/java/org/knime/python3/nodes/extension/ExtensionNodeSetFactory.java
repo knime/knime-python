@@ -342,12 +342,9 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
         protected DelegatingNodeModel createNodeModel(final NodeCreationConfiguration creationConfig) {
             final var config = creationConfig.getPortConfig().get(); // NOSONAR
 
-            try (var proxy = m_proxyProvider.getNodeFactoryProxy()) {
-                // happens here to speed up the population of the node repository
-                var initialSettings = proxy.getSettings(m_extensionVersion);
-                return new DelegatingNodeModel(m_proxyProvider, config.getInputPorts(), config.getOutputPorts(),
-                    initialSettings, m_extensionVersion, config.getInputPortLocation(), config.getOutputPortLocation());
-            }
+            // happens here to speed up the population of the node repository
+            return new DelegatingNodeModel(m_proxyProvider, config.getInputPorts(), config.getOutputPorts(),
+                m_extensionVersion, config.getInputPortLocation(), config.getOutputPortLocation());
         }
 
         @Override

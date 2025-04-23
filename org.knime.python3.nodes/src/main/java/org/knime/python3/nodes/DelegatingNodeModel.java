@@ -76,6 +76,7 @@ import org.knime.core.node.workflow.VariableTypeRegistry;
 import org.knime.core.node.workflow.virtual.AbstractPortObjectRepositoryNodeModel;
 import org.knime.core.util.PathUtils;
 import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
+import org.knime.python3.nodes.proxy.NodeProxy;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy.CredentialsProviderProxy;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy.FlowVariablesProxy;
@@ -99,7 +100,40 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
 
     private final NodeModelProxyProvider m_proxyProvider;
 
-    private JsonNodeSettings m_settings;
+    /**
+     * We're hiding the JsonNodeSettings behind a class for lazy initialization to prevent accidental wrong usage. The
+     * settings are loaded lazily so that we can create an instance of this node (for caching in the NodeSpecCache)
+     * without having to start a Python process -- which provides the initial settings.
+     */
+    private class LazyInitializedJsonNodeSettings {
+        private JsonNodeSettings m_internalSettings;
+
+        JsonNodeSettings get() {
+            if (m_internalSettings == null) {
+                try (var nodeProxy = m_proxyProvider.getConfigurationProxy()) {
+                    m_internalSettings = nodeProxy.getSettings(m_extensionVersion);
+                }
+            }
+            return m_internalSettings;
+        }
+
+        /**
+         * If we are running configure or execute we start a Python process anyways, so we can use the node proxy from
+         * that process to initialize the settings if needed.
+         */
+        JsonNodeSettings initializeFromProxy(final NodeProxy proxy) {
+            if (m_internalSettings == null) {
+                m_internalSettings = proxy.getSettings(m_extensionVersion);
+            }
+            return m_internalSettings;
+        }
+
+        void set(final JsonNodeSettings settings) {
+            m_internalSettings = settings;
+        }
+    }
+
+    private LazyInitializedJsonNodeSettings m_settings = new LazyInitializedJsonNodeSettings();
 
     private Optional<Path> m_view;
 
@@ -120,14 +154,12 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
      * @param proxyProvider provides the proxies for delegation
      * @param inputPorts The input ports of this node
      * @param outputPorts The output ports of this node
-     * @param initialSettings
      * @param extensionVersion the version of the extension
      */
     public DelegatingNodeModel(final NodeModelProxyProvider proxyProvider, final PortType[] inputPorts,
-        final PortType[] outputPorts, final JsonNodeSettings initialSettings, final String extensionVersion) {
+        final PortType[] outputPorts, final String extensionVersion) {
         super(inputPorts, outputPorts);
         m_proxyProvider = proxyProvider;
-        m_settings = initialSettings;
         m_view = Optional.empty();
         m_extensionVersion = extensionVersion;
         m_outputPorts = outputPorts;
@@ -139,17 +171,15 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
      * @param proxyProvider provides the proxies for delegation
      * @param inputPorts The input ports of this node
      * @param outputPorts The output ports of this node
-     * @param initialSettings
      * @param extensionVersion the version of the extension
      * @param inputPortMap Input Port Map for creating the node model
      * @param outputPortMap Output Port Map for creating the node model
      */
     public DelegatingNodeModel(final NodeModelProxyProvider proxyProvider, final PortType[] inputPorts,
-        final PortType[] outputPorts, final JsonNodeSettings initialSettings, final String extensionVersion,
-        final Map<String, int[]> inputPortMap, final Map<String, int[]> outputPortMap) {
+        final PortType[] outputPorts, final String extensionVersion, final Map<String, int[]> inputPortMap,
+        final Map<String, int[]> outputPortMap) {
         super(inputPorts, outputPorts);
         m_proxyProvider = proxyProvider;
-        m_settings = initialSettings;
         m_view = Optional.empty();
         m_extensionVersion = extensionVersion;
         m_outputPorts = outputPorts;
@@ -160,10 +190,10 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
     @Override
     protected PortObjectSpec[] configure(final PortObjectSpec[] inSpecs) throws InvalidSettingsException {
         return runWithProxy(m_proxyProvider::getConfigurationProxy, node -> {
-            node.loadValidatedSettings(m_settings);
+            node.loadValidatedSettings(m_settings.get());
             var result = node.configure(inSpecs, this, this, this, this);
             // allows for auto-configure
-            m_settings = node.getSettings(m_extensionVersion);
+            m_settings.set(node.getSettings(m_extensionVersion));
             return result;
         });
     }
@@ -176,9 +206,9 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
         }
 
         return runWithProxy(() -> m_proxyProvider.getExecutionProxy(inData), node -> {
-            node.loadValidatedSettings(m_settings);
+            node.loadValidatedSettings(m_settings.get());
             var result = node.execute(inData, m_outputPorts, exec, this, this, this, this);
-            m_settings = node.getSettings(m_extensionVersion);
+            m_settings.set(node.getSettings(m_extensionVersion));
             m_view = result.getView();
             return result.getPortObjects();
         });
@@ -191,7 +221,7 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
 
     @Override
     protected void saveSettingsTo(final NodeSettingsWO settings) {
-        m_settings.saveTo(settings);
+        m_settings.get().saveTo(settings);
     }
 
     @Override
@@ -207,12 +237,12 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
     protected void loadValidatedSettingsFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
         runWithProxyConsumer(m_proxyProvider::getConfigurationProxy, node -> {
             var savedVersion = JsonNodeSettingsSchema.readVersion(settings);
-            m_settings = node.getSettingsSchema(savedVersion).createFromSettings(settings);
+            m_settings.set(node.getSettingsSchema(savedVersion).createFromSettings(settings));
 
             // if the extension version the settings were saved with is different from
             // the installed extension version, we need to let the user know
             if (!savedVersion.equals(m_extensionVersion)) {
-                node.determineCompatibility(savedVersion, m_extensionVersion, m_settings.getParameters());
+                node.determineCompatibility(savedVersion, m_extensionVersion, m_settings.get().getParameters());
             }
         });
     }
@@ -234,6 +264,7 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
     private <P extends NodeModelProxy, X extends Exception, T> T runWithProxy(final Supplier<P> proxySupplier,
         final ThrowingFunction<P, T, X> function) throws X {
         try (var proxy = proxySupplier.get()) {
+            m_settings.initializeFromProxy(proxy);
             var result = function.apply(proxy);
             m_proxyShutdownTracker.closeAsynchronously(proxy);
             return result;
