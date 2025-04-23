@@ -59,6 +59,7 @@ import org.knime.core.webui.node.dialog.defaultdialog.DefaultNodeDialog;
 import org.knime.core.webui.node.dialog.defaultdialog.dataservice.DefaultDialogDataConverter;
 import org.knime.core.webui.node.dialog.defaultdialog.dataservice.FlowVariableDataServiceImpl;
 import org.knime.core.webui.node.dialog.defaultdialog.dataservice.filechooser.FileChooserDataService;
+import org.knime.core.webui.node.dialog.defaultdialog.dataservice.filechooser.FileSystemConnector;
 import org.knime.core.webui.page.Page;
 
 /**
@@ -96,11 +97,13 @@ public final class JsonFormsNodeDialog implements NodeDialog {
 
     @Override
     public Optional<RpcDataService> createRpcDataService() {
+        var fsConnector = new FileSystemConnector();
         var flowVariableDataService = new FlowVariableDataServiceImpl(m_dialogDataConverter);
-        var fileChooserService = new FileChooserDataService();
+        var fileChooserService = new FileChooserDataService(fsConnector);
         return Optional.of(RpcDataService.builder() //
             .addService("flowVariables", flowVariableDataService) //
-            .addService("fileChooser", fileChooserService)
+            .addService("fileChooser", fileChooserService) //
+            .onDeactivate(fsConnector::clear) //
             .build());
     }
 
