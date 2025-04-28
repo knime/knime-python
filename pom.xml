@@ -2,8 +2,8 @@
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>org.knime.maven</groupId>
-		<artifactId>ap.parent-DEVOPS-2219</artifactId>
-		<version>5.5.0</version>
+		<artifactId>ap.parent</artifactId>
+		<version>5.5.0-DEVOPS-2219</version>
 	</parent>
 	<groupId>org.knime</groupId>
 	<artifactId>knime-python</artifactId>
