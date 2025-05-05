@@ -474,6 +474,7 @@ final class CloseablePythonNodeProxy
                 ClassNotFoundException, InstantiationException, IllegalAccessException, IOException { // NOSONAR
                 return getExpiresAfter(serializedXMLString);
             }
+
         };
         m_proxy.initializeJavaCallback(callback);
 
@@ -552,6 +553,12 @@ final class CloseablePythonNodeProxy
             @Override
             public Map<String, int[]> get_output_port_map(){
                 return ((DelegatingNodeModel)getNode().getNodeModel()).getOutputPortMap();
+            }
+
+            @Override
+            public String execute_tool(final String tool, final String parameters) {
+                // TODO Auto-generated method stub
+                return null;
             }
         };
 
