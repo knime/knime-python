@@ -53,6 +53,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -85,6 +86,8 @@ import org.knime.core.node.workflow.ICredentials;
 import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.node.workflow.VariableType;
+import org.knime.core.node.workflow.capture.BuildWorkflowsUtil;
+import org.knime.core.node.workflow.capture.WorkflowSegmentExecutor;
 import org.knime.core.util.FileUtil;
 import org.knime.core.util.PathUtils;
 import org.knime.core.util.ThreadUtils;
@@ -557,8 +560,18 @@ final class CloseablePythonNodeProxy
 
             @Override
             public String execute_tool(final String tool, final String parameters) {
-                // TODO Auto-generated method stub
-                return null;
+                var ws = BuildWorkflowsUtil.createWorkflowSegment(Base64.getDecoder().decode(tool.getBytes()),
+                    "TODO workflow name"); // TODO inputs and outputs
+                try {
+                    var wsExecutor = new WorkflowSegmentExecutor(ws, "TODO workflow name",
+                        NodeContext.getContext().getNodeContainer(), true, warning -> {
+                        });
+                    var res = wsExecutor.executeWorkflow(new PortObject[0], exec);
+                    return "TODO"; // TODO extract tool output from workflow output
+                } catch (Exception ex) {
+                    // TODO
+                    throw new RuntimeException("Failed to execute tool: " + tool, ex);
+                }
             }
         };
 
