@@ -270,6 +270,7 @@ public interface PythonNodeModelProxy {
          */
         public ExpiryDate get_expires_after(final String serializedXMLString) throws CouldNotAuthorizeException, // NOSONAR
             ClassNotFoundException, InstantiationException, IllegalAccessException, IOException;
+
     }
 
     /**
@@ -395,6 +396,17 @@ public interface PythonNodeModelProxy {
          * @return The "KNIME Home" directory which is located inside the current workspace
          */
         String get_knime_home_dir(); // NOSONAR
+
+        /**
+         * Executes a tool in Java
+         *
+         * TODO add input data
+         *
+         * @param tool to execute TODO placeholder until we have a better idea of the representation
+         * @param parameters JSON with the parameters for the tool
+         * @return the message from the tool TODO extend to ToolResult that also includes data
+         */
+        public String execute_tool(String tool, String parameters);
 
     }
 
