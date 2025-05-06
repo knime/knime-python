@@ -55,6 +55,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -561,11 +562,12 @@ final class CloseablePythonNodeProxy
             @Override
             public String execute_tool(final String tool, final String parameters) {
                 var ws = BuildWorkflowsUtil.createWorkflowSegment(Base64.getDecoder().decode(tool.getBytes()),
-                    "TODO workflow name"); // TODO inputs and outputs
+                    "TODO workflow name", List.of(), List.of()); // TODO inputs and outputs
                 try {
                     var wsExecutor = new WorkflowSegmentExecutor(ws, "TODO workflow name",
                         NodeContext.getContext().getNodeContainer(), true, warning -> {
                         });
+                    wsExecutor.configureWorkflow(parameters);
                     var res = wsExecutor.executeWorkflow(new PortObject[0], exec);
                     return "TODO"; // TODO extract tool output from workflow output
                 } catch (Exception ex) {
