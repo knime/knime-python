@@ -48,6 +48,7 @@
  */
 package org.knime.python3.nodes;
 
+import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -55,7 +56,6 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -64,6 +64,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.stream.Stream;
+import java.util.zip.ZipInputStream;
 
 import org.knime.core.columnar.arrow.ArrowColumnStoreFactory;
 import org.knime.core.data.filestore.FileStore;
@@ -87,7 +88,7 @@ import org.knime.core.node.workflow.ICredentials;
 import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.node.workflow.VariableType;
-import org.knime.core.node.workflow.capture.BuildWorkflowsUtil;
+import org.knime.core.node.workflow.capture.WorkflowSegment;
 import org.knime.core.node.workflow.capture.WorkflowSegmentExecutor;
 import org.knime.core.util.FileUtil;
 import org.knime.core.util.PathUtils;
@@ -561,9 +562,9 @@ final class CloseablePythonNodeProxy
 
             @Override
             public String execute_tool(final String tool, final String parameters) {
-                var ws = BuildWorkflowsUtil.createWorkflowSegment(Base64.getDecoder().decode(tool.getBytes()),
-                    "TODO workflow name", List.of(), List.of()); // TODO inputs and outputs
-                try {
+                try (var byteIn = new ByteArrayInputStream(Base64.getDecoder().decode(tool.getBytes()));
+                        var zipIn = new ZipInputStream(byteIn)) {
+                    var ws = WorkflowSegment.load(zipIn);
                     var wsExecutor = new WorkflowSegmentExecutor(ws, "TODO workflow name",
                         NodeContext.getContext().getNodeContainer(), true, warning -> {
                         });
