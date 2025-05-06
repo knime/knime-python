@@ -791,6 +791,24 @@ class ExecutionContext(ConfigurationContext):
         """
         return self._java_ctx.get_knime_home_dir()
 
+    def execute_tool(self, tool_b64, parameters):
+        """
+        Execute a KNIME workflow tool.
+
+        Parameters
+        ----------
+        tool_b64 : str
+            The base64 encoded KNIME workflow tool.
+        parameters : dict
+            The parameters to pass to the workflow tool.
+
+        Returns
+        -------
+        str
+            The result of the workflow tool execution.
+        """
+        return self._java_ctx.execute_tool(tool_b64, parameters)
+
 
 class PythonNode(ABC):
     """
