@@ -11,6 +11,7 @@ class WorkflowTool:
     name: str
     description: str
     parameter_schema: dict
+    tool_bytes: bytes
 
     # TODO extend with data in- and outputs
     def execute(self, parameters: dict) -> str: ...
@@ -29,7 +30,10 @@ class WorkflowToolValueFactory(kt.PythonValueFactory):
         if storage is None:
             return None
         return WorkflowTool(
-            name=storage["0"], description=storage["1"], parameter_schema=storage["2"]
+            name=storage["0"],
+            description=storage["1"],
+            parameter_schema=storage["2"],
+            tool_bytes=storage["3"],
         )
 
     def encode(self, value: WorkflowTool):
@@ -39,4 +43,5 @@ class WorkflowToolValueFactory(kt.PythonValueFactory):
             "0": value.name,
             "1": value.description,
             "2": value.parameter_schema,
+            "3": value.tool_bytes,
         }
