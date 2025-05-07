@@ -494,6 +494,8 @@ final class CloseablePythonNodeProxy
         exec.setMessage(""); // Reset the message -> Only show the message from Python
         var progressMonitor = exec.createSubProgress(0.8);
 
+        var nodeContainer = NodeContext.getContext().getNodeContainer();
+
         final var pythonExecContext = new PythonNodeModelProxy.PythonExecutionContext() {
             @Override
             public void set_progress(final double progress, final String message) {
@@ -567,7 +569,7 @@ final class CloseablePythonNodeProxy
                         var zipIn = new ZipInputStream(byteIn)) {
                     var ws = WorkflowSegment.load(zipIn);
                     var name = ws.loadWorkflow().getName();
-                    var wsExecutor = new WorkflowSegmentExecutor(ws, name, NodeContext.getContext().getNodeContainer(),
+                    var wsExecutor = new WorkflowSegmentExecutor(ws, name, nodeContainer,
                         true, true, warning -> {
                         });
                     wsExecutor.configureWorkflow(parameters);
