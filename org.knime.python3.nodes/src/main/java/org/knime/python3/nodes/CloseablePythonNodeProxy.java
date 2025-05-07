@@ -567,7 +567,7 @@ final class CloseablePythonNodeProxy
                         var zipIn = new ZipInputStream(byteIn)) {
                     var ws = WorkflowSegment.load(zipIn);
                     var wsExecutor = new WorkflowSegmentExecutor(ws, "TODO workflow name",
-                        NodeContext.getContext().getNodeContainer(), true, warning -> {
+                        NodeContext.getContext().getNodeContainer(), true, true, warning -> {
                         });
                     wsExecutor.configureWorkflow(parameters);
                     var outputTable =
