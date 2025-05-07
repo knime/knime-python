@@ -73,6 +73,7 @@ import org.knime.core.data.filestore.FileStoreKey;
 import org.knime.core.data.filestore.FileStoreUtil;
 import org.knime.core.data.filestore.internal.IFileStoreHandler;
 import org.knime.core.data.filestore.internal.IWriteFileStoreHandler;
+import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.InvalidSettingsException;
@@ -569,8 +570,10 @@ final class CloseablePythonNodeProxy
                         NodeContext.getContext().getNodeContainer(), true, warning -> {
                         });
                     wsExecutor.configureWorkflow(parameters);
-                    var res = wsExecutor.executeWorkflow(new PortObject[0], exec);
-                    return "TODO"; // TODO extract tool output from workflow output
+                    var outputTable =  ((BufferedDataTable)wsExecutor.executeWorkflow(new PortObject[0], exec).getFirst()[0]);
+                    try (var cursor = outputTable.cursor()) {
+                        return cursor.forward().getAsDataCell(0).toString();
+                    }
                 } catch (Exception ex) {
                     // TODO
                     throw new RuntimeException("Failed to execute tool: " + tool, ex);
