@@ -29,10 +29,12 @@ class WorkflowToolValueFactory(kt.PythonValueFactory):
     def decode(self, storage):
         if storage is None:
             return None
+        import json
+
         return WorkflowTool(
             name=storage["0"],
             description=storage["1"],
-            parameter_schema=storage["2"],
+            parameter_schema=json.loads(storage["2"]),
             tool_bytes=storage["3"],
         )
 
