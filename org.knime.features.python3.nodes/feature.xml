@@ -728,7 +728,8 @@ propagated with or for interoperation with KNIME.
    </license>
 
    <requires>
-      <import feature="org.knime.features.core.columnar" version="5.5.0" match="greaterOrEqual"/>
+    <import feature="org.knime.features.core.columnar" version="5.5.0" match="greaterOrEqual" />
+    <import feature="org.knime.features.conda.envbundling" version="5.5.0" match="greaterOrEqual" />
    </requires>
 
    <plugin
@@ -780,14 +781,5 @@ propagated with or for interoperation with KNIME.
          download-size="0"
          install-size="0"
          version="0.0.0"/>
-
-   <plugin
-         id="org.knime.conda.envbundling"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"
-         unpack="false"/>
-
-
 
 </feature>
