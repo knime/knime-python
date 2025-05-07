@@ -570,9 +570,12 @@ final class CloseablePythonNodeProxy
                         NodeContext.getContext().getNodeContainer(), true, warning -> {
                         });
                     wsExecutor.configureWorkflow(parameters);
-                    var outputTable =  ((BufferedDataTable)wsExecutor.executeWorkflow(new PortObject[0], exec).getFirst()[0]);
+                    var outputTable =
+                        ((BufferedDataTable)wsExecutor.executeWorkflow(new PortObject[0], exec).getFirst()[0]);
                     try (var cursor = outputTable.cursor()) {
                         return cursor.forward().getAsDataCell(0).toString();
+                    } finally {
+                        wsExecutor.dispose();
                     }
                 } catch (Exception ex) {
                     // TODO
