@@ -405,7 +405,7 @@ public interface PythonNodeModelProxy {
          * @param inputs input data for the tool
          * @return the result of the tool execution
          */
-        public PythonToolResult execute_tool(String tool, String parameters, PythonPortObject[] inputs);
+        public PythonToolResult execute_tool(String tool, String parameters, List<PythonPortObject> inputs);
 
         record PythonToolResult(String message, PythonPortObject[] outputs) {
         }
