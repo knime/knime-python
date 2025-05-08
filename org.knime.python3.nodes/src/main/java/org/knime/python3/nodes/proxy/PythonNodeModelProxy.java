@@ -400,13 +400,15 @@ public interface PythonNodeModelProxy {
         /**
          * Executes a tool in Java
          *
-         * TODO add input data
-         *
          * @param tool to execute TODO placeholder until we have a better idea of the representation
          * @param parameters JSON with the parameters for the tool
-         * @return the message from the tool TODO extend to ToolResult that also includes data
+         * @param inputs input data for the tool
+         * @return the result of the tool execution
          */
-        public String execute_tool(String tool, String parameters);
+        public PythonToolResult execute_tool(String tool, String parameters, PythonPortObject[] inputs);
+
+        record PythonToolResult(String message, PythonPortObject[] outputs) {
+        }
 
     }
 
