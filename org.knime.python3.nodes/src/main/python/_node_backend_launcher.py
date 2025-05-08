@@ -1300,7 +1300,22 @@ class _ExecutionContext(kn.ExecutionContext):
             prepared_inputs.append(prepared_input)
             sink.close()
 
-        return self._java_ctx.execute_tool(tool_b64, parameters, prepared_inputs)
+        result = self._java_ctx.execute_tool(tool_b64, parameters, prepared_inputs)
+
+        outputs = result.outputs()
+        if outputs:
+            # TODO obtain port type from java side
+            dummy_port = kn.Port(kn.PortType.TABLE, name="dummy", description="dummy")
+            outputs = [
+                self._type_registry.port_object_to_python(
+                    output,
+                    dummy_port,
+                    None,
+                )
+                for output in outputs
+            ]
+
+        return result.message(), outputs
 
 
 class _KnimeNodeBackend(kg.EntryPoint, kn._KnimeNodeBackend):
