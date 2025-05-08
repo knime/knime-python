@@ -584,11 +584,11 @@ final class CloseablePythonNodeProxy
                     try {
                         wsExecutor.configureWorkflow(parameters);
                         var outputs = wsExecutor.executeWorkflow(inputPortObjects, exec).getFirst();
-                        var messageTable = outputs[0];
-                        var pyOutputs = Stream.of(outputs).skip(1)//
+                        var messageTable = getMessageTable(outputs, ws.getConnectedOutputs());
+                        var pyOutputs = Stream.of(outputs).filter(o -> o != messageTable)
                             .map(po -> PythonPortTypeRegistry.convertPortObjectToPython(po, conversionContext))//
                             .toArray(PythonPortObject[]::new);
-                        return new PythonToolResult(extractMessage((BufferedDataTable)messageTable), pyOutputs);
+                        return new PythonToolResult(extractMessage(messageTable), pyOutputs);
                     } finally {
                         wsExecutor.dispose();
                     }
@@ -598,13 +598,25 @@ final class CloseablePythonNodeProxy
                 }
             }
 
+            private static BufferedDataTable getMessageTable(final PortObject[] outputs,
+                final List<WorkflowSegment.Output> wsOutputs) {
+                for (int i = 0; i < outputs.length; i++) {
+                    if (wsOutputs.get(i).getSpec().map(spec -> spec.getName().equals("message output")).orElse(false)) {
+                        return (BufferedDataTable)outputs[i];
+                    }
+                }
+                return null;
+            }
+
             private static String extractMessage(final BufferedDataTable messageTable) {
+                if (messageTable == null) {
+                    return "Tool executed successfully";
+                }
                 try (var cursor = messageTable.cursor()) {
                     return cursor.forward().getAsDataCell(0).toString();
                 }
             }
         };
-
 
         // Configure before execution whether the gateway should be left open, otherwise an exception thrown in Python
         // will always close the gateway.
