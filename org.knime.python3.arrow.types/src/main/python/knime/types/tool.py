@@ -3,6 +3,7 @@ from typing import List, Optional
 import knime.api.types as kt
 
 
+@dataclass
 class ToolPort:
     name: str
     description: str
@@ -16,6 +17,17 @@ class ToolPort:
             "2": self.type,
             "3": self.spec,
         }
+
+    @classmethod
+    def _from_arrow_dict(cls, storage):
+        if storage is None:
+            return None
+        return cls(
+            name=storage["0"],
+            description=storage["1"],
+            type=storage["2"],
+            spec=storage["3"],
+        )
 
 
 @dataclass
@@ -54,6 +66,8 @@ class WorkflowToolValueFactory(kt.PythonValueFactory):
             description=storage["1"],
             parameter_schema=json.loads(storage["2"]),
             tool_bytes=storage["3"],
+            input_ports=[ToolPort._from_arrow_dict(port) for port in storage["4"]],
+            output_ports=[ToolPort._from_arrow_dict(port) for port in storage["5"]],
         )
 
     def encode(self, value: WorkflowTool):
