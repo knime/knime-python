@@ -56,6 +56,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -565,12 +566,12 @@ final class CloseablePythonNodeProxy
 
             @Override
             public PythonToolResult execute_tool(final String tool, final String parameters,
-                final PythonPortObject[] inputs) {
+                final List<PythonPortObject> inputs) {
 
                 // TODO if we want to support port types that need the filestoreMap for deserialization
                 Map<String, FileStore> dummyFileStoreMap = Map.of();
                 var conversionContext = new PortObjectConversionContext(dummyFileStoreMap, m_tableManager, exec);
-                var inputPortObjects = Arrays.stream(inputs)//
+                var inputPortObjects = inputs.stream()//
                     .map(po -> PythonPortTypeRegistry.convertPortObjectFromPython(po, conversionContext))//
                     .toArray(PortObject[]::new);
 
