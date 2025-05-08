@@ -564,19 +564,30 @@ final class CloseablePythonNodeProxy
             }
 
             @Override
-            public String execute_tool(final String tool, final String parameters) {
+            public PythonToolResult execute_tool(final String tool, final String parameters,
+                final PythonPortObject[] inputs) {
+
+                // TODO if we want to support port types that need the filestoreMap for deserialization
+                Map<String, FileStore> dummyFileStoreMap = Map.of();
+                var conversionContext = new PortObjectConversionContext(dummyFileStoreMap, m_tableManager, exec);
+                var inputPortObjects = Arrays.stream(inputs)//
+                    .map(po -> PythonPortTypeRegistry.convertPortObjectFromPython(po, conversionContext))//
+                    .toArray(PortObject[]::new);
+
                 try (var byteIn = new ByteArrayInputStream(Base64.getDecoder().decode(tool.getBytes()));
                         var zipIn = new ZipInputStream(byteIn)) {
                     var ws = WorkflowSegment.load(zipIn);
                     var name = ws.loadWorkflow().getName();
-                    var wsExecutor = new WorkflowSegmentExecutor(ws, name, nodeContainer,
-                        true, true, warning -> {
-                        });
-                    wsExecutor.configureWorkflow(parameters);
-                    var outputTable =
-                        ((BufferedDataTable)wsExecutor.executeWorkflow(new PortObject[0], exec).getFirst()[0]);
-                    try (var cursor = outputTable.cursor()) {
-                        return cursor.forward().getAsDataCell(0).toString();
+                    var wsExecutor = new WorkflowSegmentExecutor(ws, name, nodeContainer, true, true, warning -> {
+                    });
+                    try {
+                        wsExecutor.configureWorkflow(parameters);
+                        var outputs = wsExecutor.executeWorkflow(inputPortObjects, exec).getFirst();
+                        var messageTable = outputs[0];
+                        var pyOutputs = Stream.of(outputs).skip(1)//
+                            .map(po -> PythonPortTypeRegistry.convertPortObjectToPython(po, conversionContext))//
+                            .toArray(PythonPortObject[]::new);
+                        return new PythonToolResult(extractMessage((BufferedDataTable)messageTable), pyOutputs);
                     } finally {
                         wsExecutor.dispose();
                     }
@@ -585,7 +596,14 @@ final class CloseablePythonNodeProxy
                     throw new RuntimeException("Failed to execute tool: " + tool, ex);
                 }
             }
+
+            private static String extractMessage(final BufferedDataTable messageTable) {
+                try (var cursor = messageTable.cursor()) {
+                    return cursor.forward().getAsDataCell(0).toString();
+                }
+            }
         };
+
 
         // Configure before execution whether the gateway should be left open, otherwise an exception thrown in Python
         // will always close the gateway.

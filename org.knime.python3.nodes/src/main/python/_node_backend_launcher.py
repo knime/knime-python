@@ -1044,11 +1044,12 @@ class _PythonNodeProxy:
             kt._backend.file_store_handler = self._java_callback
 
             # execute
-            exec_context = kn.ExecutionContext(
+            exec_context = _ExecutionContext(
                 java_exec_context,
                 self._get_flow_variables(),
                 self._node.input_ports,
                 self._node.output_ports,
+                self._port_type_registry,
             )
 
             # TODO: maybe we want to run execute on the main thread? use knime._backend._mainloop
@@ -1262,6 +1263,44 @@ class _PythonNodeProxy:
 
     class Java:
         implements = ["org.knime.python3.nodes.proxy.PythonNodeProxy"]
+
+
+class _ExecutionContext(kn.ExecutionContext):
+    def __init__(
+        self,
+        java_exec_context,
+        flow_variables,
+        input_ports,
+        output_ports,
+        type_registry: _PortTypeRegistry,
+    ):
+        super().__init__(java_exec_context, flow_variables, input_ports, output_ports)
+        self._type_registry = type_registry
+
+    def execute_tool(self, tool_b64, parameters, inputs: List):
+        """
+        Execute a KNIME workflow tool.
+
+        Parameters
+        ----------
+        tool_b64 : str
+            The base64 encoded KNIME workflow tool.
+        parameters : str TODO could be a dict?
+            The parameters to pass to the workflow tool.
+        inputs: list of port object inputs for the tool. Only tables are supported, yet.
+
+        Returns
+        -------
+        str
+            The result of the workflow tool execution.
+        """
+        prepared_inputs = []
+        for input in inputs:
+            prepared_input, sink = self._type_registry.table_from_python(input)
+            prepared_inputs.append(prepared_input)
+            sink.close()
+
+        return self._java_ctx.execute_tool(tool_b64, parameters, prepared_inputs)
 
 
 class _KnimeNodeBackend(kg.EntryPoint, kn._KnimeNodeBackend):
