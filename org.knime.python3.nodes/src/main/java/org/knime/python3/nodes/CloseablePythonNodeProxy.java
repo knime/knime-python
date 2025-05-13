@@ -117,6 +117,7 @@ import org.knime.python3.nodes.ports.TableSpecSerializationUtils;
 import org.knime.python3.nodes.ports.converters.PortObjectConversionContext;
 import org.knime.python3.nodes.proxy.CloseableNodeFactoryProxy;
 import org.knime.python3.nodes.proxy.NodeDialogProxy;
+import org.knime.python3.nodes.proxy.NodeViewProxy;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy.Callback;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy.DialogCallback;
@@ -139,7 +140,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
 final class CloseablePythonNodeProxy
-    implements NodeExecutionProxy, NodeConfigurationProxy, CloseableNodeFactoryProxy, NodeDialogProxy {
+    implements NodeExecutionProxy, NodeConfigurationProxy, CloseableNodeFactoryProxy, NodeDialogProxy, NodeViewProxy {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(CloseablePythonNodeProxy.class);
 
@@ -487,8 +488,7 @@ final class CloseablePythonNodeProxy
 
         PortObjectConversionContext knimeToPythonConversionContext = new PortObjectConversionContext(fileStoresByKey, m_tableManager, exec);
         final var pythonInputs =
-            Arrays.stream(inData).map(po -> PythonPortTypeRegistry.convertPortObjectToPython(po, knimeToPythonConversionContext))
-                .toArray(PythonPortObject[]::new);
+            convertPortObjects(inData, knimeToPythonConversionContext);
 
         exec.setProgress(0.1, "Sending data to Python");
 
@@ -638,6 +638,18 @@ final class CloseablePythonNodeProxy
             .toArray(PortObject[]::new);
 
         return executionResult;
+    }
+
+    /**
+     * @param inData
+     * @param knimeToPythonConversionContext
+     * @return
+     */
+    private PythonPortObject[] convertPortObjects(final PortObject[] inData,
+        final PortObjectConversionContext knimeToPythonConversionContext) {
+        return Arrays.stream(inData)
+            .map(po -> PythonPortTypeRegistry.convertPortObjectToPython(po, knimeToPythonConversionContext))
+            .toArray(PythonPortObject[]::new);
     }
 
     /**
@@ -869,6 +881,25 @@ final class CloseablePythonNodeProxy
                 }
             }
         }
+    }
+
+
+    @Override
+    public DataServiceProxy getDataServiceProxy(final PortObject[] portObjects) {
+        var fileStoresByKey = new HashMap<String, FileStore>();
+        ExecutionContext exec = null;
+        PortObjectConversionContext knimeToPythonConversionContext =
+            new PortObjectConversionContext(fileStoresByKey, m_tableManager, exec);
+        var pythonPortObjects = convertPortObjects(portObjects, knimeToPythonConversionContext);
+
+        var pythonDataService = m_proxy.getDataService(pythonPortObjects);
+
+        return new DataServiceProxy() {
+            @Override
+            public String getData(final String param) {
+                return pythonDataService.getData(param);
+            }
+        };
     }
 
 }

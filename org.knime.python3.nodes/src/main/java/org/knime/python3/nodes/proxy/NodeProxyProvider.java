@@ -67,4 +67,6 @@ public interface NodeProxyProvider extends NodeModelProxyProvider {
      */
     NodeDialogProxy getNodeDialogProxy();
 
+    NodeViewProxy getNodeViewProxy();
+
 }
