@@ -44,22 +44,31 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Jan 20, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   May 12, 2025 (hornm): created
  */
 package org.knime.python3.nodes.proxy;
 
-/**
- * Proxy for a node implemented in Python.
- * This interface is implemented on the Python side.
- *
- * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
- */
-public interface PythonNodeProxy
-    extends PythonNodeModelProxy, PythonNodeDialogProxy, VersionedProxy, PythonNodeViewProxy {
+import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
 
-    /**
-     * @return The number of views of the node
-     */
-    int getNumViews();
+/**
+ * TODO
+ *
+ * @author Martin Horn, KNIME GmbH, Konstanz, Germany
+ */
+public interface PythonNodeViewProxy {
+
+    interface PythonDataServiceProxy {
+
+        /**
+         * Returns the data as a string.
+         *
+         * @param param the parameter
+         * @return the data
+         */
+        String getData(String param);
+
+    }
+
+    PythonDataServiceProxy getDataService(PythonPortObject[] portObjects);
 
 }

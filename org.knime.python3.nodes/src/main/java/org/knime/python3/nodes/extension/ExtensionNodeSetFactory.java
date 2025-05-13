@@ -94,6 +94,7 @@ import org.knime.python3.nodes.dialog.JsonFormsNodeDialog;
 import org.knime.python3.nodes.ports.PythonPortTypeRegistry;
 import org.knime.python3.nodes.proxy.NodeProxyProvider;
 import org.knime.python3.views.HtmlFileNodeView;
+import org.knime.python3.views.HtmlFileNodeView.DataService;
 
 /**
  * A {@link NodeSetFactory} for extensions that provide nodes whose settings are JSON and whose dialogs are JSON Forms
@@ -279,10 +280,28 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
             if (!hasNodeView()) {
                 throw new IllegalStateException("The node has no view.");
             }
+            Supplier<DataService> dataServiceSupplier = () -> {
+                var nodeViewProxy = m_proxyProvider.getNodeViewProxy();
+                var dataServiceProxy = nodeViewProxy.getDataServiceProxy(nodeModel.getInternalPortObjects());
+                return new DataService() {
+
+
+                    @Override
+                    public String getData(final String param) {
+                        return dataServiceProxy.getData(param);
+                    }
+
+                    @Override
+                    public void close() throws Exception {
+                        nodeViewProxy.close();
+                    }
+
+                };
+            };
             return new HtmlFileNodeView(
                 () -> nodeModel.getPathToHtmlView()
                     .orElseThrow(() -> new IllegalStateException("View is not present. This is a coding error.")),
-                m_node.getViewResources()[0]);
+                m_node.getViewResources()[0], dataServiceSupplier);
         }
 
         /** A dummy node view that does nothing and that will only be opened by workflow tests. */
