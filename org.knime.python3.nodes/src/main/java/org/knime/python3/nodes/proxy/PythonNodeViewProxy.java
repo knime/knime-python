@@ -48,7 +48,10 @@
  */
 package org.knime.python3.nodes.proxy;
 
+import org.knime.python3.nodes.LogCallback;
+import org.knime.python3.nodes.callback.AuthCallback;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
+import org.knime.python3.nodes.proxy.PythonNodeModelProxy.PythonBaseContext;
 
 /**
  * TODO
@@ -69,6 +72,16 @@ public interface PythonNodeViewProxy {
 
     }
 
-    PythonDataServiceProxy getDataService(PythonPortObject[] portObjects);
+    PythonDataServiceProxy getDataService(PythonViewContext context, PythonPortObject[] portObjects);
+
+    interface ViewCallback extends AuthCallback, LogCallback {
+
+    }
+
+    void initializeJavaCallback(ViewCallback callback);
+
+    interface PythonViewContext extends PythonBaseContext {
+
+    }
 
 }

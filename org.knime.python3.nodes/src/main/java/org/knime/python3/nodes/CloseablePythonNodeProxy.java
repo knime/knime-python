@@ -107,6 +107,8 @@ import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.arrow.PythonArrowDataUtils;
 import org.knime.python3.arrow.PythonArrowTableConverter;
 import org.knime.python3.nodes.CloseablePythonNodeProxyFactory.CloseableGatewayWithAttachments;
+import org.knime.python3.nodes.callback.AuthCallback;
+import org.knime.python3.nodes.callback.DefaultAuthCallback;
 import org.knime.python3.nodes.extension.ExtensionNode;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonCredentialPortObjectSpec;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
@@ -124,6 +126,7 @@ import org.knime.python3.nodes.proxy.PythonNodeModelProxy.DialogCallback;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy.ExpiryDate;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy.FileStoreBasedFile;
 import org.knime.python3.nodes.proxy.PythonNodeProxy;
+import org.knime.python3.nodes.proxy.PythonNodeViewProxy;
 import org.knime.python3.nodes.proxy.model.NodeConfigurationProxy;
 import org.knime.python3.nodes.proxy.model.NodeExecutionProxy;
 import org.knime.python3.nodes.settings.JsonNodeSettings;
@@ -698,6 +701,7 @@ final class CloseablePythonNodeProxy
 
         final var failure = new FailureState();
 
+        // TODO introduce a configure callback that doesn't have unsupported methods like create_sink
         final PythonNodeModelProxy.Callback callback = new Callback() {
             private DefaultLogCallback m_logCallback = new DefaultLogCallback(LOGGER);
 
@@ -886,13 +890,21 @@ final class CloseablePythonNodeProxy
 
     @Override
     public DataServiceProxy getDataServiceProxy(final PortObject[] portObjects) {
+
+        var callback = new DefaultViewCallback();
+
+        m_proxy.initializeJavaCallback(callback);
+
+        var context = new DefaultViewContext();
+
         var fileStoresByKey = new HashMap<String, FileStore>();
+        // TODO probably needed for the conversion
         ExecutionContext exec = null;
         PortObjectConversionContext knimeToPythonConversionContext =
             new PortObjectConversionContext(fileStoresByKey, m_tableManager, exec);
         var pythonPortObjects = convertPortObjects(portObjects, knimeToPythonConversionContext);
 
-        var pythonDataService = m_proxy.getDataService(pythonPortObjects);
+        var pythonDataService = m_proxy.getDataService(context, pythonPortObjects);
 
         return new DataServiceProxy() {
             @Override
@@ -901,5 +913,65 @@ final class CloseablePythonNodeProxy
             }
         };
     }
+
+    private static final class DefaultViewContext implements PythonNodeViewProxy.PythonViewContext {
+        @Override
+        public String[] get_credentials(final String identifier) {
+            ICredentials credentials = getNodeModel().getCredentials(identifier);
+            return new String[]{credentials.getLogin(), credentials.getPassword(), credentials.getName()};
+        }
+
+        @Override
+        public String[] get_credential_names() {
+            return getNodeModel().getCredentialNames();
+
+        }
+
+        @Override
+        public Map<String, int[]> get_input_port_map() {
+            return getNodeModel().getInputPortMap();
+        }
+
+        @Override
+        public Map<String, int[]> get_output_port_map() {
+            return getNodeModel().getOutputPortMap();
+        }
+
+        // TODO this is a hack to get the node model. This class should have no dependency on the node model.
+        // Instead we should pass interfaces as arguments similar to how it's done for execute or configure
+        private DelegatingNodeModel getNodeModel() {
+            return (DelegatingNodeModel)getNode().getNodeModel();
+        }
+    }
+
+    private static final class DefaultViewCallback implements PythonNodeViewProxy.ViewCallback {
+        LogCallback m_logCallback = new DefaultLogCallback(LOGGER);
+
+        AuthCallback m_authCallback = new DefaultAuthCallback();
+
+        @Override
+        public void log(final String message, final String severity) {
+            m_logCallback.log(message, severity);
+        }
+
+        @Override
+        public ExpiryDate get_expires_after(final String serializedXMLString) throws CouldNotAuthorizeException,
+            ClassNotFoundException, InstantiationException, IllegalAccessException, IOException {
+            return m_authCallback.get_expires_after(serializedXMLString);
+        }
+
+        @Override
+        public String get_auth_schema(final String serializedXMLString) throws CouldNotAuthorizeException,
+            ClassNotFoundException, InstantiationException, IllegalAccessException, IOException {
+            return m_authCallback.get_auth_schema(serializedXMLString);
+        }
+
+        @Override
+        public String get_auth_parameters(final String serializedXMLString) throws CouldNotAuthorizeException,
+            ClassNotFoundException, InstantiationException, IllegalAccessException, IOException {
+            return m_authCallback.get_auth_parameters(serializedXMLString);
+        }
+    }
+
 
 }
