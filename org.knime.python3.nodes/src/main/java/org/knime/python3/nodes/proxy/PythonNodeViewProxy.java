@@ -48,8 +48,10 @@
  */
 package org.knime.python3.nodes.proxy;
 
+import java.io.IOException;
 import java.util.List;
 
+import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.nodes.LogCallback;
 import org.knime.python3.nodes.callback.AuthCallback;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
@@ -83,6 +85,12 @@ public interface PythonNodeViewProxy {
         default public String get_preferred_value_types_as_json(final String tableSchemaJson) {
             return TableSpecSerializationUtils.getPreferredValueTypesForSerializedSchema(tableSchemaJson);
         }
+
+        /**
+         * @return a new {@link PythonArrowDataSink} that writes to a temporary file
+         * @throws IOException if the temporary file for the sink could not be created
+         */
+        PythonArrowDataSink create_sink() throws IOException; //NOSONAR
 
     }
 

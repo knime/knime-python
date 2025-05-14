@@ -847,16 +847,16 @@ final class CloseablePythonNodeProxy
     @Override
     public DataServiceProxy getDataServiceProxy(final PortObject[] portObjects) {
 
-        var callback = new DefaultViewCallback();
+        initTableManager();
+        var callback = new DefaultViewCallback(m_tableManager);
 
         m_proxy.initializeJavaCallback(callback);
 
-        var context = new DefaultViewContext(m_tableManager);
+        var nnc = (NativeNodeContainer)NodeContext.getContext().getNodeContainer();
+        var exec = nnc.createExecutionContext();
+        var context = new DefaultViewContext(m_tableManager, nnc, exec);
 
         var fileStoresByKey = new HashMap<String, FileStore>();
-        // TODO probably needed for the conversion
-        initTableManager();
-        ExecutionContext exec = null;
         PortObjectConversionContext knimeToPythonConversionContext =
             new PortObjectConversionContext(fileStoresByKey, m_tableManager, exec);
         var pythonPortObjects = convertPortObjects(portObjects, knimeToPythonConversionContext);
@@ -879,11 +879,14 @@ final class CloseablePythonNodeProxy
 
         private final NativeNodeContainer m_nodeContainer;
 
-        DefaultViewContext(final PythonArrowTableConverter tableManager) {
+        private final ExecutionContext m_exec;
+
+        DefaultViewContext(final PythonArrowTableConverter tableManager, final NativeNodeContainer nodeContainer,
+            final ExecutionContext exec) {
             m_tableManager = tableManager;
             m_nodeModel = getNodeModel();
-            // TODO hack
-            m_nodeContainer = (NativeNodeContainer)NodeContext.getContext().getNodeContainer();
+            m_nodeContainer = nodeContainer;
+            m_exec = exec;
         }
 
         @Override
@@ -911,7 +914,7 @@ final class CloseablePythonNodeProxy
         @Override
         public PythonToolResult execute_tool(final String tool, final String parameters,
             final List<PythonPortObject> inputs) {
-            return executeTool(m_nodeContainer.createExecutionContext(), m_nodeContainer, tool, parameters, inputs,
+            return executeTool(m_exec, m_nodeContainer, tool, parameters, inputs,
                 m_tableManager);
         }
 
@@ -926,6 +929,12 @@ final class CloseablePythonNodeProxy
         LogCallback m_logCallback = new DefaultLogCallback(LOGGER);
 
         AuthCallback m_authCallback = new DefaultAuthCallback();
+
+        private final PythonArrowTableConverter m_tableManager;
+
+        DefaultViewCallback(final PythonArrowTableConverter tableManager) {
+            m_tableManager = tableManager;
+        }
 
         @Override
         public void log(final String message, final String severity) {
@@ -948,6 +957,11 @@ final class CloseablePythonNodeProxy
         public String get_auth_parameters(final String serializedXMLString) throws CouldNotAuthorizeException,
             ClassNotFoundException, InstantiationException, IllegalAccessException, IOException {
             return m_authCallback.get_auth_parameters(serializedXMLString);
+        }
+
+        @Override
+        public PythonArrowDataSink create_sink() throws IOException {
+            return m_tableManager.createSink();
         }
     }
 

@@ -1050,6 +1050,15 @@ class _PythonNodeProxy:
         # unpacks inputs that come from a Port not a PortGroup
         return self._unpack_non_port_groups(inputs)
 
+    def _setup_table_backend(self, java_ctx):
+        # prepare output table creation
+        def create_python_sink():
+            java_sink = self._java_callback.create_sink()
+            return kg.data_sink_mapper(java_sink)
+
+        kt._backend = kat._ArrowBackend(create_python_sink)
+        kt._backend.file_store_handler = self._java_callback
+
     def execute(
         self, input_objects: List[_PythonPortObject], java_exec_context
     ) -> List[_PythonPortObject]:
@@ -1058,13 +1067,7 @@ class _PythonNodeProxy:
             port_map = java_exec_context.get_input_port_map()
             inputs = self._port_objs_to_python(port_map, input_objects)
 
-            # prepare output table creation
-            def create_python_sink():
-                java_sink = self._java_callback.create_sink()
-                return kg.data_sink_mapper(java_sink)
-
-            kt._backend = kat._ArrowBackend(create_python_sink)
-            kt._backend.file_store_handler = self._java_callback
+            self._setup_table_backend(java_exec_context)
 
             # execute
             exec_context = _ExecutionContext(
@@ -1129,6 +1132,8 @@ class _PythonNodeProxy:
         return _to_java_list(java_outputs)
 
     def getDataService(self, java_ctx, input_objects: List[_PythonPortObject]) -> str:
+        self._setup_table_backend(java_ctx)
+
         ctx = _ViewContext(java_ctx, {}, self._port_type_registry)
 
         converted_input_objects = self._port_objs_to_python(
