@@ -875,8 +875,15 @@ final class CloseablePythonNodeProxy
 
         private final PythonArrowTableConverter m_tableManager;
 
+        private final DelegatingNodeModel m_nodeModel;
+
+        private final NativeNodeContainer m_nodeContainer;
+
         DefaultViewContext(final PythonArrowTableConverter tableManager) {
             m_tableManager = tableManager;
+            m_nodeModel = getNodeModel();
+            // TODO hack
+            m_nodeContainer = (NativeNodeContainer)NodeContext.getContext().getNodeContainer();
         }
 
         @Override
@@ -887,31 +894,30 @@ final class CloseablePythonNodeProxy
 
         @Override
         public String[] get_credential_names() {
-            return getNodeModel().getCredentialNames();
+            return m_nodeModel.getCredentialNames();
 
         }
 
         @Override
         public Map<String, int[]> get_input_port_map() {
-            return getNodeModel().getInputPortMap();
+            return m_nodeModel.getInputPortMap();
         }
 
         @Override
         public Map<String, int[]> get_output_port_map() {
-            return getNodeModel().getOutputPortMap();
+            return m_nodeModel.getOutputPortMap();
         }
 
         @Override
         public PythonToolResult execute_tool(final String tool, final String parameters,
             final List<PythonPortObject> inputs) {
-            // TODO hack
-            var nnc = (NativeNodeContainer)NodeContext.getContext().getNodeContainer();
-            return executeTool(nnc.createExecutionContext(), nnc, tool, parameters, inputs, m_tableManager);
+            return executeTool(m_nodeContainer.createExecutionContext(), m_nodeContainer, tool, parameters, inputs,
+                m_tableManager);
         }
 
         // TODO this is a hack to get the node model. This class should have no dependency on the node model.
         // Instead we should pass interfaces as arguments similar to how it's done for execute or configure
-        private DelegatingNodeModel getNodeModel() {
+        private static DelegatingNodeModel getNodeModel() {
             return (DelegatingNodeModel)getNode().getNodeModel();
         }
     }

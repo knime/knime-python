@@ -282,6 +282,7 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
             }
             Supplier<DataService> dataServiceSupplier = () -> {
                 var nodeViewProxy = m_proxyProvider.getNodeViewProxy();
+                nodeViewProxy.loadValidatedSettings(nodeModel.getSettings());
                 var dataServiceProxy = nodeViewProxy.getDataServiceProxy(nodeModel.getInternalPortObjects());
                 return new DataService() {
 

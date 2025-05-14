@@ -438,9 +438,11 @@ class _DataService:
 
 
 class _ViewContext(kn._BaseContext):
-    def __init__(self, java_ctx, flow_variables):
+    def __init__(self, java_ctx, flow_variables, type_registry: "_PortTypeRegistry"):
         super().__init__(java_ctx, flow_variables)
-    
+        self._tool_executor = _ToolExecutor(java_ctx, type_registry)
+        self.execute_tool = self._tool_executor.execute_tool
+
     def get_input_port_map(self) -> Dict[str, List[int]]:
         return self._java_ctx.get_input_port_map()
 
@@ -1126,10 +1128,8 @@ class _PythonNodeProxy:
         _pop_log_callback()
         return _to_java_list(java_outputs)
 
-    def getDataService(
-        self, java_ctx, input_objects: List[_PythonPortObject] 
-    ) -> str:
-        ctx = _ViewContext(java_ctx, {})
+    def getDataService(self, java_ctx, input_objects: List[_PythonPortObject]) -> str:
+        ctx = _ViewContext(java_ctx, {}, self._port_type_registry)
 
         converted_input_objects = self._port_objs_to_python(
             ctx.get_input_port_map(), input_objects
@@ -1297,16 +1297,9 @@ class _PythonNodeProxy:
         implements = ["org.knime.python3.nodes.proxy.PythonNodeProxy"]
 
 
-class _ExecutionContext(kn.ExecutionContext):
-    def __init__(
-        self,
-        java_exec_context,
-        flow_variables,
-        input_ports,
-        output_ports,
-        type_registry: _PortTypeRegistry,
-    ):
-        super().__init__(java_exec_context, flow_variables, input_ports, output_ports)
+class _ToolExecutor:
+    def __init__(self, java_ctx, type_registry: _PortTypeRegistry):
+        self._java_ctx = java_ctx
         self._type_registry = type_registry
 
     def execute_tool(self, tool_b64, parameters, inputs: List):
@@ -1348,6 +1341,21 @@ class _ExecutionContext(kn.ExecutionContext):
             ]
 
         return result.message(), outputs
+
+
+class _ExecutionContext(kn.ExecutionContext):
+    def __init__(
+        self,
+        java_exec_context,
+        flow_variables,
+        input_ports,
+        output_ports,
+        type_registry: _PortTypeRegistry,
+    ):
+        super().__init__(java_exec_context, flow_variables, input_ports, output_ports)
+        self._type_registry = type_registry
+        self._tool_executor = _ToolExecutor(java_exec_context, type_registry)
+        self.execute_tool = self._tool_executor.execute_tool
 
 
 class _KnimeNodeBackend(kg.EntryPoint, kn._KnimeNodeBackend):
