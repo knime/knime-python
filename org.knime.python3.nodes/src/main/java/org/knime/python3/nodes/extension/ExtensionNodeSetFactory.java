@@ -93,6 +93,8 @@ import org.knime.python3.nodes.dialog.DelegatingJsonSettingsDataService;
 import org.knime.python3.nodes.dialog.JsonFormsNodeDialog;
 import org.knime.python3.nodes.ports.PythonPortTypeRegistry;
 import org.knime.python3.nodes.proxy.NodeProxyProvider;
+import org.knime.python3.nodes.proxy.NodeViewProxy;
+import org.knime.python3.nodes.proxy.NodeViewProxy.DataServiceProxy;
 import org.knime.python3.views.HtmlFileNodeView;
 import org.knime.python3.views.HtmlFileNodeView.DataService;
 
@@ -281,20 +283,28 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
                 throw new IllegalStateException("The node has no view.");
             }
             Supplier<DataService> dataServiceSupplier = () -> {
-                var nodeViewProxy = m_proxyProvider.getNodeViewProxy();
-                nodeViewProxy.loadValidatedSettings(nodeModel.getSettings());
-                var dataServiceProxy = nodeViewProxy.getDataServiceProxy(nodeModel.getInternalPortObjects());
                 return new DataService() {
 
+                    private NodeViewProxy m_nodeViewProxy;
+
+                    private DataServiceProxy m_dataServiceProxy;
 
                     @Override
                     public String getData(final String param) {
-                        return dataServiceProxy.getData(param);
+                        if (m_nodeViewProxy == null) {
+                            m_nodeViewProxy = m_proxyProvider.getNodeViewProxy();
+                            m_nodeViewProxy.loadValidatedSettings(nodeModel.getSettings());
+                            m_dataServiceProxy =
+                                m_nodeViewProxy.getDataServiceProxy(nodeModel.getInternalPortObjects());
+                        }
+                        return m_dataServiceProxy.getData(param);
                     }
 
                     @Override
                     public void close() throws Exception {
-                        nodeViewProxy.close();
+                        if (m_nodeViewProxy != null) {
+                            m_nodeViewProxy.close();
+                        }
                     }
 
                 };
