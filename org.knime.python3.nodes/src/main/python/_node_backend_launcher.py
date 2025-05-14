@@ -429,7 +429,7 @@ class _DataService:
         self._delegate = delegate
 
     def getData(self, param: str):
-        return self._delegate.getData(param)
+        return self._delegate.get_data(param)
 
     class Java:
         implements = [
@@ -440,6 +440,9 @@ class _DataService:
 class _ViewContext(kn._BaseContext):
     def __init__(self, java_ctx, flow_variables):
         super().__init__(java_ctx, flow_variables)
+    
+    def get_input_port_map(self) -> Dict[str, List[int]]:
+        return self._java_ctx.get_input_port_map()
 
 
 class _PortTypeRegistry:
@@ -1124,13 +1127,13 @@ class _PythonNodeProxy:
         return _to_java_list(java_outputs)
 
     def getDataService(
-        self, java_ctx, input_objects: List[_PythonPortObject], input_port_map
+        self, java_ctx, input_objects: List[_PythonPortObject] 
     ) -> str:
-        converted_input_objects = self._port_objs_to_python(
-            input_port_map, input_objects
-        )
-        ctx = _ViewContext(java_ctx, self._get_flow_variables())
+        ctx = _ViewContext(java_ctx, {})
 
+        converted_input_objects = self._port_objs_to_python(
+            ctx.get_input_port_map(), input_objects
+        )
         data_service = self._node.get_data_service(ctx, *converted_input_objects)
         return _DataService(data_service)
 

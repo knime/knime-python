@@ -88,6 +88,7 @@ import org.knime.core.node.util.CheckUtils;
 import org.knime.core.node.workflow.CredentialsProvider;
 import org.knime.core.node.workflow.ICredentials;
 import org.knime.core.node.workflow.NativeNodeContainer;
+import org.knime.core.node.workflow.NodeContainer;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.node.workflow.VariableType;
 import org.knime.core.node.workflow.capture.WorkflowSegment;
@@ -125,6 +126,7 @@ import org.knime.python3.nodes.proxy.PythonNodeModelProxy.Callback;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy.DialogCallback;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy.ExpiryDate;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy.FileStoreBasedFile;
+import org.knime.python3.nodes.proxy.PythonNodeModelProxy.PythonExecutionContext.PythonToolResult;
 import org.knime.python3.nodes.proxy.PythonNodeProxy;
 import org.knime.python3.nodes.proxy.PythonNodeViewProxy;
 import org.knime.python3.nodes.proxy.model.NodeConfigurationProxy;
@@ -570,55 +572,9 @@ final class CloseablePythonNodeProxy
             @Override
             public PythonToolResult execute_tool(final String tool, final String parameters,
                 final List<PythonPortObject> inputs) {
-
-                // TODO if we want to support port types that need the filestoreMap for deserialization
-                Map<String, FileStore> dummyFileStoreMap = Map.of();
-                var conversionContext = new PortObjectConversionContext(dummyFileStoreMap, m_tableManager, exec);
-                var inputPortObjects = inputs.stream()//
-                    .map(po -> PythonPortTypeRegistry.convertPortObjectFromPython(po, conversionContext))//
-                    .toArray(PortObject[]::new);
-
-                try (var byteIn = new ByteArrayInputStream(Base64.getDecoder().decode(tool.getBytes()));
-                        var zipIn = new ZipInputStream(byteIn)) {
-                    var ws = WorkflowSegment.load(zipIn);
-                    var name = ws.loadWorkflow().getName();
-                    var wsExecutor = new WorkflowSegmentExecutor(ws, name, nodeContainer, true, true, warning -> {
-                    });
-                    try {
-                        wsExecutor.configureWorkflow(parameters);
-                        var outputs = wsExecutor.executeWorkflow(inputPortObjects, exec).getFirst();
-                        var messageTable = getMessageTable(outputs, ws.getConnectedOutputs());
-                        var pyOutputs = Stream.of(outputs).filter(o -> o != messageTable)
-                            .map(po -> PythonPortTypeRegistry.convertPortObjectToPython(po, conversionContext))//
-                            .toArray(PythonPortObject[]::new);
-                        return new PythonToolResult(extractMessage(messageTable), pyOutputs);
-                    } finally {
-                        wsExecutor.dispose();
-                    }
-                } catch (Exception ex) {
-                    // TODO
-                    throw new RuntimeException("Failed to execute tool: " + tool, ex);
-                }
+                return executeTool(exec, nodeContainer, tool, parameters, inputs, m_tableManager);
             }
 
-            private static BufferedDataTable getMessageTable(final PortObject[] outputs,
-                final List<WorkflowSegment.Output> wsOutputs) {
-                for (int i = 0; i < outputs.length; i++) {
-                    if (wsOutputs.get(i).getSpec().map(spec -> spec.getName().equals("message output")).orElse(false)) {
-                        return (BufferedDataTable)outputs[i];
-                    }
-                }
-                return null;
-            }
-
-            private static String extractMessage(final BufferedDataTable messageTable) {
-                if (messageTable == null) {
-                    return "Tool executed successfully";
-                }
-                try (var cursor = messageTable.cursor()) {
-                    return cursor.forward().getAsDataCell(0).toString();
-                }
-            }
         };
 
         // Configure before execution whether the gateway should be left open, otherwise an exception thrown in Python
@@ -895,10 +851,11 @@ final class CloseablePythonNodeProxy
 
         m_proxy.initializeJavaCallback(callback);
 
-        var context = new DefaultViewContext();
+        var context = new DefaultViewContext(m_tableManager);
 
         var fileStoresByKey = new HashMap<String, FileStore>();
         // TODO probably needed for the conversion
+        initTableManager();
         ExecutionContext exec = null;
         PortObjectConversionContext knimeToPythonConversionContext =
             new PortObjectConversionContext(fileStoresByKey, m_tableManager, exec);
@@ -915,6 +872,13 @@ final class CloseablePythonNodeProxy
     }
 
     private static final class DefaultViewContext implements PythonNodeViewProxy.PythonViewContext {
+
+        private final PythonArrowTableConverter m_tableManager;
+
+        DefaultViewContext(final PythonArrowTableConverter tableManager) {
+            m_tableManager = tableManager;
+        }
+
         @Override
         public String[] get_credentials(final String identifier) {
             ICredentials credentials = getNodeModel().getCredentials(identifier);
@@ -935,6 +899,14 @@ final class CloseablePythonNodeProxy
         @Override
         public Map<String, int[]> get_output_port_map() {
             return getNodeModel().getOutputPortMap();
+        }
+
+        @Override
+        public PythonToolResult execute_tool(final String tool, final String parameters,
+            final List<PythonPortObject> inputs) {
+            // TODO hack
+            var nnc = (NativeNodeContainer)NodeContext.getContext().getNodeContainer();
+            return executeTool(nnc.createExecutionContext(), nnc, tool, parameters, inputs, m_tableManager);
         }
 
         // TODO this is a hack to get the node model. This class should have no dependency on the node model.
@@ -973,5 +945,56 @@ final class CloseablePythonNodeProxy
         }
     }
 
+    private static PythonToolResult executeTool(final ExecutionContext exec, final NodeContainer nodeContainer,
+        final String tool, final String parameters, final List<PythonPortObject> inputs,
+        final PythonArrowTableConverter tableManager) {
+        // TODO if we want to support port types that need the filestoreMap for deserialization
+        Map<String, FileStore> dummyFileStoreMap = Map.of();
+        var conversionContext = new PortObjectConversionContext(dummyFileStoreMap, tableManager, exec);
+        var inputPortObjects = inputs.stream()//
+            .map(po -> PythonPortTypeRegistry.convertPortObjectFromPython(po, conversionContext))//
+            .toArray(PortObject[]::new);
+
+        try (var byteIn = new ByteArrayInputStream(Base64.getDecoder().decode(tool.getBytes()));
+                var zipIn = new ZipInputStream(byteIn)) {
+            var ws = WorkflowSegment.load(zipIn);
+            var name = ws.loadWorkflow().getName();
+            var wsExecutor = new WorkflowSegmentExecutor(ws, name, nodeContainer, true, true, warning -> {
+            });
+            try {
+                wsExecutor.configureWorkflow(parameters);
+                var outputs = wsExecutor.executeWorkflow(inputPortObjects, exec).getFirst();
+                var messageTable = getMessageTable(outputs, ws.getConnectedOutputs());
+                var pyOutputs = Stream.of(outputs).filter(o -> o != messageTable)
+                    .map(po -> PythonPortTypeRegistry.convertPortObjectToPython(po, conversionContext))//
+                    .toArray(PythonPortObject[]::new);
+                return new PythonToolResult(extractMessage(messageTable), pyOutputs);
+            } finally {
+                wsExecutor.dispose();
+            }
+        } catch (Exception ex) {
+            // TODO
+            throw new RuntimeException("Failed to execute tool: " + tool, ex);
+        }
+    }
+
+    private static BufferedDataTable getMessageTable(final PortObject[] outputs,
+        final List<WorkflowSegment.Output> wsOutputs) {
+        for (int i = 0; i < outputs.length; i++) {
+            if (wsOutputs.get(i).getSpec().map(spec -> spec.getName().equals("message output")).orElse(false)) {
+                return (BufferedDataTable)outputs[i];
+            }
+        }
+        return null;
+    }
+
+    private static String extractMessage(final BufferedDataTable messageTable) {
+        if (messageTable == null) {
+            return "Tool executed successfully";
+        }
+        try (var cursor = messageTable.cursor()) {
+            return cursor.forward().getAsDataCell(0).toString();
+        }
+    }
 
 }
