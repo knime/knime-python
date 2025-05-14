@@ -48,10 +48,14 @@
  */
 package org.knime.python3.nodes.proxy;
 
+import java.util.List;
+
 import org.knime.python3.nodes.LogCallback;
 import org.knime.python3.nodes.callback.AuthCallback;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
+import org.knime.python3.nodes.ports.TableSpecSerializationUtils;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy.PythonBaseContext;
+import org.knime.python3.nodes.proxy.PythonNodeModelProxy.PythonExecutionContext.PythonToolResult;
 
 /**
  * TODO
@@ -76,11 +80,18 @@ public interface PythonNodeViewProxy {
 
     interface ViewCallback extends AuthCallback, LogCallback {
 
+        default public String get_preferred_value_types_as_json(final String tableSchemaJson) {
+            return TableSpecSerializationUtils.getPreferredValueTypesForSerializedSchema(tableSchemaJson);
+        }
+
     }
 
     void initializeJavaCallback(ViewCallback callback);
 
     interface PythonViewContext extends PythonBaseContext {
+
+        public PythonToolResult execute_tool(final String tool, final String parameters,
+            final List<PythonPortObject> inputs);
 
     }
 
