@@ -50,6 +50,7 @@ package org.knime.python3.nodes.proxy;
 
 import org.knime.core.node.port.PortObject;
 import org.knime.core.util.asynclose.AsynchronousCloseable;
+import org.knime.python3.nodes.settings.JsonNodeSettings;
 
 /**
  *
@@ -62,5 +63,10 @@ public interface NodeViewProxy extends AsynchronousCloseable<RuntimeException> {
     }
 
     DataServiceProxy getDataServiceProxy(PortObject[] portObjects);
+
+    /**
+     * @param settings
+     */
+    void loadValidatedSettings(JsonNodeSettings settings);
 
 }

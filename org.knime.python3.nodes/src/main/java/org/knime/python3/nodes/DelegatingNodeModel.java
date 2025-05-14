@@ -403,4 +403,11 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
         return m_internalPortObjects;
     }
 
+    /**
+     * @return the current settings of this node model
+     */
+    public JsonNodeSettings getSettings() {
+        return m_settings.get();
+    }
+
 }
