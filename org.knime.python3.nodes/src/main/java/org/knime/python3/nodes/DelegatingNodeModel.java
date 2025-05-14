@@ -209,14 +209,14 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
             PathUtils.deleteFileIfExists(m_view.get());
         }
 
-        // TODO if has view
-        m_internalPortObjects = inData;
-
         return runWithProxy(() -> m_proxyProvider.getExecutionProxy(inData), node -> {
             node.loadValidatedSettings(m_settings.get());
             var result = node.execute(inData, m_outputPorts, exec, this, this, this, this);
             m_settings.set(node.getSettings(m_extensionVersion));
             m_view = result.getView();
+            if (m_view.isPresent()) {
+                m_internalPortObjects = inData;
+            }
             return result.getPortObjects();
         });
     }
