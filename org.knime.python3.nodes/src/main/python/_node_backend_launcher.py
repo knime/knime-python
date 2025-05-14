@@ -427,14 +427,19 @@ class _JavaConfigContext(_JavaBaseContext):
 class _DataService:
     def __init__(self, delegate):
         self._delegate = delegate
-    
+
     def getData(self, param: str):
         return self._delegate.getData(param)
-    
+
     class Java:
         implements = [
             "org.knime.python3.nodes.proxy.PythonNodeViewProxy$PythonDataServiceProxy"
         ]
+
+
+class _ViewContext(kn._BaseContext):
+    def __init__(self, java_ctx, flow_variables):
+        super().__init__(java_ctx, flow_variables)
 
 
 class _PortTypeRegistry:
@@ -1118,16 +1123,16 @@ class _PythonNodeProxy:
         _pop_log_callback()
         return _to_java_list(java_outputs)
 
-    def getDataService(self, input_objects: List[_PythonPortObject]) -> str:
-
+    def getDataService(
+        self, java_ctx, input_objects: List[_PythonPortObject], input_port_map
+    ) -> str:
         converted_input_objects = self._port_objs_to_python(
-            self._node.get_input_port_map(), input_objects
+            input_port_map, input_objects
         )
+        ctx = _ViewContext(java_ctx, self._get_flow_variables())
 
-        data_service = self._node.getDataService(converted_input_objects)
+        data_service = self._node.get_data_service(ctx, *converted_input_objects)
         return _DataService(data_service)
-
-    
 
     def postprocess_configure_outputs(
         self, java_config_context: JavaClass, outputs: Optional[List]
