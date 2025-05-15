@@ -86,6 +86,7 @@ import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.PortType;
 import org.knime.core.node.util.CheckUtils;
+import org.knime.core.node.wizard.page.WizardPageContribution;
 import org.knime.core.node.workflow.CredentialsProvider;
 import org.knime.core.node.workflow.ICredentials;
 import org.knime.core.node.workflow.NativeNodeContainer;
@@ -117,8 +118,8 @@ import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
 import org.knime.python3.nodes.ports.PythonPortTypeRegistry;
 import org.knime.python3.nodes.ports.PythonTransientConnectionPortObject;
-import org.knime.python3.nodes.ports.WorkflowSegmentExecutorErrorUtils;
 import org.knime.python3.nodes.ports.TableSpecSerializationUtils;
+import org.knime.python3.nodes.ports.WorkflowSegmentExecutorErrorUtils;
 import org.knime.python3.nodes.ports.converters.PortObjectConversionContext;
 import org.knime.python3.nodes.proxy.CloseableNodeFactoryProxy;
 import org.knime.python3.nodes.proxy.NodeDialogProxy;
@@ -979,8 +980,13 @@ final class CloseablePythonNodeProxy
 
         var ws = loadWorkflowTool(tool);
         var name = ws.loadWorkflow().getName();
-
         var wsExecutor = createExecutor(nodeContainer, ws, name);
+        var wfm = wsExecutor.getWorkflowManager();
+        var viewNodeIds = wfm.getNodeContainers().stream()
+            .filter(nc -> nc instanceof NativeNodeContainer nnc
+                && nnc.getNode().getFactory() instanceof WizardPageContribution wpc && wpc.hasNodeView()) //
+            .map(nc -> nc.getID().toString()).toArray(String[]::new);
+
         try {
             wsExecutor.configureWorkflow(parameters);
             var result = wsExecutor.executeWorkflowAndCollectNodeMessages(inputPortObjects, exec);
@@ -988,14 +994,16 @@ final class CloseablePythonNodeProxy
             var outputs = result.portObjectCopies();
             var messageTable = getMessageTable(outputs, ws.getConnectedOutputs());
             var pyOutputs = Stream.of(outputs).filter(o -> o != messageTable)
-                    .map(po -> PythonPortTypeRegistry.convertPortObjectToPython(po, conversionContext))//
-                    .toArray(PythonPortObject[]::new);
-            return new PythonToolResult(extractMessage(messageTable), pyOutputs);
+                .map(po -> PythonPortTypeRegistry.convertPortObjectToPython(po, conversionContext))//
+                .toArray(PythonPortObject[]::new);
+            return new PythonToolResult(extractMessage(messageTable), pyOutputs, viewNodeIds);
         } catch (Exception ex) {
             // TODO
             throw new RuntimeException("Failed to execute tool: " + name, ex);
         } finally {
-            wsExecutor.dispose();
+            if (viewNodeIds.length == 0) {
+                wsExecutor.dispose();
+            }
         }
     }
 

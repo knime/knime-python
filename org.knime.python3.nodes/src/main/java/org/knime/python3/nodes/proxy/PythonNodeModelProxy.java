@@ -357,7 +357,7 @@ public interface PythonNodeModelProxy {
          */
         public PythonToolResult execute_tool(String tool, String parameters, List<PythonPortObject> inputs);
 
-        record PythonToolResult(String message, PythonPortObject[] outputs) {
+        record PythonToolResult(String message, PythonPortObject[] outputs, String[] viewNodeIds) {
         }
 
     }
