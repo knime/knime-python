@@ -117,6 +117,7 @@ import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
 import org.knime.python3.nodes.ports.PythonPortTypeRegistry;
 import org.knime.python3.nodes.ports.PythonTransientConnectionPortObject;
+import org.knime.python3.nodes.ports.WorkflowSegmentExecutorErrorUtils;
 import org.knime.python3.nodes.ports.TableSpecSerializationUtils;
 import org.knime.python3.nodes.ports.converters.PortObjectConversionContext;
 import org.knime.python3.nodes.proxy.CloseableNodeFactoryProxy;
@@ -982,7 +983,9 @@ final class CloseablePythonNodeProxy
         var wsExecutor = createExecutor(nodeContainer, ws, name);
         try {
             wsExecutor.configureWorkflow(parameters);
-            var outputs = wsExecutor.executeWorkflow(inputPortObjects, exec).getFirst();
+            var result = wsExecutor.executeWorkflowAndCollectNodeMessages(inputPortObjects, exec);
+            WorkflowSegmentExecutorErrorUtils.throwIfError(result);
+            var outputs = result.portObjectCopies();
             var messageTable = getMessageTable(outputs, ws.getConnectedOutputs());
             var pyOutputs = Stream.of(outputs).filter(o -> o != messageTable)
                     .map(po -> PythonPortTypeRegistry.convertPortObjectToPython(po, conversionContext))//
