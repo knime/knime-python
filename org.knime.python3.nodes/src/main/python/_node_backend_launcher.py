@@ -1330,7 +1330,12 @@ class _ToolExecutor:
             prepared_inputs.append(prepared_input)
             sink.close()
 
-        result = self._java_ctx.execute_tool(tool_b64, parameters, prepared_inputs)
+        try:
+            result = self._java_ctx.execute_tool(tool_b64, parameters, prepared_inputs)
+        except Py4JJavaError as e:
+            # Extract the error message from the Java exception
+            error_message = e.java_exception.getCause().getMessage()
+            raise RuntimeError(error_message) from e
 
         outputs = result.outputs()
         if outputs:
