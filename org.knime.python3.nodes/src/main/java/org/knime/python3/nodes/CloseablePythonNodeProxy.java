@@ -79,6 +79,7 @@ import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.KNIMEConstants;
+import org.knime.core.node.KNIMEException;
 import org.knime.core.node.Node;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.port.PortObject;
@@ -975,26 +976,42 @@ final class CloseablePythonNodeProxy
             .map(po -> PythonPortTypeRegistry.convertPortObjectFromPython(po, conversionContext))//
             .toArray(PortObject[]::new);
 
-        try (var byteIn = new ByteArrayInputStream(Base64.getDecoder().decode(tool.getBytes()));
-                var zipIn = new ZipInputStream(byteIn)) {
-            var ws = WorkflowSegment.load(zipIn);
-            var name = ws.loadWorkflow().getName();
-            var wsExecutor = new WorkflowSegmentExecutor(ws, name, nodeContainer, true, true, warning -> {
-            });
-            try {
-                wsExecutor.configureWorkflow(parameters);
-                var outputs = wsExecutor.executeWorkflow(inputPortObjects, exec).getFirst();
-                var messageTable = getMessageTable(outputs, ws.getConnectedOutputs());
-                var pyOutputs = Stream.of(outputs).filter(o -> o != messageTable)
+        var ws = loadWorkflowTool(tool);
+        var name = ws.loadWorkflow().getName();
+
+        var wsExecutor = createExecutor(nodeContainer, ws, name);
+        try {
+            wsExecutor.configureWorkflow(parameters);
+            var outputs = wsExecutor.executeWorkflow(inputPortObjects, exec).getFirst();
+            var messageTable = getMessageTable(outputs, ws.getConnectedOutputs());
+            var pyOutputs = Stream.of(outputs).filter(o -> o != messageTable)
                     .map(po -> PythonPortTypeRegistry.convertPortObjectToPython(po, conversionContext))//
                     .toArray(PythonPortObject[]::new);
-                return new PythonToolResult(extractMessage(messageTable), pyOutputs);
-            } finally {
-                wsExecutor.dispose();
-            }
+            return new PythonToolResult(extractMessage(messageTable), pyOutputs);
         } catch (Exception ex) {
             // TODO
-            throw new RuntimeException("Failed to execute tool: " + tool, ex);
+            throw new RuntimeException("Failed to execute tool: " + name, ex);
+        } finally {
+            wsExecutor.dispose();
+        }
+    }
+
+    static WorkflowSegmentExecutor createExecutor(final NodeContainer nodeContainer, final WorkflowSegment ws,
+        final String name) {
+        try {
+        return new WorkflowSegmentExecutor(ws, name, nodeContainer, true, true, warning -> {
+        });
+        } catch (KNIMEException e) {
+            throw new RuntimeException("Failed to create workflow segment executor for tool " + name, e);
+        }
+    }
+
+    private static WorkflowSegment loadWorkflowTool(final String b64ToolRepresentation) {
+        try (var byteIn = new ByteArrayInputStream(Base64.getDecoder().decode(b64ToolRepresentation.getBytes()));
+                var zipIn = new ZipInputStream(byteIn)) {
+            return WorkflowSegment.load(zipIn);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to load workflow tool", e);
         }
     }
 
