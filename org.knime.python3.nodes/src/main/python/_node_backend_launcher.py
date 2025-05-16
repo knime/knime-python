@@ -1350,7 +1350,7 @@ class _ToolExecutor:
                 for output in outputs
             ]
 
-        return result.message(), outputs
+        return result.message(), outputs, result.viewNodeIds()
 
 
 class _ExecutionContext(kn.ExecutionContext):
