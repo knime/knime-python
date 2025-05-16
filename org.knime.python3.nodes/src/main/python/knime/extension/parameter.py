@@ -883,8 +883,6 @@ class _BaseParameter(ABC):
         self,
         dialog_creation_context,
     ):
-        # the extension_version parameter is needed to match the signature of the
-        # _extract_ui_schema method for parameter groups
         options = self._get_options(dialog_creation_context)
         if self._is_advanced:
             options["isAdvanced"] = True
@@ -950,16 +948,40 @@ class _NumericParameter(_BaseParameter):
         if self.max_value is not None and value > self.max_value:
             raise ValueError(f"{value} is > the max value {self.max_value}")
 
-    def _extract_schema(self, extension_version=None, dialog_creation_context=None):
-        schema = super()._extract_schema(
-            dialog_creation_context=dialog_creation_context
-        )
-        schema["type"] = "number"
+    def _extract_ui_schema(
+        self,
+        dialog_creation_context,
+    ):
+        options = self._get_options(dialog_creation_context)
+
+        validations = []
         if self.min_value is not None:
-            schema["minimum"] = self.min_value
+            validations.append(
+                {
+                    "id": "min",
+                    "parameters": {"min": self.min_value, "isExclusive": False},
+                    "errorMessage": f"The value must be at least {self.min_value}.",
+                }
+            )
         if self.max_value is not None:
-            schema["maximum"] = self.max_value
-        return schema
+            validations.append(
+                {
+                    "id": "max",
+                    "parameters": {"max": self.max_value, "isExclusive": False},
+                    "errorMessage": f"The value must be at most {self.max_value}.",
+                }
+            )
+        if validations:
+            options["validations"] = validations
+
+        if self._is_advanced:
+            options["isAdvanced"] = True
+
+        return {
+            "type": "Control",
+            "label": self._label,
+            "options": options,
+        }
 
 
 class IntParameter(_NumericParameter):
@@ -1044,6 +1066,7 @@ class DoubleParameter(_NumericParameter):
             dialog_creation_context=dialog_creation_context
         )
         schema["format"] = "double"
+        schema["type"] = "number"
         return schema
 
     def _get_options(self, dialog_creation_context) -> dict:
@@ -2337,11 +2360,11 @@ class DateTimeParameter(_BaseParameter):
         min_value: Union[str, datetime.date] = None,
         max_value: Union[str, datetime.date] = None,
         since_version=None,
-        is_advanced=False,
-        show_date=True,
-        show_time=False,
-        show_seconds=False,
-        show_milliseconds=False,
+        is_advanced: bool = False,
+        show_date: bool = True,
+        show_time: bool = False,
+        show_seconds: bool = False,
+        show_milliseconds: bool = False,
         timezone: str = None,
         date_format: str = None,
     ):
@@ -2760,7 +2783,7 @@ def parameter_group(
                 A parameter_group used as descriptor i.e. declared on class level needs to be
                 handled differently than a parameter_group that is used via composition i.e. passed via __init__.
                 Here we use the _name attribute set via __set_name__ to distinguish the two since __set_name__ is only
-                called if the parameter_group is used as descriptor, namely when it is declared in the class definition.
+                called if the parameter_group is used as a descriptor, namely when it is declared in the class definition.
                 """
                 return hasattr(self, "_name")
 
