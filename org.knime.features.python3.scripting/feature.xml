@@ -731,6 +731,7 @@ propagated with or for interoperation with KNIME.
       <import feature="org.knime.features.python2" version="5.5.0" match="greaterOrEqual"/>
       <import feature="org.knime.features.conda" version="5.5.0" match="greaterOrEqual"/>
       <import feature="org.knime.features.core.columnar" version="5.5.0" match="greaterOrEqual"/>
+      <import feature="org.knime.features.pythonscripting" version="5.5.0" match="greaterOrEqual"/>
    </requires>
 
    <plugin
@@ -783,48 +784,6 @@ propagated with or for interoperation with KNIME.
          version="0.0.0"
          fragment="true"
          unpack="false"/>
-
-   <plugin
-         id="org.knime.pythonscripting.channel.v1.bin"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"/>
-
-   <plugin
-         id="org.knime.pythonscripting.channel.v1.bin.linux.x86_64"
-         os="linux"
-         arch="x86_64"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"
-         fragment="true"/>
-
-   <plugin
-         id="org.knime.pythonscripting.channel.v1.bin.win32.x86_64"
-         os="win32"
-         arch="x86_64"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"
-         fragment="true"/>
-
-   <plugin
-         id="org.knime.pythonscripting.channel.v1.bin.macosx.x86_64"
-         os="macosx"
-         arch="x86_64"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"
-         fragment="true"/>
-
-   <plugin
-         id="org.knime.pythonscripting.channel.v1.bin.macosx.aarch64"
-         os="macosx"
-         arch="aarch64"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"
-         fragment="true"/>
 
    <plugin
          id="org.knime.python3.views"
