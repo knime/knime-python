@@ -54,6 +54,7 @@ import java.util.List;
 import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.nodes.LogCallback;
 import org.knime.python3.nodes.callback.AuthCallback;
+import org.knime.python3.nodes.ports.PythonPortObjects.PurePythonTablePortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
 import org.knime.python3.nodes.ports.TableSpecSerializationUtils;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy.PythonBaseContext;
@@ -98,7 +99,7 @@ public interface PythonNodeViewProxy {
 
     interface PythonViewContext extends PythonBaseContext {
 
-        public PythonToolResult execute_tool(final String tool, final String parameters,
+        public PythonToolResult execute_tool(final PurePythonTablePortObject tool, final String parameters,
             final List<PythonPortObject> inputs);
 
     }

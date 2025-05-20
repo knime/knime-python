@@ -54,7 +54,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -85,6 +84,7 @@ import org.knime.core.node.NodeLogger;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.PortType;
+import org.knime.core.node.tool.WorkflowToolCell;
 import org.knime.core.node.util.CheckUtils;
 import org.knime.core.node.workflow.CredentialsProvider;
 import org.knime.core.node.workflow.ICredentials;
@@ -112,13 +112,14 @@ import org.knime.python3.nodes.CloseablePythonNodeProxyFactory.CloseableGatewayW
 import org.knime.python3.nodes.callback.AuthCallback;
 import org.knime.python3.nodes.callback.DefaultAuthCallback;
 import org.knime.python3.nodes.extension.ExtensionNode;
+import org.knime.python3.nodes.ports.PythonPortObjects.PurePythonTablePortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonCredentialPortObjectSpec;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
 import org.knime.python3.nodes.ports.PythonPortTypeRegistry;
 import org.knime.python3.nodes.ports.PythonTransientConnectionPortObject;
-import org.knime.python3.nodes.ports.WorkflowSegmentExecutorErrorUtils;
 import org.knime.python3.nodes.ports.TableSpecSerializationUtils;
+import org.knime.python3.nodes.ports.WorkflowSegmentExecutorErrorUtils;
 import org.knime.python3.nodes.ports.converters.PortObjectConversionContext;
 import org.knime.python3.nodes.proxy.CloseableNodeFactoryProxy;
 import org.knime.python3.nodes.proxy.NodeDialogProxy;
@@ -572,9 +573,9 @@ final class CloseablePythonNodeProxy
             }
 
             @Override
-            public PythonToolResult execute_tool(final String tool, final String parameters,
+            public PythonToolResult execute_tool(final PurePythonTablePortObject toolTable, final String parameters,
                 final List<PythonPortObject> inputs) {
-                return executeTool(exec, nodeContainer, tool, parameters, inputs, m_tableManager);
+                return executeTool(exec, nodeContainer, toolTable, parameters, inputs, m_tableManager);
             }
 
         };
@@ -914,9 +915,9 @@ final class CloseablePythonNodeProxy
         }
 
         @Override
-        public PythonToolResult execute_tool(final String tool, final String parameters,
+        public PythonToolResult execute_tool(final PurePythonTablePortObject toolTable, final String parameters,
             final List<PythonPortObject> inputs) {
-            return executeTool(m_exec, m_nodeContainer, tool, parameters, inputs,
+            return executeTool(m_exec, m_nodeContainer, toolTable, parameters, inputs,
                 m_tableManager);
         }
 
@@ -968,7 +969,7 @@ final class CloseablePythonNodeProxy
     }
 
     private static PythonToolResult executeTool(final ExecutionContext exec, final NodeContainer nodeContainer,
-        final String tool, final String parameters, final List<PythonPortObject> inputs,
+        final PurePythonTablePortObject pythonToolTable, final String parameters, final List<PythonPortObject> inputs,
         final PythonArrowTableConverter tableManager) {
         // TODO if we want to support port types that need the filestoreMap for deserialization
         Map<String, FileStore> dummyFileStoreMap = Map.of();
@@ -977,7 +978,10 @@ final class CloseablePythonNodeProxy
             .map(po -> PythonPortTypeRegistry.convertPortObjectFromPython(po, conversionContext))//
             .toArray(PortObject[]::new);
 
-        var ws = loadWorkflowTool(tool);
+        var toolTable =
+            (BufferedDataTable)PythonPortTypeRegistry.convertPortObjectFromPython(pythonToolTable, conversionContext);
+
+        var ws = loadWorkflowTool(toolTable);
         var name = ws.loadWorkflow().getName();
 
         var wsExecutor = createExecutor(nodeContainer, ws, name);
@@ -1009,12 +1013,23 @@ final class CloseablePythonNodeProxy
         }
     }
 
-    private static WorkflowSegment loadWorkflowTool(final String b64ToolRepresentation) {
-        try (var byteIn = new ByteArrayInputStream(Base64.getDecoder().decode(b64ToolRepresentation.getBytes()));
+    private static WorkflowSegment loadWorkflowTool(final BufferedDataTable toolTable) {
+        var workflowToolCell = getWorkflowToolCell(toolTable);
+        try (var byteIn = new ByteArrayInputStream(workflowToolCell.getWorkflow());
                 var zipIn = new ZipInputStream(byteIn)) {
             return WorkflowSegment.load(zipIn);
         } catch (IOException e) {
             throw new RuntimeException("Failed to load workflow tool", e);
+        }
+    }
+
+    private static WorkflowToolCell getWorkflowToolCell(final BufferedDataTable toolTable) {
+        try (var iterator = toolTable.iterator()) {
+            if (!iterator.hasNext()) {
+                throw new RuntimeException("Tool table is empty");
+            }
+            var row = iterator.next();
+            return (WorkflowToolCell)row.getCell(0);
         }
     }
 

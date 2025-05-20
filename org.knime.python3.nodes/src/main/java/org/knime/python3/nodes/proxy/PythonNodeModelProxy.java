@@ -57,6 +57,7 @@ import org.knime.core.table.schema.AnnotatedColumnarSchema;
 import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.nodes.LogCallback;
 import org.knime.python3.nodes.callback.AuthCallback;
+import org.knime.python3.nodes.ports.PythonPortObjects.PurePythonTablePortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
 import org.knime.python3.views.PythonNodeViewSink;
@@ -350,12 +351,13 @@ public interface PythonNodeModelProxy {
         /**
          * Executes a tool in Java
          *
-         * @param tool to execute TODO placeholder until we have a better idea of the representation
+         * @param toolTable holding a single tool to execute
          * @param parameters JSON with the parameters for the tool
          * @param inputs input data for the tool
          * @return the result of the tool execution
          */
-        public PythonToolResult execute_tool(String tool, String parameters, List<PythonPortObject> inputs);
+        public PythonToolResult execute_tool(PurePythonTablePortObject toolTable, String parameters,
+            List<PythonPortObject> inputs);
 
         record PythonToolResult(String message, PythonPortObject[] outputs) {
         }

@@ -1307,14 +1307,14 @@ class _ToolExecutor:
         self._java_ctx = java_ctx
         self._type_registry = type_registry
 
-    def execute_tool(self, tool_b64, parameters, inputs: List):
+    def execute_tool(self, tool, parameters, inputs: List):
         """
         Execute a KNIME workflow tool.
 
         Parameters
         ----------
-        tool_b64 : str
-            The base64 encoded KNIME workflow tool.
+        tool:
+            The tool object to execute.
         parameters : str TODO could be a dict?
             The parameters to pass to the workflow tool.
         inputs: list of port object inputs for the tool. Only tables are supported, yet.
@@ -1330,8 +1330,12 @@ class _ToolExecutor:
             prepared_inputs.append(prepared_input)
             sink.close()
 
+        tool_table = self._wrap_tool_in_table(tool)
+
         try:
-            result = self._java_ctx.execute_tool(tool_b64, parameters, prepared_inputs)
+            result = self._java_ctx.execute_tool(
+                tool_table, parameters, prepared_inputs
+            )
         except Py4JJavaError as e:
             # Extract the error message from the Java exception
             error_message = e.java_exception.getCause().getMessage()
@@ -1351,6 +1355,16 @@ class _ToolExecutor:
             ]
 
         return result.message(), outputs
+
+    def _wrap_tool_in_table(self, tool):
+        import pandas as pd
+        import knime.api.table as kt
+
+        df = pd.DataFrame({"tool": pd.Series([tool])})
+        tool_table = kt.Table.from_pandas(df)
+        prepared_table, sink = self._type_registry.table_from_python(tool_table)
+        sink.close()
+        return prepared_table
 
 
 class _ExecutionContext(kn.ExecutionContext):
