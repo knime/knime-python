@@ -1307,7 +1307,7 @@ class _ToolExecutor:
         self._java_ctx = java_ctx
         self._type_registry = type_registry
 
-    def execute_tool(self, tool, parameters, inputs: List):
+    def execute_tool(self, tool, parameters: dict, inputs: List):
         """
         Execute a KNIME workflow tool.
 
@@ -1315,7 +1315,7 @@ class _ToolExecutor:
         ----------
         tool:
             The tool object to execute.
-        parameters : str TODO could be a dict?
+        parameters : dict
             The parameters to pass to the workflow tool.
         inputs: list of port object inputs for the tool. Only tables are supported, yet.
 
@@ -1324,6 +1324,8 @@ class _ToolExecutor:
         str
             The result of the workflow tool execution.
         """
+        import json
+
         prepared_inputs = []
         for input in inputs:
             prepared_input, sink = self._type_registry.table_from_python(input)
@@ -1332,9 +1334,11 @@ class _ToolExecutor:
 
         tool_table = self._wrap_tool_in_table(tool)
 
+        parameter_json = json.dumps(parameters)
+
         try:
             result = self._java_ctx.execute_tool(
-                tool_table, parameters, prepared_inputs
+                tool_table, parameter_json, prepared_inputs
             )
         except Py4JJavaError as e:
             # Extract the error message from the Java exception
