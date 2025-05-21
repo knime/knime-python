@@ -486,8 +486,9 @@ final class CloseablePythonNodeProxy
         m_proxy.initializeJavaCallback(callback);
 
         PortObjectConversionContext knimeToPythonConversionContext = new PortObjectConversionContext(fileStoresByKey, m_tableManager, exec);
+        final PortObjectConversionContext knimeToPythonConversionContext1 = knimeToPythonConversionContext;
         final var pythonInputs =
-            convertPortObjects(inData, knimeToPythonConversionContext);
+            PythonPortTypeRegistry.convertPortObjectsToPython(Stream.of(inData), knimeToPythonConversionContext1);
 
         exec.setProgress(0.1, "Sending data to Python");
 
@@ -589,18 +590,10 @@ final class CloseablePythonNodeProxy
         final var outputExec = exec.createSubExecutionContext(0.1);
 
         PortObjectConversionContext pythonToKnimeConversionContext = new PortObjectConversionContext(fileStoresByKey, m_tableManager, outputExec);
-        executionResult.m_portObjects = pythonOutputs.stream()//
-            .map(ppo -> PythonPortTypeRegistry.convertPortObjectFromPython(ppo, pythonToKnimeConversionContext))//
-            .toArray(PortObject[]::new);
+        executionResult.m_portObjects =
+            PythonPortTypeRegistry.convertPortObjectsFromPython(pythonOutputs.stream(), pythonToKnimeConversionContext);
 
         return executionResult;
-    }
-
-    private static PythonPortObject[] convertPortObjects(final PortObject[] inData,
-        final PortObjectConversionContext knimeToPythonConversionContext) {
-        return Arrays.stream(inData)
-            .map(po -> PythonPortTypeRegistry.convertPortObjectToPython(po, knimeToPythonConversionContext))
-            .toArray(PythonPortObject[]::new);
     }
 
     /**
@@ -853,7 +846,9 @@ final class CloseablePythonNodeProxy
         var fileStoresByKey = new HashMap<String, FileStore>();
         PortObjectConversionContext knimeToPythonConversionContext =
             new PortObjectConversionContext(fileStoresByKey, m_tableManager, exec);
-        var pythonPortObjects = convertPortObjects(portObjects, knimeToPythonConversionContext);
+        final PortObjectConversionContext knimeToPythonConversionContext1 = knimeToPythonConversionContext;
+        var pythonPortObjects =
+            PythonPortTypeRegistry.convertPortObjectsToPython(Stream.of(portObjects), knimeToPythonConversionContext1);
 
         var pythonDataService = m_proxy.getDataService(context, pythonPortObjects);
 

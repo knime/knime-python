@@ -53,6 +53,7 @@ import static org.knime.python3.types.port.PortObjectConverterExtensionPoint.get
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.BufferedDataTable;
@@ -310,6 +311,22 @@ public final class PythonPortTypeRegistry {
     }
 
     /**
+     * Converts the provided array of KNIME-native {@link PortObject} implementors to the corresponding
+     * {@link PythonPortObject} wrappers.
+     *
+     * @param inData The stream of Port Objects to be converted to their Python-native {@link PythonPortObject}
+     * @param knimeToPythonConversionContext context needed for the conversion
+     * @return The Port Object array wrapped in {@link PythonPortObject}, which can be provided to the Python proxy
+     */
+    public static PythonPortObject[] convertPortObjectsToPython(final Stream<PortObject> inData,
+        final PortObjectConversionContext knimeToPythonConversionContext) {
+        return inData
+            .map(po -> PythonPortTypeRegistry.convertPortObjectToPython(po, knimeToPythonConversionContext))
+            .toArray(PythonPortObject[]::new);
+    }
+
+
+    /**
      * Converts the provided PurePythonPortObject-interfaced object received from Python to the corresponding
      * KNIME-native {@link PortObject}.
      *
@@ -354,6 +371,22 @@ public final class PythonPortTypeRegistry {
             throw new IllegalStateException("Registered Port Object converter for " + javaClassName
                 + " does not implement Python to KNIME conversion.");
         }
+    }
+
+    /**
+     * Converts the provided array of {@link PythonPortObject} implementors received from Python to the corresponding
+     * KNIME-native {@link PortObject PortObjects}
+     *
+     * @param inData The stream of Port Objects to be converted back to their KNIME-native {@link PortObject}
+     *            counterparts
+     * @param pythonToKnimeConversionContext context needed for the conversion
+     * @return The KNIME-native {@link PortObject} array extracted from the `PurePython` objects
+     */
+    public static PortObject[] convertPortObjectsFromPython(final Stream<PythonPortObject> inData,
+        final PortObjectConversionContext pythonToKnimeConversionContext) {
+        return inData
+            .map(po -> PythonPortTypeRegistry.convertPortObjectFromPython(po, pythonToKnimeConversionContext))
+            .toArray(PortObject[]::new);
     }
 
     /**
