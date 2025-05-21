@@ -101,8 +101,6 @@ import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.arrow.PythonArrowDataUtils;
 import org.knime.python3.arrow.PythonArrowTableConverter;
 import org.knime.python3.nodes.CloseablePythonNodeProxyFactory.CloseableGatewayWithAttachments;
-import org.knime.python3.nodes.callback.AuthCallback;
-import org.knime.python3.nodes.callback.DefaultAuthCallback;
 import org.knime.python3.nodes.extension.ExtensionNode;
 import org.knime.python3.nodes.ports.PythonPortObjects.PurePythonTablePortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonCredentialPortObjectSpec;
@@ -122,7 +120,6 @@ import org.knime.python3.nodes.proxy.PythonNodeModelProxy.ExpiryDate;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy.FileStoreBasedFile;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy.PythonExecutionContext.PythonToolResult;
 import org.knime.python3.nodes.proxy.PythonNodeProxy;
-import org.knime.python3.nodes.proxy.PythonNodeViewProxy;
 import org.knime.python3.nodes.proxy.model.NodeConfigurationProxy;
 import org.knime.python3.nodes.proxy.model.NodeExecutionProxy;
 import org.knime.python3.nodes.settings.JsonNodeSettings;
@@ -141,7 +138,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 final class CloseablePythonNodeProxy
     implements NodeExecutionProxy, NodeConfigurationProxy, CloseableNodeFactoryProxy, NodeDialogProxy, NodeViewProxy {
 
-    private static final NodeLogger LOGGER = NodeLogger.getLogger(CloseablePythonNodeProxy.class);
+    static final NodeLogger LOGGER = NodeLogger.getLogger(CloseablePythonNodeProxy.class);
 
     private final PythonNodeProxy m_proxy;
 
@@ -858,91 +855,6 @@ final class CloseablePythonNodeProxy
                 return pythonDataService.getData(param);
             }
         };
-    }
-
-    private static final class DefaultViewContext implements PythonNodeViewProxy.PythonViewContext {
-
-        private final ToolExecutor m_toolExecutor;
-
-        private final PortMapProvider m_portMapProvider;
-
-        private final CredentialsProviderProxy m_credentialsProvider;
-
-        DefaultViewContext(final ToolExecutor toolExecutor, final PortMapProvider portMapProvider,
-            final CredentialsProviderProxy credentialsProvider) {
-            m_toolExecutor = toolExecutor;
-            m_portMapProvider = portMapProvider;
-            m_credentialsProvider = credentialsProvider;
-        }
-
-        @Override
-        public String[] get_credentials(final String identifier) {
-            ICredentials credentials = m_credentialsProvider.getCredentials(identifier);
-            return new String[]{credentials.getLogin(), credentials.getPassword(), credentials.getName()};
-        }
-
-        @Override
-        public String[] get_credential_names() {
-            return m_credentialsProvider.getCredentialNames();
-
-        }
-
-        @Override
-        public Map<String, int[]> get_input_port_map() {
-            return m_portMapProvider.getInputPortMap();
-        }
-
-        @Override
-        public Map<String, int[]> get_output_port_map() {
-            return m_portMapProvider.getOutputPortMap();
-        }
-
-        @Override
-        public PythonToolResult execute_tool(final PurePythonTablePortObject toolTable, final String parameters,
-            final List<PythonPortObject> inputs) {
-            return m_toolExecutor.executeTool(toolTable, parameters, inputs);
-        }
-
-    }
-
-    private static final class DefaultViewCallback implements PythonNodeViewProxy.ViewCallback {
-        LogCallback m_logCallback = new DefaultLogCallback(LOGGER);
-
-        AuthCallback m_authCallback = new DefaultAuthCallback();
-
-        private final PythonArrowTableConverter m_tableManager;
-
-        DefaultViewCallback(final PythonArrowTableConverter tableManager) {
-            m_tableManager = tableManager;
-        }
-
-        @Override
-        public void log(final String message, final String severity) {
-            m_logCallback.log(message, severity);
-        }
-
-        @Override
-        public ExpiryDate get_expires_after(final String serializedXMLString) throws CouldNotAuthorizeException,
-            ClassNotFoundException, InstantiationException, IllegalAccessException, IOException {
-            return m_authCallback.get_expires_after(serializedXMLString);
-        }
-
-        @Override
-        public String get_auth_schema(final String serializedXMLString) throws CouldNotAuthorizeException,
-            ClassNotFoundException, InstantiationException, IllegalAccessException, IOException {
-            return m_authCallback.get_auth_schema(serializedXMLString);
-        }
-
-        @Override
-        public String get_auth_parameters(final String serializedXMLString) throws CouldNotAuthorizeException,
-            ClassNotFoundException, InstantiationException, IllegalAccessException, IOException {
-            return m_authCallback.get_auth_parameters(serializedXMLString);
-        }
-
-        @Override
-        public PythonArrowDataSink create_sink() throws IOException {
-            return m_tableManager.createSink();
-        }
     }
 
 }
