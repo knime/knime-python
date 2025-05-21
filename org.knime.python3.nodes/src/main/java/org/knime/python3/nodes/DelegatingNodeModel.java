@@ -81,6 +81,7 @@ import org.knime.python3.nodes.proxy.NodeProxy;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy.CredentialsProviderProxy;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy.FlowVariablesProxy;
+import org.knime.python3.nodes.proxy.model.NodeModelProxy.PortMapProvider;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy.WarningConsumer;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy.WorkflowPropertiesProxy;
 import org.knime.python3.nodes.proxy.model.NodeModelProxyProvider;
@@ -96,7 +97,7 @@ import org.knime.python3.utils.FlowVariableUtils;
  */
 public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeModel
     implements CredentialsProviderProxy, WorkflowPropertiesProxy, FlowVariablesProxy, WarningConsumer,
-    PortObjectHolder {
+    PortObjectHolder, PortMapProvider {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(DelegatingNodeModel.class);
 
@@ -382,6 +383,7 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
     /**
      * @return the inputPortMap
      */
+    @Override
     public Map<String, int[]> getInputPortMap() {
         return m_inputPortMap;
     }
@@ -389,6 +391,7 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
     /**
      * @return the outputPortMap
      */
+    @Override
     public Map<String, int[]> getOutputPortMap() {
         return m_outputPortMap;
     }
