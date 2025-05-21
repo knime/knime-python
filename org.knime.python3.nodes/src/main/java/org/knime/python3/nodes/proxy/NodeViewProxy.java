@@ -50,6 +50,8 @@ package org.knime.python3.nodes.proxy;
 
 import org.knime.core.node.port.PortObject;
 import org.knime.core.util.asynclose.AsynchronousCloseable;
+import org.knime.python3.nodes.proxy.model.NodeModelProxy.CredentialsProviderProxy;
+import org.knime.python3.nodes.proxy.model.NodeModelProxy.PortMapProvider;
 import org.knime.python3.nodes.settings.JsonNodeSettings;
 
 /**
@@ -62,7 +64,16 @@ public interface NodeViewProxy extends AsynchronousCloseable<RuntimeException> {
         String getData(String param);
     }
 
-    DataServiceProxy getDataServiceProxy(PortObject[] portObjects);
+    /**
+     * Context needed by a NodeViewProxy.
+     *
+     * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+     */
+    interface ViewEnvironment extends PortMapProvider, CredentialsProviderProxy {
+    }
+
+    DataServiceProxy getDataServiceProxy(final PortObject[] portObjects, final PortMapProvider portMapProvider,
+        final CredentialsProviderProxy credentialsProvider);
 
     /**
      * @param settings

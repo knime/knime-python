@@ -596,12 +596,7 @@ final class CloseablePythonNodeProxy
         return executionResult;
     }
 
-    /**
-     * @param inData
-     * @param knimeToPythonConversionContext
-     * @return
-     */
-    private PythonPortObject[] convertPortObjects(final PortObject[] inData,
+    private static PythonPortObject[] convertPortObjects(final PortObject[] inData,
         final PortObjectConversionContext knimeToPythonConversionContext) {
         return Arrays.stream(inData)
             .map(po -> PythonPortTypeRegistry.convertPortObjectToPython(po, knimeToPythonConversionContext))
@@ -842,7 +837,8 @@ final class CloseablePythonNodeProxy
 
 
     @Override
-    public DataServiceProxy getDataServiceProxy(final PortObject[] portObjects) {
+    public DataServiceProxy getDataServiceProxy(final PortObject[] portObjects, final PortMapProvider portMapProvider,
+        final CredentialsProviderProxy credentialsProvider) {
 
         initTableManager();
         var callback = new DefaultViewCallback(m_tableManager);
@@ -852,7 +848,7 @@ final class CloseablePythonNodeProxy
         var nnc = (NativeNodeContainer)NodeContext.getContext().getNodeContainer();
         var exec = nnc.createExecutionContext();
         var toolExecutor = new ToolExecutor(exec, nnc, m_tableManager);
-        var context = new DefaultViewContext(getNodeModel(), toolExecutor);
+        var context = new DefaultViewContext(toolExecutor, portMapProvider, credentialsProvider);
 
         var fileStoresByKey = new HashMap<String, FileStore>();
         PortObjectConversionContext knimeToPythonConversionContext =
@@ -869,43 +865,41 @@ final class CloseablePythonNodeProxy
         };
     }
 
-    // TODO this is a hack to get the node model. This class should have no dependency on the node model.
-    // Instead we should pass interfaces as arguments similar to how it's done for execute or configure
-    private static DelegatingNodeModel getNodeModel() {
-        return (DelegatingNodeModel)getNode().getNodeModel();
-    }
-
     private static final class DefaultViewContext implements PythonNodeViewProxy.PythonViewContext {
-
-        private final DelegatingNodeModel m_nodeModel;
 
         private final ToolExecutor m_toolExecutor;
 
-        DefaultViewContext(final DelegatingNodeModel nodeModel, final ToolExecutor toolExecutor) {
-            m_nodeModel = nodeModel;
+        private final PortMapProvider m_portMapProvider;
+
+        private final CredentialsProviderProxy m_credentialsProvider;
+
+        DefaultViewContext(final ToolExecutor toolExecutor, final PortMapProvider portMapProvider,
+            final CredentialsProviderProxy credentialsProvider) {
             m_toolExecutor = toolExecutor;
+            m_portMapProvider = portMapProvider;
+            m_credentialsProvider = credentialsProvider;
         }
 
         @Override
         public String[] get_credentials(final String identifier) {
-            ICredentials credentials = getNodeModel().getCredentials(identifier);
+            ICredentials credentials = m_credentialsProvider.getCredentials(identifier);
             return new String[]{credentials.getLogin(), credentials.getPassword(), credentials.getName()};
         }
 
         @Override
         public String[] get_credential_names() {
-            return m_nodeModel.getCredentialNames();
+            return m_credentialsProvider.getCredentialNames();
 
         }
 
         @Override
         public Map<String, int[]> get_input_port_map() {
-            return m_nodeModel.getInputPortMap();
+            return m_portMapProvider.getInputPortMap();
         }
 
         @Override
         public Map<String, int[]> get_output_port_map() {
-            return m_nodeModel.getOutputPortMap();
+            return m_portMapProvider.getOutputPortMap();
         }
 
         @Override

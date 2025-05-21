@@ -295,7 +295,8 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
                             m_nodeViewProxy = m_proxyProvider.getNodeViewProxy();
                             m_nodeViewProxy.loadValidatedSettings(nodeModel.getSettings());
                             m_dataServiceProxy =
-                                m_nodeViewProxy.getDataServiceProxy(nodeModel.getInternalPortObjects());
+                                m_nodeViewProxy.getDataServiceProxy(nodeModel.getInternalPortObjects(), nodeModel,
+                                    nodeModel);
                         }
                         return m_dataServiceProxy.getData(param);
                     }
