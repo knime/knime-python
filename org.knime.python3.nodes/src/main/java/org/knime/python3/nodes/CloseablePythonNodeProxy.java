@@ -48,7 +48,6 @@
  */
 package org.knime.python3.nodes;
 
-import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -64,7 +63,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.stream.Stream;
-import java.util.zip.ZipInputStream;
 
 import org.knime.core.columnar.arrow.ArrowColumnStoreFactory;
 import org.knime.core.data.filestore.FileStore;
@@ -73,27 +71,21 @@ import org.knime.core.data.filestore.FileStoreKey;
 import org.knime.core.data.filestore.FileStoreUtil;
 import org.knime.core.data.filestore.internal.IFileStoreHandler;
 import org.knime.core.data.filestore.internal.IWriteFileStoreHandler;
-import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.KNIMEConstants;
-import org.knime.core.node.KNIMEException;
 import org.knime.core.node.Node;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.PortType;
-import org.knime.core.node.tool.WorkflowToolCell;
 import org.knime.core.node.util.CheckUtils;
 import org.knime.core.node.workflow.CredentialsProvider;
 import org.knime.core.node.workflow.ICredentials;
 import org.knime.core.node.workflow.NativeNodeContainer;
-import org.knime.core.node.workflow.NodeContainer;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.node.workflow.VariableType;
-import org.knime.core.node.workflow.capture.WorkflowSegment;
-import org.knime.core.node.workflow.capture.WorkflowSegmentExecutor;
 import org.knime.core.util.FileUtil;
 import org.knime.core.util.PathUtils;
 import org.knime.core.util.ThreadUtils;
@@ -119,7 +111,6 @@ import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
 import org.knime.python3.nodes.ports.PythonPortTypeRegistry;
 import org.knime.python3.nodes.ports.PythonTransientConnectionPortObject;
 import org.knime.python3.nodes.ports.TableSpecSerializationUtils;
-import org.knime.python3.nodes.ports.WorkflowSegmentExecutorErrorUtils;
 import org.knime.python3.nodes.ports.converters.PortObjectConversionContext;
 import org.knime.python3.nodes.proxy.CloseableNodeFactoryProxy;
 import org.knime.python3.nodes.proxy.NodeDialogProxy;
@@ -506,6 +497,9 @@ final class CloseablePythonNodeProxy
         var nodeContainer = NodeContext.getContext().getNodeContainer();
 
         final var pythonExecContext = new PythonNodeModelProxy.PythonExecutionContext() {
+
+            ToolExecutor m_toolExecutor = new ToolExecutor(exec, nodeContainer, m_tableManager);
+
             @Override
             public void set_progress(final double progress, final String message) {
                 progressMonitor.setProgress(progress, message);
@@ -575,7 +569,7 @@ final class CloseablePythonNodeProxy
             @Override
             public PythonToolResult execute_tool(final PurePythonTablePortObject toolTable, final String parameters,
                 final List<PythonPortObject> inputs) {
-                return executeTool(exec, nodeContainer, toolTable, parameters, inputs, m_tableManager);
+                return m_toolExecutor.executeTool(toolTable, parameters, inputs);
             }
 
         };
@@ -857,7 +851,8 @@ final class CloseablePythonNodeProxy
 
         var nnc = (NativeNodeContainer)NodeContext.getContext().getNodeContainer();
         var exec = nnc.createExecutionContext();
-        var context = new DefaultViewContext(m_tableManager, nnc, exec);
+        var toolExecutor = new ToolExecutor(exec, nnc, m_tableManager);
+        var context = new DefaultViewContext(getNodeModel(), toolExecutor);
 
         var fileStoresByKey = new HashMap<String, FileStore>();
         PortObjectConversionContext knimeToPythonConversionContext =
@@ -874,22 +869,21 @@ final class CloseablePythonNodeProxy
         };
     }
 
-    private static final class DefaultViewContext implements PythonNodeViewProxy.PythonViewContext {
+    // TODO this is a hack to get the node model. This class should have no dependency on the node model.
+    // Instead we should pass interfaces as arguments similar to how it's done for execute or configure
+    private static DelegatingNodeModel getNodeModel() {
+        return (DelegatingNodeModel)getNode().getNodeModel();
+    }
 
-        private final PythonArrowTableConverter m_tableManager;
+    private static final class DefaultViewContext implements PythonNodeViewProxy.PythonViewContext {
 
         private final DelegatingNodeModel m_nodeModel;
 
-        private final NativeNodeContainer m_nodeContainer;
+        private final ToolExecutor m_toolExecutor;
 
-        private final ExecutionContext m_exec;
-
-        DefaultViewContext(final PythonArrowTableConverter tableManager, final NativeNodeContainer nodeContainer,
-            final ExecutionContext exec) {
-            m_tableManager = tableManager;
-            m_nodeModel = getNodeModel();
-            m_nodeContainer = nodeContainer;
-            m_exec = exec;
+        DefaultViewContext(final DelegatingNodeModel nodeModel, final ToolExecutor toolExecutor) {
+            m_nodeModel = nodeModel;
+            m_toolExecutor = toolExecutor;
         }
 
         @Override
@@ -917,15 +911,9 @@ final class CloseablePythonNodeProxy
         @Override
         public PythonToolResult execute_tool(final PurePythonTablePortObject toolTable, final String parameters,
             final List<PythonPortObject> inputs) {
-            return executeTool(m_exec, m_nodeContainer, toolTable, parameters, inputs,
-                m_tableManager);
+            return m_toolExecutor.executeTool(toolTable, parameters, inputs);
         }
 
-        // TODO this is a hack to get the node model. This class should have no dependency on the node model.
-        // Instead we should pass interfaces as arguments similar to how it's done for execute or configure
-        private static DelegatingNodeModel getNodeModel() {
-            return (DelegatingNodeModel)getNode().getNodeModel();
-        }
     }
 
     private static final class DefaultViewCallback implements PythonNodeViewProxy.ViewCallback {
@@ -965,90 +953,6 @@ final class CloseablePythonNodeProxy
         @Override
         public PythonArrowDataSink create_sink() throws IOException {
             return m_tableManager.createSink();
-        }
-    }
-
-    private static PythonToolResult executeTool(final ExecutionContext exec, final NodeContainer nodeContainer,
-        final PurePythonTablePortObject pythonToolTable, final String parameters, final List<PythonPortObject> inputs,
-        final PythonArrowTableConverter tableManager) {
-        // TODO if we want to support port types that need the filestoreMap for deserialization
-        Map<String, FileStore> dummyFileStoreMap = Map.of();
-        var conversionContext = new PortObjectConversionContext(dummyFileStoreMap, tableManager, exec);
-        var inputPortObjects = inputs.stream()//
-            .map(po -> PythonPortTypeRegistry.convertPortObjectFromPython(po, conversionContext))//
-            .toArray(PortObject[]::new);
-
-        var toolTable =
-            (BufferedDataTable)PythonPortTypeRegistry.convertPortObjectFromPython(pythonToolTable, conversionContext);
-
-        var ws = loadWorkflowTool(toolTable);
-        var name = ws.loadWorkflow().getName();
-
-        var wsExecutor = createExecutor(nodeContainer, ws, name);
-        try {
-            wsExecutor.configureWorkflow(parameters);
-            var result = wsExecutor.executeWorkflowAndCollectNodeMessages(inputPortObjects, exec);
-            WorkflowSegmentExecutorErrorUtils.throwIfError(result);
-            var outputs = result.portObjectCopies();
-            var messageTable = getMessageTable(outputs, ws.getConnectedOutputs());
-            var pyOutputs = Stream.of(outputs).filter(o -> o != messageTable)
-                    .map(po -> PythonPortTypeRegistry.convertPortObjectToPython(po, conversionContext))//
-                    .toArray(PythonPortObject[]::new);
-            return new PythonToolResult(extractMessage(messageTable), pyOutputs);
-        } catch (Exception ex) {
-            // TODO
-            throw new RuntimeException("Failed to execute tool: " + name, ex);
-        } finally {
-            wsExecutor.dispose();
-        }
-    }
-
-    static WorkflowSegmentExecutor createExecutor(final NodeContainer nodeContainer, final WorkflowSegment ws,
-        final String name) {
-        try {
-        return new WorkflowSegmentExecutor(ws, name, nodeContainer, true, true, warning -> {
-        });
-        } catch (KNIMEException e) {
-            throw new RuntimeException("Failed to create workflow segment executor for tool " + name, e);
-        }
-    }
-
-    private static WorkflowSegment loadWorkflowTool(final BufferedDataTable toolTable) {
-        var workflowToolCell = getWorkflowToolCell(toolTable);
-        try (var byteIn = new ByteArrayInputStream(workflowToolCell.getWorkflow());
-                var zipIn = new ZipInputStream(byteIn)) {
-            return WorkflowSegment.load(zipIn);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to load workflow tool", e);
-        }
-    }
-
-    private static WorkflowToolCell getWorkflowToolCell(final BufferedDataTable toolTable) {
-        try (var iterator = toolTable.iterator()) {
-            if (!iterator.hasNext()) {
-                throw new RuntimeException("Tool table is empty");
-            }
-            var row = iterator.next();
-            return (WorkflowToolCell)row.getCell(0);
-        }
-    }
-
-    private static BufferedDataTable getMessageTable(final PortObject[] outputs,
-        final List<WorkflowSegment.Output> wsOutputs) {
-        for (int i = 0; i < outputs.length; i++) {
-            if (wsOutputs.get(i).getSpec().map(spec -> spec.getName().equals("message output")).orElse(false)) {
-                return (BufferedDataTable)outputs[i];
-            }
-        }
-        return null;
-    }
-
-    private static String extractMessage(final BufferedDataTable messageTable) {
-        if (messageTable == null) {
-            return "Tool executed successfully";
-        }
-        try (var cursor = messageTable.cursor()) {
-            return cursor.forward().getAsDataCell(0).toString();
         }
     }
 
