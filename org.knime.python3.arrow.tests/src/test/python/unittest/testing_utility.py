@@ -284,14 +284,22 @@ class DummyConverter:
 
 class DummyJavaDataSinkFactory:
     def __init__(self, chunk_size) -> None:
-        self._sinks = []
+        self._sink_paths = []
         self._chunk_size = chunk_size
+        self._arrow_sinks = []
 
     def __enter__(self):
         return self.create_data_sink
 
     def __exit__(self, *args):
-        for sink in self._sinks:
+        import gc
+
+        # gc.collect()  # Force garbage collection to close any lingering file handles
+
+        for arrow_sink in self._arrow_sinks:
+            arrow_sink.close()
+
+        for sink in self._sink_paths:
             os.remove(sink)
 
     def create_data_sink(self) -> ka.ArrowDataSink:
@@ -300,7 +308,8 @@ class DummyJavaDataSinkFactory:
         arrow_sink = ka.ArrowDataSink(dummy_java_sink)
         arrow_sink._writer = dummy_writer
         arrow_sink._chunk_size = self._chunk_size
-        self._sinks.append(dummy_java_sink._path)
+        self._sink_paths.append(dummy_java_sink._path)
+        self._arrow_sinks.append(arrow_sink)
         return arrow_sink
 
 
