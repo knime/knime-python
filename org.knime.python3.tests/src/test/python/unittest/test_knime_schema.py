@@ -783,12 +783,12 @@ class SchemaTest(unittest.TestCase):
         pa_type = pa.struct(
             [
                 ("0", pa.struct([("0", pa.int64()), ("1", pa.int64())])),
-                ("1", pa.large_list(pa.int64())),
+                ("1", pa.list_(pa.int64())),
             ]
         )
         self.assertEqual(
             str(pa_storage_type),
-            "struct<0: struct<0: int64, 1: int64>, 1: large_list<item: int64>>",
+            "struct<0: struct<0: int64, 1: int64>, 1: list<item: int64>>",
         )
         self.assertEqual(pa_storage_type, pa_type)
         data_spec2 = {
@@ -819,7 +819,7 @@ class SchemaTest(unittest.TestCase):
         pa_storage_type2 = kat.data_spec_to_arrow(data_spec=data_spec2)
         self.assertEqual(
             str(pa_storage_type2),
-            "struct<0: struct<0: struct<0: int64, 1: int64>, 1: struct<0: large_list<item: int64>, 1: struct<0: int64, 1: int64>>>, 1: large_list<item: struct<0: large_list<item: int64>, 1: int64>>>",
+            "struct<0: struct<0: struct<0: int64, 1: int64>, 1: struct<0: list<item: int64>, 1: struct<0: int64, 1: int64>>>, 1: list<item: struct<0: list<item: int64>, 1: int64>>>",
         )
 
 

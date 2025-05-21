@@ -912,7 +912,7 @@ def data_spec_to_arrow(data_spec):
         type_id = data_spec["type"]
         if type_id == "list":
             value_type = data_spec["inner_type"]
-            return pa.large_list(data_spec_to_arrow(value_type))
+            return pa.list_(data_spec_to_arrow(value_type))
         elif type_id == "struct":
             fields = [
                 (str(i), data_spec_to_arrow(t))
