@@ -2349,6 +2349,83 @@ class BoolParameter(_BaseParameter):
     def _get_options(self, dialog_creation_context) -> dict:
         return {"format": "boolean"}
 
+@dataclass(frozen=True)
+class CredentialValue:
+    """
+    A class representing a credential.
+
+    Parameters
+    ----------
+    username : str
+        The username for the credential.
+    password : str
+        The password for the credential.
+    second_factor : Optional[str]
+        A second factor if present.
+    """
+
+    username: str
+    password: str
+    second_factor: Optional[str]
+
+
+class CredentialsParameter(_BaseParameter):
+    """
+    Parameter class for credentials, that allows inputting username and password,
+    but can be overwritten jointly with a credentials flow variable.
+    """
+
+    def __init__(
+        self,
+        label,
+        description,
+        default_value: Optional[CredentialValue] = None,
+        validator=None,
+        since_version=None,
+        is_advanced=False,
+    ):
+        super().__init__(
+            label, description, default_value, validator, since_version, is_advanced
+        )
+
+    def _extract_schema(self, extension_version=None, dialog_creation_context=None):
+        schema = super()._extract_schema(
+            dialog_creation_context=dialog_creation_context
+        )
+        schema["type"] = "object"
+        schema["properties"] = {
+            "username": {"type": "string"},
+            "password": {"type": "string"},
+            "secondFactor": {"type": "string"},
+        }
+        return schema
+
+    def _get_options(self, dialog_creation_context) -> dict:
+        return {
+            "format": "credentials",
+        }
+
+    def _to_dict(self, value: Optional[CredentialValue]) -> Optional[dict]:
+        if not value:
+            return None
+
+        return {
+            "username": value.username,
+            "password": value.password,
+            "secondFactor": value.second_factor,
+        }
+
+    def _from_dict(self, value) -> Optional[CredentialValue]:
+        """Parses the value to a datetime object.
+
+        The value can be a string or a datetime object.
+        """
+        if not value:
+            return None
+        return CredentialValue(
+            value["username"], value["password"], value["secondFactor"]
+        )
+
 
 class DateTimeParameter(_BaseParameter):
     def __init__(

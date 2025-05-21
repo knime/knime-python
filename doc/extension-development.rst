@@ -192,15 +192,31 @@ the following parameter types. For a more detailed description see
    :inherited-members:
    :exclude-members: validator, rule
 
+
 .. autoclass:: knime.extension.LocalPathParameter
    :members:
    :noindex:
    :inherited-members:
+   :exclude-members: validator, rule
+
+
+.. autoclass:: knime.extension.CredentialValue
+   :members:
+   :noindex:
+   :inherited-members:
+
+.. autoclass:: knime.extension.CredentialsParameter
+   :members:
+   :noindex:
+   :inherited-members:
+   :exclude-members: validator, rule
+
 
 .. autoclass:: knime.extension.ParameterArray
    :members:
    :noindex:
    :inherited-members:
+   :exclude-members: validator, rule
 
 
 Validation
