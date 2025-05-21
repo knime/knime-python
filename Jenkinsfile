@@ -180,11 +180,12 @@ def runPython3MultiversionWorkflowTestConfig(String environmentFile, String base
                         'knime-productivity-oss',
                         'knime-reporting',
                         'knime-cef',
-			'knime-hubclient-sdk',
+                        'knime-hubclient-sdk',
                     ],
                     ius: [
                         'org.knime.features.chem.types.feature.group',
-                        'org.knime.features.core.columnar.feature.group'
+                        'org.knime.features.core.columnar.feature.group',
+                        'org.knime.features.ext.office365.filehandling.feature.group'
                     ]
                 ],
             )
