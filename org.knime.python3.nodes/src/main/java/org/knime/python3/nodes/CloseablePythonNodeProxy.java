@@ -447,10 +447,9 @@ final class CloseablePythonNodeProxy
         };
         m_proxy.initializeJavaCallback(callback);
 
-        PortObjectConversionContext knimeToPythonConversionContext = new PortObjectConversionContext(fileStoresByKey, m_tableManager, exec);
-        final PortObjectConversionContext knimeToPythonConversionContext1 = knimeToPythonConversionContext;
+        var knimeToPythonConversionContext = new PortObjectConversionContext(fileStoresByKey, m_tableManager, exec);
         final var pythonInputs =
-            PythonPortTypeRegistry.convertPortObjectsToPython(Stream.of(inData), knimeToPythonConversionContext1);
+            PythonPortTypeRegistry.convertPortObjectsToPython(Stream.of(inData), knimeToPythonConversionContext);
 
         exec.setProgress(0.1, "Sending data to Python");
 
