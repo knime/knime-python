@@ -40,6 +40,7 @@ class WorkflowTool:
     description: str
     parameter_schema: dict
     tool_bytes: bytes
+    message_output_port_index: int
     input_ports: Optional[List[ToolPort]] = None
     output_ports: Optional[List[ToolPort]] = None
 
@@ -63,6 +64,7 @@ class WorkflowToolValueFactory(kt.PythonValueFactory):
             description=storage["1"],
             parameter_schema=json.loads(storage["2"]),
             tool_bytes=storage["3"],
+            message_output_port_index=storage["6"],
             input_ports=[ToolPort._from_arrow_dict(port) for port in storage["4"]],
             output_ports=[ToolPort._from_arrow_dict(port) for port in storage["5"]],
         )
@@ -79,4 +81,5 @@ class WorkflowToolValueFactory(kt.PythonValueFactory):
             "3": value.tool_bytes,
             "4": [port._to_arrow_dict() for port in value.input_ports],
             "5": [port._to_arrow_dict() for port in value.output_ports],
+            "6": value.message_output_port_index,
         }
