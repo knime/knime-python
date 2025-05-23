@@ -42,6 +42,7 @@ class WorkflowTool:
     tool_bytes: bytes
     input_ports: Optional[List[ToolPort]] = None
     output_ports: Optional[List[ToolPort]] = None
+    message_output_port_index: int 
 
 
 class WorkflowToolValueFactory(kt.PythonValueFactory):
@@ -65,6 +66,7 @@ class WorkflowToolValueFactory(kt.PythonValueFactory):
             tool_bytes=storage["3"],
             input_ports=[ToolPort._from_arrow_dict(port) for port in storage["4"]],
             output_ports=[ToolPort._from_arrow_dict(port) for port in storage["5"]],
+            message_output_port_index=storage["6"],
         )
 
     def encode(self, value: WorkflowTool):
@@ -79,4 +81,5 @@ class WorkflowToolValueFactory(kt.PythonValueFactory):
             "3": value.tool_bytes,
             "4": [port._to_arrow_dict() for port in value.input_ports],
             "5": [port._to_arrow_dict() for port in value.output_ports],
+            "6": value.message_output_port_index,
         }
