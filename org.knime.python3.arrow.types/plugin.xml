@@ -100,7 +100,7 @@
             modulePath="src/main/python" moduleName="knime.types.tool">
       		<PythonValueFactory
                PythonClassName="WorkflowToolValueFactory"
-               ValueFactory="org.knime.core.node.tool.WorkflowToolValueFactory"
+               ValueFactory="org.knime.core.node.agentic.tool.WorkflowToolValueFactory"
                ValueTypeName="knime.types.tool.WorkflowTool"
                isDefaultPythonRepresentation="true">
             </PythonValueFactory>
