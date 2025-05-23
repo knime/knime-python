@@ -55,11 +55,17 @@ import org.knime.python3.nodes.proxy.model.NodeModelProxy.PortMapProvider;
 import org.knime.python3.nodes.settings.JsonNodeSettings;
 
 /**
+ * Provides methods and interfaces used by views to create data service instances that are powered by a remote proxy.
  *
  * @author Martin Horn, KNIME GmbH, Konstanz, Germany
  */
 public interface NodeViewProxy extends AsynchronousCloseable<RuntimeException> {
 
+    /**
+     * Data service that is powered by a remote proxy.
+     *
+     * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+     */
     interface DataServiceProxy {
         String getData(String param);
     }
@@ -72,12 +78,17 @@ public interface NodeViewProxy extends AsynchronousCloseable<RuntimeException> {
     interface ViewEnvironment extends PortMapProvider, CredentialsProviderProxy {
     }
 
-    DataServiceProxy getDataServiceProxy(final PortObject[] portObjects, final PortMapProvider portMapProvider,
-        final CredentialsProviderProxy credentialsProvider);
-
     /**
-     * @param settings
+     * Creates a data service that is powered by a remote proxy.
+     *
+     * @param settings of the node
+     * @param portObjects provided as input to the node
+     * @param portMapProvider provides the map from port groups to their indices
+     * @param credentialsProvider provides access to credentials
+     *
+     * @return a data service that is powered by a remote proxy
      */
-    void loadValidatedSettings(JsonNodeSettings settings);
+    DataServiceProxy getDataServiceProxy(JsonNodeSettings settings, final PortObject[] portObjects,
+        final PortMapProvider portMapProvider, final CredentialsProviderProxy credentialsProvider);
 
 }

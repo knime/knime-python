@@ -792,8 +792,10 @@ final class CloseablePythonNodeProxy
 
 
     @Override
-    public DataServiceProxy getDataServiceProxy(final PortObject[] portObjects, final PortMapProvider portMapProvider,
-        final CredentialsProviderProxy credentialsProvider) {
+    public DataServiceProxy getDataServiceProxy(final JsonNodeSettings settings, final PortObject[] portObjects,
+        final PortMapProvider portMapProvider, final CredentialsProviderProxy credentialsProvider) {
+
+        loadValidatedSettings(settings);
 
         initTableManager();
         var callback = new DefaultViewCallback(m_tableManager, new DefaultLogCallback(LOGGER));
