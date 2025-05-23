@@ -51,7 +51,6 @@ package org.knime.python3.nodes;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -92,18 +91,15 @@ import org.knime.core.util.ThreadUtils;
 import org.knime.core.util.asynclose.AsynchronousCloseable;
 import org.knime.core.util.auth.CouldNotAuthorizeException;
 import org.knime.core.webui.data.DataServiceException;
-import org.knime.credentials.base.Credential;
-import org.knime.credentials.base.CredentialPortObjectSpec;
-import org.knime.credentials.base.oauth.api.AccessTokenAccessor;
 import org.knime.credentials.base.oauth.api.HttpAuthorizationHeaderCredentialValue;
 import org.knime.python3.PythonFileStoreUtils;
 import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.arrow.PythonArrowDataUtils;
 import org.knime.python3.arrow.PythonArrowTableConverter;
 import org.knime.python3.nodes.CloseablePythonNodeProxyFactory.CloseableGatewayWithAttachments;
+import org.knime.python3.nodes.callback.AuthCallbackUtils;
 import org.knime.python3.nodes.extension.ExtensionNode;
 import org.knime.python3.nodes.ports.PythonPortObjects.PurePythonTablePortObject;
-import org.knime.python3.nodes.ports.PythonPortObjects.PythonCredentialPortObjectSpec;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
 import org.knime.python3.nodes.ports.PythonPortTypeRegistry;
@@ -118,7 +114,6 @@ import org.knime.python3.nodes.proxy.PythonNodeModelProxy.Callback;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy.DialogCallback;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy.ExpiryDate;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy.FileStoreBasedFile;
-import org.knime.python3.nodes.proxy.PythonNodeModelProxy.PythonExecutionContext.PythonToolResult;
 import org.knime.python3.nodes.proxy.PythonNodeProxy;
 import org.knime.python3.nodes.proxy.model.NodeConfigurationProxy;
 import org.knime.python3.nodes.proxy.model.NodeExecutionProxy;
@@ -313,52 +308,22 @@ final class CloseablePythonNodeProxy
 
     public static String getAuthSchema(final String serializedXMLString) throws CouldNotAuthorizeException, // NOSONAR
         ClassNotFoundException, InstantiationException, IllegalAccessException, IOException { // NOSONAR
-
-        final HttpAuthorizationHeaderCredentialValue cred = getCredentialFromXMLString(serializedXMLString);
-        if (cred != null) {
-            return cred.getAuthScheme();
-        }
-
-        return null;
-
+        return AuthCallbackUtils.getAuthSchema(serializedXMLString);
     }
 
     public static String getAuthParameters(final String serializedXMLString) throws CouldNotAuthorizeException, // NOSONAR
         ClassNotFoundException, InstantiationException, IllegalAccessException, IOException { // NOSONAR
-
-        final HttpAuthorizationHeaderCredentialValue cred = getCredentialFromXMLString(serializedXMLString);
-        if (cred != null) {
-            return cred.getAuthParameters();
-        }
-
-        return null;
+        return AuthCallbackUtils.getAuthParameters(serializedXMLString);
     }
 
     public static ExpiryDate getExpiresAfter(final String serializedXMLString) throws CouldNotAuthorizeException, // NOSONAR
         ClassNotFoundException, InstantiationException, IllegalAccessException, IOException { // NOSONAR
-        final HttpAuthorizationHeaderCredentialValue cred = getCredentialFromXMLString(serializedXMLString);
-        if (cred instanceof AccessTokenAccessor accessor) {
-            final Instant instant = accessor.getExpiresAfter().orElse(null);
-            if (instant != null) {
-                return new ExpiryDate(instant.getEpochSecond(), instant.getNano());
-            }
-        }
-        return null;
+        return AuthCallbackUtils.getExpiresAfter(serializedXMLString);
     }
 
     public static HttpAuthorizationHeaderCredentialValue getCredentialFromXMLString(final String serializedXMLString)
         throws ClassNotFoundException, InstantiationException, IllegalAccessException, IOException {
-
-        CredentialPortObjectSpec credentialPortObjectSpec =
-            PythonCredentialPortObjectSpec.loadFromXMLCredentialPortObjectSpecString(serializedXMLString);
-
-        var credential = credentialPortObjectSpec.getCredential(Credential.class);
-
-        final Credential cred = credential.orElseThrow();
-        if (cred instanceof HttpAuthorizationHeaderCredentialValue val) {
-            return val;
-        }
-        return null;
+        return AuthCallbackUtils.getCredentialFromXMLString(serializedXMLString);
     }
 
     @Override
@@ -831,7 +796,7 @@ final class CloseablePythonNodeProxy
         final CredentialsProviderProxy credentialsProvider) {
 
         initTableManager();
-        var callback = new DefaultViewCallback(m_tableManager);
+        var callback = new DefaultViewCallback(m_tableManager, new DefaultLogCallback(LOGGER));
 
         m_proxy.initializeJavaCallback(callback);
 

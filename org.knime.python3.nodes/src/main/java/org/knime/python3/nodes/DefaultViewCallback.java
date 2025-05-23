@@ -53,8 +53,7 @@ import java.io.IOException;
 import org.knime.core.util.auth.CouldNotAuthorizeException;
 import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.arrow.PythonArrowTableConverter;
-import org.knime.python3.nodes.callback.AuthCallback;
-import org.knime.python3.nodes.callback.DefaultAuthCallback;
+import org.knime.python3.nodes.callback.AuthCallbackUtils;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy.ExpiryDate;
 import org.knime.python3.nodes.proxy.PythonNodeViewProxy;
 
@@ -65,14 +64,13 @@ import org.knime.python3.nodes.proxy.PythonNodeViewProxy;
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
 final class DefaultViewCallback implements PythonNodeViewProxy.ViewCallback {
-    LogCallback m_logCallback = new DefaultLogCallback(CloseablePythonNodeProxy.LOGGER);
-
-    AuthCallback m_authCallback = new DefaultAuthCallback();
+    private final LogCallback m_logCallback;
 
     private final PythonArrowTableConverter m_tableManager;
 
-    DefaultViewCallback(final PythonArrowTableConverter tableManager) {
+    DefaultViewCallback(final PythonArrowTableConverter tableManager, final LogCallback logCallback) {
         m_tableManager = tableManager;
+        m_logCallback = logCallback;
     }
 
     @Override
@@ -83,19 +81,19 @@ final class DefaultViewCallback implements PythonNodeViewProxy.ViewCallback {
     @Override
     public ExpiryDate get_expires_after(final String serializedXMLString) throws CouldNotAuthorizeException,
         ClassNotFoundException, InstantiationException, IllegalAccessException, IOException {
-        return m_authCallback.get_expires_after(serializedXMLString);
+        return AuthCallbackUtils.getExpiresAfter(serializedXMLString);
     }
 
     @Override
     public String get_auth_schema(final String serializedXMLString) throws CouldNotAuthorizeException,
         ClassNotFoundException, InstantiationException, IllegalAccessException, IOException {
-        return m_authCallback.get_auth_schema(serializedXMLString);
+        return AuthCallbackUtils.getAuthSchema(serializedXMLString);
     }
 
     @Override
     public String get_auth_parameters(final String serializedXMLString) throws CouldNotAuthorizeException,
         ClassNotFoundException, InstantiationException, IllegalAccessException, IOException {
-        return m_authCallback.get_auth_parameters(serializedXMLString);
+        return AuthCallbackUtils.getAuthParameters(serializedXMLString);
     }
 
     @Override

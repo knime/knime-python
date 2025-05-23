@@ -65,25 +65,10 @@ import org.knime.python3.nodes.proxy.PythonNodeModelProxy.ExpiryDate;
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-public final class DefaultAuthCallback implements AuthCallback {
+public final class AuthCallbackUtils {
 
-    @Override
-    public String get_auth_schema(final String serializedXMLString) throws CouldNotAuthorizeException, // NOSONAR
-        ClassNotFoundException, InstantiationException, IllegalAccessException, IOException { // NOSONAR
-        return getAuthSchema(serializedXMLString);
-
-    }
-
-    @Override
-    public String get_auth_parameters(final String serializedXMLString) throws CouldNotAuthorizeException, // NOSONAR
-        ClassNotFoundException, InstantiationException, IllegalAccessException, IOException { // NOSONAR
-        return getAuthParameters(serializedXMLString);
-    }
-
-    @Override
-    public ExpiryDate get_expires_after(final String serializedXMLString) throws CouldNotAuthorizeException, // NOSONAR
-        ClassNotFoundException, InstantiationException, IllegalAccessException, IOException { // NOSONAR
-        return getExpiresAfter(serializedXMLString);
+    private AuthCallbackUtils() {
+        // Utility class
     }
 
     /**
