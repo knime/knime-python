@@ -132,6 +132,9 @@ public final class HtmlFileNodeView implements NodeTableView {
 
     @Override
     public Optional<RpcDataService> createRpcDataService() {
+        if (m_dataServiceSupplier == null) {
+            return Optional.empty();
+        }
         var dataService = m_dataServiceSupplier.get();
 
         return Optional.of(RpcDataService.builder(new ViewDataService(dataService)).onDeactivate(() -> {
