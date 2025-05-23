@@ -70,7 +70,7 @@ import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
 import org.knime.python3.nodes.ports.PythonPortTypeRegistry;
 import org.knime.python3.nodes.ports.WorkflowSegmentExecutorErrorUtils;
 import org.knime.python3.nodes.ports.converters.PortObjectConversionContext;
-import org.knime.python3.nodes.proxy.PythonNodeModelProxy.PythonExecutionContext.PythonToolResult;
+import org.knime.python3.nodes.proxy.PythonToolContext.PythonToolResult;
 
 /**
  * Executes WorkflowTools used by agents.

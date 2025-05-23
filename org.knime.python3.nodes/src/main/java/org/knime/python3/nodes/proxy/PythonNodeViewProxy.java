@@ -49,16 +49,13 @@
 package org.knime.python3.nodes.proxy;
 
 import java.io.IOException;
-import java.util.List;
 
 import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.nodes.LogCallback;
 import org.knime.python3.nodes.callback.AuthCallback;
-import org.knime.python3.nodes.ports.PythonPortObjects.PurePythonTablePortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
 import org.knime.python3.nodes.ports.TableSpecSerializationUtils;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy.PythonBaseContext;
-import org.knime.python3.nodes.proxy.PythonNodeModelProxy.PythonExecutionContext.PythonToolResult;
 
 /**
  * Implemented in Python to provide a data service that is written in Python.
@@ -122,10 +119,7 @@ public interface PythonNodeViewProxy {
      *
      * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
      */
-    interface PythonViewContext extends PythonBaseContext {
-
-        public PythonToolResult execute_tool(final PurePythonTablePortObject tool, final String parameters,
-            final List<PythonPortObject> inputs);
+    interface PythonViewContext extends PythonBaseContext, PythonToolContext {
 
     }
 

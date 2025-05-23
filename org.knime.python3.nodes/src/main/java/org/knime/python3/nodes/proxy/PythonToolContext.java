@@ -44,68 +44,41 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   May 21, 2025 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   May 23, 2025 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
-package org.knime.python3.nodes;
+package org.knime.python3.nodes.proxy;
 
 import java.util.List;
-import java.util.Map;
 
-import org.knime.core.node.workflow.ICredentials;
 import org.knime.python3.nodes.ports.PythonPortObjects.PurePythonTablePortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
-import org.knime.python3.nodes.proxy.PythonNodeViewProxy;
-import org.knime.python3.nodes.proxy.model.NodeModelProxy.CredentialsProviderProxy;
-import org.knime.python3.nodes.proxy.model.NodeModelProxy.PortMapProvider;
 
 /**
- * Default implementation of the {@link PythonNodeViewProxy.PythonViewContext} interface.
- *
- * Used by the CloseablePythonNodeProxy to provide the context for Python views.
+ * Context for execution tools from Python.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-final class DefaultViewContext implements PythonNodeViewProxy.PythonViewContext {
+public interface PythonToolContext {
 
-    private final ToolExecutor m_toolExecutor;
-
-    private final PortMapProvider m_portMapProvider;
-
-    private final CredentialsProviderProxy m_credentialsProvider;
-
-    DefaultViewContext(final ToolExecutor toolExecutor, final PortMapProvider portMapProvider,
-        final CredentialsProviderProxy credentialsProvider) {
-        m_toolExecutor = toolExecutor;
-        m_portMapProvider = portMapProvider;
-        m_credentialsProvider = credentialsProvider;
+    /**
+     * Result of a tool execution.
+     *
+     * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+     * @param message of the tool execution
+     * @param outputs of the tool execution
+     */
+    record PythonToolResult(String message, PythonPortObject[] outputs) {
     }
 
-    @Override
-    public String[] get_credentials(final String identifier) {
-        ICredentials credentials = m_credentialsProvider.getCredentials(identifier);
-        return new String[]{credentials.getLogin(), credentials.getPassword(), credentials.getName()};
-    }
-
-    @Override
-    public String[] get_credential_names() {
-        return m_credentialsProvider.getCredentialNames();
-
-    }
-
-    @Override
-    public Map<String, int[]> get_input_port_map() {
-        return m_portMapProvider.getInputPortMap();
-    }
-
-    @Override
-    public Map<String, int[]> get_output_port_map() {
-        return m_portMapProvider.getOutputPortMap();
-    }
-
-    @Override
-    public PythonToolResult execute_tool(final PurePythonTablePortObject toolTable, final String parameters,
-        final List<PythonPortObject> inputs) {
-        return m_toolExecutor.executeTool(toolTable, parameters, inputs);
-    }
+    /**
+     * Executes a tool in Java
+     *
+     * @param toolTable holding a single tool to execute
+     * @param parameters JSON with the parameters for the tool
+     * @param inputs input data for the tool
+     * @return the result of the tool execution
+     */
+    PythonToolResult execute_tool(PurePythonTablePortObject toolTable, String parameters,
+        List<PythonPortObject> inputs);
 
 }
