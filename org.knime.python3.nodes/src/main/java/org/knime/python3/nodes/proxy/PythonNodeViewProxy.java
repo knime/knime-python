@@ -61,12 +61,17 @@ import org.knime.python3.nodes.proxy.PythonNodeModelProxy.PythonBaseContext;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy.PythonExecutionContext.PythonToolResult;
 
 /**
- * TODO
+ * Implemented in Python to provide a data service that is written in Python.
  *
  * @author Martin Horn, KNIME GmbH, Konstanz, Germany
  */
 public interface PythonNodeViewProxy {
 
+    /**
+     * Interface for the Python implementation of the data service.
+     *
+     * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+     */
     interface PythonDataServiceProxy {
 
         /**
@@ -79,8 +84,20 @@ public interface PythonNodeViewProxy {
 
     }
 
+    /**
+     * Implemented in Python to provide a data service that is written in Python.
+     *
+     * @param context the context of the view
+     * @param portObjects the port objects provided as input to the node
+     * @return the data service written in Python
+     */
     PythonDataServiceProxy getDataService(PythonViewContext context, PythonPortObject[] portObjects);
 
+    /**
+     * Callback for the Python implementation of the data service.
+     *
+     * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+     */
     interface ViewCallback extends AuthCallback, LogCallback {
 
         default public String get_preferred_value_types_as_json(final String tableSchemaJson) {
@@ -95,8 +112,16 @@ public interface PythonNodeViewProxy {
 
     }
 
+    /**
+     * @param callback the callback to use for logging and authentication
+     */
     void initializeJavaCallback(ViewCallback callback);
 
+    /**
+     * Context available for views during {@link #getDataService(PythonViewContext, PythonPortObject[])}.
+     *
+     * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+     */
     interface PythonViewContext extends PythonBaseContext {
 
         public PythonToolResult execute_tool(final PurePythonTablePortObject tool, final String parameters,
