@@ -133,7 +133,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 final class CloseablePythonNodeProxy
     implements NodeExecutionProxy, NodeConfigurationProxy, CloseableNodeFactoryProxy, NodeDialogProxy, NodeViewProxy {
 
-    static final NodeLogger LOGGER = NodeLogger.getLogger(CloseablePythonNodeProxy.class);
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(CloseablePythonNodeProxy.class);
 
     private final PythonNodeProxy m_proxy;
 
@@ -808,11 +808,10 @@ final class CloseablePythonNodeProxy
         var context = new DefaultViewContext(toolExecutor, portMapProvider, credentialsProvider);
 
         var fileStoresByKey = new HashMap<String, FileStore>();
-        PortObjectConversionContext knimeToPythonConversionContext =
+        final var knimeToPythonConversionContext =
             new PortObjectConversionContext(fileStoresByKey, m_tableManager, exec);
-        final PortObjectConversionContext knimeToPythonConversionContext1 = knimeToPythonConversionContext;
         var pythonPortObjects =
-            PythonPortTypeRegistry.convertPortObjectsToPython(Stream.of(portObjects), knimeToPythonConversionContext1);
+            PythonPortTypeRegistry.convertPortObjectsToPython(Stream.of(portObjects), knimeToPythonConversionContext);
 
         var pythonDataService = m_proxy.getDataService(context, pythonPortObjects);
 
