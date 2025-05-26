@@ -279,7 +279,7 @@ class _PythonWorkflowPortObject:
 
         prepared_inputs = {}
         for key, input in inputs.items():
-            prepared_input, sink = self._type_registry.table_from_python(input)
+            prepared_input = self._type_registry.table_from_python(input)
             prepared_inputs[key] = prepared_input
             sink.close()
 
@@ -711,7 +711,12 @@ class _PortTypeRegistry:
 
         raise TypeError("Unsupported PortObject found in Python, got " + class_name)
 
-    def table_from_python(self, obj):  # -> tuple[_PythonTablePortObject, Any]:
+    def table_from_python(self, obj):
+        table, sink = self._table_from_python(obj)
+        sink.close()
+        return table
+
+    def _table_from_python(self, obj):  # -> tuple[_PythonTablePortObject, Any]:
         java_data_sink = None
         if isinstance(obj, kat.ArrowTable):
             sink = kt._backend.create_sink()
@@ -743,7 +748,7 @@ class _PortTypeRegistry:
                 raise TypeError(
                     f"Object for port {port} should be of type Table or BatchOutputTable, but got {type(obj)}"
                 )
-            return self.table_from_python(obj)[0]
+            return self._table_from_python(obj)[0]
         elif port.type == kn.PortType.BINARY:
             if not isinstance(obj, bytes):
                 tb = None
