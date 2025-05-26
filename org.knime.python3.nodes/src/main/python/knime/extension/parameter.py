@@ -954,25 +954,19 @@ class _NumericParameter(_BaseParameter):
     ):
         options = self._get_options(dialog_creation_context)
 
-        validations = []
+        validation = {}
         if self.min_value is not None:
-            validations.append(
-                {
-                    "id": "min",
-                    "parameters": {"min": self.min_value, "isExclusive": False},
-                    "errorMessage": f"The value must be at least {self.min_value}.",
-                }
-            )
+            validation["min"] = {
+                "parameters": {"min": self.min_value, "isExclusive": False},
+                "errorMessage": f"The value must be at least {self.min_value}.",
+            }
         if self.max_value is not None:
-            validations.append(
-                {
-                    "id": "max",
-                    "parameters": {"max": self.max_value, "isExclusive": False},
-                    "errorMessage": f"The value must be at most {self.max_value}.",
-                }
-            )
-        if validations:
-            options["validations"] = validations
+            validation["max"] = {
+                "parameters": {"max": self.max_value, "isExclusive": False},
+                "errorMessage": f"The value must be at most {self.max_value}.",
+            }
+        if validation:
+            options["validation"] = validation
 
         if self._is_advanced:
             options["isAdvanced"] = True
