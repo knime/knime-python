@@ -54,6 +54,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -101,6 +102,7 @@ import org.knime.python3.arrow.PythonArrowDataUtils;
 import org.knime.python3.arrow.PythonArrowTableConverter;
 import org.knime.python3.nodes.CloseablePythonNodeProxyFactory.CloseableGatewayWithAttachments;
 import org.knime.python3.nodes.extension.ExtensionNode;
+import org.knime.python3.nodes.ports.PythonPortObjects.PurePythonTablePortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonCredentialPortObjectSpec;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
@@ -487,7 +489,12 @@ final class CloseablePythonNodeProxy
         exec.setMessage(""); // Reset the message -> Only show the message from Python
         var progressMonitor = exec.createSubProgress(0.8);
 
+        var nodeContainer = NodeContext.getContext().getNodeContainer();
+
         final var pythonExecContext = new PythonNodeModelProxy.PythonExecutionContext() {
+
+            ToolExecutor m_toolExecutor = new ToolExecutor(exec, nodeContainer, m_tableManager);
+
             @Override
             public void set_progress(final double progress, final String message) {
                 progressMonitor.setProgress(progress, message);
@@ -553,6 +560,13 @@ final class CloseablePythonNodeProxy
             public Map<String, int[]> get_output_port_map(){
                 return ((DelegatingNodeModel)getNode().getNodeModel()).getOutputPortMap();
             }
+
+            @Override
+            public PythonToolResult execute_tool(final PurePythonTablePortObject toolTable, final String parameters,
+                final List<PythonPortObject> inputs) {
+                return m_toolExecutor.executeTool(toolTable, parameters, inputs);
+            }
+
         };
 
         // Configure before execution whether the gateway should be left open, otherwise an exception thrown in Python

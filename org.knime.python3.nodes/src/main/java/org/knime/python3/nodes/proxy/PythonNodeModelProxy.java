@@ -360,7 +360,7 @@ public interface PythonNodeModelProxy {
      *
      * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
      */
-    interface PythonExecutionContext extends PythonConfigurationContext {
+    interface PythonExecutionContext extends PythonConfigurationContext, PythonToolContext {
         /**
          * Set the current node execution progress
          *
