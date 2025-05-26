@@ -474,13 +474,13 @@ final class CloseablePythonNodeProxy
                 ClassNotFoundException, InstantiationException, IllegalAccessException, IOException { // NOSONAR
                 return getExpiresAfter(serializedXMLString);
             }
+
         };
         m_proxy.initializeJavaCallback(callback);
 
-        PortObjectConversionContext knimeToPythonConversionContext = new PortObjectConversionContext(fileStoresByKey, m_tableManager, exec);
+        var knimeToPythonConversionContext = new PortObjectConversionContext(fileStoresByKey, m_tableManager, exec);
         final var pythonInputs =
-            Arrays.stream(inData).map(po -> PythonPortTypeRegistry.convertPortObjectToPython(po, knimeToPythonConversionContext))
-                .toArray(PythonPortObject[]::new);
+            PythonPortTypeRegistry.convertPortObjectsToPython(Stream.of(inData), knimeToPythonConversionContext);
 
         exec.setProgress(0.1, "Sending data to Python");
 
@@ -570,9 +570,8 @@ final class CloseablePythonNodeProxy
         final var outputExec = exec.createSubExecutionContext(0.1);
 
         PortObjectConversionContext pythonToKnimeConversionContext = new PortObjectConversionContext(fileStoresByKey, m_tableManager, outputExec);
-        executionResult.m_portObjects = pythonOutputs.stream()//
-            .map(ppo -> PythonPortTypeRegistry.convertPortObjectFromPython(ppo, pythonToKnimeConversionContext))//
-            .toArray(PortObject[]::new);
+        executionResult.m_portObjects =
+            PythonPortTypeRegistry.convertPortObjectsFromPython(pythonOutputs.stream(), pythonToKnimeConversionContext);
 
         return executionResult;
     }
