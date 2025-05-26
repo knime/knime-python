@@ -59,10 +59,13 @@ class WorkflowToolValueFactory(kt.PythonValueFactory):
             return None
         import json
 
+        param_schema_json = storage["2"]
+        param_schema = json.loads(param_schema_json) if param_schema_json else {}
+
         return WorkflowTool(
             name=storage["0"],
             description=storage["1"],
-            parameter_schema=json.loads(storage["2"]),
+            parameter_schema=param_schema,
             tool_bytes=storage["3"],
             message_output_port_index=storage["6"],
             input_ports=[ToolPort._from_arrow_dict(port) for port in storage["4"]],
