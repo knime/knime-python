@@ -2286,9 +2286,9 @@ class ColumnFilterParameter(_BaseColumnParameter):
 
     def _get_options(self, dialog_creation_context) -> dict:
         options = {
-            "format": "columnFilter",
-            "showSearch": True,
-            "showMode": True,
+            "format": "typedStringFilter",
+            "unknownValuesText": "Any unknown column",
+            "emptyStateLabel": "No columns in this list.",
             "possibleValues": _possible_values(
                 self._schema_provider(dialog_creation_context),
                 self._column_filter,
