@@ -1303,27 +1303,22 @@ class _ToolExecutor:
 
         parameter_json = json.dumps(parameters)
 
-        try:
-            result = self._java_ctx.execute_tool(
-                tool_table, parameter_json, prepared_inputs, debug
-            )
-        except Py4JJavaError as e:
-            # Extract the error message from the Java exception
-            error_message = e.java_exception.getMessage()
-            raise RuntimeError(error_message) from e
-
+        result = self._java_ctx.execute_tool(
+            tool_table, parameter_json, prepared_inputs, debug
+        )
         outputs = result.outputs()
-        if outputs:
-            # TODO obtain port type from java side
-            dummy_port = kn.Port(kn.PortType.TABLE, name="dummy", description="dummy")
-            outputs = [
-                self._type_registry.port_object_to_python(
-                    output,
-                    dummy_port,
-                    None,
-                )
-                for output in outputs
-            ]
+        if outputs is None:
+            raise RuntimeError(result.message())
+
+        dummy_port = kn.Port(kn.PortType.TABLE, name="dummy", description="dummy")
+        outputs = [
+            self._type_registry.port_object_to_python(
+                output,
+                dummy_port,
+                None,
+            )
+            for output in outputs
+        ]
 
         return result.message(), outputs
 
