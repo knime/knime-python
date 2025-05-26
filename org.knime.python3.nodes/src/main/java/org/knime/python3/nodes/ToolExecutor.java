@@ -87,7 +87,7 @@ final class ToolExecutor {
     }
 
     PythonToolResult executeTool(final PurePythonTablePortObject pythonToolTable, final String parameters,
-        final List<PythonPortObject> inputs) {
+        final List<PythonPortObject> inputs, final boolean debug) {
         // TODO if we want to support port types that need the filestoreMap for deserialization
         Map<String, FileStore> dummyFileStoreMap = Map.of();
         var conversionContext = new PortObjectConversionContext(dummyFileStoreMap, m_tableManager, m_exec);
@@ -102,7 +102,8 @@ final class ToolExecutor {
 
         NodeContext.pushContext(m_nodeContainer);
         try {
-            var result = tool.execute(parameters, inputPortObjects, m_exec);
+            var executionHints = debug ? new String[]{"debug"} : new String[0];
+            var result = tool.execute(parameters, inputPortObjects, m_exec, executionHints);
             var outputs = result.outputs();
             if (outputs == null) {
                 throw new RuntimeException(result.message());

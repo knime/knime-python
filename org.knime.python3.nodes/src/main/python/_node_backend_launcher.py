@@ -1275,7 +1275,7 @@ class _ToolExecutor:
         self._java_ctx = java_ctx
         self._type_registry = type_registry
 
-    def execute_tool(self, tool, parameters: dict, inputs: List):
+    def execute_tool(self, tool, parameters: dict, inputs: List, debug: bool = False):
         """
         Execute a KNIME workflow tool.
 
@@ -1305,7 +1305,7 @@ class _ToolExecutor:
 
         try:
             result = self._java_ctx.execute_tool(
-                tool_table, parameter_json, prepared_inputs
+                tool_table, parameter_json, prepared_inputs, debug
             )
         except Py4JJavaError as e:
             # Extract the error message from the Java exception
