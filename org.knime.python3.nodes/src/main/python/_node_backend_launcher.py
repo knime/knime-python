@@ -1049,11 +1049,12 @@ class _PythonNodeProxy:
             kt._backend.file_store_handler = self._java_callback
 
             # execute
-            exec_context = kn.ExecutionContext(
+            exec_context = _ExecutionContext(
                 java_exec_context,
                 self._get_flow_variables(),
                 self._node.input_ports,
                 self._node.output_ports,
+                self._port_type_registry,
             )
 
             # TODO: maybe we want to run execute on the main thread? use knime._backend._mainloop
@@ -1267,6 +1268,88 @@ class _PythonNodeProxy:
 
     class Java:
         implements = ["org.knime.python3.nodes.proxy.PythonNodeProxy"]
+
+
+class _ToolExecutor:
+    def __init__(self, java_ctx, type_registry: _PortTypeRegistry):
+        self._java_ctx = java_ctx
+        self._type_registry = type_registry
+
+    def execute_tool(self, tool, parameters: dict, inputs: List):
+        """
+        Execute a KNIME workflow tool.
+
+        Parameters
+        ----------
+        tool:
+            The tool object to execute.
+        parameters : dict
+            The parameters to pass to the workflow tool.
+        inputs: list of port object inputs for the tool. Only tables are supported, yet.
+
+        Returns
+        -------
+        str
+            The result of the workflow tool execution.
+        """
+        import json
+
+        prepared_inputs = []
+        for input in inputs:
+            prepared_input = self._type_registry.table_from_python(input)
+            prepared_inputs.append(prepared_input)
+
+        tool_table = self._wrap_tool_in_table(tool)
+
+        parameter_json = json.dumps(parameters)
+
+        try:
+            result = self._java_ctx.execute_tool(
+                tool_table, parameter_json, prepared_inputs
+            )
+        except Py4JJavaError as e:
+            # Extract the error message from the Java exception
+            error_message = e.java_exception.getMessage()
+            raise RuntimeError(error_message) from e
+
+        outputs = result.outputs()
+        if outputs:
+            # TODO obtain port type from java side
+            dummy_port = kn.Port(kn.PortType.TABLE, name="dummy", description="dummy")
+            outputs = [
+                self._type_registry.port_object_to_python(
+                    output,
+                    dummy_port,
+                    None,
+                )
+                for output in outputs
+            ]
+
+        return result.message(), outputs
+
+    def _wrap_tool_in_table(self, tool):
+        import pandas as pd
+        import knime.api.table as kt
+
+        df = pd.DataFrame({"tool": pd.Series([tool])})
+        tool_table = kt.Table.from_pandas(df)
+        prepared_table = self._type_registry.table_from_python(tool_table)
+        return prepared_table
+
+
+class _ExecutionContext(kn.ExecutionContext):
+    def __init__(
+        self,
+        java_exec_context,
+        flow_variables,
+        input_ports,
+        output_ports,
+        type_registry: _PortTypeRegistry,
+    ):
+        super().__init__(java_exec_context, flow_variables, input_ports, output_ports)
+        self._type_registry = type_registry
+        self._tool_executor = _ToolExecutor(java_exec_context, type_registry)
+        self.execute_tool = self._tool_executor.execute_tool
 
 
 class _KnimeNodeBackend(kg.EntryPoint, kn._KnimeNodeBackend):
