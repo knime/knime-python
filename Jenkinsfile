@@ -169,6 +169,7 @@ def runPython3MultiversionWorkflowTestConfig(String environmentFile, String base
                         'knime-xml',
                         'knime-python-legacy',
                         'knime-conda',
+                        'knime-conda-channels',
                         'knime-python-nodes-testing',
                         'knime-base-views',
                         'knime-scripting-editor',
