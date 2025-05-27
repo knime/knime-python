@@ -427,6 +427,38 @@ class _DataService:
     def __init__(self, delegate):
         self._delegate = delegate
 
+    def handle(self, request: str):
+        try:
+            req = json.loads(request)
+            method = req.get("method")
+            params = req.get("params", [])
+            id_ = req.get("id", None)
+
+            if not hasattr(self._delegate, method):
+                response = {
+                    "jsonrpc": "2.0",
+                    "id": id_,
+                    "error": {
+                        "code": -32601,
+                        "message": f"Method '{method}' not found",
+                    },
+                }
+            else:
+                func = getattr(self._delegate, method)
+                if isinstance(params, dict):
+                    result = func(**params)
+                else:
+                    result = func(*params)
+                response = {"jsonrpc": "2.0", "id": id_, "result": result}
+        except Exception as ex:
+            response = {
+                "jsonrpc": "2.0",
+                "id": id_ if "id_" in locals() else None,
+                "error": {"code": -32603, "message": str(ex)},
+            }
+
+        return json.dumps(response)
+
     def getData(self, param: str):
         return self._delegate.get_data(param)
 
@@ -1328,7 +1360,6 @@ class _ToolExecutor:
         str
             The result of the workflow tool execution.
         """
-        import json
 
         prepared_inputs = []
         for input in inputs:
