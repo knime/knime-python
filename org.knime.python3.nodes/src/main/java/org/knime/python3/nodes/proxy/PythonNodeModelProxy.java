@@ -54,9 +54,9 @@ import java.util.Map;
 
 import org.knime.core.data.filestore.FileStore;
 import org.knime.core.table.schema.AnnotatedColumnarSchema;
-import org.knime.core.util.auth.CouldNotAuthorizeException;
 import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.nodes.LogCallback;
+import org.knime.python3.nodes.callback.AuthCallback;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
 import org.knime.python3.views.PythonNodeViewSink;
@@ -176,7 +176,7 @@ public interface PythonNodeModelProxy {
      * Sonar: the methods of this interface are intended to be called from Python only, so they follow Python's naming
      * conventions. Sonar issues caused by this are suppressed.
      */
-    interface Callback extends LogCallback, FailureCallback {
+    interface Callback extends LogCallback, FailureCallback, AuthCallback {
 
         /**
          * @return a new {@link PythonArrowDataSink} that writes to a temporary file
@@ -220,56 +220,6 @@ public interface PythonNodeModelProxy {
          */
         String get_preferred_value_types_as_json(final String tableSchemaJson); // NOSONAR
 
-        /**
-         * Retrieves the authentication schema from a serialized XML representation of a credential.
-         *
-         * This method parses the input XML string and extracts the authentication schema from it, assuming that the XML
-         * represents a valid CredentialPortObjectSpec.
-         *
-         * @param serializedXMLString The serialized XML string containing credential information.
-         * @return The authentication schema extracted from the credential, or null if the schema is not found.
-         * @throws CouldNotAuthorizeException If there is an issue with the authorization process.
-         * @throws ClassNotFoundException If the required class is not found during deserialization.
-         * @throws InstantiationException If an error occurs while instantiating an object during deserialization.
-         * @throws IllegalAccessException If there is an illegal access operation during deserialization.
-         * @throws IOException If an I/O error occurs during deserialization.
-         */
-        public String get_auth_schema(final String serializedXMLString) throws CouldNotAuthorizeException, // NOSONAR
-            ClassNotFoundException, InstantiationException, IllegalAccessException, IOException;
-
-        /**
-         * Retrieves the authentication parameters from a serialized XML representation of a credential.
-         *
-         * This method parses the input XML string and extracts the authentication parameters from it, assuming that the
-         * XML represents a valid CredentialPortObjectSpec.
-         *
-         * @param serializedXMLString The serialized XML string containing credential information.
-         * @return The authentication parameters extracted from the credential, or null if not found.
-         * @throws CouldNotAuthorizeException If there is an issue with the authorization process.
-         * @throws ClassNotFoundException If the required class is not found during deserialization.
-         * @throws InstantiationException If an error occurs while instantiating an object during deserialization.
-         * @throws IllegalAccessException If there is an illegal access operation during deserialization.
-         * @throws IOException If an I/O error occurs during deserialization or when retrieving parameters.
-         */
-        public String get_auth_parameters(final String serializedXMLString) throws CouldNotAuthorizeException, // NOSONAR
-            ClassNotFoundException, InstantiationException, IllegalAccessException, IOException;
-
-        /**
-         * Retrieves the optional expiry time of the access token from a serialized XML representation of a credential.
-         *
-         * This method parses the input XML string and extracts the expiry time of the access token from it,
-         * assuming that the XML represents a valid CredentialPortObjectSpec that has an expiry time.
-         *
-         * @param serializedXMLString The serialized XML string containing credential information.
-         * @return The optional expiry time of the access token extracted from the credential, or null if not found.
-         * @throws CouldNotAuthorizeException If there is an issue with the authorization process.
-         * @throws ClassNotFoundException If the required class is not found during deserialization.
-         * @throws InstantiationException If an error occurs while instantiating an object during deserialization.
-         * @throws IllegalAccessException If there is an illegal access operation during deserialization.
-         * @throws IOException If an I/O error occurs during deserialization or when retrieving parameters.
-         */
-        public ExpiryDate get_expires_after(final String serializedXMLString) throws CouldNotAuthorizeException, // NOSONAR
-            ClassNotFoundException, InstantiationException, IllegalAccessException, IOException;
     }
 
     /**
@@ -395,6 +345,7 @@ public interface PythonNodeModelProxy {
          * @return The "KNIME Home" directory which is located inside the current workspace
          */
         String get_knime_home_dir(); // NOSONAR
+
 
     }
 
