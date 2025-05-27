@@ -460,7 +460,7 @@ class _DataService:
         return json.dumps(response)
 
     def getData(self, param: str):
-        return self._delegate.get_data(param)
+        return self._delegate.getData(param)
 
     class Java:
         implements = [
