@@ -104,6 +104,24 @@ public interface NodeModelProxy extends AsynchronousCloseable<RuntimeException>,
     }
 
     /**
+     * Provides access to the input and output port maps of the node.
+     *
+     * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+     */
+    interface PortMapProvider {
+
+        /**
+         * @return the inputPortMap
+         */
+        public Map<String, int[]> getInputPortMap();
+
+        /**
+         * @return the outputPortMap
+         */
+        public Map<String, int[]> getOutputPortMap();
+    }
+
+    /**
      * Interface that should be implemented by a class that allows to set warning messages.
      *
      * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany

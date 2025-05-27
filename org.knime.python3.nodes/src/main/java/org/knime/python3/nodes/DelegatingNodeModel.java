@@ -66,6 +66,7 @@ import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.NodeView;
 import org.knime.core.node.port.PortObject;
+import org.knime.core.node.port.PortObjectHolder;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.PortType;
 import org.knime.core.node.workflow.FlowVariable;
@@ -80,6 +81,7 @@ import org.knime.python3.nodes.proxy.NodeProxy;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy.CredentialsProviderProxy;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy.FlowVariablesProxy;
+import org.knime.python3.nodes.proxy.model.NodeModelProxy.PortMapProvider;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy.WarningConsumer;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy.WorkflowPropertiesProxy;
 import org.knime.python3.nodes.proxy.model.NodeModelProxyProvider;
@@ -94,7 +96,8 @@ import org.knime.python3.utils.FlowVariableUtils;
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
 public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeModel
-    implements CredentialsProviderProxy, WorkflowPropertiesProxy, FlowVariablesProxy, WarningConsumer {
+    implements CredentialsProviderProxy, WorkflowPropertiesProxy, FlowVariablesProxy, WarningConsumer,
+    PortObjectHolder, PortMapProvider {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(DelegatingNodeModel.class);
 
@@ -147,6 +150,8 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
     private Map<String, int[]> m_inputPortMap;
 
     private Map<String, int[]> m_outputPortMap;
+
+    private PortObject[] m_internalPortObjects;
 
     /**
      * Constructor.
@@ -210,6 +215,9 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
             var result = node.execute(inData, m_outputPorts, exec, this, this, this, this);
             m_settings.set(node.getSettings(m_extensionVersion));
             m_view = result.getView();
+            if (m_view.isPresent()) {
+                m_internalPortObjects = inData;
+            }
             return result.getPortObjects();
         });
     }
@@ -375,6 +383,7 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
     /**
      * @return the inputPortMap
      */
+    @Override
     public Map<String, int[]> getInputPortMap() {
         return m_inputPortMap;
     }
@@ -382,8 +391,26 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
     /**
      * @return the outputPortMap
      */
+    @Override
     public Map<String, int[]> getOutputPortMap() {
         return m_outputPortMap;
+    }
+
+    @Override
+    public void setInternalPortObjects(final PortObject[] portObjects) {
+        m_internalPortObjects = portObjects;
+    }
+
+    @Override
+    public PortObject[] getInternalPortObjects() {
+        return m_internalPortObjects;
+    }
+
+    /**
+     * @return the current settings of this node model
+     */
+    public JsonNodeSettings getSettings() {
+        return m_settings.get();
     }
 
 }

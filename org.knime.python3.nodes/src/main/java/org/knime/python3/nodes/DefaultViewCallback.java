@@ -44,22 +44,60 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Jan 20, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   May 21, 2025 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
  */
-package org.knime.python3.nodes.proxy;
+package org.knime.python3.nodes;
+
+import java.io.IOException;
+
+import org.knime.core.util.auth.CouldNotAuthorizeException;
+import org.knime.python3.arrow.PythonArrowDataSink;
+import org.knime.python3.arrow.PythonArrowTableConverter;
+import org.knime.python3.nodes.callback.AuthCallbackUtils;
+import org.knime.python3.nodes.proxy.PythonNodeModelProxy.ExpiryDate;
+import org.knime.python3.nodes.proxy.PythonNodeViewProxy;
 
 /**
- * Proxy for a node implemented in Python.
- * This interface is implemented on the Python side.
+ * Default implementation of the {@link PythonNodeViewProxy.ViewCallback} interface used by the
+ * CloseablePythonNodeProxy.
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-public interface PythonNodeProxy
-    extends PythonNodeModelProxy, PythonNodeDialogProxy, VersionedProxy, PythonNodeViewProxy {
+final class DefaultViewCallback implements PythonNodeViewProxy.ViewCallback {
+    private final LogCallback m_logCallback;
 
-    /**
-     * @return The number of views of the node
-     */
-    int getNumViews();
+    private final PythonArrowTableConverter m_tableManager;
 
+    DefaultViewCallback(final PythonArrowTableConverter tableManager, final LogCallback logCallback) {
+        m_tableManager = tableManager;
+        m_logCallback = logCallback;
+    }
+
+    @Override
+    public void log(final String message, final String severity) {
+        m_logCallback.log(message, severity);
+    }
+
+    @Override
+    public ExpiryDate get_expires_after(final String serializedXMLString) throws CouldNotAuthorizeException,
+        ClassNotFoundException, InstantiationException, IllegalAccessException, IOException {
+        return AuthCallbackUtils.getExpiresAfter(serializedXMLString);
+    }
+
+    @Override
+    public String get_auth_schema(final String serializedXMLString) throws CouldNotAuthorizeException,
+        ClassNotFoundException, InstantiationException, IllegalAccessException, IOException {
+        return AuthCallbackUtils.getAuthSchema(serializedXMLString);
+    }
+
+    @Override
+    public String get_auth_parameters(final String serializedXMLString) throws CouldNotAuthorizeException,
+        ClassNotFoundException, InstantiationException, IllegalAccessException, IOException {
+        return AuthCallbackUtils.getAuthParameters(serializedXMLString);
+    }
+
+    @Override
+    public PythonArrowDataSink create_sink() throws IOException {
+        return m_tableManager.createSink();
+    }
 }

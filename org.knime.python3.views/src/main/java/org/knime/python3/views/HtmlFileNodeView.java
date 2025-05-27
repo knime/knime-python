@@ -80,6 +80,8 @@ public final class HtmlFileNodeView implements NodeTableView {
 
     private final ViewResources m_resources;
 
+    private final Supplier<DataService> m_dataServiceSupplier;
+
     /**
      * Create a view that shows the HTML document that is saved at the given location.
      *
@@ -98,8 +100,28 @@ public final class HtmlFileNodeView implements NodeTableView {
      * @param resources resources that are available to the page.
      */
     public HtmlFileNodeView(final Supplier<Path> htmlSupplier, final ViewResources resources) {
+        this(htmlSupplier, resources, null);
+    }
+
+    /**
+     * TODO
+     *
+     * @param htmlSupplier
+     * @param resources
+     * @param dataServiceSupplier
+     */
+    public HtmlFileNodeView(final Supplier<Path> htmlSupplier, final ViewResources resources,
+        final Supplier<DataService> dataServiceSupplier) {
         m_htmlSupplier = htmlSupplier;
         m_resources = resources;
+        m_dataServiceSupplier = dataServiceSupplier;
+    }
+
+    // TODO naming
+    public interface DataService extends AutoCloseable {
+
+        String getData(String param);
+
     }
 
     @Override
@@ -110,7 +132,32 @@ public final class HtmlFileNodeView implements NodeTableView {
 
     @Override
     public Optional<RpcDataService> createRpcDataService() {
-        return Optional.empty();
+        if (m_dataServiceSupplier == null) {
+            return Optional.empty();
+        }
+        var dataService = m_dataServiceSupplier.get();
+
+        return Optional.of(RpcDataService.builder(new ViewDataService(dataService)).onDeactivate(() -> {
+            try {
+                dataService.close();
+            } catch (Exception ex) {
+                // TODO
+                throw new RuntimeException(ex);
+            }
+        }).build());
+    }
+
+    public static class ViewDataService {
+
+        private DataService m_dataService;
+
+        ViewDataService(final DataService dataService) {
+            m_dataService = dataService;
+        }
+
+        public String getData(final String param) {
+            return m_dataService.getData(param);
+        }
     }
 
     @Override

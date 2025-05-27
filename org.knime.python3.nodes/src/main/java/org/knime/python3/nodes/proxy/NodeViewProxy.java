@@ -44,22 +44,51 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Jan 20, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   May 12, 2025 (hornm): created
  */
 package org.knime.python3.nodes.proxy;
 
+import org.knime.core.node.port.PortObject;
+import org.knime.core.util.asynclose.AsynchronousCloseable;
+import org.knime.python3.nodes.proxy.model.NodeModelProxy.CredentialsProviderProxy;
+import org.knime.python3.nodes.proxy.model.NodeModelProxy.PortMapProvider;
+import org.knime.python3.nodes.settings.JsonNodeSettings;
+
 /**
- * Proxy for a node implemented in Python.
- * This interface is implemented on the Python side.
+ * Provides methods and interfaces used by views to create data service instances that are powered by a remote proxy.
  *
- * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+ * @author Martin Horn, KNIME GmbH, Konstanz, Germany
  */
-public interface PythonNodeProxy
-    extends PythonNodeModelProxy, PythonNodeDialogProxy, VersionedProxy, PythonNodeViewProxy {
+public interface NodeViewProxy extends AsynchronousCloseable<RuntimeException> {
 
     /**
-     * @return The number of views of the node
+     * Data service that is powered by a remote proxy.
+     *
+     * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
      */
-    int getNumViews();
+    interface DataServiceProxy {
+        String getData(String param);
+    }
+
+    /**
+     * Context needed by a NodeViewProxy.
+     *
+     * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+     */
+    interface ViewEnvironment extends PortMapProvider, CredentialsProviderProxy {
+    }
+
+    /**
+     * Creates a data service that is powered by a remote proxy.
+     *
+     * @param settings of the node
+     * @param portObjects provided as input to the node
+     * @param portMapProvider provides the map from port groups to their indices
+     * @param credentialsProvider provides access to credentials
+     *
+     * @return a data service that is powered by a remote proxy
+     */
+    DataServiceProxy getDataServiceProxy(JsonNodeSettings settings, final PortObject[] portObjects,
+        final PortMapProvider portMapProvider, final CredentialsProviderProxy credentialsProvider);
 
 }

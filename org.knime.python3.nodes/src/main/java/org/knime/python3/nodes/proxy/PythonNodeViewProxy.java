@@ -44,22 +44,83 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Jan 20, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   May 12, 2025 (hornm): created
  */
 package org.knime.python3.nodes.proxy;
 
+import java.io.IOException;
+
+import org.knime.python3.arrow.PythonArrowDataSink;
+import org.knime.python3.nodes.LogCallback;
+import org.knime.python3.nodes.callback.AuthCallback;
+import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
+import org.knime.python3.nodes.ports.TableSpecSerializationUtils;
+import org.knime.python3.nodes.proxy.PythonNodeModelProxy.PythonBaseContext;
+
 /**
- * Proxy for a node implemented in Python.
- * This interface is implemented on the Python side.
+ * Implemented in Python to provide a data service that is written in Python.
  *
- * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+ * @author Martin Horn, KNIME GmbH, Konstanz, Germany
  */
-public interface PythonNodeProxy
-    extends PythonNodeModelProxy, PythonNodeDialogProxy, VersionedProxy, PythonNodeViewProxy {
+public interface PythonNodeViewProxy {
 
     /**
-     * @return The number of views of the node
+     * Interface for the Python implementation of the data service.
+     *
+     * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
      */
-    int getNumViews();
+    interface PythonDataServiceProxy {
+
+        /**
+         * Returns the data as a string.
+         *
+         * @param param the parameter
+         * @return the data
+         */
+        String getData(String param);
+
+    }
+
+    /**
+     * Implemented in Python to provide a data service that is written in Python.
+     *
+     * @param context the context of the view
+     * @param portObjects the port objects provided as input to the node
+     * @return the data service written in Python
+     */
+    PythonDataServiceProxy getDataService(PythonViewContext context, PythonPortObject[] portObjects);
+
+    /**
+     * Callback for the Python implementation of the data service.
+     *
+     * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+     */
+    interface ViewCallback extends AuthCallback, LogCallback {
+
+        default public String get_preferred_value_types_as_json(final String tableSchemaJson) {
+            return TableSpecSerializationUtils.getPreferredValueTypesForSerializedSchema(tableSchemaJson);
+        }
+
+        /**
+         * @return a new {@link PythonArrowDataSink} that writes to a temporary file
+         * @throws IOException if the temporary file for the sink could not be created
+         */
+        PythonArrowDataSink create_sink() throws IOException; //NOSONAR
+
+    }
+
+    /**
+     * @param callback the callback to use for logging and authentication
+     */
+    void initializeJavaCallback(ViewCallback callback);
+
+    /**
+     * Context available for views during {@link #getDataService(PythonViewContext, PythonPortObject[])}.
+     *
+     * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+     */
+    interface PythonViewContext extends PythonBaseContext, PythonToolContext {
+
+    }
 
 }

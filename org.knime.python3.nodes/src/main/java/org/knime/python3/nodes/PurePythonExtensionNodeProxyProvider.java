@@ -59,6 +59,7 @@ import org.knime.python3.nodes.ports.PythonTransientConnectionPortObject;
 import org.knime.python3.nodes.proxy.CloseableNodeFactoryProxy;
 import org.knime.python3.nodes.proxy.NodeDialogProxy;
 import org.knime.python3.nodes.proxy.NodeProxyProvider;
+import org.knime.python3.nodes.proxy.NodeViewProxy;
 import org.knime.python3.nodes.proxy.model.NodeConfigurationProxy;
 import org.knime.python3.nodes.proxy.model.NodeExecutionProxy;
 
@@ -126,6 +127,11 @@ class PurePythonExtensionNodeProxyProvider implements NodeProxyProvider {
 
     @Override
     public NodeDialogProxy getNodeDialogProxy() {
+        return createPythonNode();
+    }
+
+    @Override
+    public NodeViewProxy getNodeViewProxy() {
         return createPythonNode();
     }
 
