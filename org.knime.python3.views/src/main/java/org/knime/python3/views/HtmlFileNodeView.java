@@ -53,6 +53,8 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -62,6 +64,7 @@ import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.webui.data.ApplyDataService;
 import org.knime.core.webui.data.InitialDataService;
 import org.knime.core.webui.data.RpcDataService;
+import org.knime.core.webui.data.RpcDataService.WildcardHandler;
 import org.knime.core.webui.node.view.NodeTableView;
 import org.knime.core.webui.node.view.NodeView;
 import org.knime.core.webui.page.Page;
@@ -79,8 +82,6 @@ public final class HtmlFileNodeView implements NodeTableView {
     private final Supplier<Path> m_htmlSupplier;
 
     private final ViewResources m_resources;
-
-    private final Supplier<DataService> m_dataServiceSupplier;
 
     /**
      * Create a view that shows the HTML document that is saved at the given location.
@@ -100,28 +101,8 @@ public final class HtmlFileNodeView implements NodeTableView {
      * @param resources resources that are available to the page.
      */
     public HtmlFileNodeView(final Supplier<Path> htmlSupplier, final ViewResources resources) {
-        this(htmlSupplier, resources, null);
-    }
-
-    /**
-     * TODO
-     *
-     * @param htmlSupplier
-     * @param resources
-     * @param dataServiceSupplier
-     */
-    public HtmlFileNodeView(final Supplier<Path> htmlSupplier, final ViewResources resources,
-        final Supplier<DataService> dataServiceSupplier) {
         m_htmlSupplier = htmlSupplier;
         m_resources = resources;
-        m_dataServiceSupplier = dataServiceSupplier;
-    }
-
-    // TODO naming
-    public interface DataService extends AutoCloseable {
-
-        String getData(String param);
-
     }
 
     @Override
@@ -132,32 +113,23 @@ public final class HtmlFileNodeView implements NodeTableView {
 
     @Override
     public Optional<RpcDataService> createRpcDataService() {
-        if (m_dataServiceSupplier == null) {
-            return Optional.empty();
-        }
-        var dataService = m_dataServiceSupplier.get();
-
-        return Optional.of(RpcDataService.builder(new ViewDataService(dataService)).onDeactivate(() -> {
-            try {
-                dataService.close();
-            } catch (Exception ex) {
-                // TODO
-                throw new RuntimeException(ex);
-            }
-        }).build());
+        return Optional.of(RpcDataService.builder(new PythonRpcHandler()).onDeactivate(null /* TODO */).build());
     }
 
-    public static class ViewDataService {
+    static class PythonRpcHandler implements WildcardHandler {
 
-        private DataService m_dataService;
-
-        ViewDataService(final DataService dataService) {
-            m_dataService = dataService;
+        @Override
+        public Object handleRequest(final String method, final List<Object> params) {
+            // TODO send request to python
+            return null;
         }
 
-        public String getData(final String param) {
-            return m_dataService.getData(param);
+        @Override
+        public Object handleRequest(final String method, final Map<String, Object> params) {
+            // TODO send request to python
+            return null;
         }
+
     }
 
     @Override
