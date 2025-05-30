@@ -80,6 +80,8 @@ public final class HtmlFileNodeView implements NodeTableView {
 
     private final ViewResources m_resources;
 
+    private final Supplier<JsonRpcRequestHandler> m_dataServiceSupplier;
+
     /**
      * Create a view that shows the HTML document that is saved at the given location.
      *
@@ -98,8 +100,41 @@ public final class HtmlFileNodeView implements NodeTableView {
      * @param resources resources that are available to the page.
      */
     public HtmlFileNodeView(final Supplier<Path> htmlSupplier, final ViewResources resources) {
+        this(htmlSupplier, resources, null);
+    }
+
+    /**
+     * Create a view that shows the HTML document that is saved at the given location and uses a data service to
+     * communicate with the backend.
+     *
+     * @param htmlSupplier supplier that provides the path to the HTML file that should be shown currently. The file
+     *            must exist and must be readable.
+     * @param resources resources that are available to the page.
+     * @param dataServiceSupplier supplier that provides a JSON RPC request handler that can be used to handle requests
+     *            from the HTML
+     */
+    public HtmlFileNodeView(final Supplier<Path> htmlSupplier, final ViewResources resources,
+        final Supplier<JsonRpcRequestHandler> dataServiceSupplier) {
         m_htmlSupplier = htmlSupplier;
         m_resources = resources;
+        m_dataServiceSupplier = dataServiceSupplier;
+    }
+
+    /**
+     * Interface for handling JSON RPC requests in the HTML view.
+     *
+     * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+     */
+    public interface JsonRpcRequestHandler extends AutoCloseable {
+
+        /**
+         * Handles a JSON RPC request. And produces a JSON RPC response.
+         *
+         * @param jsonRpcRequest to handle
+         * @return the JSON RPC response as a string
+         */
+        String handleRequest(String jsonRpcRequest);
+
     }
 
     @Override
@@ -110,8 +145,20 @@ public final class HtmlFileNodeView implements NodeTableView {
 
     @Override
     public Optional<RpcDataService> createRpcDataService() {
-        return Optional.empty();
+        if (m_dataServiceSupplier == null) {
+            return Optional.empty();
+        }
+        var dataService = m_dataServiceSupplier.get();
+        return Optional.of(RpcDataService.builder(new JsonRpcWildcardHandler(dataService)).onDeactivate(() -> {
+            try {
+                dataService.close();
+            } catch (Exception ex) {
+                // TODO
+                throw new RuntimeException(ex);
+            }
+        }).build());
     }
+
 
     @Override
     @SuppressWarnings("unchecked")

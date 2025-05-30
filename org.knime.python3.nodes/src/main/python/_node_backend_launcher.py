@@ -281,7 +281,6 @@ class _PythonWorkflowPortObject:
         for key, input in inputs.items():
             prepared_input = self._type_registry.table_from_python(input)
             prepared_inputs[key] = prepared_input
-            sink.close()
 
         outports = [
             self._create_placeholder_port_type(id, outport)
@@ -422,6 +421,58 @@ class _JavaConfigContext(_JavaBaseContext):
         implements = [
             "org.knime.python3.nodes.proxy.PythonNodeModelProxy$PythonConfigurationContext"
         ]
+
+
+class _JsonRpcDataService:
+    def __init__(self, delegate):
+        self._delegate = delegate
+
+    def handleJsonRpcRequest(self, request: str):
+        try:
+            req = json.loads(request)
+            method = req.get("method")
+            params = req.get("params", [])
+            id_ = req.get("id", None)
+
+            if not hasattr(self._delegate, method):
+                response = {
+                    "jsonrpc": "2.0",
+                    "id": id_,
+                    "error": {
+                        "code": -32601,
+                        "message": f"Method '{method}' not found",
+                    },
+                }
+            else:
+                func = getattr(self._delegate, method)
+                if isinstance(params, dict):
+                    result = func(**params)
+                else:
+                    result = func(*params)
+                response = {"jsonrpc": "2.0", "id": id_, "result": result}
+        except Exception as ex:
+            response = {
+                "jsonrpc": "2.0",
+                "id": id_ if "id_" in locals() else None,
+                "error": {"code": -32603, "message": str(ex)},
+            }
+
+        return json.dumps(response)
+
+    class Java:
+        implements = [
+            "org.knime.python3.nodes.proxy.PythonNodeViewProxy$PythonDataServiceProxy"
+        ]
+
+
+class _ViewContext(kn._BaseContext):
+    def __init__(self, java_ctx, flow_variables, type_registry: "_PortTypeRegistry"):
+        super().__init__(java_ctx, flow_variables)
+        self._tool_executor = _ToolExecutor(java_ctx, type_registry)
+        self.execute_tool = self._tool_executor.execute_tool
+
+    def get_input_port_map(self) -> Dict[str, List[int]]:
+        return self._java_ctx.get_input_port_map()
 
 
 class _PortTypeRegistry:
@@ -1032,6 +1083,15 @@ class _PythonNodeProxy:
         # unpacks inputs that come from a Port not a PortGroup
         return self._unpack_non_port_groups(inputs)
 
+    def _setup_table_backend(self, java_ctx):
+        # prepare output table creation
+        def create_python_sink():
+            java_sink = self._java_callback.create_sink()
+            return kg.data_sink_mapper(java_sink)
+
+        kt._backend = kat._ArrowBackend(create_python_sink)
+        kt._backend.file_store_handler = self._java_callback
+
     def execute(
         self, input_objects: List[_PythonPortObject], java_exec_context
     ) -> List[_PythonPortObject]:
@@ -1040,13 +1100,7 @@ class _PythonNodeProxy:
             port_map = java_exec_context.get_input_port_map()
             inputs = self._port_objs_to_python(port_map, input_objects)
 
-            # prepare output table creation
-            def create_python_sink():
-                java_sink = self._java_callback.create_sink()
-                return kg.data_sink_mapper(java_sink)
-
-            kt._backend = kat._ArrowBackend(create_python_sink)
-            kt._backend.file_store_handler = self._java_callback
+            self._setup_table_backend(java_exec_context)
 
             # execute
             exec_context = _ExecutionContext(
@@ -1109,6 +1163,17 @@ class _PythonNodeProxy:
 
         _pop_log_callback()
         return _to_java_list(java_outputs)
+
+    def getDataService(self, java_ctx, input_objects: List[_PythonPortObject]) -> str:
+        self._setup_table_backend(java_ctx)
+
+        ctx = _ViewContext(java_ctx, {}, self._port_type_registry)
+
+        converted_input_objects = self._port_objs_to_python(
+            ctx.get_input_port_map(), input_objects
+        )
+        data_service = self._node.get_data_service(ctx, *converted_input_objects)
+        return _JsonRpcDataService(data_service)
 
     def postprocess_configure_outputs(
         self, java_config_context: JavaClass, outputs: Optional[List]
@@ -1292,7 +1357,6 @@ class _ToolExecutor:
         str
             The result of the workflow tool execution.
         """
-        import json
 
         prepared_inputs = []
         for input in inputs:

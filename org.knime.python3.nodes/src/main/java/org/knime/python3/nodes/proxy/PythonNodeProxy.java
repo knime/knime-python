@@ -54,7 +54,8 @@ package org.knime.python3.nodes.proxy;
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-public interface PythonNodeProxy extends PythonNodeModelProxy, PythonNodeDialogProxy, VersionedProxy {
+public interface PythonNodeProxy
+    extends PythonNodeModelProxy, PythonNodeDialogProxy, VersionedProxy, PythonNodeViewProxy {
 
     /**
      * @return The number of views of the node

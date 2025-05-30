@@ -100,7 +100,6 @@ import org.knime.python3.nodes.CloseablePythonNodeProxyFactory.CloseableGatewayW
 import org.knime.python3.nodes.callback.AuthCallbackUtils;
 import org.knime.python3.nodes.extension.ExtensionNode;
 import org.knime.python3.nodes.ports.PythonPortObjects.PurePythonTablePortObject;
-import org.knime.python3.nodes.ports.PythonPortObjects.PythonCredentialPortObjectSpec;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
 import org.knime.python3.nodes.ports.PythonPortTypeRegistry;
@@ -109,6 +108,7 @@ import org.knime.python3.nodes.ports.TableSpecSerializationUtils;
 import org.knime.python3.nodes.ports.converters.PortObjectConversionContext;
 import org.knime.python3.nodes.proxy.CloseableNodeFactoryProxy;
 import org.knime.python3.nodes.proxy.NodeDialogProxy;
+import org.knime.python3.nodes.proxy.NodeViewProxy;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy.Callback;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy.DialogCallback;
@@ -131,7 +131,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
 final class CloseablePythonNodeProxy
-    implements NodeExecutionProxy, NodeConfigurationProxy, CloseableNodeFactoryProxy, NodeDialogProxy {
+    implements NodeExecutionProxy, NodeConfigurationProxy, CloseableNodeFactoryProxy, NodeDialogProxy, NodeViewProxy {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(CloseablePythonNodeProxy.class);
 
@@ -786,6 +786,39 @@ final class CloseablePythonNodeProxy
                 }
             }
         }
+    }
+
+
+    @Override
+    public DataServiceProxy getDataServiceProxy(final JsonNodeSettings settings, final PortObject[] portObjects,
+        final PortMapProvider portMapProvider, final CredentialsProviderProxy credentialsProvider) {
+
+        loadValidatedSettings(settings);
+
+        initTableManager();
+        var callback = new DefaultViewCallback(m_tableManager, new DefaultLogCallback(LOGGER));
+
+        m_proxy.initializeJavaCallback(callback);
+
+        var nnc = (NativeNodeContainer)NodeContext.getContext().getNodeContainer();
+        var exec = nnc.createExecutionContext();
+        var toolExecutor = new ToolExecutor(exec, nnc, m_tableManager);
+        var context = new DefaultViewContext(toolExecutor, portMapProvider, credentialsProvider);
+
+        var fileStoresByKey = new HashMap<String, FileStore>();
+        final var knimeToPythonConversionContext =
+            new PortObjectConversionContext(fileStoresByKey, m_tableManager, exec);
+        var pythonPortObjects =
+            PythonPortTypeRegistry.convertPortObjectsToPython(Stream.of(portObjects), knimeToPythonConversionContext);
+
+        var pythonDataService = m_proxy.getDataService(context, pythonPortObjects);
+
+        return new DataServiceProxy() {
+            @Override
+            public String handleJsonRpcRequest(final String request) {
+                return pythonDataService.handleJsonRpcRequest(request);
+            }
+        };
     }
 
 }
