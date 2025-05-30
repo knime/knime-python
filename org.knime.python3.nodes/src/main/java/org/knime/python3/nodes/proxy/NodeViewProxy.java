@@ -44,117 +44,51 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Mar 23, 2022 (Adrian Nembach, KNIME GmbH, Konstanz, Germany): created
+ *   May 12, 2025 (hornm): created
  */
-package org.knime.python3.nodes.proxy.model;
+package org.knime.python3.nodes.proxy;
 
-import java.util.Map;
-
-import org.knime.core.node.workflow.ICredentials;
+import org.knime.core.node.port.PortObject;
 import org.knime.core.util.asynclose.AsynchronousCloseable;
-import org.knime.python3.nodes.proxy.NodeProxy;
+import org.knime.python3.nodes.proxy.model.NodeModelProxy.CredentialsProviderProxy;
+import org.knime.python3.nodes.proxy.model.NodeModelProxy.PortMapProvider;
 import org.knime.python3.nodes.settings.JsonNodeSettings;
 
 /**
+ * Provides methods and interfaces used by views to create data service instances that are powered by a remote proxy.
  *
- * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+ * @author Martin Horn, KNIME GmbH, Konstanz, Germany
  */
-public interface NodeModelProxy extends AsynchronousCloseable<RuntimeException>, NodeProxy {
+public interface NodeViewProxy extends AsynchronousCloseable<RuntimeException> {
 
     /**
-     * Interface that should be implemented by a class that provides access to and can receive updated flow variables
-     *
-     * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
-     */
-    interface FlowVariablesProxy {
-        /**
-         * @return the map of flow variables that are the inputs to this node
-         */
-        Map<String, Object> getFlowVariables();
-
-        /**
-         * Set updated flow variables after modifications by this node
-         *
-         * @param flowVariables
-         */
-        void setFlowVariables(Map<String, Object> flowVariables);
-
-    }
-
-    /**
-     * Interface that should be implemented by a class that provides access to credentials
-     *
-     * @author Jonas Klotz, KNIME GmbH, Berlin, Germany
-     */
-    interface CredentialsProviderProxy {
-
-        /**
-         * @param identifier used to get the credentials
-         * @return credentials for the given identifier
-         *
-         */
-
-        ICredentials getCredentials(String identifier);
-
-        /**
-         * @return flow variable names for all attached credentials
-         */
-        String[] getCredentialNames();
-
-    }
-
-    /**
-     * Provides access to the input and output port maps of the node.
+     * Data service that is powered by a remote proxy.
      *
      * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
      */
-    interface PortMapProvider {
-
-        /**
-         * @return the inputPortMap
-         */
-        public Map<String, int[]> getInputPortMap();
-
-        /**
-         * @return the outputPortMap
-         */
-        public Map<String, int[]> getOutputPortMap();
+    interface DataServiceProxy {
+        String handleJsonRpcRequest(String param);
     }
 
     /**
-     * Interface that should be implemented by a class that allows to set warning messages.
+     * Context needed by a NodeViewProxy.
      *
      * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
      */
-    interface WarningConsumer {
-
-        /**
-         * @param message the warning message to show
-         */
-        void setWarning(String message);
+    interface ViewEnvironment extends PortMapProvider, CredentialsProviderProxy {
     }
 
     /**
-     * Interface that provides access to the current workflow path on disk
+     * Creates a data service that is powered by a remote proxy.
      *
-     * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
+     * @param settings of the node
+     * @param portObjects provided as input to the node
+     * @param portMapProvider provides the map from port groups to their indices
+     * @param credentialsProvider provides access to credentials
+     *
+     * @return a data service that is powered by a remote proxy
      */
-    interface WorkflowPropertiesProxy {
-        /**
-         * @return the absolute path to the workflow on disk. Can be a temporary path if the workflow was opened from
-         *          a remote location
-         */
-        String getLocalWorkflowPath();
-
-        /**
-         * @return The node name with included ID
-         */
-        String getNodeNameWithID();
-    }
-
-    /**
-     * @param settings
-     */
-    void loadValidatedSettings(JsonNodeSettings settings);
+    DataServiceProxy getDataServiceProxy(JsonNodeSettings settings, final PortObject[] portObjects,
+        final PortMapProvider portMapProvider, final CredentialsProviderProxy credentialsProvider);
 
 }
