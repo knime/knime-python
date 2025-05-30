@@ -153,8 +153,7 @@ public final class HtmlFileNodeView implements NodeTableView {
             try {
                 dataService.close();
             } catch (Exception ex) {
-                // TODO
-                throw new RuntimeException(ex);
+                LOGGER.error("Failed to close JSON RPC request handler.", ex);
             }
         }).build());
     }
