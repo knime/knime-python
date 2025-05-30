@@ -469,7 +469,7 @@ class _ViewContext(kn._BaseContext):
     def __init__(self, java_ctx, flow_variables, type_registry: "_PortTypeRegistry"):
         super().__init__(java_ctx, flow_variables)
         self._tool_executor = _ToolExecutor(java_ctx, type_registry)
-        self.execute_tool = self._tool_executor.execute_tool
+        self._execute_tool = self._tool_executor.execute_tool
 
     def get_input_port_map(self) -> Dict[str, List[int]]:
         return self._java_ctx.get_input_port_map()
@@ -1408,7 +1408,7 @@ class _ExecutionContext(kn.ExecutionContext):
         super().__init__(java_exec_context, flow_variables, input_ports, output_ports)
         self._type_registry = type_registry
         self._tool_executor = _ToolExecutor(java_exec_context, type_registry)
-        self.execute_tool = self._tool_executor.execute_tool
+        self._execute_tool = self._tool_executor.execute_tool
 
 
 class _KnimeNodeBackend(kg.EntryPoint, kn._KnimeNodeBackend):
