@@ -383,7 +383,8 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
 
             // happens here to speed up the population of the node repository
             return new DelegatingNodeModel(m_proxyProvider, config.getInputPorts(), config.getOutputPorts(),
-                m_extensionVersion, config.getInputPortLocation(), config.getOutputPortLocation());
+                m_extensionVersion, config.getInputPortLocation(), config.getOutputPortLocation(),
+                m_bundleName + "." + m_node.getId());
         }
 
         @Override

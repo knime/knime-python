@@ -153,6 +153,8 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
 
     private PortObject[] m_internalPortObjects;
 
+    private String m_globalNodeId = null;
+
     /**
      * Constructor.
      *
@@ -183,6 +185,23 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
     public DelegatingNodeModel(final NodeModelProxyProvider proxyProvider, final PortType[] inputPorts,
         final PortType[] outputPorts, final String extensionVersion, final Map<String, int[]> inputPortMap,
         final Map<String, int[]> outputPortMap) {
+        this(proxyProvider, inputPorts, outputPorts, extensionVersion, inputPortMap, outputPortMap, null);
+    }
+
+    /**
+     * Constructor with port maps
+     *
+     * @param proxyProvider provides the proxies for delegation
+     * @param inputPorts The input ports of this node
+     * @param outputPorts The output ports of this node
+     * @param extensionVersion the version of the extension
+     * @param inputPortMap Input Port Map for creating the node model
+     * @param outputPortMap Output Port Map for creating the node model
+     * @param globalNodeId the global node ID, used for a workaround, to be removed with AP-24409
+     */
+    public DelegatingNodeModel(final NodeModelProxyProvider proxyProvider, final PortType[] inputPorts,
+        final PortType[] outputPorts, final String extensionVersion, final Map<String, int[]> inputPortMap,
+        final Map<String, int[]> outputPortMap, final String globalNodeId) {
         super(inputPorts, outputPorts);
         m_proxyProvider = proxyProvider;
         m_view = Optional.empty();
@@ -190,6 +209,7 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
         m_outputPorts = outputPorts;
         m_inputPortMap = inputPortMap;
         m_outputPortMap = outputPortMap;
+        m_globalNodeId = globalNodeId;
     }
 
     @Override
@@ -215,7 +235,7 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
             var result = node.execute(inData, m_outputPorts, exec, this, this, this, this);
             m_settings.set(node.getSettings(m_extensionVersion));
             m_view = result.getView();
-            if (m_view.isPresent()) {
+            if (m_view.isPresent() && "org.knime.python.llm.ChatAgentPrompter".equals(m_globalNodeId)) {
                 m_internalPortObjects = inData;
             }
             return result.getPortObjects();
