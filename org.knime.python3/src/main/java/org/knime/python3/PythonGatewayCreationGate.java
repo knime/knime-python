@@ -49,22 +49,17 @@
 package org.knime.python3;
 
 import java.util.ArrayList;
-import java.util.EventObject;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import org.eclipse.equinox.internal.p2.engine.PhaseEvent;
-import org.eclipse.equinox.internal.p2.engine.RollbackOperationEvent;
-import org.eclipse.equinox.internal.provisional.p2.core.eventbus.ProvisioningListener;
-import org.eclipse.equinox.p2.engine.PhaseSetFactory;
 import org.knime.core.node.NodeLogger;
 
 /**
  * Gate that controls Python gateway creation. Allows to block gateway creation and to kill all Python processes if
  * needed.
  *
- * The keeps a count of how often it was closed, state changes only occur if it is opened often enough to bring this
+ * The keeps a count of how often it was closed, state changes only occur if it is opened enough to bring this
  * count down to zero.
  *
  * Registered listeners will be notified if the overall state of the gate changes between opened and closed.
@@ -72,7 +67,7 @@ import org.knime.core.node.NodeLogger;
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
 @SuppressWarnings("restriction")
-public final class PythonGatewayCreationGate implements ProvisioningListener {
+public final class PythonGatewayCreationGate {
 
     /**
      * Interface for listeners to the {@link PythonGatewayCreationGate} opening and closing
@@ -110,9 +105,10 @@ public final class PythonGatewayCreationGate implements ProvisioningListener {
      * Close the gate, block creation of Python gateways. If the gate was already closed before, it stays closed but now
      * has to be opened once more to be open again.
      *
-     * If the state changes from open to closed, listeners will be notified of this event.
+     * If the state changes from open to closed, listeners will be notified synchronously of this event.
      */
     void blockPythonCreation() {
+        LOGGER.info("Blocking Python process startup");
         if (m_blockCount.getAndIncrement() == 0) {
             m_gatewayLock.writeLock().lock();
 
@@ -126,10 +122,11 @@ public final class PythonGatewayCreationGate implements ProvisioningListener {
      * Open the gate = allow creation of Python gateways. If the gate was closed multiple times, opening it once could
      * mean that it is still closed. Only if it was opened as often as it was closed the gate will really open.
      *
-     * If the state changes from closed to open, listeners will be notified of this event.
+     * If the state changes from closed to open, listeners will be notified synchronously of this event.
      */
     void allowPythonCreation() {
         if (m_blockCount.getAndDecrement() == 1) {
+            LOGGER.info("Allowing Python process startup again after installation failed");
             m_gatewayLock.writeLock().unlock();
 
             synchronized (m_listeners) {
@@ -171,30 +168,6 @@ public final class PythonGatewayCreationGate implements ProvisioningListener {
     public void deregisterListener(final PythonGatewayCreationGateListener listener) {
         synchronized (m_listeners) {
             m_listeners.remove(listener);
-        }
-    }
-
-    /**
-     * Called whenever a ProvisioningEvent is fired by Eclipse's event bus
-     */
-    @Override
-    public void notify(final EventObject o) {
-        if (o instanceof PhaseEvent && ((PhaseEvent)o).getPhaseId().equals(PhaseSetFactory.PHASE_INSTALL)
-            && ((PhaseEvent)o).getType() == PhaseEvent.TYPE_START) {
-            // lock if we enter the "install" phase
-            LOGGER.info("Blocking Python process startup during installation");
-            INSTANCE.blockPythonCreation();
-        } else if (o instanceof PhaseEvent && ((PhaseEvent)o).getPhaseId().equals(PhaseSetFactory.PHASE_CONFIGURE)
-            && ((PhaseEvent)o).getType() == PhaseEvent.TYPE_START) {
-            // "configure" is the normal phase after install, so we can unlock Python processes again
-            LOGGER.info("Allowing Python process startup again after installation");
-            INSTANCE.allowPythonCreation();
-        } else if (o instanceof RollbackOperationEvent && !INSTANCE.isPythonGatewayCreationAllowed()) {
-            // According to org.eclipse.equinox.internal.p2.engine.Engine.perform() -> L92,
-            // a RollbackOperationEvent will be fired if an operation failed, and this event is only fired in that case,
-            // so we unlock if we are currently locked.
-            LOGGER.info("Allowing Python process startup again after installation failed");
-            INSTANCE.allowPythonCreation();
         }
     }
 

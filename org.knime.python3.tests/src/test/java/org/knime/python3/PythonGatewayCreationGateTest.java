@@ -53,11 +53,14 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
+import org.knime.conda.envbundling.action.InstallCondaEnvironment;
 
 /**
  *
@@ -155,5 +158,62 @@ public class PythonGatewayCreationGateTest {
         Thread.sleep(20); //NOSONAR
         GATE.allowPythonCreation();
         latch.countDown();
+    }
+
+    @Test
+    public void testCondaInstallListenerBlocksAndUnblocksGate() throws Exception {
+        // Ensure initial state
+        assertTrue("Gate should be open initially", GATE.isPythonGatewayCreationAllowed());
+
+        // Simulate a long-running install using latches
+        CountDownLatch installStarted = new CountDownLatch(1);
+        CountDownLatch installContinue = new CountDownLatch(1);
+        AtomicInteger startCalled = new AtomicInteger(0);
+        AtomicInteger endCalled = new AtomicInteger(0);
+
+        // Register a test listener that blocks in onInstallStart
+        var testListener = new InstallCondaEnvironment.EnvironmentInstallListener() {
+            @Override
+            public void onInstallStart(final String name) {
+                startCalled.incrementAndGet();
+                installStarted.countDown();
+                try {
+                    installContinue.await();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+
+            @Override
+            public void onInstallEnd(final String name) {
+                endCalled.incrementAndGet();
+            }
+        };
+        InstallCondaEnvironment.registerEnvironmentInstallListener(testListener);
+
+        // Start install in a separate thread
+        Thread installThread = new Thread(() -> {
+            var installAction = new InstallCondaEnvironment.InstallAction();
+            var map = new HashMap<String, Object>();
+            map.put("directory", Paths.get("").toAbsolutePath().toString());
+            map.put("name", "Testenv");
+            // This will fail because there's no extension at this path,
+            // but we don't care here as we only want the listener to be triggered
+            installAction.execute(map);
+        });
+        installThread.start();
+
+        // Wait for install to start
+        assertTrue("Install did not start in time", installStarted.await(2, java.util.concurrent.TimeUnit.SECONDS));
+        // Should be blocked now
+        assertFalse("Gate should be blocked during install", GATE.isPythonGatewayCreationAllowed());
+        assertEquals("onInstallStart should be called once", 1, startCalled.get());
+        // Allow install to continue
+        installContinue.countDown();
+        installThread.join(2000);
+        // Should be allowed again
+        assertTrue("Gate should be open after install", GATE.isPythonGatewayCreationAllowed());
+        assertEquals("onInstallEnd should be called once", 1, endCalled.get());
+        InstallCondaEnvironment.deregisterEnvironmentInstallListener(testListener);
     }
 }

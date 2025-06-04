@@ -48,10 +48,16 @@
  */
 package org.knime.python3;
 
+import java.util.EventObject;
 import java.util.function.Consumer;
 
+import org.eclipse.equinox.internal.p2.engine.PhaseEvent;
+import org.eclipse.equinox.internal.p2.engine.RollbackOperationEvent;
 import org.eclipse.equinox.internal.provisional.p2.core.eventbus.IProvisioningEventBus;
+import org.eclipse.equinox.internal.provisional.p2.core.eventbus.ProvisioningListener;
 import org.eclipse.equinox.p2.core.IProvisioningAgent;
+import org.eclipse.equinox.p2.engine.PhaseSetFactory;
+import org.knime.conda.envbundling.action.InstallCondaEnvironment;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkUtil;
@@ -61,7 +67,7 @@ import org.osgi.framework.ServiceReference;
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
 @SuppressWarnings("restriction") // because we are using internal Eclipse API to be notified for ongoing installations
-public final class Activator implements BundleActivator {
+public final class Activator implements BundleActivator, ProvisioningListener, InstallCondaEnvironment.EnvironmentInstallListener {
 
     /**
      * Singleton gateway queue instance for this bundle and its dependents.
@@ -70,15 +76,44 @@ public final class Activator implements BundleActivator {
 
     @Override
     public void start(final BundleContext context) throws Exception {
-        registerProvisioningEventBusListener();
+        applyToProvisioningEventBus(eventBus -> eventBus.addListener(this));
+        InstallCondaEnvironment.registerEnvironmentInstallListener(this);
         PythonGatewayCreationGate.INSTANCE.registerListener(PythonGatewayTracker.INSTANCE);
     }
 
     @Override
     public void stop(final BundleContext bundleContext) throws Exception {
-        deregisterProvisioningEventBusListener();
+        applyToProvisioningEventBus(eventBus -> eventBus.removeListener(this));
+        InstallCondaEnvironment.deregisterEnvironmentInstallListener(this);
         PythonGatewayCreationGate.INSTANCE.deregisterListener(PythonGatewayTracker.INSTANCE);
         GATEWAY_FACTORY.close();
+    }
+
+
+    /* --------------------------------------------------------------------- */
+    /* Registering with Eclipse plugin installation/uninstallation           */
+    /* --------------------------------------------------------------------- */
+    /**
+     * Called whenever a ProvisioningEvent is fired by Eclipse's event bus
+     */
+    @Override
+    public void notify(final EventObject o) {
+        if (o instanceof PhaseEvent //
+            && (((PhaseEvent)o).getPhaseId().equals(PhaseSetFactory.PHASE_INSTALL) //
+                || ((PhaseEvent)o).getPhaseId().equals(PhaseSetFactory.PHASE_UNINSTALL)) //
+            && ((PhaseEvent)o).getType() == PhaseEvent.TYPE_START) {
+            PythonGatewayCreationGate.INSTANCE.blockPythonCreation();
+        } else if (o instanceof PhaseEvent && ((PhaseEvent)o).getPhaseId().equals(PhaseSetFactory.PHASE_CONFIGURE)
+            && ((PhaseEvent)o).getType() == PhaseEvent.TYPE_START) {
+            // "configure" is the normal phase after install, so we can unlock Python processes again
+            PythonGatewayCreationGate.INSTANCE.allowPythonCreation();
+        } else if (o instanceof RollbackOperationEvent
+            && !PythonGatewayCreationGate.INSTANCE.isPythonGatewayCreationAllowed()) {
+            // According to org.eclipse.equinox.internal.p2.engine.Engine.perform() -> L92,
+            // a RollbackOperationEvent will be fired if an operation failed, and this event is only fired in that case,
+            // so we unlock if we are currently locked.
+            PythonGatewayCreationGate.INSTANCE.allowPythonCreation();
+        }
     }
 
     private void applyToProvisioningEventBus(final Consumer<IProvisioningEventBus> consumer) {
@@ -99,11 +134,16 @@ public final class Activator implements BundleActivator {
         }
     }
 
-    private void registerProvisioningEventBusListener() {
-        applyToProvisioningEventBus(eventBus -> eventBus.addListener(PythonGatewayCreationGate.INSTANCE));
+    /* --------------------------------------------------------------------- */
+    /* Registering with Conda environment creations                          */
+    /* --------------------------------------------------------------------- */
+    @Override
+    public void onInstallStart(final String environmentName) {
+        PythonGatewayCreationGate.INSTANCE.blockPythonCreation();
     }
 
-    private void deregisterProvisioningEventBusListener() {
-        applyToProvisioningEventBus(eventBus -> eventBus.removeListener(PythonGatewayCreationGate.INSTANCE));
+    @Override
+    public void onInstallEnd(final String environmentName) {
+        PythonGatewayCreationGate.INSTANCE.allowPythonCreation();
     }
 }
