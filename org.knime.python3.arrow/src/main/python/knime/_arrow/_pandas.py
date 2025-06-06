@@ -845,6 +845,10 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
                 logical_type=self._logical_type,
                 converter=self._converter,
             )
+
+        if isinstance(indices, list):
+            indices = np.array(indices)
+
         storage = katy._to_storage_array(
             self._data
         )  # decodes the data puts it in storage array
