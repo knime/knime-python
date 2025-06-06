@@ -78,6 +78,8 @@ public final class HtmlFileNodeView implements NodeTableView {
 
     private final Supplier<Path> m_htmlSupplier;
 
+    private final String m_relativeHTMLPath;
+
     private final ViewResources m_resources;
 
     private final Supplier<JsonRpcRequestHandler> m_dataServiceSupplier;
@@ -100,7 +102,7 @@ public final class HtmlFileNodeView implements NodeTableView {
      * @param resources resources that are available to the page.
      */
     public HtmlFileNodeView(final Supplier<Path> htmlSupplier, final ViewResources resources) {
-        this(htmlSupplier, resources, null);
+        this(htmlSupplier, "index.html", resources, null);
     }
 
     /**
@@ -109,15 +111,18 @@ public final class HtmlFileNodeView implements NodeTableView {
      *
      * @param htmlSupplier supplier that provides the path to the HTML file that should be shown currently. The file
      *            must exist and must be readable.
+     * @param relativeHTMLPath the relative path to the HTML file, used to resolve relative links in the HTML file.
      * @param resources resources that are available to the page.
      * @param dataServiceSupplier supplier that provides a JSON RPC request handler that can be used to handle requests
      *            from the HTML
      */
-    public HtmlFileNodeView(final Supplier<Path> htmlSupplier, final ViewResources resources,
-        final Supplier<JsonRpcRequestHandler> dataServiceSupplier) {
+    public HtmlFileNodeView(final Supplier<Path> htmlSupplier, final String relativeHTMLPath,
+        final ViewResources resources, final Supplier<JsonRpcRequestHandler> dataServiceSupplier) {
         m_htmlSupplier = htmlSupplier;
+        m_relativeHTMLPath = relativeHTMLPath;
         m_resources = resources;
         m_dataServiceSupplier = dataServiceSupplier;
+
     }
 
     /**
@@ -167,7 +172,7 @@ public final class HtmlFileNodeView implements NodeTableView {
 
     @Override
     public Page getPage() {
-        var pb = Page.builder(this::openPage, "index.html", StandardCharsets.UTF_8);
+        var pb = Page.builder(this::openPage, m_relativeHTMLPath, StandardCharsets.UTF_8);
         m_resources.addToPageBuilder(pb);
         return pb.build();
     }

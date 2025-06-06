@@ -48,8 +48,11 @@
  */
 package org.knime.python3.nodes.extension;
 
+import java.nio.file.Path;
+
 import org.knime.core.node.NodeDescription;
 import org.knime.python3.nodes.extension.ExtensionNodeSetFactory.PortSpecifier;
+import org.knime.python3.views.FolderViewResources;
 import org.knime.python3.views.ViewResources;
 
 /**
@@ -104,9 +107,9 @@ public interface ExtensionNode {
     boolean isHidden();
 
     /**
-     * @return the paths to the resources for each view
+     * @return the paths to the resources and index HTML for each view
      */
-    ViewResources[] getViewResources();
+    ExtensionNodeView[] getExtensionNodeView();
 
     /**
      * @return get all input ports
@@ -118,4 +121,26 @@ public interface ExtensionNode {
      */
     PortSpecifier[] getOutputPorts();
 
+    /**
+     * Represents a view for an extension node, containing the resources and the path to the index HTML file. TODO write
+     * javadoc
+     */
+    public record ExtensionNodeView(Path basePath, String relativeResourcesPath, String indexHtmlName) {
+
+        public ViewResources getViewResources() {
+            if (relativeResourcesPath == null || relativeResourcesPath.isEmpty()) {
+                return ViewResources.EMPTY_RESOURCES;
+            } else {
+                return new FolderViewResources(basePath.resolve(relativeResourcesPath), relativeResourcesPath, true);
+            }
+        }
+
+        public Path getHtmlPath() {
+            return basePath.resolve(relativeResourcesPath).resolve(indexHtmlName);
+        }
+
+        public String getRelativeHtmlPath() {
+            return relativeResourcesPath + "/" + indexHtmlName;
+        }
+    }
 }

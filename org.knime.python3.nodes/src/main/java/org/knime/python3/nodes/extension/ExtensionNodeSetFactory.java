@@ -282,40 +282,51 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
             if (!hasNodeView()) {
                 throw new IllegalStateException("The node has no view.");
             }
-            Supplier<JsonRpcRequestHandler> dataServiceSupplier = () -> {
-                return new JsonRpcRequestHandler() {
 
-                    private NodeViewProxy m_nodeViewProxy;
+            var extensionNodeView = m_node.getExtensionNodeView()[0];
+            var viewResources = extensionNodeView.getViewResources();
 
-                    private DataServiceProxy m_dataServiceProxy;
+            if (extensionNodeView.indexHtmlName() == null) {
+                // The view is is generated dynamically in execute
+                return new HtmlFileNodeView( //
+                    () -> nodeModel.getPathToHtmlView()
+                        .orElseThrow(() -> new IllegalStateException("View is not present. This is a coding error.")),
+                    viewResources //
+                );
+            } else {
+                // The view is a static HTML file - we need a data service
+                Supplier<JsonRpcRequestHandler> dataServiceSupplier = () -> {
+                    return new JsonRpcRequestHandler() {
 
-                    @Override
-                    public String handleRequest(final String jsonRpcRequest) {
-                        if (m_nodeViewProxy == null) {
-                            m_nodeViewProxy = m_proxyProvider.getNodeViewProxy();
-                            m_dataServiceProxy =
-                                m_nodeViewProxy.getDataServiceProxy(nodeModel.getSettings(),
+                        private NodeViewProxy m_nodeViewProxy;
+
+                        private DataServiceProxy m_dataServiceProxy;
+
+                        @Override
+                        public String handleRequest(final String jsonRpcRequest) {
+                            if (m_nodeViewProxy == null) {
+                                m_nodeViewProxy = m_proxyProvider.getNodeViewProxy();
+                                m_dataServiceProxy = m_nodeViewProxy.getDataServiceProxy(nodeModel.getSettings(),
                                     nodeModel.getInternalPortObjects(), nodeModel, nodeModel);
+                            }
+                            return m_dataServiceProxy.handleJsonRpcRequest(jsonRpcRequest);
                         }
-                        return m_dataServiceProxy.handleJsonRpcRequest(jsonRpcRequest);
-                    }
 
-                    @Override
-                    public void close() throws Exception {
-                        if (m_nodeViewProxy != null) {
-                            m_nodeViewProxy.close();
-                            m_nodeViewProxy = null;
-                            m_dataServiceProxy = null;
+                        @Override
+                        public void close() throws Exception {
+                            if (m_nodeViewProxy != null) {
+                                m_nodeViewProxy.close();
+                                m_nodeViewProxy = null;
+                                m_dataServiceProxy = null;
+                            }
                         }
-                    }
 
-
+                    };
                 };
-            };
-            return new HtmlFileNodeView(
-                () -> nodeModel.getPathToHtmlView()
-                    .orElseThrow(() -> new IllegalStateException("View is not present. This is a coding error.")),
-                m_node.getViewResources()[0], dataServiceSupplier);
+
+                return new HtmlFileNodeView(extensionNodeView::getHtmlPath, extensionNodeView.getRelativeHtmlPath(),
+                    viewResources, dataServiceSupplier);
+            }
         }
 
         /** A dummy node view that does nothing and that will only be opened by workflow tests. */
