@@ -48,8 +48,11 @@
  */
 package org.knime.python3.nodes.extension;
 
+import java.nio.file.Path;
+
 import org.knime.core.node.NodeDescription;
 import org.knime.python3.nodes.extension.ExtensionNodeSetFactory.PortSpecifier;
+import org.knime.python3.views.FolderViewResources;
 import org.knime.python3.views.ViewResources;
 
 /**
@@ -104,9 +107,9 @@ public interface ExtensionNode {
     boolean isHidden();
 
     /**
-     * @return the paths to the resources for each view
+     * @return the paths to the resources and index HTML for each view
      */
-    ViewResources[] getViewResources();
+    ExtensionNodeView[] getExtensionNodeView();
 
     /**
      * @return get all input ports
@@ -118,4 +121,38 @@ public interface ExtensionNode {
      */
     PortSpecifier[] getOutputPorts();
 
+    /**
+     * Represents a view for a node, containing the resources and the path to the index HTML file.
+     *
+     * @param basePath the base directory where the resources for the view are located.
+     * @param relativeResourcesPath the path to the resources directory, relative to the base path. The resources will
+     *            be served with this path as a prefix. Can be <code>null</code> for views that do not have static
+     *            resources.
+     * @param indexHtmlName the name of the index HTML file for the view inside the <code>relativeResourcesPath</code>.
+     *            Can be <code>null</code> for views which index HTML is generated dynamically.
+     */
+    public record ExtensionNodeView(Path basePath, String relativeResourcesPath, String indexHtmlName) {
+
+        /** @return the resources for this view, never {@code null} */
+        public ViewResources getViewResources() {
+            if (relativeResourcesPath == null || relativeResourcesPath.isEmpty()) {
+                return ViewResources.EMPTY_RESOURCES;
+            } else {
+                return new FolderViewResources(basePath.resolve(relativeResourcesPath), relativeResourcesPath, true);
+            }
+        }
+
+        /**
+         * @return the absolute path to the index HTML file for this view, resolved from {@code basePath},
+         *         {@code relativeResourcesPath}, and {@code indexHtmlName}.
+         */
+        public Path getHtmlPath() {
+            return basePath.resolve(relativeResourcesPath).resolve(indexHtmlName);
+        }
+
+        /** @return the relative path on which the index HTML file is served */
+        public String getRelativeHtmlPath() {
+            return relativeResourcesPath + "/" + indexHtmlName;
+        }
+    }
 }

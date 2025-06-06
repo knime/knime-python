@@ -55,7 +55,6 @@ import org.knime.core.node.port.PortType;
 import org.knime.python3.nodes.extension.ExtensionNode;
 import org.knime.python3.nodes.extension.ExtensionNodeSetFactory.PortSpecifier;
 import org.knime.python3.nodes.ports.PythonPortTypeRegistry;
-import org.knime.python3.views.ViewResources;
 
 /**
  * Represents a PythonNode.
@@ -84,7 +83,7 @@ public final class PythonNode implements ExtensionNode {
 
     private final boolean m_isHidden;
 
-    private final ViewResources[] m_viewResources;
+    private final ExtensionNodeView[] m_viewResources;
 
     /**
      * Constructor.
@@ -109,7 +108,7 @@ public final class PythonNode implements ExtensionNode {
         final int numViews, //
         final boolean isDeprecated, //
         final boolean isHidden, //
-        final ViewResources[] viewResources, //
+        final ExtensionNodeView[] viewResources, //
         final List<PortSpecifier> inputPortSpecifiers, //
         final List<PortSpecifier> outputPortSpecifiers) {
 
@@ -199,7 +198,7 @@ public final class PythonNode implements ExtensionNode {
     }
 
     @Override
-    public ViewResources[] getViewResources() {
+    public ExtensionNodeView[] getExtensionNodeView() {
         return m_viewResources;
     }
 
@@ -224,5 +223,4 @@ public final class PythonNode implements ExtensionNode {
             .map(portSpecifier -> PythonPortTypeRegistry.getPortTypeForIdentifier(portSpecifier.typeString()))
             .toArray(PortType[]::new);
     }
-
 }

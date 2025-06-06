@@ -68,11 +68,10 @@ import org.knime.core.node.NodeLogger;
 import org.knime.core.node.extension.CategoryExtension;
 import org.knime.python3.PythonGatewayUtils;
 import org.knime.python3.PythonProcessTerminatedException;
+import org.knime.python3.nodes.extension.ExtensionNode.ExtensionNodeView;
 import org.knime.python3.nodes.extension.ExtensionNodeSetFactory.PortSpecifier;
 import org.knime.python3.nodes.extension.NodeDescriptionBuilder;
 import org.knime.python3.nodes.extension.NodeDescriptionBuilder.Tab;
-import org.knime.python3.views.FolderViewResources;
-import org.knime.python3.views.ViewResources;
 import org.osgi.framework.Version;
 import org.yaml.snakeyaml.Yaml;
 
@@ -384,7 +383,7 @@ public final class PythonExtensionParser {
                 .collect(Collectors.toList());
 
             return new PythonNode(id, category, after, keywords, descriptionBuilder.build(), views.length,
-                is_deprecated, is_hidden, getViewResources(modulePath), inputPortSpecifiers, outputPortSpecifiers);
+                is_deprecated, is_hidden, getExtensionNodeViews(modulePath), inputPortSpecifiers, outputPortSpecifiers);
         }
 
         private NodeDescriptionBuilder createDescriptionBuilder() {
@@ -418,12 +417,10 @@ public final class PythonExtensionParser {
             return builder;
         }
 
-        private ViewResources[] getViewResources(final Path modulePath) {
+        private ExtensionNodeView[] getExtensionNodeViews(final Path modulePath) {
             return Arrays.stream(views) //
-                .map(v -> v.static_resources != null
-                    ? new FolderViewResources(modulePath.resolve(v.static_resources), v.static_resources, true)
-                    : ViewResources.EMPTY_RESOURCES) //
-                .toArray(ViewResources[]::new);
+                .map(v -> new ExtensionNodeView(modulePath, v.static_resources, v.index_html_path)) //
+                .toArray(ExtensionNodeView[]::new);
         }
 
         private static <T> void consumeIfPresent(final T[] array, final Consumer<T> elementConsumer) {
@@ -476,6 +473,8 @@ public final class PythonExtensionParser {
     @SuppressWarnings("java:S116") // the fields are named this way for JSON deserialization
     private static class JsonView extends JsonDescribed {
         private String static_resources;
+
+        private String index_html_path;
     }
 
     @SuppressWarnings("java:S116") // the fields are named this way for JSON deserialization
