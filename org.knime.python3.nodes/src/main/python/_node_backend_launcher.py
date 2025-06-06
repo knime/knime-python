@@ -1241,6 +1241,8 @@ class _PythonNodeProxy:
                 out_view = out_view[0]
             # write the view to the sink
             view_sink = kg.data_sink_mapper(self._java_callback.create_view_sink())
+            # Note: The view does not have to be of type NodeView yet.
+            # If it is not, it will be converted to a NodeView with the `view` function.
             view_sink.display(out_view)
         outputs = self._postprocess_outputs(outputs)
 
