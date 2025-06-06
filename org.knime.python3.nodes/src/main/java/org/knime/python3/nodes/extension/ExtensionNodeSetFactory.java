@@ -51,6 +51,7 @@ package org.knime.python3.nodes.extension;
 import static java.util.stream.Collectors.toMap;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -392,9 +393,14 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
         protected DelegatingNodeModel createNodeModel(final NodeCreationConfiguration creationConfig) {
             final var config = creationConfig.getPortConfig().get(); // NOSONAR
 
+            // Note: We hold the outputs if one of the views is not generated dynamically, indicating that they need to
+            // load their data from a data service
+            var shouldHoldOutputs = Arrays.stream(m_node.getExtensionNodeView()) //
+                .anyMatch(v -> v.indexHtmlName() != null);
+
             // happens here to speed up the population of the node repository
             return new DelegatingNodeModel(m_proxyProvider, config.getInputPorts(), config.getOutputPorts(),
-                m_extensionVersion, config.getInputPortLocation(), config.getOutputPortLocation());
+                m_extensionVersion, config.getInputPortLocation(), config.getOutputPortLocation(), shouldHoldOutputs);
         }
 
         @Override
