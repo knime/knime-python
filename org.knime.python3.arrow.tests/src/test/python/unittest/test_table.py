@@ -307,6 +307,20 @@ class ArrowTableTest(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             self.generate_test_table_with_rowid_column().to_pandas()
 
+    def test_pandas_roundtrip_with_data(self):
+        """
+        This test works up to Py 3.11 and Pandas <2, but fails with
+        Py 3.12 and Pandas 2.1
+        """
+        table = self._test_table
+        data = table.to_pandas()
+        # if we omit the 2 columns below, the roundtrip works also in Py3.12
+        # data.drop(["TimestampCol", "URICol"], axis=1, inplace=True)
+        other = kt.Table.from_pandas(data)
+        data2 = other.to_pandas()
+
+        pd.testing.assert_frame_equal(data, data2)
+
     def test_to_batches(self):
         table = self._test_table
         batches = list(table.to_batches())
