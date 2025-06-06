@@ -1227,6 +1227,11 @@ class _PythonNodeProxy:
             outputs = []
         if hasattr(self._node, "output_view") and self._node.output_view is not None:
             if isinstance(outputs, (list, tuple)):
+                if len(outputs) == 0:
+                    raise ValueError(
+                        "The node has an output view but no outputs were produced. "
+                        "Return an output view from the execute method."
+                    )
                 out_view = outputs[-1]
                 outputs = outputs[:-1]
             else:
