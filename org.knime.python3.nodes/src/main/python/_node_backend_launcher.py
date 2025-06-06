@@ -1225,7 +1225,11 @@ class _PythonNodeProxy:
         """
         if outputs is None:
             outputs = []
-        if hasattr(self._node, "output_view") and self._node.output_view is not None:
+        if (
+            hasattr(self._node, "output_view")
+            and self._node.output_view is not None
+            and self._node.output_view.index_html_path is None
+        ):
             if isinstance(outputs, (list, tuple)):
                 if len(outputs) == 0:
                     raise ValueError(
