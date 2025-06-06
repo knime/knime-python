@@ -464,6 +464,7 @@ class ViewDeclaration:
     name: str
     description: str
     static_resources: Optional[str] = None
+    static_html_view: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -1451,7 +1452,12 @@ def output_port(name: str, description: str, port_type: PortType):
     )
 
 
-def output_view(name: str, description: str, static_resources: Optional[str] = None):
+def output_view(
+    name: str,
+    description: str,
+    static_resources: Optional[str] = None,
+    static_html_folder: Optional[str] = None,
+):
     """
     Use this decorator to specify that this node produces a view.
 
@@ -1461,18 +1467,37 @@ def output_view(name: str, description: str, static_resources: Optional[str] = N
         The name of the view.
     description : str
         Description of the view.
-    static_resources : str
-        The path to a folder of resources that will be available to the HTML page. The
-        path given here must be relative to the root of the extension. The resources
-        can be accessed by the same relative file path (e.g. "{static_resources}/{filename}").
+    static_resources : str, optional
+        Path (relative to the extension root) to a folder of static resources (e.g., JS, CSS, images)
+        that will be made available to the HTML page for the view. These resources can be accessed
+        by the same relative file path (e.g., "{static_resources}/{filename}"). All text-based resources
+        must be UTF-8 encoded. Cannot be used together with `static_html_folder`.
+    static_html_folder : str, optional
+        Path (relative to the extension root) to a folder containing an "index.html" file that defines
+        the view. All additional resources/assets (e.g., JS, CSS, images) required by the view must be
+        included in this folder. This option must not be used together with `static_resources`.
         All text-based resources must be UTF-8 encoded.
+
+    Notes
+    -----
+    - Use `static_resources` if you want to provide additional files to a dynamically generated HTML view.
+    - Use `static_html_folder` if you want to provide a complete static HTML view (with an "index.html" entry point).
+    - Only one of `static_resources` or `static_html_folder` can be specified.
+
+    Example
+    -------
+    >>> @knext.output_view(
+    ...     name="My View",
+    ...     description="Shows a custom visualization.",
+    ...     static_html_folder="my_view_assets"
+    ... )
     """
 
     def add_view(node_factory):
         setattr(
             node_factory,
             "output_view",
-            ViewDeclaration(name, description, static_resources),
+            ViewDeclaration(name, description, static_resources, static_html_folder),
         )
         return node_factory
 
