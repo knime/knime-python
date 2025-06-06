@@ -151,6 +151,8 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
 
     private PortObject[] m_internalPortObjects;
 
+    private final boolean m_shouldHoldOutputs;
+
     /**
      * Constructor with port maps
      *
@@ -160,10 +162,12 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
      * @param extensionVersion the version of the extension
      * @param inputPortMap Input Port Map for creating the node model
      * @param outputPortMap Output Port Map for creating the node model
+     * @param shouldHoldOutputs indicates if the execution outputs should be saved as internal data to be used by a node
+     *            view
      */
     public DelegatingNodeModel(final NodeModelProxyProvider proxyProvider, final PortType[] inputPorts,
         final PortType[] outputPorts, final String extensionVersion, final Map<String, int[]> inputPortMap,
-        final Map<String, int[]> outputPortMap) {
+        final Map<String, int[]> outputPortMap, final boolean shouldHoldOutputs) {
         super(inputPorts, outputPorts);
         m_proxyProvider = proxyProvider;
         m_view = Optional.empty();
@@ -171,6 +175,7 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
         m_outputPorts = outputPorts;
         m_inputPortMap = inputPortMap;
         m_outputPortMap = outputPortMap;
+        m_shouldHoldOutputs = shouldHoldOutputs;
     }
 
     @Override
@@ -196,7 +201,7 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
             var result = node.execute(inData, m_outputPorts, exec, this, this, this, this);
             m_settings.set(node.getSettings(m_extensionVersion));
             m_view = result.getView();
-            if (m_view.isPresent()) {
+            if (m_shouldHoldOutputs) {
                 m_internalPortObjects = inData;
             }
             return result.getPortObjects();
