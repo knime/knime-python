@@ -112,7 +112,7 @@ class MyExtensionArray(pa.ExtensionArray):
         storage_scalar = self.storage[idx]
         return MyExtensionScalar(self.type, storage_scalar)
 
-    def to_pylist(self):
+    def to_pylist(self, maps_as_pydicts=None):
         return [self.type.decode(x) for x in self.storage.to_pylist()]
 
     def to_pandas(self):
@@ -174,7 +174,7 @@ class MyExtensionScalar:
     def __reduce__(self):
         return unpickle_knime_extension_scalar, (self.ext_type, self.storage_scalar)
 
-    def as_py(self):
+    def as_py(self, maps_as_pydicts=None):
         return self.ext_type.decode(self.storage_scalar.as_py())
 
 

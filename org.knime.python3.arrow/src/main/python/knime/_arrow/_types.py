@@ -505,7 +505,9 @@ class LogicalTypeExtensionType(pa.ExtensionType):
         class LogicalTypeExtensionScalar(pa.ExtensionScalar):
             _ext_type = self
 
-            def as_py(self):
+            def as_py(self, maps_as_pydicts=None):
+                # Note: We do not simply pass maps_as_pydicts to the storage array (self.value)
+                # because we want the value to be decoded using the logical type's decode method.
                 return self._ext_type.decode(
                     self.value.as_py() if self.value is not None else None
                 )
@@ -653,8 +655,15 @@ class StructDictEncodedLogicalTypeExtensionType(pa.ExtensionType):
         """
 
         class StructDictEncodedLogicalTypeExtensionScalar(pa.ExtensionScalar):
-            def as_py(self):
-                return self.value.as_py() if self.value else None
+            def as_py(self, maps_as_pydicts=None):
+                if self.value is None:
+                    return None
+                elif maps_as_pydicts is None:
+                    return self.value.as_py()
+                else:
+                    # Note: we do not pass map_as_pydicts if it is None to be compatible
+                    # with older versions of PyArrow that do not support this argument
+                    return self.value.as_py(maps_as_pydicts=maps_as_pydicts)
 
         return StructDictEncodedLogicalTypeExtensionScalar
 
@@ -1005,9 +1014,13 @@ class KnimeExtensionArray(pa.ExtensionArray):
         for idx in range(len(self)):
             yield KnimeExtensionScalar(self.type, self.storage[idx])
 
-    def to_pylist(self):
-        # the pyarrow intern to pylist function cannot be used for dictionary decoded values
-        return [self[i].as_py() for i in range(len(self))]
+    def to_pylist(self, maps_as_pydicts=None):
+        if maps_as_pydicts is None:
+            return [self[i].as_py() for i in range(len(self))]
+        else:
+            return [
+                self[i].as_py(maps_as_pydicts=maps_as_pydicts) for i in range(len(self))
+            ]
 
     def to_pandas(self):
         # TODO use super method and pass through arguments (i.e. essentially decorate the super implementation)
@@ -1027,6 +1040,9 @@ class KnimeExtensionScalar:
 
     Only used up to pyarrow 7, broken for our use case in pyarrow 8, and superceeded
     by LogicalTypeExtensionType.__arrow_ext_scalar_class__() from pyarrow 9 on.
+
+    TODO(AP-24495) this is still used by the KnimeExtensionArray in some places even
+        with pyarrow >= 9
     """
 
     def __init__(self, ext_type: LogicalTypeExtensionType, storage_scalar: pa.Scalar):
@@ -1077,7 +1093,9 @@ class KnimeExtensionScalar:
     def __reduce__(self):
         return unpickle_knime_extension_scalar, (self.ext_type, self.storage_scalar)
 
-    def as_py(self):
+    def as_py(self, maps_as_pydicts=None):
+        # Note: We do not simply pass maps_as_pydicts to the storage scalar because we
+        # want the value to be decoded using the logical type's decode method.
         return self.ext_type.decode(
             self.storage_scalar.as_py() if self.storage_scalar is not None else None
         )

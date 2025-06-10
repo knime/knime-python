@@ -146,8 +146,13 @@ class _AbstractArray(abc.ABC):
 
     # Converters
 
-    def to_pylist(self):
-        return [v.as_py() for v in self]
+    def to_pylist(self, maps_as_pydicts=None):
+        if maps_as_pydicts is None:
+            return [v.as_py() for v in self]
+        else:
+            # Note: we do not pass map_as_pydicts if it is None to be compatible
+            # with older versions of PyArrow that do not support this argument
+            return [v.as_py(maps_as_pydicts=maps_as_pydicts) for v in self]
 
     def to_numpy(self, zero_copy_only=True, writable=False):
         if zero_copy_only:
