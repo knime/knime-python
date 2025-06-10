@@ -1,0 +1,73 @@
+[workspace]
+channels = ["knime", "knime/label/nightly", "conda-forge"]
+platforms = ["win-64", "linux-64", "osx-64", "osx-arm64"]
+
+# Tasks
+
+[tasks]
+format = "ruff format ."
+
+[tasks.test-all]
+depends-on = [
+    { task = "test", environment = "test-py38pa6" },
+    { task = "test", environment = "test-py38" },
+    { task = "test", environment = "test-py39" },
+    { task = "test", environment = "test-py311" },
+    { task = "test", environment = "test-py311kn55" },
+]
+
+[feature.test.tasks]
+test = "pytest"
+coverage = "coverage run -m pytest && coverage xml && coverage html && coverage report"
+
+# Dev environment for VS Code
+
+[dependencies]
+python = "3.11.*"
+knime-python-base = "*"
+pytest = "*"
+pytest-cov = "*"
+matplotlib = "*"
+seaborn = "*"
+ruff = "*"
+
+# Test Environments
+
+[environments]
+test-py38pa6 = { features = ["py38pa6", "test"], no-default-feature = true }
+test-py38 = { features = ["py38", "test"], no-default-feature = true }
+test-py39 = { features = ["py39", "test"], no-default-feature = true }
+test-py311 = { features = ["py311", "test"], no-default-feature = true }
+test-py311kn55 = { features = ["py311kn55", "test"], no-default-feature = true }
+
+# Test features
+
+[feature.test.dependencies]
+pytest = "*"
+matplotlib = "*"
+seaborn = "*"
+coverage = "*"
+
+[feature.py38pa6.dependencies]
+python = "3.8.*"
+pyarrow = "6.0.*"
+numpy = "1.19.*"
+pandas = "1.3.*"
+py4j = "0.10.9.*"
+markdown = "3.3.*"
+
+[feature.py38.dependencies]
+python = "3.8.*"
+knime-python-base = "4.7.*"
+
+[feature.py39.dependencies]
+python = "3.9.*"
+knime-python-base = "4.7.*"
+
+[feature.py311.dependencies]
+python = "3.11.*"
+knime-python-base = "5.2.*"
+
+[feature.py311kn55.dependencies]
+python = "3.11.*"
+knime-python-base = "5.5.*"
