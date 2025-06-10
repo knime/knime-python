@@ -50,6 +50,7 @@ package org.knime.python3.nodes.extension;
 
 import java.nio.file.Path;
 
+import org.apache.commons.lang3.StringUtils;
 import org.knime.core.node.NodeDescription;
 import org.knime.python3.nodes.extension.ExtensionNodeSetFactory.PortSpecifier;
 import org.knime.python3.views.FolderViewResources;
@@ -135,7 +136,7 @@ public interface ExtensionNode {
 
         /** @return the resources for this view, never {@code null} */
         public ViewResources getViewResources() {
-            if (relativeResourcesPath == null || relativeResourcesPath.isEmpty()) {
+            if (StringUtils.isBlank(relativeResourcesPath)) {
                 return ViewResources.EMPTY_RESOURCES;
             } else {
                 return new FolderViewResources(basePath.resolve(relativeResourcesPath), relativeResourcesPath, true);
