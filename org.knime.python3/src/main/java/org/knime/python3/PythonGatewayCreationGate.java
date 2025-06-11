@@ -125,6 +125,7 @@ public final class PythonGatewayCreationGate {
      * If the state changes from closed to open, listeners will be notified synchronously of this event.
      */
     void allowPythonCreation() {
+        LOGGER.debug("Decrementing Python process startup block count");
         if (m_blockCount.getAndDecrement() == 1) {
             LOGGER.info("Allowing Python process startup again after installation failed");
             m_gatewayLock.writeLock().unlock();

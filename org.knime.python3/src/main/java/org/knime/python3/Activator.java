@@ -58,6 +58,8 @@ import org.eclipse.equinox.internal.provisional.p2.core.eventbus.ProvisioningLis
 import org.eclipse.equinox.p2.core.IProvisioningAgent;
 import org.eclipse.equinox.p2.engine.PhaseSetFactory;
 import org.knime.conda.envbundling.action.InstallCondaEnvironment;
+import org.knime.conda.envbundling.action.InstallCondaEnvironment.EnvironmentInstallListener;
+import org.knime.core.node.NodeLogger;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkUtil;
@@ -67,7 +69,7 @@ import org.osgi.framework.ServiceReference;
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
 @SuppressWarnings("restriction") // because we are using internal Eclipse API to be notified for ongoing installations
-public final class Activator implements BundleActivator, ProvisioningListener, InstallCondaEnvironment.EnvironmentInstallListener {
+public final class Activator implements BundleActivator, ProvisioningListener, EnvironmentInstallListener {
 
     /**
      * Singleton gateway queue instance for this bundle and its dependents.
@@ -98,6 +100,12 @@ public final class Activator implements BundleActivator, ProvisioningListener, I
      */
     @Override
     public void notify(final EventObject o) {
+        var logger = NodeLogger.getLogger(Activator.class);
+        if (o instanceof PhaseEvent e) {
+            logger.info("Received PhaseEvent: " + e.getPhaseId() + " - " + e.getType());
+        } else {
+            logger.info("Received event: " + o.getClass().getName() + " - " + o);
+        }
         if (o instanceof PhaseEvent //
             && (((PhaseEvent)o).getPhaseId().equals(PhaseSetFactory.PHASE_INSTALL) //
                 || ((PhaseEvent)o).getPhaseId().equals(PhaseSetFactory.PHASE_UNINSTALL)) //
