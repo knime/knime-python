@@ -76,10 +76,10 @@ public interface PythonToolContext {
      * @param toolTable holding a single tool to execute
      * @param parameters JSON with the parameters for the tool
      * @param inputs input data for the tool
-     * @param debug whether to run the tool in debug mode
+     * @param executionHints additional, optional hints for the tool execution
      * @return the result of the tool execution
      */
     PythonToolResult execute_tool(PurePythonTablePortObject toolTable, String parameters,
-        List<PythonPortObject> inputs, boolean debug);
+        List<PythonPortObject> inputs, List<String> executionHints);
 
 }
