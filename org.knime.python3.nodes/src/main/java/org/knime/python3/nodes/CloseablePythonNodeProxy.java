@@ -70,6 +70,7 @@ import org.knime.core.data.filestore.FileStoreKey;
 import org.knime.core.data.filestore.FileStoreUtil;
 import org.knime.core.data.filestore.internal.IFileStoreHandler;
 import org.knime.core.data.filestore.internal.IWriteFileStoreHandler;
+import org.knime.core.data.filestore.internal.NotInWorkflowWriteFileStoreHandler;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.InvalidSettingsException;
@@ -728,12 +729,24 @@ final class CloseablePythonNodeProxy
         if (nodeFsHandler instanceof IWriteFileStoreHandler writeFsHandler) {
             return writeFsHandler;
         } else {
-            throw new IllegalStateException("A NodeContext should be available during execution of Python Nodes");
+            throw new IllegalStateException(
+                "A WriteFileStoreHandler should be available during execution of Python Nodes");
         }
     }
 
     private static IFileStoreHandler getFileStoreHandler() {
-        return getNode().getFileStoreHandler();
+        if (NodeContext.getContextOptional().map(NodeContext::getNodeContainer)
+            .orElse(null) instanceof NativeNodeContainer nnc) {
+            if (nnc.getNodeContainerState().isExecuted()) {
+                // we don't want to permanently keep the file stores for an already executed node
+                // because those are guaranteed to not be used anymore downstream
+                return new NotInWorkflowWriteFileStoreHandler(UUID.randomUUID());
+            } else {
+                return nnc.getNode().getFileStoreHandler();
+            }
+        } else {
+            throw new IllegalStateException("A NodeContext should be available during execution of Python Nodes");
+        }
     }
 
     @Override
