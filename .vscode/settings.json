@@ -1,0 +1,16 @@
+{
+  // Add extra source folders to the Python analysis path for import resolution
+  "python.analysis.extraPaths": [
+    "org.knime.python3/src/main/python",
+    "org.knime.python3.arrow/src/main/python",
+    "org.knime.python3.arrow.types/src/main/python",
+    "org.knime.python3.nodes/src/main/python",
+    "org.knime.python3.scripting/src/main/python",
+    "org.knime.python3.views/src/main/python"
+  ],
+  // Disable the automatic activation of the Python environment in the terminal enable usage of all environments in the terminal
+  "python.terminal.activateEnvironment": false,
+  "python.testing.pytestArgs": ["."],
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestEnabled": true,
+}

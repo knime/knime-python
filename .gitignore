@@ -15,7 +15,6 @@
 .coverage
 **/htmlcov/
 **/.idea
-**/.vscode
 
 # new build output
 */.polyglot.*
