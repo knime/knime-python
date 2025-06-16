@@ -39,40 +39,46 @@ class WorkflowTool:
     name: str
     description: str
     parameter_schema: dict
-    tool_bytes: bytes
     message_output_port_index: int
     input_ports: Optional[List[ToolPort]] = None
     output_ports: Optional[List[ToolPort]] = None
+    _filestore_keys: Optional[List[str]] = None
 
 
-class WorkflowToolValueFactory(kt.PythonValueFactory):
+class WorkflowToolValueFactory(kt.FileStorePythonValueFactory):
     """
     Python equivalent of the WorkflowToolValueFactory class in KNIME, that can read
     the Arrow representation of a KNIME workflow tool value and convert it to a Python object.
     """
 
     def __init__(self):
-        kt.PythonValueFactory.__init__(self, WorkflowTool)
+        kt.FileStorePythonValueFactory.__init__(self, WorkflowTool)
 
-    def decode(self, storage):
-        if storage is None:
-            return None
+    def read(self, file_paths, table_data):
+        # file_paths is not accessed because we only pass on the filestore keys
         import json
-
-        param_schema_json = storage["2"]
+        param_schema_json = table_data["2"]
         param_schema = json.loads(param_schema_json) if param_schema_json else {}
 
         return WorkflowTool(
-            name=storage["0"],
-            description=storage["1"],
+            name=table_data["0"],
+            description=table_data["1"],
             parameter_schema=param_schema,
-            tool_bytes=storage["3"],
-            message_output_port_index=storage["6"],
-            input_ports=[ToolPort._from_arrow_dict(port) for port in storage["4"]],
-            output_ports=[ToolPort._from_arrow_dict(port) for port in storage["5"]],
+            message_output_port_index=table_data["5"],
+            input_ports=[ToolPort._from_arrow_dict(port) for port in table_data["3"]],
+            output_ports=[ToolPort._from_arrow_dict(port) for port in table_data["4"]],
         )
+        
 
-    def encode(self, value: WorkflowTool):
+    def decode(self, storage):
+        # calls the read method and constructs the Python readable part of the tool
+        tool = super().decode(storage)
+        # the filestore is not accessed in Python but we need it to execute the tool
+        tool._filestore_keys = storage.get("0")
+        return tool
+    
+    def write(self, file_store_creator, value):
+        # we don't create filestores here. The encode method takes care of passing the filestore keys along
         import json
 
         if value is None:
@@ -81,8 +87,15 @@ class WorkflowToolValueFactory(kt.PythonValueFactory):
             "0": value.name,
             "1": value.description,
             "2": json.dumps(value.parameter_schema),
-            "3": value.tool_bytes,
-            "4": [port._to_arrow_dict() for port in value.input_ports],
-            "5": [port._to_arrow_dict() for port in value.output_ports],
-            "6": value.message_output_port_index,
+            "3": [port._to_arrow_dict() for port in value.input_ports],
+            "4": [port._to_arrow_dict() for port in value.output_ports],
+            "5": value.message_output_port_index,
+        }
+        
+
+    def encode(self, value: WorkflowTool):
+        encoded = super().encode(value)
+        return {
+            "0": value._filestore_keys, # the filestore keys we read in the decode method
+            "1": encoded["1"],  # the rest of the encoded data
         }
