@@ -818,7 +818,7 @@ final class CloseablePythonNodeProxy
         loadValidatedSettings(settings);
 
         initTableManager();
-        var callback = new DefaultViewCallback(m_tableManager, new DefaultLogCallback(LOGGER));
+        var callback = new DefaultViewCallback(m_tableManager, new DefaultLogCallback(LOGGER), getFileStoreHandler());
 
         m_proxy.initializeJavaCallback(callback);
 

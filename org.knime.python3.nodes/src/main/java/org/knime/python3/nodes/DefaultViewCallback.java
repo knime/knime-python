@@ -50,7 +50,10 @@ package org.knime.python3.nodes;
 
 import java.io.IOException;
 
+import org.knime.core.data.filestore.FileStoreKey;
+import org.knime.core.data.filestore.internal.IFileStoreHandler;
 import org.knime.core.util.auth.CouldNotAuthorizeException;
+import org.knime.python3.PythonFileStoreUtils;
 import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.arrow.PythonArrowTableConverter;
 import org.knime.python3.nodes.callback.AuthCallbackUtils;
@@ -68,9 +71,13 @@ final class DefaultViewCallback implements PythonNodeViewProxy.ViewCallback {
 
     private final PythonArrowTableConverter m_tableManager;
 
-    DefaultViewCallback(final PythonArrowTableConverter tableManager, final LogCallback logCallback) {
+    private final IFileStoreHandler m_filestoreHandler;
+
+    DefaultViewCallback(final PythonArrowTableConverter tableManager, final LogCallback logCallback,
+        final IFileStoreHandler filestoreHandler) {
         m_tableManager = tableManager;
         m_logCallback = logCallback;
+        m_filestoreHandler = filestoreHandler;
     }
 
     @Override
@@ -94,6 +101,11 @@ final class DefaultViewCallback implements PythonNodeViewProxy.ViewCallback {
     public String get_auth_parameters(final String serializedXMLString) throws CouldNotAuthorizeException,
         ClassNotFoundException, InstantiationException, IllegalAccessException, IOException {
         return AuthCallbackUtils.getAuthParameters(serializedXMLString);
+    }
+
+    @Override
+    public String file_store_key_to_absolute_path(final String fileStoreKey) { // NOSONAR
+        return PythonFileStoreUtils.getAbsolutePathForKey(m_filestoreHandler, FileStoreKey.load(fileStoreKey));
     }
 
     @Override

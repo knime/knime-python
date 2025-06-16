@@ -53,6 +53,7 @@ import java.io.IOException;
 import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.nodes.LogCallback;
 import org.knime.python3.nodes.callback.AuthCallback;
+import org.knime.python3.nodes.callback.FilestoreCallback;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
 import org.knime.python3.nodes.ports.TableSpecSerializationUtils;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy.PythonBaseContext;
@@ -95,7 +96,7 @@ public interface PythonNodeViewProxy {
      *
      * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
      */
-    interface ViewCallback extends AuthCallback, LogCallback {
+    interface ViewCallback extends AuthCallback, LogCallback, FilestoreCallback {
 
         default public String get_preferred_value_types_as_json(final String tableSchemaJson) {
             return TableSpecSerializationUtils.getPreferredValueTypesForSerializedSchema(tableSchemaJson);
