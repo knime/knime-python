@@ -88,9 +88,12 @@ import org.knime.core.node.NodeLogger;
 public class PythonExtensionsPreferencePage extends PreferencePage implements IWorkbenchPreferencePage {
 
     private static final String INFO_TEXT = """
-            This preference page allows you to create a folder with all Conda and pip packages that are used by the \
-            installed Python-based extensions. This folder enables you to install the extensions on a system without \
-            internet access.""";
+            WARNING: This preference page is a legacy feature, only needed for offline installations of Python-based extensions that did not include the required packages in the extension itself. \
+            Extensions built for version 5.5.0 and newer do not require this step.\
+
+            This preference page allows you to create a folder containing all Conda and pip packages used by the installed Python-based extensions. \
+            This folder enables you to install the extensions on a system without internet access.\
+            """;
 
     private static final String LINK_TO_DOCS =
         "https://docs.knime.com/latest/pure_python_node_extensions_guide/index.html#_offline_installation";
