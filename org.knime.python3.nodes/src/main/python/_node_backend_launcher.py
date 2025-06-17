@@ -1351,7 +1351,7 @@ class _ToolExecutor:
         self._java_ctx = java_ctx
         self._type_registry = type_registry
 
-    def execute_tool(self, tool, parameters: dict, inputs: List, debug: bool = False):
+    def execute_tool(self, tool, parameters: dict, inputs: List, execution_hints: dict):
         """
         Execute a KNIME workflow tool.
 
@@ -1362,6 +1362,7 @@ class _ToolExecutor:
         parameters : dict
             The parameters to pass to the workflow tool.
         inputs: list of port object inputs for the tool. Only tables are supported, yet.
+        execution_hints: optional hints controlling the tool execution - doesn't need to be respected by the implementation
 
         Returns
         -------
@@ -1379,7 +1380,7 @@ class _ToolExecutor:
         parameter_json = json.dumps(parameters)
 
         result = self._java_ctx.execute_tool(
-            tool_table, parameter_json, prepared_inputs, debug
+            tool_table, parameter_json, prepared_inputs, execution_hints
         )
         outputs = result.outputs()
         if outputs is None:
