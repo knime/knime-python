@@ -534,7 +534,7 @@ final class CloseablePythonNodeProxy
 
             @Override
             public PythonToolResult execute_tool(final PurePythonTablePortObject toolTable, final String parameters,
-                final List<PythonPortObject> inputs, final List<String> executionHints) {
+                final List<PythonPortObject> inputs, final Map<String, String> executionHints) {
                 return m_toolExecutor.executeTool(toolTable, parameters, inputs, executionHints);
             }
 
