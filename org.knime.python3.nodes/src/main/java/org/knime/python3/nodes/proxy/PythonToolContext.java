@@ -49,6 +49,7 @@
 package org.knime.python3.nodes.proxy;
 
 import java.util.List;
+import java.util.Map;
 
 import org.knime.python3.nodes.ports.PythonPortObjects.PurePythonTablePortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
@@ -80,6 +81,6 @@ public interface PythonToolContext {
      * @return the result of the tool execution
      */
     PythonToolResult execute_tool(PurePythonTablePortObject toolTable, String parameters,
-        List<PythonPortObject> inputs, List<String> executionHints);
+        List<PythonPortObject> inputs, Map<String, String> executionHints);
 
 }

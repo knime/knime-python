@@ -87,7 +87,7 @@ final class ToolExecutor {
     }
 
     PythonToolResult executeTool(final PurePythonTablePortObject pythonToolTable, final String parameters,
-        final List<PythonPortObject> inputs, final List<String> executionHints) {
+        final List<PythonPortObject> inputs, final Map<String, String> executionHints) {
         // TODO AP-24410: Properly register output file stores
         Map<String, FileStore> dummyFileStoreMap = Map.of();
         var conversionContext = new PortObjectConversionContext(dummyFileStoreMap, m_tableManager, m_exec);
@@ -102,7 +102,7 @@ final class ToolExecutor {
 
         NodeContext.pushContext(m_nodeContainer);
         try {
-            var result = tool.execute(parameters, inputPortObjects, m_exec, executionHints.toArray(String[]::new));
+            var result = tool.execute(parameters, inputPortObjects, m_exec, executionHints);
             var outputs = result.outputs();
             if (outputs == null) {
                 return new PythonToolResult(result.message(), null);
