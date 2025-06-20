@@ -1,0 +1,4 @@
+\!/=
+/instance/org.knime.python3.scripting.nodes/bundledCondaEnvPath=org_knime_pythonscripting
+/instance/org.knime.python3.scripting.nodes/pythonEnvironmentType=bundled
+/instance/org.knime.core.data.columnar/knime.core.data.columnar.off-heap-limit=1024
