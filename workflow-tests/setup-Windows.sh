@@ -5,8 +5,15 @@ if [[ -n $KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT ]]; then
 	prefPath="${WORKSPACE}/workflow-tests/preferences-Windows.epf"
 
 	if [[ $KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT = "bundled" ]]; then
-		envPath="${WORKSPACE}\\\\knime test.app\\\\bundling\\\\envs\\\\org_knime_pythonscripting"
-		echo "Using bundled environment at ${envPath}"
+		# Find the versioned bundled env directory
+		bundled_dir=("${WORKSPACE}\\knime test.app\\bundling\\org_knime_pythonscripting_channel_bin_"*)
+		if [ -d "${bundled_dir[0]}" ]; then
+			envPath="${bundled_dir[0]}"
+			echo "Using bundled environment at ${envPath}"
+		else
+			echo "Bundled environment not found!" >&2
+			exit 1
+		fi
 	else
 		envPath="${WORKSPACE}\\\\python_test_environment"
 		echo "Creating Conda environment for: ${KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT} at ${envPath}"
