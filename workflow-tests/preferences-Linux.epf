@@ -1,7 +1,7 @@
 @org.knime.workbench.core=2.10.0.0043156
 \!/=
 file_export_version=3.0
-/instance/org.knime.python2/pythonEnvironmentType=conda
-/instance/org.knime.python2/condaDirectoryPath=/home/jenkins/miniconda3
-/instance/org.knime.python2/python3CondaEnvironmentDirectoryPath=<placeholder_for_env_path>
+/instance/org.knime.conda/condaDirectoryPath=/home/jenkins/miniconda3
+/instance/org.knime.python3.scripting.nodes/pythonEnvironmentType=conda
+/instance/org.knime.python3.scripting.nodes/python3CondaEnvironmentDirectoryPath=<placeholder_for_env_path>
 /instance/org.knime.core.data.columnar/knime.core.data.columnar.off-heap-limit=1024
