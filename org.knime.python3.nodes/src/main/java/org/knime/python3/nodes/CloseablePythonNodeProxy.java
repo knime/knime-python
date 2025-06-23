@@ -136,6 +136,8 @@ final class CloseablePythonNodeProxy
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(CloseablePythonNodeProxy.class);
 
+    private IFileStoreHandler m_fileStoreHandler;
+
     private final PythonNodeProxy m_proxy;
 
     private final CloseableGatewayWithAttachments m_closeableGateway;
@@ -197,6 +199,7 @@ final class CloseablePythonNodeProxy
     @Override
     public void close() {
         m_closer.close();
+        m_fileStoreHandler = null;
     }
 
     @Override
@@ -724,7 +727,7 @@ final class CloseablePythonNodeProxy
             .toArray(PortObjectSpec[]::new);
     }
 
-    private static IWriteFileStoreHandler getWriteFileStoreHandler() {
+    private IWriteFileStoreHandler getWriteFileStoreHandler() {
         final IFileStoreHandler nodeFsHandler = getFileStoreHandler();
         if (nodeFsHandler instanceof IWriteFileStoreHandler writeFsHandler) {
             return writeFsHandler;
@@ -734,19 +737,25 @@ final class CloseablePythonNodeProxy
         }
     }
 
-    private static IFileStoreHandler getFileStoreHandler() {
-        if (NodeContext.getContextOptional().map(NodeContext::getNodeContainer)
-            .orElse(null) instanceof NativeNodeContainer nnc) {
-            if (nnc.getNodeContainerState().isExecuted()) {
-                // we don't want to permanently keep the file stores for an already executed node
-                // because those are guaranteed to not be used anymore downstream
-                return new NotInWorkflowWriteFileStoreHandler(UUID.randomUUID());
+    private IFileStoreHandler getFileStoreHandler() {
+        if (m_fileStoreHandler == null) {
+            if (NodeContext.getContextOptional().map(NodeContext::getNodeContainer)
+                .orElse(null) instanceof NativeNodeContainer nnc) {
+                if (nnc.getNodeContainerState().isExecuted()) {
+                    // The “Agent Chat View” node executes tools/workflow while it is already executed.
+                    // The result data of these tool calls are ignored (not part of the data).
+                    // There is a pending discussion on how that node should behave
+                    // (interacting with it while it is executing vs. executed), which is part of AP-24554.
+                    m_fileStoreHandler = new NotInWorkflowWriteFileStoreHandler(UUID.randomUUID());
+                } else {
+                    m_fileStoreHandler = nnc.getNode().getFileStoreHandler();
+                }
             } else {
-                return nnc.getNode().getFileStoreHandler();
+                throw new IllegalStateException("A NodeContext should be available during execution of Python Nodes");
             }
-        } else {
-            throw new IllegalStateException("A NodeContext should be available during execution of Python Nodes");
         }
+        return m_fileStoreHandler;
+
     }
 
     @Override
