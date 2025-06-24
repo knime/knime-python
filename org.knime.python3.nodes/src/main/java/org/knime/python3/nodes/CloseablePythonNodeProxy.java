@@ -49,6 +49,7 @@
 package org.knime.python3.nodes;
 
 import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -64,10 +65,12 @@ import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
 import org.knime.core.columnar.arrow.ArrowColumnStoreFactory;
+import org.knime.core.data.IDataRepository;
 import org.knime.core.data.filestore.FileStore;
 import org.knime.core.data.filestore.FileStoreFactory;
 import org.knime.core.data.filestore.FileStoreKey;
 import org.knime.core.data.filestore.FileStoreUtil;
+import org.knime.core.data.filestore.internal.FileStoreProxy.FlushCallback;
 import org.knime.core.data.filestore.internal.IFileStoreHandler;
 import org.knime.core.data.filestore.internal.IWriteFileStoreHandler;
 import org.knime.core.data.filestore.internal.NotInWorkflowWriteFileStoreHandler;
@@ -199,10 +202,10 @@ final class CloseablePythonNodeProxy
     @Override
     public void close() {
         m_closer.close();
-        if (m_fileStoreHandler instanceof NotInWorkflowWriteFileStoreHandler) {
+        if (m_fileStoreHandler instanceof DelegatingAndNotInWorkflowWriteFileStoreHandler) {
             m_fileStoreHandler.clearAndDispose();
+            m_fileStoreHandler = null;
         }
-        m_fileStoreHandler = null;
     }
 
     @Override
@@ -744,21 +747,111 @@ final class CloseablePythonNodeProxy
         if (m_fileStoreHandler == null) {
             if (NodeContext.getContextOptional().map(NodeContext::getNodeContainer)
                 .orElse(null) instanceof NativeNodeContainer nnc) {
+                var fileStoreHandler = nnc.getNode().getFileStoreHandler();
                 if (nnc.getNodeContainerState().isExecuted()) {
                     // The “Agent Chat View” node executes tools/workflow while it is already executed.
                     // The result data of these tool calls are ignored (not part of the data).
                     // There is a pending discussion on how that node should behave
                     // (interacting with it while it is executing vs. executed), which is part of AP-24554.
                     // TODO AP-24555: let the python node explicitly define what file store handler to use?
-                    m_fileStoreHandler = NotInWorkflowWriteFileStoreHandler.create();
+                    m_fileStoreHandler = new DelegatingAndNotInWorkflowWriteFileStoreHandler(fileStoreHandler);
                 } else {
-                    m_fileStoreHandler = nnc.getNode().getFileStoreHandler();
+                    m_fileStoreHandler = fileStoreHandler;
                 }
             } else {
                 throw new IllegalStateException("A NodeContext should be available during execution of Python Nodes");
             }
         }
         return m_fileStoreHandler;
+
+    }
+
+    /**
+     * Delegates the <b>read</b> file-store operations to the passed one. All <b>write</b> operations are delegated to a
+     * {@link NotInWorkflowWriteFileStoreHandler}.
+     */
+    private static class DelegatingAndNotInWorkflowWriteFileStoreHandler implements IWriteFileStoreHandler {
+
+        private final IFileStoreHandler m_readFileStoreHandlerDelegate;
+
+        private final IWriteFileStoreHandler m_writeFileStoreHandlerDelegate;
+
+        DelegatingAndNotInWorkflowWriteFileStoreHandler(final IFileStoreHandler readFileStoreHandlerDelegate) {
+            m_readFileStoreHandlerDelegate = readFileStoreHandlerDelegate;
+            m_writeFileStoreHandlerDelegate = new NotInWorkflowWriteFileStoreHandler(UUID.randomUUID(),
+                readFileStoreHandlerDelegate.getDataRepository());
+        }
+
+        @Override
+        public IDataRepository getDataRepository() {
+            return m_readFileStoreHandlerDelegate.getDataRepository();
+        }
+
+        @Override
+        public void clearAndDispose() {
+            m_writeFileStoreHandlerDelegate.clearAndDispose();
+        }
+
+        @Override
+        public FileStore getFileStore(final FileStoreKey key) {
+            return m_readFileStoreHandlerDelegate.getFileStore(key);
+        }
+
+        @Override
+        public FileStore createFileStore(final String name) throws IOException {
+            return m_writeFileStoreHandlerDelegate.createFileStore(name);
+        }
+
+        @Override
+        public FileStore createFileStore(final String name, final int[] nestedLoopPath, final int iterationIndex)
+            throws IOException {
+            return m_writeFileStoreHandlerDelegate.createFileStore(name, nestedLoopPath, iterationIndex);
+        }
+
+        @Override
+        public void open(final ExecutionContext exec) {
+            m_writeFileStoreHandlerDelegate.open(exec);
+        }
+
+        @Override
+        public void addToRepository(final IDataRepository repository) {
+            m_writeFileStoreHandlerDelegate.addToRepository(repository);
+        }
+
+        @Override
+        public void close() {
+            m_writeFileStoreHandlerDelegate.close();
+        }
+
+        @Override
+        public void ensureOpenAfterLoad() throws IOException {
+            m_writeFileStoreHandlerDelegate.ensureOpenAfterLoad();
+        }
+
+        @Override
+        public FileStoreKey translateToLocal(final FileStore fs, final FlushCallback flushCallback) {
+            return m_writeFileStoreHandlerDelegate.translateToLocal(fs, flushCallback);
+        }
+
+        @Override
+        public boolean mustBeFlushedPriorSave(final FileStore fs) {
+            return m_writeFileStoreHandlerDelegate.mustBeFlushedPriorSave(fs);
+        }
+
+        @Override
+        public UUID getStoreUUID() {
+            return m_writeFileStoreHandlerDelegate.getStoreUUID();
+        }
+
+        @Override
+        public File getBaseDir() {
+            return m_writeFileStoreHandlerDelegate.getBaseDir();
+        }
+
+        @Override
+        public boolean isReference() {
+            return m_writeFileStoreHandlerDelegate.isReference();
+        }
 
     }
 
