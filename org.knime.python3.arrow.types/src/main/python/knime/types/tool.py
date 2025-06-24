@@ -57,6 +57,7 @@ class WorkflowToolValueFactory(kt.FileStorePythonValueFactory):
     def read(self, file_paths, table_data):
         # file_paths is not accessed because we only pass on the filestore keys
         import json
+
         param_schema_json = table_data["2"]
         param_schema = json.loads(param_schema_json) if param_schema_json else {}
 
@@ -68,7 +69,6 @@ class WorkflowToolValueFactory(kt.FileStorePythonValueFactory):
             input_ports=[ToolPort._from_arrow_dict(port) for port in table_data["3"]],
             output_ports=[ToolPort._from_arrow_dict(port) for port in table_data["4"]],
         )
-        
 
     def decode(self, storage):
         # calls the read method and constructs the Python readable part of the tool
@@ -76,7 +76,7 @@ class WorkflowToolValueFactory(kt.FileStorePythonValueFactory):
         # the filestore is not accessed in Python but we need it to execute the tool
         tool._filestore_keys = storage.get("0")
         return tool
-    
+
     def write(self, file_store_creator, value):
         # we don't create filestores here. The encode method takes care of passing the filestore keys along
         import json
@@ -91,11 +91,10 @@ class WorkflowToolValueFactory(kt.FileStorePythonValueFactory):
             "4": [port._to_arrow_dict() for port in value.output_ports],
             "5": value.message_output_port_index,
         }
-        
 
     def encode(self, value: WorkflowTool):
         encoded = super().encode(value)
         return {
-            "0": value._filestore_keys, # the filestore keys we read in the decode method
+            "0": value._filestore_keys,  # the filestore keys we read in the decode method
             "1": encoded["1"],  # the rest of the encoded data
         }
