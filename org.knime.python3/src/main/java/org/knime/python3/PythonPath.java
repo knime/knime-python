@@ -150,8 +150,8 @@ public final class PythonPath {
          */
         public PythonPathBuilder add(final Path path) {
             if (!m_paths.add(path.toAbsolutePath().toString())) {
-                LOGGER.coding(String.format("The path '%s' is already present.",
-                    path.toAbsolutePath()));
+                // TODO(AP-24563) check why we add paths multiple times. It shouldn't happen.
+                LOGGER.debug(String.format("The path '%s' is already present.", path.toAbsolutePath()));
             }
             return this;
         }
