@@ -50,17 +50,17 @@ import numpy as np
 import pandas as pd
 import pandas.api.extensions as pdext
 import pyarrow as pa
-from pandas.core.dtypes.dtypes import register_extension_dtype
-from pandas.api.types import is_object_dtype
 
-import knime._arrow._dictencoding as kasde
-import knime._arrow._types as katy
-import knime.api.types as kt
-import knime.api.schema as ks
-import logging
-
-LOGGER = logging.getLogger(__name__)
-
+def _register_extension_if_needed(ext_type: pa.ExtensionType):
+    """
+    Checks if the given extension type is already registered in PyArrow,
+    and registers it if not.
+    """
+    if ext_type.extension_name:
+        try:
+            _ = pa.get_extension_type(ext_type.extension_name)
+        except KeyError:
+            pa.register_extension_type(ext_type)
 
 def pandas_df_to_arrow(data_frame: pd.DataFrame, row_ids: str = "auto") -> pa.Table:
     """
@@ -392,30 +392,11 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
     ):
         """
         Construct a new ExtensionArray from a sequence of scalars.
-        Parameters. This is similar to the default docstring of extension arrays, except for the additional parameters:
-        storage_type, logical_type and converter, which are added by KNIME and only used internally.
-        ----------
-        scalars : Sequence
-            Each element will be an instance of the scalar type for this
-            array, ``cls.dtype.type``.
-        dtype : dtype, optional
-            Construct for this particular dtype. This should be a Dtype
-            compatible with the ExtensionArray.
-        copy : bool, default False
-            If True, copy the underlying data.
-        storage_type: pa.DataType,
-            Dtype in which the data is stored on disk.
-        logical_type: str,
-            Dtype that is used in KNIME
-        converter: any,
-            Valuefactory to decode and encode the datatype. For an example see :class: `LocalDateTimeValueFactory`
-        Returns
-        -------
-        ExtensionArray
         """
         if scalars is None:
             raise ValueError("Cannot create KnimePandasExtensionArray from empty data")
-            # easy case
+
+        # easy case
         if isinstance(scalars, pa.Array) or isinstance(scalars, pa.ChunkedArray):
             if isinstance(scalars.type, katy.LogicalTypeExtensionType):
                 return KnimePandasExtensionArray(
@@ -456,25 +437,22 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
                 "Can only create KnimePandasExtensionArray from a sequence if the storage type is given."
             )
 
-        arrow_type = katy.LogicalTypeExtensionType(
-            converter, storage_type, logical_type
-        )
+        arrow_type = katy.LogicalTypeExtensionType(converter, storage_type, logical_type)
+
         if converter and type(converter) != type(kt.get_converter(logical_type)):
-            # If we slice a Pandas series based on a ProxyExtensionType, we should return
-            # the appropriate type as well:
-            proxy_value_factories = [
-                v[1] for v in kt._python_proxy_type_to_factory_info.values()
-            ]
+            proxy_value_factories = [v[1] for v in kt._python_proxy_type_to_factory_info.values()]
             converter_name = type(converter).__qualname__
             if converter_name not in proxy_value_factories:
                 raise TypeError(
                     f"""
-                    The given configuration is not a valid ProxyExtensionType, converter {converter} was not 
+                    The given configuration is not a valid ProxyExtensionType, converter {converter} was not
                     found in list of registered proxy converters: {proxy_value_factories}
                     """
                 )
-
             arrow_type = katy.ProxyExtensionType(converter, storage_type, logical_type)
+
+        # Register the extension type if needed, before creating the ExtensionArray:
+        _register_extension_if_needed(arrow_type)
 
         storage_array = pa.array(scalars, type=storage_type)
         extension_array = pa.ExtensionArray.from_storage(arrow_type, storage_array)

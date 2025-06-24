@@ -544,6 +544,10 @@ class LogicalTypeExtensionType(pa.ExtensionType):
         storage_type_string = extract_string_from_pa_dtype(self.storage_type)
         return f"extension<knime.logical_type<{storage_type_string}, {self._logical_type}>>"
 
+    @property
+    def extension_name(self) -> str:
+        return "knime.logical_type"
+
 
 class ProxyExtensionType(LogicalTypeExtensionType):
     """
@@ -589,6 +593,10 @@ class ProxyExtensionType(LogicalTypeExtensionType):
             + self._converter.compatible_type.__qualname__
         )
         return f"extension<knime.proxy_type<{storage_type}, {self._logical_type}, {converter_string}>>"
+
+    @property
+    def extension_name(self) -> str:
+        return "knime.proxy_type"
 
 
 # Register our extension type with
@@ -678,6 +686,10 @@ class StructDictEncodedLogicalTypeExtensionType(pa.ExtensionType):
 
     def __str__(self):
         return f"extension<knime.struct_dict_encoded_logical_type<{self.storage_type}, {self.value_factory_type}>>"
+
+    @property
+    def extension_name(self) -> str:
+        return "knime.struct_dictencoded_logical_type"
 
 
 pa.register_extension_type(
