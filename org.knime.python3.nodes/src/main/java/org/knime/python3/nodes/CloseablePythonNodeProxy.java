@@ -199,6 +199,9 @@ final class CloseablePythonNodeProxy
     @Override
     public void close() {
         m_closer.close();
+        if (m_fileStoreHandler instanceof NotInWorkflowWriteFileStoreHandler) {
+            m_fileStoreHandler.clearAndDispose();
+        }
         m_fileStoreHandler = null;
     }
 
@@ -737,7 +740,7 @@ final class CloseablePythonNodeProxy
         }
     }
 
-    private IFileStoreHandler getFileStoreHandler() {
+    private synchronized IFileStoreHandler getFileStoreHandler() {
         if (m_fileStoreHandler == null) {
             if (NodeContext.getContextOptional().map(NodeContext::getNodeContainer)
                 .orElse(null) instanceof NativeNodeContainer nnc) {
@@ -746,7 +749,8 @@ final class CloseablePythonNodeProxy
                     // The result data of these tool calls are ignored (not part of the data).
                     // There is a pending discussion on how that node should behave
                     // (interacting with it while it is executing vs. executed), which is part of AP-24554.
-                    m_fileStoreHandler = new NotInWorkflowWriteFileStoreHandler(UUID.randomUUID());
+                    // TODO AP-24555: let the python node explicitly define what file store handler to use?
+                    m_fileStoreHandler = NotInWorkflowWriteFileStoreHandler.create();
                 } else {
                     m_fileStoreHandler = nnc.getNode().getFileStoreHandler();
                 }
