@@ -105,13 +105,13 @@ final class ToolExecutor {
             var result = tool.execute(parameters, inputPortObjects, m_exec, executionHints);
             var outputs = result.outputs();
             if (outputs == null) {
-                return new PythonToolResult(result.message(), null);
+                return new PythonToolResult(result.message(), null, result.viewNodeIds());
             }
             var pyOutputs = Stream.of(result.outputs())//
                 .map(po -> PythonPortTypeRegistry.convertPortObjectToPython(po, conversionContext))//
                 .toArray(PythonPortObject[]::new);
 
-            return new PythonToolResult(result.message(), pyOutputs);
+            return new PythonToolResult(result.message(), pyOutputs, result.viewNodeIds());
         } finally {
             NodeContext.removeLastContext();
         }
