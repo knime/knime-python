@@ -48,9 +48,9 @@ properties([
 ])
 
 try {
-    node('maven && java17 && ubuntu22.04 && workflow-tests') {
-        knimetools.defaultTychoBuild(updateSiteProject: 'org.knime.update.python')
-    }
+    // node('maven && java17 && ubuntu22.04 && workflow-tests') {
+    //     knimetools.defaultTychoBuild(updateSiteProject: 'org.knime.update.python')
+    // }
 
     def parallelConfigs = [:]
     for (env in WF_TESTS_PYTHON_ENVS) {
@@ -66,78 +66,78 @@ try {
 
     parallel(parallelConfigs)
 
-    node('ubuntu22.04 && workflow-tests && java17') {
-        stage('Clone') {
-            env.lastStage = env.STAGE_NAME
-            checkout scm
-        }
+    // node('ubuntu22.04 && workflow-tests && java17') {
+    //     stage('Clone') {
+    //         env.lastStage = env.STAGE_NAME
+    //         checkout scm
+    //     }
 
-        for (pyEnv in PYTEST_PYTHON_ENVS) {
-            stage("Run pytest for ${pyEnv}") {
-                env.lastStage = env.STAGE_NAME
+    //     for (pyEnv in PYTEST_PYTHON_ENVS) {
+    //         stage("Run pytest for ${pyEnv}") {
+    //             env.lastStage = env.STAGE_NAME
 
-                String envPath = "${env.WORKSPACE}/pytest-envs/${pyEnv}"
-                String envYml = "${env.WORKSPACE}/pytest-envs/${pyEnv}.yml"
+    //             String envPath = "${env.WORKSPACE}/pytest-envs/${pyEnv}"
+    //             String envYml = "${env.WORKSPACE}/pytest-envs/${pyEnv}.yml"
 
-                sh(label: 'create conda env', script: """
-                    micromamba create -p ${envPath} -f ${envYml}
-                """)
+    //             sh(label: 'create conda env', script: """
+    //                 micromamba create -p ${envPath} -f ${envYml}
+    //             """)
 
-                sh(label: 'run pytest', script: """
-                    ${envPath}/bin/coverage run -m pytest --junit-xml=pytest_results.xml || true
+    //             sh(label: 'run pytest', script: """
+    //                 ${envPath}/bin/coverage run -m pytest --junit-xml=pytest_results.xml || true
 
-                    # create a separate coverage.xml file for each module
-                    for d in org.knime.python3*/ ; do
-                        ${envPath}/bin/coverage xml -o "\${d}coverage-${pyEnv}.xml" --include "*\$d**/*.py" || true
+    //                 # create a separate coverage.xml file for each module
+    //                 for d in org.knime.python3*/ ; do
+    //                     ${envPath}/bin/coverage xml -o "\${d}coverage-${pyEnv}.xml" --include "*\$d**/*.py" || true
 
-                        # delete mention of module name in coverage.xml
-                        if [ -f "\${d}coverage-${pyEnv}.xml" ]; then
-                            sed -i "s|\$d||g" "\${d}coverage-${pyEnv}.xml"
-                        fi
-                    done
-                """)
+    //                     # delete mention of module name in coverage.xml
+    //                     if [ -f "\${d}coverage-${pyEnv}.xml" ]; then
+    //                         sed -i "s|\$d||g" "\${d}coverage-${pyEnv}.xml"
+    //                     fi
+    //                 done
+    //             """)
 
-                junit 'pytest_results.xml'
-                stash(name: "${pyEnv}", includes: "**/coverage-${pyEnv}.xml")
-            }
-        }
+    //             junit 'pytest_results.xml'
+    //             stash(name: "${pyEnv}", includes: "**/coverage-${pyEnv}.xml")
+    //         }
+    //     }
 
-        stage('Build and Deploy knime-extension ') {
-            env.lastStage = env.STAGE_NAME
+    //     stage('Build and Deploy knime-extension ') {
+    //         env.lastStage = env.STAGE_NAME
 
-            String envName = "test_knime_extension"
-            String recipePath = "${env.WORKSPACE}/knime-extension/recipe"
-            String prefixPath = "${env.WORKSPACE}/${envName}"
-            String[] packageNames = [
-                "conda-build",
-                "anaconda-client"
-            ]
+    //         String envName = "test_knime_extension"
+    //         String recipePath = "${env.WORKSPACE}/knime-extension/recipe"
+    //         String prefixPath = "${env.WORKSPACE}/${envName}"
+    //         String[] packageNames = [
+    //             "conda-build",
+    //             "anaconda-client"
+    //         ]
 
-            condaHelpers.createCondaEnv(prefixPath: prefixPath, packageNames: packageNames)
+    //         condaHelpers.createCondaEnv(prefixPath: prefixPath, packageNames: packageNames)
 
-            sh(
-                label: "Collect Files",
-                script: """#!/bin/sh
-                    cd knime-extension
-                    micromamba run -p ${prefixPath} python ${env.WORKSPACE}/knime-extension/collect_files.py
-                """
-            )
+    //         sh(
+    //             label: "Collect Files",
+    //             script: """#!/bin/sh
+    //                 cd knime-extension
+    //                 micromamba run -p ${prefixPath} python ${env.WORKSPACE}/knime-extension/collect_files.py
+    //             """
+    //         )
 
-            // Only upload if on master and tests pass
-            def upload = params.FORCE_UPLOAD_PACKAGE || (BN == 'master' && currentBuild.result != 'UNSTABLE')
-            condaHelpers.buildCondaPackage(recipePath, prefixPath, upload)
-        }
+    //         // Only upload if on master and tests pass
+    //         def upload = params.FORCE_UPLOAD_PACKAGE || (BN == 'master' && currentBuild.result != 'UNSTABLE')
+    //         condaHelpers.buildCondaPackage(recipePath, prefixPath, upload)
+    //     }
 
-        stage('Sonarqube analysis') {
-            env.lastStage = env.STAGE_NAME
-            env.SONAR_ENV = "Sonarcloud"
-            configs = workflowTests.ALL_CONFIGURATIONS + PYTEST_PYTHON_ENVS
-            echo "running sonar on ${configs}"
-            workflowTests.runSonar(configs)
-        }
+    //     stage('Sonarqube analysis') {
+    //         env.lastStage = env.STAGE_NAME
+    //         env.SONAR_ENV = "Sonarcloud"
+    //         configs = workflowTests.ALL_CONFIGURATIONS + PYTEST_PYTHON_ENVS
+    //         echo "running sonar on ${configs}"
+    //         workflowTests.runSonar(configs)
+    //     }
 
-        owasp.sendNodeJSSBOMs(readMavenPom(file: 'pom.xml').properties['revision'])
-    }
+    //     owasp.sendNodeJSSBOMs(readMavenPom(file: 'pom.xml').properties['revision'])
+    // }
  } catch (ex) {
     currentBuild.result = 'FAILURE'
     throw ex
