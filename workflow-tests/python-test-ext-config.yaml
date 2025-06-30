@@ -1,0 +1,3 @@
+org.knime.python3.nodes.testing:
+  conda_env_path: <placeholder_for_env_path>
+  debug_mode: false

@@ -1,4 +1,4 @@
-name: python_test_environment
+name: env_py11kn55
 channels:
   - conda-forge
   - knime/label/nightly
