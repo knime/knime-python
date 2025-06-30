@@ -1,4 +1,4 @@
-name: python_test_environment
+name: env_py38_legacy
 channels:
   - conda-forge
   - knime

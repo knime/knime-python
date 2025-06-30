@@ -1,4 +1,4 @@
-name: python_test_environment
+name: env_py36_pa5
 channels:
   - conda-forge
   - knime

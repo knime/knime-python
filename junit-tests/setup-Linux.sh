@@ -2,7 +2,7 @@
 
 # Create the Python environment for JUnit tests
 envYml="${WORKSPACE}/junit-tests/env_py39.yml"
-envPath="${WORKSPACE}/python_test_environment"
+envPath="${WORKSPACE}/env_py39"
 echo "Creating Conda environment for: ${envYml} at ${envPath}"
 
 micromamba create \

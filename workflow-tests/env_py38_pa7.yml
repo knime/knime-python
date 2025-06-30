@@ -1,4 +1,4 @@
-name: python_test_environment
+name: env_py38_pa7
 channels:
   - conda-forge
   - knime
@@ -10,3 +10,4 @@ dependencies:
   - nbformat # Jupyter nodebook loading
   - ipython # Jupyter nodebook loading
   - matplotlib # Used in default script
+  - markdown # For Python-based node descriptions
