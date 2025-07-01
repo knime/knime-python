@@ -1396,7 +1396,7 @@ class _ToolExecutor:
             for output in outputs
         ]
 
-        return result.message(), outputs
+        return result.message(), outputs, result.viewNodeIds()
 
     def _wrap_tool_in_table(self, tool):
         import pandas as pd

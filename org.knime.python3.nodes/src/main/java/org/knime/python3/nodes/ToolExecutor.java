@@ -48,6 +48,8 @@
  */
 package org.knime.python3.nodes;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -56,9 +58,12 @@ import org.knime.core.data.filestore.FileStore;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.agentic.tool.ToolValue;
+import org.knime.core.node.agentic.tool.ToolValue.ToolResult;
+import org.knime.core.node.agentic.tool.WorkflowToolValue.WorkflowToolResult;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.workflow.NodeContainer;
 import org.knime.core.node.workflow.NodeContext;
+import org.knime.gateway.impl.project.VirtualWorkflowProjects;
 import org.knime.python3.arrow.PythonArrowTableConverter;
 import org.knime.python3.nodes.ports.PythonPortObjects.PurePythonTablePortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
@@ -71,23 +76,29 @@ import org.knime.python3.nodes.proxy.PythonToolContext.PythonToolResult;
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-final class ToolExecutor {
+final class ToolExecutor implements AutoCloseable {
 
     private final ExecutionContext m_exec;
 
-    private final NodeContainer m_nodeContainer;
+    private NodeContainer m_nodeContainer;
 
     private final PythonArrowTableConverter m_tableManager;
+
+    private Collection<Runnable> m_onCloseRunnables;
 
     ToolExecutor(final ExecutionContext exec, final NodeContainer nodeContainer,
         final PythonArrowTableConverter tableManager) {
         m_exec = exec;
         m_nodeContainer = nodeContainer;
         m_tableManager = tableManager;
+        m_onCloseRunnables = new ArrayList<>();
     }
 
     PythonToolResult executeTool(final PurePythonTablePortObject pythonToolTable, final String parameters,
         final List<PythonPortObject> inputs, final Map<String, String> executionHints) {
+        if (m_nodeContainer == null) {
+            throw new IllegalStateException("ToolExecutor has already been closed");
+        }
         // TODO AP-24410: Properly register output file stores
         Map<String, FileStore> dummyFileStoreMap = Map.of();
         var conversionContext = new PortObjectConversionContext(dummyFileStoreMap, m_tableManager, m_exec);
@@ -103,20 +114,49 @@ final class ToolExecutor {
         NodeContext.pushContext(m_nodeContainer);
         try {
             var result = tool.execute(parameters, inputPortObjects, m_exec, executionHints);
+            var viewNodeIds = getViewNodeIdsAndRegisterVirtualProject(result);
             var outputs = result.outputs();
             if (outputs == null) {
-                return new PythonToolResult(result.message(), null);
+                return new PythonToolResult(result.message(), null, viewNodeIds);
             }
             var pyOutputs = Stream.of(result.outputs())//
                 .map(po -> PythonPortTypeRegistry.convertPortObjectToPython(po, conversionContext))//
                 .toArray(PythonPortObject[]::new);
 
-            return new PythonToolResult(result.message(), pyOutputs);
+            return new PythonToolResult(result.message(), pyOutputs, viewNodeIds);
         } finally {
             NodeContext.removeLastContext();
         }
     }
 
+    /**
+     * Extracts the view-node-ids from the tool-result (if available) and makes the 'virtual project' used for the
+     * tool-execution with 'gateway' to make it accessible by Agent Chat View frontend. And also makes sure the 'virtual
+     * project' is disposed when not needed anymore.
+     *
+     * @param viewNodeIds
+     * @return view-node-ids in a special format as consumed by the Agent Chat View frontend
+     */
+    private String[] getViewNodeIdsAndRegisterVirtualProject(final ToolResult toolResult) {
+        if (toolResult instanceof WorkflowToolResult workflowToolResult) {
+            var virtualProject = workflowToolResult.virtualProject();
+            var viewNodeIds = workflowToolResult.viewNodeIds();
+            if (virtualProject != null && viewNodeIds != null && viewNodeIds.length > 0) {
+                var projectId = VirtualWorkflowProjects.registerProject(virtualProject);
+                for (int i = 0; i < viewNodeIds.length; i++) {
+                    viewNodeIds[i] = projectId + "#" + viewNodeIds[i];
+                }
+                m_onCloseRunnables.add(() -> VirtualWorkflowProjects.removeProject(projectId));
+                return viewNodeIds;
+            } else if (viewNodeIds != null && viewNodeIds.length > 0) {
+                for (int i = 0; i < viewNodeIds.length; i++) {
+                    viewNodeIds[i] = "not-a-virtual-project#" + viewNodeIds[i];
+                }
+                return viewNodeIds;
+            }
+        }
+        return new String[0];
+    }
 
     private static ToolValue getTool(final BufferedDataTable toolTable) {
         try (var iterator = toolTable.iterator()) {
@@ -126,6 +166,13 @@ final class ToolExecutor {
             var row = iterator.next();
             return (ToolValue)row.getCell(0);
         }
+    }
+
+    @Override
+    public void close() throws Exception {
+        m_nodeContainer = null;
+        m_onCloseRunnables.forEach(Runnable::run);
+        m_onCloseRunnables.clear();
     }
 
 }

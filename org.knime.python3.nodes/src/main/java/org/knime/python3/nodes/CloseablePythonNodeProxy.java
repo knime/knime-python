@@ -937,6 +937,11 @@ final class CloseablePythonNodeProxy
             public String handleJsonRpcRequest(final String request) {
                 return pythonDataService.handleJsonRpcRequest(request);
             }
+
+            @Override
+            public void close() throws Exception {
+                toolExecutor.close();
+            }
         };
     }
 

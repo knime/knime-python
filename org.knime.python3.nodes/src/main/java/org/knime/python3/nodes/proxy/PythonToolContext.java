@@ -67,8 +67,9 @@ public interface PythonToolContext {
      * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
      * @param message of the tool execution
      * @param outputs of the tool execution
+     * @param viewNodeIds ids of nodes with views to be displayed after the tool execution
      */
-    record PythonToolResult(String message, PythonPortObject[] outputs) {
+    record PythonToolResult(String message, PythonPortObject[] outputs, String[] viewNodeIds) {
     }
 
     /**
