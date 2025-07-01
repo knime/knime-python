@@ -20,9 +20,11 @@ if [[ -n $KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT ]]; then
 		sedi "s|<placeholder_for_env_path>|${envPath//\\/\\\\\\\\}|g" "${prefPath}"
 		cat "${prefPath}"
 
-		# Configure Python extension environment for testing extension
-		ext_config="${WORKSPACE}/workflow-tests/python-test-ext-config.yaml"
-		sedi "s|<placeholder_for_env_path>|${envPath}|g" "${ext_config}"
-		echo "-Dknime.python.extension.config=${ext_config}" >> "${WORKSPACE}/workflow-tests/vmargs"
+		# Configure environment for Python-based nodes testing extension (py36 is not supported)
+		if [[ $KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT != env_py36* ]]; then
+			ext_config="${WORKSPACE}/workflow-tests/python-test-ext-config.yaml"
+			sedi "s|<placeholder_for_env_path>|${envPath}|g" "${ext_config}"
+			echo "-Dknime.python.extension.config=${ext_config}" >> "${WORKSPACE}/workflow-tests/vmargs"
+		fi
 	fi
 fi
