@@ -240,16 +240,16 @@ class KnimeType(unittest.TestCase):
 class KnimeTypeInDict(unittest.TestCase):
     def test_knime_types_are_hashable(self):
         d = {
-            k.int32(): "Number (integer)",
-            k.int64(): "Number (long)",
-            k.double(): "Number (double)",
+            k.int32(): "Number (Integer)",
+            k.int64(): "Number (Long Integer)",
+            k.double(): "Number (Float)",
             k.string(): "String",
             k.string(k.DictEncodingKeyType.BYTE): "String[dict_encoding=BYTE_KEY]",
-            k.bool_(): "Boolean value",
+            k.bool_(): "Boolean",
             k.blob(): "blob",
             k.null(): "null",
-            k.list_(k.int32()): "List (Collection of: Number (integer))",
-            k.struct(k.int32(), k.string()): "struct<Number (integer), String>",
+            k.list_(k.int32()): "List (Collection of: Number (Integer))",
+            k.struct(k.int32(), k.string()): "struct<Number (Integer), String>",
         }
 
         for key, v in d.items():
@@ -531,14 +531,15 @@ class SchemaTest(unittest.TestCase):
         ]
         names = ["Ints", "Longs", "Doubles", "Strings", "List", "Struct"]
         s = k.Schema(types, names)
-        self.assertEqual("Number (integer)", str(k.int32()))
-        self.assertEqual("Number (long)", str(k.int64()))
+        self.assertEqual("Number (Integer)", str(k.int32()))
+        self.assertEqual("Number (Long Integer)", str(k.int64()))
         self.assertEqual("String", str(k.string()))
-        self.assertEqual("Number (double)", str(k.double()))
-        self.assertEqual("Boolean value", str(k.bool_()))
-        self.assertEqual("List (Collection of: Boolean value)", str(k.list_(k.bool_())))
+        self.assertEqual("Number (Float)", str(k.double()))
+        self.assertEqual("Boolean", str(k.bool_()))
+        self.assertEqual("List (Collection of: Boolean)", str(k.list_(k.bool_())))
         self.assertEqual(
-            "struct<Number (long), String>", str(k.struct(k.int64(), k.string()))
+            "struct<Number (Long Integer), String>",
+            str(k.struct(k.int64(), k.string())),
         )
 
         sep = ",\n\t"
