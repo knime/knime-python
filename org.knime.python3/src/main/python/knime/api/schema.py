@@ -89,11 +89,11 @@ class PrimitiveTypeId(Enum):
     Primitive data types known to KNIME
     """
 
-    INT = "Number (integer)"  # int32
-    LONG = "Number (long)"  # int64
+    INT = "Number (Integer)"  # int32
+    LONG = "Number (Long Integer)"  # int64
     STRING = "String"  # string
-    DOUBLE = "Number (double)"  # double
-    BOOL = "Boolean value"  # bool
+    DOUBLE = "Number (Float)"  # double
+    BOOL = "Boolean"  # bool
     BLOB = "blob"
     NULL = "null"
 
