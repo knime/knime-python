@@ -5,3 +5,4 @@ dist
 .vscode
 CHANGELOG.md
 target
+eslint-suppressions.json
