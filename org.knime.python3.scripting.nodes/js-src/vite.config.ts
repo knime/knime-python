@@ -9,7 +9,7 @@ import monacoEditorPlugin, {
 } from "vite-plugin-monaco-editor";
 import svgLoader from "vite-svg-loader";
 
-// @ts-ignore
+// @ts-expect-error svgo.config is not typed
 import { svgoConfig } from "@knime/styles/config/svgo.config";
 
 // Hack because default export of vite-plugin-monaco-editor is wrong (and does not fit types)

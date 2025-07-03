@@ -11,10 +11,7 @@ const workspaceStore = useWorkspaceStore();
 interface Props {
   columnWidths: ColumnSizes;
 }
-
-const props = withDefaults(defineProps<Props>(), {
-  columnWidths: () => [100, 100, 100],
-});
+const props = defineProps<Props>();
 
 const totalWidth = computed(() =>
   props.columnWidths.reduce((a, c) => a + c, 0),

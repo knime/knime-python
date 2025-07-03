@@ -81,7 +81,7 @@ describe("App.vue", () => {
             template: '<div><slot name="right-pane" /></div>',
           },
         }
-      : ({} as {});
+      : ({} as object);
 
     const wrapper = mount(App, {
       global: {

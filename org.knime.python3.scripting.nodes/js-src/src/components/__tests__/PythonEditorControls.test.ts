@@ -39,7 +39,7 @@ describe("PythonEditorControls", () => {
 
   const setValidEditorSelection = async () => {
     // simulate valid selection for run selected lines button
-    // @ts-ignore (selection is not readonly in the test)
+    // @ts-expect-error selection is not readonly in the test
     editor.useMainCodeEditorStore().value!.selection.value =
       "this is a valid, non-empty selection";
     await nextTick();
@@ -47,7 +47,7 @@ describe("PythonEditorControls", () => {
 
   const clearEditorSelection = async () => {
     // simulate valid selection for run selected lines button
-    // @ts-ignore (selection is not readonly in the test)
+    // @ts-expect-error selection is not readonly in the test
     editor.useMainCodeEditorStore().value!.selection.value = "";
     await nextTick();
   };
