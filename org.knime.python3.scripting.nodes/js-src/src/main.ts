@@ -1,14 +1,13 @@
 import "@/__mocks__/browser-mock-services";
 
 import { createApp } from "vue";
-import { BrowserReporter, Consola, LogLevel } from "consola";
+import { Consola, LogLevels } from "consola";
 
 import App from "@/components/App.vue";
 
 const setupConsola = () => {
   const consola = new Consola({
-    level: import.meta.env.DEV ? LogLevel.Trace : LogLevel.Error,
-    reporters: [new BrowserReporter()],
+    level: import.meta.env.DEV ? LogLevels.trace : LogLevels.error,
   });
   const globalObject = typeof global === "object" ? global : window;
 
