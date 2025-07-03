@@ -84,7 +84,7 @@ const resizeColumns = (delta: number) => {
       // not enough space
       // set to minimum
       columnSizes[1] = MIN_COLUMN_SIZE;
-      let difference =
+      const difference =
         props.containerWidth - (MIN_COLUMN_SIZE - delta + columnSizes[2]);
       columnSizes[0] = Math.max(difference, MIN_COLUMN_SIZE);
       columnSizes[2] = props.containerWidth - columnSizes[0] - columnSizes[1];
@@ -102,7 +102,7 @@ const resizeColumns = (delta: number) => {
     } else {
       // set to minimum
       columnSizes[1] = MIN_COLUMN_SIZE;
-      let difference =
+      const difference =
         props.containerWidth - (MIN_COLUMN_SIZE + delta + columnSizes[0]);
       columnSizes[2] = Math.max(difference, MIN_COLUMN_SIZE);
       columnSizes[0] = props.containerWidth - columnSizes[1] - columnSizes[2];
@@ -162,7 +162,7 @@ const onPointerDown = (
 };
 
 const onPointerMove = (event: { clientX: number }) => {
-  let delta = event.clientX - (mouseState.currentX ?? event.clientX);
+  const delta = event.clientX - (mouseState.currentX ?? event.clientX);
   if (typeof columnState.dragIndex === "number") {
     resizeColumns(delta);
   }

@@ -55,7 +55,6 @@ onMounted(async () => {
   if (executableSelection.id !== "") {
     selectedExecutableOption.value = executableSelection.id;
   } else if (hasDropDownOptions.value) {
-    // @ts-ignore - null check is in if condition
     selectedExecutableOption.value = dropDownOptions.value[0].id;
   }
 
