@@ -27,13 +27,13 @@
     "postinstall": "license-check -c"
   },
   "dependencies": {
-    "@knime/components": "^1.17.1",
+    "@knime/components": "1.30.1",
     "@knime/scripting-editor": "0.0.104",
-    "@knime/styles": "^1.2.0",
-    "@knime/ui-extension-service": "2.1.1",
+    "@knime/styles": "1.8.0",
+    "@knime/ui-extension-service": "2.2.0",
     "@vueuse/core": "11.1.0",
-    "consola": "2.15.3",
-    "vue": "3.4.27"
+    "consola": "3.4.2",
+    "vue": "3.5.17"
   },
   "devDependencies": {
     "@cyclonedx/cyclonedx-npm": "1.19.3",
