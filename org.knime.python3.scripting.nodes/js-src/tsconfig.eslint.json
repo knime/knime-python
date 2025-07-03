@@ -1,0 +1,8 @@
+// A simple tsconfig just such that eslint can make use of typescript features
+{
+  "extends": "@vue/tsconfig/tsconfig.dom.json",
+  "compilerOptions": {
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["node", "jsdom"]
+  }
+}
