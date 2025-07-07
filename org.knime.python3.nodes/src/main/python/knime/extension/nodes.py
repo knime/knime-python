@@ -63,6 +63,102 @@ class PortObject(ABC):
     """
     Base class for custom port objects. They must have a corresponding
     `PortObjectSpec` and support serialization from and to bytes.
+
+    Examples
+    --------
+
+    >>> class MyPortObjectSpec(knext.PortObjectSpec):
+    ...     def __init__(self, my_info: str) -> None:
+    ...         self._my_info = my_info
+    ...
+    ...     def serialize(self) -> dict:
+    ...         return {
+    ...             "my_info": self._my_info,
+    ...         }
+    ...
+    ...     @classmethod
+    ...     def deserialize(cls, data: dict) -> "MyPortObjectSpec":
+    ...         return cls(data["my_info"])
+    ...
+    ...     @property
+    ...     def my_info(self) -> str:
+    ...         return self._my_info
+    ...
+    ... class MyPortObject(knext.PortObject):
+    ...     def __init__(self, spec: MyPortObjectSpec, my_data: str) -> None:
+    ...         super().__init__(spec)
+    ...         self._my_data = my_data
+    ...
+    ...     def serialize(self) -> bytes:
+    ...         return self._my_data.encode()
+    ...
+    ...     @property
+    ...     def spec(self) -> MyPortObjectSpec:
+    ...         return super().spec
+    ...
+    ...     @classmethod
+    ...     def deserialize(cls, spec: MyPortObjectSpec, storage: bytes) -> "MyPortObject":
+    ...         return cls(spec, storage.decode())
+    ...
+    ...     @property
+    ...     def my_data(self) -> str:
+    ...         return self._my_data
+    ...
+    ...
+    ... my_port_type = knext.port_type("My Port Type", MyPortObject, MyPortObjectSpec)
+    ...
+    ... @knext.node(
+    ...     name="My PortObject Creator",
+    ...     node_type=knext.NodeType.SOURCE,
+    ...     icon_path="icon.png",
+    ...     category=node_category,
+    ... )
+    ... @knext.output_port("MyPortType output", "MyPortType output", my_port_type)
+    ... class NodeWithMyOutputPort(knext.PythonNode):
+    ...     value = knext.StringParameter(
+    ...         "port object value",
+    ...         "Value that will be put in the port object",
+    ...         "Foo",
+    ...     )
+    ...
+    ...     def configure(self, config_context: knext.ConfigurationContext):
+    ...         return MyPortObjectSpec(f"port object will contain value {self.value}")
+    ...
+    ...     def execute(self, exec_context: knext.ExecutionContext):
+    ...         return MyPortObject(MyPortObjectSpec(f"port object will contain value {self.value}"), self.value)
+    ...
+    ...
+    ... @knext.node(
+    ...     name="My PortObject Applier",
+    ...     node_type=knext.NodeType.MANIPULATOR,
+    ...     icon_path="icon.png",
+    ...     category=node_category,
+    ... )
+    ... @knext.input_port("MyPortType input", "MyPortType input", my_port_type)
+    ... @knext.input_table("Input table", "Table to apply some action to.")
+    ... @knext.output_table("Output table", "Table with the applied action.")
+    ... class NodeWithTestInputPort(knext.PythonNode):
+    ...     '''
+    ...     This node adds a column containing some info from the port object
+    ...     '''
+    ...     def configure(
+    ...         self,
+    ...         config_context: knext.ConfigurationContext,
+    ...         spec: MyPortObjectSpec,
+    ...         schema: knext.Schema,
+    ...     ):
+    ...         return schema.append(knext.Column(knext.string(), "NewCol"))
+    ...
+    ...     def execute(
+    ...         self,
+    ...         exec_context: knext.ExecutionContext,
+    ...         port_object: MyPortObject,
+    ...         table: knext.Table,
+    ...     ):
+    ...         df = table.to_pandas()
+    ...         df["NewCol"] = [port_object.my_data] * len(df)
+    ...
+    ...         return knext.Table.from_pandas(df)
     """
 
     def __init__(self, spec: PortObjectSpec) -> None:
