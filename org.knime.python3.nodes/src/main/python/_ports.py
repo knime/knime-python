@@ -177,7 +177,7 @@ class JavaPortTypeRegistry:
     ) -> kn.PortObjectSpec:
         converter = self._decoder_for_spec_class.get(container.getJavaClassName())
         return converter.decode_spec(
-            intermediate_representation=container.getIntermediateRepresentation(),
+            container.getIntermediateRepresentation(),
         )
 
     def can_decode_spec(self, java_class_name: JavaClassName) -> bool:
@@ -206,8 +206,8 @@ class JavaPortTypeRegistry:
         extension_spec = extension_port_object.getSpec()
         spec = self.decode_spec(extension_spec) if extension_spec else None
         return decoder.decode_object(
-            intermediate_representation=extension_port_object.getIntermediateRepresentation(),
-            spec=spec,
+            extension_port_object.getIntermediateRepresentation(),
+            spec,
         )
 
     def encode_spec(
@@ -217,9 +217,7 @@ class JavaPortTypeRegistry:
         entry = self._find_encoder_for_type(type(spec), self._encoder_for_spec_type)
         if entry is None:
             raise ValueError(f"No converter found for type {type(spec)}")
-        intermediate_representation = entry.converter.encode_spec(
-            spec=spec,
-        )
+        intermediate_representation = entry.converter.encode_spec(spec)
         return _ExtensionPortObjectSpec(
             intermediate_representation, entry.java_spec_class_name
         )
@@ -229,7 +227,7 @@ class JavaPortTypeRegistry:
         if entry is None:
             raise ValueError(f"No converter found for type {type(obj)}")
         intermediate_representation = entry.converter.encode_object(
-            port_object=obj,
+            obj,
         )
         spec_container = self.encode_spec(obj.spec) if hasattr(obj, "spec") else None
         return _ExtensionPortObject(
