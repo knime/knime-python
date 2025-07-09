@@ -72,6 +72,7 @@ import py4j.Py4JException;
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
+@SuppressWarnings("restriction")
 final class PortObjectExtensionPointUtils {
 
     public static PortObjectExtensionPointUtils getInstance() {
@@ -116,7 +117,7 @@ final class PortObjectExtensionPointUtils {
             try {
                 register.accept(e);
             } catch (Py4JException ex) {
-                LOGGER.info(
+                LOGGER.warn(
                     "Failed to register a PythonPortObjectConverter contributed by %s.".formatted(e.contributor()), ex);
             }
         };
