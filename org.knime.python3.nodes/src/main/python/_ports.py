@@ -36,7 +36,7 @@ class _ExtensionPortObjectSpec:
 
     class Java:
         implements = [
-            "org.knime.python3.nodes.ports.ExtensionPortObjectConverters$PythonExtensionPortObjectSpec"
+            "org.knime.python3.nodes.ports.extension.ExtensionPortObjectConverters$PythonExtensionPortObjectSpec"
         ]
 
 
@@ -62,7 +62,7 @@ class _ExtensionPortObject:
 
     class Java:
         implements = [
-            "org.knime.python3.nodes.ports.ExtensionPortObjectConverters$PythonExtensionPortObject"
+            "org.knime.python3.nodes.ports.extension.ExtensionPortObjectConverters$PythonExtensionPortObject"
         ]
 
 
