@@ -171,6 +171,11 @@ class JavaPortTypeRegistry:
     def get_port_type_for_id(self, id: str) -> kn.PortType:
         return self._port_types_by_id.get(id)
 
+    def get_port_type_for_spec_type(self, spec_type) -> kn.PortType:
+        return self._port_types_by_id.get(
+            self._encoder_for_spec_type[spec_type].java_obj_class_name
+        )
+
     def decode_spec(
         self,
         container: _ExtensionPortObjectSpec,

@@ -523,6 +523,11 @@ class _PortTypeRegistry:
     ) -> kn.PortType:
         if spec_type in self._port_types_by_spec_class:
             return self._port_types_by_spec_class[spec_type]
+        port_type = self._extension_port_type_registry.get_port_type_for_spec_type(
+            spec_type
+        )
+        if port_type is not None:
+            return port_type
         raise KeyError(f"The PortObjectSpec type {str(spec_type)} is not registered.")
 
     def get_port_type_for_id(self, id: str) -> kn.PortType:
