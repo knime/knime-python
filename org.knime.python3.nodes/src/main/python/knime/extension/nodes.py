@@ -51,7 +51,7 @@ Provides base implementations and utilities for the development of KNIME nodes i
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, asdict
 from enum import Enum
-from typing import Any, Dict, List, Optional, Callable, Tuple, Type, Union
+from typing import Any, Dict, List, Optional, Callable, Type, Union
 import os.path
 
 import knime.extension.parameter as kp

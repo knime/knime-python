@@ -79,7 +79,7 @@ class PortObjectEncoder(ABC, Generic[OBJ, OBJ_IR, SPEC, SPEC_IR]):
         return self._object_type
 
     @abstractmethod
-    def encode_spec(self, spec: SPEC, port_info) -> SPEC_IR:
+    def encode_spec(self, spec: SPEC) -> SPEC_IR:
         pass
 
     @property
