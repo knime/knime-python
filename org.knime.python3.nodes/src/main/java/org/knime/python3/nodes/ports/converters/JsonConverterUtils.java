@@ -59,6 +59,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
+@SuppressWarnings("restriction")
 public final class JsonConverterUtils {
 
     private JsonConverterUtils() {

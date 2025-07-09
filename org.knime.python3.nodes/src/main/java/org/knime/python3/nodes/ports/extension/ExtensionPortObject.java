@@ -48,7 +48,6 @@
  */
 package org.knime.python3.nodes.ports.extension;
 
-import org.knime.python3.nodes.ports.PythonPortObjects;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
 import org.knime.python3.types.port.ir.PortObjectIntermediateRepresentation;
 
@@ -56,6 +55,7 @@ import org.knime.python3.types.port.ir.PortObjectIntermediateRepresentation;
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
+@SuppressWarnings("restriction")
 public final class ExtensionPortObject implements PythonPortObject {
 
     private final ExtensionPortObjectSpec m_spec;

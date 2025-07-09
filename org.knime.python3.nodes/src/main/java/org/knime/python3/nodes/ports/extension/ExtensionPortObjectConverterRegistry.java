@@ -67,6 +67,7 @@ import org.knime.python3.types.port.converter.UntypedPortObjectConverter;
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
+@SuppressWarnings("restriction")
 public final class ExtensionPortObjectConverterRegistry {
 
     private final ClassHierarchyMap<PortObject, UntypedDelegatingPortObjectEncoder> m_encoderByObjectClass =

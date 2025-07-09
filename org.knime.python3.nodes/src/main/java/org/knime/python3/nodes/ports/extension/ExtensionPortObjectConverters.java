@@ -63,6 +63,7 @@ import org.knime.python3.types.port.ir.PortObjectSpecIntermediateRepresentation;
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
+@SuppressWarnings("restriction")
 public final class ExtensionPortObjectConverters {
 
     /**

@@ -165,7 +165,7 @@ final class CloseablePythonNodeProxyFactory {
         try {
             // TODO(AP-23257) we do not have access to the gateway when using the proxy
             // so we cannot check if the Python process was terminated if a proxy call fails
-            nodeProxy = m_extension.createProxy(backend, m_nodeId);
+            nodeProxy = ResolvedPythonExtension.createProxy(backend, m_nodeId);
         } catch (Py4JException ex) {
             PythonProcessTerminatedException.throwIfTerminated(gateway, ex);
             throw ex;
