@@ -52,13 +52,13 @@ import java.net.URI;
 
 import org.knime.credentials.base.CredentialPortObjectSpec;
 import org.knime.python3.nodes.ports.converters.JsonConverterUtils;
-import org.knime.python3.types.port.converter.PortObjectEncoder;
 import org.knime.python3.types.port.converter.PortObjectConversionContext;
+import org.knime.python3.types.port.converter.PortObjectEncoder;
 import org.knime.python3.types.port.converter.PortObjectSpecConversionContext;
-import org.knime.python3.types.port.ir.EmptyIntermediateRepresentation;
+import org.knime.python3.types.port.ir.JavaEmptyIntermediateRepresentation;
+import org.knime.python3.types.port.ir.JavaStringIntermediateRepresentation;
 import org.knime.python3.types.port.ir.PortObjectIntermediateRepresentation;
 import org.knime.python3.types.port.ir.PortObjectSpecIntermediateRepresentation;
-import org.knime.python3.types.port.ir.StringIntermediateRepresentation;
 import org.knime.workflowservices.connection.AbstractHubAuthenticationPortObject;
 import org.knime.workflowservices.connection.AbstractHubAuthenticationPortObjectSpec;
 
@@ -79,13 +79,13 @@ public final class HubCredentialPythonConverter implements
         var json = JsonConverterUtils.createObjectNode();
         json.put("data", xmlContent);
         json.put("hub_url", spec.getHubURL().map(URI::toString).orElse(null));
-        return new StringIntermediateRepresentation(json.toString());
+        return new JavaStringIntermediateRepresentation(json.toString());
     }
 
     @Override
     public PortObjectIntermediateRepresentation encodePortObject(
         final AbstractHubAuthenticationPortObject portObject, final PortObjectConversionContext context) {
-        return EmptyIntermediateRepresentation.INSTANCE;
+        return JavaEmptyIntermediateRepresentation.INSTANCE;
     }
 
     @Override

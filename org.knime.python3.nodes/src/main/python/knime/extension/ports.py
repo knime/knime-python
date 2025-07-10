@@ -9,7 +9,6 @@ class IntermediateRepresentation(ABC):
 class PortObjectSpecIntermediateRepresentation(IntermediateRepresentation):
     pass
 
-
 class PortObjectIntermediateRepresentation(IntermediateRepresentation):
     pass
 
@@ -23,9 +22,15 @@ class StringIntermediateRepresentation(
     def getStringRepresentation(self) -> str:
         return self._representation
 
+    class Java:
+        implements = [
+            "org.knime.python3.types.port.ir.StringIntermediateRepresentation"
+        ]
+
 
 class EmptyIntermediateRepresentation(PortObjectIntermediateRepresentation):
-    pass
+    class Java:
+        implements = ["org.knime.python3.types.port.ir.EmptyIntermediateRepresentation"]
 
 
 SPEC = TypeVar("SPEC")

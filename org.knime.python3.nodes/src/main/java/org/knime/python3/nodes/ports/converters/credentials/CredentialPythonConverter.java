@@ -58,11 +58,13 @@ import org.knime.credentials.base.CredentialPortObject;
 import org.knime.credentials.base.CredentialPortObjectSpec;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonCredentialPortObjectSpec;
 import org.knime.python3.nodes.ports.converters.JsonConverterUtils;
-import org.knime.python3.types.port.converter.PortObjectEncoder;
 import org.knime.python3.types.port.converter.PortObjectConversionContext;
-import org.knime.python3.types.port.converter.PortObjectSpecConversionContext;
 import org.knime.python3.types.port.converter.PortObjectDecoder;
+import org.knime.python3.types.port.converter.PortObjectEncoder;
+import org.knime.python3.types.port.converter.PortObjectSpecConversionContext;
 import org.knime.python3.types.port.ir.EmptyIntermediateRepresentation;
+import org.knime.python3.types.port.ir.JavaEmptyIntermediateRepresentation;
+import org.knime.python3.types.port.ir.JavaStringIntermediateRepresentation;
 import org.knime.python3.types.port.ir.PortObjectIntermediateRepresentation;
 import org.knime.python3.types.port.ir.PortObjectSpecIntermediateRepresentation;
 import org.knime.python3.types.port.ir.StringIntermediateRepresentation;
@@ -106,7 +108,7 @@ public final class CredentialPythonConverter
         final PortObjectSpecConversionContext context) {
         var json = new ObjectMapper().createObjectNode();
         json.put("data", getXmlContent(spec));
-        return new StringIntermediateRepresentation(json.toString());
+        return new JavaStringIntermediateRepresentation(json.toString());
     }
 
     static String getXmlContent(final CredentialPortObjectSpec spec) {
@@ -125,7 +127,7 @@ public final class CredentialPythonConverter
     @Override
     public PortObjectIntermediateRepresentation encodePortObject(final CredentialPortObject portObject,
         final PortObjectConversionContext context) {
-        return EmptyIntermediateRepresentation.INSTANCE;
+        return JavaEmptyIntermediateRepresentation.INSTANCE;
     }
 
     @Override
