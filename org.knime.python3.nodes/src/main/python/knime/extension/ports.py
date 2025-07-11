@@ -9,6 +9,7 @@ class IntermediateRepresentation(ABC):
 class PortObjectSpecIntermediateRepresentation(IntermediateRepresentation):
     pass
 
+
 class PortObjectIntermediateRepresentation(IntermediateRepresentation):
     pass
 
