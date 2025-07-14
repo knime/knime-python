@@ -171,7 +171,7 @@ public final class HtmlFileNodeView implements NodeTableView {
 
     @Override
     public Page getPage() {
-        var pb = Page.create().fromString(this::openPage, StandardCharsets.UTF_8).relativePath("index.html");
+        var pb = Page.create().fromString(this::openPage, StandardCharsets.UTF_8).relativePath(m_relativeHTMLPath);
         m_resources.addToPage(pb);
         return pb;
     }
