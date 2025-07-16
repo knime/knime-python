@@ -289,11 +289,14 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
 
             if (extensionNodeView.indexHtmlName() == null) {
                 // The view is is generated dynamically in execute
-                return new HtmlFileNodeView( //
-                    () -> nodeModel.getPathToHtmlView()
-                        .orElseThrow(() -> new IllegalStateException("View is not present. This is a coding error.")),
-                    viewResources //
-                );
+                return HtmlFileNodeView.builder() //
+                    .htmlSupplier( //
+                        () -> nodeModel.getPathToHtmlView().orElseThrow(
+                            () -> new IllegalStateException("View is not present. This is a coding error.")) //
+                    ) //
+                    .resources(viewResources) //
+                    .canBeUsedInReport(nodeModel::canViewBeUsedInReport) //
+                    .build();
             } else {
                 // The view is a static HTML file - we need a data service
                 Supplier<JsonRpcRequestHandler> dataServiceSupplier = () -> {
@@ -328,8 +331,12 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
                     };
                 };
 
-                return new HtmlFileNodeView(extensionNodeView::getHtmlPath, extensionNodeView.getRelativeHtmlPath(),
-                    viewResources, dataServiceSupplier);
+                return HtmlFileNodeView.builder() //
+                    .htmlSupplier(extensionNodeView::getHtmlPath) //
+                    .relativeHTMLPath(extensionNodeView.getRelativeHtmlPath()) //
+                    .resources(viewResources) //
+                    .dataServiceSupplier(dataServiceSupplier) //
+                    .build();
             }
         }
 
@@ -420,7 +427,6 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
         public KaiNodeInterface createKaiNodeInterface() {
             return m_kaiNodeInterface;
         }
-
     }
 
     /**

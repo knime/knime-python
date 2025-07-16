@@ -137,7 +137,7 @@ import org.knime.python3.types.PythonValueFactoryModule;
 import org.knime.python3.types.PythonValueFactoryRegistry;
 import org.knime.python3.utils.FlowVariableUtils;
 import org.knime.python3.views.Python3ViewsSourceDirectory;
-import org.knime.python3.views.PythonNodeViewSink;
+import org.knime.python3.views.PythonNodeViewStoragePath;
 
 import com.google.common.base.Strings;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -613,8 +613,8 @@ public final class Python3KernelBackend implements PythonKernelBackend {
     public void getOutputView(final Path file, final ExecutionMonitor exec)
         throws PythonIOException, CanceledExecutionException {
         performCancelable(() -> {
-            final var absolutePath = file.toAbsolutePath().toString();
-            m_proxy.getOutputView(new PythonNodeViewSink(absolutePath));
+            var viewPath = new PythonNodeViewStoragePath(file);
+            m_proxy.getOutputView(viewPath.getSink());
             return null;
         }, exec);
     }

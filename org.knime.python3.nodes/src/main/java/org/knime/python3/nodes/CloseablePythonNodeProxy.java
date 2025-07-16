@@ -51,7 +51,6 @@ package org.knime.python3.nodes;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -90,7 +89,6 @@ import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.node.workflow.VariableType;
 import org.knime.core.util.FileUtil;
-import org.knime.core.util.PathUtils;
 import org.knime.core.util.ThreadUtils;
 import org.knime.core.util.asynclose.AsynchronousCloseable;
 import org.knime.core.util.auth.CouldNotAuthorizeException;
@@ -124,6 +122,7 @@ import org.knime.python3.nodes.proxy.model.NodeExecutionProxy;
 import org.knime.python3.nodes.settings.JsonNodeSettings;
 import org.knime.python3.nodes.settings.JsonNodeSettingsSchema;
 import org.knime.python3.utils.FlowVariableUtils;
+import org.knime.python3.views.PythonNodeViewStoragePath;
 import org.knime.python3.views.PythonNodeViewSink;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -239,7 +238,6 @@ final class CloseablePythonNodeProxy
                     .getAvailableFlowVariables(getCompatibleFlowVariableTypes()).values());
             }
 
-
             @SuppressWarnings("unused")
             public String get_auth_schema(final String serializedXMLString) throws CouldNotAuthorizeException, // NOSONAR
                 ClassNotFoundException, InstantiationException, IllegalAccessException, IOException { // NOSONAR
@@ -288,18 +286,20 @@ final class CloseablePythonNodeProxy
             }
 
             @Override
-            public Map<String, int[]> get_input_port_map(){
+            public Map<String, int[]> get_input_port_map() {
                 return ((DelegatingNodeModel)getNode().getNodeModel()).getInputPortMap();
             }
+
             @Override
-            public Map<String, int[]> get_output_port_map(){
+            public Map<String, int[]> get_output_port_map() {
                 return ((DelegatingNodeModel)getNode().getNodeModel()).getOutputPortMap();
             }
         };
         // extensionVersion must always be the version of the installed extension, since it is used
         // on the Python side to generate the schema and UI schema, which need to correspond to the
         // set of parameters available in the installed version of the extension.
-        var dialogRepresentation = m_proxy.getDialogRepresentation(settings.getParameters(), extensionVersion, pythonDialogContext);
+        var dialogRepresentation =
+            m_proxy.getDialogRepresentation(settings.getParameters(), extensionVersion, pythonDialogContext);
         try {
             failure.throwIfFailure();
         } catch (InvalidSettingsException ex) {
@@ -389,9 +389,9 @@ final class CloseablePythonNodeProxy
             @Override
             public PythonNodeViewSink create_view_sink() throws IOException {
                 if (executionResult.m_view == null) {
-                    executionResult.m_view = PathUtils.createTempFile("python_node_view_", ".html");
+                    executionResult.m_view = new PythonNodeViewStoragePath();
                 }
-                return new PythonNodeViewSink(executionResult.m_view.toAbsolutePath().toString());
+                return executionResult.m_view.getSink();
             }
 
             @Override
@@ -529,12 +529,14 @@ final class CloseablePythonNodeProxy
             public String get_node_id() {
                 return workflowPropertiesProxy.getNodeNameWithID();
             }
+
             @Override
-            public Map<String, int[]> get_input_port_map(){
+            public Map<String, int[]> get_input_port_map() {
                 return ((DelegatingNodeModel)getNode().getNodeModel()).getInputPortMap();
             }
+
             @Override
-            public Map<String, int[]> get_output_port_map(){
+            public Map<String, int[]> get_output_port_map() {
                 return ((DelegatingNodeModel)getNode().getNodeModel()).getOutputPortMap();
             }
 
@@ -560,7 +562,8 @@ final class CloseablePythonNodeProxy
 
         final var outputExec = exec.createSubExecutionContext(0.1);
 
-        PortObjectConversionContext pythonToKnimeConversionContext = new PortObjectConversionContext(fileStoresByKey, m_tableManager, outputExec);
+        PortObjectConversionContext pythonToKnimeConversionContext =
+            new PortObjectConversionContext(fileStoresByKey, m_tableManager, outputExec);
         executionResult.m_portObjects =
             PythonPortTypeRegistry.convertPortObjectsFromPython(pythonOutputs.stream(), pythonToKnimeConversionContext);
 
@@ -593,7 +596,7 @@ final class CloseablePythonNodeProxy
     public static class PythonExecutionResult implements ExecutionResult {
         private PortObject[] m_portObjects;
 
-        private Path m_view;
+        private PythonNodeViewStoragePath m_view;
 
         @Override
         public PortObject[] getPortObjects() {
@@ -601,7 +604,7 @@ final class CloseablePythonNodeProxy
         }
 
         @Override
-        public Optional<Path> getView() {
+        public Optional<PythonNodeViewStoragePath> getView() {
             return Optional.ofNullable(m_view);
         }
     }
@@ -703,12 +706,14 @@ final class CloseablePythonNodeProxy
             public String get_node_id() {
                 return workflowPropertiesProxy.getNodeNameWithID();
             }
+
             @Override
-            public Map<String, int[]> get_input_port_map(){
+            public Map<String, int[]> get_input_port_map() {
                 return ((DelegatingNodeModel)getNode().getNodeModel()).getInputPortMap();
             }
+
             @Override
-            public Map<String, int[]> get_output_port_map(){
+            public Map<String, int[]> get_output_port_map() {
                 return ((DelegatingNodeModel)getNode().getNodeModel()).getOutputPortMap();
             }
         };
@@ -907,7 +912,6 @@ final class CloseablePythonNodeProxy
             }
         }
     }
-
 
     @Override
     public DataServiceProxy getDataServiceProxy(final JsonNodeSettings settings, final PortObject[] portObjects,

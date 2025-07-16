@@ -140,10 +140,17 @@ class NodeView:
         html: str,
         svg_or_png: Optional[Union[str, bytes]] = None,
         render_fn: Optional[Callable[[], Union[str, bytes]]] = None,
+        can_be_used_in_report: bool = False,
     ) -> None:
         self.html = html
         self._svg_or_png = svg_or_png
         self._render_fn = render_fn
+        self.can_be_used_in_report = can_be_used_in_report
+
+        # TODO(AP-22036, AP-22035) we could use the render_fn to generate the
+        # image and always be able to use the view in reports. However, this would
+        # require us to always call the render_fn and put the result into the HTML
+        # even if the view is not used in a report.
 
     def render(self) -> Union[str, bytes]:
         # We alread have a rendered representation
@@ -339,7 +346,11 @@ def view_svg(svg: str) -> NodeView:
     svg : str
         A string containing the SVG.
     """
-    return NodeView(_SVG_HTML_BODY.format(svg=svg, js=_IMAGE_REPORTING_JS), svg_or_png=svg)
+    return NodeView(
+        _SVG_HTML_BODY.format(svg=svg, js=_IMAGE_REPORTING_JS),
+        svg_or_png=svg,
+        can_be_used_in_report=True,
+    )
 
 
 def view_png(png: bytes) -> NodeView:
@@ -352,7 +363,11 @@ def view_png(png: bytes) -> NodeView:
         The bytes of the PNG image
     """
     b64 = base64.b64encode(png).decode("ascii")
-    return NodeView(_PNG_HTML_BODY.format(png_b64=b64, js=_IMAGE_REPORTING_JS), svg_or_png=png)
+    return NodeView(
+        _PNG_HTML_BODY.format(png_b64=b64, js=_IMAGE_REPORTING_JS),
+        svg_or_png=png,
+        can_be_used_in_report=True,
+    )
 
 
 def view_jpeg(jpeg: bytes) -> NodeView:
@@ -365,7 +380,11 @@ def view_jpeg(jpeg: bytes) -> NodeView:
         The bytes of the JPEG image
     """
     b64 = base64.b64encode(jpeg).decode("ascii")
-    return NodeView(_JPEG_HTML_BODY.format(jpeg_b64=b64, js=_IMAGE_REPORTING_JS), svg_or_png=jpeg)
+    return NodeView(
+        _JPEG_HTML_BODY.format(jpeg_b64=b64, js=_IMAGE_REPORTING_JS),
+        svg_or_png=jpeg,
+        can_be_used_in_report=True,
+    )
 
 
 ##########################################################################
