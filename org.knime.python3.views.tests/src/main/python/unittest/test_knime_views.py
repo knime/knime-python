@@ -24,6 +24,10 @@ def is_html(s):
     return s.lstrip().startswith("<!DOCTYPE html>")
 
 
+def has_reporting_code(s: str):
+    return "setReportingContent(" in s
+
+
 def open_test_file(name, mode):
     return open(os.path.normpath(os.path.join(__file__, "..", name)), mode)
 
@@ -67,6 +71,7 @@ class KnimeViewsTest(unittest.TestCase):
             self.assertEqual(html_view.html, html)
             with self.assertRaises(NotImplementedError):
                 html_view.render()
+            self.assertFalse(html_view.can_be_used_in_report)
 
         for html in self.htmls:
             # Using kv.view
@@ -84,6 +89,8 @@ class KnimeViewsTest(unittest.TestCase):
             self.assertTrue(svg in svg_view.html)
             self.assertTrue(is_html(svg_view.html))
             self.assertEqual(svg_view.render(), svg)
+            self.assertTrue(svg_view.can_be_used_in_report)
+            self.assertTrue(has_reporting_code(svg_view.html))
 
         for svg in self.svgs:
             # Using kv.view
@@ -98,9 +105,11 @@ class KnimeViewsTest(unittest.TestCase):
     def test_png_view(self):
         def check_view(png_view):
             self.assertIsInstance(png_view, kv.NodeView)
-            self.assertTrue('<img src="data:image/png;base64' in png_view.html)
+            self.assertTrue('<img id="view-container" src="data:image/png;base64' in png_view.html)
             self.assertTrue(is_html(png_view.html))
             self.assertEqual(png_view.render(), png)
+            self.assertTrue(png_view.can_be_used_in_report)
+            self.assertTrue(has_reporting_code(png_view.html))
 
         for png in self.pngs:
             # Using kv.view
@@ -115,9 +124,11 @@ class KnimeViewsTest(unittest.TestCase):
     def test_jpeg_view(self):
         def check_view(jpeg_view):
             self.assertIsInstance(jpeg_view, kv.NodeView)
-            self.assertTrue('<img src="data:image/jpeg;base64' in jpeg_view.html)
+            self.assertTrue('<img id="view-container" src="data:image/jpeg;base64' in jpeg_view.html)
             self.assertTrue(is_html(jpeg_view.html))
             self.assertEqual(jpeg_view.render(), jpeg)
+            self.assertTrue(jpeg_view.can_be_used_in_report)
+            self.assertTrue(has_reporting_code(jpeg_view.html))
 
         for jpeg in self.jpegs:
             # Using kv.view
@@ -173,13 +184,13 @@ class KnimeViewsTest(unittest.TestCase):
         # PNG next
         png_viewable = ViewableClass(png=self.pngs[0], jpeg=self.jpegs[0])
         png_view = kv.view(png_viewable)
-        self.assertTrue('<img src="data:image/png;base64' in png_view.html)
+        self.assertTrue('<img id="view-container" src="data:image/png;base64' in png_view.html)
         self.assertEqual(png_view.render(), self.pngs[0])
 
         # JPEG next
         jpeg_viewable = ViewableClass(jpeg=self.jpegs[0])
         jpeg_view = kv.view(jpeg_viewable)
-        self.assertTrue('<img src="data:image/jpeg;base64' in jpeg_view.html)
+        self.assertTrue('<img id="view-container" src="data:image/jpeg;base64' in jpeg_view.html)
         self.assertEqual(jpeg_view.render(), self.jpegs[0])
 
     def test_repr_html_render(self):
@@ -209,11 +220,13 @@ class KnimeViewsTest(unittest.TestCase):
         def check_view(matplotlib_view):
             self.assertIsInstance(matplotlib_view, kv.NodeView)
             self.assertTrue(is_html(matplotlib_view.html))
-            self.assertTrue('<img src="data:image/png;base64' in matplotlib_view.html)
+            self.assertTrue('<img id="view-container" src="data:image/png;base64' in matplotlib_view.html)
             render_repr = matplotlib_view.render()
             self.assertTrue(
                 base64.b64encode(render_repr).decode("ascii") in matplotlib_view.html
             )
+            self.assertTrue(matplotlib_view.can_be_used_in_report)
+            self.assertTrue(has_reporting_code(matplotlib_view.html))
 
         import matplotlib.pyplot as plt
         import seaborn as sns
@@ -259,9 +272,10 @@ class KnimeViewsTest(unittest.TestCase):
             )
             render_repr = matplotlib_view.render()
             self.assertTrue(render_repr in matplotlib_view.html)
+            self.assertTrue(matplotlib_view.can_be_used_in_report)
+            self.assertTrue(has_reporting_code(matplotlib_view.html))
 
         import matplotlib.pyplot as plt
-        import seaborn as sns
 
         data_x = list(range(10))
         data_y = [i + 2 for i in range(10)]
@@ -272,7 +286,6 @@ class KnimeViewsTest(unittest.TestCase):
 
     def test_matplotlib_fail_unsupported_format(self):
         import matplotlib.pyplot as plt
-        import seaborn as sns
 
         data_x = list(range(10))
         data_y = [i + 2 for i in range(10)]
