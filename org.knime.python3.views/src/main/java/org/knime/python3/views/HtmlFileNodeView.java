@@ -54,6 +54,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 import org.knime.core.node.InvalidSettingsException;
@@ -68,7 +69,11 @@ import org.knime.core.webui.node.view.NodeView;
 import org.knime.core.webui.page.Page;
 
 /**
- * A {@link NodeView} that just shows an HTML document that is saved on disk.
+ * A {@link NodeView} that renders a static HTML document located on disk. The HTML file can be enriched with additional
+ * resources ({@link ViewResources}) and can optionally communicate with the backend via JSON‑RPC.
+ * <p>
+ * Instances have to be created through the {@link #builder()} which guides callers through the mandatory and optional
+ * configuration steps.
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
  */
@@ -85,59 +90,84 @@ public final class HtmlFileNodeView implements NodeTableView, DisposeDataService
 
     private final Supplier<JsonRpcRequestHandler> m_dataServiceSupplier;
 
+    private final BooleanSupplier m_canBeUsedInReport;
+
     /**
-     * Create a view that shows the HTML document that is saved at the given location.
+     * Starts construction of an {@link HtmlFileNodeView}. The returned builder enforces that an
+     * {@link HtmlFileNodeViewBuilderRequiresHtmlSupplier#htmlSupplier(Supplier) html supplier} is provided before the
+     * view can be {@link HtmlFileNodeViewBuilder#build() built}.
+     *
+     * @return the first stage of the fluent builder API
+     */
+    public static HtmlFileNodeViewBuilderRequiresHtmlSupplier builder() {
+        return new Builder();
+    }
+
+    private HtmlFileNodeView(final Supplier<Path> htmlSupplier, final String relativeHTMLPath,
+        final ViewResources resources, final Supplier<JsonRpcRequestHandler> dataServiceSupplier,
+        final BooleanSupplier canBeUsedInReport) {
+        m_htmlSupplier = htmlSupplier;
+        m_relativeHTMLPath = relativeHTMLPath;
+        m_resources = resources;
+        m_dataServiceSupplier = dataServiceSupplier;
+        m_canBeUsedInReport = canBeUsedInReport;
+    }
+
+    /**
+     * Creates a view that shows the HTML document that is saved at the given location.
      *
      * @param htmlSupplier A supplier that provides the path to the HTML file that should be shown currently. The file
      *            must exist and must be readable.
+     * @deprecated Use {@link #builder()} instead.
      */
+    @Deprecated
     public HtmlFileNodeView(final Supplier<Path> htmlSupplier) {
         this(htmlSupplier, ViewResources.EMPTY_RESOURCES);
     }
 
     /**
-     * Create a view that shows the HTML document that is saved at the given location.
+     * Creates a view that shows the HTML document that is saved at the given location.
      *
      * @param htmlSupplier A supplier that provides the path to the HTML file that should be shown currently. The file
      *            must exist and must be readable.
      * @param resources resources that are available to the page.
+     * @deprecated Use {@link #builder()} instead.
      */
+    @Deprecated
     public HtmlFileNodeView(final Supplier<Path> htmlSupplier, final ViewResources resources) {
         this(htmlSupplier, "index.html", resources, null);
     }
 
     /**
-     * Create a view that shows the HTML document that is saved at the given location and uses a data service to
+     * Creates a view that shows the HTML document that is saved at the given location and uses a data service to
      * communicate with the backend.
      *
      * @param htmlSupplier supplier that provides the path to the HTML file that should be shown currently. The file
      *            must exist and must be readable.
      * @param relativeHTMLPath the relative path to the HTML file, used to resolve relative links in the HTML file.
      * @param resources resources that are available to the page.
-     * @param dataServiceSupplier supplier that provides a JSON RPC request handler that can be used to handle requests
+     * @param dataServiceSupplier supplier that provides a JSON‑RPC request handler that can be used to handle requests
      *            from the HTML
+     * @deprecated Use {@link #builder()} instead.
      */
+    @Deprecated
     public HtmlFileNodeView(final Supplier<Path> htmlSupplier, final String relativeHTMLPath,
         final ViewResources resources, final Supplier<JsonRpcRequestHandler> dataServiceSupplier) {
-        m_htmlSupplier = htmlSupplier;
-        m_relativeHTMLPath = relativeHTMLPath;
-        m_resources = resources;
-        m_dataServiceSupplier = dataServiceSupplier;
-
+        this(htmlSupplier, relativeHTMLPath, resources, dataServiceSupplier, () -> false);
     }
 
     /**
-     * Interface for handling JSON RPC requests in the HTML view.
+     * Interface for handling JSON‑RPC requests coming from the HTML view.
      *
      * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
      */
     public interface JsonRpcRequestHandler extends AutoCloseable {
 
         /**
-         * Handles a JSON RPC request. And produces a JSON RPC response.
+         * Handles a JSON‑RPC request and produces the corresponding response.
          *
-         * @param jsonRpcRequest to handle
-         * @return the JSON RPC response as a string
+         * @param jsonRpcRequest the raw JSON‑RPC request payload
+         * @return the JSON‑RPC response as a String
          */
         String handleRequest(String jsonRpcRequest);
 
@@ -213,7 +243,131 @@ public final class HtmlFileNodeView implements NodeTableView, DisposeDataService
 
     @Override
     public boolean canBeUsedInReport() {
-        // TODO only set to true if it is actually implemented
-        return true;
+        return m_canBeUsedInReport.getAsBoolean();
+    }
+
+    // ================= BUILDER
+
+    /**
+     * First stage of the builder—requires the mandatory {@code htmlSupplier}. After calling
+     * {@link #htmlSupplier(Supplier)} the builder transitions to {@link HtmlFileNodeViewBuilder} exposing all optional
+     * settings.
+     */
+    public interface HtmlFileNodeViewBuilderRequiresHtmlSupplier {
+        /**
+         * Defines the {@link Supplier} that provides the absolute {@link Path} to the HTML document. The supplier is
+         * evaluated on every invocation of the view ensuring that the latest file is displayed. This is necessary if
+         * the path changes between node executions.
+         *
+         * @param htmlSupplier supplier of an existing, readable HTML file
+         * @return the next builder stage enabling the configuration of optional parameters
+         */
+        HtmlFileNodeViewBuilder htmlSupplier(Supplier<Path> htmlSupplier);
+    }
+
+    /**
+     * Second and final stage of the fluent builder. All methods return {@code this} so that calls can be conveniently
+     * chained. Only {@link #build()} creates the immutable {@link HtmlFileNodeView} instance.
+     *
+     * <pre>
+     * HtmlFileNodeView view = HtmlFileNodeView.builder().htmlSupplier(() -> myHtmlPath).relativeHTMLPath("index.html")
+     *     .resources(resources).dataServiceSupplier(() -> new MyRpcHandler()).canBeUsedInReport(true).build();
+     * </pre>
+     */
+    public interface HtmlFileNodeViewBuilder {
+        /**
+         * Sets the relative path of the HTML file inside the page. This value is used as the base URI for resolving
+         * relative links contained in the HTML. Defaults to {@code "index.html"}.
+         *
+         * @param relativeHTMLPath relative path to the HTML file
+         * @return {@code this} builder instance
+         */
+        HtmlFileNodeViewBuilder relativeHTMLPath(String relativeHTMLPath);
+
+        /**
+         * Adds additional static resources (images, CSS, JavaScript, …) that are served alongside the HTML file.
+         *
+         * @param resources container holding the additional resources (never {@code null})
+         * @return {@code this} builder instance
+         */
+        HtmlFileNodeViewBuilder resources(ViewResources resources);
+
+        /**
+         * Supplies a factory for a {@link JsonRpcRequestHandler}. If set, the view will expose a JSON‑RPC endpoint that
+         * the frontend can use to invoke backend logic.
+         *
+         * @param dataServiceSupplier factory that returns a fresh handler for each view instance
+         * @return {@code this} builder instance
+         */
+        HtmlFileNodeViewBuilder dataServiceSupplier(Supplier<JsonRpcRequestHandler> dataServiceSupplier);
+
+        /**
+         * Marks the view as usable in KNIME report templates. Defaults to {@code false}.
+         *
+         * @param canBeUsedInReport whether the view currently supplied by the {@code htmlSupplier} can be used in a
+         *            report
+         * @return {@code this} builder instance
+         */
+        HtmlFileNodeViewBuilder canBeUsedInReport(BooleanSupplier canBeUsedInReport);
+
+        /**
+         * Builds the {@link HtmlFileNodeView} using the configuration collected so far.
+         *
+         * @return a fully‑configured, immutable {@link HtmlFileNodeView}
+         * @throws IllegalStateException if the mandatory {@code htmlSupplier} has not been provided
+         */
+        HtmlFileNodeView build();
+    }
+
+    private static class Builder implements HtmlFileNodeViewBuilderRequiresHtmlSupplier, HtmlFileNodeViewBuilder {
+
+        private Supplier<Path> m_htmlSupplier;
+
+        private String m_relativeHTMLPath = "index.html";
+
+        private ViewResources m_resources = ViewResources.EMPTY_RESOURCES;
+
+        private Supplier<JsonRpcRequestHandler> m_dataServiceSupplier;
+
+        private BooleanSupplier m_canBeUsedInReport;
+
+        @Override
+        public HtmlFileNodeViewBuilder htmlSupplier(final Supplier<Path> htmlSupplier) {
+            m_htmlSupplier = htmlSupplier;
+            return this;
+        }
+
+        @Override
+        public HtmlFileNodeViewBuilder relativeHTMLPath(final String relativeHTMLPath) {
+            m_relativeHTMLPath = relativeHTMLPath;
+            return this;
+        }
+
+        @Override
+        public HtmlFileNodeViewBuilder resources(final ViewResources resources) {
+            m_resources = resources;
+            return this;
+        }
+
+        @Override
+        public HtmlFileNodeViewBuilder dataServiceSupplier(final Supplier<JsonRpcRequestHandler> dataServiceSupplier) {
+            m_dataServiceSupplier = dataServiceSupplier;
+            return this;
+        }
+
+        @Override
+        public HtmlFileNodeViewBuilder canBeUsedInReport(final BooleanSupplier canBeUsedInReport) {
+            m_canBeUsedInReport = canBeUsedInReport;
+            return this;
+        }
+
+        @Override
+        public HtmlFileNodeView build() {
+            if (m_htmlSupplier == null) {
+                throw new IllegalStateException("htmlSupplier is required");
+            }
+            return new HtmlFileNodeView(m_htmlSupplier, m_relativeHTMLPath, m_resources, m_dataServiceSupplier,
+                m_canBeUsedInReport);
+        }
     }
 }
