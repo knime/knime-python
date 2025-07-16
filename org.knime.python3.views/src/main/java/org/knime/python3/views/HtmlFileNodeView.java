@@ -209,4 +209,10 @@ public final class HtmlFileNodeView implements NodeTableView {
         // Port 0 is our best guess
         return 0;
     }
+
+    @Override
+    public boolean canBeUsedInReport() {
+        // TODO only set to true if it is actually implemented
+        return true;
+    }
 }
