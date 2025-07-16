@@ -51,7 +51,6 @@ package org.knime.python3.scripting.nodes2;
 import java.io.File;
 import java.io.IOException;
 import java.net.ConnectException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
@@ -85,7 +84,6 @@ import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.node.workflow.VariableType;
 import org.knime.core.node.workflow.VariableTypeRegistry;
-import org.knime.core.util.PathUtils;
 import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
 import org.knime.python3.PythonCommand;
 import org.knime.python3.PythonProcessTerminatedException;
@@ -94,6 +92,7 @@ import org.knime.python3.scripting.nodes2.PythonScriptingSession.ExecutionInfo;
 import org.knime.python3.scripting.nodes2.PythonScriptingSession.ExecutionStatus;
 import org.knime.python3.scripting.nodes2.PythonScriptingSession.FileStoreHandlerSupplier;
 import org.knime.python3.utils.FlowVariableUtils;
+import org.knime.python3.views.PythonNodeViewStoragePath;
 import org.knime.scripting.editor.ScriptingService.ConsoleText;
 
 import py4j.Py4JException;
@@ -124,7 +123,7 @@ public final class PythonScriptNodeModel extends NodeModel {
 
     private ConsoleOutputStorage m_consoleOutputStorage;
 
-    private Optional<Path> m_view;
+    private Optional<PythonNodeViewStoragePath> m_view;
 
     static final VariableType<?>[] KNOWN_FLOW_VARIABLE_TYPES = FlowVariableUtils.convertToFlowVariableTypes(Set.of( //
         Boolean.class, //
@@ -158,8 +157,16 @@ public final class PythonScriptNodeModel extends NodeModel {
      * @throws IllegalStateException if no view is available
      */
     public Path getPathToHtmlView() {
-        return m_view
+        return m_view //
+            .map(PythonNodeViewStoragePath::getPath) //
             .orElseThrow(() -> new IllegalStateException("View is not present. This is an implementation error."));
+    }
+
+    /**
+     * @return {@code true} if the node has a view that can be used in a report, {@code false} otherwise.
+     */
+    public boolean canViewBeUsedInReport() {
+        return m_view.isPresent() && m_view.get().canBeUsedInReport();
     }
 
     @Override
@@ -276,7 +283,7 @@ public final class PythonScriptNodeModel extends NodeModel {
         if (m_hasView) {
             // Delete the last view if it is still present
             if (m_view.isPresent()) {
-                PathUtils.deleteFileIfExists(m_view.get());
+                m_view.get().deleteIfExists();
             }
             m_view = session.getOutputView();
             if (m_view.isEmpty()) {
@@ -328,10 +335,7 @@ public final class PythonScriptNodeModel extends NodeModel {
     protected void loadInternals(final File nodeInternDir, final ExecutionMonitor exec)
         throws IOException, CanceledExecutionException {
         m_consoleOutputStorage = ConsoleOutputUtils.openConsoleOutput(nodeInternDir.toPath());
-        final var viewPath = persistedViewPath(nodeInternDir);
-        if (Files.isReadable(viewPath)) {
-            m_view = Optional.of(viewPath);
-        }
+        m_view = PythonNodeViewStoragePath.loadFromInternals(nodeInternDir.toPath());
     }
 
     @Override
@@ -347,14 +351,8 @@ public final class PythonScriptNodeModel extends NodeModel {
             m_consoleOutputStorage = ConsoleOutputUtils.openConsoleOutput(nodeInternPath);
         }
         if (m_view.isPresent()) {
-            // Copy the view from the temporary file to the persisted internals directory
-            Files.copy(m_view.get(), persistedViewPath(nodeInternDir));
+            m_view.get().saveToInternals(nodeInternDir.toPath());
         }
-    }
-
-    /** Path to the persisted view inside the internals directory */
-    private static Path persistedViewPath(final File nodeInternDir) {
-        return nodeInternDir.toPath().resolve("view.html");
     }
 
     private static final class ModelFileStoreHandlerSupplier implements FileStoreHandlerSupplier {

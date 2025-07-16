@@ -49,13 +49,13 @@
 package org.knime.python3.nodes.proxy.model;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.Optional;
 
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortType;
+import org.knime.python3.views.PythonNodeViewStoragePath;
 
 /**
  *
@@ -94,7 +94,7 @@ public interface NodeExecutionProxy extends NodeModelProxy {
         /**
          * @return path to the view of the node (if there is one)
          */
-        Optional<Path> getView();
+        Optional<PythonNodeViewStoragePath> getView();
     }
 
 }

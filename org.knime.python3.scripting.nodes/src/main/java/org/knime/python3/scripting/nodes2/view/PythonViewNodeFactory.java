@@ -86,7 +86,10 @@ public class PythonViewNodeFactory extends ConfigurableNodeFactory<PythonScriptN
 
     @Override
     public NodeView createNodeView(final PythonScriptNodeModel nodeModel) {
-        return new HtmlFileNodeView(nodeModel::getPathToHtmlView);
+        return HtmlFileNodeView.builder() //
+            .htmlSupplier(nodeModel::getPathToHtmlView) //
+            .canBeUsedInReport(nodeModel::canViewBeUsedInReport) //
+            .build();
     }
 
     @Override

@@ -85,7 +85,7 @@ import org.knime.python3.PythonDataSource;
 import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.arrow.PythonArrowDataSource;
 import org.knime.python3.arrow.PythonArrowTableConverter;
-import org.knime.python3.views.PythonNodeViewSink;
+import org.knime.python3.views.PythonNodeViewStoragePath;
 
 /**
  * Static utilities for getting KNIME port data to a Python process and back.
@@ -257,12 +257,13 @@ final class PythonIOUtils {
      *
      * @throws IOException if the temporary file could not be created
      */
-    static Optional<Path> getOutputView(final PythonScriptingEntryPoint pythonEntryPoint) throws IOException {
-        final var path = PathUtils.createTempFile("output_view", ".html");
-        if (pythonEntryPoint.getOutputView(new PythonNodeViewSink(path.toAbsolutePath().toString()))) {
+    static Optional<PythonNodeViewStoragePath> getOutputView(final PythonScriptingEntryPoint pythonEntryPoint)
+        throws IOException {
+        final var path = new PythonNodeViewStoragePath();
+        if (pythonEntryPoint.getOutputView(path.getSink())) {
             return Optional.of(path);
         } else {
-            PathUtils.deleteFileIfExists(path);
+            path.deleteIfExists();
             return Optional.empty();
         }
     }

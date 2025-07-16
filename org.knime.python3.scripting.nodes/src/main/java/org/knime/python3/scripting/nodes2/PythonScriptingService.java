@@ -70,13 +70,13 @@ import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.workflow.FlowObjectStack;
 import org.knime.core.node.workflow.NodeContext;
-import org.knime.core.util.PathUtils;
 import org.knime.core.util.ThreadUtils;
 import org.knime.core.webui.data.DataServiceContext;
 import org.knime.python3.scripting.nodes2.PythonScriptingService.ExecutableOption.ExecutableOptionType;
 import org.knime.python3.scripting.nodes2.PythonScriptingSession.ExecutionInfo;
 import org.knime.python3.scripting.nodes2.PythonScriptingSession.ExecutionStatus;
 import org.knime.python3.scripting.nodes2.PythonScriptingSession.FileStoreHandlerSupplier;
+import org.knime.python3.views.PythonNodeViewStoragePath;
 import org.knime.scripting.editor.CodeGenerationRequest;
 import org.knime.scripting.editor.InputOutputModel;
 import org.knime.scripting.editor.ScriptingService;
@@ -104,7 +104,7 @@ final class PythonScriptingService extends ScriptingService {
 
     private PythonScriptingSession m_interactiveSession;
 
-    private Optional<Path> m_view;
+    private Optional<PythonNodeViewStoragePath> m_view;
 
     /**
      * Create a new {@link PythonScriptingService}.
@@ -185,9 +185,9 @@ final class PythonScriptingService extends ScriptingService {
     }
 
     public InputStream openHtmlPreview() {
-        if (m_view.isPresent() && Files.exists(m_view.get())) {
+        if (m_view.isPresent() && Files.exists(m_view.get().getPath())) {
             try {
-                return Files.newInputStream(m_view.get());
+                return Files.newInputStream(m_view.get().getPath());
             } catch (IOException ex) {
                 LOGGER.error("Failed to open preview.", ex);
                 return InputStream.nullInputStream();
@@ -201,7 +201,7 @@ final class PythonScriptingService extends ScriptingService {
     private void clearView() {
         m_view.ifPresent(v -> {
             try {
-                PathUtils.deleteFileIfExists(v);
+                v.deleteIfExists();
             } catch (IOException ex) {
                 LOGGER.error("Failed to delete the preview.", ex);
             }
