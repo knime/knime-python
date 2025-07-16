@@ -53,8 +53,11 @@ LOGGER = logging.getLogger("knime.api.views")
 _SVG_HTML_BODY = """
 <!DOCTYPE html>
 <html>
+    <head>
+        <script type="text/javascript">{js}</script>
+    </head>
     <body>
-    {svg}
+        <div id="view-container">{svg}</div>
     </body>
 </html>
 """
@@ -62,8 +65,9 @@ _SVG_HTML_BODY = """
 _PNG_HTML_BODY = """
 <!DOCTYPE html>
 <html>
+    <head><script type="text/javascript">{js}</script></head>
     <body>
-    <img src="data:image/png;base64,{png_b64}" style="width: 100%; height: 100%;" />
+    <img id="view-container" src="data:image/png;base64,{png_b64}" style="width: 100%; height: 100%;" />
     </body>
 </html>
 """
@@ -71,8 +75,9 @@ _PNG_HTML_BODY = """
 _JPEG_HTML_BODY = """
 <!DOCTYPE html>
 <html>
+    <head><script type="text/javascript">{js}</script></head>
     <body>
-    <img src="data:image/jpeg;base64,{jpeg_b64}" style="width: 100%; height: 100%;" />
+        <img id="view-container" src="data:image/jpeg;base64,{jpeg_b64}" style="width: 100%; height: 100%;" />
     </body>
 </html>
 """
@@ -115,6 +120,8 @@ file.
 
 :meta hide-value:
 """
+
+_IMAGE_REPORTING_JS = KNIME_UI_EXT_SERVICE_JS + _read_js_file("image-reporting.js")
 
 
 class NodeView:
@@ -332,7 +339,7 @@ def view_svg(svg: str) -> NodeView:
     svg : str
         A string containing the SVG.
     """
-    return NodeView(_SVG_HTML_BODY.format(svg=svg), svg_or_png=svg)
+    return NodeView(_SVG_HTML_BODY.format(svg=svg, js=_IMAGE_REPORTING_JS), svg_or_png=svg)
 
 
 def view_png(png: bytes) -> NodeView:
@@ -345,7 +352,7 @@ def view_png(png: bytes) -> NodeView:
         The bytes of the PNG image
     """
     b64 = base64.b64encode(png).decode("ascii")
-    return NodeView(_PNG_HTML_BODY.format(png_b64=b64), svg_or_png=png)
+    return NodeView(_PNG_HTML_BODY.format(png_b64=b64, js=_IMAGE_REPORTING_JS), svg_or_png=png)
 
 
 def view_jpeg(jpeg: bytes) -> NodeView:
@@ -358,7 +365,7 @@ def view_jpeg(jpeg: bytes) -> NodeView:
         The bytes of the JPEG image
     """
     b64 = base64.b64encode(jpeg).decode("ascii")
-    return NodeView(_JPEG_HTML_BODY.format(jpeg_b64=b64), svg_or_png=jpeg)
+    return NodeView(_JPEG_HTML_BODY.format(jpeg_b64=b64, js=_IMAGE_REPORTING_JS), svg_or_png=jpeg)
 
 
 ##########################################################################
