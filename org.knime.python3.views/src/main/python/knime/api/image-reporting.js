@@ -7,6 +7,12 @@ KnimeUIExtensionService.ReportingService.getInstance().then((service) => {
     svg.style.width = "100%";
     svg.style.height = "100%";
     svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+
+    // Remove any <metadata> elements from the SVG to avoid issues with XML namespaces
+    const metadataElement = svg.querySelector("metadata");
+    if (metadataElement && metadataElement.parentNode) {
+      metadataElement.parentNode.removeChild(metadataElement);
+    }
   }
 
   if (viewElement) {
