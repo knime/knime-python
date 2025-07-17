@@ -83,6 +83,19 @@ class KnimeViewsTest(unittest.TestCase):
             # Using an object that has _repr_html_
             check_view(kv.view(ViewableClass(html=html)), html)
 
+    def test_html_view_with_reporting(self):
+        def check_view(html_view, html):
+            self.assertIsInstance(html_view, kv.NodeView)
+            self.assertEqual(html_view.html, html)
+            self.assertTrue(html_view.can_be_used_in_report)
+
+        html = self.htmls[0]
+        html_view = kv.view_html(html, can_be_used_in_report=True)
+
+        self.assertIsInstance(html_view, kv.NodeView)
+        self.assertEqual(html_view.html, html)
+        self.assertTrue(html_view.can_be_used_in_report)
+
     def test_svg_view(self):
         def check_view(svg_view, svg):
             self.assertIsInstance(svg_view, kv.NodeView)
@@ -105,7 +118,9 @@ class KnimeViewsTest(unittest.TestCase):
     def test_png_view(self):
         def check_view(png_view):
             self.assertIsInstance(png_view, kv.NodeView)
-            self.assertTrue('<img id="view-container" src="data:image/png;base64' in png_view.html)
+            self.assertTrue(
+                '<img id="view-container" src="data:image/png;base64' in png_view.html
+            )
             self.assertTrue(is_html(png_view.html))
             self.assertEqual(png_view.render(), png)
             self.assertTrue(png_view.can_be_used_in_report)
@@ -124,7 +139,9 @@ class KnimeViewsTest(unittest.TestCase):
     def test_jpeg_view(self):
         def check_view(jpeg_view):
             self.assertIsInstance(jpeg_view, kv.NodeView)
-            self.assertTrue('<img id="view-container" src="data:image/jpeg;base64' in jpeg_view.html)
+            self.assertTrue(
+                '<img id="view-container" src="data:image/jpeg;base64' in jpeg_view.html
+            )
             self.assertTrue(is_html(jpeg_view.html))
             self.assertEqual(jpeg_view.render(), jpeg)
             self.assertTrue(jpeg_view.can_be_used_in_report)
@@ -184,13 +201,17 @@ class KnimeViewsTest(unittest.TestCase):
         # PNG next
         png_viewable = ViewableClass(png=self.pngs[0], jpeg=self.jpegs[0])
         png_view = kv.view(png_viewable)
-        self.assertTrue('<img id="view-container" src="data:image/png;base64' in png_view.html)
+        self.assertTrue(
+            '<img id="view-container" src="data:image/png;base64' in png_view.html
+        )
         self.assertEqual(png_view.render(), self.pngs[0])
 
         # JPEG next
         jpeg_viewable = ViewableClass(jpeg=self.jpegs[0])
         jpeg_view = kv.view(jpeg_viewable)
-        self.assertTrue('<img id="view-container" src="data:image/jpeg;base64' in jpeg_view.html)
+        self.assertTrue(
+            '<img id="view-container" src="data:image/jpeg;base64' in jpeg_view.html
+        )
         self.assertEqual(jpeg_view.render(), self.jpegs[0])
 
     def test_repr_html_render(self):
@@ -220,7 +241,10 @@ class KnimeViewsTest(unittest.TestCase):
         def check_view(matplotlib_view):
             self.assertIsInstance(matplotlib_view, kv.NodeView)
             self.assertTrue(is_html(matplotlib_view.html))
-            self.assertTrue('<img id="view-container" src="data:image/png;base64' in matplotlib_view.html)
+            self.assertTrue(
+                '<img id="view-container" src="data:image/png;base64'
+                in matplotlib_view.html
+            )
             render_repr = matplotlib_view.render()
             self.assertTrue(
                 base64.b64encode(render_repr).decode("ascii") in matplotlib_view.html
