@@ -317,6 +317,7 @@ def view_html(
     html: str,
     svg_or_png: Optional[Union[str, bytes]] = None,
     render_fn: Optional[Callable[[], Union[str, bytes]]] = None,
+    can_be_used_in_report=False,
 ) -> NodeView:
     """
     Create a NodeView that displays the given HTML document.
@@ -334,7 +335,12 @@ def view_html(
     render_fn : callable
         A callable that returns an SVG or PNG representation of the page.
     """
-    return NodeView(html, svg_or_png=svg_or_png, render_fn=render_fn)
+    return NodeView(
+        html,
+        svg_or_png=svg_or_png,
+        render_fn=render_fn,
+        can_be_used_in_report=can_be_used_in_report,
+    )
 
 
 def view_svg(svg: str) -> NodeView:
