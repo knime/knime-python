@@ -49,6 +49,8 @@ Provides access to environment variables and other information about the KNIME P
 """
 
 import os
+import re
+from urllib.parse import urlsplit, quote_plus, unquote_plus
 
 try:
     from dataclasses import dataclass
@@ -58,6 +60,7 @@ from typing import Optional, Tuple
 import logging
 
 supported_proxy_protocols = ["http", "https"]
+no_proxy_key = "no_proxy"
 
 
 @dataclass
@@ -163,7 +166,9 @@ class ProxySettings:
         proxy_env_string = "http://"
 
         if self.has_credentials():
-            proxy_env_string += f"{self.user_name}:{self.password}@"
+            proxy_env_string += (
+                f"{quote_plus(self.user_name)}:{quote_plus(self.password)}@"
+            )
 
         proxy_env_string += f"{self.host_name}"
 
@@ -202,9 +207,44 @@ class ProxySettings:
         if proxy_env_variable and proxy_env_string:
             os.environ[proxy_env_variable] = proxy_env_string
         if self.exclude_hosts:
+            excluded_hosts_list = []
+            for host in self.exclude_hosts.split("|"):
+                excluded_hosts_list.append(ProxySettings._translate_excluded_host(host))
+
             # Replace '|' with ',' in NO_PROXY because Java uses '|' as a separator,
             # but python-httpx expects ',' for the NO_PROXY environment variable.
-            os.environ["NO_PROXY"] = self.exclude_hosts.replace("|", ",")
+            os.environ[no_proxy_key] = ",".join(excluded_hosts_list)
+
+    @staticmethod
+    def _translate_excluded_host(host: str) -> str:
+        """
+        Translation from a Java-accepted excluded host to a Python-accepted excluded host
+        for proxies. The translation itself is not as trivial, e.g. since Python treats wildcards
+        as plain literals, but - on the other hand - employs additional suffix matching.
+
+        See "https://about.gitlab.com/blog/we-need-to-talk-no-proxy/#the-lowest-common-denominator".
+
+        Returns
+        -------
+            str: The excluded host that can be set (or ","-joined) as "no_proxy" environment variable
+        """
+        if host is None:
+            return ""
+
+        host = host.strip()
+        if host == "*":
+            # Proxy is disabled for all hosts.
+            return "*"
+        # Suffix matching requires a "leading-dot" syntax.
+        suffix = re.match(r"^\*[^.]", host)
+        # If removing wildcards causes an invalid URL (e.g. "*.*.knime.com" -> "..knime.com"),
+        # replace multiple dots (2 or more) with a single one.
+        host = re.sub(r"\.{2,}", ".", host.replace("*", ""))
+        # If we get a single dot, proxy is disabled for all hosts (e.g. "*.*" -> ".").
+        if host == ".":
+            return "*"
+
+        return f".{host}" if suffix else host
 
     @classmethod
     def from_string(cls, proxy_string, exclude_hosts: Optional[str] = None):
@@ -227,9 +267,10 @@ class ProxySettings:
         ProxySettings
             The proxy settings object
         """
+        parts = urlsplit(proxy_string)
+
         # Parse the protocol
-        protocol_name, proxy_string = proxy_string.split("://", 1)
-        protocol_name = protocol_name.lower()
+        protocol_name = parts.scheme.lower()
         if protocol_name not in supported_proxy_protocols:
             raise ValueError(
                 f"Invalid or unsupported protocol: {protocol_name}, to see all supported protocols, "
@@ -237,18 +278,12 @@ class ProxySettings:
             )
 
         # Parse the user and password
-        user_name, password = None, None
-        if "@" in proxy_string:
-            # The user and password is provided
-            user_password, proxy_string = proxy_string.split("@", 1)
-            user_name, password = user_password.split(":", 1)
+        user_name = unquote_plus(parts.username) if parts.username else None
+        password = unquote_plus(parts.password) if parts.password else None
 
         # Parse the host and port
-        host_name, port_number = None, None
-        if ":" in proxy_string:
-            host_name, port_number = proxy_string.split(":", 1)
-        else:  # if no port is provided
-            host_name = proxy_string
+        host_name = parts.hostname
+        port_number = str(parts.port) if parts.port is not None else None
 
         return cls(
             protocol_name=protocol_name,
@@ -340,7 +375,7 @@ def get_proxy_settings(protocol_name: Optional[str] = None) -> Optional[ProxySet
     if not proxy_env_string:
         return None
 
-    exclude_hosts = os.environ.get("NO_PROXY", None)
+    exclude_hosts = os.environ.get(no_proxy_key, None)
     return ProxySettings.from_string(proxy_env_string, exclude_hosts)
 
 

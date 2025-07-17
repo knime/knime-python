@@ -43,6 +43,7 @@
 # ------------------------------------------------------------------------
 
 import os
+from urllib.parse import quote_plus
 import unittest
 from unittest import mock
 
@@ -52,15 +53,17 @@ import knime.extension.env as ke  # old import to test forwarding
 class TestProxySettings(unittest.TestCase):
     os_env_literal = "os.environ"
     no_proxy_literal = "localhost,127.0.0.1"
-    proxy_string_user_pw = "http://user:password@localhost:8080"
+    proxy_string_user_pw = (
+        f"""http://{quote_plus("us@r!")}:{quote_plus("p@ss:word")}@localhost:8080"""
+    )
 
     def test_create_proxy_environment_variable_strings(self):
         proxy = ke.ProxySettings(
             protocol_name="http",
             host_name="localhost",
             port_number="8080",
-            user_name="user",
-            password="password",
+            user_name="us@r!",
+            password="p@ss:word",
         )
         variable, value = proxy.create_proxy_environment_key_value_pair()
         self.assertEqual(variable, "http_proxy")
@@ -72,13 +75,13 @@ class TestProxySettings(unittest.TestCase):
                 protocol_name="http",
                 host_name="localhost",
                 port_number="8080",
-                user_name="user",
-                password="password",
+                user_name="us@r!",
+                password="p@ss:word",
                 exclude_hosts=self.no_proxy_literal,
             )
             proxy.set_as_environment_variable()
             self.assertEqual(os.environ.get("http_proxy"), self.proxy_string_user_pw)
-            self.assertEqual(os.environ.get("NO_PROXY"), self.no_proxy_literal)
+            self.assertEqual(os.environ.get("no_proxy"), self.no_proxy_literal)
 
     def test_from_string(self):
         proxy = ke.ProxySettings.from_string(
@@ -91,7 +94,7 @@ class TestProxySettings(unittest.TestCase):
             self.os_env_literal,
             {
                 "http_proxy": self.proxy_string_user_pw,
-                "NO_PROXY": self.no_proxy_literal,
+                "no_proxy": self.no_proxy_literal,
             },
         ):
             proxy = ke.get_proxy_settings("http")
@@ -101,9 +104,40 @@ class TestProxySettings(unittest.TestCase):
         self.assertEqual(proxy.protocol_name, "http")
         self.assertEqual(proxy.host_name, "localhost")
         self.assertEqual(proxy.port_number, "8080")
-        self.assertEqual(proxy.user_name, "user")
-        self.assertEqual(proxy.password, "password")
+        self.assertEqual(proxy.user_name, "us@r!")
+        self.assertEqual(proxy.password, "p@ss:word")
         self.assertEqual(proxy.exclude_hosts, self.no_proxy_literal)
+
+    def test_java_to_python_no_proxy_translation(self):
+        # fmt: off
+        for raw, expected in {
+            "*.example.com": ".example.com",  # star-dot prefix -> leading dot
+            "*example.com" : ".example.com",  # star prefix     -> leading dot
+            "*.*.knime.com": ".knime.com",    # multiple stars  -> collapse & single dot
+            "example.com"  : "example.com",   # no wildcard     -> unchanged
+            "*.*.*"        : "*",             # only stars/dots -> star
+            "*"            : "*",             # single star     -> preserved
+        }.items():
+        # fmt: on
+            self.assertEqual(
+                ke.ProxySettings._translate_excluded_host(raw),
+                expected,
+            )
+
+        java_no_proxy = "localhost|*.example.com|*example.org|*.*.knime.com|*"
+        python_no_proxy = "localhost,.example.com,.example.org,.knime.com,*"
+
+        with mock.patch(self.os_env_literal, {}):
+            proxy = ke.ProxySettings(
+                protocol_name="http",
+                host_name="localhost",
+                exclude_hosts=java_no_proxy,
+            )
+            proxy.set_as_environment_variable()
+            self.assertEqual(
+                os.environ.get("no_proxy"),
+                python_no_proxy
+            )
 
 
 if __name__ == "__main__":
