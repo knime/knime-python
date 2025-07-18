@@ -408,7 +408,7 @@ def register_extension(plugin_xml: str, value_factory_to_type_name_map: dict = N
             for python_value_factory in module.findall("PythonValueFactory"):
                 value_factory_str = (
                     '{\\"value_factory_class\\":\\"'
-                    + python_value_factory.get("ValueTypeName")
+                    + python_value_factory.get("ValueFactory")
                     + '\\"}'
                 )
 
