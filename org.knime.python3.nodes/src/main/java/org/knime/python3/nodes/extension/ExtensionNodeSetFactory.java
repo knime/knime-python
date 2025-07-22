@@ -318,6 +318,9 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
                             if (m_nodeViewProxy != null) {
                                 m_nodeViewProxy.close();
                                 m_nodeViewProxy = null;
+                            }
+                            if (m_dataServiceProxy != null) {
+                                m_dataServiceProxy.close();
                                 m_dataServiceProxy = null;
                             }
                         }

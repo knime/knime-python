@@ -66,7 +66,7 @@ public interface NodeViewProxy extends AsynchronousCloseable<RuntimeException> {
      *
      * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
      */
-    interface DataServiceProxy {
+    interface DataServiceProxy extends AutoCloseable {
         String handleJsonRpcRequest(String param);
     }
 
