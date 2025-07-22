@@ -466,7 +466,7 @@ final class CloseablePythonNodeProxy
         exec.setMessage(""); // Reset the message -> Only show the message from Python
         var progressMonitor = exec.createSubProgress(0.8);
 
-        var nodeContainer = NodeContext.getContext().getNodeContainer();
+        var nodeContainer = (NativeNodeContainer)NodeContext.getContext().getNodeContainer();
 
         final var pythonExecContext = new PythonNodeModelProxy.PythonExecutionContext() {
 
