@@ -10,13 +10,13 @@ source:
 
 requirements:
   build:
-    - python=3.9
+    - python=3.11
     - pip
     - setuptools
     - build
     - wheel
   run:
-    - python>=3.9
+    - python>=3.11
 
 build:
   noarch: python
