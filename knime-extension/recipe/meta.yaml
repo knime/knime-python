@@ -10,7 +10,7 @@ source:
 
 requirements:
   build:
-    - python
+    - python=3.9
     - pip
     - setuptools
     - build
@@ -20,7 +20,7 @@ requirements:
 
 build:
   noarch: python
-  string: py{{ python | replace(".", "") }}_{{time.strftime("%Y%m%d%H%M").strip()}}
+  string: {{time.strftime("%Y%m%d%H%M").strip()}}
   script: python -m pip install . --no-build-isolation
 
 test:
