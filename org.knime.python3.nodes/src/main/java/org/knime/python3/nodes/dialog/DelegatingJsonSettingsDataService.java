@@ -59,11 +59,11 @@ import org.knime.core.webui.node.dialog.NodeAndVariableSettingsRO;
 import org.knime.core.webui.node.dialog.NodeAndVariableSettingsWO;
 import org.knime.core.webui.node.dialog.NodeSettingsService;
 import org.knime.core.webui.node.dialog.SettingsType;
-import org.knime.core.webui.node.dialog.defaultdialog.DefaultNodeSettings.DefaultNodeSettingsContext;
 import org.knime.core.webui.node.dialog.defaultdialog.dataservice.DefaultDialogDataConverter;
 import org.knime.core.webui.node.dialog.defaultdialog.jsonforms.JsonFormsConsts;
 import org.knime.core.webui.node.dialog.defaultdialog.jsonforms.JsonFormsDataUtil;
 import org.knime.core.webui.node.dialog.defaultdialog.jsonforms.JsonNodeSettingsMapperUtil;
+import org.knime.node.parameters.NodeParametersInput;
 import org.knime.python3.nodes.proxy.NodeDialogProxy;
 import org.knime.python3.nodes.settings.JsonNodeSettingsSchema;
 
@@ -132,7 +132,7 @@ public final class DelegatingJsonSettingsDataService implements NodeSettingsServ
 
     @Override
     public JsonNode nodeSettingsToDataJson(final SettingsType type, final NodeSettingsRO nodeSettings,
-        final DefaultNodeSettingsContext context) throws InvalidSettingsException {
+        final NodeParametersInput context) throws InvalidSettingsException {
         var jsonSettings = m_lastSettingsSchema.createFromSettings(nodeSettings);
         var params = jsonSettings.getParameters();
 
