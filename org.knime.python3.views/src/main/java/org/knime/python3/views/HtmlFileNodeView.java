@@ -60,6 +60,7 @@ import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.webui.data.ApplyDataService;
+import org.knime.core.webui.data.DisposeDataServicesOnNodeStateChange;
 import org.knime.core.webui.data.InitialDataService;
 import org.knime.core.webui.data.RpcDataService;
 import org.knime.core.webui.node.view.NodeTableView;
@@ -72,7 +73,7 @@ import org.knime.core.webui.page.Page;
  * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
  */
 @SuppressWarnings("restriction") // webui node views are still restricted API
-public final class HtmlFileNodeView implements NodeTableView {
+public final class HtmlFileNodeView implements NodeTableView, DisposeDataServicesOnNodeStateChange {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(HtmlFileNodeView.class);
 
