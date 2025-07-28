@@ -774,12 +774,13 @@ final class CloseablePythonNodeProxy
 
         private final IFileStoreHandler m_readFileStoreHandlerDelegate;
 
-        private final IWriteFileStoreHandler m_writeFileStoreHandlerDelegate;
+        private final NotInWorkflowWriteFileStoreHandler m_writeFileStoreHandlerDelegate;
 
         DelegatingAndNotInWorkflowWriteFileStoreHandler(final IFileStoreHandler readFileStoreHandlerDelegate) {
             m_readFileStoreHandlerDelegate = readFileStoreHandlerDelegate;
             m_writeFileStoreHandlerDelegate = new NotInWorkflowWriteFileStoreHandler(UUID.randomUUID(),
                 readFileStoreHandlerDelegate.getDataRepository());
+            m_writeFileStoreHandlerDelegate.open();
         }
 
         @Override
