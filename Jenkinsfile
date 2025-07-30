@@ -15,6 +15,13 @@ static final String DEFAULT_WF_TESTS_PYTHON_ENV = 'bundled'
 @groovy.transform.Field
 static final List<String> PYTEST_PYTHON_ENVS = ['env_py38_legacy', 'env_py38', 'env_py39', 'env_py311', "env_py311kn55"]
 
+@groovy.transform.Field
+static final Map<String,String> MM_CHECK_LABELS = [
+    ubuntu22   : 'ubuntu22.04 && workflow-tests',
+    mac_arm64  : 'macosx-aarch  && workflow-tests',   // Apple Silicon
+    mac_intel  : 'macosx        && workflow-tests'    // Intel macOS
+]
+
 library "knime-pipeline@$BN"
 
 def baseBranch = (BN == KNIMEConstants.NEXT_RELEASE_BRANCH ? 'master' : BN.replace('releases/', ''))
@@ -48,6 +55,35 @@ properties([
 ])
 
 try {
+    stage('Check micromamba on all workflow‑test agents') {
+
+        def mmParallel = [:]
+
+        MM_CHECK_LABELS.each { key, label ->
+            mmParallel[key] = {
+                node(label) {                    // gives a workspace on that agent
+                    sh """
+                        set -euo pipefail
+                        echo '===== Agent: ${NODE_NAME} (${label}) ====='
+                        if command -v uname >/dev/null 2>&1; then
+                            uname -srm                # Linux / macOS summary
+                        else
+                            ver                       # Windows
+                        fi
+
+                        echo 'micromamba path  : ' \$(command -v micromamba || echo 'NOT INSTALLED')
+                        micromamba --version   || true
+                        # first matching 'platform:' line → linux-64, osx-arm64, …
+                        micromamba info | grep -m1 'platform:' || true
+                        echo '============================================='
+                    """
+                }
+            }
+        }
+        /* run the three checks side‑by‑side */
+        parallel mmParallel
+    }
+
     node('maven && java17 && ubuntu22.04 && workflow-tests') {
         knimetools.defaultTychoBuild(updateSiteProject: 'org.knime.update.python')
     }
@@ -145,51 +181,76 @@ try {
     notifications.notifyBuild(currentBuild.result)
 }
 
+def createAndCheckEnv(String envYml, String envDir) {
+    sh """
+        set -euo pipefail
+        echo ">>> Creating conda env from ${envYml} into ${envDir}"
+        micromamba create -y -p "${envDir}" -f "${envYml}"
+
+        echo ">>> Listing ${envDir}/bin"
+        ls -l "${envDir}/bin" || true
+
+        echo ">>> Checking python executable"
+        "${envDir}/bin/python" -V
+
+        echo ">>> Print architecture of python binary"
+        file "${envDir}/bin/python" || true
+    """
+}
+
+
 def runPython3MultiversionWorkflowTestConfig(String environmentFile, String baseBranch) {
-    withEnv([ "KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT=${environmentFile}" ]) {
-        stage("Workflowtests with Python: ${environmentFile}") {
-            workflowTests.runTests(
-                dependencies: [
-                    repositories: [
-                        'knime-chemistry',
-                        'knime-database',
-                        'knime-office365',
-                        'knime-datageneration',
-                        'knime-distance',
-                        'knime-ensembles',
-                        'knime-filehandling',
-                        'knime-jep',
-                        'knime-jfreechart',
-                        'knime-js-base',
-                        'knime-kerberos',
-                        'knime-python',
-                        'knime-python-types',
-                        'knime-core-columnar',
-                        'knime-testing-internal',
-                        'knime-xml',
-                        'knime-python-legacy',
-                        'knime-conda',
-                        'knime-conda-channels',
-                        'knime-python-nodes-testing',
-                        'knime-base-views',
-                        'knime-scripting-editor',
-                        'knime-gateway',
-                        'knime-credentials-base',
-                        'knime-google',
-                        'knime-cloud',
-                        'knime-buildworkflows',
-                        'knime-productivity-oss',
-                        'knime-reporting',
-                        'knime-cef',
-                        'knime-hubclient-sdk',
+    node('workflow-tests') {
+        withEnv([ "KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT=${environmentFile}" ]) {
+             stage("Prepare env ${environmentFile}") {
+                String envDir = "${env.WORKSPACE}/python_test_environment"
+                String envYml = "${env.WORKSPACE}/${environmentFile}"
+                createAndCheckEnv(envYml, envDir)
+            }
+            stage("Workflowtests with Python: ${environmentFile}") {
+                workflowTests.runTests(
+                    dependencies: [
+                        repositories: [
+                            'knime-chemistry',
+                            'knime-database',
+                            'knime-office365',
+                            'knime-datageneration',
+                            'knime-distance',
+                            'knime-ensembles',
+                            'knime-filehandling',
+                            'knime-jep',
+                            'knime-jfreechart',
+                            'knime-js-base',
+                            'knime-kerberos',
+                            'knime-python',
+                            'knime-python-types',
+                            'knime-core-columnar',
+                            'knime-testing-internal',
+                            'knime-xml',
+                            'knime-python-legacy',
+                            'knime-conda',
+                            'knime-conda-channels',
+                            'knime-python-nodes-testing',
+                            'knime-base-views',
+                            'knime-scripting-editor',
+                            'knime-gateway',
+                            'knime-credentials-base',
+                            'knime-google',
+                            'knime-cloud',
+                            'knime-buildworkflows',
+                            'knime-productivity-oss',
+                            'knime-reporting',
+                            'knime-cef',
+                            'knime-hubclient-sdk',
+                        ],
+                        ius: [
+                            'org.knime.features.chem.types.feature.group',
+                            'org.knime.features.core.columnar.feature.group',
+                            'org.knime.features.ext.office365.filehandling.feature.group'
+                        ]
                     ],
-                    ius: [
-                        'org.knime.features.chem.types.feature.group',
-                        'org.knime.features.core.columnar.feature.group',
-                        'org.knime.features.ext.office365.filehandling.feature.group'
-                    ]
-                ],
-            )
+                )
+            }
         }
     }
 }
