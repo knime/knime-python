@@ -269,7 +269,11 @@ final class CloseablePythonNodeProxy
 
             @Override
             public String[] get_credential_names() {
-                return getNode().getCredentialsProvider().listNames().toArray(String[]::new);
+                CredentialsProvider credentialsProvider = getNode().getCredentialsProvider();
+                if (credentialsProvider == null) {
+                    return new String[0];
+                }
+                return credentialsProvider.listNames().toArray(String[]::new);
             }
 
             @Override
