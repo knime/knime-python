@@ -12,10 +12,15 @@ if [[ -n $KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT ]]; then
 		envPath="${WORKSPACE}/python_test_environment"
 		echo "Creating Conda environment for: ${KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT} at ${envPath}"
 
+		# Disable code signing so that micromamba can run without issues on macOS-aarch64
+		export LIBMAMBA_DISABLE_CODE_SIGNING=1
+		export MAMBA_NO_CODE_SIGNING=1
+
 		micromamba create \
 			-r ${WORKSPACE}/micromamba-root \
 			-p ${envPath} \
-			-f ${WORKSPACE}/workflow-tests/${KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT}
+			-f ${WORKSPACE}/workflow-tests/${KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT} \
+			--no-code-signing
 		micromamba list -p ${envPath}
 
 		sedi "s|<placeholder_for_env_path>|${envPath}|g" "${prefPath}"
