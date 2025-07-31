@@ -218,7 +218,7 @@ def view(obj) -> NodeView:
     ----------------------------------------------------------------
     The input must match one of the following patterns:
 
-    - **HTML**  ``str`` starting with ``"<!DOCTYPE html>"``.  
+    - **HTML**  ``str`` starting with ``"<!DOCTYPE html>"``.
       Must be self-contained; external links open in a browser.
     - **SVG**   ``str`` containing valid ``<svg … xmlns="…">`` markup.
     - **PNG**   ``bytes`` beginning with the PNG magic number.
@@ -462,7 +462,7 @@ def view_matplotlib(fig=None, format="png") -> NodeView:
     Create a :class:`NodeView` that displays a **matplotlib** figure and is
     *report-ready* out of the box.
 
-    The figure is exported as a PNG or SVG (controlled by *format*).  
+    The figure is exported as a PNG or SVG (controlled by *format*).
     If *fig* is *None*, the current active figure is used.  The figure is
     then closed so it should not be modified afterwards.
 
