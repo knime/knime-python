@@ -122,8 +122,8 @@ import org.knime.python3.nodes.proxy.model.NodeExecutionProxy;
 import org.knime.python3.nodes.settings.JsonNodeSettings;
 import org.knime.python3.nodes.settings.JsonNodeSettingsSchema;
 import org.knime.python3.utils.FlowVariableUtils;
-import org.knime.python3.views.PythonNodeViewStoragePath;
 import org.knime.python3.views.PythonNodeViewSink;
+import org.knime.python3.views.PythonNodeViewStoragePath;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
@@ -929,7 +929,8 @@ final class CloseablePythonNodeProxy
         m_proxy.initializeJavaCallback(callback);
 
         var nnc = (NativeNodeContainer)NodeContext.getContext().getNodeContainer();
-        var exec = nnc.createExecutionContext();
+        var fileStoreSwitcher = FileStoreSwitcher.create(nnc);
+        var exec = fileStoreSwitcher.createExecutionContext();
         var toolExecutor = new ToolExecutor(exec, nnc, m_tableManager);
         var context = new DefaultViewContext(toolExecutor, portMapProvider, credentialsProvider);
 
@@ -950,8 +951,38 @@ final class CloseablePythonNodeProxy
             @Override
             public void close() throws Exception {
                 toolExecutor.close();
+                fileStoreSwitcher.close();
             }
         };
+    }
+
+    private record FileStoreSwitcher(NativeNodeContainer nodeContainer, IFileStoreHandler originalFileStoreHandler,
+        IWriteFileStoreHandler temporaryFileStoreHandler) implements AutoCloseable {
+
+        static FileStoreSwitcher create(final NativeNodeContainer nodeContainer) {
+            var originalFileStoreHandler = nodeContainer.getNode().getFileStoreHandler();
+            // Hack to make sure all nodes within the 'virtual workflow' used for the tool execution
+            // use a suitable file store handler in case the host node is already executed (e.g. Agent Chat View).
+            // We temporarily(!) replace the file store handler of the host node with a more suitable one (and make
+            // sure its available via the WorkflowDataRepository) such that
+            // FlowVirtualScopeContext.createFileStoreHandler returns it.
+            final var temporaryFileStoreHandler =
+                new NotInWorkflowWriteFileStoreHandler(UUID.randomUUID(), originalFileStoreHandler.getDataRepository());
+            temporaryFileStoreHandler.open();
+            nodeContainer.getNode().setFileStoreHandler(temporaryFileStoreHandler);
+            return new FileStoreSwitcher(nodeContainer, originalFileStoreHandler, temporaryFileStoreHandler);
+        }
+
+        ExecutionContext createExecutionContext() {
+            return nodeContainer.createExecutionContext();
+        }
+
+        @Override
+        public void close() {
+            temporaryFileStoreHandler.close();
+            temporaryFileStoreHandler.clearAndDispose();
+            nodeContainer.getNode().setFileStoreHandler(originalFileStoreHandler);
+        }
     }
 
 }
