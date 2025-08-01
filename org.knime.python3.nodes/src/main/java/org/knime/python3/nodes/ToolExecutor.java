@@ -52,11 +52,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Stream;
 
 import org.knime.core.data.filestore.FileStore;
-import org.knime.core.data.filestore.internal.NotInWorkflowWriteFileStoreHandler;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.agentic.tool.ToolValue;
@@ -111,24 +109,7 @@ final class ToolExecutor implements AutoCloseable {
         var tool = getTool(toolTable);
 
         NodeContext.pushContext(m_nodeContainer);
-        var originalFileStoreHandler = m_nodeContainer.getNode().getFileStoreHandler();
-        if (m_nodeContainer.getNodeContainerState().isExecuted()) {
-            // Hack to make sure all nodes within the 'virtual workflow' used for the tool execution
-            // use a suitable file store handler in case the host node is already executed (e.g. Agent Chat View).
-            // We temporarily(!) replace the file store handler of the host node with a more suitable one (and make
-            // sure its available via the WorkflowDataRepository) such that
-            // FlowVirtualScopeContext.createFileStoreHandler returns it.
-            final var temporaryFileStoreHandler =
-                new NotInWorkflowWriteFileStoreHandler(UUID.randomUUID(), originalFileStoreHandler.getDataRepository());
-            temporaryFileStoreHandler.open();
-            m_nodeContainer.getNode().setFileStoreHandler(temporaryFileStoreHandler);
-            // keep the temporary file store handler around until no more tool is executed - to still enable proper file store
-            // exchange between java/python and different tools till then
-            m_onCloseRunnables.add(() -> {
-                temporaryFileStoreHandler.close();
-                temporaryFileStoreHandler.clearAndDispose();
-            });
-        }
+
         try {
             var result = tool.execute(parameters, inputPortObjects, m_exec, executionHints);
             var outputs = result.outputs();
@@ -142,7 +123,6 @@ final class ToolExecutor implements AutoCloseable {
             return new PythonToolResult(result.message(), pyOutputs);
         } finally {
             NodeContext.removeLastContext();
-            m_nodeContainer.getNode().setFileStoreHandler(originalFileStoreHandler);
         }
     }
 
