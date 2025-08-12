@@ -2476,8 +2476,9 @@ class DateTimeParameter(_BaseParameter):
             This can lead to unexpected results, if the value is ambiguous (e.g. 01/02/03 can be parsed as 2001-02-03
             or 2003-01-02).
         user_input : bool
-            Whether the value is a user input or not. If the value is a user input, the date_format parameter is used
-            to parse the string.
+            Whether the value is a developer input or not. Set this to True if the value was provided by the developer
+            as one of the parameters (min, max, default). In these cases the date_format parameter is used to parse
+            the string.
 
         Returns
         -------
@@ -2504,7 +2505,8 @@ class DateTimeParameter(_BaseParameter):
         """
         Parses the string value to a datetime object.
         """
-        # we only want to use the date format when we have the input from the user, as we only get ISO strings from java
+        # user_input indicates that this string was provided by the developer
+        # -> it uses the "date_format" that the developer provided
         if self.date_format and user_input:
             try:
                 return datetime.datetime.strptime(value, self.date_format)
@@ -2513,6 +2515,8 @@ class DateTimeParameter(_BaseParameter):
                     f"Could not parse {value} to a datetime object. Please provide a string or a "
                     f"datetime object. If you provide a string please also provide a date format."
                 ) from e
+
+        # The value comes from the settings
         try:
             if str.endswith(value, "Z"):  # Java ISO 8601 format ends with Z
                 value = value.replace("Z", "")
