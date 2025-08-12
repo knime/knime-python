@@ -2447,11 +2447,7 @@ class DateTimeParameter(_BaseParameter):
         if not value:
             return None
 
-        iso_string = value.isoformat()
-        if not self.timezone:
-            # append Z to indicate UTC as it is necessary for the ISO 8601 format in java
-            iso_string = iso_string + "Z"
-        return iso_string
+        return value.isoformat()
 
     def _from_dict(self, value) -> Optional[datetime.date]:
         """Parses the value to a datetime object.
