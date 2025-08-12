@@ -2449,6 +2449,12 @@ class DateTimeParameter(_BaseParameter):
         if not value:
             return None
 
+        # If timezone is present, remove it from the datetime object before converting to ISO string
+        # For this parameter the timezone cannot be configured by the user but is only set by the node
+        # to a constant value. Therefore, the user sees a local date&time input field.
+        if self.timezone is not None and value.tzinfo is not None:
+            value = value.replace(tzinfo=None)
+
         return value.isoformat()
 
     def _from_dict(self, value) -> Optional[datetime.date]:
@@ -2493,8 +2499,10 @@ class DateTimeParameter(_BaseParameter):
         if not self.show_time:
             value = value.date()
 
-        if self.timezone is not None:
-            value = value.astimezone(pytz.timezone(self.timezone))
+        if self.timezone is not None and not value.tzinfo:
+            # NOTE: We only set the tzinfo and do not shift the value (as datetime.astimezone would do)
+            # because we want the user configured local date&time with the timezone
+            value = pytz.timezone(self.timezone).localize(value)
         return value
 
     def _parse_dt_string(self, value: str, user_input: bool):
