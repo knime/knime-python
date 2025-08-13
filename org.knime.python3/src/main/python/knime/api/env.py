@@ -50,6 +50,7 @@ Provides access to environment variables and other information about the KNIME P
 
 import os
 import re
+import tempfile
 from urllib.parse import urlsplit, quote_plus, unquote_plus
 
 try:
@@ -394,3 +395,20 @@ def _set_proxy_settings(java_callback):
         proxy_dict = dict(java_proxy_map)
         proxy_settings = ProxySettings.from_dict(proxy_dict)
         proxy_settings.set_as_environment_variable()
+
+
+def _set_tmp_directory(java_callback):
+    """
+    Set temporary directory to environment variables and Python tempfile.tempdir from Java callback.
+
+    Parameters
+    ----------
+    java_callback : object
+        The Java callback object. Must have the following methods:
+        - get_global_tmp_dir_path() -> String
+    """
+    tmp_directory = java_callback.get_global_tmp_dir_path()
+    tempfile.tempdir = tmp_directory
+    os.environ["TMPDIR"] = tmp_directory
+    os.environ["TEMP"] = tmp_directory
+    os.environ["TMP"] = tmp_directory

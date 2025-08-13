@@ -52,6 +52,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import org.knime.core.node.KNIMEConstants;
 import org.knime.core.node.NodeLogger;
 import org.knime.python3.PythonGateway;
 import org.knime.python3.PythonGatewayUtils;
@@ -158,6 +159,10 @@ final class CloseablePythonNodeProxyFactory {
             @SuppressWarnings("unused")
             public List<Map<String, String>> get_global_proxy_list() { // NOSONAR
                 return ProxyUtils.getGlobalProxyList();
+            }
+            @SuppressWarnings("unused")
+            public String get_global_tmp_dir_path() { // NOSONAR
+                return KNIMEConstants.getKNIMETempPath().toString();
             }
         };
         backend.initializeJavaCallback(callback);

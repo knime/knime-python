@@ -42,12 +42,17 @@
 #  when such Node is propagated with or for interoperation with KNIME.
 # ------------------------------------------------------------------------
 
+import logging
 import os
+import tempfile
 from urllib.parse import quote_plus
 import unittest
 from unittest import mock
 
 import knime.extension.env as ke  # old import to test forwarding
+from knime.api import env
+
+logger = logging.getLogger(__name__)
 
 
 class TestProxySettings(unittest.TestCase):
@@ -138,6 +143,72 @@ class TestProxySettings(unittest.TestCase):
                 os.environ.get("no_proxy"),
                 python_no_proxy
             )
+
+
+class TestTmpDirectorySettings(unittest.TestCase):
+    class JavaCallback(object):
+        """
+        Class to mimic Java callback after temporary path changes in Preferences.
+        """
+
+        def __init__(self, value):
+            self.value = value
+
+        def get_global_tmp_dir_path(self):
+            return self.value
+
+    @classmethod
+    def setUpClass(cls):
+        # Save path before test
+        cls.old_path = os.environ.get("TEMP", tempfile.gettempdir())
+        cls.new_path = os.path.join(cls.old_path, "TestTmpDirectorySettings")
+        logger.info(
+            f"Start TestTmpDirectorySettings  old_path={cls.old_path}, new_path={cls.new_path}"
+        )
+        os.mkdir(cls.new_path)
+
+    @classmethod
+    def tearDownClass(cls):
+        # Restore an original path from the build pipeline
+        java_callback = cls.JavaCallback(cls.old_path)
+        env._set_tmp_directory(java_callback)
+        logger.info(
+            f"Teardown tests and old_path={cls.old_path}, new_path={cls.new_path}"
+        )
+        # Cleanup
+        os.rmdir(cls.new_path)
+
+    def test_set_as_environment_variable(self):
+        expected_text = "Lorem ipsum"
+
+        java_callback = self.JavaCallback(self.new_path)
+        env._set_tmp_directory(java_callback)
+
+        # Check environment variables
+        assert self.new_path == os.environ["TMPDIR"]
+        assert self.new_path == os.environ["TMP"]
+        assert self.new_path == os.environ["TEMP"]
+
+        # Check temp path set
+        current_temp_dir = tempfile.gettempdir()
+        assert current_temp_dir == self.new_path
+
+        # Create a temp file
+        with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
+            file_name = f.name
+            f.write(expected_text)
+
+        # Check that file was created in a temp path
+        assert self.new_path in file_name
+
+        # Additionally, check content
+        with open(file_name, "r") as f:
+            actual_text = f.read()
+
+        # Cleanup tmp file
+        os.remove(file_name)
+
+        assert expected_text == actual_text
 
 
 if __name__ == "__main__":

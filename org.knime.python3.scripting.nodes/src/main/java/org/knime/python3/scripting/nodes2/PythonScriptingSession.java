@@ -74,6 +74,7 @@ import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.KNIMEConstants;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.util.CheckUtils;
@@ -247,6 +248,11 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
         @SuppressWarnings("unused")
         public List<Map<String, String>> get_global_proxy_list() { // NOSONAR
             return ProxyUtils.getGlobalProxyList();
+        }
+
+        @SuppressWarnings("unused")
+        public String get_global_tmp_dir_path() { // NOSONAR
+            return KNIMEConstants.getKNIMETempPath().toString();
         }
     }
 

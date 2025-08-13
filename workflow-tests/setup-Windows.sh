@@ -4,6 +4,11 @@
 if [[ -n $KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT ]]; then
 	prefPath="${WORKSPACE}/workflow-tests/preferences-Windows.epf"
 
+	# Create temporary directory
+	export KNIME_WORKFLOWTEST_TMP_DIR="$TEMP/knime_temp"
+	mkdir -p "${KNIME_WORKFLOWTEST_TMP_DIR}"
+	echo "-Dknime.tmpdir=$(path "$KNIME_WORKFLOWTEST_TMP_DIR")" >> "$KNIME_INI"
+
 	if [[ $KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT = "bundled" ]]; then
 		# Use the generic preferences file for bundled environment
 		cp "${WORKSPACE}/workflow-tests/preferences-bundled-env.epf" "${WORKSPACE}/workflow-tests/preferences-Windows.epf"
@@ -28,9 +33,9 @@ if [[ -n $KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT ]]; then
 			ext_config="${WORKSPACE}/workflow-tests/python-test-ext-config.yaml"
 			sedi "s|<placeholder_for_env_path>|${envPath}|g" "${ext_config}"
 			echo "-Dknime.python.extension.config=${ext_config}" >> "${WORKSPACE}/workflow-tests/vmargs"
-    else
-      echo "Python 3.6 is not supported to run workflow-tests"
-      exit 1
+		else
+			echo "Python 3.6 is not supported to run workflow-tests"
+			exit 1
 		fi
 	fi
 fi
