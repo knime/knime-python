@@ -11,3 +11,9 @@ micromamba create \
 micromamba list -p ${envPath}
 
 export PYTHON3_EXEC_PATH_LINUX="${envPath}/bin/python"
+
+# Create temporary directory
+export KNIME_WORKFLOWTEST_TMP_DIR="/tmp/KnimeTestPath"
+mkdir -p "${KNIME_WORKFLOWTEST_TMP_DIR}"
+# TODO: check if we need it here
+echo "-Dknime.tmpdir=$KNIME_WORKFLOWTEST_TMP_DIR" >> "knime.ini"
