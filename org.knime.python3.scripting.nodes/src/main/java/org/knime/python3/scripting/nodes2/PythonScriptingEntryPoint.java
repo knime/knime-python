@@ -71,6 +71,13 @@ public interface PythonScriptingEntryPoint extends PythonEntryPoint {
      * @param workingDir the current working directory to use
      */
     void setCurrentWorkingDirectory(String workingDir);
+//
+//     /**
+//      * Set the temporary directory to Python nodes.
+//      *
+//      * @param tmpDir the temporary directory to use
+//      */
+//     void setTmpDirectory(String tmpDir);
 
     /**
      * Setup input and output variables in knime_io.

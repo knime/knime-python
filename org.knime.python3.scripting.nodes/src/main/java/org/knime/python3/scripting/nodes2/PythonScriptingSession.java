@@ -74,6 +74,7 @@ import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.KNIMEConstants;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.util.CheckUtils;
@@ -165,6 +166,7 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
         m_outputRedirector = PythonGatewayUtils.redirectGatewayOutput(m_gateway, LOGGER::info, LOGGER::info);
 
         setCurrentWorkingDirectory();
+        // setTmpDirectory();
     }
 
     void setupIO( //
@@ -247,6 +249,11 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
         @SuppressWarnings("unused")
         public List<Map<String, String>> get_global_proxy_list() { // NOSONAR
             return ProxyUtils.getGlobalProxyList();
+        }
+
+        @SuppressWarnings("unused")
+        public String get_global_tmp_dir_path() { // NOSONAR
+            return KNIMEConstants.getKNIMETempPath().resolve("root");
         }
     }
 
@@ -485,6 +492,21 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
 
     /** Set the current working directory to the workflow directory */
     private void setCurrentWorkingDirectory() {
+        try {
+            var workflowDirRef = NodeContext.getContext().getWorkflowManager().getNodeContainerDirectory();
+            Optional.ofNullable(workflowDirRef).map(r -> r.getFile().toString())
+                .ifPresent(m_entryPoint::setCurrentWorkingDirectory);
+        } catch (Py4JException ex) {
+            PythonProcessTerminatedException.throwIfTerminated(m_gateway, ex);
+            throw ex;
+        } catch (Exception ex) { // NOSONAR: We want to catch any exception here
+            // Do not propagate exception since setting the CWD is merely for convenience.
+            LOGGER.warn("Python's current working directory could not be set to the workflow directory.", ex);
+        }
+    }
+
+    /** Set the tmp directory to Python nodes */
+    private void setTmpDirectory() {
         try {
             var workflowDirRef = NodeContext.getContext().getWorkflowManager().getNodeContainerDirectory();
             Optional.ofNullable(workflowDirRef).map(r -> r.getFile().toString())

@@ -389,8 +389,35 @@ def _set_proxy_settings(java_callback):
         The Java callback object. Must have the following methods:
         - get_global_proxy_list() -> JavaList[JavaMap[str, str]]
     """
+    import logging
+
+    logging.error("Java callback initialized")
+    print("Java callback initialized")
     proxy_map_list = list(java_callback.get_global_proxy_list())
     for java_proxy_map in proxy_map_list:
         proxy_dict = dict(java_proxy_map)
         proxy_settings = ProxySettings.from_dict(proxy_dict)
         proxy_settings.set_as_environment_variable()
+
+
+def _set_tmp_directory(java_callback):
+    """
+    Set temporary directory to environment variable for Java callback.
+
+    Parameters
+    ----------
+    java_callback : object
+        The Java callback object. Must have the following methods:
+        - get_global_tmp_dir_path() -> String
+    """
+    tmp_directory = java_callback.get_global_tmp_dir_path()
+    data = dir(tmp_directory)
+    print(f"Java callback initialized: {data}")
+    with open("~/Downloads/lorem_ipsum.md", "w") as tmp_file:
+        tmp_file.write(data)
+    # FIXME: when serialization of tmp_directory is ready  # NOSONAR
+    # import tempfile
+    # os.environ["TMPDIR"] = tmp_directory
+    # os.environ["TEMP"] = tmp_directory
+    # os.environ["TMP"] = tmp_directory
+    # tempfile.tempdir = tmp_directory

@@ -140,5 +140,9 @@ class TestProxySettings(unittest.TestCase):
             )
 
 
+class TestTmpPathSettings(unittest.TestCase):  # FIXME  # NOSONAR
+    pass
+
+
 if __name__ == "__main__":
     unittest.main()

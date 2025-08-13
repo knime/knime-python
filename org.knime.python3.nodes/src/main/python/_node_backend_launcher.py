@@ -74,7 +74,7 @@ from py4j.java_gateway import JavaClass, Py4JJavaError
 from py4j.java_collections import ListConverter
 import py4j.clientserver
 
-from knime.api.env import _set_proxy_settings
+from knime.api.env import _set_proxy_settings, _set_tmp_directory
 
 from _ports import JavaPortTypeRegistry
 
@@ -1510,7 +1510,12 @@ class _KnimeNodeBackend(kg.EntryPoint, kn._KnimeNodeBackend):
 
     def initializeJavaCallback(self, callback):
         _push_log_callback(lambda msg, sev: callback.log(msg, sev))
+        import logging
+
+        logging.warning("Java callback initialized")
+        print("Java callback initialized")
         _set_proxy_settings(callback)
+        _set_tmp_directory(callback)
 
     def retrieveCategoriesAsJson(self) -> str:
         category_dicts = [category.to_dict() for category in kn._categories]
