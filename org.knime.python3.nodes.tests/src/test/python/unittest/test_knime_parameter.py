@@ -653,6 +653,29 @@ class ParameterizedParameterArrayNested:
         _validate_parameter_array(values)
 
 
+class ParameterizedParameterArrayAdvanced:
+    """Provides checks for advanced ParameterArray parameters"""
+
+    parameter_array_basic = kp.ParameterArray(
+        label="Basic Array",
+        description="A basic parameter array",
+        parameters=ParameterArrayGroup(),
+        layout_direction=kp.LayoutDirection.VERTICAL,
+        array_title="Basic Array Title",
+        allow_reorder=True,
+    )
+
+    parameter_array_advanced = kp.ParameterArray(
+        label="Advanced Array",
+        description="An advanced parameter array",
+        parameters=ParameterArrayGroup(),
+        layout_direction=kp.LayoutDirection.HORIZONTAL,
+        array_title="Advanced Array Title",
+        allow_reorder=True,
+        is_advanced=True,
+    )
+
+
 class ParameterizedWithOneGroup:
     int_param = kp.IntParameter("Int Parameter", "An integer parameter", 3)
     double_param = kp.DoubleParameter("Double Parameter", "A double parameter", 1.5)
@@ -1149,6 +1172,9 @@ class ParameterTest(unittest.TestCase):
         self.parameterized_with_parameter_array = ParameterizedParameterArray()
         self.parameterized_with_parameter_array_nested = (
             ParameterizedParameterArrayNested()
+        )
+        self.parameterized_with_parameter_array_advanced = (
+            ParameterizedParameterArrayAdvanced()
         )
         self.maxDiff = None
 
@@ -2151,6 +2177,91 @@ class ParameterTest(unittest.TestCase):
         }
         extracted = kp.extract_ui_schema(
             self.parameterized_with_parameter_array,
+            DummyDialogCreationContext(),
+        )
+        self.assertEqual(expected, extracted)
+
+    def test_extract_ui_schema_parameter_array_advanced(self):
+        """Test that advanced parameter arrays are correctly marked as advanced in the UI schema."""
+        expected = {
+            "type": "VerticalLayout",
+            "elements": [
+                {
+                    "type": "Section",
+                    "label": "Basic Array",
+                    "elements": [
+                        {
+                            "scope": "#/properties/model/properties/parameter_array_basic",
+                            "type": "Control",
+                            "label": "Basic Array",
+                            "options": {
+                                "addButtonText": None,
+                                "detail": {
+                                    "layout": {
+                                        "type": "VerticalLayout",
+                                        "elements": [
+                                            {
+                                                "type": "Control",
+                                                "scope": "#/properties/first",
+                                                "label": "First Parameter",
+                                                "options": {"format": "integer"},
+                                            },
+                                            {
+                                                "type": "Control",
+                                                "scope": "#/properties/second",
+                                                "label": "Second Parameter",
+                                                "options": {"format": "integer"},
+                                            },
+                                        ],
+                                    }
+                                },
+                                "arrayElementTitle": "Basic Array Title",
+                                "showSortButtons": True,
+                            },
+                        }
+                    ],
+                },
+                {
+                    "type": "Section",
+                    "label": "Advanced Array",
+                    "options": {"isAdvanced": True},
+                    "elements": [
+                        {
+                            "scope": "#/properties/model/properties/parameter_array_advanced",
+                            "type": "Control",
+                            "label": "Advanced Array",
+                            "options": {
+                                "addButtonText": None,
+                                "detail": {
+                                    "layout": {
+                                        "type": "HorizontalLayout",
+                                        "elements": [
+                                            {
+                                                "type": "Control",
+                                                "scope": "#/properties/first",
+                                                "label": "First Parameter",
+                                                "options": {"format": "integer"},
+                                            },
+                                            {
+                                                "type": "Control",
+                                                "scope": "#/properties/second",
+                                                "label": "Second Parameter",
+                                                "options": {"format": "integer"},
+                                            },
+                                        ],
+                                    }
+                                },
+                                "arrayElementTitle": "Advanced Array Title",
+                                "isAdvanced": True,
+                                "showSortButtons": True,
+                            },
+                        }
+                    ],
+                },
+            ],
+        }
+        extracted = kp.extract_ui_schema(
+            self.parameterized_with_parameter_array_advanced,
             DummyDialogCreationContext(),
         )
         self.assertEqual(expected, extracted)
