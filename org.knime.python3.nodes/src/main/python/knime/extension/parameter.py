@@ -640,6 +640,8 @@ class _UISchemaExtractor:
                     }
                 ],
             }
+            if param_obj._is_advanced:
+                element_schema["options"] = {"isAdvanced": True}
 
         else:
             element_schema = {
@@ -3186,7 +3188,6 @@ class ParameterArray(_BaseParameter):
 
     def _extract_ui_schema(self, dialog_creation_context):
         base_schema = super()._extract_ui_schema(dialog_creation_context)
-        base_schema["options"] = self._get_options(dialog_creation_context)
         nested_elements = base_schema["options"]["detail"]["layout"]["elements"]
         param_holder = self._parameters._get_param_holder(self._parameters)
         for name, param_obj in _get_parameters(param_holder).items():
