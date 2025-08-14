@@ -94,7 +94,6 @@ you can run ``configure`` of your node:
 ...         knext.Column(knext.int64(), "Integers"),
 ...         knext.Column(knext.double(), "Doubles"),
 ...         knext.Column(knext.int64(), "Integers_copy"),
-...         knext.Column(knext.logical(cet.SmilesValue), "Smiles"),
 ...     ]
 ... )
 ...
