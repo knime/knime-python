@@ -46,21 +46,61 @@
 Experimental unit testing support for Python based KNIME nodes.
 
 This module provides mock implementations for some KNIME internals as
-well as an TestingExecutionContext and a TestingConfigureContext which you
+well as an ``TestingExecutionContext`` and a ``TestingConfigureContext`` which you
 can instantiate, e.g. set some flow variables, or overwrite the behavior
 of some methods if needed.
 
-With that, you can build unit tests that instanciate a node and run configure
-or execute, using Pandas DataFrames as inputs and outputs (Arrow is not implemented
-for testing).
+With that, you can build unit tests using Python's ``unittest`` framework that instanciate
+a node and run configure or execute, using Pandas DataFrames as inputs and outputs
+(Arrow is not implemented for testing).
 
 If you need any extension types like e.g. Chemistry or Geospatial types, we provide
 a method ``register_extension(plugin_xml)`` that you can point to the source of the
-plugin providing these extensions. It will load load the Python type definition of
-this plugin so that it will be available in the test as usual (e.g. ``import knime.types.chemistry``).
+plugin that registers these extensions. It will load load the Python type definition of
+this plugin so that it will be available in the test as usual
+(e.g. ``import knime.types.chemistry``).
 
 Examples
 --------
+
+If you want to test that your node produces the output **schema** you expect,
+you can run ``configure`` of your node:
+
+>>> import knime.extension as knext
+... import knime.extension.testing as ktest
+...
+... # set up test input schema
+... schema = knext.Schema.from_columns(
+...     [
+...         knext.Column(knext.int64(), "Integers"),
+...         knext.Column(knext.double(), "Doubles"),
+...     ]
+... )
+...
+... # assume TestNode is your Python node with one input and one output table
+... node = TestNode()
+... node.column = "Test" # configure parameter "column" to the value "Test"
+...
+... # create testing configuration context
+... config_context = ktest.TestingConfigurationContext()
+...
+... # configure node, passing the testing configuration context
+... output_schema = node.configure(config_context, input_schema)
+...
+... # check that the output schema matches your expectations
+...
+... expected_schema = knext.Schema.from_columns(
+...     [
+...         knext.Column(knext.int64(), "Integers"),
+...         knext.Column(knext.double(), "Doubles"),
+...         knext.Column(knext.int64(), "Integers_copy"),
+...         knext.Column(knext.logical(cet.SmilesValue), "Smiles"),
+...     ]
+... )
+...
+... self.assertEqual(expected_schema, output_schema)
+
+To test **execution** of a node that uses ``to_pandas()``:
 
 >>> import knime.extension as knext
 ... import knime.extension.testing as ktest
@@ -81,6 +121,29 @@ Examples
 ... output_df = output.to_pandas()
 ...
 ... # TODO: check that the output DataFrame matches your expectations
+
+In case you are working with a **batched table**, it makes sense to test with multiple batches:
+
+>>> # assume BatchTestNode is your Python node with one input and one output table
+... node = BatchTestNode()
+... node.column = "Test"
+...
+... input = knext.BatchOutputTable.create()
+... input.append(pd.DataFrame({"Test": [1, 2]}))
+... input.append(pd.DataFrame({"Test": [3, 4]}))
+...
+... exec_context = ktest.TestingExecutionContext()
+... output = node.execute(exec_context, input)
+...
+... output_df = output.to_pandas()
+... expected_df = pd.DataFrame({"Test": [1, 2, 3, 4]})
+... expected_df["Test_copy"] = expected_df["Test"]
+... for column in expected_df.columns:
+...     self.assertEqual(
+...         expected_df[column].to_list(),
+...         output_df[column].to_list(),
+...         f"Values not equal in {column}",
+...     )
 """
 
 from typing import Optional, Union, Dict, Any
@@ -316,7 +379,7 @@ class _TestingNodeBackend(knodes._KnimeNodeBackend):
         raise RuntimeError("Port type retrieval not implemented for testing")
 
 
-class TestingBaseContest:
+class _TestingBaseContext:
     def __init__(self) -> None:
         self._flow_variables = {}
 
@@ -350,11 +413,70 @@ class TestingBaseContest:
         pass  # noop
 
 
-class TestingConfigurationContext(TestingBaseContest, knext.ConfigurationContext):
+class TestingConfigurationContext(_TestingBaseContext, knext.ConfigurationContext):
+    """
+    This is a mock implementation of a configuration context for testing.
+    In unit tests, create an instance of the ``TestConfigurationContext`` and pass it
+    to your node when you test ``configure``
+
+    Examples
+    --------
+
+    >>> import knime.extension as knext
+    ... import knime.extension.testing as ktest
+    ...
+    ... # set up test input schema
+    ... schema = knext.Schema.from_columns(
+    ...     [
+    ...         knext.Column(knext.int64(), "Integers"),
+    ...         knext.Column(knext.double(), "Doubles"),
+    ...     ]
+    ... )
+    ...
+    ... # assume TestNode is your Python node with one input and one output table
+    ... node = TestNode()
+    ... node.column = "Test" # configure parameter "column" to the value "Test"
+    ...
+    ... # create testing configuration context
+    ... config_context = ktest.TestingConfigurationContext()
+    ...
+    ... # configure node, passing the testing configuration context
+    ... output_schema = node.configure(config_context, input_schema)
+    ...
+    ... # TODO: check that the output schema matches your expectations
+    """
     pass
 
 
-class TestingExecutionContext(TestingBaseContest, knext.ExecutionContext):
+class TestingExecutionContext(_TestingBaseContext, knext.ExecutionContext):
+    """
+    This is a mock implementation of an execution context for testing.
+    In unit tests, create an instance of the ``TestExecutionContext`` and pass it
+    to your node when testing ``execute``.
+
+    Examples
+    --------
+
+    >>> import knime.extension as knext
+    ... import knime.extension.testing as ktest
+    ...
+    ... # set up test input
+    ... input_df = pd.DataFrame({"Test": [1, 2, 3, 4]})
+    ... input = knext.Table.from_pandas(input_df)
+    ...
+    ... # assume TestNode is your Python node with one input and one output table
+    ... node = TestNode()
+    ... node.column = "Test" # configure parameter "column" to the value "Test"
+    ...
+    ... # create testing execution context
+    ... exec_context = ktest.TestingExecutionContext()
+    ...
+    ... # execute node, passing the testing execution context
+    ... output = node.execute(exec_context, input)
+    ... output_df = output.to_pandas()
+    ...
+    ... # TODO: check that the output DataFrame matches your expectations
+    """
     def set_warning(self, message: str) -> None:
         pass  # noop
 
@@ -385,7 +507,7 @@ def register_extension(plugin_xml: str, value_factory_to_type_name_map: dict = N
         Provide the path to a plugin.xml that registers Python types at the extension point.
     value_factory_to_type_name_map: dict = None
         An optional mapping from value factory to readable type names e.g.
-        org.knime.chem.types.SmilesAdapterCellValueFactory -> Smiles
+        ``org.knime.chem.types.SmilesAdapterCellValueFactory`` -> ``Smiles``
     """
     import xml.etree.ElementTree as ET
     import sys

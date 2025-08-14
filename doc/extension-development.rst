@@ -440,3 +440,25 @@ This module provides access to the different environment variables that are avai
    :members:
    :noindex:
    :inherited-members:
+
+
+Testing (Experimental)
+----------------------
+
+.. note::
+   **Experimental Feature**: The testing functionality provided in this module
+   is currently experimental. It does not support all data types and port types, and only works
+   with ``Table._to_pandas()`` and not ``Table.to_pyarrow()``. Use with caution and expect 
+   potential API modifications or behavioral changes.
+
+.. automodule:: knime.extension.testing
+   :noindex:
+
+.. autoclass:: knime.extension.testing.TestingConfigurationContext
+   :noindex:
+
+.. autoclass:: knime.extension.testing.TestingExecutionContext
+   :noindex:
+
+.. autofunction:: knime.extension.testing.register_extension
+   :noindex:
