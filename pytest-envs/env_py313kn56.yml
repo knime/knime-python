@@ -9,8 +9,9 @@ dependencies:
   - pytest
   - matplotlib # View tests
   - seaborn # View tests
-  - pyarrow
-  - pandas
-  - py4j
+  - pyarrow=21.0
+  - pandas=2.3
+  - py4j=0.10.9
+  - markdown=3.8
   - nbformat # Jupyter nodebook loading
   - ipython # Jupyter nodebook loading
