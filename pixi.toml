@@ -14,8 +14,8 @@ depends-on = [
     { task = "test", environment = "test-py39" },
     { task = "test", environment = "test-py311" },
     { task = "test", environment = "test-py311kn55" },
-    { task = "test", environment = "test-py312kn55" },
-    { task = "test", environment = "test-py313kn55" },
+    { task = "test", environment = "test-py312kn56" },
+    { task = "test", environment = "test-py313kn56" },
 ]
 
 [feature.test.tasks]
@@ -41,8 +41,8 @@ test-py38 = { features = ["py38", "test"], no-default-feature = true }
 test-py39 = { features = ["py39", "test"], no-default-feature = true }
 test-py311 = { features = ["py311", "test"], no-default-feature = true }
 test-py311kn55 = { features = ["py311kn55", "test"], no-default-feature = true }
-test-py312kn56 = { features = ["py312kn55", "test"], no-default-feature = true }
-test-py313kn56 = { features = ["py313kn55", "test"], no-default-feature = true }
+test-py312kn56 = { features = ["py312kn56", "test"], no-default-feature = true }
+test-py313kn56 = { features = ["py313kn56", "test"], no-default-feature = true }
 docs = { features = ["docs"], no-default-feature = true }
 
 # Test features
@@ -85,6 +85,7 @@ pyarrow = "21.0.*"
 py4j = "0.10.9.*"
 numpy = "2.3.*"
 pandas = "2.3.*"
+markdown = "3.8.*"
 
 
 [feature.py313kn56.dependencies]
@@ -94,6 +95,7 @@ pyarrow = "21.0.*"
 numpy = "2.3.*"
 pandas = "2.3.*"
 py4j = "0.10.9.*"
+markdown = "3.8.*"
 
 
 # Docs building
