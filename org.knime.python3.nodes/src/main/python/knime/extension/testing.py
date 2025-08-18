@@ -444,6 +444,7 @@ class TestingConfigurationContext(_TestingBaseContext, knext.ConfigurationContex
     ...
     ... # TODO: check that the output schema matches your expectations
     """
+
     pass
 
 
@@ -476,6 +477,7 @@ class TestingExecutionContext(_TestingBaseContext, knext.ExecutionContext):
     ...
     ... # TODO: check that the output DataFrame matches your expectations
     """
+
     def set_warning(self, message: str) -> None:
         pass  # noop
 
