@@ -63,7 +63,8 @@ import org.knime.core.data.filestore.internal.FileStoreProxy.FlushCallback;
 import org.knime.core.data.filestore.internal.IWriteFileStoreHandler;
 import org.knime.core.data.v2.RowKeyType;
 import org.knime.core.data.v2.ValueFactoryUtils;
-import org.knime.core.data.v2.schema.ValueSchemaUtils;
+import org.knime.core.data.v2.schema.DataTableValueSchema;
+import org.knime.core.data.v2.schema.DataTableValueSchemaUtils;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.table.schema.AnnotatedColumnarSchema;
 import org.knime.core.table.schema.AnnotatedColumnarSchema.ColumnMetaData;
@@ -117,8 +118,8 @@ public final class TableSpecSerializationUtils {
 
     /**
      * Dummy implementation of a file store handler because we're only using it when converting a DataTableSpec to a
-     * {@link ColumnarSchema}. We do not need full {@link ColumnarValueSchema} but are reusing the conversion methods
-     * from the {@link ValueSchemaUtils}, so we pass in a dummy file store handler.
+     * {@link ColumnarSchema}. We do not need full {@link DataTableValueSchema} but are reusing the conversion methods
+     * from the {@link DataTableValueSchemaUtils}, so we pass in a dummy file store handler.
      *
      * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
      */
@@ -198,7 +199,7 @@ public final class TableSpecSerializationUtils {
     }
 
     private static AnnotatedColumnarSchema specToSchema(final DataTableSpec spec) {
-        final var vs = ValueSchemaUtils.create(spec, RowKeyType.CUSTOM, new DummyFileStoreHandler());
+        final var vs = DataTableValueSchemaUtils.create(spec, RowKeyType.CUSTOM, new DummyFileStoreHandler());
         var columnNames = new String[spec.getNumColumns() + 1];
         columnNames[0] = "RowKey";
         var columnMetaData = new ColumnMetaData[columnNames.length];
