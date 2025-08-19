@@ -48,6 +48,10 @@
  */
 package org.knime.python3.scripting.nodes2;
 
+import static org.knime.core.table.schema.DataSpecs.BOOLEAN;
+import static org.knime.core.table.schema.DataSpecs.LONG;
+import static org.knime.core.table.schema.DataSpecs.STRING;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -68,8 +72,6 @@ import org.knime.core.table.access.StringAccess.StringReadAccess;
 import org.knime.core.table.access.StringAccess.StringWriteAccess;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.schema.ColumnarSchema;
-import org.knime.core.table.schema.DataSpec;
-import org.knime.core.table.schema.DefaultColumnarSchema;
 import org.knime.core.util.PathUtils;
 import org.knime.python3.arrow.PythonArrowDataUtils;
 import org.knime.python3.scripting.nodes2.ConsoleOutputUtils.ConsoleOutputStorage;
@@ -108,12 +110,7 @@ final class ConsoleOutputUtils {
 
     private static final ColumnStoreFactory STORE_FACTORY = PythonArrowDataUtils.getArrowColumnStoreFactory();
 
-    private static final ColumnarSchema TABLE_SCHEMA = //
-        DefaultColumnarSchema.builder() //
-            .addColumn(DataSpec.longSpec()) //
-            .addColumn(DataSpec.stringSpec()) //
-            .addColumn(DataSpec.booleanSpec()) //
-            .build();
+    private static final ColumnarSchema TABLE_SCHEMA = ColumnarSchema.of(LONG, STRING, BOOLEAN);
 
     /**
      * Create a new {@link ConsoleOutputConsumer} that accepts {@link ConsoleText} objects and saves them to a columnar
