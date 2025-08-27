@@ -41,12 +41,12 @@ export const DEFAULT_INITIAL_DATA: PythonInitialData = {
       subItems: [
         {
           name: "Foo",
-          type: "Number",
+          type: { displayName: "Number" },
           supported: true,
         },
         {
           name: 'Bar & "<xml>"',
-          type: "String",
+          type: { displayName: "String" },
           supported: false,
         },
       ],
@@ -84,12 +84,12 @@ export const DEFAULT_INITIAL_DATA: PythonInitialData = {
     subItems: [
       {
         name: "Flow var 1",
-        type: "Number",
+        type: { displayName: "Number" },
         supported: true,
       },
       {
         name: 'Bar & "<xml>"',
-        type: "Something weird",
+        type: { displayName: "Something weird" },
         supported: false,
       },
     ],

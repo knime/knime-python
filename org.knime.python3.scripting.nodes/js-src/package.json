@@ -27,8 +27,8 @@
     "postinstall": "license-check -c"
   },
   "dependencies": {
-    "@knime/components": "1.32.0",
-    "@knime/scripting-editor": "0.0.106",
+    "@knime/components": "1.37.0",
+    "@knime/scripting-editor": "0.0.107",
     "@knime/styles": "1.8.0",
     "@knime/ui-extension-service": "2.4.1",
     "@vueuse/core": "13.5.0",
