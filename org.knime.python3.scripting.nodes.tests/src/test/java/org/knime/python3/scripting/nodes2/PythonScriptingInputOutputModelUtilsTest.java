@@ -102,7 +102,11 @@ public final class PythonScriptingInputOutputModelUtilsTest {
         assertEquals("num flow variables", variables.size(), subItems.length);
         for (int i = 0; i < subItems.length; i++) {
             assertEquals("variable name " + i, variables.get(i).getName(), subItems[i].name());
-            assertEquals("variable type" + i, variables.get(i).getVariableType().toString(), subItems[i].type());
+            var expectedType = variables.get(i).getVariableType();
+            var type = subItems[i].type();
+            assertEquals("variable type id " + i, expectedType.getIdentifier(), type.id().get());
+            assertEquals("variable type title " + i, expectedType.getClass().getSimpleName(), type.title().get());
+            assertEquals("variable type display name " + i, expectedType.toString(), type.displayName());
         }
     }
 
@@ -130,7 +134,11 @@ public final class PythonScriptingInputOutputModelUtilsTest {
         assertEquals("num columns", TABLE_SPEC.getNumColumns(), subItems.length);
         for (int i = 0; i < subItems.length; i++) {
             assertEquals("column name" + i, TABLE_SPEC.getColumnNames()[i], subItems[i].name());
-            assertEquals("column type " + i, TABLE_SPEC.getColumnSpec(i).getType().toString(), subItems[i].type());
+            var expectedType = TABLE_SPEC.getColumnSpec(i).getType();
+            var type = subItems[i].type();
+            assertEquals("column type id " + i, expectedType.getPreferredValueClass().getName(), type.id().get());
+            assertEquals("column type title " + i, expectedType.getName(), type.title().get());
+            assertEquals("column type display name " + i, expectedType.getName(), type.displayName());
         }
 
         // object 0
