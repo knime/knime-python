@@ -28,7 +28,7 @@
   },
   "dependencies": {
     "@knime/components": "1.37.0",
-    "@knime/scripting-editor": "0.0.108",
+    "@knime/scripting-editor": "0.0.109",
     "@knime/styles": "1.8.0",
     "@knime/ui-extension-service": "2.4.1",
     "@vueuse/core": "13.5.0",
