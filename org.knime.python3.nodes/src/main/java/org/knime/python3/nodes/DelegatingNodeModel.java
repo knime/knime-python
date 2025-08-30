@@ -50,7 +50,6 @@ package org.knime.python3.nodes;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
@@ -74,7 +73,6 @@ import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.node.workflow.VariableType;
 import org.knime.core.node.workflow.VariableTypeRegistry;
 import org.knime.core.node.workflow.virtual.AbstractPortObjectRepositoryNodeModel;
-import org.knime.core.util.PathUtils;
 import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
 import org.knime.python3.nodes.proxy.NodeProxy;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy;
@@ -87,6 +85,7 @@ import org.knime.python3.nodes.proxy.model.NodeModelProxyProvider;
 import org.knime.python3.nodes.settings.JsonNodeSettings;
 import org.knime.python3.nodes.settings.JsonNodeSettingsSchema;
 import org.knime.python3.utils.FlowVariableUtils;
+import org.knime.python3.views.PythonNodeViewStoragePath;
 
 /**
  * NodeModel that delegates its operations to a proxy implemented in Python. Extends
@@ -136,7 +135,7 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
 
     private LazyInitializedJsonNodeSettings m_settings = new LazyInitializedJsonNodeSettings();
 
-    private Optional<Path> m_view;
+    private Optional<PythonNodeViewStoragePath> m_view;
 
     private String m_extensionVersion;
 
@@ -193,7 +192,7 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
     protected PortObject[] execute(final PortObject[] inData, final ExecutionContext exec) throws Exception {
         // Delete the old view file if it exists
         if (m_view.isPresent()) {
-            PathUtils.deleteFileIfExists(m_view.get());
+            m_view.get().deleteIfExists();
         }
 
         return runWithProxy(() -> m_proxyProvider.getExecutionProxy(inData), node -> {
@@ -289,10 +288,7 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
     @Override
     protected void loadInternals(final File nodeInternDir, final ExecutionMonitor exec)
         throws IOException, CanceledExecutionException {
-        final var viewPath = persistedViewPath(nodeInternDir);
-        if (Files.isReadable(viewPath)) {
-            m_view = Optional.of(viewPath);
-        }
+        m_view = PythonNodeViewStoragePath.loadFromInternals(nodeInternDir.toPath());
     }
 
     @Override
@@ -300,13 +296,8 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
         throws IOException, CanceledExecutionException {
         if (m_view.isPresent()) {
             // Copy the view from the temporary file to the persisted internals directory
-            Files.copy(m_view.get(), persistedViewPath(nodeInternDir));
+            m_view.get().saveToInternals(nodeInternDir.toPath());
         }
-    }
-
-    /** Path to the persisted view inside the internals directory */
-    private static Path persistedViewPath(final File nodeInternDir) {
-        return nodeInternDir.toPath().resolve("view.html");
     }
 
     /**
@@ -314,7 +305,14 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
      *         return a view.
      */
     public Optional<Path> getPathToHtmlView() {
-        return m_view;
+        return m_view.map(PythonNodeViewStoragePath::getPath);
+    }
+
+    /**
+     * @return {@code true} if the node has a view that can be used in a report, {@code false} otherwise.
+     */
+    public boolean canViewBeUsedInReport() {
+        return m_view.isPresent() && m_view.get().canBeUsedInReport();
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})

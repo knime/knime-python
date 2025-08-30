@@ -103,6 +103,7 @@ import org.knime.python3.types.PythonValueFactoryRegistry;
 import org.knime.python3.utils.FlowVariableUtils;
 import org.knime.python3.utils.ProxyUtils;
 import org.knime.python3.views.Python3ViewsSourceDirectory;
+import org.knime.python3.views.PythonNodeViewStoragePath;
 import org.knime.python3.views.PythonViewsExtension;
 import org.knime.scripting.editor.ScriptingService.ConsoleText;
 
@@ -402,7 +403,7 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
      *
      * @throws IOException if the temporary file could not be created
      */
-    Optional<Path> getOutputView() throws IOException {
+    Optional<PythonNodeViewStoragePath> getOutputView() throws IOException {
         try {
             return PythonIOUtils.getOutputView(m_entryPoint);
         } catch (Py4JException ex) {

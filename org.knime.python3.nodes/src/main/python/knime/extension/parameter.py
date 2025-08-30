@@ -640,6 +640,8 @@ class _UISchemaExtractor:
                     }
                 ],
             }
+            if param_obj._is_advanced:
+                element_schema["options"] = {"isAdvanced": True}
 
         else:
             element_schema = {
@@ -2447,11 +2449,13 @@ class DateTimeParameter(_BaseParameter):
         if not value:
             return None
 
-        iso_string = value.isoformat()
-        if not self.timezone:
-            # append Z to indicate UTC as it is necessary for the ISO 8601 format in java
-            iso_string = iso_string + "Z"
-        return iso_string
+        # If timezone is present, remove it from the datetime object before converting to ISO string
+        # For this parameter the timezone cannot be configured by the user but is only set by the node
+        # to a constant value. Therefore, the user sees a local date&time input field.
+        if self.timezone is not None and value.tzinfo is not None:
+            value = value.replace(tzinfo=None)
+
+        return value.isoformat()
 
     def _from_dict(self, value) -> Optional[datetime.date]:
         """Parses the value to a datetime object.
@@ -2474,8 +2478,9 @@ class DateTimeParameter(_BaseParameter):
             This can lead to unexpected results, if the value is ambiguous (e.g. 01/02/03 can be parsed as 2001-02-03
             or 2003-01-02).
         user_input : bool
-            Whether the value is a user input or not. If the value is a user input, the date_format parameter is used
-            to parse the string.
+            Whether the value is a developer input or not. Set this to True if the value was provided by the developer
+            as one of the parameters (min, max, default). In these cases the date_format parameter is used to parse
+            the string.
 
         Returns
         -------
@@ -2494,15 +2499,18 @@ class DateTimeParameter(_BaseParameter):
         if not self.show_time:
             value = value.date()
 
-        if self.timezone is not None:
-            value = value.astimezone(pytz.timezone(self.timezone))
+        if self.timezone is not None and not value.tzinfo:
+            # NOTE: We only set the tzinfo and do not shift the value (as datetime.astimezone would do)
+            # because we want the user configured local date&time with the timezone
+            value = pytz.timezone(self.timezone).localize(value)
         return value
 
     def _parse_dt_string(self, value: str, user_input: bool):
         """
         Parses the string value to a datetime object.
         """
-        # we only want to use the date format when we have the input from the user, as we only get ISO strings from java
+        # user_input indicates that this string was provided by the developer
+        # -> it uses the "date_format" that the developer provided
         if self.date_format and user_input:
             try:
                 return datetime.datetime.strptime(value, self.date_format)
@@ -2511,21 +2519,45 @@ class DateTimeParameter(_BaseParameter):
                     f"Could not parse {value} to a datetime object. Please provide a string or a "
                     f"datetime object. If you provide a string please also provide a date format."
                 ) from e
+
+        # The value comes from the settings
         try:
-            if str.endswith(value, "Z"):  # Java ISO 8601 format ends with Z
-                value = value.replace("Z", "")
-            value = datetime.datetime.fromisoformat(value)
+            # Backward compatibility (KNIME AP [5.2, 5.5.2) and 5.6.0)
+            # We used to append "Z" to all settings to make the work in the dialog components.
+            # "Z" indicates Zulu time and a +0 offset timzone. However, none of the settings really
+            # represented zoned date-time values (note that the timezone is applied after the fact).
+            # Therefore, we removed the "Z" suffix before loading the value.
+            # Note: This will only be true for value saved in the affected versions because
+            # future versions do not save datetime with a "Z" suffix
+            if str.endswith(value, "Z"):
+                value = datetime.datetime.fromisoformat(value.replace("Z", ""))
+
+                # Reproduce the following logic from previous KNIME AP versions if timezone was set
+                # 1. Remove "Z" when loading the value -> local datetime
+                # 2. Shift the datetime to the timezone
+                if self.timezone is not None:
+                    # Notice that replacing the timezone later will have no effect
+                    return value.astimezone(pytz.timezone(self.timezone))
+                else:
+                    return value
+            else:
+                # NOTE: This branch can be reached for values saved with the KNIME AP versions listed above.
+                # If the timezone was set and the dialog was applied twice we saved values like
+                # `2025-08-12T13:00:00+04:00`. The zone relates to the timezone parameter.
+                # This does not need to be handled explicitly. We just replace the zone later but it won't
+                # affect the value.
+                return datetime.datetime.fromisoformat(value)
+
         except:  # NOSONAR
             # if the value is not in ISO format, we try to parse it automatically
             try:
-                value = parser.parse(value)
+                return parser.parse(value)
             except Exception as e:
                 raise ValueError(
                     f"Could not parse {value} to a datetime object. Please provide a string in ISO format or a "
                     f"datetime object. If you don't provide the string in ISO format, please also provide a date "
                     f"format."
                 ) from e
-        return value
 
     def _extract_schema(self, extension_version=None, dialog_creation_context=None):
         prop = super()._extract_schema(dialog_creation_context=dialog_creation_context)
@@ -3156,7 +3188,6 @@ class ParameterArray(_BaseParameter):
 
     def _extract_ui_schema(self, dialog_creation_context):
         base_schema = super()._extract_ui_schema(dialog_creation_context)
-        base_schema["options"] = self._get_options(dialog_creation_context)
         nested_elements = base_schema["options"]["detail"]["layout"]["elements"]
         param_holder = self._parameters._get_param_holder(self._parameters)
         for name, param_obj in _get_parameters(param_holder).items():

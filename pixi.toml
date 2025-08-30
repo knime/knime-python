@@ -39,6 +39,7 @@ test-py38 = { features = ["py38", "test"], no-default-feature = true }
 test-py39 = { features = ["py39", "test"], no-default-feature = true }
 test-py311 = { features = ["py311", "test"], no-default-feature = true }
 test-py311kn55 = { features = ["py311kn55", "test"], no-default-feature = true }
+docs = { features = ["docs"], no-default-feature = true }
 
 # Test features
 
@@ -71,3 +72,14 @@ knime-python-base = "5.2.*"
 [feature.py311kn55.dependencies]
 python = "3.11.*"
 knime-python-base = "5.5.*"
+
+
+# Docs building
+[feature.docs.dependencies]
+python = "3.11.*"
+sphinx = "*"
+sphinx-rtd-theme = ">=1.2.0rc3"
+pytz = ">=2025.2,<2026"
+
+[feature.docs.tasks]
+docs = { cwd = "doc", cmd = "make html" }

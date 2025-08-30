@@ -55,26 +55,22 @@ import org.knime.python3.PythonDataSink;
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
  */
-public final class PythonNodeViewSink implements PythonDataSink {
-
-    private final String m_outputFilePath;
-
-    /**
-     * @param outputFilePath the path to which the HTML should be written to
-     */
-    public PythonNodeViewSink(final String outputFilePath) {
-        m_outputFilePath = outputFilePath;
-    }
+public interface PythonNodeViewSink extends PythonDataSink {
 
     @Override
-    public String getIdentifier() {
+    default String getIdentifier() {
         return "org.knime.python3.views";
     }
 
     /**
      * @return the path to which the HTML should be written to from the Python process
      */
-    public String getOutputFilePath() {
-        return m_outputFilePath;
-    }
+    String getOutputFilePath();
+
+    /**
+     * Sets whether the HTML file can be used in a report.
+     *
+     * @param canBeUsedInReport whether the HTML file can be used in a report
+     */
+    void setCanBeUsedInReport(boolean canBeUsedInReport);
 }

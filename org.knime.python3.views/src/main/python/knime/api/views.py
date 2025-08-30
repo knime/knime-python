@@ -53,8 +53,11 @@ LOGGER = logging.getLogger("knime.api.views")
 _SVG_HTML_BODY = """
 <!DOCTYPE html>
 <html>
+    <head>
+        <script type="text/javascript">{js}</script>
+    </head>
     <body>
-    {svg}
+        <div id="view-container">{svg}</div>
     </body>
 </html>
 """
@@ -62,8 +65,9 @@ _SVG_HTML_BODY = """
 _PNG_HTML_BODY = """
 <!DOCTYPE html>
 <html>
+    <head><script type="text/javascript">{js}</script></head>
     <body>
-    <img src="data:image/png;base64,{png_b64}" style="width: 100%; height: 100%;" />
+    <img id="view-container" src="data:image/png;base64,{png_b64}" style="width: 100%; height: 100%;" />
     </body>
 </html>
 """
@@ -71,8 +75,9 @@ _PNG_HTML_BODY = """
 _JPEG_HTML_BODY = """
 <!DOCTYPE html>
 <html>
+    <head><script type="text/javascript">{js}</script></head>
     <body>
-    <img src="data:image/jpeg;base64,{jpeg_b64}" style="width: 100%; height: 100%;" />
+        <img id="view-container" src="data:image/jpeg;base64,{jpeg_b64}" style="width: 100%; height: 100%;" />
     </body>
 </html>
 """
@@ -116,16 +121,43 @@ file.
 :meta hide-value:
 """
 
+_IMAGE_REPORTING_JS = KNIME_UI_EXT_SERVICE_JS + _read_js_file("image-reporting.js")
+
 
 class NodeView:
-    """
-    A view of a KNIME node that can be displayed for the user.
+    """A wrapper that embeds a visualisation in KNIME Analytics Platform.
 
     Notes
     -----
+    Do **not** instantiate *NodeView* directly—use one of the helper functions
+    (:func:`view`, :func:`view_html`, :func:`view_svg`, :func:`view_png`,
+    :func:`view_jpeg`, …).
 
-    Do not create a NodeView directly but use the utility functions
-    view, view_html, view_svg, view_png, and view_jpeg.
+    Parameters
+    ----------
+    html : str
+        Self-contained HTML snippet that renders the interactive view inside
+        KNIME AP.
+    svg_or_png : str | bytes | None, optional
+        Static SVG **or** PNG/JPEG bytes handed to the Reporting engine when a
+        report is generated.  If *None*, the value is produced lazily via
+        *render_fn*.
+    render_fn : Callable[[], str | bytes] | None, optional
+        Callback that returns *svg_or_png* on-demand.
+    can_be_used_in_report : bool, default ``False``
+        Set **True** to signal that this view can be embedded in a report
+        produced by the **KNIME Reporting Extension**.
+
+        * **Image helpers** (`view_svg`, `view_png`, `view_jpeg`,
+          :pydata:`view_matplotlib`, …) turn the flag on automatically because
+          they always provide the image to the Reporting engine.
+
+        * **HTML helpers** leave the flag *False* by default. Only enable it
+          when the view's JavaScript sends a static representation to the
+          ReportingService using ``reportingService.setReportingContent(...)``.
+          If you are not in control of the JavaScript or cannot ensure this,
+          keep the flag *False* so the view is omitted from the report instead
+          of breaking it.
     """
 
     def __init__(
@@ -133,10 +165,17 @@ class NodeView:
         html: str,
         svg_or_png: Optional[Union[str, bytes]] = None,
         render_fn: Optional[Callable[[], Union[str, bytes]]] = None,
+        can_be_used_in_report: bool = False,
     ) -> None:
         self.html = html
         self._svg_or_png = svg_or_png
         self._render_fn = render_fn
+        self.can_be_used_in_report = can_be_used_in_report
+
+        # TODO(AP-22036, AP-22035) we could use the render_fn to generate the
+        # image and always be able to use the view in reports. However, this would
+        # require us to always call the render_fn and put the result into the HTML
+        # even if the view is not used in a report.
 
     def render(self) -> Union[str, bytes]:
         # We alread have a rendered representation
@@ -156,33 +195,46 @@ class NodeView:
 
 
 def view(obj) -> NodeView:
-    """Create an NodeView for the given object.
+    """Return a best-effort :class:`NodeView` for *obj*.
 
-    This method tries to find out the best option to display the given object.
-    First, the method checks if a special view implementation (listed below)
-    exists for the given object. Next, IPython _repr_html_, _repr_svg_,
-    _repr_png_, or _repr_jpeg_ are used.
+    The function attempts, in order, to
 
-    Special view implementations:
+    1.  match *obj* to one of the dedicated helper functions listed
+        below, or
+    2.  fall back to the object's IPython ``_repr_*_`` methods
+        (``_repr_html_``, ``_repr_svg_``, ``_repr_png_``,
+        ``_repr_jpeg_``).
 
-    - HTML: The obj must be of type str and start with "<!DOCTYPE html>". The document
-      must be self-contained and must not reference external resources. Links to
-      external resources will be opened in an external browser.
-    - SVG: The obj must be of type str and contain a valid SVG
-    - PNG: The obj must be of type bytes and contain a PNG image file
-    - JPEG: The obj must be of type bytes and contain a JPEG image file
-    - Matplotlib: The obj must be a matplotlib.figure.Figure
-    - Plotly: The obj must be a plotly.graph_objects.Figure
+    Images - SVG, PNG, JPEG, matplotlib, seaborn - are exported with
+    a static snapshot and therefore show up in Reports of the *KNIME
+    Reporting Extension* outputs automatically. All other supported
+    objects (HTML strings, Plotly figures, etc.) are not supported in
+    reports by default. To enable them in reports, use the
+    :func:`view_html` function and set the ``can_be_used_in_report``
+    flag.
+
+    ----------------------------------------------------------------
+    Special view implementations
+    ----------------------------------------------------------------
+    The input must match one of the following patterns:
+
+    - **HTML**  ``str`` starting with ``"<!DOCTYPE html>"``.
+      Must be self-contained; external links open in a browser.
+    - **SVG**   ``str`` containing valid ``<svg … xmlns="…">`` markup.
+    - **PNG**   ``bytes`` beginning with the PNG magic number.
+    - **JPEG**  ``bytes`` beginning ``0xFFD8FF`` and ending ``0xFFD9``.
+    - **Matplotlib**  ``matplotlib.figure.Figure`` instance.
+    - **Plotly**  ``plotly.graph_objects.Figure`` instance.
 
     Parameters
     ----------
     obj : Any
-        The object which should be displayed
+        The object to visualise.
 
     Raises
     ------
     ValueError
-        If no view could be created for the given object
+        If no suitable helper or ``_repr_*_`` method is found.
     """
 
     if type(obj) is str:
@@ -303,6 +355,7 @@ def view_html(
     html: str,
     svg_or_png: Optional[Union[str, bytes]] = None,
     render_fn: Optional[Callable[[], Union[str, bytes]]] = None,
+    can_be_used_in_report=False,
 ) -> NodeView:
     """
     Create a NodeView that displays the given HTML document.
@@ -319,46 +372,71 @@ def view_html(
         a bytes object containing a PNG image.
     render_fn : callable
         A callable that returns an SVG or PNG representation of the page.
+    can_be_used_in_report : bool, default ``False``
+        Indicates whether this view will appear in a report generated by
+        the **KNIME Reporting Extension**. Only set the flag to ``True`` when you
+        provide the view to the *knime-ui-extension-service* ReportingService.
     """
-    return NodeView(html, svg_or_png=svg_or_png, render_fn=render_fn)
+    return NodeView(
+        html,
+        svg_or_png=svg_or_png,
+        render_fn=render_fn,
+        can_be_used_in_report=can_be_used_in_report,
+    )
 
 
 def view_svg(svg: str) -> NodeView:
     """
-    Create a NodeView that displays the given SVG.
+    Create a :class:`NodeView` that shows an **SVG** and is *report-ready*
+    out of the box.
 
     Parameters
     ----------
     svg : str
-        A string containing the SVG.
+        SVG markup (must include the ``<svg ...>`` root element with the
+        XML namespace declaration).
     """
-    return NodeView(_SVG_HTML_BODY.format(svg=svg), svg_or_png=svg)
+    return NodeView(
+        _SVG_HTML_BODY.format(svg=svg, js=_IMAGE_REPORTING_JS),
+        svg_or_png=svg,
+        can_be_used_in_report=True,
+    )
 
 
 def view_png(png: bytes) -> NodeView:
     """
-    Create a NodeView that displays the given PNG image.
+    Create a :class:`NodeView` that shows a **PNG** image and is
+    *report-ready* out of the box.
 
     Parameters
     ----------
     png : bytes
-        The bytes of the PNG image
+        Raw PNG data.
     """
     b64 = base64.b64encode(png).decode("ascii")
-    return NodeView(_PNG_HTML_BODY.format(png_b64=b64), svg_or_png=png)
+    return NodeView(
+        _PNG_HTML_BODY.format(png_b64=b64, js=_IMAGE_REPORTING_JS),
+        svg_or_png=png,
+        can_be_used_in_report=True,
+    )
 
 
 def view_jpeg(jpeg: bytes) -> NodeView:
     """
-    Create a NodeView that displays the given JPEG image.
+    Create a :class:`NodeView` that shows a **JPEG** image and is
+    *report-ready* out of the box.
 
     Parameters
     ----------
     jpeg : bytes
-        The bytes of the JPEG image
+        Raw JPEG data.
     """
     b64 = base64.b64encode(jpeg).decode("ascii")
-    return NodeView(_JPEG_HTML_BODY.format(jpeg_b64=b64), svg_or_png=jpeg)
+    return NodeView(
+        _JPEG_HTML_BODY.format(jpeg_b64=b64, js=_IMAGE_REPORTING_JS),
+        svg_or_png=jpeg,
+        can_be_used_in_report=True,
+    )
 
 
 ##########################################################################
@@ -381,18 +459,24 @@ except ImportError:
 
 def view_matplotlib(fig=None, format="png") -> NodeView:
     """
-    Create a view showing the given matplotlib figure.
+    Create a :class:`NodeView` that displays a **matplotlib** figure and is
+    *report-ready* out of the box.
 
-    The figure is displayed by exporting it as an SVG. If no figure is given
-    the current active figure is displayed. Note that the figure is closed and
-    should not be used after calling this method.
+    The figure is exported as a PNG or SVG (controlled by *format*).
+    If *fig* is *None*, the current active figure is used.  The figure is
+    then closed so it should not be modified afterwards.
+
+    Because a static image is always supplied, the helper sets
+    ``can_be_used_in_report=True`` automatically, allowing the view to appear
+    in reports generated by the **KNIME Reporting Extension** without
+    additional JavaScript.
 
     Parameters
     ----------
-    fig : matplotlib.figure.Figure
-        A matplotlib figure which should be displayed.
-    format : str
-        The format of the view inside the HTML document. Either "png" or "svg".
+    fig : matplotlib.figure.Figure, optional
+        Figure to render.  Defaults to the current figure.
+    format : {"png", "svg"}, default "png"
+        Output format embedded in the HTML snippet.
 
     Raises
     ------
@@ -433,10 +517,16 @@ def view_matplotlib(fig=None, format="png") -> NodeView:
 
 def view_seaborn() -> NodeView:
     """
-    Create a view showing the current active seaborn figure.
+    Create a :class:`NodeView` that shows the current active **seaborn**
+    figure and is *report-ready* out of the box.
 
-    This function just calls view_matplotlib() because seaborn plots are just
-    matplotlib figures under the hood.
+    The function simply forwards to :func:`view_matplotlib` because seaborn
+    charts are regular matplotlib figures under the hood.
+
+    As a static image is always embedded, the helper sets
+    ``can_be_used_in_report=True`` automatically, so the view can be
+    included in reports generated by the **KNIME Reporting Extension**
+    without any extra JavaScript.
 
     Raises
     ------

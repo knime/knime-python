@@ -67,3 +67,5 @@ class NodeViewSink:
 
         with open(self._java_data_sink.getOutputFilePath(), "w", encoding="utf-8") as f:
             f.write(node_view.html)
+
+        self._java_data_sink.setCanBeUsedInReport(node_view.can_be_used_in_report)

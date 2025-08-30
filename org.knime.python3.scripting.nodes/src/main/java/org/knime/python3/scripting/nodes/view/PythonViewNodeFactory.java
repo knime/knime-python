@@ -124,7 +124,9 @@ public final class PythonViewNodeFactory extends ConfigurableNodeFactory<PythonV
 
     @Override
     public org.knime.core.webui.node.view.NodeView createNodeView(final PythonViewNodeModel nodeModel) {
-        return new HtmlFileNodeView(nodeModel::getPathToHtml);
+        return HtmlFileNodeView.builder() //
+            .htmlSupplier(nodeModel::getPathToHtml) //
+            .build();
     }
 
     /** Create either an empty list or a list with one image output port */
