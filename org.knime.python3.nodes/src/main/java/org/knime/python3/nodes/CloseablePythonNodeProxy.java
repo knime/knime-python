@@ -125,7 +125,6 @@ import org.knime.python3.nodes.settings.JsonNodeSettings;
 import org.knime.python3.nodes.settings.JsonNodeSettingsSchema;
 import org.knime.python3.utils.FlowVariableUtils;
 import org.knime.python3.views.PythonNodeViewSink;
-import org.knime.python3.views.PythonNodeViewStoragePath;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
