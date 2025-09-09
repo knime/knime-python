@@ -154,6 +154,11 @@ onMounted(async () => {
         file-name="main.py"
         :menu-items="menuItems"
         :to-settings="toSettings"
+        :initial-pane-sizes="{
+          left: 260,
+          right: hasPreview ? 380 : 260,
+          bottom: 300,
+        }"
         :additional-bottom-pane-tab-content="[
           {
             slotName: 'bottomPaneTabSlot:console',
