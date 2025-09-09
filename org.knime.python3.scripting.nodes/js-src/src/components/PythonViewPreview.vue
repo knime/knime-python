@@ -36,16 +36,17 @@ onMounted(() => {
       v-show="!pythonPreviewStatus.hasValidView"
       class="placeholder-container"
     >
+      <img id="preview-img" src="/assets/plot-placeholder.svg" />
       <div v-if="!pythonPreviewStatus.isExecutedOnce" class="placeholder-text">
-        Please run the code to see the preview.
+        Run the code to see the preview.
       </div>
       <div v-else class="placeholder-text">
-        The view cannot be displayed. Please check the error message and
-        re-execute the script.
+        The view cannot be displayed.<br />
+        Check the error message and re-execute the script.
       </div>
-      <img id="preview-img" src="/assets/plot-placeholder.svg" />
       <Button
         :with-border="true"
+        compact
         :disabled="
           !sessionStatus.isRunningSupported ||
           sessionStatus.status === 'RUNNING_ALL' ||
@@ -80,12 +81,13 @@ iframe,
 }
 
 #preview-img {
-  max-width: 200px;
+  max-width: 80px;
   height: auto;
   opacity: 0.3;
 }
 
 .placeholder-text {
+  text-align: center;
   margin-left: 20px;
   margin-right: 20px;
 }

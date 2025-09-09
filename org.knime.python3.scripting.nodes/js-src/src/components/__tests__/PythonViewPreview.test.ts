@@ -80,7 +80,7 @@ describe("PythonViewPreview", () => {
       expect(wrapper.find(".iframe-container").isVisible()).toBeFalsy();
       expect(wrapper.find(".placeholder-container").isVisible()).toBeTruthy();
       expect(wrapper.find(".placeholder-text").text()).toContain(
-        "Please run the code to see the preview.",
+        "Run the code to see the preview.",
       );
     });
 
