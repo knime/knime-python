@@ -32,6 +32,7 @@ export default defineConfig({
   },
   optimizeDeps: { exclude: ["@knime/scripting-editor"] },
   base: "./",
+  build: { target: "esnext" },
   test: {
     setupFiles: [
       fileURLToPath(new URL("./src/test-setup/setup.ts", import.meta.url)),
