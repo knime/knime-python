@@ -24,11 +24,6 @@
       "count": 1
     }
   },
-  "src/test-setup/setup.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    }
-  },
   "vite.config.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 2
