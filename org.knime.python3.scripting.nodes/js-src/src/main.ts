@@ -1,7 +1,8 @@
-import "@/__mocks__/browser-mock-services";
-
 import { createApp } from "vue";
 import { Consola, LogLevels } from "consola";
+
+import { init, initMocked } from "@knime/scripting-editor";
+import { LoadingApp } from "@knime/scripting-editor/loading";
 
 import App from "@/components/App.vue";
 
@@ -17,6 +18,18 @@ const setupConsola = () => {
 
 setupConsola();
 
-const app = createApp(App);
+// Show loading app while initializing
+const loadingApp = createApp(LoadingApp);
+loadingApp.mount("#app");
 
-app.mount("#app");
+// Initialize application (e.g., load initial data, set up services)
+if (import.meta.env.MODE === "development.browser") {
+  // Mock the initial data and services
+  initMocked((await import("@/__mocks__/browser-mock-services")).default);
+} else {
+  await init();
+}
+
+// Unmount loading app and mount the main app
+loadingApp.unmount();
+createApp(App).mount("#app");
