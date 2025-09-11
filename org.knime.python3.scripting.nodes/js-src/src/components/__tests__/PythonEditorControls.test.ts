@@ -72,6 +72,7 @@ describe("PythonEditorControls", () => {
     let wrapper: VueWrapper;
 
     beforeEach(async () => {
+      useSessionStatusStore().isRunningSupported = true;
       wrapper = (await doMount()).wrapper;
       await setValidEditorSelection();
     });

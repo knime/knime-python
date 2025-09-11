@@ -6,6 +6,8 @@ import { LoadingApp } from "@knime/scripting-editor/loading";
 
 import App from "@/components/App.vue";
 
+import { initPython } from "./init";
+
 const setupConsola = () => {
   const consola = new Consola({
     level: import.meta.env.DEV ? LogLevels.trace : LogLevels.error,
@@ -26,8 +28,10 @@ loadingApp.mount("#app");
 if (import.meta.env.MODE === "development.browser") {
   // Mock the initial data and services
   initMocked((await import("@/__mocks__/browser-mock-services")).default);
+  initPython();
 } else {
   await init();
+  initPython();
 }
 
 // Unmount loading app and mount the main app

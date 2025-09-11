@@ -1,7 +1,7 @@
 import {
   type GenericInitialData,
   type InputOutputModel,
-  getInitialDataService,
+  getInitialData,
 } from "@knime/scripting-editor";
 
 import type { ExecutableOption } from "./types/common";
@@ -12,8 +12,7 @@ export type PythonInitialData = GenericInitialData & {
   executableOptionsList: ExecutableOption[];
 };
 
+// TODO no "service" is needed anymore, just export getInitialData directly
 export const getPythonInitialDataService = () => ({
-  ...getInitialDataService(),
-  getInitialData: async () =>
-    (await getInitialDataService().getInitialData()) as PythonInitialData,
+  getInitialData: () => getInitialData() as PythonInitialData,
 });

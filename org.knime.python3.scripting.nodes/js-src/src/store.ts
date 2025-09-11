@@ -1,9 +1,7 @@
 import { type Ref, reactive, ref } from "vue";
 
-import { consoleHandler } from "@knime/scripting-editor";
 import type { SettingState } from "@knime/ui-extension-service";
 
-import { getPythonInitialDataService } from "./python-initial-data-service";
 import type { ExecutionResult, Workspace } from "./types/common";
 
 export type WorkspaceStore = {
@@ -69,22 +67,6 @@ const sessionStatus: SessionStatusStore = reactive<SessionStatusStore>({
 export const useSessionStatusStore = (): SessionStatusStore => {
   return sessionStatus;
 };
-
-// Check if inputs are available and set the isRunningSupported flag accordingly
-getPythonInitialDataService()
-  .getInitialData()
-  .then((initialData) => {
-    sessionStatus.isRunningSupported = initialData.inputConnectionInfo.every(
-      (port) => port.isOptional || port.status === "OK",
-    );
-
-    if (!sessionStatus.isRunningSupported) {
-      consoleHandler.writeln({
-        warning:
-          "Missing input data. Connect all input ports and execute preceding nodes to enable script execution.",
-      });
-    }
-  });
 
 export type PythonViewStatus = {
   hasValidView: boolean;

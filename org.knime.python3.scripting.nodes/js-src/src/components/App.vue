@@ -2,7 +2,7 @@
 import { type Ref, nextTick, onMounted, ref, watch } from "vue";
 import * as monaco from "monaco-editor";
 
-import { FunctionButton, LoadingIcon, type MenuItem } from "@knime/components";
+import { FunctionButton, type MenuItem } from "@knime/components";
 import {
   CompactTabBar,
   type ConsoleHandler,
@@ -105,7 +105,7 @@ watch(
   () => pythonScriptingService.connectToLanguageServer(),
 );
 
-const initialDataLoaded = ref(false);
+const initialData = getPythonInitialDataService().getInitialData();
 
 // Register the completion items for the inputs
 pythonScriptingService.registerInputCompletions();
@@ -118,7 +118,7 @@ const toSettings = (commonSettings: GenericNodeSettings) => ({
 });
 
 // Right pane tab bar - only show if preview is available
-const hasPreview = ref<boolean>(false);
+const hasPreview = initialData.hasPreview;
 type RightPaneTabValue = "workspace" | "preview";
 const rightPaneActiveTab = ref<RightPaneTabValue>("workspace");
 const rightPaneOptions = [
@@ -126,101 +126,91 @@ const rightPaneOptions = [
   { value: "preview", label: "Output Preview" },
 ];
 
+if (hasPreview) {
+  rightPaneActiveTab.value = "preview";
+}
+
 onMounted(async () => {
   pythonScriptingService.sendLastConsoleOutput();
 
   await pythonScriptingService.initExecutableSelection();
 
-  const initialData = await getPythonInitialDataService().getInitialData();
-
-  initialDataLoaded.value = true;
-  // Check if the preview is available
-  hasPreview.value = initialData.hasPreview;
-
-  if (hasPreview.value) {
+  if (hasPreview) {
     // wait until preview is mounted to DOM
     await nextTick();
-    rightPaneActiveTab.value = "preview";
   }
 });
 </script>
 
 <template>
   <main>
-    <template v-if="initialDataLoaded">
-      <ScriptingEditor
-        :title="`Python ${hasPreview ? 'View' : 'Script'}`"
-        language="python"
-        file-name="main.py"
-        :menu-items="menuItems"
-        :to-settings="toSettings"
-        :initial-pane-sizes="{
-          left: 260,
-          right: hasPreview ? 380 : 260,
-          bottom: 300,
-        }"
-        :additional-bottom-pane-tab-content="[
-          {
-            slotName: 'bottomPaneTabSlot:console',
-            label: 'Console',
-            associatedControlsSlotName: 'bottomPaneTabControlsSlot:console',
-          },
-        ]"
-        @menu-item-clicked="onMenuItemClicked"
-      >
-        <template #settings-title>
-          {{ currentSettingsMenuItem?.title }}
-        </template>
-        <template #settings-content>
-          <EnvironmentSettings
-            v-if="currentSettingsMenuItem?.title === 'Select Environment'"
+    <ScriptingEditor
+      :title="`Python ${hasPreview ? 'View' : 'Script'}`"
+      language="python"
+      file-name="main.py"
+      :menu-items="menuItems"
+      :to-settings="toSettings"
+      :initial-pane-sizes="{
+        left: 260,
+        right: hasPreview ? 380 : 260,
+        bottom: 300,
+      }"
+      :additional-bottom-pane-tab-content="[
+        {
+          slotName: 'bottomPaneTabSlot:console',
+          label: 'Console',
+          associatedControlsSlotName: 'bottomPaneTabControlsSlot:console',
+        },
+      ]"
+      @menu-item-clicked="onMenuItemClicked"
+    >
+      <template #settings-title>
+        {{ currentSettingsMenuItem?.title }}
+      </template>
+      <template #settings-content>
+        <EnvironmentSettings
+          v-if="currentSettingsMenuItem?.title === 'Select Environment'"
+        />
+      </template>
+      <template #code-editor-controls>
+        <PythonEditorControls />
+      </template>
+      <template #right-pane>
+        <div v-if="hasPreview" id="right-pane">
+          <CompactTabBar
+            ref="rightTabBar"
+            v-model="rightPaneActiveTab"
+            :possible-values="rightPaneOptions"
+            :disabled="false"
+            name="rightTabBar"
           />
-        </template>
-        <template #code-editor-controls>
-          <PythonEditorControls />
-        </template>
-        <template #right-pane>
-          <div v-if="hasPreview" id="right-pane">
-            <CompactTabBar
-              ref="rightTabBar"
-              v-model="rightPaneActiveTab"
-              :possible-values="rightPaneOptions"
-              :disabled="false"
-              name="rightTabBar"
-            />
-            <div id="right-pane-content">
-              <PythonWorkspace v-show="rightPaneActiveTab === 'workspace'" />
-              <PythonViewPreview v-show="rightPaneActiveTab === 'preview'" />
-            </div>
+          <div id="right-pane-content">
+            <PythonWorkspace v-show="rightPaneActiveTab === 'workspace'" />
+            <PythonViewPreview v-show="rightPaneActiveTab === 'preview'" />
           </div>
-          <PythonWorkspace v-if="!hasPreview" />
-        </template>
-        <template #bottom-pane-status-label>
-          <LastActionStatus />
-        </template>
-        <template #bottomPaneTabSlot:console>
-          <OutputConsole
-            class="console"
-            @console-created="
-              (console: ConsoleHandler) => {
-                setConsoleHandler(console);
-                initConsoleEventHandler();
-              }
-            "
-          />
-        </template>
-        <template #bottomPaneTabControlsSlot:console>
-          <FunctionButton class="clear-button" @click="consoleHandler.clear">
-            <TrashIcon />
-          </FunctionButton>
-        </template>
-      </ScriptingEditor>
-    </template>
-    <template v-else>
-      <div class="no-editors">
-        <LoadingIcon />
-      </div>
-    </template>
+        </div>
+        <PythonWorkspace v-if="!hasPreview" />
+      </template>
+      <template #bottom-pane-status-label>
+        <LastActionStatus />
+      </template>
+      <template #bottomPaneTabSlot:console>
+        <OutputConsole
+          class="console"
+          @console-created="
+            (console: ConsoleHandler) => {
+              setConsoleHandler(console);
+              initConsoleEventHandler();
+            }
+          "
+        />
+      </template>
+      <template #bottomPaneTabControlsSlot:console>
+        <FunctionButton class="clear-button" @click="consoleHandler.clear">
+          <TrashIcon />
+        </FunctionButton>
+      </template>
+    </ScriptingEditor>
   </main>
 </template>
 
@@ -237,12 +227,5 @@ onMounted(async () => {
 
 #right-pane-content {
   flex-grow: 1;
-}
-
-.no-editors {
-  position: absolute;
-  inset: calc(50% - 25px);
-  width: 50px;
-  height: 50px;
 }
 </style>

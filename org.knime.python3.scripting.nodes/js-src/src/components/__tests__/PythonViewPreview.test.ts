@@ -95,6 +95,7 @@ describe("PythonViewPreview", () => {
     });
 
     it("placholder button executes script", () => {
+      useSessionStatusStore().isRunningSupported = true;
       editor.useMainCodeEditorStore().value = { text: ref("myScript") } as any;
       previewStatusStore.hasValidView = false;
       const wrapper = mount(PythonViewPreview);

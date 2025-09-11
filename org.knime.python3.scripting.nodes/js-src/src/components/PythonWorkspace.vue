@@ -43,10 +43,10 @@ const resetWorkspace = async () => {
   useSessionStatusStore().lastActionResult = success ? "RESET" : "RESET_FAILED";
 };
 
-onMounted(async () => {
+onMounted(() => {
   useTotalWidth();
 
-  const initialData = await getPythonInitialDataService().getInitialData();
+  const initialData = getPythonInitialDataService().getInitialData();
   if (
     initialData.inputConnectionInfo.every(
       (port) => port.isOptional || port.status === "OK",

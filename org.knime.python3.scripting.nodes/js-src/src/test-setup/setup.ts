@@ -21,13 +21,13 @@ vi.mock("@knime/ui-extension-service", () => ({}));
 
 vi.mock("@/python-initial-data-service", () => ({
   getPythonInitialDataService: vi.fn(() => ({
-    getInitialData: vi.fn(() => Promise.resolve(DEFAULT_INITIAL_DATA)),
+    getInitialData: vi.fn(() => DEFAULT_INITIAL_DATA),
   })),
 }));
 
 vi.mock("@/python-settings-service", () => ({
   getPythonSettingsService: vi.fn(() => ({
-    getSettings: vi.fn(() => Promise.resolve(DEFAULT_INITIAL_SETTINGS)),
+    getSettings: vi.fn(() => DEFAULT_INITIAL_SETTINGS),
     registerSettingsGetterForApply: vi.fn(() => Promise.resolve()),
   })),
 }));
@@ -38,7 +38,10 @@ initMocked({
     sendToService: vi.fn(),
     getOutputPreviewTableInitialData: vi.fn(() => Promise.resolve(undefined)),
     registerEventHandler: vi.fn(),
-    connectToLanguageServer: vi.fn(),
+    // @ts-expect-error Mock doesn't fully implement MonacoLSPConnection interface
+    connectToLanguageServer: vi.fn(() =>
+      Promise.resolve({ changeConfiguration: vi.fn() }),
+    ),
     isKaiEnabled: vi.fn(),
     isLoggedIntoHub: vi.fn(),
     getAiDisclaimer: vi.fn(),
@@ -48,7 +51,10 @@ initMocked({
   settingsService: {
     getSettings: vi.fn(() => Promise.resolve(DEFAULT_INITIAL_SETTINGS)),
     registerSettingsGetterForApply: vi.fn(),
-    registerSettings: vi.fn(() => vi.fn()),
+    // @ts-expect-error Mock doesn't fully implement SettingState interface
+    registerSettings: vi.fn(() =>
+      vi.fn(() => ({ addControllingFlowVariable: vi.fn() })),
+    ),
   },
   initialData: DEFAULT_INITIAL_DATA,
   displayMode: "small",

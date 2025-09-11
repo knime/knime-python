@@ -60,12 +60,11 @@ describe("App.vue", () => {
       },
     );
     vi.mocked(getPythonInitialDataService).mockReturnValue({
-      getInitialData: () =>
-        Promise.resolve({
-          ...DEFAULT_INITIAL_DATA,
-          executableOptionsList: executableOptions as ExecutableOption[],
-          hasPreview: viewAvailable,
-        }),
+      getInitialData: () => ({
+        ...DEFAULT_INITIAL_DATA,
+        executableOptionsList: executableOptions as ExecutableOption[],
+        hasPreview: viewAvailable,
+      }),
     });
     vi.mocked(getPythonSettingsService).mockReturnValue(
       createPythonSettingsServiceMock(settings),

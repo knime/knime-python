@@ -31,11 +31,10 @@ describe("EnvironmentSettings", () => {
     );
 
     vi.mocked(getPythonInitialDataService).mockReturnValue({
-      getInitialData: () =>
-        Promise.resolve({
-          ...DEFAULT_INITIAL_DATA,
-          executableOptionsList: executableOptions as ExecutableOption[],
-        }),
+      getInitialData: () => ({
+        ...DEFAULT_INITIAL_DATA,
+        executableOptionsList: executableOptions as ExecutableOption[],
+      }),
     });
 
     setSelectedExecutable({ id: "", isMissing: false });
@@ -101,11 +100,10 @@ describe("EnvironmentSettings", () => {
     it("displays error if no executable options are available", async () => {
       // only default executable
       vi.mocked(getPythonInitialDataService).mockReturnValue({
-        getInitialData: () =>
-          Promise.resolve({
-            ...DEFAULT_INITIAL_DATA,
-            executableOptionsList: [],
-          }),
+        getInitialData: () => ({
+          ...DEFAULT_INITIAL_DATA,
+          executableOptionsList: [],
+        }),
       });
 
       const wrapper = await doMount();
@@ -122,17 +120,16 @@ describe("EnvironmentSettings", () => {
     it("displays error if missing executable is selected", async () => {
       // missing executable
       vi.mocked(getPythonInitialDataService).mockReturnValue({
-        getInitialData: () =>
-          Promise.resolve({
-            ...DEFAULT_INITIAL_DATA,
-            executableOptionsList: [
-              executableOptionsMock[0],
-              {
-                type: "MISSING_VAR",
-                id: "conda.environment1",
-              },
-            ] as ExecutableOption[],
-          }),
+        getInitialData: () => ({
+          ...DEFAULT_INITIAL_DATA,
+          executableOptionsList: [
+            executableOptionsMock[0],
+            {
+              type: "MISSING_VAR",
+              id: "conda.environment1",
+            },
+          ] as ExecutableOption[],
+        }),
       });
 
       const wrapper = await doMount();
@@ -149,17 +146,16 @@ describe("EnvironmentSettings", () => {
     it("does not restart session if selected executable is missing", async () => {
       // missing executable
       vi.mocked(getPythonInitialDataService).mockReturnValue({
-        getInitialData: () =>
-          Promise.resolve({
-            ...DEFAULT_INITIAL_DATA,
-            executableOptionsList: [
-              executableOptionsMock[0],
-              {
-                type: "MISSING_VAR",
-                id: "conda.environment1",
-              },
-            ] as ExecutableOption[],
-          }),
+        getInitialData: () => ({
+          ...DEFAULT_INITIAL_DATA,
+          executableOptionsList: [
+            executableOptionsMock[0],
+            {
+              type: "MISSING_VAR",
+              id: "conda.environment1",
+            },
+          ] as ExecutableOption[],
+        }),
       });
 
       const wrapper = await doMount();

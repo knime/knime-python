@@ -120,14 +120,13 @@ describe("PythonWorkspace", () => {
 
   it("reset button disabled if inputs are not available", async () => {
     vi.mocked(getPythonInitialDataService).mockReturnValue({
-      getInitialData: () =>
-        Promise.resolve({
-          ...DEFAULT_INITIAL_DATA,
-          inputConnectionInfo: [
-            { status: "OK", isOptional: false },
-            { status: "UNEXECUTED_CONNECTION", isOptional: false },
-          ],
-        }),
+      getInitialData: () => ({
+        ...DEFAULT_INITIAL_DATA,
+        inputConnectionInfo: [
+          { status: "OK", isOptional: false },
+          { status: "UNEXECUTED_CONNECTION", isOptional: false },
+        ],
+      }),
     });
 
     const { wrapper } = await doMount();

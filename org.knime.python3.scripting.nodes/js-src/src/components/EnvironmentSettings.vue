@@ -41,8 +41,8 @@ const getExecutableById = (executableId: string): ExecutableOption | null => {
 };
 
 onMounted(async () => {
-  executableOptions = (await getPythonInitialDataService().getInitialData())
-    .executableOptionsList;
+  executableOptions =
+    getPythonInitialDataService().getInitialData().executableOptionsList;
 
   dropDownOptions.value = executableOptions
     .map((executableOption: ExecutableOption) => ({

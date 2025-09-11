@@ -7,46 +7,18 @@ import {
   getScriptingService,
 } from "@knime/scripting-editor";
 
-import { DEFAULT_INITIAL_DATA } from "@/__mocks__/mock-data";
+import { initPython } from "@/init";
 import { pythonScriptingService } from "@/python-scripting-service";
 import { useSessionStatusStore, useWorkspaceStore } from "@/store";
 import type { ExecutionInfo, KillSessionInfo } from "@/types/common";
-
-const mockScriptingService = vi.hoisted(() => {
-  const languageServerConnection = { changeConfiguration: vi.fn() };
-
-  return {
-    sendToService: vi.fn((args) => {
-      // If this method is not mocked, the tests fail with a hard to debug
-      // error otherwise, so we're really explicit here.
-      throw new Error(
-        `ScriptingService.sendToService should have been mocked for method ${args}`,
-      );
-    }),
-    registerEventHandler: vi.fn(),
-    connectToLanguageServer: vi.fn(() => languageServerConnection),
-    registerSettingsGetterForApply: vi.fn(),
-  };
-});
-vi.mock("@knime/scripting-editor", async (importActual) => {
-  const scriptEditorModule = (await importActual()) as any;
-
-  return {
-    ...scriptEditorModule,
-    getScriptingService: vi.fn(() => {
-      return mockScriptingService;
-    }),
-    getInitialDataService: vi.fn(() => ({
-      getInitialData: vi.fn(() => Promise.resolve(DEFAULT_INITIAL_DATA)),
-    })),
-  };
-});
 
 describe("python-scripting-service", () => {
   let eventHandler: (info: ExecutionInfo) => void;
   const getConsoleSpy = () => vi.spyOn(consoleHandler, "writeln");
 
   beforeAll(() => {
+    // Initialize Python to register the event handler
+    initPython();
     eventHandler = vi.mocked(getScriptingService().registerEventHandler).mock
       .calls[0][1];
   });
