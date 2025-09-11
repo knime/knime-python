@@ -9,8 +9,8 @@ if [[ -n $KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT ]]; then
 		cp "${WORKSPACE}/workflow-tests/preferences-bundled-env.epf" "${WORKSPACE}/workflow-tests/preferences-Linux.epf"
 		cat "${WORKSPACE}/workflow-tests/preferences-Linux.epf"
 	else
-	  # remove extension substring from name
-	  envName=${KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT%".yml"}
+		# remove extension substring from name
+		envName=${KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT%".yml"}
 
 		envPath="${WORKSPACE}/${envName}"
 		echo "Creating Conda environment for: ${KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT} at ${envPath}"
@@ -28,9 +28,9 @@ if [[ -n $KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT ]]; then
 			ext_config="${WORKSPACE}/workflow-tests/python-test-ext-config.yaml"
 			sedi "s|<placeholder_for_env_path>|${envPath}|g" "${ext_config}"
 			echo "-Dknime.python.extension.config=${ext_config}" >> "${WORKSPACE}/workflow-tests/vmargs"
-    else
-      echo "Python 3.6 is not supported to run workflow-tests"
-      exit 1
+		else
+			echo "Python 3.6 is not supported to run workflow-tests"
+			exit 1
 		fi
 	fi
 fi
