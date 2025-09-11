@@ -14,10 +14,11 @@ if [[ -n $KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT ]]; then
 		cp "${WORKSPACE}/workflow-tests/preferences-bundled-env.epf" "${WORKSPACE}/workflow-tests/preferences-Windows.epf"
 		cat "${WORKSPACE}/workflow-tests/preferences-Windows.epf"
 	else
-	  # remove extension substring from name
-	  envName=${KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT%".yml"}
+		# remove extension substring from name
+		envName=${KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT%".yml"}
 
-		envPath="${WORKSPACE}\\\\${envName}"
+		escapedWorkspace=$(echo "${WORKSPACE}" | sed 's/\\/\\\\\\\\/g')
+		envPath="${escapedWorkspace}\\\\${envName}"
 		echo "Creating Conda environment for: ${KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT} at ${envPath}"
 
 		cmd /c C:/tools/micromamba.exe create \
@@ -25,7 +26,7 @@ if [[ -n $KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT ]]; then
 			-f ${WORKSPACE}\\workflow-tests\\${KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT}
 		cmd /c C:/tools/micromamba.exe list -p ${envPath}
 
-		sedi "s|<placeholder_for_env_path>|${envPath//\\/\\\\\\\\}|g" "${prefPath}"
+		sedi "s|<placeholder_for_env_path>|${envPath}|g" "${prefPath}"
 		cat "${prefPath}"
 
 		# Configure environment for Python-based nodes testing extension (py36 is not supported)
