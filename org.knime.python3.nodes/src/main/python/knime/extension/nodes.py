@@ -890,6 +890,12 @@ class ExecutionContext(ConfigurationContext):
         """
         return self._java_ctx.get_knime_home_dir()
 
+    def get_internal_view_data(self) -> str:
+        """
+        TODO
+        """
+        return self._java_ctx.get_internal_view_data()
+
 
 class PythonNode(ABC):
     """

@@ -122,6 +122,8 @@ public interface PythonNodeViewProxy {
      */
     interface PythonViewContext extends PythonBaseContext, PythonToolContext {
 
+        String get_internal_view_data();
+
     }
 
 }

@@ -346,6 +346,13 @@ public interface PythonNodeModelProxy {
          */
         String get_knime_home_dir(); // NOSONAR
 
+        /**
+         * TODO
+         *
+         * @return
+         */
+        String get_internal_view_data();
+
 
     }
 

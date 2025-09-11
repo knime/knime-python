@@ -83,12 +83,14 @@ public interface NodeViewProxy extends AsynchronousCloseable<RuntimeException> {
      *
      * @param settings of the node
      * @param portObjects provided as input to the node
+     * @param internalViewData TODO
      * @param portMapProvider provides the map from port groups to their indices
      * @param credentialsProvider provides access to credentials
      *
      * @return a data service that is powered by a remote proxy
      */
     DataServiceProxy getDataServiceProxy(JsonNodeSettings settings, final PortObject[] portObjects,
-        final PortMapProvider portMapProvider, final CredentialsProviderProxy credentialsProvider);
+        String internalViewData, final PortMapProvider portMapProvider,
+        final CredentialsProviderProxy credentialsProvider);
 
 }
