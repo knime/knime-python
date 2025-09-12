@@ -133,7 +133,7 @@ if (hasPreview) {
 onMounted(async () => {
   pythonScriptingService.sendLastConsoleOutput();
 
-  await pythonScriptingService.initExecutableSelection();
+  pythonScriptingService.initExecutableSelection();
 
   if (hasPreview) {
     // wait until preview is mounted to DOM

@@ -23,8 +23,8 @@ const sessionStatus = useSessionStatusStore();
 const mainEditorState = editor.useMainCodeEditorStore();
 
 export const pythonScriptingService = {
-  initExecutableSelection: async (): Promise<void> => {
-    const settings = await getPythonSettingsService().getSettings();
+  initExecutableSelection: (): void => {
+    const settings = getPythonSettingsService().getSettings();
 
     setSelectedExecutable({ id: settings.executableSelection ?? "" });
     pythonScriptingService.updateExecutableSelection(executableSelection.id);
