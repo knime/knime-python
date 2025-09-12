@@ -1,14 +1,16 @@
 import { watch } from "vue";
 
 import {
+  type GenericInitialData,
+  type InputOutputModel,
   consoleHandler,
   editor,
+  getInitialData,
   getScriptingService,
+  getSettingsService,
 } from "@knime/scripting-editor";
 
 import { registerInputCompletions } from "./input-completions";
-import { getPythonInitialDataService } from "./python-initial-data-service";
-import { getPythonSettingsService } from "./python-settings-service";
 import { sendErrorToConsole } from "./send-error-to-console";
 import {
   setSelectedExecutable,
@@ -16,21 +18,29 @@ import {
   useSessionStatusStore,
   useWorkspaceStore,
 } from "./store";
-import type { KillSessionInfo } from "./types/common";
+import type { ExecutableOption, KillSessionInfo } from "./types/common";
+
+export type PythonInitialData = GenericInitialData & {
+  hasPreview: boolean;
+  outputObjects: InputOutputModel[];
+  executableOptionsList: ExecutableOption[];
+};
 
 const executableSelection = useExecutableSelectionStore();
 const sessionStatus = useSessionStatusStore();
 const mainEditorState = editor.useMainCodeEditorStore();
 
+export const getPythonInitialData = () => getInitialData() as PythonInitialData;
+
 export const pythonScriptingService = {
   initExecutableSelection: (): void => {
-    const settings = getPythonSettingsService().getSettings();
+    const settings = getSettingsService().getSettings();
 
     setSelectedExecutable({ id: settings.executableSelection ?? "" });
     pythonScriptingService.updateExecutableSelection(executableSelection.id);
-    const executableInfo = getPythonInitialDataService()
-      .getInitialData()
-      .executableOptionsList.find(({ id }) => id === executableSelection.id);
+    const executableInfo = getPythonInitialData().executableOptionsList.find(
+      ({ id }) => id === executableSelection.id,
+    );
     if (
       typeof executableInfo === "undefined" ||
       executableInfo.type === "MISSING_VAR"
@@ -110,7 +120,7 @@ export const pythonScriptingService = {
     }
   },
   registerInputCompletions: () => {
-    const initialData = getPythonInitialDataService().getInitialData();
+    const initialData = getPythonInitialData();
     const inpObjects = initialData.inputObjects;
     const inpFlowVars = initialData.flowVariables;
 

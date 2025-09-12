@@ -4,8 +4,10 @@ import { type Ref, computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { Dropdown, Label, RadioButtons } from "@knime/components";
 import { getSettingsService } from "@knime/scripting-editor";
 
-import { getPythonInitialDataService } from "@/python-initial-data-service";
-import { pythonScriptingService } from "@/python-scripting-service";
+import {
+  getPythonInitialData,
+  pythonScriptingService,
+} from "@/python-scripting-service";
 import {
   setSelectedExecutable,
   useExecutableSelectionStore,
@@ -41,14 +43,13 @@ const getExecutableById = (executableId: string): ExecutableOption | null => {
 };
 
 onMounted(async () => {
-  executableOptions =
-    getPythonInitialDataService().getInitialData().executableOptionsList;
+  executableOptions = getPythonInitialData().executableOptionsList;
 
   dropDownOptions.value = executableOptions
     .map((executableOption: ExecutableOption) => ({
       id: executableOption.id,
       text: executableOption.id,
-      type: executableOption.type as any,
+      type: executableOption.type,
     }))
     .filter(({ id }) => id !== "");
 
@@ -61,7 +62,7 @@ onMounted(async () => {
   // Set the settings store to the initially selected flow variable
   const executableSettingState = useExecutableSettingStore();
   if (executableSettingState.value === null) {
-    const register = await getSettingsService().registerSettings("model");
+    const register = await getSettingsService().registerSettings("model"); // TODO remove await here
     const environmentSettingState = register("");
     if (executableSelection.livePrefValue === "") {
       executableSettingState.value =

@@ -13,6 +13,7 @@ import {
   consoleHandler,
   editor,
   getScriptingService,
+  initMocked,
 } from "@knime/scripting-editor";
 
 import { executableOptionsMock } from "@/__mocks__/executable-options";
@@ -21,9 +22,7 @@ import {
   DEFAULT_INITIAL_SETTINGS,
   createPythonSettingsServiceMock,
 } from "@/__mocks__/mock-data";
-import { getPythonInitialDataService } from "@/python-initial-data-service";
 import { pythonScriptingService } from "@/python-scripting-service";
-import { getPythonSettingsService } from "@/python-settings-service";
 import { setSelectedExecutable, useExecutableSelectionStore } from "@/store";
 import type {
   ExecutableOption,
@@ -45,6 +44,14 @@ describe("App.vue", () => {
     settings?: PythonScriptingNodeSettings;
     stubScriptingEditorComponent?: boolean;
   } = {}) => {
+    initMocked({
+      initialData: {
+        ...DEFAULT_INITIAL_DATA,
+        executableOptionsList: executableOptions as ExecutableOption[],
+        hasPreview: viewAvailable,
+      },
+      settingsService: createPythonSettingsServiceMock(settings),
+    });
     vi.mocked(getScriptingService().sendToService).mockImplementation(
       (methodName: string): any => {
         if (methodName === "sendLastConsoleOutput") {
@@ -58,16 +65,6 @@ describe("App.vue", () => {
         }
         throw Error(`Method ${methodName} was not mocked but called in test`);
       },
-    );
-    vi.mocked(getPythonInitialDataService).mockReturnValue({
-      getInitialData: () => ({
-        ...DEFAULT_INITIAL_DATA,
-        executableOptionsList: executableOptions as ExecutableOption[],
-        hasPreview: viewAvailable,
-      }),
-    });
-    vi.mocked(getPythonSettingsService).mockReturnValue(
-      createPythonSettingsServiceMock(settings),
     );
     setSelectedExecutable({ id: "", isMissing: false });
 

@@ -19,19 +19,6 @@ window.consola = consola;
 // hard-to-debug failures due to timeouts.
 vi.mock("@knime/ui-extension-service", () => ({}));
 
-vi.mock("@/python-initial-data-service", () => ({
-  getPythonInitialDataService: vi.fn(() => ({
-    getInitialData: vi.fn(() => DEFAULT_INITIAL_DATA),
-  })),
-}));
-
-vi.mock("@/python-settings-service", () => ({
-  getPythonSettingsService: vi.fn(() => ({
-    getSettings: vi.fn(() => DEFAULT_INITIAL_SETTINGS),
-    registerSettingsGetterForApply: vi.fn(() => Promise.resolve()),
-  })),
-}));
-
 // Initialize @knime/scripting-editor with mock data
 initMocked({
   scriptingService: {

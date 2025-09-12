@@ -9,11 +9,6 @@
       "count": 1
     }
   },
-  "src/components/EnvironmentSettings.vue": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    }
-  },
   "src/components/PythonWorkspaceHeader.vue": {
     "@typescript-eslint/no-explicit-any": {
       "count": 4

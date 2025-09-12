@@ -25,8 +25,10 @@ import LastActionStatus from "@/components/LastActionStatus.vue";
 import PythonEditorControls from "@/components/PythonEditorControls.vue";
 import PythonViewPreview from "@/components/PythonViewPreview.vue";
 import PythonWorkspace from "@/components/PythonWorkspace.vue";
-import { getPythonInitialDataService } from "@/python-initial-data-service";
-import { pythonScriptingService } from "@/python-scripting-service";
+import {
+  getPythonInitialData,
+  pythonScriptingService,
+} from "@/python-scripting-service";
 import { useExecutableSelectionStore } from "@/store";
 
 const menuItems: MenuItem[] = [
@@ -105,7 +107,7 @@ watch(
   () => pythonScriptingService.connectToLanguageServer(),
 );
 
-const initialData = getPythonInitialDataService().getInitialData();
+const initialData = getPythonInitialData();
 
 // Register the completion items for the inputs
 pythonScriptingService.registerInputCompletions();

@@ -3,10 +3,9 @@ import { type Ref } from "vue";
 import { flushPromises, mount } from "@vue/test-utils";
 
 import { Button } from "@knime/components";
-import { getScriptingService } from "@knime/scripting-editor";
+import { getScriptingService, initMocked } from "@knime/scripting-editor";
 
 import { DEFAULT_INITIAL_DATA } from "@/__mocks__/mock-data";
-import { getPythonInitialDataService } from "@/python-initial-data-service";
 import { useSessionStatusStore, useWorkspaceStore } from "@/store";
 import PythonWorkspace from "../PythonWorkspace.vue";
 import { type ColumnSizes } from "../PythonWorkspaceHeader.vue";
@@ -119,14 +118,14 @@ describe("PythonWorkspace", () => {
   });
 
   it("reset button disabled if inputs are not available", async () => {
-    vi.mocked(getPythonInitialDataService).mockReturnValue({
-      getInitialData: () => ({
+    initMocked({
+      initialData: {
         ...DEFAULT_INITIAL_DATA,
         inputConnectionInfo: [
           { status: "OK", isOptional: false },
           { status: "UNEXECUTED_CONNECTION", isOptional: false },
         ],
-      }),
+      },
     });
 
     const { wrapper } = await doMount();

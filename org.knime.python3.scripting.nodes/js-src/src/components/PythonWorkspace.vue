@@ -4,8 +4,10 @@ import { useDebounceFn, useResizeObserver } from "@vueuse/core";
 
 import { Button } from "@knime/components";
 
-import { getPythonInitialDataService } from "@/python-initial-data-service";
-import { pythonScriptingService } from "@/python-scripting-service";
+import {
+  getPythonInitialData,
+  pythonScriptingService,
+} from "@/python-scripting-service";
 import { usePythonPreviewStatusStore, useSessionStatusStore } from "@/store";
 
 import PythonWorkspaceBody from "./PythonWorkspaceBody.vue";
@@ -46,7 +48,7 @@ const resetWorkspace = async () => {
 onMounted(() => {
   useTotalWidth();
 
-  const initialData = getPythonInitialDataService().getInitialData();
+  const initialData = getPythonInitialData();
   if (
     initialData.inputConnectionInfo.every(
       (port) => port.isOptional || port.status === "OK",

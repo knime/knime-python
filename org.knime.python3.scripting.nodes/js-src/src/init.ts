@@ -1,6 +1,6 @@
 import { consoleHandler, getScriptingService } from "@knime/scripting-editor";
 
-import { getPythonInitialDataService } from "./python-initial-data-service";
+import { getPythonInitialData } from "./python-scripting-service";
 import { sendErrorToConsole } from "./send-error-to-console";
 import {
   usePythonPreviewStatusStore,
@@ -48,7 +48,7 @@ export const initPython = () => {
   );
 
   // Check if inputs are available and set the isRunningSupported flag accordingly
-  const initialData = getPythonInitialDataService().getInitialData();
+  const initialData = getPythonInitialData();
   sessionStatus.isRunningSupported = initialData.inputConnectionInfo.every(
     (port) => port.isOptional || port.status === "OK",
   );

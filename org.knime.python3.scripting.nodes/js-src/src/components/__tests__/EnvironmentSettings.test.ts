@@ -2,11 +2,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { flushPromises, mount } from "@vue/test-utils";
 
 import { Dropdown } from "@knime/components";
-import { consoleHandler, getScriptingService } from "@knime/scripting-editor";
+import {
+  consoleHandler,
+  getScriptingService,
+  initMocked,
+} from "@knime/scripting-editor";
 
 import { executableOptionsMock } from "@/__mocks__/executable-options";
 import { DEFAULT_INITIAL_DATA } from "@/__mocks__/mock-data";
-import { getPythonInitialDataService } from "@/python-initial-data-service";
 import { setSelectedExecutable } from "@/store";
 import type { ExecutableOption } from "@/types/common";
 import EnvironmentSettings from "../EnvironmentSettings.vue";
@@ -21,6 +24,12 @@ describe("EnvironmentSettings", () => {
   };
 
   beforeEach(() => {
+    initMocked({
+      initialData: {
+        ...DEFAULT_INITIAL_DATA,
+        executableOptionsList: executableOptions as ExecutableOption[],
+      },
+    });
     vi.mocked(getScriptingService().sendToService).mockImplementation(
       vi.fn((methodName: string): any => {
         if (methodName === "updateExecutableSelection") {
@@ -30,24 +39,11 @@ describe("EnvironmentSettings", () => {
       }),
     );
 
-    vi.mocked(getPythonInitialDataService).mockReturnValue({
-      getInitialData: () => ({
-        ...DEFAULT_INITIAL_DATA,
-        executableOptionsList: executableOptions as ExecutableOption[],
-      }),
-    });
-
     setSelectedExecutable({ id: "", isMissing: false });
   });
 
   afterEach(() => {
     vi.clearAllMocks();
-  });
-
-  it("loads initial data on mount", async () => {
-    await doMount();
-
-    expect(getPythonInitialDataService).toHaveBeenCalled();
   });
 
   it("does not display executable options if default is selected", async () => {
@@ -99,11 +95,11 @@ describe("EnvironmentSettings", () => {
   describe("error handling", () => {
     it("displays error if no executable options are available", async () => {
       // only default executable
-      vi.mocked(getPythonInitialDataService).mockReturnValue({
-        getInitialData: () => ({
+      initMocked({
+        initialData: {
           ...DEFAULT_INITIAL_DATA,
           executableOptionsList: [],
-        }),
+        },
       });
 
       const wrapper = await doMount();
@@ -119,17 +115,14 @@ describe("EnvironmentSettings", () => {
 
     it("displays error if missing executable is selected", async () => {
       // missing executable
-      vi.mocked(getPythonInitialDataService).mockReturnValue({
-        getInitialData: () => ({
+      initMocked({
+        initialData: {
           ...DEFAULT_INITIAL_DATA,
           executableOptionsList: [
             executableOptionsMock[0],
-            {
-              type: "MISSING_VAR",
-              id: "conda.environment1",
-            },
-          ] as ExecutableOption[],
-        }),
+            { type: "MISSING_VAR", id: "conda.environment1" },
+          ],
+        },
       });
 
       const wrapper = await doMount();
@@ -145,17 +138,14 @@ describe("EnvironmentSettings", () => {
 
     it("does not restart session if selected executable is missing", async () => {
       // missing executable
-      vi.mocked(getPythonInitialDataService).mockReturnValue({
-        getInitialData: () => ({
+      initMocked({
+        initialData: {
           ...DEFAULT_INITIAL_DATA,
           executableOptionsList: [
             executableOptionsMock[0],
-            {
-              type: "MISSING_VAR",
-              id: "conda.environment1",
-            },
-          ] as ExecutableOption[],
-        }),
+            { type: "MISSING_VAR", id: "conda.environment1" },
+          ],
+        },
       });
 
       const wrapper = await doMount();

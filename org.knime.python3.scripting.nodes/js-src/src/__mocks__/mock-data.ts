@@ -1,7 +1,6 @@
 import { createSettingsServiceMock } from "@knime/scripting-editor/settings-service-browser-mock";
 
-import type { PythonInitialData } from "@/python-initial-data-service";
-import type { PythonSettingsService } from "@/python-settings-service";
+import type { PythonInitialData } from "@/python-scripting-service";
 import type { PythonScriptingNodeSettings } from "@/types/common";
 
 export const DEFAULT_INITIAL_SETTINGS: PythonScriptingNodeSettings = {
@@ -123,7 +122,4 @@ export const DEFAULT_INITIAL_DATA: PythonInitialData = {
 
 export const createPythonSettingsServiceMock = (
   settings?: PythonScriptingNodeSettings,
-) =>
-  createSettingsServiceMock(
-    settings ?? DEFAULT_INITIAL_SETTINGS,
-  ) as PythonSettingsService;
+) => createSettingsServiceMock(settings ?? DEFAULT_INITIAL_SETTINGS);
