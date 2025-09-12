@@ -42,7 +42,7 @@ const getExecutableById = (executableId: string): ExecutableOption | null => {
   return executableOptions?.find(({ id }) => id === executableId) ?? null;
 };
 
-onMounted(async () => {
+onMounted(() => {
   executableOptions = getPythonInitialData().executableOptionsList;
 
   dropDownOptions.value = executableOptions
@@ -62,15 +62,15 @@ onMounted(async () => {
   // Set the settings store to the initially selected flow variable
   const executableSettingState = useExecutableSettingStore();
   if (executableSettingState.value === null) {
-    const register = await getSettingsService().registerSettings("model"); // TODO remove await here
+    const register = getSettingsService().registerSettings("model");
     const environmentSettingState = register("");
-    if (executableSelection.livePrefValue === "") {
+    if (executableSelection.id === "") {
       executableSettingState.value =
         environmentSettingState.addControllingFlowVariable(null);
     } else {
       executableSettingState.value =
         environmentSettingState.addControllingFlowVariable(
-          executableSelection.livePrefValue,
+          executableSelection.id,
         );
     }
   }
