@@ -58,7 +58,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -73,7 +72,6 @@ import org.knime.python3.nodes.extension.ExtensionNodeSetFactory.PortSpecifier;
 import org.knime.python3.nodes.extension.NodeDescriptionBuilder;
 import org.knime.python3.nodes.extension.NodeDescriptionBuilder.Tab;
 import org.osgi.framework.Version;
-import org.yaml.snakeyaml.Yaml;
 
 import com.google.gson.Gson;
 
@@ -124,9 +122,8 @@ public final class PythonExtensionParser {
      * @throws IOException if parsing failed
      */
     public static PythonNodeExtension parseExtension(final Path path, final Version bundleVersion) throws IOException {
-        var staticInfo = readStaticInformation(path, bundleVersion);
-
-        return retrieveDynamicInformationFromPython(staticInfo);
+        var knimeYaml = KnimeYaml.fromDirectory(path);
+        return retrieveDynamicInformationFromPython(knimeYaml, bundleVersion);
     }
 
     /**
@@ -137,42 +134,22 @@ public final class PythonExtensionParser {
      */
     public static void clearCache(final Path path, final Version bundleVersion) {
         try {
-            var staticInfo = readStaticInformation(path, bundleVersion);
-            Path cachePath = getExtensionCachePath(staticInfo);
+            var knimeYaml = KnimeYaml.fromDirectory(path);
+            var cachePath = getExtensionCachePath(knimeYaml, bundleVersion);
             cachePath.toFile().delete();
         } catch (IOException ex) {
             LOGGER.warn("Could not remove extension cache for extension at " + path, ex);
         }
     }
 
-    private static StaticExtensionInfo readStaticInformation(final Path path, final Version bundleVersion)
-        throws IOException {
-        var yaml = new Yaml();
-        try (var inputStream = Files.newInputStream(path.resolve("knime.yml"))) {
-            Map<String, Object> map = yaml.load(inputStream);
-            final var name = (String)map.get("name");
-            final var group_id = (String)map.get("group_id");
-            final var env_name = (String)map.getOrDefault("bundled_env_name", group_id.replace('.', '_') + "_" + name);
-            final var version = (String)map.get("version");
-            return new StaticExtensionInfo(//
-                name, //
-                group_id, //
-                env_name, //
-                (String)map.get("extension_module"), //
-                path, //
-                version, //
-                bundleVersion);
-        }
-    }
+    private static PythonNodeExtension retrieveDynamicInformationFromPython(final KnimeYaml knimeYaml,
+        final Version bundleVersion) throws IOException {
+        var gatewayFactory = new PythonNodeGatewayFactory(knimeYaml.getId(), knimeYaml.bundledEnvName(),
+            knimeYaml.version(), knimeYaml.getModulePath());
 
-    private static PythonNodeExtension retrieveDynamicInformationFromPython(final StaticExtensionInfo staticInfo)
-        throws IOException {
-        var gatewayFactory = new PythonNodeGatewayFactory(staticInfo.m_id, staticInfo.m_environmentName,
-            staticInfo.m_version, staticInfo.m_modulePath);
+        Path cachePath = getExtensionCachePath(knimeYaml, bundleVersion);
 
-        Path cachePath = getExtensionCachePath(staticInfo);
-
-        var extension = loadCachedExtension(staticInfo, gatewayFactory, cachePath, staticInfo.m_bundleVersion);
+        var extension = loadCachedExtension(knimeYaml, gatewayFactory, cachePath, bundleVersion);
         if (extension != null) {
             return extension;
         }
@@ -183,9 +160,9 @@ public final class PythonExtensionParser {
                 var backend = gateway.getEntryPoint();
                 var categoriesJson = backend.retrieveCategoriesAsJson();
                 var nodesJson = backend.retrieveNodesAsJson();
-                cacheExtension(cachePath, staticInfo, categoriesJson, nodesJson);
+                cacheExtension(cachePath, knimeYaml, categoriesJson, nodesJson, bundleVersion);
 
-                return createNodeExtension(categoriesJson, nodesJson, staticInfo, gatewayFactory);
+                return createNodeExtension(categoriesJson, nodesJson, knimeYaml, gatewayFactory);
             } catch (Py4JException ex) {
                 // TODO(AP-23257) can we give a hint to the user? There could be something wrong with the Python
                 // extension but this is mostly relevant to the developer. If the process was killed by the watchdog
@@ -213,18 +190,20 @@ public final class PythonExtensionParser {
      * If the extension has a custom source code path set, we don't want to load cached info because new nodes could
      * have been added in the source.
      *
-     * @param staticInfo The info from the knime.yml of the extension
+     * @param knimeYaml The info from the knime.yml of the extension
+     * @param bundleVersion the version of the bundle providing the extension (null if not from bundle)
      * @return the path where extension info is or should be cached, or null if the extension is not (and should not be)
      *         cached
      */
-    private static Path getExtensionCachePath(final StaticExtensionInfo staticInfo) {
-        if (PythonExtensionPreferences.hasCustomSrcPath(staticInfo.m_id)) {
+    private static Path getExtensionCachePath(final KnimeYaml knimeYaml, final Version bundleVersion) {
+        var id = knimeYaml.getId();
+        if (PythonExtensionPreferences.hasCustomSrcPath(id)) {
             return null;
         }
 
         Path cachePath = null;
 
-        if (staticInfo.m_bundleVersion != null) {
+        if (bundleVersion != null) {
 
             try {
                 // The config area path can contain spaces and umlauts. These need to be URL encoded to be able to create
@@ -235,29 +214,27 @@ public final class PythonExtensionParser {
                     .replace("+", "%20").replace("%2F", "/") // Preserve slashes in the path
                     .replace("%3A", ":"); // Preserve colons
                 var configAreaURI = new URI(encodedURL);
-                cachePath = new File(configAreaURI).toPath().resolve(staticInfo.m_id);
+                cachePath = new File(configAreaURI).toPath().resolve(id);
             } catch (NullPointerException | URISyntaxException ex) { // NOSONAR
-                LOGGER.debug("Could not find configuration area path to cache " + staticInfo.m_id + "_"
-                    + staticInfo.m_bundleVersion, ex);
+                LOGGER.debug("Could not find configuration area path to cache " + id + "_" + bundleVersion, ex);
             }
         } else {
-            LOGGER
-                .debug("Not caching extension " + staticInfo.m_id + " info because it doesn't have a bundle version.");
+            LOGGER.debug("Not caching extension " + id + " info because it doesn't have a bundle version.");
         }
 
         return cachePath;
     }
 
-    private static void cacheExtension(final Path cachePath, final StaticExtensionInfo extensionInfo,
-        final String categoriesJson, final String nodesJson) throws IOException {
-        if (cachePath == null || extensionInfo.m_bundleVersion == null) {
+    private static void cacheExtension(final Path cachePath, final KnimeYaml extensionInfo, final String categoriesJson,
+        final String nodesJson, final Version bundleVersion) throws IOException {
+        if (cachePath == null || bundleVersion == null) {
             return;
         }
 
         // we have plain strings of JSON encoded categories and nodes, so we construct the string for a JSON by hand.
         StringBuilder sb = new StringBuilder();
         sb.append("{ \"bundleVersion\": \"");
-        sb.append(extensionInfo.m_bundleVersion);
+        sb.append(bundleVersion);
         sb.append("\",\n\"categories\": ");
         sb.append(categoriesJson);
         sb.append(",\n\"nodes\": ");
@@ -266,22 +243,22 @@ public final class PythonExtensionParser {
 
         try {
             Files.writeString(cachePath, sb.toString());
-            LOGGER.info("Saved extension '" + extensionInfo.m_id + "_" + extensionInfo.m_bundleVersion + "' cache to "
-                + cachePath);
+            LOGGER.info("Saved extension '" + extensionInfo.getId() + "_" + bundleVersion + "' cache to " + cachePath);
         } catch (IOException e) {
-            LOGGER.debug("Could not write extension '" + extensionInfo.m_id + "_" + extensionInfo.m_bundleVersion
-                + "' cache to " + cachePath, e);
+            LOGGER.debug(
+                "Could not write extension '" + extensionInfo.getId() + "_" + bundleVersion + "' cache to " + cachePath,
+                e);
         }
 
     }
 
-    private static PythonNodeExtension loadCachedExtension(final StaticExtensionInfo staticInfo,
+    private static PythonNodeExtension loadCachedExtension(final KnimeYaml knimeYaml,
         final PythonNodeGatewayFactory gatewayFactory, final Path cachePath, final Version expectedVersion) {
 
         if (cachePath != null) {
             try (var cachedExtensionReader = Files.newBufferedReader(cachePath)) {
-                LOGGER.info("Trying to load cached extension '" + staticInfo.m_id + "_" + staticInfo.m_bundleVersion
-                    + "' from " + cachePath);
+                LOGGER.info("Trying to load cached extension '" + knimeYaml.getId() + "_" + expectedVersion + "' from "
+                    + cachePath);
 
                 JsonExtension cachedExt = new Gson().fromJson(cachedExtensionReader, JsonExtension.class);
 
@@ -290,15 +267,15 @@ public final class PythonExtensionParser {
                         + " but found " + cachedExt.bundleVersion);
                 }
 
-                return new PythonNodeExtension(staticInfo.m_id, //
-                    parseNodes(cachedExt.nodes, staticInfo.m_extensionPath), //
-                    parseCategories(cachedExt.categories, staticInfo.m_extensionPath), //
+                return new PythonNodeExtension(knimeYaml.getId(), //
+                    parseNodes(cachedExt.nodes, knimeYaml.extensionPath()), //
+                    parseCategories(cachedExt.categories, knimeYaml.extensionPath()), //
                     gatewayFactory, //
-                    staticInfo.m_version);
+                    knimeYaml.version());
 
             } catch (IOException e) { // NOSONAR we're not re-throwing this exception because we handle it directly
-                LOGGER.debug("Didn't find cached info for extension '" + staticInfo.m_id + "_"
-                    + staticInfo.m_bundleVersion + "'. Parsing Python extension instead.");
+                LOGGER.debug("Didn't find cached info for extension '" + knimeYaml.getId() + "_" + expectedVersion
+                    + "'. Parsing Python extension instead.");
             }
         }
 
@@ -306,9 +283,14 @@ public final class PythonExtensionParser {
     }
 
     private static PythonNodeExtension createNodeExtension(final String categoriesJson, final String nodesJson,
-        final StaticExtensionInfo staticInfo, final PythonNodeGatewayFactory gatewayFactory) {
-        return new PythonNodeExtension(staticInfo.m_id, parseNodes(nodesJson, staticInfo.m_extensionPath),
-            parseCategories(categoriesJson, staticInfo.m_extensionPath), gatewayFactory, staticInfo.m_version);
+        final KnimeYaml knimeYaml, final PythonNodeGatewayFactory gatewayFactory) {
+        return new PythonNodeExtension( //
+            knimeYaml.getId(), //
+            parseNodes(nodesJson, knimeYaml.extensionPath()), //
+            parseCategories(categoriesJson, knimeYaml.extensionPath()), //
+            gatewayFactory, //
+            knimeYaml.version() //
+        );
     }
 
     private static List<CategoryExtension.Builder> parseCategories(final String categoriesJson,
@@ -514,50 +496,5 @@ public final class PythonExtensionParser {
         protected JsonNodeDescription[] nodes;
 
         protected String bundleVersion;
-    }
-
-    /**
-     * Struct-like POJO that is filled by SnakeYaml. Contains static information on the extension. The critical fields
-     * are id, environment_name and extension_module.
-     *
-     * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
-     */
-    private static final class StaticExtensionInfo {
-
-        private String m_id;
-
-        private String m_environmentName;
-
-        private String m_version;
-
-        private Path m_modulePath;
-
-        private Path m_extensionPath;
-
-        private Version m_bundleVersion; // null if the extension is not provided by a bundle
-
-        StaticExtensionInfo(final String name, final String group_id, final String environmentName,
-            final String extensionModule, final Path extensionPath, final String version, final Version bundleVersion) {
-            m_id = group_id + "." + name;
-            m_environmentName = environmentName;
-            m_extensionPath = extensionPath;
-            m_version = version;
-            m_bundleVersion = bundleVersion;
-
-            if (m_version == null || m_version.isBlank()) {
-                m_version = "0.0.0";
-                LOGGER.warnWithFormat(
-                    "Missing extension version in knime.yml for extension '%s'; setting version to '0.0.0'", name);
-            }
-
-            var relativeModulePath = Path.of(extensionModule);
-            if (relativeModulePath.getParent() == null) {
-                // the extension module is top level in the extension folder next to the knime.yml
-                m_modulePath = extensionPath.resolve(extensionModule);
-            } else {
-                // the extension module is in a potentially nested subfolder
-                m_modulePath = extensionPath.resolve(relativeModulePath);
-            }
-        }
     }
 }
