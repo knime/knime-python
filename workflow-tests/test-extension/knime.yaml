@@ -1,0 +1,15 @@
+# Test extension for debugSources workflow testing
+name: nodes_testing_debugsources
+group_id: org.knime.python3
+description: Test Extension for debugSources
+long_description: This extension is used to test the debugSources functionality in workflow tests.
+version: 0.1.0
+
+# Legal information
+author: KNIME Test
+vendor: KNIME AG, Zurich, Switzerland
+license_file: LICENSE.TXT
+
+# Python settings 
+pixi_toml_path: pixi.toml
+extension_module: ./src/extension

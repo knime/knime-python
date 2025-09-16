@@ -124,7 +124,8 @@ public final class PythonExtensionParser {
      * @throws IOException if parsing failed
      */
     public static PythonNodeExtension parseExtension(final Path path, final Version bundleVersion) throws IOException {
-        var staticInfo = readStaticInformation(path, bundleVersion);
+        var knimeYaml = KnimeYaml.fromDirectory(path);
+        var staticInfo = createStaticExtensionInfo(knimeYaml, bundleVersion);
 
         return retrieveDynamicInformationFromPython(staticInfo);
     }
@@ -137,7 +138,8 @@ public final class PythonExtensionParser {
      */
     public static void clearCache(final Path path, final Version bundleVersion) {
         try {
-            var staticInfo = readStaticInformation(path, bundleVersion);
+            var knimeYaml = KnimeYaml.fromDirectory(path);
+            var staticInfo = createStaticExtensionInfo(knimeYaml, bundleVersion);
             Path cachePath = getExtensionCachePath(staticInfo);
             cachePath.toFile().delete();
         } catch (IOException ex) {
@@ -145,24 +147,23 @@ public final class PythonExtensionParser {
         }
     }
 
-    private static StaticExtensionInfo readStaticInformation(final Path path, final Version bundleVersion)
-        throws IOException {
-        var yaml = new Yaml();
-        try (var inputStream = Files.newInputStream(path.resolve("knime.yml"))) {
-            Map<String, Object> map = yaml.load(inputStream);
-            final var name = (String)map.get("name");
-            final var group_id = (String)map.get("group_id");
-            final var env_name = (String)map.getOrDefault("bundled_env_name", group_id.replace('.', '_') + "_" + name);
-            final var version = (String)map.get("version");
-            return new StaticExtensionInfo(//
-                name, //
-                group_id, //
-                env_name, //
-                (String)map.get("extension_module"), //
-                path, //
-                version, //
-                bundleVersion);
-        }
+    /**
+     * Creates a StaticExtensionInfo from KnimeYaml data.
+     * 
+     * @param knimeYaml the parsed knime.yaml data
+     * @param bundleVersion the version of the bundle providing the extension (null if not from bundle)
+     * @return StaticExtensionInfo instance
+     */
+    private static StaticExtensionInfo createStaticExtensionInfo(final KnimeYaml knimeYaml, final Version bundleVersion) {
+        return new StaticExtensionInfo(
+            knimeYaml.name(),
+            knimeYaml.groupId(), 
+            knimeYaml.bundledEnvName(),
+            knimeYaml.extensionModule(),
+            knimeYaml.extensionPath(),
+            knimeYaml.getNormalizedVersion(),
+            bundleVersion
+        );
     }
 
     private static PythonNodeExtension retrieveDynamicInformationFromPython(final StaticExtensionInfo staticInfo)

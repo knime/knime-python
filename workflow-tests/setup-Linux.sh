@@ -28,6 +28,17 @@ if [[ -n $KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT ]]; then
 			ext_config="${WORKSPACE}/workflow-tests/python-test-ext-config.yaml"
 			sedi "s|<placeholder_for_env_path>|${envPath}|g" "${ext_config}"
 			echo "-Dknime.python.extension.config=${ext_config}" >> "${WORKSPACE}/workflow-tests/vmargs"
+
+			# Test debug_knime_yaml_list argument with test extension
+			test_extension="${WORKSPACE}/workflow-tests/test-extension/knime.yaml"
+			
+			# Run pixi install in the test extension directory
+			echo "Setting up pixi environment for test extension..."
+			cd "${WORKSPACE}/workflow-tests/test-extension"
+			pixi install
+			cd "${WORKSPACE}"
+			
+			echo "-Dknime.python.extension.debug_knime_yaml_list=${test_extension}" >> "${WORKSPACE}/workflow-tests/vmargs"
     else
       echo "Python 3.6 is not supported to run workflow-tests"
       exit 1
