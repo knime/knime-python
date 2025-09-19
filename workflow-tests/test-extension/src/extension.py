@@ -9,6 +9,7 @@ import knime.extension as knext
     name="Test Debug Sources Node",
     node_type=knext.NodeType.MANIPULATOR,
     category="/",
+    icon_path="",
 )
 @knext.input_table(
     name="Input Data",
