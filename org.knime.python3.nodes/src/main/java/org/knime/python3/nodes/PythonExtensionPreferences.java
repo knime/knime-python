@@ -64,7 +64,6 @@ import org.knime.core.node.NodeLogger;
 import org.knime.python3.CondaPythonCommand;
 import org.knime.python3.PythonCommand;
 import org.knime.python3.SimplePythonCommand;
-import org.knime.python3.nodes.KnimeYaml;
 import org.yaml.snakeyaml.Yaml;
 
 /**
@@ -81,8 +80,9 @@ final class PythonExtensionPreferences {
     private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonExtensionPreferences.class);
 
     private static final String PY_EXTENSIONS_YML_PROPERTY = "knime.python.extension.config";
-    
-    private static final String PY_EXTENSIONS_DEBUG_KNIME_YAML_LIST_PROPERTY = "knime.python.extension.debug_knime_yaml_list";
+
+    private static final String PY_EXTENSIONS_DEBUG_KNIME_YAML_LIST_PROPERTY =
+        "knime.python.extension.debug_knime_yaml_list";
 
     static Stream<Path> getPathsToCustomExtensions() {
         return loadConfigs()//
@@ -125,14 +125,14 @@ final class PythonExtensionPreferences {
     private static Stream<ExtensionConfig> loadConfigs() {
         // First, try to load from the original config.yml approach
         Stream<ExtensionConfig> configYmlStream = loadConfigsFromYml();
-        
-        // Then, try to load from the new debug sources list approach  
+
+        // Then, try to load from the new debug sources list approach
         Stream<ExtensionConfig> debugKnimeYamlStream = loadConfigsFromDebugKnimeYamlList();
-        
+
         // Combine both streams
         return Stream.concat(configYmlStream, debugKnimeYamlStream);
     }
-    
+
     private static Stream<ExtensionConfig> loadConfigsFromYml() {
         var pathToYml = System.getProperty(PY_EXTENSIONS_YML_PROPERTY);
         if (pathToYml == null) {
@@ -146,27 +146,20 @@ final class PythonExtensionPreferences {
             }
         }
     }
-    
+
     private static Stream<ExtensionConfig> loadConfigsFromDebugKnimeYamlList() {
         var debugKnimeYamlPaths = System.getProperty(PY_EXTENSIONS_DEBUG_KNIME_YAML_LIST_PROPERTY);
         if (debugKnimeYamlPaths == null) {
             return Stream.empty();
         } else {
-            return Stream.of(debugKnimeYamlPaths.split(File.pathSeparator))
-                .map(String::trim)
-                .filter(path -> !path.isEmpty())
+            return Stream.of(debugKnimeYamlPaths.split(File.pathSeparator)) //
+                .map(String::trim) //
+                .filter(path -> !path.isEmpty()) //
                 .flatMap(path -> {
                     try {
-                        var knimeYaml = KnimeYaml.fromPath(Path.of(path));
-                        return Stream.of(new ExtensionConfig(
-                            knimeYaml.getId(),
-                            knimeYaml.getSourcePathString(),
-                            knimeYaml.getCondaEnvPathString(),
-                            null, // no python_executable for knime.yaml approach
-                            true  // assume debug_mode=true for knime.yaml approach
-                        ));
+                        return Stream.of(loadConfigFromKnimeYaml(Path.of(path)));
                     } catch (IOException ex) {
-                        LOGGER.error("Failed to read knime.yaml file at " + path, ex);
+                        LOGGER.error("Failed to read knime.yml file at " + path, ex);
                         return Stream.empty();
                     }
                 });
@@ -183,19 +176,20 @@ final class PythonExtensionPreferences {
         }
     }
 
-    private static ExtensionConfig createStaticExtensionInfo(final Path pathToKnimeYaml) throws IOException {
+    private static ExtensionConfig loadConfigFromKnimeYaml(final Path pathToKnimeYaml) throws IOException {
         // Use the shared KnimeYaml parser instead of duplicating logic
         var knimeYaml = KnimeYaml.fromPath(pathToKnimeYaml);
-        
-        return new ExtensionConfig(
-            knimeYaml.getId(),
-            knimeYaml.getSourcePathString(),
-            knimeYaml.getCondaEnvPathString(),
-            null, // no python_executable for knime.yaml approach  
-            true  // assume debug_mode=true for knime.yaml approach
+
+        var pixiEnvPath = knimeYaml.extensionPath().resolve(".pixi/envs/default").toAbsolutePath().toString();
+        return new ExtensionConfig( //
+            knimeYaml.getId(), //
+            knimeYaml.extensionPath().toString(), //
+            pixiEnvPath, //
+            null, // no python_executable for knime.yaml approach
+            true // assume debug_mode=true for knime.yaml approach
         );
     }
-    
+
     private static ExtensionConfig mapToConfig(final Entry<String, Object> configEntry) {
         try {
             @SuppressWarnings("unchecked")
