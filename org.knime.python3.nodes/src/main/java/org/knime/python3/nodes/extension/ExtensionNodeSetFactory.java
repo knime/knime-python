@@ -298,7 +298,7 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
                     .canBeUsedInReport(nodeModel::canViewBeUsedInReport) //
                     .build();
             } else {
-                // The view is a static HTML file - we need a data service
+                // The view is a static HTML file - we need data services
                 Supplier<JsonRpcRequestHandler> dataServiceSupplier = () -> {
                     return new JsonRpcRequestHandler() {
 
@@ -311,7 +311,8 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
                             if (m_nodeViewProxy == null) {
                                 m_nodeViewProxy = m_proxyProvider.getNodeViewProxy();
                                 m_dataServiceProxy = m_nodeViewProxy.getDataServiceProxy(nodeModel.getSettings(),
-                                    nodeModel.getInternalPortObjects(), nodeModel, nodeModel);
+                                    nodeModel.getInternalPortObjects(), nodeModel.getInternalViewData(), nodeModel,
+                                    nodeModel);
                             }
                             return m_dataServiceProxy.handleJsonRpcRequest(jsonRpcRequest);
                         }

@@ -474,6 +474,9 @@ class _ViewContext(kn._BaseContext):
     def get_input_port_map(self) -> Dict[str, List[int]]:
         return self._java_ctx.get_input_port_map()
 
+    def get_internal_view_data(self) -> str:
+        return self._java_ctx.get_internal_view_data()
+
 
 class _PortTypeRegistry:
     # One global dictionary for all connections
