@@ -60,6 +60,7 @@ import java.util.function.Supplier;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.NodeSettingsRO;
+import org.knime.core.node.interactive.ReExecutable;
 import org.knime.core.webui.data.ApplyDataService;
 import org.knime.core.webui.data.DisposeDataServicesOnNodeStateChange;
 import org.knime.core.webui.data.InitialDataService;
@@ -92,6 +93,10 @@ public final class HtmlFileNodeView implements NodeTableView, DisposeDataService
 
     private final BooleanSupplier m_canBeUsedInReport;
 
+    private final ReExecutable<String> m_reExecutable;
+
+    private final Supplier<String> m_initialDataSupplier;
+
     /**
      * Starts construction of an {@link HtmlFileNodeView}. The returned builder enforces that an
      * {@link HtmlFileNodeViewBuilderRequiresHtmlSupplier#htmlSupplier(Supplier) html supplier} is provided before the
@@ -105,12 +110,15 @@ public final class HtmlFileNodeView implements NodeTableView, DisposeDataService
 
     private HtmlFileNodeView(final Supplier<Path> htmlSupplier, final String relativeHTMLPath,
         final ViewResources resources, final Supplier<JsonRpcRequestHandler> dataServiceSupplier,
-        final BooleanSupplier canBeUsedInReport) {
+        final BooleanSupplier canBeUsedInReport, final ReExecutable<String> reExecutable,
+        final Supplier<String> initialDataSupplier) {
         m_htmlSupplier = htmlSupplier;
         m_relativeHTMLPath = relativeHTMLPath;
         m_resources = resources;
         m_dataServiceSupplier = dataServiceSupplier;
         m_canBeUsedInReport = canBeUsedInReport;
+        m_reExecutable = reExecutable;
+        m_initialDataSupplier = initialDataSupplier;
     }
 
     /**
@@ -153,7 +161,7 @@ public final class HtmlFileNodeView implements NodeTableView, DisposeDataService
     @Deprecated
     public HtmlFileNodeView(final Supplier<Path> htmlSupplier, final String relativeHTMLPath,
         final ViewResources resources, final Supplier<JsonRpcRequestHandler> dataServiceSupplier) {
-        this(htmlSupplier, relativeHTMLPath, resources, dataServiceSupplier, () -> false);
+        this(htmlSupplier, relativeHTMLPath, resources, dataServiceSupplier, () -> false, null, null);
     }
 
     /**
@@ -176,7 +184,10 @@ public final class HtmlFileNodeView implements NodeTableView, DisposeDataService
     @Override
     @SuppressWarnings("unchecked")
     public Optional<InitialDataService<?>> createInitialDataService() {
-        return Optional.empty();
+        if (m_initialDataSupplier == null) {
+            return Optional.empty();
+        }
+        return Optional.of(InitialDataService.builder(m_initialDataSupplier).build());
     }
 
     @Override
@@ -197,7 +208,10 @@ public final class HtmlFileNodeView implements NodeTableView, DisposeDataService
     @Override
     @SuppressWarnings("unchecked")
     public Optional<ApplyDataService<?>> createApplyDataService() {
-        return Optional.empty();
+        if (m_reExecutable == null) {
+            return Optional.empty();
+        }
+        return Optional.of(ApplyDataService.builder(m_reExecutable).build());
     }
 
     @Override
@@ -302,6 +316,26 @@ public final class HtmlFileNodeView implements NodeTableView, DisposeDataService
         HtmlFileNodeViewBuilder dataServiceSupplier(Supplier<JsonRpcRequestHandler> dataServiceSupplier);
 
         /**
+         * Sets a the {@link ReExecutable} used to build the apply data service for view, see
+         * {@link ApplyDataService#builder(ReExecutable)}.
+         *
+         * @param reExecutable the instance, may be {@code null} if no apply data service is required
+         *
+         * @return {@code this} builder instance
+         */
+        HtmlFileNodeViewBuilder reExecutable(ReExecutable<String> reExecutable);
+
+        /**
+         * Sets the initial data supplier used to build the initial data service for the view, see
+         * {@link InitialDataService#builder(Supplier)}.
+         *
+         * @param dataSupplier supplier of the initial data, may be {@code null} if no initial data service is required
+         *
+         * @return {@code this} builder instance
+         */
+        HtmlFileNodeViewBuilder initialDataSupplier(Supplier<String> dataSupplier);
+
+        /**
          * Marks the view as usable in KNIME report templates. Defaults to {@code false}.
          *
          * @param canBeUsedInReport whether the view currently supplied by the {@code htmlSupplier} can be used in a
@@ -331,6 +365,10 @@ public final class HtmlFileNodeView implements NodeTableView, DisposeDataService
 
         private BooleanSupplier m_canBeUsedInReport;
 
+        private ReExecutable<String> m_reExecutable;
+
+        private Supplier<String> m_initialDataSupplier;
+
         @Override
         public HtmlFileNodeViewBuilder htmlSupplier(final Supplier<Path> htmlSupplier) {
             m_htmlSupplier = htmlSupplier;
@@ -356,6 +394,18 @@ public final class HtmlFileNodeView implements NodeTableView, DisposeDataService
         }
 
         @Override
+        public HtmlFileNodeViewBuilder reExecutable(final ReExecutable<String> reExecutable) {
+            m_reExecutable = reExecutable;
+            return this;
+        }
+
+        @Override
+        public HtmlFileNodeViewBuilder initialDataSupplier(final Supplier<String> dataSupplier) {
+            m_initialDataSupplier = dataSupplier;
+            return this;
+        }
+
+        @Override
         public HtmlFileNodeViewBuilder canBeUsedInReport(final BooleanSupplier canBeUsedInReport) {
             m_canBeUsedInReport = canBeUsedInReport;
             return this;
@@ -367,7 +417,7 @@ public final class HtmlFileNodeView implements NodeTableView, DisposeDataService
                 throw new IllegalStateException("htmlSupplier is required");
             }
             return new HtmlFileNodeView(m_htmlSupplier, m_relativeHTMLPath, m_resources, m_dataServiceSupplier,
-                m_canBeUsedInReport);
+                m_canBeUsedInReport, m_reExecutable, m_initialDataSupplier);
         }
     }
 }
