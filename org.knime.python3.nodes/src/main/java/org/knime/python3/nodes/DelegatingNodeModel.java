@@ -48,13 +48,21 @@
  */
 package org.knime.python3.nodes;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
@@ -64,6 +72,7 @@ import org.knime.core.node.NodeLogger;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.NodeView;
+import org.knime.core.node.interactive.ReExecutable;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.PortType;
@@ -94,7 +103,8 @@ import org.knime.python3.views.PythonNodeViewStoragePath;
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
 public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeModel
-    implements CredentialsProviderProxy, WorkflowPropertiesProxy, FlowVariablesProxy, WarningConsumer, PortMapProvider {
+    implements CredentialsProviderProxy, WorkflowPropertiesProxy, FlowVariablesProxy, WarningConsumer, PortMapProvider,
+    ReExecutable<String> {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(DelegatingNodeModel.class);
 
@@ -152,6 +162,8 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
 
     private final boolean m_shouldHoldOutputs;
 
+    private String m_internalViewData;
+
     /**
      * Constructor with port maps
      *
@@ -186,6 +198,11 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
             m_settings.set(node.getSettings(m_extensionVersion));
             return result;
         });
+    }
+
+    @Override
+    public void preReExecute(final String data, final boolean isNewDefault) {
+        m_internalViewData = data;
     }
 
     @Override
@@ -283,12 +300,19 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
         m_proxyProvider.cleanup();
         m_view = Optional.empty();
         m_proxyShutdownTracker.waitForAllToClose();
+        m_internalViewData = null;
     }
 
     @Override
     protected void loadInternals(final File nodeInternDir, final ExecutionMonitor exec)
         throws IOException, CanceledExecutionException {
         m_view = PythonNodeViewStoragePath.loadFromInternals(nodeInternDir.toPath());
+        File f = new File(nodeInternDir, "internal_view_data.gz");
+        if (f.exists()) {
+            try (InputStream in = new GZIPInputStream(new BufferedInputStream(new FileInputStream(f)))) {
+                m_internalViewData = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+            }
+        }
     }
 
     @Override
@@ -297,6 +321,12 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
         if (m_view.isPresent()) {
             // Copy the view from the temporary file to the persisted internals directory
             m_view.get().saveToInternals(nodeInternDir.toPath());
+        }
+        if (m_internalViewData != null) {
+            try (GZIPOutputStream gzs = new GZIPOutputStream(
+                new BufferedOutputStream(new FileOutputStream(new File(nodeInternDir, "internal_view_data.gz"))))) {
+                gzs.write(m_internalViewData.getBytes(StandardCharsets.UTF_8));
+            }
         }
     }
 
@@ -388,6 +418,17 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
     @Override
     public PortObject[] getInternalPortObjects() {
         return m_internalPortObjects;
+    }
+
+    /**
+     * Returns the internal view data that is updated via {@link #preReExecute(String, boolean)} which is being called
+     * when the node is re-executed (~widget re-execution) with new view data. The view data is persisted as 'internal
+     * data' view data is persisted as node 'internals'.
+     *
+     * @return the internal view data or {@code null} if none
+     */
+    public String getInternalViewData() {
+        return m_internalViewData;
     }
 
     /**

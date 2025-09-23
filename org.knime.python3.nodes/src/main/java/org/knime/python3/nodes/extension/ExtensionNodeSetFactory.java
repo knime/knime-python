@@ -335,7 +335,11 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
                     .htmlSupplier(extensionNodeView::getHtmlPath) //
                     .relativeHTMLPath(extensionNodeView.getRelativeHtmlPath()) //
                     .resources(viewResources) //
-                    .dataServiceSupplier(dataServiceSupplier) //
+                    .initialDataSupplier(() -> {
+                        var data = nodeModel.getInternalViewData();
+                        return data == null ? "" : data;
+                    }).dataServiceSupplier(dataServiceSupplier) //
+                    .reExecutable(nodeModel) //
                     .build();
             }
         }
