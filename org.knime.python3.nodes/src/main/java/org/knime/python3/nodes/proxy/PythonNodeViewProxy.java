@@ -51,6 +51,7 @@ package org.knime.python3.nodes.proxy;
 import java.io.IOException;
 
 import org.knime.python3.arrow.PythonArrowDataSink;
+import org.knime.python3.nodes.DelegatingNodeModel;
 import org.knime.python3.nodes.LogCallback;
 import org.knime.python3.nodes.callback.AuthCallback;
 import org.knime.python3.nodes.callback.FilestoreCallback;
@@ -121,6 +122,11 @@ public interface PythonNodeViewProxy {
      * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
      */
     interface PythonViewContext extends PythonBaseContext, PythonToolContext {
+
+        /**
+         * @return the internal view data of the node (see {@link DelegatingNodeModel#getInternalViewData()}
+         */
+        String get_internal_view_data();
 
     }
 

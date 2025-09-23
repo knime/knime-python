@@ -550,6 +550,11 @@ final class CloseablePythonNodeProxy
                 return m_toolExecutor.executeTool(toolTable, parameters, inputs, executionHints);
             }
 
+            @Override
+            public String get_internal_view_data() {
+                return ((DelegatingNodeModel)getNode().getNodeModel()).getInternalViewData();
+            }
+
         };
 
         // Configure before execution whether the gateway should be left open, otherwise an exception thrown in Python
@@ -919,7 +924,8 @@ final class CloseablePythonNodeProxy
 
     @Override
     public DataServiceProxy getDataServiceProxy(final JsonNodeSettings settings, final PortObject[] portObjects,
-        final PortMapProvider portMapProvider, final CredentialsProviderProxy credentialsProvider) {
+        final String internalViewData, final PortMapProvider portMapProvider,
+        final CredentialsProviderProxy credentialsProvider) {
 
         loadValidatedSettings(settings);
 
@@ -932,7 +938,7 @@ final class CloseablePythonNodeProxy
         var fileStoreSwitcher = FileStoreSwitcher.create(nnc);
         var exec = fileStoreSwitcher.createExecutionContext();
         var toolExecutor = new ToolExecutor(exec, nnc, m_tableManager);
-        var context = new DefaultViewContext(toolExecutor, portMapProvider, credentialsProvider);
+        var context = new DefaultViewContext(toolExecutor, portMapProvider, credentialsProvider, internalViewData);
 
         var fileStoresByKey = new HashMap<String, FileStore>();
         final var knimeToPythonConversionContext =
