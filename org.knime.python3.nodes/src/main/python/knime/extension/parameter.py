@@ -1107,7 +1107,49 @@ class _BaseMultiChoiceParameter(_BaseParameter):
 class StringParameter(_BaseMultiChoiceParameter):
     """
     Parameter class for primitive string types.
+
+    Dynamic Choices
+    ---------------
+    The optional ``choices`` callable may return either a list/tuple of plain strings
+    or ``StringParameter.Choice`` objects. Plain strings are interpreted as choices
+    with identical id and label and an empty description. ``Choice`` objects allow
+    specifying a user-facing label and an optional description while persisting only
+    the stable ``id``. Descriptions (if any) are aggregated into the parameter
+    description under an "Available options" section. The section is included only
+    if at least one dynamic choice supplies a non-empty description.
+
+    Examples
+    --------
+    >>> def basic(ctx):
+    ...     return ["A", "B"]
+    ...
+    >>> def rich(ctx):
+    ...     return [
+    ...         StringParameter.Choice("A", "Option A", "Description for A"),
+    ...         StringParameter.Choice("B", "Option B"),  # no description
+    ...     ]
+    ...
+    >>> param = knext.StringParameter(
+    ...     label="Example",
+    ...     description="Pick an option.",
+    ...     choices=rich,
+    ...     default_value="A",
+    ... )
     """
+    
+    # Lean Choice dataclass enabling dynamic choices with (id, label, optional description).
+    # Declared here to keep public surface minimal; can be imported as knime.extension.parameter.StringParameter.Choice
+    from dataclasses import dataclass as _dataclass  # local import to avoid top-level dependency changes
+    @_dataclass(frozen=True)
+    class Choice:
+        id: str
+        label: str
+        description: str = ""
+        def __post_init__(self):  # basic validation
+            if not self.id:
+                raise ValueError("Choice id must be non-empty")
+            if not isinstance(self.id, str) or not isinstance(self.label, str) or not isinstance(self.description, str):
+                raise TypeError("Choice id, label and description must be strings")
 
     def _default_validator(self, value):
         if not isinstance(value, str):
@@ -1145,6 +1187,45 @@ class StringParameter(_BaseMultiChoiceParameter):
         if self._choices:
             self._choices = lru_cache(maxsize=1)(self._choices)
 
+        # internal flag to avoid adding existence validator multiple times
+        self._choice_validator_added = False
+
+    def _normalized_choices(self, dialog_creation_context):
+        """Return list of Choice objects (normalize str -> Choice)."""
+        raw = self._choices(dialog_creation_context)
+        if not isinstance(raw, (list, tuple)):
+            raise TypeError("choices() must return a list or tuple of str or Choice")
+        norm = []
+        seen = set()
+        for item in raw:
+            if isinstance(item, str):
+                c = self.Choice(item, item)
+            elif isinstance(item, self.Choice):
+                c = item
+            else:
+                raise TypeError("choices() elements must be str or Choice")
+            if c.id in seen:
+                raise ValueError(f"Duplicate choice id '{c.id}'")
+            seen.add(c.id)
+            norm.append(c)
+        return norm
+
+    def _append_choice_descriptions(self, base_doc: str, choices: List["StringParameter.Choice"]):
+        described = [c for c in choices if c.description]
+        if not described:
+            return base_doc
+        # indentation logic similar to EnumParameter
+        if base_doc:
+            lines = base_doc.expandtabs().splitlines()
+            indent_lvl = _get_indent_level(lines)
+            indent = " " * indent_lvl
+        else:
+            indent = ""
+        appendix = f"\n\n{indent}**Available options:**\n\n"
+        for c in described:
+            appendix += f"{indent}- {c.label}: {c.description}\n"
+        return base_doc.expandtabs() + appendix
+
     def _extract_schema(self, extension_version=None, dialog_creation_context=None):
         schema = super()._extract_schema(
             dialog_creation_context=dialog_creation_context
@@ -1154,14 +1235,34 @@ class StringParameter(_BaseMultiChoiceParameter):
             # We pass the current DialogCreationContext to the _choices callable
             # and expect that the node developers write a lambda such that it
             # passes this parameter as "self" to the respective methods of the context.
-
-            if len(self._choices(dialog_creation_context)) == 0:
+            normalized = self._normalized_choices(dialog_creation_context)
+            if len(normalized) == 0:
                 schema["type"] = "string"
             else:
                 schema["oneOf"] = [
-                    {"const": e, "title": e}
-                    for e in self._choices(dialog_creation_context)
+                    {"const": c.id, "title": c.label} for c in normalized
                 ]
+                # add aggregated description only if at least one choice has description
+                schema["description"] = self._append_choice_descriptions(
+                    schema.get("description", self.__doc__ or ""), normalized
+                )
+                # add existence validator once choices known
+                if not self._choice_validator_added:
+                    choice_ids = {c.id for c in normalized}
+                    def _existence_validator(v):
+                        if v not in choice_ids:
+                            raise ValueError(
+                                f"Value '{v}' is not among dynamic choices: "
+                                + ", ".join(sorted(choice_ids))
+                            )
+                    self._validator = _combine_validators(
+                        self._validator, _existence_validator
+                    )
+                    self._choice_validator_added = True
+                # if default is None and not callable set first id
+                if self._default_value is None or self._default_value == "":
+                    if len(normalized) > 0 and not callable(self._default_value):
+                        self._default_value = normalized[0].id
 
         elif self._enum is None or len(self._enum) == 0:
             schema["type"] = "string"
@@ -1176,18 +1277,15 @@ class StringParameter(_BaseMultiChoiceParameter):
         if self._enum and len(self._enum) <= 4:
             return {"format": "radio"}
 
-        has_empty_list = (
-            hasattr(self, "_choices")
-            and callable(self._choices)
-            and len(self._choices(dialog_creation_context)) == 0
-            or isinstance(self._enum, list)
-            and len(self._enum) == 0
-        )
-
-        if has_empty_list:
-            return {"format": "dropDown", "placeholder": "No values present"}
-        else:
+        if hasattr(self, "_choices") and callable(self._choices):
+            normalized = self._normalized_choices(dialog_creation_context)
+            if len(normalized) == 0:
+                return {"format": "dropDown", "placeholder": "No values present"}
             return {"format": "string"}
+
+        if isinstance(self._enum, list) and len(self._enum) == 0:
+            return {"format": "dropDown", "placeholder": "No values present"}
+        return {"format": "string"}
 
 
 class LocalPathParameter(StringParameter):
