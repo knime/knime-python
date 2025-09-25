@@ -1478,6 +1478,88 @@ class TestStringParameterDynamicChoices(unittest.TestCase):
         self.assertEqual(P.sp._default_value, "first")
 
 
+class ParameterizedStaticChoices:
+    """Helper parameterized class for static sequence StringParameter tests."""
+    static_plain = kp.StringParameter(
+        label="Plain Static",
+        description="Static plain sequence",
+        default_value="A",
+        choices=["A", "B", "C"],
+    )
+
+    static_rich = kp.StringParameter(
+        label="Rich Static",
+        description="Static rich sequence",
+        default_value="x",
+        choices=[
+            kp.StringParameter.Choice("x", "Ex", "Letter ex"),
+            kp.StringParameter.Choice("y", "Why"),  # no description
+            "z",  # plain string, no description
+        ],
+    )
+
+    static_auto_default = kp.StringParameter(
+        label="Auto Static",
+        description="Auto default static sequence",
+        default_value=None,
+        choices=["d1", "d2"],
+    )
+
+    static_empty = kp.StringParameter(
+        label="Empty Static",
+        description="Empty static sequence",
+        choices=[],
+    )
+
+
+class TestStringParameterStaticChoices(unittest.TestCase):
+    def test_schema_plain_static(self):
+        obj = ParameterizedStaticChoices()
+        schema = kp.extract_schema(obj, dialog_creation_context=DummyDialogCreationContext())
+        s = schema["properties"]["model"]["properties"]["static_plain"]
+        self.assertIn("oneOf", s)
+        values = {e["const"]: e["title"] for e in s["oneOf"]}
+        self.assertEqual(values, {"A": "A", "B": "B", "C": "C"})
+        # No descriptions provided -> section should NOT be added
+        self.assertNotIn("**Available options:**", s["description"])
+
+    def test_schema_rich_static_with_descriptions_table(self):
+        obj = ParameterizedStaticChoices()
+        schema = kp.extract_schema(obj, dialog_creation_context=DummyDialogCreationContext())
+        s = schema["properties"]["model"]["properties"]["static_rich"]
+        self.assertIn("oneOf", s)
+        desc = s["description"]
+        # Table header should be present because at least one choice has a description
+        self.assertIn("| ID | Name | Description |", desc)
+        self.assertRegex(desc, r"\| x \| Ex \| Letter ex \|")
+        # Rows for choices without description should still appear with empty cell
+        self.assertRegex(desc, r"\| y \| Why \| *\|")
+        self.assertRegex(desc, r"\| z \| z \| *\|")
+
+    def test_auto_default_static(self):
+        obj = ParameterizedStaticChoices()
+        kp.extract_schema(obj, dialog_creation_context=DummyDialogCreationContext())
+        self.assertEqual(ParameterizedStaticChoices.static_auto_default._default_value, "d1")
+
+    def test_empty_static_choices(self):
+        obj = ParameterizedStaticChoices()
+        schema = kp.extract_schema(obj, dialog_creation_context=DummyDialogCreationContext())
+        s = schema["properties"]["model"]["properties"]["static_empty"]
+        # No oneOf because the list is empty -> string schema
+        self.assertEqual(s["type"], "string")
+        # UI schema placeholder check
+        ui = kp.extract_ui_schema(obj, DummyDialogCreationContext())
+        control = next(e for e in ui["elements"] if e["scope"].endswith("/static_empty"))
+        self.assertEqual(control["options"]["format"], "dropDown")
+        self.assertEqual(control["options"]["placeholder"], "No values present")
+
+    def test_invalid_assignment_static(self):
+        obj = ParameterizedStaticChoices()
+        kp.extract_schema(obj, dialog_creation_context=DummyDialogCreationContext())
+        with self.assertRaises(ValueError):
+            obj.static_plain = "INVALID"
+
+
 class DummyDialogCreationContext:
     def __init__(self, specs: List = None) -> None:
         class DummyJavaContext:

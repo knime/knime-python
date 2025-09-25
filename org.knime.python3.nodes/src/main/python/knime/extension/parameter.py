@@ -305,7 +305,7 @@ def extract_parameter_descriptions(obj) -> dict:
             if "options" in tab_description
         ]
         top_level_options = [
-            description for description in descriptions if not "options" in description
+            description for description in descriptions if "options" not in description
         ]
         if len(top_level_options) > 0:
             options_tab = {
@@ -1180,10 +1180,51 @@ class StringParameter(_BaseMultiChoiceParameter):
             validator = self._default_validator
         if enum is not None and not isinstance(enum, list):
             raise TypeError("The enum parameter must be a list.")
-        if enum and choices:
-            raise ValueError("Cannot specify both enum and choices")
-        self._enum = enum
-        self._choices = choices
+        # Backward compatibility: historically 'enum' provided static list of strings.
+        # We now allow 'choices' to be either a callable (dynamic) or a static sequence (list/tuple) of
+        # str or Choice objects. If both enum and a static sequence for choices are provided we raise as before.
+        # If enum and a callable are provided we also raise (ambiguous sources).
+        if enum and choices and callable(choices):
+            raise ValueError("Cannot specify both enum and a dynamic choices callable")
+        if enum and choices and not callable(choices):
+            raise ValueError("Cannot specify both enum and static choices sequence")
+
+        self._enum = enum  # list[str] or None (legacy static list)
+        self._choices = None  # dynamic callable (cached) or None
+        self._static_choice_objs: Optional[List[StringParameter.Choice]] = None
+
+        if choices is not None:
+            if callable(choices):
+                # dynamic choices
+                self._choices = lru_cache(maxsize=1)(choices)
+            else:
+                # static sequence provided via 'choices'
+                if not isinstance(choices, (list, tuple)):
+                    raise TypeError("'choices' must be a callable, list, or tuple.")
+                # normalize into Choice objects
+                norm = []
+                seen = set()
+                for item in choices:
+                    if isinstance(item, str):
+                        c = self.Choice(item, item)
+                    elif isinstance(item, self.Choice):
+                        c = item
+                    else:
+                        raise TypeError(
+                            "Static 'choices' sequence elements must be str or StringParameter.Choice"
+                        )
+                    if c.id in seen:
+                        raise ValueError(f"Duplicate choice id '{c.id}' in static choices")
+                    seen.add(c.id)
+                    norm.append(c)
+                self._static_choice_objs = norm
+                # for styling heuristics (radio vs dropdown) we re-use _enum with ids if labels simple
+                self._enum = [c.id for c in norm]
+
+        # if only enum is provided, we may later wrap it into static choices for description purposes
+        if self._enum is not None and self._static_choice_objs is None and enum is not None:
+            # create lightweight Choice objects (ids == labels, empty description)
+            self._static_choice_objs = [self.Choice(e, e, "") for e in self._enum]
         super().__init__(
             label,
             description,
@@ -1192,11 +1233,28 @@ class StringParameter(_BaseMultiChoiceParameter):
             since_version,
             is_advanced,
         )
-        if self._choices:
-            self._choices = lru_cache(maxsize=1)(self._choices)
-
-        # internal flag to avoid adding existence validator multiple times
+        # internal flag to avoid adding existence validator multiple times (dynamic choices)
         self._choice_validator_added = False
+
+        # Add existence validator for static sequences immediately (dynamic added later when evaluated)
+        if self._static_choice_objs:
+            static_ids = {c.id for c in self._static_choice_objs}
+
+            def _existence_validator_static(v):
+                if v not in static_ids:
+                    raise ValueError(
+                        f"Value '{v}' is not among static choices: "
+                        + ", ".join(sorted(static_ids))
+                    )
+
+            self._validator = _combine_validators(
+                self._validator, _existence_validator_static
+            )
+            if (self._default_value is None or self._default_value == "") and not callable(
+                self._default_value
+            ):
+                if len(self._static_choice_objs) > 0:
+                    self._default_value = self._static_choice_objs[0].id
 
     def _normalized_choices(self, dialog_creation_context):
         """Return list of Choice objects (normalize str -> Choice)."""
@@ -1221,28 +1279,26 @@ class StringParameter(_BaseMultiChoiceParameter):
     def _append_choice_descriptions(
         self, base_doc: str, choices: List["StringParameter.Choice"]
     ):
-        described = [c for c in choices if c.description]
-        if not described:
+        # Show table only if at least one choice has a description,
+        # but include ALL choices as rows; empty description cells for those without one.
+        show_any = any(c.description for c in choices)
+        if not show_any:
             return base_doc
-        # indentation logic similar to EnumParameter
         if base_doc:
             lines = base_doc.expandtabs().splitlines()
             indent_lvl = _get_indent_level(lines)
             indent = " " * indent_lvl
         else:
             indent = ""
-        # Build markdown table instead of bullet list
         appendix = f"\n\n{indent}**Available options:**\n\n"
-        # Use non-breaking spaces to reduce wrapping likelihood of 'Name'
         name_header = "Name".replace(" ", "\u00A0")
         header = f"{indent}| ID | {name_header} | Description |\n"
         separator = f"{indent}| --- | --- | --- |\n"
         row_lines = []
-        for c in described:
-            safe_desc = c.description.replace("|", "\\|")
+        for c in choices:
+            safe_desc = c.description.replace("|", "\\|") if c.description else ""
             row_lines.append(f"{indent}| {c.id} | {c.label} | {safe_desc} |\n")
-        rows = "".join(row_lines)
-        appendix += header + separator + rows
+        appendix += header + separator + "".join(row_lines)
         return base_doc.expandtabs() + appendix
 
     def _extract_schema(self, extension_version=None, dialog_creation_context=None):
@@ -1285,9 +1341,22 @@ class StringParameter(_BaseMultiChoiceParameter):
                     if len(normalized) > 0 and not callable(self._default_value):
                         self._default_value = normalized[0].id
 
+        elif self._static_choice_objs is not None:
+            # static sequence provided via 'choices' (or enum transformed) -> use normalized objects
+            normalized = self._static_choice_objs
+            if len(normalized) == 0:
+                schema["type"] = "string"
+            else:
+                schema["oneOf"] = [
+                    {"const": c.id, "title": c.label} for c in normalized
+                ]
+                # only append descriptions if at least one non-empty
+                schema["description"] = self._append_choice_descriptions(
+                    schema.get("description", self.__doc__ or ""), normalized
+                )
         elif self._enum is None or len(self._enum) == 0:
             schema["type"] = "string"
-        else:
+        else:  # legacy enum list
             schema["oneOf"] = [{"const": e, "title": e} for e in self._enum]
         return schema
 
@@ -1295,18 +1364,52 @@ class StringParameter(_BaseMultiChoiceParameter):
     def _get_options(self, dialog_creation_context) -> dict:
         """Returns the jsonforms options for the parameter"""
 
-        if self._enum and len(self._enum) <= 4:
-            return {"format": "radio"}
-
-        if hasattr(self, "_choices") and callable(self._choices):
+        # dynamic choices (callable)
+        if self._choices and callable(self._choices):
             normalized = self._normalized_choices(dialog_creation_context)
             if len(normalized) == 0:
                 return {"format": "dropDown", "placeholder": "No values present"}
             return {"format": "string"}
-
-        if isinstance(self._enum, list) and len(self._enum) == 0:
-            return {"format": "dropDown", "placeholder": "No values present"}
+        # static choices via sequence or enum
+        if self._static_choice_objs is not None:
+            if len(self._static_choice_objs) == 0:
+                return {"format": "dropDown", "placeholder": "No values present"}
+            if len(self._static_choice_objs) <= 4:
+                return {"format": "radio"}
+            return {"format": "string"}
+        # legacy enum handling
+        if isinstance(self._enum, list):
+            if len(self._enum) == 0:
+                return {"format": "dropDown", "placeholder": "No values present"}
+            if len(self._enum) <= 4:
+                return {"format": "radio"}
         return {"format": "string"}
+
+    def _extract_description(self, name, parent_scope: _Scope):  # NOSONAR
+        """Include static enum values in the node description if present.
+        Dynamic (callable) choices are only available when a dialog creation context is supplied;
+        during description extraction we can't evaluate them. Static sequences (enum or choices sequence)
+        are context independent and therefore always appended (with descriptions if provided via Choice objects).
+        """
+        desc = self.__doc__ or ""
+        # prefer static choice objects (may carry descriptions)
+        if self._static_choice_objs is not None:
+            desc = self._append_choice_descriptions(desc, self._static_choice_objs)
+        elif self._enum and not (self._choices and callable(self._choices)):
+            # legacy simple enum list (strings only)
+            if self._enum and len(self._enum) > 0:
+                # replicate previous bullet list behavior
+                if desc:
+                    lines = desc.expandtabs().splitlines()
+                    indent_lvl = _get_indent_level(lines)
+                    indent = " " * indent_lvl
+                else:
+                    indent = ""
+                options_description = f"\n\n{indent}**Available options:**\n\n"
+                for opt in self._enum:
+                    options_description += f"{indent}- {opt}\n"
+                desc = (desc or "").expandtabs() + options_description
+        return {"name": self._label, "description": desc}
 
 
 class LocalPathParameter(StringParameter):
@@ -1395,7 +1498,7 @@ class MultilineStringParameter(_BaseParameter):
                 f"Number of lines is of type {type(number_of_lines)}, but should be of type integer."
             )
         elif number_of_lines <= 0:
-            raise ValueError(f"Number of lines should be of type positive integer.")
+            raise ValueError("Number of lines should be of type positive integer.")
 
         self._number_of_lines = number_of_lines
 
@@ -1752,7 +1855,8 @@ class _BaseColumnParameter(_BaseParameter):
             is_advanced=is_advanced,
         )
         if column_filter is None:
-            column_filter = lambda c: True
+            def column_filter(c):
+                return True
         self._column_filter = column_filter
         if schema_provider is None:
             self._port_index = port_index
@@ -2073,7 +2177,7 @@ class PatternFilterConfig:
 
         filtered_column_names = []
         for column in schema:
-            pattern_matches = pattern.search(column.name) != None
+            pattern_matches = pattern.search(column.name) is not None
             # The ^ is xor, so we include the column only if
             # the pattern is matching or it is NOT matching but
             # we have inverted the search
@@ -2667,7 +2771,7 @@ class DateTimeParameter(_BaseParameter):
                 # affect the value.
                 return datetime.datetime.fromisoformat(value)
 
-        except:  # NOSONAR
+        except Exception:  # NOSONAR - broad but explicit to preserve previous behavior
             # if the value is not in ISO format, we try to parse it automatically
             try:
                 return parser.parse(value)
