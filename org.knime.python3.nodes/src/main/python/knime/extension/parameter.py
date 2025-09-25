@@ -1218,7 +1218,9 @@ class StringParameter(_BaseMultiChoiceParameter):
                     seen.add(c.id)
                     norm.append(c)
                 self._static_choice_objs = norm
-                # for styling heuristics (radio vs dropdown) we re-use _enum with ids if labels simple
+                # styling heuristic simplified: no radio rendering anymore, but we still
+                # populate _enum with ids so existing downstream logic relying on _enum length
+                # (e.g. selecting default) keeps working.
                 self._enum = [c.id for c in norm]
 
         # if only enum is provided, we may later wrap it into static choices for description purposes
@@ -1348,15 +1350,11 @@ class StringParameter(_BaseMultiChoiceParameter):
         if self._static_choice_objs is not None:
             if len(self._static_choice_objs) == 0:
                 return {"format": "dropDown", "placeholder": "No values present"}
-            if len(self._static_choice_objs) <= 4:
-                return {"format": "radio"}
             return {"format": "string"}
         # legacy enum handling
         if isinstance(self._enum, list):
             if len(self._enum) == 0:
                 return {"format": "dropDown", "placeholder": "No values present"}
-            if len(self._enum) <= 4:
-                return {"format": "radio"}
         return {"format": "string"}
 
     def _extract_description(self, name, parent_scope: _Scope):  # NOSONAR

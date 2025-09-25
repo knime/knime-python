@@ -1439,13 +1439,13 @@ class TestStringParameterDynamicChoices(unittest.TestCase):
         obj.param_with_desc = "STILL_INVALID"
         self.assertEqual(obj.param_with_desc, "STILL_INVALID")
 
-    def test_enum_radio_branch(self):
-        """Static enum with <=4 entries uses radio format."""
+    def test_enum_small_also_uses_string_format(self):
+        """Static enum with <=4 entries now uses string format (radio removed)."""
         class P:
             sp = kp.StringParameter(enum=["a", "b", "c", "d"], default_value="a")
         ui = kp.extract_ui_schema(P(), DummyDialogCreationContext())
         ctrl = next(e for e in ui["elements"] if e["scope"].endswith("/sp"))
-        self.assertEqual(ctrl["options"]["format"], "radio")
+        self.assertEqual(ctrl["options"]["format"], "string")
 
     def test_enum_empty_dropdown_branch(self):
         """Empty enum list triggers dropDown placeholder branch."""
