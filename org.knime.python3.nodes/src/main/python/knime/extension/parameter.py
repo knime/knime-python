@@ -1136,19 +1136,27 @@ class StringParameter(_BaseMultiChoiceParameter):
     ...     default_value="A",
     ... )
     """
-    
+
     # Lean Choice dataclass enabling dynamic choices with (id, label, optional description).
     # Declared here to keep public surface minimal; can be imported as knime.extension.parameter.StringParameter.Choice
-    from dataclasses import dataclass as _dataclass  # local import to avoid top-level dependency changes
+    from dataclasses import (
+        dataclass as _dataclass,
+    )  # local import to avoid top-level dependency changes
+
     @_dataclass(frozen=True)
     class Choice:
         id: str
         label: str
         description: str = ""
+
         def __post_init__(self):  # basic validation
             if not self.id:
                 raise ValueError("Choice id must be non-empty")
-            if not isinstance(self.id, str) or not isinstance(self.label, str) or not isinstance(self.description, str):
+            if (
+                not isinstance(self.id, str)
+                or not isinstance(self.label, str)
+                or not isinstance(self.description, str)
+            ):
                 raise TypeError("Choice id, label and description must be strings")
 
     def _default_validator(self, value):
@@ -1210,7 +1218,9 @@ class StringParameter(_BaseMultiChoiceParameter):
             norm.append(c)
         return norm
 
-    def _append_choice_descriptions(self, base_doc: str, choices: List["StringParameter.Choice"]):
+    def _append_choice_descriptions(
+        self, base_doc: str, choices: List["StringParameter.Choice"]
+    ):
         described = [c for c in choices if c.description]
         if not described:
             return base_doc
@@ -1249,12 +1259,14 @@ class StringParameter(_BaseMultiChoiceParameter):
                 # add existence validator once choices known
                 if not self._choice_validator_added:
                     choice_ids = {c.id for c in normalized}
+
                     def _existence_validator(v):
                         if v not in choice_ids:
                             raise ValueError(
                                 f"Value '{v}' is not among dynamic choices: "
                                 + ", ".join(sorted(choice_ids))
                             )
+
                     self._validator = _combine_validators(
                         self._validator, _existence_validator
                     )

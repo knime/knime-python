@@ -1183,7 +1183,9 @@ class TestStringParameterDynamicChoices(unittest.TestCase):
     def test_schema_contains_oneOf_and_descriptions(self):
         obj = ParameterizedDynamicChoices()
         # provide dialog creation context so dynamic choices callable can use it if needed
-        schema = kp.extract_schema(obj, dialog_creation_context=DummyDialogCreationContext())
+        schema = kp.extract_schema(
+            obj, dialog_creation_context=DummyDialogCreationContext()
+        )
         s = schema["properties"]["model"]["properties"]["param_with_desc"]
         self.assertIn("oneOf", s)
         values = {entry["const"]: entry["title"] for entry in s["oneOf"]}
@@ -1196,7 +1198,9 @@ class TestStringParameterDynamicChoices(unittest.TestCase):
 
     def test_no_options_section_when_no_descriptions(self):
         obj = ParameterizedDynamicChoices()
-        schema = kp.extract_schema(obj, dialog_creation_context=DummyDialogCreationContext())
+        schema = kp.extract_schema(
+            obj, dialog_creation_context=DummyDialogCreationContext()
+        )
         s = schema["properties"]["model"]["properties"]["param_plain"]
         self.assertIn("oneOf", s)
         self.assertNotIn("**Available options:**", s["description"])
@@ -1217,48 +1221,56 @@ class TestStringParameterDynamicChoices(unittest.TestCase):
 
     def test_empty_choices_list(self):
         """Test StringParameter with empty dynamic choices."""
+
         def empty_choices(ctx):
             return []
-        
+
         param = kp.StringParameter(
             label="Empty",
             description="No choices available.",
             choices=empty_choices,
         )
-        
+
         class TestObj:
             empty_param = param
-        
+
         obj = TestObj()
-        schema = kp.extract_schema(obj, dialog_creation_context=DummyDialogCreationContext())
+        schema = kp.extract_schema(
+            obj, dialog_creation_context=DummyDialogCreationContext()
+        )
         s = schema["properties"]["model"]["properties"]["empty_param"]
-        
+
         # Empty choices should fall back to plain string type (no oneOf)
         self.assertEqual(s["type"], "string")
         self.assertNotIn("oneOf", s)
         # Should use dropDown with placeholder UI format (not placeholder format)
         ui_schema = kp.extract_ui_schema(obj, DummyDialogCreationContext())
-        control = next(el for el in ui_schema["elements"] if el["scope"] == "#/properties/model/properties/empty_param")
+        control = next(
+            el
+            for el in ui_schema["elements"]
+            if el["scope"] == "#/properties/model/properties/empty_param"
+        )
         self.assertEqual(control["options"]["format"], "dropDown")
         self.assertEqual(control["options"]["placeholder"], "No values present")
 
     def test_duplicate_choice_ids_rejected(self):
         """Test that duplicate choice IDs raise ValueError during normalization."""
+
         def duplicate_choices(ctx):
             return [
                 kp.StringParameter.Choice("A", "First A"),
                 kp.StringParameter.Choice("A", "Second A"),  # duplicate ID
             ]
-        
+
         param = kp.StringParameter(
             label="Duplicates",
             description="Should fail normalization.",
             choices=duplicate_choices,
         )
-        
+
         class TestObj:
             dup_param = param
-        
+
         obj = TestObj()
         with self.assertRaises(ValueError) as cm:
             kp.extract_schema(obj, dialog_creation_context=DummyDialogCreationContext())
@@ -1266,106 +1278,120 @@ class TestStringParameterDynamicChoices(unittest.TestCase):
 
     def test_many_choices_use_string_ui(self):
         """Test that >4 choices use string (dropdown) UI format."""
+
         def many_choices(ctx):
             return [f"choice_{i}" for i in range(6)]  # 6 choices > 4
-        
+
         param = kp.StringParameter(
             label="Many",
             description="Many choices should use dropdown.",
             choices=many_choices,
         )
-        
+
         class TestObj:
             many_param = param
-        
+
         obj = TestObj()
         ui_schema = kp.extract_ui_schema(obj, DummyDialogCreationContext())
-        control = next(el for el in ui_schema["elements"] if el["scope"] == "#/properties/model/properties/many_param")
+        control = next(
+            el
+            for el in ui_schema["elements"]
+            if el["scope"] == "#/properties/model/properties/many_param"
+        )
         self.assertEqual(control["options"]["format"], "string")
 
     def test_mixed_choice_types_normalized(self):
         """Test that mix of strings and Choice objects are normalized properly."""
+
         def mixed_choices(ctx):
             return [
                 "plain_string",
                 kp.StringParameter.Choice("rich", "Rich Choice", "Has description"),
                 kp.StringParameter.Choice("rich_no_desc", "Rich No Desc"),
             ]
-        
+
         param = kp.StringParameter(
             label="Mixed",
             description="Mixed choice types.",
             choices=mixed_choices,
         )
-        
+
         class TestObj:
             mixed_param = param
-        
+
         obj = TestObj()
-        schema = kp.extract_schema(obj, dialog_creation_context=DummyDialogCreationContext())
+        schema = kp.extract_schema(
+            obj, dialog_creation_context=DummyDialogCreationContext()
+        )
         s = schema["properties"]["model"]["properties"]["mixed_param"]
-        
+
         # Verify all are normalized to oneOf with const/title
         values = {entry["const"]: entry["title"] for entry in s["oneOf"]}
         expected = {
             "plain_string": "plain_string",
-            "rich": "Rich Choice", 
-            "rich_no_desc": "Rich No Desc"
+            "rich": "Rich Choice",
+            "rich_no_desc": "Rich No Desc",
         }
         self.assertEqual(values, expected)
-        
+
         # Should have description section for the one choice with description
         self.assertIn("**Available options:**", s["description"])
         self.assertIn("Rich Choice: Has description", s["description"])
 
     def test_context_dependent_choices(self):
         """Test that choices callable receives DialogCreationContext."""
+
         def context_aware_choices(ctx):
             # Use context to determine choices (mock credential names)
-            if hasattr(ctx, '_java_ctx'):
+            if hasattr(ctx, "_java_ctx"):
                 return ["cred1", "cred2", "cred3"]
             return ["fallback"]
-        
+
         param = kp.StringParameter(
             label="Context",
             description="Uses context for choices.",
             choices=context_aware_choices,
         )
-        
+
         class TestObj:
             context_param = param
-        
+
         obj = TestObj()
-        schema = kp.extract_schema(obj, dialog_creation_context=DummyDialogCreationContext())
+        schema = kp.extract_schema(
+            obj, dialog_creation_context=DummyDialogCreationContext()
+        )
         s = schema["properties"]["model"]["properties"]["context_param"]
-        
+
         # Should get context-aware choices
         values = [entry["const"] for entry in s["oneOf"]]
         self.assertEqual(values, ["cred1", "cred2", "cred3"])
 
     def test_default_auto_selection_with_callable_default(self):
         """Test that callable default_value is not overridden by auto-selection."""
+
         def auto_choices(ctx):
             return ["first", "second", "third"]
-        
+
         def callable_default():
             return "second"
-        
+
         param = kp.StringParameter(
             label="Callable Default",
             description="Has callable default.",
             default_value=callable_default,
             choices=auto_choices,
         )
-        
+
         class TestObj:
             callable_default_param = param
-        
+
         obj = TestObj()
         kp.extract_schema(obj, dialog_creation_context=DummyDialogCreationContext())
-        
+
         # Should NOT auto-select first choice since default is callable
-        self.assertEqual(TestObj.callable_default_param._default_value, callable_default)
+        self.assertEqual(
+            TestObj.callable_default_param._default_value, callable_default
+        )
 
 
 class DummyDialogCreationContext:
