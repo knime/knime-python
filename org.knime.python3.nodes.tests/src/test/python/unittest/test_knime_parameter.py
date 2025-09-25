@@ -1218,11 +1218,12 @@ class TestStringParameterDynamicChoices(unittest.TestCase):
 
     def test_invalid_value_after_schema_extraction(self):
         obj = ParameterizedDynamicChoices()
-        # build schema (adds existence validator)
+        # Build schema (previously added existence validator). After policy change
+        # invalid assignments are allowed and no automatic membership validation occurs.
         kp.extract_schema(obj, dialog_creation_context=DummyDialogCreationContext())
-        # now assigning invalid value should raise
-        with self.assertRaises(ValueError):
-            obj.param_with_desc = "INVALID"
+        # Assign an invalid value and verify it is simply stored.
+        obj.param_with_desc = "INVALID"
+        self.assertEqual(obj.param_with_desc, "INVALID")
 
     def test_empty_choices_list(self):
         """Test StringParameter with empty dynamic choices."""
@@ -1421,17 +1422,22 @@ class TestStringParameterDynamicChoices(unittest.TestCase):
         self.assertIn("| ID | Name | Description |", s["description"])
         self.assertRegex(s["description"], r"\| X \| Ex \| Explained \|")
 
-    def test_existence_validator_added_only_once(self):
-        """Invoke schema extraction twice; validator shouldn't duplicate errors."""
+    def test_invalid_value_allowed_after_repeated_schema_extraction(self):
+        """Ensure repeated schema extraction does not introduce implicit validators.
+
+        After removal of automatic existence validation, assigning a value that is
+        not among dynamic choices must remain possible without raising errors,
+        even after multiple schema extraction calls.
+        """
         obj = ParameterizedDynamicChoices()
+        # First extraction
         kp.extract_schema(obj, dialog_creation_context=DummyDialogCreationContext())
-        # second extraction should not add another wrapper; still raises exactly once
-        with self.assertRaises(ValueError):
-            obj.param_with_desc = "NOTVALID"
-        # extract again; ensure same behavior
+        obj.param_with_desc = "NOTVALID"
+        self.assertEqual(obj.param_with_desc, "NOTVALID")
+        # Second extraction should not change previously assigned value nor add validation
         kp.extract_schema(obj, dialog_creation_context=DummyDialogCreationContext())
-        with self.assertRaises(ValueError):
-            obj.param_with_desc = "NOTVALID"
+        obj.param_with_desc = "STILL_INVALID"
+        self.assertEqual(obj.param_with_desc, "STILL_INVALID")
 
     def test_enum_radio_branch(self):
         """Static enum with <=4 entries uses radio format."""
@@ -1556,8 +1562,9 @@ class TestStringParameterStaticChoices(unittest.TestCase):
     def test_invalid_assignment_static(self):
         obj = ParameterizedStaticChoices()
         kp.extract_schema(obj, dialog_creation_context=DummyDialogCreationContext())
-        with self.assertRaises(ValueError):
-            obj.static_plain = "INVALID"
+        # Previously raised ValueError; now invalid assignment is allowed.
+        obj.static_plain = "INVALID"
+        self.assertEqual(obj.static_plain, "INVALID")
 
 
 class DummyDialogCreationContext:

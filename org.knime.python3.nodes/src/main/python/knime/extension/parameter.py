@@ -1236,25 +1236,13 @@ class StringParameter(_BaseMultiChoiceParameter):
         # internal flag to avoid adding existence validator multiple times (dynamic choices)
         self._choice_validator_added = False
 
-        # Add existence validator for static sequences immediately (dynamic added later when evaluated)
-        if self._static_choice_objs:
-            static_ids = {c.id for c in self._static_choice_objs}
-
-            def _existence_validator_static(v):
-                if v not in static_ids:
-                    raise ValueError(
-                        f"Value '{v}' is not among static choices: "
-                        + ", ".join(sorted(static_ids))
-                    )
-
-            self._validator = _combine_validators(
-                self._validator, _existence_validator_static
-            )
-            if (self._default_value is None or self._default_value == "") and not callable(
-                self._default_value
-            ):
-                if len(self._static_choice_objs) > 0:
-                    self._default_value = self._static_choice_objs[0].id
+        # Auto-set default for static sequences only (no existence validation enforced)
+        if self._static_choice_objs and (
+            (self._default_value is None or self._default_value == "")
+            and not callable(self._default_value)
+            and len(self._static_choice_objs) > 0
+        ):
+            self._default_value = self._static_choice_objs[0].id
 
     def _normalized_choices(self, dialog_creation_context):
         """Return list of Choice objects (normalize str -> Choice)."""
@@ -1321,21 +1309,7 @@ class StringParameter(_BaseMultiChoiceParameter):
                 schema["description"] = self._append_choice_descriptions(
                     schema.get("description", self.__doc__ or ""), normalized
                 )
-                # add existence validator once choices known
-                if not self._choice_validator_added:
-                    choice_ids = {c.id for c in normalized}
-
-                    def _existence_validator(v):
-                        if v not in choice_ids:
-                            raise ValueError(
-                                f"Value '{v}' is not among dynamic choices: "
-                                + ", ".join(sorted(choice_ids))
-                            )
-
-                    self._validator = _combine_validators(
-                        self._validator, _existence_validator
-                    )
-                    self._choice_validator_added = True
+                # existence validation removed – node developers may implement custom validators if desired
                 # if default is None and not callable set first id
                 if self._default_value is None or self._default_value == "":
                     if len(normalized) > 0 and not callable(self._default_value):
