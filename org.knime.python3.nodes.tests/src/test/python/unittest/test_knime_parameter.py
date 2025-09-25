@@ -1393,6 +1393,83 @@ class TestStringParameterDynamicChoices(unittest.TestCase):
             TestObj.callable_default_param._default_value, callable_default
         )
 
+    def test_description_aggregation_when_base_doc_empty(self):
+        """Ensure aggregation works when original description is empty/None."""
+        def rich(ctx):
+            return [
+                kp.StringParameter.Choice("X", "Ex", "Explained"),
+                kp.StringParameter.Choice("Y", "Why"),
+            ]
+        param = kp.StringParameter(
+            label=None,
+            description=None,  # base_doc empty branch
+            choices=rich,
+        )
+        class AggregationObj:
+            agg = param
+        schema = kp.extract_schema(
+            AggregationObj(), dialog_creation_context=DummyDialogCreationContext()
+        )
+        s = schema["properties"]["model"]["properties"]["agg"]
+        self.assertIn("**Available options:**", s["description"])
+        self.assertIn("Ex: Explained", s["description"])
+
+    def test_existence_validator_added_only_once(self):
+        """Invoke schema extraction twice; validator shouldn't duplicate errors."""
+        obj = ParameterizedDynamicChoices()
+        kp.extract_schema(obj, dialog_creation_context=DummyDialogCreationContext())
+        # second extraction should not add another wrapper; still raises exactly once
+        with self.assertRaises(ValueError):
+            obj.param_with_desc = "NOTVALID"
+        # extract again; ensure same behavior
+        kp.extract_schema(obj, dialog_creation_context=DummyDialogCreationContext())
+        with self.assertRaises(ValueError):
+            obj.param_with_desc = "NOTVALID"
+
+    def test_enum_radio_branch(self):
+        """Static enum with <=4 entries uses radio format."""
+        class P:
+            sp = kp.StringParameter(enum=["a", "b", "c", "d"], default_value="a")
+        ui = kp.extract_ui_schema(P(), DummyDialogCreationContext())
+        ctrl = next(e for e in ui["elements"] if e["scope"].endswith("/sp"))
+        self.assertEqual(ctrl["options"]["format"], "radio")
+
+    def test_enum_empty_dropdown_branch(self):
+        """Empty enum list triggers dropDown placeholder branch."""
+        class P:
+            sp = kp.StringParameter(enum=[], default_value="")
+        ui = kp.extract_ui_schema(P(), DummyDialogCreationContext())
+        ctrl = next(e for e in ui["elements"] if e["scope"].endswith("/sp"))
+        self.assertEqual(ctrl["options"]["format"], "dropDown")
+        self.assertEqual(ctrl["options"]["placeholder"], "No values present")
+
+    def test_choices_callable_wrong_return_type(self):
+        """choices() returning non-list raises TypeError."""
+        def bad(ctx):
+            return 123
+        class P:
+            sp = kp.StringParameter(choices=bad)
+        with self.assertRaises(TypeError):
+            kp.extract_schema(P(), dialog_creation_context=DummyDialogCreationContext())
+
+    def test_choices_element_wrong_type(self):
+        """choices() containing invalid element type raises TypeError."""
+        def bad(ctx):
+            return [42]
+        class P:
+            sp = kp.StringParameter(choices=bad)
+        with self.assertRaises(TypeError):
+            kp.extract_schema(P(), dialog_creation_context=DummyDialogCreationContext())
+
+    def test_auto_default_from_first_choice_when_empty_string(self):
+        """If default_value is empty string, first dynamic choice is selected."""
+        def ch(ctx):
+            return ["first", "second"]
+        class P:
+            sp = kp.StringParameter(default_value="", choices=ch)
+        kp.extract_schema(P(), dialog_creation_context=DummyDialogCreationContext())
+        self.assertEqual(P.sp._default_value, "first")
+
 
 class DummyDialogCreationContext:
     def __init__(self, specs: List = None) -> None:
