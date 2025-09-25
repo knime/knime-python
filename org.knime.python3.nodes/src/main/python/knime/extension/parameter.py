@@ -1231,9 +1231,18 @@ class StringParameter(_BaseMultiChoiceParameter):
             indent = " " * indent_lvl
         else:
             indent = ""
+        # Build markdown table instead of bullet list
         appendix = f"\n\n{indent}**Available options:**\n\n"
+        # Use non-breaking spaces to reduce wrapping likelihood of 'Name'
+        name_header = "Name".replace(" ", "\u00A0")
+        header = f"{indent}| ID | {name_header} | Description |\n"
+        separator = f"{indent}| --- | --- | --- |\n"
+        row_lines = []
         for c in described:
-            appendix += f"{indent}- {c.label}: {c.description}\n"
+            safe_desc = c.description.replace("|", "\\|")
+            row_lines.append(f"{indent}| {c.id} | {c.label} | {safe_desc} |\n")
+        rows = "".join(row_lines)
+        appendix += header + separator + rows
         return base_doc.expandtabs() + appendix
 
     def _extract_schema(self, extension_version=None, dialog_creation_context=None):

@@ -372,7 +372,7 @@ class KnimeMarkdownParser:
         )
 
         self.md_options = markdown.Markdown(
-            extensions=[_KnExtensionForOptions(), "sane_lists", "fenced_code"],
+            extensions=[_KnExtensionForOptions(), "sane_lists", "fenced_code", "tables"],
             output_format="xhtml",
         )
 

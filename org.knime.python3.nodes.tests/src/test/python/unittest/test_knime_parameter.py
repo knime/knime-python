@@ -1192,9 +1192,14 @@ class TestStringParameterDynamicChoices(unittest.TestCase):
         self.assertEqual(values, {"A": "Alpha", "B": "Beta", "GAMMA": "GAMMA"})
         desc = s["description"]
         self.assertIn("**Available options:**", desc)
-        self.assertIn("Alpha: First letter", desc)
-        self.assertNotIn("Beta:", desc)
-        self.assertNotIn("GAMMA", desc)
+        # New markdown table header
+        self.assertIn("| ID | Name | Description |", desc)
+        # Row for described choice
+        self.assertRegex(desc, r"\| A \| Alpha \| First letter \|")
+        # Undescribed choices should have empty (or absent) description cell
+        self.assertRegex(desc, r"\| B \| Beta \| *\|")
+        # Gamma has no description; ensure its id/title present with blank description
+        self.assertRegex(desc, r"\| GAMMA \| GAMMA \| *\|")
 
     def test_no_options_section_when_no_descriptions(self):
         obj = ParameterizedDynamicChoices()
@@ -1336,7 +1341,8 @@ class TestStringParameterDynamicChoices(unittest.TestCase):
 
         # Should have description section for the one choice with description
         self.assertIn("**Available options:**", s["description"])
-        self.assertIn("Rich Choice: Has description", s["description"])
+        self.assertIn("| ID | Name | Description |", s["description"])
+        self.assertRegex(s["description"], r"\| rich \| Rich Choice \| Has description \|")
 
     def test_context_dependent_choices(self):
         """Test that choices callable receives DialogCreationContext."""
@@ -1412,7 +1418,8 @@ class TestStringParameterDynamicChoices(unittest.TestCase):
         )
         s = schema["properties"]["model"]["properties"]["agg"]
         self.assertIn("**Available options:**", s["description"])
-        self.assertIn("Ex: Explained", s["description"])
+        self.assertIn("| ID | Name | Description |", s["description"])
+        self.assertRegex(s["description"], r"\| X \| Ex \| Explained \|")
 
     def test_existence_validator_added_only_once(self):
         """Invoke schema extraction twice; validator shouldn't duplicate errors."""
