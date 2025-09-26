@@ -73,14 +73,14 @@ final class DefaultViewContext implements PythonNodeViewProxy.PythonViewContext 
 
     private final CredentialsProviderProxy m_credentialsProvider;
 
-    private final String m_internalViewData;
+    private final String m_viewData;
 
     DefaultViewContext(final ToolExecutor toolExecutor, final PortMapProvider portMapProvider,
-        final CredentialsProviderProxy credentialsProvider, final String internalViewData) {
+        final CredentialsProviderProxy credentialsProvider, final String viewData) {
         m_toolExecutor = toolExecutor;
         m_portMapProvider = portMapProvider;
         m_credentialsProvider = credentialsProvider;
-        m_internalViewData = internalViewData;
+        m_viewData = viewData;
     }
 
     @Override
@@ -112,7 +112,8 @@ final class DefaultViewContext implements PythonNodeViewProxy.PythonViewContext 
     }
 
     @Override
+    // TODO rename to 'get_view_data'
     public String get_internal_view_data() {
-        return m_internalViewData;
+        return m_viewData;
     }
 }

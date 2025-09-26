@@ -459,6 +459,9 @@ class _JsonRpcDataService:
 
         return json.dumps(response)
 
+    def getViewData(self):
+        self._delegate.get_view_data()
+
     class Java:
         implements = [
             "org.knime.python3.nodes.proxy.PythonNodeViewProxy$PythonDataServiceProxy"

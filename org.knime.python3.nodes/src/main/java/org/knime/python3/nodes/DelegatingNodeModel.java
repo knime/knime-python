@@ -52,6 +52,7 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -84,13 +85,15 @@ import org.knime.core.node.workflow.VariableTypeRegistry;
 import org.knime.core.node.workflow.virtual.AbstractPortObjectRepositoryNodeModel;
 import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
 import org.knime.python3.nodes.proxy.NodeProxy;
+import org.knime.python3.nodes.proxy.NodeProxyProvider;
+import org.knime.python3.nodes.proxy.NodeViewProxy;
+import org.knime.python3.nodes.proxy.NodeViewProxy.DataServiceProxy;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy.CredentialsProviderProxy;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy.FlowVariablesProxy;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy.PortMapProvider;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy.WarningConsumer;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy.WorkflowPropertiesProxy;
-import org.knime.python3.nodes.proxy.model.NodeModelProxyProvider;
 import org.knime.python3.nodes.settings.JsonNodeSettings;
 import org.knime.python3.nodes.settings.JsonNodeSettingsSchema;
 import org.knime.python3.utils.FlowVariableUtils;
@@ -108,7 +111,11 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(DelegatingNodeModel.class);
 
-    private final NodeModelProxyProvider m_proxyProvider;
+    private final NodeProxyProvider m_proxyProvider;
+
+    private NodeViewProxy m_nodeViewProxy;
+
+    private DataServiceProxy m_dataServiceProxy;
 
     /**
      * We're hiding the JsonNodeSettings behind a class for lazy initialization to prevent accidental wrong usage. The
@@ -162,7 +169,7 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
 
     private final boolean m_shouldHoldOutputs;
 
-    private String m_internalViewData;
+    private ViewData m_viewData;
 
     /**
      * Constructor with port maps
@@ -176,7 +183,7 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
      * @param shouldHoldOutputs indicates if the execution outputs should be saved as internal data to be used by a node
      *            view
      */
-    public DelegatingNodeModel(final NodeModelProxyProvider proxyProvider, final PortType[] inputPorts,
+    public DelegatingNodeModel(final NodeProxyProvider proxyProvider, final PortType[] inputPorts,
         final PortType[] outputPorts, final String extensionVersion, final Map<String, int[]> inputPortMap,
         final Map<String, int[]> outputPortMap, final boolean shouldHoldOutputs) {
         super(inputPorts, outputPorts);
@@ -202,7 +209,9 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
 
     @Override
     public void preReExecute(final String data, final boolean isNewDefault) {
-        m_internalViewData = data;
+        if (m_viewData != null) {
+            m_viewData.markToPersist();
+        }
     }
 
     @Override
@@ -297,22 +306,21 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
 
     @Override
     protected void reset() {
+        if (m_dataServiceProxy != null) {
+            m_viewData = new ViewData(m_dataServiceProxy.getViewData());
+        } else {
+            m_viewData = null;
+        }
         m_proxyProvider.cleanup();
         m_view = Optional.empty();
         m_proxyShutdownTracker.waitForAllToClose();
-        m_internalViewData = null;
     }
 
     @Override
     protected void loadInternals(final File nodeInternDir, final ExecutionMonitor exec)
         throws IOException, CanceledExecutionException {
         m_view = PythonNodeViewStoragePath.loadFromInternals(nodeInternDir.toPath());
-        File f = new File(nodeInternDir, "internal_view_data.gz");
-        if (f.exists()) {
-            try (InputStream in = new GZIPInputStream(new BufferedInputStream(new FileInputStream(f)))) {
-                m_internalViewData = new String(in.readAllBytes(), StandardCharsets.UTF_8);
-            }
-        }
+        m_viewData = ViewData.load(nodeInternDir);
     }
 
     @Override
@@ -322,11 +330,8 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
             // Copy the view from the temporary file to the persisted internals directory
             m_view.get().saveToInternals(nodeInternDir.toPath());
         }
-        if (m_internalViewData != null) {
-            try (GZIPOutputStream gzs = new GZIPOutputStream(
-                new BufferedOutputStream(new FileOutputStream(new File(nodeInternDir, "internal_view_data.gz"))))) {
-                gzs.write(m_internalViewData.getBytes(StandardCharsets.UTF_8));
-            }
+        if (m_viewData != null) {
+            m_viewData.save(nodeInternDir);
         }
     }
 
@@ -427,15 +432,76 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
      *
      * @return the internal view data or {@code null} if none
      */
-    public String getInternalViewData() {
-        return m_internalViewData;
+    public String getViewData() {
+        return m_viewData.get();
     }
 
     /**
-     * @return the current settings of this node model
+     * TODO
      */
-    public JsonNodeSettings getSettings() {
-        return m_settings.get();
+    public DataServiceProxy getDataServiceProxy() {
+        if (m_nodeViewProxy == null) {
+            m_nodeViewProxy = m_proxyProvider.getNodeViewProxy();
+            m_dataServiceProxy = m_nodeViewProxy.getDataServiceProxy(m_settings.get(), m_internalPortObjects,
+                m_viewData.get(), this, this);
+        }
+        return m_dataServiceProxy;
+    }
+
+    /**
+     * TODO
+     *
+     * @throws Exception
+     */
+    public void disposeDataServiceProxy() throws Exception {
+        if (m_nodeViewProxy != null) {
+            m_nodeViewProxy.close();
+            m_nodeViewProxy = null;
+        }
+        if (m_dataServiceProxy != null) {
+            m_dataServiceProxy.close();
+            m_dataServiceProxy = null;
+        }
+    }
+
+    private static class ViewData {
+
+        private final String m_data;
+
+        private boolean m_doPersist;
+
+        ViewData(final String data) {
+            m_data = data;
+            m_doPersist = false;
+        }
+
+        String get() {
+            return m_data;
+        }
+
+        void markToPersist() {
+            m_doPersist = true;
+        }
+
+        void save(final File nodeInternDir) throws IOException {
+            if (m_doPersist) {
+                try (GZIPOutputStream gzs = new GZIPOutputStream(
+                    new BufferedOutputStream(new FileOutputStream(new File(nodeInternDir, "internal_view_data.gz"))))) {
+                    gzs.write(m_data.getBytes(StandardCharsets.UTF_8));
+                }
+            }
+        }
+
+        static ViewData load(final File nodeInternDir) throws FileNotFoundException, IOException {
+            File f = new File(nodeInternDir, "internal_view_data.gz");
+            if (f.exists()) {
+                try (InputStream in = new GZIPInputStream(new BufferedInputStream(new FileInputStream(f)))) {
+                    return new ViewData(new String(in.readAllBytes(), StandardCharsets.UTF_8));
+                }
+            }
+            return null;
+        }
+
     }
 
 }

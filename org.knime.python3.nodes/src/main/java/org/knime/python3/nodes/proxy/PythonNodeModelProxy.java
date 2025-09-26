@@ -348,7 +348,7 @@ public interface PythonNodeModelProxy {
         String get_knime_home_dir(); // NOSONAR
 
         /**
-         * @return the internal view data of the node (see {@link DelegatingNodeModel#getInternalViewData()}
+         * @return the internal view data of the node (see {@link DelegatingNodeModel#getViewData()}
          */
         String get_internal_view_data(); // NOSONAR
 

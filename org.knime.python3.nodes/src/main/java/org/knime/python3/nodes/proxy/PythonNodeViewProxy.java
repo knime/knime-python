@@ -81,6 +81,13 @@ public interface PythonNodeViewProxy {
          */
         String handleJsonRpcRequest(String param);
 
+        /**
+         * TODO
+         *
+         * @return
+         */
+        String getViewData();
+
     }
 
     /**
@@ -124,7 +131,7 @@ public interface PythonNodeViewProxy {
     interface PythonViewContext extends PythonBaseContext, PythonToolContext {
 
         /**
-         * @return the internal view data of the node (see {@link DelegatingNodeModel#getInternalViewData()}
+         * @return the internal view data of the node (see {@link DelegatingNodeModel#getViewData()}
          */
         String get_internal_view_data();
 

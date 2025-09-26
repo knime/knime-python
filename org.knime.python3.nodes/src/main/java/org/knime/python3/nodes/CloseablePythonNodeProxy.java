@@ -552,7 +552,7 @@ final class CloseablePythonNodeProxy
 
             @Override
             public String get_internal_view_data() {
-                return ((DelegatingNodeModel)getNode().getNodeModel()).getInternalViewData();
+                return ((DelegatingNodeModel)getNode().getNodeModel()).getViewData();
             }
 
         };
@@ -924,7 +924,7 @@ final class CloseablePythonNodeProxy
 
     @Override
     public DataServiceProxy getDataServiceProxy(final JsonNodeSettings settings, final PortObject[] portObjects,
-        final String internalViewData, final PortMapProvider portMapProvider,
+        final String viewData, final PortMapProvider portMapProvider,
         final CredentialsProviderProxy credentialsProvider) {
 
         loadValidatedSettings(settings);
@@ -938,7 +938,7 @@ final class CloseablePythonNodeProxy
         var fileStoreSwitcher = FileStoreSwitcher.create(nnc);
         var exec = fileStoreSwitcher.createExecutionContext();
         var toolExecutor = new ToolExecutor(exec, nnc, m_tableManager);
-        var context = new DefaultViewContext(toolExecutor, portMapProvider, credentialsProvider, internalViewData);
+        var context = new DefaultViewContext(toolExecutor, portMapProvider, credentialsProvider, viewData);
 
         var fileStoresByKey = new HashMap<String, FileStore>();
         final var knimeToPythonConversionContext =
@@ -952,6 +952,11 @@ final class CloseablePythonNodeProxy
             @Override
             public String handleJsonRpcRequest(final String request) {
                 return pythonDataService.handleJsonRpcRequest(request);
+            }
+
+            @Override
+            public String getViewData() {
+                return pythonDataService.getViewData();
             }
 
             @Override
