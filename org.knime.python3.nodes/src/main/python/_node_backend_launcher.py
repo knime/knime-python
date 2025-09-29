@@ -424,7 +424,8 @@ class _JavaConfigContext(_JavaBaseContext):
 
 
 class _JsonRpcDataService:
-    def __init__(self, delegate):
+    def __init__(self, portTypeRegistry: "_PortTypeRegistry", delegate):
+        self._portTypeRegistry = portTypeRegistry
         self._delegate = delegate
 
     def handleJsonRpcRequest(self, request: str):
@@ -459,10 +460,39 @@ class _JsonRpcDataService:
 
         return json.dumps(response)
 
+    def getViewData(self) -> "_PythonViewData":
+        import json
+
+        view_data = self._delegate.get_view_data()
+        return _PythonViewData(
+            data=json.dumps(view_data["data"]),
+            ports=[
+                self._portTypeRegistry.table_from_python(port)
+                for port in view_data["ports"]
+            ],
+        )
+
     class Java:
         implements = [
             "org.knime.python3.nodes.proxy.PythonNodeViewProxy$PythonDataServiceProxy"
         ]
+
+
+class _PythonViewData:
+    def __init__(self, data: Dict[str, Any], ports: List[_PythonPortObject] = None):
+        self._data = data
+        self._ports = ports
+
+    class Java:
+        implements = [
+            "org.knime.python3.nodes.proxy.PythonNodeViewProxy$PythonDataServiceProxy$PythonViewData"
+        ]
+
+    def data(self) -> Dict[str, Any]:
+        return self._data
+
+    def ports(self) -> List[_PythonPortObject]:
+        return _to_java_list(self._ports)
 
 
 class _ViewContext(kn._BaseContext):
@@ -470,12 +500,27 @@ class _ViewContext(kn._BaseContext):
         super().__init__(java_ctx, flow_variables)
         self._tool_executor = _ToolExecutor(java_ctx, type_registry)
         self._execute_tool = self._tool_executor.execute_tool
+        self._type_registry = type_registry
 
     def get_input_port_map(self) -> Dict[str, List[int]]:
         return self._java_ctx.get_input_port_map()
 
-    def get_internal_view_data(self) -> str:
-        return self._java_ctx.get_internal_view_data()
+    def _get_view_data(self) -> dict:
+        view_data = self._java_ctx.get_view_data()
+        if view_data is None:
+            return None
+
+        dummy_port = kn.Port(kn.PortType.TABLE, name="dummy", description="dummy")
+        java_ports = view_data.ports()
+        ports = [
+            self._type_registry.port_object_to_python(
+                port,
+                dummy_port,
+                None,
+            )
+            for port in java_ports
+        ]
+        return {"data": json.loads(view_data.data()), "ports": ports}
 
 
 class _PortTypeRegistry:
@@ -1181,7 +1226,7 @@ class _PythonNodeProxy:
             ctx.get_input_port_map(), input_objects
         )
         data_service = self._node.get_data_service(ctx, *converted_input_objects)
-        return _JsonRpcDataService(data_service)
+        return _JsonRpcDataService(self._port_type_registry, data_service)
 
     def postprocess_configure_outputs(
         self, java_config_context: JavaClass, outputs: Optional[List]
@@ -1429,6 +1474,23 @@ class _ExecutionContext(kn.ExecutionContext):
         self._type_registry = type_registry
         self._tool_executor = _ToolExecutor(java_exec_context, type_registry)
         self._execute_tool = self._tool_executor.execute_tool
+
+    def _get_view_data(self) -> dict:
+        view_data = self._java_ctx.get_view_data()
+        if view_data is None:
+            return None
+
+        dummy_port = kn.Port(kn.PortType.TABLE, name="dummy", description="dummy")
+        java_ports = view_data.ports()
+        ports = [
+            self._type_registry.port_object_to_python(
+                port,
+                dummy_port,
+                None,
+            )
+            for port in java_ports
+        ]
+        return {"data": json.loads(view_data.data()), "ports": ports}
 
 
 class _KnimeNodeBackend(kg.EntryPoint, kn._KnimeNodeBackend):

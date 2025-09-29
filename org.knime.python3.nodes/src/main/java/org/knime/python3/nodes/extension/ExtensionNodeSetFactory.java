@@ -94,8 +94,6 @@ import org.knime.python3.nodes.dialog.DelegatingJsonSettingsDataService;
 import org.knime.python3.nodes.dialog.JsonFormsNodeDialog;
 import org.knime.python3.nodes.ports.PythonPortTypeRegistry;
 import org.knime.python3.nodes.proxy.NodeProxyProvider;
-import org.knime.python3.nodes.proxy.NodeViewProxy;
-import org.knime.python3.nodes.proxy.NodeViewProxy.DataServiceProxy;
 import org.knime.python3.views.HtmlFileNodeView;
 import org.knime.python3.views.HtmlFileNodeView.JsonRpcRequestHandler;
 
@@ -302,31 +300,14 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
                 Supplier<JsonRpcRequestHandler> dataServiceSupplier = () -> {
                     return new JsonRpcRequestHandler() {
 
-                        private NodeViewProxy m_nodeViewProxy;
-
-                        private DataServiceProxy m_dataServiceProxy;
-
                         @Override
                         public String handleRequest(final String jsonRpcRequest) {
-                            if (m_nodeViewProxy == null) {
-                                m_nodeViewProxy = m_proxyProvider.getNodeViewProxy();
-                                m_dataServiceProxy = m_nodeViewProxy.getDataServiceProxy(nodeModel.getSettings(),
-                                    nodeModel.getInternalPortObjects(), nodeModel.getInternalViewData(), nodeModel,
-                                    nodeModel);
-                            }
-                            return m_dataServiceProxy.handleJsonRpcRequest(jsonRpcRequest);
+                            return nodeModel.getDataServiceProxy().handleJsonRpcRequest(jsonRpcRequest);
                         }
 
                         @Override
                         public void close() throws Exception {
-                            if (m_nodeViewProxy != null) {
-                                m_nodeViewProxy.close();
-                                m_nodeViewProxy = null;
-                            }
-                            if (m_dataServiceProxy != null) {
-                                m_dataServiceProxy.close();
-                                m_dataServiceProxy = null;
-                            }
+                            nodeModel.disposeDataServiceProxy();
                         }
 
                     };
@@ -337,7 +318,7 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
                     .relativeHTMLPath(extensionNodeView.getRelativeHtmlPath()) //
                     .resources(viewResources) //
                     .initialDataSupplier(() -> {
-                        var data = nodeModel.getInternalViewData();
+                        var data = nodeModel.getFrontendViewData();
                         return data == null ? "" : data;
                     }).dataServiceSupplier(dataServiceSupplier) //
                     .reExecutable(nodeModel) //

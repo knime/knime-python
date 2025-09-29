@@ -55,6 +55,7 @@ import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortType;
+import org.knime.python3.nodes.DelegatingNodeModel.ViewData.BackendViewData;
 import org.knime.python3.views.PythonNodeViewStoragePath;
 
 /**
@@ -71,6 +72,7 @@ public interface NodeExecutionProxy extends NodeModelProxy {
      * @param credentialsProviderProxy for access to credentials
      * @param warningConsumer for settings warning messages
      * @param workflowPropertiesProxy to query location information about the current workflow
+     * @param viewData view data that might be needed during execution, or {@code null} if none
      * @return the result of the execution
      * @throws IOException if the data transfer failed
      * @throws CanceledExecutionException if the node execution is canceled
@@ -78,7 +80,8 @@ public interface NodeExecutionProxy extends NodeModelProxy {
      */
     ExecutionResult execute(final PortObject[] inData, final PortType[] outputPorts, final ExecutionContext exec,
         FlowVariablesProxy flowVarProxy, CredentialsProviderProxy credentialsProviderProxy,
-        WorkflowPropertiesProxy workflowPropertiesProxy, WarningConsumer warningConsumer) throws Exception;
+        WorkflowPropertiesProxy workflowPropertiesProxy, WarningConsumer warningConsumer, BackendViewData viewData)
+        throws Exception;
 
     /**
      * Encapsulates the result of an execute call.

@@ -890,13 +890,6 @@ class ExecutionContext(ConfigurationContext):
         """
         return self._java_ctx.get_knime_home_dir()
 
-    def get_internal_view_data(self) -> str:
-        """
-        Returns the internal view data for this node. I.e. data that updated when a node is
-        re-executed (~widget re-execution) and persisted with the node's 'internals'.
-        """
-        return self._java_ctx.get_internal_view_data()
-
 
 class PythonNode(ABC):
     """

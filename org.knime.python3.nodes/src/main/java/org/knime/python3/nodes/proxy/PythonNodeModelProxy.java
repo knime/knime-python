@@ -55,11 +55,12 @@ import java.util.Map;
 import org.knime.core.data.filestore.FileStore;
 import org.knime.core.table.schema.AnnotatedColumnarSchema;
 import org.knime.python3.arrow.PythonArrowDataSink;
-import org.knime.python3.nodes.DelegatingNodeModel;
+import org.knime.python3.nodes.DelegatingNodeModel.ViewData;
 import org.knime.python3.nodes.LogCallback;
 import org.knime.python3.nodes.callback.AuthCallback;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
+import org.knime.python3.nodes.proxy.PythonNodeViewProxy.PythonDataServiceProxy.PythonViewData;
 import org.knime.python3.views.PythonNodeViewSink;
 
 /**
@@ -348,9 +349,9 @@ public interface PythonNodeModelProxy {
         String get_knime_home_dir(); // NOSONAR
 
         /**
-         * @return the internal view data of the node (see {@link DelegatingNodeModel#getInternalViewData()}
+         * @return the view data of the node (see {@link ViewData})
          */
-        String get_internal_view_data(); // NOSONAR
+        PythonViewData get_view_data(); // NOSONAR
 
     }
 

@@ -49,6 +49,7 @@
 package org.knime.python3.nodes.proxy;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.nodes.DelegatingNodeModel;
@@ -58,6 +59,7 @@ import org.knime.python3.nodes.callback.FilestoreCallback;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
 import org.knime.python3.nodes.ports.TableSpecSerializationUtils;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy.PythonBaseContext;
+import org.knime.python3.nodes.proxy.PythonNodeViewProxy.PythonDataServiceProxy.PythonViewData;
 
 /**
  * Implemented in Python to provide a data service that is written in Python.
@@ -80,6 +82,20 @@ public interface PythonNodeViewProxy {
          * @return the data
          */
         String handleJsonRpcRequest(String param);
+
+        /**
+         * Gives access to the view data of the node to be stored with the node's internals.
+         *
+         * @return the view data on the python side
+         */
+        PythonViewData getViewData();
+
+        interface PythonViewData {
+
+            String data();
+
+            List<PythonPortObject> ports();
+        }
 
     }
 
@@ -124,9 +140,9 @@ public interface PythonNodeViewProxy {
     interface PythonViewContext extends PythonBaseContext, PythonToolContext {
 
         /**
-         * @return the internal view data of the node (see {@link DelegatingNodeModel#getInternalViewData()}
+         * @return the view data of the node (see {@link DelegatingNodeModel#getViewData()}
          */
-        String get_internal_view_data();
+        PythonViewData get_view_data();
 
     }
 

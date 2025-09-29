@@ -51,6 +51,7 @@ package org.knime.python3.nodes.proxy;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.util.asynclose.AsynchronousCloseable;
 import org.knime.python3.nodes.DelegatingNodeModel;
+import org.knime.python3.nodes.DelegatingNodeModel.ViewData.BackendViewData;
 import org.knime.python3.nodes.proxy.PythonNodeViewProxy.PythonViewContext;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy.CredentialsProviderProxy;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy.PortMapProvider;
@@ -70,6 +71,8 @@ public interface NodeViewProxy extends AsynchronousCloseable<RuntimeException> {
      */
     interface DataServiceProxy extends AutoCloseable {
         String handleJsonRpcRequest(String param);
+
+        BackendViewData getViewData();
     }
 
     /**
@@ -85,16 +88,14 @@ public interface NodeViewProxy extends AsynchronousCloseable<RuntimeException> {
      *
      * @param settings of the node
      * @param portObjects provided as input to the node
-     * @param internalViewData the internal view data of the node (see {@link DelegatingNodeModel#getInternalViewData()}
-     *            which is being made available to the python-side via the {@link PythonViewContext}; {@code null} if
-     *            there is no view data
+     * @param viewData the view data of the node (see {@link DelegatingNodeModel#getViewData()} which is being made
+     *            available to the python-side via the {@link PythonViewContext}; {@code null} if there is no view data
      * @param portMapProvider provides the map from port groups to their indices
      * @param credentialsProvider provides access to credentials
      *
      * @return a data service that is powered by a remote proxy
      */
-    DataServiceProxy getDataServiceProxy(JsonNodeSettings settings, final PortObject[] portObjects,
-        String internalViewData, final PortMapProvider portMapProvider,
-        final CredentialsProviderProxy credentialsProvider);
+    DataServiceProxy getDataServiceProxy(JsonNodeSettings settings, final PortObject[] portObjects, BackendViewData viewData,
+        final PortMapProvider portMapProvider, final CredentialsProviderProxy credentialsProvider);
 
 }

@@ -99,6 +99,7 @@ import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.arrow.PythonArrowDataUtils;
 import org.knime.python3.arrow.PythonArrowTableConverter;
 import org.knime.python3.nodes.CloseablePythonNodeProxyFactory.CloseableGatewayWithAttachments;
+import org.knime.python3.nodes.DelegatingNodeModel.ViewData.BackendViewData;
 import org.knime.python3.nodes.callback.AuthCallbackUtils;
 import org.knime.python3.nodes.extension.ExtensionNode;
 import org.knime.python3.nodes.ports.PythonPortObjects.PurePythonTablePortObject;
@@ -117,6 +118,7 @@ import org.knime.python3.nodes.proxy.PythonNodeModelProxy.DialogCallback;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy.ExpiryDate;
 import org.knime.python3.nodes.proxy.PythonNodeModelProxy.FileStoreBasedFile;
 import org.knime.python3.nodes.proxy.PythonNodeProxy;
+import org.knime.python3.nodes.proxy.PythonNodeViewProxy.PythonDataServiceProxy.PythonViewData;
 import org.knime.python3.nodes.proxy.model.NodeConfigurationProxy;
 import org.knime.python3.nodes.proxy.model.NodeExecutionProxy;
 import org.knime.python3.nodes.settings.JsonNodeSettings;
@@ -368,7 +370,7 @@ final class CloseablePythonNodeProxy
     public ExecutionResult execute(final PortObject[] inData, final PortType[] outputPortTypes,
         final ExecutionContext exec, final FlowVariablesProxy flowVariablesProxy,
         final CredentialsProviderProxy credentialsProviderProxy, final WorkflowPropertiesProxy workflowPropertiesProxy,
-        final WarningConsumer warningConsumer) throws Exception {
+        final WarningConsumer warningConsumer, final BackendViewData viewData) throws Exception {
         initTableManager();
         Map<String, FileStore> fileStoresByKey = new HashMap<>();
         final var executionResult = new PythonExecutionResult();
@@ -551,8 +553,8 @@ final class CloseablePythonNodeProxy
             }
 
             @Override
-            public String get_internal_view_data() {
-                return ((DelegatingNodeModel)getNode().getNodeModel()).getInternalViewData();
+            public PythonViewData get_view_data() {
+                return toPythonViewData(viewData, fileStoresByKey, exec);
             }
 
         };
@@ -924,7 +926,7 @@ final class CloseablePythonNodeProxy
 
     @Override
     public DataServiceProxy getDataServiceProxy(final JsonNodeSettings settings, final PortObject[] portObjects,
-        final String internalViewData, final PortMapProvider portMapProvider,
+        final BackendViewData viewData, final PortMapProvider portMapProvider,
         final CredentialsProviderProxy credentialsProvider) {
 
         loadValidatedSettings(settings);
@@ -938,9 +940,11 @@ final class CloseablePythonNodeProxy
         var fileStoreSwitcher = FileStoreSwitcher.create(nnc);
         var exec = fileStoreSwitcher.createExecutionContext();
         var toolExecutor = new ToolExecutor(exec, nnc, m_tableManager);
-        var context = new DefaultViewContext(toolExecutor, portMapProvider, credentialsProvider, internalViewData);
 
         var fileStoresByKey = new HashMap<String, FileStore>();
+        var context = new DefaultViewContext(toolExecutor, portMapProvider, credentialsProvider,
+            toPythonViewData(viewData, fileStoresByKey, exec));
+
         final var knimeToPythonConversionContext =
             new PortObjectConversionContext(fileStoresByKey, m_tableManager, exec);
         var pythonPortObjects =
@@ -952,6 +956,17 @@ final class CloseablePythonNodeProxy
             @Override
             public String handleJsonRpcRequest(final String request) {
                 return pythonDataService.handleJsonRpcRequest(request);
+            }
+
+            @Override
+            public BackendViewData getViewData() {
+                var viewData = pythonDataService.getViewData();
+                var conversionContext = new PortObjectConversionContext(fileStoresByKey, m_tableManager, exec);
+                var ports = viewData.ports();
+                var portObjects = viewData.ports().stream() //
+                    .map(po -> PythonPortTypeRegistry.convertPortObjectFromPython(po, conversionContext))//
+                    .toArray(PortObject[]::new);
+                return new BackendViewData(viewData.data(), portObjects);
             }
 
             @Override
@@ -989,6 +1004,33 @@ final class CloseablePythonNodeProxy
             temporaryFileStoreHandler.clearAndDispose();
             nodeContainer.getNode().setFileStoreHandler(originalFileStoreHandler);
         }
+    }
+
+    private PythonViewData toPythonViewData(final BackendViewData viewData,
+        final Map<String, FileStore> fileStoresByKey, final ExecutionContext exec) {
+        if (viewData == null) {
+            return null;
+        }
+        var data = viewData.data();
+        var ports = viewData.ports();
+        var conversionContext = new PortObjectConversionContext(fileStoresByKey, m_tableManager, exec);
+        var pyPorts = Stream.of(ports)//
+            .map(po -> PythonPortTypeRegistry.convertPortObjectToPython(po, conversionContext))//
+            .toList();
+
+        return new PythonViewData() {
+
+            @Override
+            public String data() {
+                return data;
+            }
+
+            @Override
+            public List<PythonPortObject> ports() {
+                return pyPorts;
+            }
+
+        };
     }
 
 }

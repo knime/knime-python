@@ -52,9 +52,11 @@ import java.util.List;
 import java.util.Map;
 
 import org.knime.core.node.workflow.ICredentials;
+import org.knime.python3.nodes.DelegatingNodeModel.ViewData.BackendViewData;
 import org.knime.python3.nodes.ports.PythonPortObjects.PurePythonTablePortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
 import org.knime.python3.nodes.proxy.PythonNodeViewProxy;
+import org.knime.python3.nodes.proxy.PythonNodeViewProxy.PythonDataServiceProxy.PythonViewData;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy.CredentialsProviderProxy;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy.PortMapProvider;
 
@@ -73,14 +75,14 @@ final class DefaultViewContext implements PythonNodeViewProxy.PythonViewContext 
 
     private final CredentialsProviderProxy m_credentialsProvider;
 
-    private final String m_internalViewData;
+    private final PythonViewData m_viewData;
 
     DefaultViewContext(final ToolExecutor toolExecutor, final PortMapProvider portMapProvider,
-        final CredentialsProviderProxy credentialsProvider, final String internalViewData) {
+        final CredentialsProviderProxy credentialsProvider, final PythonViewData viewData) {
         m_toolExecutor = toolExecutor;
         m_portMapProvider = portMapProvider;
         m_credentialsProvider = credentialsProvider;
-        m_internalViewData = internalViewData;
+        m_viewData = viewData;
     }
 
     @Override
@@ -112,7 +114,7 @@ final class DefaultViewContext implements PythonNodeViewProxy.PythonViewContext 
     }
 
     @Override
-    public String get_internal_view_data() {
-        return m_internalViewData;
+    public PythonViewData get_view_data() {
+        return m_viewData;
     }
 }

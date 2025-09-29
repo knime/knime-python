@@ -50,12 +50,13 @@ package org.knime.python3.nodes;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
@@ -64,6 +65,7 @@ import java.util.function.Supplier;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
@@ -84,13 +86,17 @@ import org.knime.core.node.workflow.VariableTypeRegistry;
 import org.knime.core.node.workflow.virtual.AbstractPortObjectRepositoryNodeModel;
 import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
 import org.knime.python3.nodes.proxy.NodeProxy;
+import org.knime.python3.nodes.proxy.NodeProxyProvider;
+import org.knime.python3.nodes.proxy.NodeViewProxy;
+import org.knime.python3.nodes.proxy.NodeViewProxy.DataServiceProxy;
+import org.knime.python3.nodes.proxy.PythonNodeModelProxy.PythonExecutionContext;
+import org.knime.python3.nodes.proxy.PythonNodeViewProxy.PythonViewContext;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy.CredentialsProviderProxy;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy.FlowVariablesProxy;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy.PortMapProvider;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy.WarningConsumer;
 import org.knime.python3.nodes.proxy.model.NodeModelProxy.WorkflowPropertiesProxy;
-import org.knime.python3.nodes.proxy.model.NodeModelProxyProvider;
 import org.knime.python3.nodes.settings.JsonNodeSettings;
 import org.knime.python3.nodes.settings.JsonNodeSettingsSchema;
 import org.knime.python3.utils.FlowVariableUtils;
@@ -108,7 +114,11 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(DelegatingNodeModel.class);
 
-    private final NodeModelProxyProvider m_proxyProvider;
+    private final NodeProxyProvider m_proxyProvider;
+
+    private NodeViewProxy m_nodeViewProxy;
+
+    private DataServiceProxy m_dataServiceProxy;
 
     /**
      * We're hiding the JsonNodeSettings behind a class for lazy initialization to prevent accidental wrong usage. The
@@ -158,11 +168,11 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
 
     private Map<String, int[]> m_outputPortMap;
 
-    private PortObject[] m_internalPortObjects;
+    private PortObject[] m_internalInputPortObjects;
 
     private final boolean m_shouldHoldOutputs;
 
-    private String m_internalViewData;
+    private ViewData m_viewData;
 
     /**
      * Constructor with port maps
@@ -176,7 +186,7 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
      * @param shouldHoldOutputs indicates if the execution outputs should be saved as internal data to be used by a node
      *            view
      */
-    public DelegatingNodeModel(final NodeModelProxyProvider proxyProvider, final PortType[] inputPorts,
+    public DelegatingNodeModel(final NodeProxyProvider proxyProvider, final PortType[] inputPorts,
         final PortType[] outputPorts, final String extensionVersion, final Map<String, int[]> inputPortMap,
         final Map<String, int[]> outputPortMap, final boolean shouldHoldOutputs) {
         super(inputPorts, outputPorts);
@@ -202,7 +212,10 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
 
     @Override
     public void preReExecute(final String data, final boolean isNewDefault) {
-        m_internalViewData = data;
+        if (m_viewData != null) {
+            m_viewData.setFrontendData(data);
+            m_viewData.markToPersist();
+        }
     }
 
     @Override
@@ -212,13 +225,18 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
             m_view.get().deleteIfExists();
         }
 
+        if (m_viewData != null && !m_viewData.isMarkedToPersist()) {
+            m_viewData = null;
+        }
+
         return runWithProxy(() -> m_proxyProvider.getExecutionProxy(inData), node -> {
             node.loadValidatedSettings(m_settings.get());
-            var result = node.execute(inData, m_outputPorts, exec, this, this, this, this);
+            var result = node.execute(inData, m_outputPorts, exec, this, this, this, this,
+                m_viewData == null ? null : m_viewData.getBackendData());
             m_settings.set(node.getSettings(m_extensionVersion));
             m_view = result.getView();
             if (m_shouldHoldOutputs) {
-                m_internalPortObjects = inData;
+                m_internalInputPortObjects = inData;
             }
             return result.getPortObjects();
         });
@@ -297,22 +315,22 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
 
     @Override
     protected void reset() {
+        if (m_dataServiceProxy != null) {
+            m_viewData = new ViewData();
+            m_viewData.setBackendData(m_dataServiceProxy.getViewData());
+        } else {
+            m_viewData = null;
+        }
         m_proxyProvider.cleanup();
         m_view = Optional.empty();
         m_proxyShutdownTracker.waitForAllToClose();
-        m_internalViewData = null;
     }
 
     @Override
     protected void loadInternals(final File nodeInternDir, final ExecutionMonitor exec)
         throws IOException, CanceledExecutionException {
         m_view = PythonNodeViewStoragePath.loadFromInternals(nodeInternDir.toPath());
-        File f = new File(nodeInternDir, "internal_view_data.gz");
-        if (f.exists()) {
-            try (InputStream in = new GZIPInputStream(new BufferedInputStream(new FileInputStream(f)))) {
-                m_internalViewData = new String(in.readAllBytes(), StandardCharsets.UTF_8);
-            }
-        }
+        m_viewData = ViewData.load(nodeInternDir);
     }
 
     @Override
@@ -322,11 +340,8 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
             // Copy the view from the temporary file to the persisted internals directory
             m_view.get().saveToInternals(nodeInternDir.toPath());
         }
-        if (m_internalViewData != null) {
-            try (GZIPOutputStream gzs = new GZIPOutputStream(
-                new BufferedOutputStream(new FileOutputStream(new File(nodeInternDir, "internal_view_data.gz"))))) {
-                gzs.write(m_internalViewData.getBytes(StandardCharsets.UTF_8));
-            }
+        if (m_viewData != null) {
+            m_viewData.save(nodeInternDir);
         }
     }
 
@@ -412,30 +427,154 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
 
     @Override
     public void setInternalPortObjects(final PortObject[] portObjects) {
-        m_internalPortObjects = portObjects;
+        if (m_viewData == null) {
+            m_internalInputPortObjects = portObjects;
+        } else {
+            var viewDataPortObjects = m_viewData.getBackendData().ports;
+            m_internalInputPortObjects = new PortObject[getNrInPorts()];
+            assert m_internalInputPortObjects.length + viewDataPortObjects.length == portObjects.length;
+            System.arraycopy(portObjects, 0, m_internalInputPortObjects, 0, m_internalInputPortObjects.length);
+            System.arraycopy(portObjects, m_internalInputPortObjects.length, viewDataPortObjects, 0,
+                viewDataPortObjects.length);
+        }
     }
 
     @Override
     public PortObject[] getInternalPortObjects() {
-        return m_internalPortObjects;
+        if (m_viewData == null) {
+            return m_internalInputPortObjects;
+        } else {
+            return ArrayUtils.addAll(m_internalInputPortObjects, m_viewData.getBackendData().ports);
+        }
     }
 
     /**
-     * Returns the internal view data that is updated via {@link #preReExecute(String, boolean)} which is being called
+     * Returns the frontend view data that is updated via {@link #preReExecute(String, boolean)} which is being called
      * when the node is re-executed (~widget re-execution) with new view data. The view data is persisted as 'internal
      * data' view data is persisted as node 'internals'.
      *
-     * @return the internal view data or {@code null} if none
+     * @return the frontend view data
      */
-    public String getInternalViewData() {
-        return m_internalViewData;
+    public String getFrontendViewData() {
+        return m_viewData == null ? null : m_viewData.getFrontendData();
     }
 
     /**
-     * @return the current settings of this node model
+     * @return the data service proxy instance
      */
-    public JsonNodeSettings getSettings() {
-        return m_settings.get();
+    public DataServiceProxy getDataServiceProxy() {
+        if (m_nodeViewProxy == null) {
+            m_nodeViewProxy = m_proxyProvider.getNodeViewProxy();
+            m_dataServiceProxy = m_nodeViewProxy.getDataServiceProxy(m_settings.get(), m_internalInputPortObjects,
+                m_viewData == null ? null : m_viewData.getBackendData(), this, this);
+        }
+        return m_dataServiceProxy;
+    }
+
+    /**
+     * Disposes the data service proxy and associated resources.
+     *
+     * @throws Exception
+     */
+    public void disposeDataServiceProxy() throws Exception {
+        if (m_nodeViewProxy != null) {
+            m_nodeViewProxy.close();
+            m_nodeViewProxy = null;
+        }
+        if (m_dataServiceProxy != null) {
+            m_dataServiceProxy.close();
+            m_dataServiceProxy = null;
+        }
+    }
+
+    /**
+     * Encapsulates the view data that is persisted with the node internals. The view data consists of two parts:
+     * <ul>
+     * <li>the frontend data: received from the frontend via {@link DelegatingNodeModel#preReExecute(String, boolean)}
+     * on node re-execution; served back to the frontend via the ui-extension's 'initial data'</li>
+     * <li>the backend data: fetched from python on {@link DelegatingNodeModel#reset()} via
+     * {@link DataServiceProxy#getViewData()}; served back to python via {@link PythonViewContext#get_view_data()} (for
+     * the view's data service) and via {@link PythonExecutionContext#get_view_data()} (for the node re-execution)</li>
+     */
+    public static class ViewData {
+
+        private BackendViewData m_backendData;
+
+        private String m_frontendData;
+
+        private boolean m_doPersist = false;
+
+        private void setFrontendData(final String frontendData) {
+            m_frontendData = frontendData;
+        }
+
+        private ViewData() {
+            //
+        }
+
+        private ViewData(final String frontendData, final BackendViewData pythonData) {
+            setFrontendData(frontendData);
+            setBackendData(pythonData);
+            m_doPersist = true;
+        }
+
+        /**
+         * @return the view data to be provided to the frontend
+         */
+        private String getFrontendData() {
+            return m_frontendData;
+        }
+
+        private void setBackendData(final BackendViewData backendData) {
+            m_backendData = backendData;
+        }
+
+        /**
+         * @return the view data to be provided to the backend (python)
+         */
+        BackendViewData getBackendData() {
+            return m_backendData;
+        }
+
+        private void markToPersist() {
+            m_doPersist = true;
+        }
+
+        private boolean isMarkedToPersist() {
+            return m_doPersist;
+        }
+
+        private void save(final File nodeInternDir) throws IOException {
+            if (m_doPersist) {
+                try (DataOutputStream out = new DataOutputStream(new GZIPOutputStream(new BufferedOutputStream(
+                    new FileOutputStream(new File(nodeInternDir, "internal_view_data.gz")))))) {
+                    out.writeUTF(m_frontendData);
+                    out.writeUTF(m_backendData.data());
+                    out.writeInt(m_backendData.ports.length);
+                }
+            }
+        }
+
+        private static ViewData load(final File nodeInternDir) throws FileNotFoundException, IOException {
+            File f = new File(nodeInternDir, "internal_view_data.gz");
+            if (f.exists()) {
+                try (DataInputStream in =
+                    new DataInputStream(new GZIPInputStream(new BufferedInputStream(new FileInputStream(f))))) {
+                    return new ViewData(in.readUTF(), new BackendViewData(in.readUTF(), new PortObject[in.readInt()]));
+                }
+            }
+            return null;
+        }
+
+        /**
+         * The backend view data fetch from and provided to python.
+         *
+         * @param data any data that can be serialized as a string
+         * @param ports the port objects to be persisted with the view data
+         */
+        public record BackendViewData(String data, PortObject[] ports) {
+        }
+
     }
 
 }
