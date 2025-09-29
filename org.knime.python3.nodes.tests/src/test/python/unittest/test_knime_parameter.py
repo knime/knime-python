@@ -1,4 +1,5 @@
 import unittest
+import re
 
 import knime.api.schema as ks
 import knime.extension.nodes as kn
@@ -1137,6 +1138,457 @@ class ParameterizedWithEnumStyles:
         TestEnumOptions.FOO,
         TestEnumOptions,
     )
+
+
+class ParameterizedDynamicChoices:
+    """Helper parameterized class for dynamic StringParameter choice tests."""
+
+    @staticmethod
+    def _choices_rich(ctx):
+        return [
+            kp.StringParameter.Choice("A", "Alpha", "First letter"),
+            kp.StringParameter.Choice("B", "Beta"),
+            "GAMMA",
+        ]
+
+    @staticmethod
+    def _choices_plain(ctx):
+        return ["X", "Y"]
+
+    @staticmethod
+    def _choices_auto(ctx):
+        return [kp.StringParameter.Choice("ONE", "One", "The first"), "TWO"]
+
+    param_with_desc = kp.StringParameter(
+        label="Letters",
+        description="Pick a letter.",
+        default_value="A",
+        # pass underlying function object of staticmethod so it is callable
+        choices=_choices_rich.__func__,
+    )
+    param_plain = kp.StringParameter(
+        label="Plain",
+        description="Plain choices.",
+        default_value="X",
+        choices=_choices_plain.__func__,
+    )
+    param_auto = kp.StringParameter(
+        label="Auto",
+        description="Auto default.",
+        default_value=None,
+        choices=_choices_auto.__func__,
+    )
+
+
+class TestStringParameterDynamicChoices(unittest.TestCase):
+    def test_schema_contains_oneOf_and_descriptions(self):
+        obj = ParameterizedDynamicChoices()
+        # provide dialog creation context so dynamic choices callable can use it if needed
+        schema = kp.extract_schema(
+            obj, dialog_creation_context=DummyDialogCreationContext()
+        )
+        s = schema["properties"]["model"]["properties"]["param_with_desc"]
+        self.assertIn("oneOf", s)
+        values = {entry["const"]: entry["title"] for entry in s["oneOf"]}
+        self.assertEqual(values, {"A": "Alpha", "B": "Beta", "GAMMA": "GAMMA"})
+        desc = s["description"]
+        self.assertIn("**Available options:**", desc)
+        # Bullet list style (no table)
+        self.assertIn("- Alpha: First letter", desc)
+        # Undescribed choices appear without colon/description
+        self.assertRegex(desc, r"^- Beta$|\n- Beta\n", re.MULTILINE)
+        self.assertRegex(desc, r"^- GAMMA$|\n- GAMMA\n", re.MULTILINE)
+
+    def test_no_options_section_when_no_descriptions(self):
+        obj = ParameterizedDynamicChoices()
+        schema = kp.extract_schema(
+            obj, dialog_creation_context=DummyDialogCreationContext()
+        )
+        s = schema["properties"]["model"]["properties"]["param_plain"]
+        self.assertIn("oneOf", s)
+        # No descriptions among choices -> section should be omitted
+        self.assertNotIn("**Available options:**", s["description"])
+
+    def test_default_auto_set(self):
+        obj = ParameterizedDynamicChoices()
+        kp.extract_schema(obj, dialog_creation_context=DummyDialogCreationContext())
+        # descriptor default adjusted
+        self.assertEqual(ParameterizedDynamicChoices.param_auto._default_value, "ONE")
+
+    def test_invalid_value_after_schema_extraction(self):
+        obj = ParameterizedDynamicChoices()
+        # Build schema (previously added existence validator). After policy change
+        # invalid assignments are allowed and no automatic membership validation occurs.
+        kp.extract_schema(obj, dialog_creation_context=DummyDialogCreationContext())
+        # Assign an invalid value and verify it is simply stored.
+        obj.param_with_desc = "INVALID"
+        self.assertEqual(obj.param_with_desc, "INVALID")
+
+    def test_empty_choices_list(self):
+        """Test StringParameter with empty dynamic choices."""
+
+        def empty_choices(ctx):
+            return []
+
+        param = kp.StringParameter(
+            label="Empty",
+            description="No choices available.",
+            choices=empty_choices,
+        )
+
+        class TestObj:
+            empty_param = param
+
+        obj = TestObj()
+        schema = kp.extract_schema(
+            obj, dialog_creation_context=DummyDialogCreationContext()
+        )
+        s = schema["properties"]["model"]["properties"]["empty_param"]
+
+        # Empty choices should fall back to plain string type (no oneOf)
+        self.assertEqual(s["type"], "string")
+        self.assertNotIn("oneOf", s)
+        # Should use dropDown with placeholder UI format (not placeholder format)
+        ui_schema = kp.extract_ui_schema(obj, DummyDialogCreationContext())
+        control = next(
+            el
+            for el in ui_schema["elements"]
+            if el["scope"] == "#/properties/model/properties/empty_param"
+        )
+        self.assertEqual(control["options"]["format"], "dropDown")
+        self.assertEqual(control["options"]["placeholder"], "No values present")
+
+    def test_duplicate_choice_ids_rejected(self):
+        """Test that duplicate choice IDs raise ValueError during normalization."""
+
+        def duplicate_choices(ctx):
+            return [
+                kp.StringParameter.Choice("A", "First A"),
+                kp.StringParameter.Choice("A", "Second A"),  # duplicate ID
+            ]
+
+        param = kp.StringParameter(
+            label="Duplicates",
+            description="Should fail normalization.",
+            choices=duplicate_choices,
+        )
+
+        class TestObj:
+            dup_param = param
+
+        obj = TestObj()
+        with self.assertRaises(ValueError) as cm:
+            kp.extract_schema(obj, dialog_creation_context=DummyDialogCreationContext())
+        self.assertIn("Duplicate choice id", str(cm.exception))
+
+    def test_many_choices_use_string_ui(self):
+        """Test that >4 choices use string (dropdown) UI format."""
+
+        def many_choices(ctx):
+            return [f"choice_{i}" for i in range(6)]  # 6 choices > 4
+
+        param = kp.StringParameter(
+            label="Many",
+            description="Many choices should use dropdown.",
+            choices=many_choices,
+        )
+
+        class TestObj:
+            many_param = param
+
+        obj = TestObj()
+        ui_schema = kp.extract_ui_schema(obj, DummyDialogCreationContext())
+        control = next(
+            el
+            for el in ui_schema["elements"]
+            if el["scope"] == "#/properties/model/properties/many_param"
+        )
+        self.assertEqual(control["options"]["format"], "string")
+
+    def test_mixed_choice_types_normalized(self):
+        """Test that mix of strings and Choice objects are normalized properly."""
+
+        def mixed_choices(ctx):
+            return [
+                "plain_string",
+                kp.StringParameter.Choice("rich", "Rich Choice", "Has description"),
+                kp.StringParameter.Choice("rich_no_desc", "Rich No Desc"),
+            ]
+
+        param = kp.StringParameter(
+            label="Mixed",
+            description="Mixed choice types.",
+            choices=mixed_choices,
+        )
+
+        class TestObj:
+            mixed_param = param
+
+        obj = TestObj()
+        schema = kp.extract_schema(
+            obj, dialog_creation_context=DummyDialogCreationContext()
+        )
+        s = schema["properties"]["model"]["properties"]["mixed_param"]
+
+        # Verify all are normalized to oneOf with const/title
+        values = {entry["const"]: entry["title"] for entry in s["oneOf"]}
+        expected = {
+            "plain_string": "plain_string",
+            "rich": "Rich Choice",
+            "rich_no_desc": "Rich No Desc",
+        }
+        self.assertEqual(values, expected)
+
+        # Should have description section for the one choice with description
+        self.assertIn("**Available options:**", s["description"])
+        self.assertIn("- Rich Choice: Has description", s["description"])
+
+    def test_context_dependent_choices(self):
+        """Test that choices callable receives DialogCreationContext."""
+
+        def context_aware_choices(ctx):
+            # Use context to determine choices (mock credential names)
+            if hasattr(ctx, "_java_ctx"):
+                return ["cred1", "cred2", "cred3"]
+            return ["fallback"]
+
+        param = kp.StringParameter(
+            label="Context",
+            description="Uses context for choices.",
+            choices=context_aware_choices,
+        )
+
+        class TestObj:
+            context_param = param
+
+        obj = TestObj()
+        schema = kp.extract_schema(
+            obj, dialog_creation_context=DummyDialogCreationContext()
+        )
+        s = schema["properties"]["model"]["properties"]["context_param"]
+
+        # Should get context-aware choices
+        values = [entry["const"] for entry in s["oneOf"]]
+        self.assertEqual(values, ["cred1", "cred2", "cred3"])
+
+    def test_default_auto_selection_with_callable_default(self):
+        """Test that callable default_value is not overridden by auto-selection."""
+
+        def auto_choices(ctx):
+            return ["first", "second", "third"]
+
+        def callable_default():
+            return "second"
+
+        param = kp.StringParameter(
+            label="Callable Default",
+            description="Has callable default.",
+            default_value=callable_default,
+            choices=auto_choices,
+        )
+
+        class TestObj:
+            callable_default_param = param
+
+        obj = TestObj()
+        kp.extract_schema(obj, dialog_creation_context=DummyDialogCreationContext())
+
+        # Should NOT auto-select first choice since default is callable
+        self.assertEqual(
+            TestObj.callable_default_param._default_value, callable_default
+        )
+
+    def test_description_aggregation_when_base_doc_empty(self):
+        """Ensure aggregation works when original description is empty/None."""
+
+        def rich(ctx):
+            return [
+                kp.StringParameter.Choice("X", "Ex", "Explained"),
+                kp.StringParameter.Choice("Y", "Why"),
+            ]
+
+        param = kp.StringParameter(
+            label=None,
+            description=None,  # base_doc empty branch
+            choices=rich,
+        )
+
+        class AggregationObj:
+            agg = param
+
+        schema = kp.extract_schema(
+            AggregationObj(), dialog_creation_context=DummyDialogCreationContext()
+        )
+        s = schema["properties"]["model"]["properties"]["agg"]
+        self.assertIn("**Available options:**", s["description"])
+        self.assertIn("- Ex: Explained", s["description"])
+
+    def test_invalid_value_allowed_after_repeated_schema_extraction(self):
+        """Ensure repeated schema extraction does not introduce implicit validators.
+
+        After removal of automatic existence validation, assigning a value that is
+        not among dynamic choices must remain possible without raising errors,
+        even after multiple schema extraction calls.
+        """
+        obj = ParameterizedDynamicChoices()
+        # First extraction
+        kp.extract_schema(obj, dialog_creation_context=DummyDialogCreationContext())
+        obj.param_with_desc = "NOTVALID"
+        self.assertEqual(obj.param_with_desc, "NOTVALID")
+        # Second extraction should not change previously assigned value nor add validation
+        kp.extract_schema(obj, dialog_creation_context=DummyDialogCreationContext())
+        obj.param_with_desc = "STILL_INVALID"
+        self.assertEqual(obj.param_with_desc, "STILL_INVALID")
+
+    def test_enum_small_also_uses_string_format(self):
+        """Static enum with <=4 entries now uses string format (radio removed)."""
+
+        class P:
+            sp = kp.StringParameter(enum=["a", "b", "c", "d"], default_value="a")
+
+        ui = kp.extract_ui_schema(P(), DummyDialogCreationContext())
+        ctrl = next(e for e in ui["elements"] if e["scope"].endswith("/sp"))
+        self.assertEqual(ctrl["options"]["format"], "string")
+
+    def test_enum_empty_dropdown_branch(self):
+        """Empty enum list triggers dropDown placeholder branch."""
+
+        class P:
+            sp = kp.StringParameter(enum=[], default_value="")
+
+        ui = kp.extract_ui_schema(P(), DummyDialogCreationContext())
+        ctrl = next(e for e in ui["elements"] if e["scope"].endswith("/sp"))
+        self.assertEqual(ctrl["options"]["format"], "dropDown")
+        self.assertEqual(ctrl["options"]["placeholder"], "No values present")
+
+    def test_choices_callable_wrong_return_type(self):
+        """choices() returning non-list raises TypeError."""
+
+        def bad(ctx):
+            return 123
+
+        class P:
+            sp = kp.StringParameter(choices=bad)
+
+        with self.assertRaises(TypeError):
+            kp.extract_schema(P(), dialog_creation_context=DummyDialogCreationContext())
+
+    def test_choices_element_wrong_type(self):
+        """choices() containing invalid element type raises TypeError."""
+
+        def bad(ctx):
+            return [42]
+
+        class P:
+            sp = kp.StringParameter(choices=bad)
+
+        with self.assertRaises(TypeError):
+            kp.extract_schema(P(), dialog_creation_context=DummyDialogCreationContext())
+
+    def test_auto_default_from_first_choice_when_empty_string(self):
+        """If default_value is empty string, first dynamic choice is selected."""
+
+        def ch(ctx):
+            return ["first", "second"]
+
+        class P:
+            sp = kp.StringParameter(default_value="", choices=ch)
+
+        kp.extract_schema(P(), dialog_creation_context=DummyDialogCreationContext())
+        self.assertEqual(P.sp._default_value, "first")
+
+
+class ParameterizedStaticChoices:
+    """Helper parameterized class for static sequence StringParameter tests."""
+
+    static_plain = kp.StringParameter(
+        label="Plain Static",
+        description="Static plain sequence",
+        default_value="A",
+        choices=["A", "B", "C"],
+    )
+
+    static_rich = kp.StringParameter(
+        label="Rich Static",
+        description="Static rich sequence",
+        default_value="x",
+        choices=[
+            kp.StringParameter.Choice("x", "Ex", "Letter ex"),
+            kp.StringParameter.Choice("y", "Why"),  # no description
+            "z",  # plain string, no description
+        ],
+    )
+
+    static_auto_default = kp.StringParameter(
+        label="Auto Static",
+        description="Auto default static sequence",
+        default_value=None,
+        choices=["d1", "d2"],
+    )
+
+    static_empty = kp.StringParameter(
+        label="Empty Static",
+        description="Empty static sequence",
+        choices=[],
+    )
+
+
+class TestStringParameterStaticChoices(unittest.TestCase):
+    def test_schema_plain_static(self):
+        obj = ParameterizedStaticChoices()
+        schema = kp.extract_schema(
+            obj, dialog_creation_context=DummyDialogCreationContext()
+        )
+        s = schema["properties"]["model"]["properties"]["static_plain"]
+        self.assertIn("oneOf", s)
+        values = {e["const"]: e["title"] for e in s["oneOf"]}
+        self.assertEqual(values, {"A": "A", "B": "B", "C": "C"})
+        # No descriptions provided -> section should NOT be added
+        self.assertNotIn("**Available options:**", s["description"])
+
+    def test_schema_rich_static_with_descriptions_table(self):
+        obj = ParameterizedStaticChoices()
+        schema = kp.extract_schema(
+            obj, dialog_creation_context=DummyDialogCreationContext()
+        )
+        s = schema["properties"]["model"]["properties"]["static_rich"]
+        self.assertIn("oneOf", s)
+        desc = s["description"]
+        # Bullet list should show described and undescribed entries
+        self.assertIn("**Available options:**", desc)
+        self.assertIn("- Ex: Letter ex", desc)
+        self.assertRegex(desc, r"^- Why$|\n- Why\n", re.MULTILINE)
+        self.assertRegex(desc, r"^- z$|\n- z\n", re.MULTILINE)
+
+    def test_auto_default_static(self):
+        obj = ParameterizedStaticChoices()
+        kp.extract_schema(obj, dialog_creation_context=DummyDialogCreationContext())
+        self.assertEqual(
+            ParameterizedStaticChoices.static_auto_default._default_value, "d1"
+        )
+
+    def test_empty_static_choices(self):
+        obj = ParameterizedStaticChoices()
+        schema = kp.extract_schema(
+            obj, dialog_creation_context=DummyDialogCreationContext()
+        )
+        s = schema["properties"]["model"]["properties"]["static_empty"]
+        # No oneOf because the list is empty -> string schema
+        self.assertEqual(s["type"], "string")
+        # UI schema placeholder check
+        ui = kp.extract_ui_schema(obj, DummyDialogCreationContext())
+        control = next(
+            e for e in ui["elements"] if e["scope"].endswith("/static_empty")
+        )
+        self.assertEqual(control["options"]["format"], "dropDown")
+        self.assertEqual(control["options"]["placeholder"], "No values present")
+
+    def test_invalid_assignment_static(self):
+        obj = ParameterizedStaticChoices()
+        kp.extract_schema(obj, dialog_creation_context=DummyDialogCreationContext())
+        # Previously raised ValueError; now invalid assignment is allowed.
+        obj.static_plain = "INVALID"
+        self.assertEqual(obj.static_plain, "INVALID")
 
 
 class DummyDialogCreationContext:
