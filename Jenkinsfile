@@ -179,7 +179,6 @@ def runPython3MultiversionWorkflowTestConfig(String environmentFile, String base
                         'knime-buildworkflows',
                         'knime-productivity-oss',
                         'knime-reporting',
-                        'knime-reporting2',
                         'knime-cef',
                         'knime-hubclient-sdk',
                     ],

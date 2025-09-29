@@ -39,14 +39,4 @@ if [[ -n $KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT ]]; then
 			exit 1
 		fi
 	fi
-
-	# Test debug_knime_yaml_list argument with test extension
-	test_extension="${WORKSPACE}/workflow-tests/test-extension/knime.yml"
-
-	# Run pixi install in the test extension directory
-	echo "Setting up pixi environment for test extension..."
-	cd "${WORKSPACE}/workflow-tests/test-extension"
-	/Users/jenkins/.pixi/bin/pixi install
-	cd "${WORKSPACE}"
-	echo "-Dknime.python.extension.debug_knime_yaml_list=${test_extension}" >> "${WORKSPACE}/workflow-tests/vmargs"
 fi

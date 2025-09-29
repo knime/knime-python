@@ -48,7 +48,6 @@
  */
 package org.knime.python3.nodes;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -80,9 +79,6 @@ final class PythonExtensionPreferences {
     private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonExtensionPreferences.class);
 
     private static final String PY_EXTENSIONS_YML_PROPERTY = "knime.python.extension.config";
-
-    private static final String PY_EXTENSIONS_DEBUG_KNIME_YAML_LIST_PROPERTY =
-        "knime.python.extension.debug_knime_yaml_list";
 
     static Stream<Path> getPathsToCustomExtensions() {
         return loadConfigs()//
@@ -123,17 +119,6 @@ final class PythonExtensionPreferences {
     }
 
     private static Stream<ExtensionConfig> loadConfigs() {
-        // First, try to load from the original config.yml approach
-        Stream<ExtensionConfig> configYmlStream = loadConfigsFromYml();
-
-        // Then, try to load from the new debug sources list approach
-        Stream<ExtensionConfig> debugKnimeYamlStream = loadConfigsFromDebugKnimeYamlList();
-
-        // Combine both streams
-        return Stream.concat(configYmlStream, debugKnimeYamlStream);
-    }
-
-    private static Stream<ExtensionConfig> loadConfigsFromYml() {
         var pathToYml = System.getProperty(PY_EXTENSIONS_YML_PROPERTY);
         if (pathToYml == null) {
             return Stream.empty();
@@ -147,25 +132,6 @@ final class PythonExtensionPreferences {
         }
     }
 
-    private static Stream<ExtensionConfig> loadConfigsFromDebugKnimeYamlList() {
-        var debugKnimeYamlPaths = System.getProperty(PY_EXTENSIONS_DEBUG_KNIME_YAML_LIST_PROPERTY);
-        if (debugKnimeYamlPaths == null) {
-            return Stream.empty();
-        } else {
-            return Stream.of(debugKnimeYamlPaths.split(File.pathSeparator)) // NOSONAR - pathSeparator is not a regex
-                .map(String::trim) //
-                .filter(path -> !path.isEmpty()) //
-                .flatMap(path -> {
-                    try {
-                        return Stream.of(loadConfigFromKnimeYaml(Path.of(path)));
-                    } catch (IOException ex) {
-                        LOGGER.error("Failed to read knime.yml file at " + path, ex);
-                        return Stream.empty();
-                    }
-                });
-        }
-    }
-
     private static Stream<ExtensionConfig> parseYmlFile(final Path pathToYml) throws IOException {
         try (var inputStream = Files.newInputStream(pathToYml)) {
             var yml = new Yaml();
@@ -174,86 +140,6 @@ final class PythonExtensionPreferences {
                 .map(PythonExtensionPreferences::mapToConfig)//
                 .filter(Objects::nonNull);
         }
-    }
-
-    private static ExtensionConfig loadConfigFromKnimeYaml(final Path pathToKnimeYaml) throws IOException {
-        // Use the shared KnimeYaml parser instead of duplicating logic
-        var knimeYaml = KnimeYaml.fromPath(pathToKnimeYaml);
-
-        var pixiEnvPath = knimeYaml.extensionPath().resolve(".pixi/envs/default").toAbsolutePath();
-
-        // Validate that the pixi environment exists and contains a valid Python installation
-        validatePixiEnvironment(pixiEnvPath, knimeYaml.getId());
-
-        return new ExtensionConfig( //
-            knimeYaml.getId(), //
-            knimeYaml.extensionPath().toString(), //
-            pixiEnvPath.toString(), //
-            null, // no python_executable for knime.yaml approach
-            true // assume debug_mode=true for knime.yaml approach
-        );
-    }
-
-    /**
-     * Validates that the pixi environment path exists and contains a valid Python installation.
-     *
-     * @param pixiEnvPath the path to the pixi environment
-     * @param extensionId the extension ID for error reporting
-     * @throws IOException if the environment is invalid or doesn't exist
-     */
-    private static void validatePixiEnvironment(final Path pixiEnvPath, final String extensionId) throws IOException {
-        LOGGER.debugWithFormat("Validating pixi environment for extension '%s' at path: %s", extensionId, pixiEnvPath);
-
-        if (!Files.exists(pixiEnvPath)) {
-            throw new IOException(String.format(
-                "Pixi environment not found for extension '%s' at path: %s. "
-                    + "Please ensure 'pixi install' has been run in the extension directory.",
-                extensionId, pixiEnvPath));
-        }
-
-        // Find the Python executable in the pixi environment
-        var pythonExecutable = findPixiPythonExecutable(pixiEnvPath);
-        if (pythonExecutable == null) {
-            throw new IOException(
-                String.format(
-                    "Python executable not found in pixi environment for extension '%s' at path: %s. "
-                        + "Expected to find python or python.exe in the environment directory.",
-                    extensionId, pixiEnvPath));
-        }
-
-        // Validate that the Python executable exists and is accessible
-        if (!Files.exists(pythonExecutable) || !Files.isExecutable(pythonExecutable)) {
-            throw new IOException(
-                String.format("Python executable not accessible in pixi environment for extension '%s': %s",
-                    extensionId, pythonExecutable));
-        }
-
-        LOGGER.debugWithFormat("Successfully validated pixi environment for extension '%s' at: %s with Python: %s",
-            extensionId, pixiEnvPath, pythonExecutable);
-    }
-
-    /**
-     * Finds the Python executable in a pixi environment. Pixi environments typically have the Python executable
-     * directly in the environment directory.
-     *
-     * @param pixiEnvPath the path to the pixi environment
-     * @return the path to the Python executable, or null if not found
-     */
-    private static Path findPixiPythonExecutable(final Path pixiEnvPath) {
-        // Check common locations for Python executable in pixi environments
-        var candidates = List.of(pixiEnvPath.resolve("python.exe"), // Windows
-            pixiEnvPath.resolve("python"), // Linux/macOS
-            pixiEnvPath.resolve("bin").resolve("python.exe"), // Windows with bin
-            pixiEnvPath.resolve("bin").resolve("python") // Linux/macOS with bin
-        );
-
-        for (var candidate : candidates) {
-            if (Files.exists(candidate)) {
-                return candidate;
-            }
-        }
-
-        return null;
     }
 
     private static ExtensionConfig mapToConfig(final Entry<String, Object> configEntry) {
