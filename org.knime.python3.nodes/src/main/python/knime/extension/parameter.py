@@ -1132,18 +1132,12 @@ class StringParameter(_BaseMultiChoiceParameter):
     >>> param = knext.StringParameter(
     ...     label="Example",
     ...     description="Pick an option.",
-    ...     choices=rich,
+    ...     choices=rich, # alternatively: choices=basic
     ...     default_value="A",
     ... )
     """
 
-    # Lean Choice dataclass enabling dynamic choices with (id, label, optional description).
-    # Declared here to keep public surface minimal; can be imported as knime.extension.parameter.StringParameter.Choice
-    from dataclasses import (
-        dataclass as _dataclass,
-    )  # local import to avoid top-level dependency changes
-
-    @_dataclass(frozen=True)
+    @dataclass(frozen=True)
     class Choice:
         id: str
         label: str
@@ -1222,7 +1216,6 @@ class StringParameter(_BaseMultiChoiceParameter):
         if enum and choices and not callable(choices):
             raise ValueError("Cannot specify both enum and static choices sequence")
 
-        self._enum = enum  # list[str] or None (legacy static list)
         self._choices = None  # dynamic callable (cached) or None
         self._static_choice_objs: Optional[List[StringParameter.Choice]] = None
 
@@ -1241,19 +1234,11 @@ class StringParameter(_BaseMultiChoiceParameter):
                     "Duplicate choice id '{id}' in static choices",
                 )
                 self._static_choice_objs = norm
-                # styling heuristic simplified: no radio rendering anymore, but we still
-                # populate _enum with ids so existing downstream logic relying on _enum length
-                # (e.g. selecting default) keeps working.
-                self._enum = [c.id for c in norm]
 
         # if only enum is provided, we may later wrap it into static choices for description purposes
-        if (
-            self._enum is not None
-            and self._static_choice_objs is None
-            and enum is not None
-        ):
+        if self._static_choice_objs is None and enum is not None:
             # create lightweight Choice objects (ids == labels, empty description)
-            self._static_choice_objs = [self.Choice(e, e, "") for e in self._enum]
+            self._static_choice_objs = [self.Choice(e, e, "") for e in enum]
         super().__init__(
             label,
             description,
@@ -1266,12 +1251,11 @@ class StringParameter(_BaseMultiChoiceParameter):
         # Auto-set default for static sequences only (no existence validation enforced)
         if self._static_choice_objs and (
             (self._default_value is None or self._default_value == "")
-            and not callable(self._default_value)
             and len(self._static_choice_objs) > 0
         ):
             self._default_value = self._static_choice_objs[0].id
 
-    def _normalized_choices(self, dialog_creation_context):
+    def _fetch_normalized_choices(self, dialog_creation_context):
         """Return list of Choice objects (normalize str -> Choice)."""
         raw = self._choices(dialog_creation_context)
         if not isinstance(raw, (list, tuple)):
@@ -1295,21 +1279,12 @@ class StringParameter(_BaseMultiChoiceParameter):
         Rationale: Align style across enum-like parameter descriptions and avoid wide
         markdown tables which render poorly in narrow layouts.
         """
-        if base_doc:
-            lines = base_doc.expandtabs().splitlines()
-            indent_lvl = _get_indent_level(lines)
-            indent = " " * indent_lvl
-        else:
-            indent = ""
-
-        if not choices:
-            return base_doc
 
         # Show section only if at least one non-empty description (retain original gating expectation)
-        any_desc = any(c.description.strip() for c in choices)
-        if not any_desc:
+        if not (choices and any(c.description.strip() for c in choices)):
             return base_doc
 
+        indent = self._extract_indent(base_doc)
         appendix = f"\n\n{indent}**Available options:**\n\n"
         for c in choices:
             if c.description.strip():
@@ -1319,96 +1294,70 @@ class StringParameter(_BaseMultiChoiceParameter):
 
         return base_doc.expandtabs() + appendix
 
+    def _normalized_choices(self, dialog_ctx):
+        if callable(self._choices) and dialog_ctx:
+            # We pass the current DialogCreationContext to the _choices callable
+            # and expect that the node developers write a lambda such that it
+            # passes this parameter as "self" to the respective methods of the context.
+            normalized_choices = self._fetch_normalized_choices(dialog_ctx)
+            if len(normalized_choices) > 0 and not self._default_value:
+                self._default_value = normalized_choices[0].id
+            return normalized_choices
+        elif self._static_choice_objs is not None:
+            return self._static_choice_objs
+        else:
+            return None
+
     def _extract_schema(self, extension_version=None, dialog_creation_context=None):
         schema = super()._extract_schema(
             dialog_creation_context=dialog_creation_context
         )
 
-        if self._choices and dialog_creation_context:
-            # We pass the current DialogCreationContext to the _choices callable
-            # and expect that the node developers write a lambda such that it
-            # passes this parameter as "self" to the respective methods of the context.
-            normalized = self._normalized_choices(dialog_creation_context)
-            if len(normalized) == 0:
-                schema["type"] = "string"
-            else:
-                schema["oneOf"] = [
-                    {"const": c.id, "title": c.label} for c in normalized
-                ]
-                # add aggregated description only if at least one choice has description
-                schema["description"] = self._append_choice_descriptions(
-                    schema.get("description", self.__doc__ or ""), normalized
-                )
-                # if default is None and not callable set first id
-                if self._default_value is None or self._default_value == "":
-                    if len(normalized) > 0 and not callable(self._default_value):
-                        self._default_value = normalized[0].id
+        normalized_choices = self._normalized_choices(dialog_creation_context)
 
-        elif self._static_choice_objs is not None:
-            # static sequence provided via 'choices' (or enum transformed) -> use normalized objects
-            normalized = self._static_choice_objs
-            if len(normalized) == 0:
-                schema["type"] = "string"
-            else:
-                schema["oneOf"] = [
-                    {"const": c.id, "title": c.label} for c in normalized
-                ]
-                # only append descriptions if at least one non-empty
-                schema["description"] = self._append_choice_descriptions(
-                    schema.get("description", self.__doc__ or ""), normalized
-                )
-        elif self._enum is None or len(self._enum) == 0:
+        if normalized_choices:
+            schema["oneOf"] = [
+                {"const": c.id, "title": c.label} for c in normalized_choices
+            ]
+            # add aggregated description only if at least one choice has description
+            schema["description"] = self._append_choice_descriptions(
+                schema.get("description", self.__doc__ or ""), normalized_choices
+            )
+        else:
             schema["type"] = "string"
-        else:  # legacy enum list
-            schema["oneOf"] = [{"const": e, "title": e} for e in self._enum]
+
         return schema
 
     # Overwrites method from _BaseMultiChoiceParameter
     def _get_options(self, dialog_creation_context) -> dict:
         """Returns the jsonforms options for the parameter"""
 
-        # dynamic choices (callable)
-        if self._choices and callable(self._choices):
-            normalized = self._normalized_choices(dialog_creation_context)
-            if len(normalized) == 0:
-                return {"format": "dropDown", "placeholder": "No values present"}
+        normalized_choices = self._normalized_choices(dialog_creation_context)
+
+        if normalized_choices is None or len(normalized_choices) > 0:
             return {"format": "string"}
-        # static choices via sequence or enum
-        if self._static_choice_objs is not None:
-            if len(self._static_choice_objs) == 0:
-                return {"format": "dropDown", "placeholder": "No values present"}
-            return {"format": "string"}
-        # legacy enum handling
-        if isinstance(self._enum, list):
-            if len(self._enum) == 0:
-                return {"format": "dropDown", "placeholder": "No values present"}
-        return {"format": "string"}
+        else:
+            return {"format": "dropDown", "placeholder": "No values present"}
 
     def _extract_description(self, name, parent_scope: _Scope):  # NOSONAR
-        """Include static enum values in the node description if present.
+        """Include static choices in the node description if present.
         Dynamic (callable) choices are only available when a dialog creation context is supplied;
         during description extraction we can't evaluate them. Static sequences (enum or choices sequence)
         are context independent and therefore always appended (with descriptions if provided via Choice objects).
         """
         desc = self.__doc__ or ""
-        # prefer static choice objects (may carry descriptions)
-        if self._static_choice_objs is not None:
-            desc = self._append_choice_descriptions(desc, self._static_choice_objs)
-        elif self._enum and not (self._choices and callable(self._choices)):
-            # legacy simple enum list (strings only)
-            if self._enum and len(self._enum) > 0:
-                # replicate previous bullet list behavior
-                if desc:
-                    lines = desc.expandtabs().splitlines()
-                    indent_lvl = _get_indent_level(lines)
-                    indent = " " * indent_lvl
-                else:
-                    indent = ""
-                options_description = f"\n\n{indent}**Available options:**\n\n"
-                for opt in self._enum:
-                    options_description += f"{indent}- {opt}\n"
-                desc = (desc or "").expandtabs() + options_description
+
+        normalized_choices = self._normalized_choices(dialog_ctx=None)
+        if normalized_choices:
+            desc = self._append_choice_descriptions(desc, normalized_choices)
         return {"name": self._label, "description": desc}
+
+    def _extract_indent(self, desc: str):
+        if not desc:
+            return ""
+        lines = desc.expandtabs().splitlines()
+        indent_lvl = _get_indent_level(lines)
+        return " " * indent_lvl
 
 
 class LocalPathParameter(StringParameter):
