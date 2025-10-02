@@ -962,7 +962,6 @@ final class CloseablePythonNodeProxy
             public BackendViewData getViewData() {
                 var viewData = pythonDataService.getViewData();
                 var conversionContext = new PortObjectConversionContext(fileStoresByKey, m_tableManager, exec);
-                var ports = viewData.ports();
                 var portObjects = viewData.ports().stream() //
                     .map(po -> PythonPortTypeRegistry.convertPortObjectFromPython(po, conversionContext))//
                     .toArray(PortObject[]::new);

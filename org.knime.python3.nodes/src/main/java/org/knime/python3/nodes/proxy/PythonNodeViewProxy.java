@@ -90,6 +90,9 @@ public interface PythonNodeViewProxy {
          */
         PythonViewData getViewData();
 
+        /**
+         * Used to communicate the view data between the Java and Python.
+         */
         interface PythonViewData {
 
             String data();

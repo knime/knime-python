@@ -52,7 +52,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.knime.core.node.workflow.ICredentials;
-import org.knime.python3.nodes.DelegatingNodeModel.ViewData.BackendViewData;
 import org.knime.python3.nodes.ports.PythonPortObjects.PurePythonTablePortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
 import org.knime.python3.nodes.proxy.PythonNodeViewProxy;

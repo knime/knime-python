@@ -95,7 +95,8 @@ public interface NodeViewProxy extends AsynchronousCloseable<RuntimeException> {
      *
      * @return a data service that is powered by a remote proxy
      */
-    DataServiceProxy getDataServiceProxy(JsonNodeSettings settings, final PortObject[] portObjects, BackendViewData viewData,
-        final PortMapProvider portMapProvider, final CredentialsProviderProxy credentialsProvider);
+    DataServiceProxy getDataServiceProxy(JsonNodeSettings settings, final PortObject[] portObjects,
+        BackendViewData viewData, final PortMapProvider portMapProvider,
+        final CredentialsProviderProxy credentialsProvider);
 
 }

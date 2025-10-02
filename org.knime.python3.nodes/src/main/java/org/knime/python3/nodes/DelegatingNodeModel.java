@@ -54,7 +54,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -496,13 +495,13 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
      * {@link DataServiceProxy#getViewData()}; served back to python via {@link PythonViewContext#get_view_data()} (for
      * the view's data service) and via {@link PythonExecutionContext#get_view_data()} (for the node re-execution)</li>
      */
-    public static class ViewData {
+    public final static class ViewData {
 
         private BackendViewData m_backendData;
 
         private String m_frontendData;
 
-        private boolean m_doPersist = false;
+        private boolean m_doPersist;
 
         private void setFrontendData(final String frontendData) {
             m_frontendData = frontendData;
@@ -555,7 +554,7 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
             }
         }
 
-        private static ViewData load(final File nodeInternDir) throws FileNotFoundException, IOException {
+        private static ViewData load(final File nodeInternDir) throws IOException {
             File f = new File(nodeInternDir, "internal_view_data.gz");
             if (f.exists()) {
                 try (DataInputStream in =
