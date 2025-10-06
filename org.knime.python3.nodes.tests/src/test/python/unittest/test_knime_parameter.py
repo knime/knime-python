@@ -1110,6 +1110,16 @@ class TestEnumOptions(kp.EnumParameterOptions):
     BAZ = ("Baz", "The baz")
 
 
+class ParameterizedWithNoneColumn:
+    """Test class for column parameter with include_none_column=True"""
+
+    column_param_with_none = kp.ColumnParameter(
+        "Column Parameter With None",
+        "A column parameter that allows none selection",
+        include_none_column=True,
+    )
+
+
 class ParameterizedWithEnumStyles:
     radio = kp.EnumParameter(
         "radio",
@@ -1628,6 +1638,7 @@ class ParameterTest(unittest.TestCase):
         self.parameterized_with_parameter_array_advanced = (
             ParameterizedParameterArrayAdvanced()
         )
+        self.parameterized_with_none_column = ParameterizedWithNoneColumn()
         self.maxDiff = None
 
     def test_forbidden_keywords_not_allowed(self):
@@ -3537,6 +3548,56 @@ class ParameterTest(unittest.TestCase):
             Parameterized(), DummyDialogCreationContext(table_specs)
         )
         self.assertEqual(extracted, expected)
+
+    def test_column_parameter_with_none_option(self):
+        """Test that column parameter with include_none_column=True generates correct schema with <none> option."""
+
+        # Test schema generation - should remain type string (consistent with existing implementation)
+        expected_schema = {
+            "type": "object",
+            "properties": {
+                "model": {
+                    "type": "object",
+                    "properties": {
+                        "column_param_with_none": {
+                            "title": "Column Parameter With None",
+                            "description": "A column parameter that allows none selection",
+                            "type": "string",
+                        }
+                    },
+                }
+            },
+        }
+
+        extracted_schema = kp.extract_schema(
+            self.parameterized_with_none_column,
+            dialog_creation_context=DummyDialogCreationContext(),
+        )
+        self.assertEqual(expected_schema, extracted_schema)
+
+        expected_ui_schema = {
+            "type": "VerticalLayout",
+            "elements": [
+                {
+                    "type": "Control",
+                    "label": "Column Parameter With None",
+                    "scope": "#/properties/model/properties/column_param_with_none",
+                    "options": {
+                        "format": "dropDown",
+                        "showRowKeys": False,
+                        "showNoneColumn": True,
+                        "possibleValues": test_possible_values
+                        + [{"id": "<none>", "text": "None"}],
+                    },
+                }
+            ],
+        }
+
+        extracted_ui_schema = kp.extract_ui_schema(
+            self.parameterized_with_none_column, DummyDialogCreationContext()
+        )
+
+        self.assertEqual(expected_ui_schema, extracted_ui_schema)
 
 
 class FullColumnSelectionTest(unittest.TestCase):
