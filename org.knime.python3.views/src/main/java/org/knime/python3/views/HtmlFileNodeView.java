@@ -363,7 +363,7 @@ public final class HtmlFileNodeView implements NodeTableView, DisposeDataService
 
         private Supplier<JsonRpcRequestHandler> m_dataServiceSupplier;
 
-        private BooleanSupplier m_canBeUsedInReport;
+        private BooleanSupplier m_canBeUsedInReport = () -> false;
 
         private ReExecutable<String> m_reExecutable;
 
