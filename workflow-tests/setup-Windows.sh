@@ -17,7 +17,7 @@ if [[ -n $KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT ]]; then
 	  # remove extension substring from name
 	  envName=${KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT%".yml"}
 
-		envPath="${WORKSPACE}\\\\${envName}"
+		envPath="${WORKSPACE}\\${envName}"
 		echo "Creating Conda environment for: ${KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT} at ${envPath}"
 
 		cmd /c C:/tools/micromamba.exe create \
