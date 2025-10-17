@@ -1921,11 +1921,10 @@ class ColumnParameter(_BaseColumnParameter):
 
     # overriding these functions to allow none types change in ui schema (change applicable starting 5.9).
     def _to_dict(self, value):
-        return self.NONE if value is None else value
+        return "" if value is None else value
 
     def _from_dict(self, value):
-        return None if value == self.NONE or value == "" else value
-
+        return None if value == "" else value
 
 class MultiColumnParameter(_BaseColumnParameter):
     """
