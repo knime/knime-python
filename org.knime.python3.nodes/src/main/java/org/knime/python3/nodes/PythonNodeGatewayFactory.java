@@ -148,6 +148,15 @@ public final class PythonNodeGatewayFactory {
 
     private static PythonCommand getPythonCommandForEnvironment(final String environmentName) {
         final var environment = CondaEnvironmentRegistry.getEnvironment(environmentName);
+        if (environment == null) {
+            throw new IllegalStateException("Conda environment '" + environmentName + "' not found. "
+                + "Please check if the environment is properly installed or configured.");
+        }
+        if (environment.isDisabled()) {
+            throw new IllegalStateException("Conda environment '" + environmentName + "' is disabled. "
+                + "This environment was permanently skipped during installation. "
+                + "Please check the KNIME log for details about why the environment was skipped.");
+        }
         return new BundledPythonCommand(environment.getPath().toAbsolutePath().toString());
     }
 
