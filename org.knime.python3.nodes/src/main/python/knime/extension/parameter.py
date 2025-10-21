@@ -1926,6 +1926,7 @@ class ColumnParameter(_BaseColumnParameter):
     def _from_dict(self, value):
         return None if value == "" else value
 
+
 class MultiColumnParameter(_BaseColumnParameter):
     """
     Parameter class for multiple columns.
@@ -2059,9 +2060,6 @@ def _possible_values(
             entry["compatibleTypes"] = compatible_types
         return entry
 
-    if spec is None:
-        return [entry("")]
-
     if not isinstance(spec, ks.Schema):
         raise TypeError("The given input is not a table.")
 
@@ -2081,7 +2079,7 @@ def _possible_values(
     if len(filtered) > 0:
         return filtered
     else:
-        return [entry("")]
+        return []
 
 
 class ColumnFilterMode(Enum):
