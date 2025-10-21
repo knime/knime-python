@@ -1913,11 +1913,18 @@ class ColumnParameter(_BaseColumnParameter):
             ),
         }
 
+        # following condition was added to integrate change in knime-core-ui
+        # to enable selection of "None" columns
+        if self._include_none_column:
+            options["possibleValues"].append({"id": self.NONE, "text": "None"})
         return options
 
-    def _inject(self, obj, value, name, version, exclude_validations: bool = False):
-        value = None if value == "" else value
-        return super()._inject(obj, value, name, version, exclude_validations)
+    # overriding these functions to allow none types change in ui schema (change applicable starting 5.9).
+    def _to_dict(self, value):
+        return "" if value is None else value
+
+    def _from_dict(self, value):
+        return None if value == "" else value
 
 
 class MultiColumnParameter(_BaseColumnParameter):
@@ -2053,9 +2060,6 @@ def _possible_values(
             entry["compatibleTypes"] = compatible_types
         return entry
 
-    if spec is None:
-        return [entry("")]
-
     if not isinstance(spec, ks.Schema):
         raise TypeError("The given input is not a table.")
 
@@ -2075,7 +2079,7 @@ def _possible_values(
     if len(filtered) > 0:
         return filtered
     else:
-        return [entry("")]
+        return []
 
 
 class ColumnFilterMode(Enum):
