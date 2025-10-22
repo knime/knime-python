@@ -178,12 +178,29 @@ def _get_arrow_storage_to_ext_fn(dtype):
             return _identity
         # get encoding for all contained types
         inner_fns = [_get_arrow_storage_to_ext_fn(inner.type) for inner in dtype]
-        return lambda a: pa.StructArray.from_arrays(
-            [fn(inner) for fn, inner in zip(inner_fns, a.flatten())],
-            names=[t.name for t in dtype],
-        )
+        return lambda a: get_struct_arrays(a, inner_fns, dtype)
     else:
         return _identity
+
+
+def get_struct_arrays(arrays, inner_fns, dtype):
+    """
+    This method was created to recalculate struct masks
+    Since python 3.12, the way how structs are stored has changed
+    It cannot be done at create_storage_for_struct_dict_encoded_array, since we
+    get only subtype there, and in new pyarrow is_valid: False + False -> True
+    """
+    struct_arrays = [fn(inner) for fn, inner in zip(inner_fns, arrays.flatten())]
+    return pa.StructArray.from_arrays(
+        struct_arrays,
+        names=[t.name for t in dtype],
+        mask=pa.array(
+            [
+                not any([value.is_valid for value in values])
+                for values in zip(*struct_arrays)
+            ]
+        ),
+    )
 
 
 def _identity(x):
@@ -370,7 +387,7 @@ def get_object_to_storage_fn(dtype: pa.DataType):
         return _identity
     elif is_list_type(dtype):
         inner_fn = get_object_to_storage_fn(dtype.value_type)
-        return lambda l: [inner_fn(x) for x in l]
+        return lambda lst: [inner_fn(x) for x in lst]
     elif pat.is_struct(dtype):
         inner_fns = [get_object_to_storage_fn(field.type) for field in dtype]
         return lambda d: {
@@ -1087,7 +1104,7 @@ class KnimeExtensionScalar:
     def __eq__(self, other):
         try:
             return self.equals(other)
-        except:
+        except Exception:
             return NotImplemented
 
     def __reduce__(self):
@@ -1412,7 +1429,7 @@ def _wrap_primitive_array(
 
 
 def convert_f32_to_f64(array, wrapped_type):
-    LOGGER.info(f"Convert float32 to double precision")
+    LOGGER.info("Convert float32 to double precision")
     if is_list_type(array.type):
         array = array.cast(pa.list_(pa.float64()))  # cast to  list of float 64
         wrapped_type = LogicalTypeExtensionType(
