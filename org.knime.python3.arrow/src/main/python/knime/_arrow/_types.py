@@ -1495,6 +1495,10 @@ def get_int_indexer_from_nested_storage(
             )
     else:
         return storage[item]
+    
+
+def get_storage_scalar_type_null_object(scalar_type):
+    return pa.scalar({field.name: None for field in scalar_type}, type=scalar_type)
 
 
 def _get_int_indexer_from_struct_array(_get_the_correct_chunk, item, storage):
@@ -1520,10 +1524,12 @@ def _get_int_indexer_from_struct_array(_get_the_correct_chunk, item, storage):
         else:
             storage_scalar_list.append(field[item])
     storage_scalar_type = _struct_type_from_values(*storage_scalar_list)
+    null_struct_scalar = get_storage_scalar_type_null_object(storage_scalar_type)
     storage_scalar = pa.scalar(
         tuple(i.as_py() for i in storage_scalar_list), type=storage_scalar_type
     )
-    return storage_scalar
+    # with pyarrow >= 20, check if generated tuple is null value representation
+    return None if storage_scalar == null_struct_scalar else storage_scalar
 
 
 def _get_int_indexer_from_list_array(
