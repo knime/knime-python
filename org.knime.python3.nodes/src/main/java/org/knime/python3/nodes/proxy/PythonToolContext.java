@@ -67,9 +67,10 @@ public interface PythonToolContext {
      * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
      * @param message of the tool execution
      * @param outputs of the tool execution
+     * @param outputIds
      * @param viewNodeIds ids of nodes with views to be displayed after the tool execution
      */
-    record PythonToolResult(String message, PythonPortObject[] outputs, String[] viewNodeIds) {
+    record PythonToolResult(String message, PythonPortObject[] outputs, List<String> outputIds, String[] viewNodeIds) {
     }
 
     /**
@@ -83,5 +84,41 @@ public interface PythonToolContext {
      */
     PythonToolResult execute_tool(PurePythonTablePortObject toolTable, String parameters,
         List<PythonPortObject> inputs, Map<String, String> executionHints);
+
+    /**
+     * Info about an initialized combined-tools workflow.
+     *
+     * @param projectId
+     * @param workflowId
+     * @param inputPortIds
+     */
+    public record CombinedToolsWorkflowInfo(String projectId, String workflowId, List<String> inputPortIds) {
+    }
+
+    /**
+     * Initializes the combined-tools workflow for the given inputs.
+     *
+     * @param inputs the source inputs of the combined-tools workflow
+     * @param execMode DEFAUTL, DETACHED or DEBUG
+     * @return info about the initialized combined-tools workflow
+     */
+    CombinedToolsWorkflowInfo init_combined_tools_workflow(List<PythonPortObject> inputs, String execMode);
+
+    /**
+     * @return the combined-tools workflow as a Python port object
+     */
+    PythonPortObject get_combined_tools_workflow();
+
+    /**
+     * Executes a tool in Java within a combined-tools workflow.
+     *
+     * @param toolTable holding a single tool to execute
+     * @param parameters JSON with the parameters for the tool
+     * @param inputsIds port references (within the combined tools workflow) to use as inputs for the tool execution
+     * @param executionHints additional, optional hints for the tool execution
+     * @return the result of the tool execution
+     */
+    PythonToolResult execute_tool_in_combined_workflow(PurePythonTablePortObject toolTable, String parameters,
+        List<String> inputsIds, Map<String, String> executionHints);
 
 }

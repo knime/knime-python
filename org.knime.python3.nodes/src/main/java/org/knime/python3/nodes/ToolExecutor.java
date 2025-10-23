@@ -48,10 +48,12 @@
  */
 package org.knime.python3.nodes;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import org.knime.core.data.filestore.FileStore;
@@ -59,16 +61,27 @@ import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.agentic.tool.ToolValue;
 import org.knime.core.node.agentic.tool.ToolValue.ToolResult;
+import org.knime.core.node.agentic.tool.WorkflowToolValue;
 import org.knime.core.node.agentic.tool.WorkflowToolValue.WorkflowToolResult;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
+import org.knime.core.node.workflow.NodeID.NodeIDSuffix;
+import org.knime.core.node.workflow.capture.CombinedExecutor;
+import org.knime.core.node.workflow.capture.CombinedExecutor.PortId;
+import org.knime.core.node.workflow.capture.WorkflowPortObject;
+import org.knime.core.node.workflow.capture.WorkflowPortObjectSpec;
+import org.knime.core.node.workflow.capture.WorkflowSegment;
+import org.knime.core.node.workflow.capture.WorkflowSegmentExecutor;
+import org.knime.core.node.workflow.capture.WorkflowSegmentExecutor.ExecutionMode;
 import org.knime.gateway.impl.project.VirtualWorkflowProjects;
 import org.knime.python3.arrow.PythonArrowTableConverter;
+import org.knime.python3.nodes.DelegatingNodeModel.ViewData.VirtualProject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PurePythonTablePortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
 import org.knime.python3.nodes.ports.PythonPortTypeRegistry;
 import org.knime.python3.nodes.ports.converters.PortObjectConversionContext;
+import org.knime.python3.nodes.proxy.PythonToolContext.CombinedToolsWorkflowInfo;
 import org.knime.python3.nodes.proxy.PythonToolContext.PythonToolResult;
 
 /**
@@ -86,12 +99,28 @@ final class ToolExecutor implements AutoCloseable {
 
     private Collection<Runnable> m_onCloseRunnables;
 
+    private VirtualProject m_combinedToolsWorkflow;
+
+    private CombinedExecutor m_workflowExecutor;
+
+    private boolean m_disposeCombinedToolsWorkflowOnClose;
+
     ToolExecutor(final ExecutionContext exec, final NativeNodeContainer nodeContainer,
         final PythonArrowTableConverter tableManager) {
         m_exec = exec;
         m_nodeContainer = nodeContainer;
         m_tableManager = tableManager;
         m_onCloseRunnables = new ArrayList<>();
+    }
+
+    ToolExecutor(final ExecutionContext exec, final NativeNodeContainer nodeContainer,
+        final PythonArrowTableConverter tableManager, final VirtualProject combinedToolsWorkflowInfo) {
+        m_exec = exec;
+        m_nodeContainer = nodeContainer;
+        m_tableManager = tableManager;
+        m_onCloseRunnables = new ArrayList<>();
+        m_combinedToolsWorkflow = combinedToolsWorkflowInfo;
+        m_disposeCombinedToolsWorkflowOnClose = false;
     }
 
     PythonToolResult executeTool(final PurePythonTablePortObject pythonToolTable, final String parameters,
@@ -110,29 +139,129 @@ final class ToolExecutor implements AutoCloseable {
             (BufferedDataTable)PythonPortTypeRegistry.convertPortObjectFromPython(pythonToolTable, conversionContext);
 
         var tool = getTool(toolTable);
-
         NodeContext.pushContext(m_nodeContainer);
         try {
             var result = tool.execute(parameters, inputPortObjects, m_exec, executionHints);
             var viewNodeIds = getViewNodeIdsAndRegisterVirtualProject(result);
             var outputs = result.outputs();
             if (outputs == null) {
-                return new PythonToolResult(result.message(), null, viewNodeIds);
+                return new PythonToolResult(result.message(), null, null, viewNodeIds);
             }
             var pyOutputs = Stream.of(result.outputs())//
                 .map(po -> PythonPortTypeRegistry.convertPortObjectToPython(po, conversionContext))//
                 .toArray(PythonPortObject[]::new);
 
-            return new PythonToolResult(result.message(), pyOutputs, viewNodeIds);
+            return new PythonToolResult(result.message(), pyOutputs, null, viewNodeIds);
         } finally {
             NodeContext.removeLastContext();
         }
+    }
+
+    CombinedToolsWorkflowInfo initCombinedToolsWorkflow(final List<PythonPortObject> inputs,
+        final String execModeString) {
+        Map<String, FileStore> dummyFileStoreMap = Map.of();
+        List<String> inputPortIds = null;
+        var execMode = ExecutionMode.valueOf(execModeString);
+        if (m_combinedToolsWorkflow == null) {
+            var conversionContext = new PortObjectConversionContext(dummyFileStoreMap, m_tableManager, m_exec);
+            var inputPortObjects = inputs.stream()//
+                .map(po -> PythonPortTypeRegistry.convertPortObjectFromPython(po, conversionContext))//
+                .toArray(PortObject[]::new);
+            m_workflowExecutor =
+                WorkflowSegmentExecutor.builder(m_nodeContainer, execMode, "Combined tools workflow", warning -> {
+                }, m_exec, false).combined(inputPortObjects).build();
+            var combinedToolsWorkflowId = m_workflowExecutor.getWorkflow().getID();
+            m_disposeCombinedToolsWorkflowOnClose = true;
+            m_combinedToolsWorkflow = new VirtualProject(combinedToolsWorkflowId);
+            inputPortIds = m_workflowExecutor.getSourcePortIds().stream()
+                .map(id -> id.nodeIDSuffix() + "#" + id.portIndex()).toList();
+        } else {
+            m_workflowExecutor =
+                WorkflowSegmentExecutor.builder(m_nodeContainer, execMode, "Combined tools workflow", warning -> {
+                }, m_exec, false).combined(m_combinedToolsWorkflow.loadAndGetWorkflow()).build();
+            assert inputs.isEmpty();
+            inputPortIds = List.of();
+        }
+        return new CombinedToolsWorkflowInfo(m_combinedToolsWorkflow.projectId(),
+            m_combinedToolsWorkflow.workflowId().toString(), inputPortIds);
+    }
+
+    PythonToolResult executeToolInCombinedWorkflow(final PurePythonTablePortObject pythonToolTable, final String parameters,
+        final List<String> inputIds, final Map<String, String> executionHints) {
+        assert m_workflowExecutor != null && m_combinedToolsWorkflow != null;
+
+        Map<String, FileStore> dummyFileStoreMap = Map.of();
+        var conversionContext = new PortObjectConversionContext(dummyFileStoreMap, m_tableManager, m_exec);
+        var toolTable =
+            (BufferedDataTable)PythonPortTypeRegistry.convertPortObjectFromPython(pythonToolTable, conversionContext);
+        var tool = getTool(toolTable);
+        if (!(tool instanceof WorkflowToolValue)) {
+            // TODO enable this type of execution for non-workflow-based tools, too
+            // (add a placeholder node to the combined tools workflow that outputs the tool's outputs)
+            throw new UnsupportedOperationException(
+                "Executing tools in a combined workflow only supported for workflow-based tools so far");
+        }
+        var workflowTool = (WorkflowToolValue)tool;
+        var combinedToolsWorkflowId = m_combinedToolsWorkflow.workflowId();
+
+        // map inputIds to ports
+        var inputs = inputIds.stream().map(id -> createPortId(id)).toList();
+        NodeContext.pushContext(m_nodeContainer);
+        try {
+            var result = workflowTool.execute(m_workflowExecutor, parameters, inputs, m_exec, executionHints);
+            var viewNodeIds = result.viewNodeIds();
+            var outputs = result.outputs();
+            if (outputs == null) {
+                return new PythonToolResult(result.message(), null, null, viewNodeIds);
+            }
+            var pyOutputs = Stream.of(result.outputs())//
+                .map(po -> PythonPortTypeRegistry.convertPortObjectToPython(po, conversionContext))//
+                .toArray(PythonPortObject[]::new);
+
+            var outputIds = Stream.of(result.outputIds()).map(id -> id.replaceFirst(combinedToolsWorkflowId + ":", "")) // TODO re-visit?
+                .toList();
+            return new PythonToolResult(result.message(), pyOutputs, outputIds, viewNodeIds);
+        } finally {
+            NodeContext.removeLastContext();
+        }
+    }
+
+    static PortId createPortId(final String id) {
+        var split = id.split("#");
+        return new PortId(NodeIDSuffix.fromString(split[0]), Integer.parseInt(split[1]));
+    }
+
+    PythonPortObject getCombinedToolsWorkflow() {
+        // TODO remove virtual I/O nodes and properly set inputs/outputs on workflow segment
+        var combinedToolsWorkflow = m_workflowExecutor.getWorkflow();
+        var ws = new WorkflowSegment(combinedToolsWorkflow, List.of(), List.of(), Set.of());
+        var spec = new WorkflowPortObjectSpec(ws, combinedToolsWorkflow.getName(), List.of(), List.of());
+        var po = new WorkflowPortObject(spec);
+        try {
+            ws.serializeAndDisposeWorkflow();
+        } catch (IOException ex) {
+            // TODO
+            throw new RuntimeException(ex);
+        }
+        var conversionContext = new PortObjectConversionContext(Map.of(), m_tableManager, m_exec);
+        return PythonPortTypeRegistry.convertPortObjectToPython(po, conversionContext);
+    }
+
+    VirtualProject getCombinedToolsWorkflowAndMarkToNotDisposeOnClose() {
+        m_disposeCombinedToolsWorkflowOnClose = false;
+        return m_combinedToolsWorkflow;
     }
 
     /**
      * Extracts the view-node-ids from the tool-result (if available) and makes the 'virtual project' used for the
      * tool-execution with 'gateway' to make it accessible by Agent Chat View frontend. And also makes sure the 'virtual
      * project' is disposed when not needed anymore.
+     *
+     * NOTE: only relevant when tool is executed via
+     * {@link ToolExecutor#executeTool(PurePythonTablePortObject, String, List, Map)} but NOT with
+     * {@link ToolExecutor#executeToolInCombinedWorkflow(PurePythonTablePortObject, String, List, Map)}. In case of the
+     * later, the virtual project life cycle is taken care of via {@link VirtualProject} and the view-ids are only
+     * port-references (node-id + port-index) but doesn't include the project-id anymore.
      *
      * @param viewNodeIds
      * @return view-node-ids in a special format as consumed by the Agent Chat View frontend
@@ -170,6 +299,14 @@ final class ToolExecutor implements AutoCloseable {
 
     @Override
     public void close() throws Exception {
+        if (m_disposeCombinedToolsWorkflowOnClose) {
+            m_combinedToolsWorkflow.dispose();
+        }
+        if (m_workflowExecutor != null) {
+            m_workflowExecutor.dispose(false);
+            m_workflowExecutor = null;
+        }
+        m_combinedToolsWorkflow = null;
         m_nodeContainer = null;
         m_onCloseRunnables.forEach(Runnable::run);
         m_onCloseRunnables.clear();

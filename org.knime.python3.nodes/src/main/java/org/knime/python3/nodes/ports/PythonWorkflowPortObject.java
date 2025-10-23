@@ -60,12 +60,14 @@ import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortTypeRegistry;
 import org.knime.core.node.util.CheckUtils;
 import org.knime.core.node.workflow.NativeNodeContainer;
-import org.knime.core.node.workflow.NodeContainer;
 import org.knime.core.node.workflow.NodeContext;
+import org.knime.core.node.workflow.capture.IsolatedExecutor;
 import org.knime.core.node.workflow.capture.WorkflowPortObject;
 import org.knime.core.node.workflow.capture.WorkflowPortObjectSpec;
 import org.knime.core.node.workflow.capture.WorkflowSegment.IOInfo;
 import org.knime.core.node.workflow.capture.WorkflowSegmentExecutor;
+import org.knime.core.node.workflow.capture.WorkflowSegmentExecutor.ExecutionMode;
+import org.knime.core.node.workflow.capture.WorkflowSegmentExecutor.WorkflowSegmentNodeMessage;
 import org.knime.python3.arrow.PythonArrowTableConverter;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObject;
 import org.knime.python3.nodes.ports.PythonPortObjects.PythonPortObjectSpec;
@@ -132,21 +134,22 @@ public final class PythonWorkflowPortObject implements PythonPortObject {
             .map(inputs::get)// get inputs in order defined by workflow spec
             .map(p -> PythonPortTypeRegistry.convertPortObjectFromPython(p, inportObjectConversionContext))
             .toArray(PortObject[]::new);
-        var executable = createExecutable(warningConsumer);
+        var executor = createExecutor(warningConsumer, exec);
         try {
-            var result = executable.executeWorkflowAndCollectNodeMessages(portObjects, exec);
-            if (result.portObjectCopies() == null) {
+            var result = executor.execute(m_workflow.getSpec().getWorkflowSegment(), portObjects, null, null);
+            if (result.outputs() == null) {
                 // a null array currently indicates a failed execution
-                throw new WorkflowExecutionException(result.compileSingleErrorMessage());
+                throw new WorkflowExecutionException(
+                    WorkflowSegmentNodeMessage.compileSingleErrorMessage(result.nodeMessages()));
             }
             var outportConversionContext = new PortObjectConversionContext(dummyFileStoreMap, m_tableConverter, null);
-            var outputs = Stream.of(result.portObjectCopies())//
+            var outputs = Stream.of(result.outputs())//
                 .map(p -> PythonPortTypeRegistry.convertPortObjectToPython(p, outportConversionContext))//
                 .toArray(PythonPortObject[]::new);
             var flowVariables = FlowVariableUtils.convertToMap(result.flowVariables());
             return new WorkflowExecutionResult(outputs, flowVariables);
         } finally {
-            executable.dispose();
+            executor.dispose();
         }
     }
 
@@ -159,12 +162,13 @@ public final class PythonWorkflowPortObject implements PythonPortObject {
         return nodeContainer.createExecutionContext().createSilentSubExecutionContext(0);
     }
 
-    private WorkflowSegmentExecutor createExecutable(final Consumer<String> warningConsumer) throws KNIMEException {
-        NodeContainer nc = NodeContext.getContext().getNodeContainer();
+    private IsolatedExecutor createExecutor(final Consumer<String> warningConsumer, final ExecutionContext exec)
+        throws KNIMEException {
+        var nc = (NativeNodeContainer)NodeContext.getContext().getNodeContainer();
         CheckUtils.checkArgumentNotNull(nc, "Not a local workflow");
-        var spec = m_workflow.getSpec();
-        return new WorkflowSegmentExecutor(spec.getWorkflowSegment(), spec.getWorkflowName(), nc, false,
-            warningConsumer);
+        return WorkflowSegmentExecutor
+            .builder(nc, ExecutionMode.DEFAULT, m_workflow.getSpec().getWorkflowName(), warningConsumer, exec, true)
+            .isolated(false).build();
     }
 
     private void checkPortCompatibility(final Map<String, PythonPortObject> inputs) {

@@ -463,6 +463,9 @@ class _JsonRpcDataService:
     def getViewData(self) -> "_PythonViewData":
         import json
 
+        if not hasattr(self._delegate, "get_view_data"):
+            return None
+
         view_data = self._delegate.get_view_data()
         return _PythonViewData(
             data=json.dumps(view_data["data"]),
@@ -470,6 +473,7 @@ class _JsonRpcDataService:
                 self._portTypeRegistry.table_from_python(port)
                 for port in view_data["ports"]
             ],
+            portIds=view_data["portIds"],
         )
 
     class Java:
@@ -479,9 +483,15 @@ class _JsonRpcDataService:
 
 
 class _PythonViewData:
-    def __init__(self, data: Dict[str, Any], ports: List[_PythonPortObject] = None):
+    def __init__(
+        self,
+        data: Dict[str, Any],
+        ports: List[_PythonPortObject] = None,
+        portIds: List[str] = None,
+    ):
         self._data = data
         self._ports = ports
+        self._portIds = portIds
 
     class Java:
         implements = [
@@ -494,12 +504,24 @@ class _PythonViewData:
     def ports(self) -> List[_PythonPortObject]:
         return _to_java_list(self._ports)
 
+    def portIds(self) -> List[str]:
+        return _to_java_list(self._portIds)
+
 
 class _ViewContext(kn._BaseContext):
     def __init__(self, java_ctx, flow_variables, type_registry: "_PortTypeRegistry"):
         super().__init__(java_ctx, flow_variables)
         self._tool_executor = _ToolExecutor(java_ctx, type_registry)
         self._execute_tool = self._tool_executor.execute_tool
+        self._execute_tool_in_combined_workflow = (
+            self._tool_executor.execute_tool_in_combined_workflow
+        )
+        self._init_combined_tools_workflow = (
+            self._tool_executor.init_combined_tools_workflow
+        )
+        self._get_combined_tools_workflow = (
+            self._tool_executor.get_combined_tools_workflow
+        )
         self._type_registry = type_registry
 
     def get_input_port_map(self) -> Dict[str, List[int]]:
@@ -520,7 +542,11 @@ class _ViewContext(kn._BaseContext):
             )
             for port in java_ports
         ]
-        return {"data": json.loads(view_data.data()), "ports": ports}
+        return {
+            "data": json.loads(view_data.data()),
+            "ports": ports,
+            "ports_for_ids": view_data.portsForIds(),
+        }
 
 
 class _PortTypeRegistry:
@@ -1451,6 +1477,64 @@ class _ToolExecutor:
 
         return result.message(), outputs, result.viewNodeIds()
 
+    def init_combined_tools_workflow(self, inputs: List, execution_mode: str):
+        prepared_inputs = []
+        for input in inputs:
+            prepared_input = self._type_registry.table_from_python(input)
+            prepared_inputs.append(prepared_input)
+        result = self._java_ctx.init_combined_tools_workflow(
+            prepared_inputs, execution_mode
+        )
+        return result.projectId(), result.workflowId(), result.inputPortIds()
+
+    def get_combined_tools_workflow(self):
+        return self._java_ctx.get_combined_tools_workflow()
+
+    # TODO de-duplicate
+    def execute_tool_in_combined_workflow(
+        self, tool, parameters: dict, input_ids: List, execution_hints: dict
+    ):
+        """
+        Execute a KNIME workflow tool.
+
+        Parameters
+        ----------
+        tool:
+            The tool object to execute.
+        parameters : dict
+            The parameters to pass to the workflow tool.
+        input_ids: TODO
+        execution_hints: optional hints controlling the tool execution - doesn't need to be respected by the implementation
+
+        Returns
+        -------
+        str
+            The result of the workflow tool execution.
+        """
+
+        tool_table = self._wrap_tool_in_table(tool)
+
+        parameter_json = json.dumps(parameters)
+
+        result = self._java_ctx.execute_tool_in_combined_workflow(
+            tool_table, parameter_json, input_ids, execution_hints
+        )
+        outputs = result.outputs()
+        if outputs is None:
+            raise RuntimeError(result.message())
+
+        dummy_port = kn.Port(kn.PortType.TABLE, name="dummy", description="dummy")
+        outputs = [
+            self._type_registry.port_object_to_python(
+                output,
+                dummy_port,
+                None,
+            )
+            for output in outputs
+        ]
+
+        return result.message(), outputs, result.outputIds(), result.viewNodeIds()
+
     def _wrap_tool_in_table(self, tool):
         import pandas as pd
         import knime.api.table as kt
@@ -1481,16 +1565,27 @@ class _ExecutionContext(kn.ExecutionContext):
             return None
 
         dummy_port = kn.Port(kn.PortType.TABLE, name="dummy", description="dummy")
-        java_ports = view_data.ports()
         ports = [
             self._type_registry.port_object_to_python(
                 port,
                 dummy_port,
                 None,
             )
-            for port in java_ports
+            for port in view_data.ports()
         ]
-        return {"data": json.loads(view_data.data()), "ports": ports}
+        ports_for_ids = [
+            self._type_registry.port_object_to_python(
+                port,
+                dummy_port,
+                None,
+            )
+            for port in view_data.portsForIds()
+        ]
+        return {
+            "data": json.loads(view_data.data()),
+            "ports": ports,
+            "ports_for_ids": ports_for_ids,
+        }
 
 
 class _KnimeNodeBackend(kg.EntryPoint, kn._KnimeNodeBackend):
