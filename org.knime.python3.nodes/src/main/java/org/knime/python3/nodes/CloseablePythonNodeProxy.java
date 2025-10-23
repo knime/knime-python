@@ -553,6 +553,24 @@ final class CloseablePythonNodeProxy
             }
 
             @Override
+            public CombinedToolsWorkflowInfo init_combined_tools_workflow(final List<PythonPortObject> inputs,
+                final String execMode) {
+                throw new UnsupportedOperationException(
+                    "Initializing a combined tools workflow is not supported here.");
+            }
+
+            @Override
+            public PythonPortObject get_combined_tools_workflow() {
+                throw new UnsupportedOperationException("Getting the combined tools workflow is not supported here.");
+            }
+
+            @Override
+            public PythonToolResult execute_tool_in_combined_workflow(final PurePythonTablePortObject toolTable, final String parameters,
+                final List<String> inputsIds, final Map<String, String> executionHints) {
+                throw new UnsupportedOperationException("Executing a tool with input IDs is not supported here.");
+            }
+
+            @Override
             public PythonViewData get_view_data() {
                 return toPythonViewData(viewData, fileStoresByKey, exec);
             }
@@ -939,7 +957,8 @@ final class CloseablePythonNodeProxy
         var nnc = (NativeNodeContainer)NodeContext.getContext().getNodeContainer();
         var fileStoreSwitcher = FileStoreSwitcher.create(nnc);
         var exec = fileStoreSwitcher.createExecutionContext();
-        var toolExecutor = new ToolExecutor(exec, nnc, m_tableManager);
+        var toolExecutor =
+            new ToolExecutor(exec, nnc, m_tableManager, viewData == null ? null : viewData.virtualProject());
 
         var fileStoresByKey = new HashMap<String, FileStore>();
         var context = new DefaultViewContext(toolExecutor, portMapProvider, credentialsProvider,
@@ -965,7 +984,8 @@ final class CloseablePythonNodeProxy
                 var portObjects = viewData.ports().stream() //
                     .map(po -> PythonPortTypeRegistry.convertPortObjectFromPython(po, conversionContext))//
                     .toArray(PortObject[]::new);
-                return new BackendViewData(viewData.data(), portObjects);
+                return new BackendViewData(viewData.data(), portObjects, viewData.portIds().toArray(String[]::new),
+                    toolExecutor.getCombinedToolsWorkflowAndMarkToNotDisposeOnClose());
             }
 
             @Override
@@ -1024,11 +1044,23 @@ final class CloseablePythonNodeProxy
         }
         var data = viewData.data();
         var ports = viewData.ports();
+        var portIds = viewData.portIds();
+        var portsForIds = new PortObject[portIds.length];
+        if (portIds.length > 0) {
+            var wfm = viewData.virtualProject().loadAndGetWorkflow();
+            for (int i = 0; i < portIds.length; i++) {
+                var portId = ToolExecutor.createPortId(portIds[i]);
+                portsForIds[i] = wfm.getNodeContainer(portId.nodeIDSuffix().prependParent(wfm.getID()))
+                    .getOutPort(portId.portIndex()).getPortObject();
+            }
+        }
         var conversionContext = new PortObjectConversionContext(fileStoresByKey, m_tableManager, exec);
         var pyPorts = Stream.of(ports)//
             .map(po -> PythonPortTypeRegistry.convertPortObjectToPython(po, conversionContext))//
             .toList();
-
+        var pyPortsForIds = Stream.of(portsForIds)//
+            .map(po -> PythonPortTypeRegistry.convertPortObjectToPython(po, conversionContext))//
+            .toList();
         return new PythonViewData() {
 
             @Override
@@ -1039,6 +1071,16 @@ final class CloseablePythonNodeProxy
             @Override
             public List<PythonPortObject> ports() {
                 return pyPorts;
+            }
+
+            @Override
+            public List<String> portIds() {
+                return null;
+            }
+
+            @Override
+            public List<PythonPortObject> portsForIds() {
+                return pyPortsForIds;
             }
 
         };

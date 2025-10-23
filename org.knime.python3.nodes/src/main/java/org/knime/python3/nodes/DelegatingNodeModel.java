@@ -50,6 +50,8 @@ package org.knime.python3.nodes;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -57,12 +59,17 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.knime.core.node.CanceledExecutionException;
@@ -79,11 +86,25 @@ import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.PortType;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.ICredentials;
+import org.knime.core.node.workflow.NodeContainer;
 import org.knime.core.node.workflow.NodeContext;
+import org.knime.core.node.workflow.NodeID;
+import org.knime.core.node.workflow.NodeUIInformation;
+import org.knime.core.node.workflow.UnsupportedWorkflowVersionException;
 import org.knime.core.node.workflow.VariableType;
 import org.knime.core.node.workflow.VariableTypeRegistry;
+import org.knime.core.node.workflow.WorkflowManager;
+import org.knime.core.node.workflow.WorkflowPersistor.WorkflowLoadResult;
+import org.knime.core.node.workflow.WorkflowSaveHelper;
+import org.knime.core.node.workflow.capture.WorkflowSegment;
 import org.knime.core.node.workflow.virtual.AbstractPortObjectRepositoryNodeModel;
+import org.knime.core.util.FileUtil;
+import org.knime.core.util.FileUtil.ZipFileFilter;
+import org.knime.core.util.LockFailedException;
+import org.knime.core.util.Pair;
+import org.knime.core.util.VMFileLocker;
 import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
+import org.knime.gateway.impl.project.VirtualWorkflowProjects;
 import org.knime.python3.nodes.proxy.NodeProxy;
 import org.knime.python3.nodes.proxy.NodeProxyProvider;
 import org.knime.python3.nodes.proxy.NodeViewProxy;
@@ -225,6 +246,7 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
         }
 
         if (m_viewData != null && !m_viewData.isMarkedToPersist()) {
+            m_viewData.dispose();
             m_viewData = null;
         }
 
@@ -310,20 +332,29 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
         m_proxyProvider.cleanup();
 
         m_proxyShutdownTracker.waitForAllToClose();
+
+        if (m_viewData != null) {
+            m_viewData.dispose();
+            m_viewData = null;
+        }
     }
 
     @Override
-    protected void reset() {
+    protected synchronized void reset() {
         if (m_dataServiceProxy != null) {
             m_viewData = new ViewData();
             m_viewData.setBackendData(m_dataServiceProxy.getViewData());
         } else {
+            if (m_viewData != null) {
+                m_viewData.dispose();
+            }
             m_viewData = null;
         }
         m_proxyProvider.cleanup();
         m_view = Optional.empty();
         m_proxyShutdownTracker.waitForAllToClose();
     }
+
 
     @Override
     protected void loadInternals(final File nodeInternDir, final ExecutionMonitor exec)
@@ -443,7 +474,8 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
         if (m_viewData == null) {
             return m_internalInputPortObjects;
         } else {
-            return ArrayUtils.addAll(m_internalInputPortObjects, m_viewData.getBackendData().ports);
+            var ports = m_viewData.getBackendData().ports;
+            return ArrayUtils.addAll(m_internalInputPortObjects, ports);
         }
     }
 
@@ -461,7 +493,7 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
     /**
      * @return the data service proxy instance
      */
-    public DataServiceProxy getDataServiceProxy() {
+    public synchronized DataServiceProxy getDataServiceProxy() {
         if (m_nodeViewProxy == null) {
             m_nodeViewProxy = m_proxyProvider.getNodeViewProxy();
             m_dataServiceProxy = m_nodeViewProxy.getDataServiceProxy(m_settings.get(), m_internalInputPortObjects,
@@ -475,7 +507,7 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
      *
      * @throws Exception
      */
-    public void disposeDataServiceProxy() throws Exception {
+    public synchronized void disposeDataServiceProxy() throws Exception {
         if (m_nodeViewProxy != null) {
             m_nodeViewProxy.close();
             m_nodeViewProxy = null;
@@ -550,6 +582,21 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
                     out.writeUTF(m_frontendData);
                     out.writeUTF(m_backendData.data());
                     out.writeInt(m_backendData.ports.length);
+                    out.writeInt(m_backendData.portIds().length);
+                    for (int i = 0; i < m_backendData.portIds().length; i++) {
+                        out.writeUTF(m_backendData.portIds()[i]);
+                    }
+                    // write workflow
+                    var bytes = m_backendData.virtualProject.saveAsBlob();
+                    out.writeBoolean(bytes != null);
+                    if (bytes == null) {
+                        out.writeUTF(m_backendData.virtualProject.workflowId().toString());
+                    } else {
+                        out.writeInt(bytes.length);
+                        out.write(bytes);
+                    }
+                    out.flush();
+                } finally {
                 }
             }
         }
@@ -559,10 +606,35 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
             if (f.exists()) {
                 try (DataInputStream in =
                     new DataInputStream(new GZIPInputStream(new BufferedInputStream(new FileInputStream(f))))) {
-                    return new ViewData(in.readUTF(), new BackendViewData(in.readUTF(), new PortObject[in.readInt()]));
+                    var frontendData = in.readUTF();
+                    var backendData = in.readUTF();
+                    var ports = new PortObject[in.readInt()];
+                    var portIds = new String[in.readInt()];
+                    for (int i = 0; i < portIds.length; i++) {
+                        portIds[i] = in.readUTF();
+                    }
+                    // load workflow
+                    var hasBytes = in.readBoolean();
+                    VirtualProject virtualProject;
+                    if (hasBytes) {
+                        var bytes = new byte[in.readInt()];
+                        in.readFully(bytes);
+                        var hostNode = NodeContext.getContext().getNodeContainer();
+                        virtualProject = new VirtualProject(bytes, hostNode);
+                    } else {
+                        var workflowId = NodeID.fromString(in.readUTF());
+                        virtualProject = new VirtualProject(workflowId);
+                    }
+                    return new ViewData(frontendData, new BackendViewData(backendData, ports, portIds, virtualProject));
                 }
             }
             return null;
+        }
+
+        private void dispose() {
+            if (m_backendData != null && m_backendData.virtualProject != null) {
+                m_backendData.virtualProject.dispose();
+            }
         }
 
         /**
@@ -570,10 +642,197 @@ public final class DelegatingNodeModel extends AbstractPortObjectRepositoryNodeM
          *
          * @param data any data that can be serialized as a string
          * @param ports the port objects to be persisted with the view data
+         * @param portIds reference to ports in the virtual project workflow which a turned into actual port objects
+         *            when being passed to python
+         * @param virtualProject a virtual workflow project to be persisted with the view data
          */
-        public record BackendViewData(String data, PortObject[] ports) {
+        public record BackendViewData(String data, PortObject[] ports, String[] portIds,
+            VirtualProject virtualProject) {
+
         }
 
+        /**
+         * Encapsulates a virtual workflow project that is persisted with the view data. A virtual workflow project is
+         * never edited by the user directly and its life-cycle is controlled by the 'host node'.
+         */
+        public static final class VirtualProject {
+
+            private byte[] m_blob;
+
+            private NodeContainer m_hostNode;
+
+            private NodeID m_workflowId;
+
+            private String m_projectId;
+
+            private File m_wfmTmpDir;
+
+            private VirtualProject(final byte[] blob, final NodeContainer hostNode) {
+                m_blob = blob;
+                m_hostNode = hostNode;
+            }
+
+            /**
+             * Creates a new virtual project from an existing workflow. The workflow is registered as a virtual project
+             * workflow - see {@link VirtualWorkflowProjects#registerProject(WorkflowManager)}.
+             *
+             * @param workflowId id referencing the workflow to be used as virtual project
+             */
+            VirtualProject(final NodeID workflowId) {
+                m_workflowId = workflowId;
+                m_projectId = VirtualWorkflowProjects.registerProject(getWorkflow(workflowId));
+            }
+
+            /**
+             * @return the id to identify the virtual project within {@link VirtualWorkflowProjects}.
+             */
+            String projectId() {
+                return m_projectId;
+            }
+
+            /**
+             * @return id referencing the workflow within the workflow manager hierarchy.
+             */
+            NodeID workflowId() {
+                return m_workflowId;
+            }
+
+            /**
+             * @return {@code null} if is not a workflow project registered at {@link WorkflowManager#ROOT}
+             * @throws IOException
+             */
+            byte[] saveAsBlob() throws IOException {
+                if (m_workflowId == null && m_blob != null) {
+                    return m_blob;
+                }
+                if (m_workflowId.getPrefix().equals(WorkflowManager.ROOT.getID())) {
+                    return wfmToBlob(getWorkflow(m_workflowId));
+                } else {
+                    return null;
+                }
+            }
+
+            private static byte[] wfmToBlob(final WorkflowManager wfm) throws IOException {
+                var tmpDir = newTempDirWithName("virtual_project_" + wfm.getNameWithID());
+                try {
+                    return wfmToBlob(wfm, tmpDir);
+                } finally {
+                    FileUtil.deleteRecursively(tmpDir.getParentFile());
+                }
+            }
+
+            private static File newTempDirWithName(final String name) throws IOException {
+                final String sanitizedName = FileUtil.ILLEGAL_FILENAME_CHARS_PATTERN.matcher(name).replaceAll("_");
+                return new File(FileUtil.createTempDir("python_virtual_project"), sanitizedName);
+            }
+
+            private static byte[] wfmToBlob(final WorkflowManager wfm, final File tmpDir) throws IOException {
+                try (var bos = new ByteArrayOutputStream(); ZipOutputStream out = new ZipOutputStream(bos);) {
+                    var saveHelper = new WorkflowSaveHelper(true, false);
+                    wfm.save(tmpDir, saveHelper, new ExecutionMonitor());
+                    FileUtil.zipDir(out, Collections.singleton(tmpDir), new ZipFileFilter() {
+                        @Override
+                        public boolean include(final File f) {
+                            return !f.getName().equals(VMFileLocker.LOCK_FILE);
+                        }
+                    }, null);
+                    bos.flush();
+                    return bos.toByteArray();
+                } catch (LockFailedException | CanceledExecutionException | IOException e) {
+                    throw new IOException("Failed saving workflow for " + VirtualProject.class.getName(), e);
+                }
+            }
+
+            WorkflowManager loadAndGetWorkflow() {
+                if (m_workflowId == null) {
+                    var res = blobToWfm(m_blob, null, m_hostNode);
+                    var wfm = res.getFirst();
+                    m_projectId = VirtualWorkflowProjects.registerProject(wfm);
+                    m_workflowId = wfm.getID();
+                    m_blob = null;
+                    m_hostNode = null;
+                    m_wfmTmpDir = res.getSecond();
+                }
+                return getWorkflow(m_workflowId);
+            }
+
+            private static WorkflowManager getWorkflow(final NodeID workflowId) {
+                try {
+                    return (WorkflowManager)WorkflowManager.ROOT.findNodeContainer(workflowId);
+                } catch (IllegalArgumentException e) {
+                    return null;
+                }
+            }
+
+            private static Pair<WorkflowManager, File> blobToWfm(final byte[] bytes,
+                final Consumer<WorkflowLoadResult> loadResultCallback, final NodeContainer hostNode) {
+                try (var in = new ZipInputStream(new ByteArrayInputStream(bytes))) {
+                    final var tmpDir = newTempDirWithName("virtual_project_" + hostNode.getNameWithID());
+                    FileUtil.unzip(in, tmpDir, 1);
+                    var loadHelper = WorkflowSegment.createWorkflowLoadHelper(tmpDir, LOGGER::warn);
+                    var loadResult = WorkflowManager.ROOT.load(tmpDir, new ExecutionMonitor(), loadHelper, false);
+                    var wfm = loadResult.getWorkflowManager();
+                    if (loadResultCallback != null) {
+                        loadResultCallback.accept(loadResult);
+                    }
+                    NodeUIInformation hostNodeUIInfo = hostNode.getUIInformation();
+                    if (hostNodeUIInfo != null) {
+                        NodeUIInformation startUI =
+                            NodeUIInformation.builder(hostNodeUIInfo).translate(new int[]{60, -60, 0, 0}).build();
+                        wfm.setUIInformation(startUI);
+                    }
+                    return new Pair<>(wfm, tmpDir.getParentFile());
+                } catch (InvalidSettingsException | CanceledExecutionException | UnsupportedWorkflowVersionException
+                        | LockFailedException | IOException ex) {
+                    // should never happen
+                    throw new IllegalStateException("Failed loading workflow port object", ex);
+                }
+            }
+
+            void dispose() {
+                if (m_workflowId == null) {
+                    return;
+                }
+
+                m_blob = null;
+                m_hostNode = null;
+
+                var wfm = getWorkflow(m_workflowId);
+                if (wfm == null) {
+                    return;
+                }
+
+                // cancel
+                if (wfm.getNodeContainerState().isExecutionInProgress()) {
+                    wfm.cancelExecution(wfm);
+                    try {
+                        wfm.waitWhileInExecution(5, TimeUnit.SECONDS);
+                    } catch (InterruptedException ex) {
+                        // should never happen
+                        throw new IllegalStateException("Interrupted while waiting for workflow to cancel execution.",
+                            ex);
+                    }
+                }
+
+                // dispose workflow manager
+                if (wfm.isProject()) {
+                    wfm.getParent().removeProject(m_workflowId);
+                } else {
+                    wfm.getParent().removeNode(m_workflowId);
+                }
+
+                // remove from virtual projects
+                if (m_projectId != null && VirtualWorkflowProjects.isVirtualProject(m_projectId)) {
+                    VirtualWorkflowProjects.removeProject(m_projectId);
+                }
+
+                if (m_wfmTmpDir != null) {
+                    FileUtil.deleteRecursively(m_wfmTmpDir);
+                    m_wfmTmpDir = null;
+                }
+            }
+
+        }
     }
 
 }

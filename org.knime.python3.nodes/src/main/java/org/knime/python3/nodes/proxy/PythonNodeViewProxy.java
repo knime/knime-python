@@ -98,6 +98,16 @@ public interface PythonNodeViewProxy {
             String data();
 
             List<PythonPortObject> ports();
+
+            /**
+             * @return port references (only available when being send from Python to Java)
+             */
+            List<String> portIds();
+
+            /**
+             * @return the port objects referenced by the {@link #portIds()} when being send from Java to Python)
+             */
+            List<PythonPortObject> portsForIds();
         }
 
     }
