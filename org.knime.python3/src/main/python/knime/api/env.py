@@ -49,7 +49,9 @@ Provides access to environment variables and other information about the KNIME P
 """
 
 import os
+import platform
 import re
+import sys
 import tempfile
 from urllib.parse import urlsplit, quote_plus, unquote_plus
 
@@ -412,3 +414,60 @@ def _set_tmp_directory(java_callback):
     os.environ["TMPDIR"] = tmp_directory
     os.environ["TEMP"] = tmp_directory
     os.environ["TMP"] = tmp_directory
+
+
+def _pathsep_join(first: Optional[str], second: str) -> str:
+    """
+    Helper method that joins the two paths using the os.pathsep separator, as needed for a PATH
+    environment variable. If the first part is None, no separator is added
+    """
+    if first and second:
+        return os.pathsep.join([first, second])
+    elif first:
+        return first
+    else:
+        return second
+
+
+def _set_paths():
+    """
+    Make sure that the PATH variable includes the folder of the Python executable by appending
+    that folder to the PATH (if needed). We append it to the end so we don't change the behavior
+    of currently existing scripts where binaries from system paths would be picked up.
+
+    Also set the LD_LIBRARY_PATH on linux and DYLD_FALLBACK_LIBRARY_PATH on macOS to the "lib"
+    folder next to the "bin" folder that contains the Python executable if it exists, as we assume
+    this to be a Python environment who's dynamic libraries should be loadable.
+    """
+    # Get the directory containing the Python executable
+    python_executable = sys.executable
+    python_bin_dir = os.path.dirname(python_executable)
+
+    # Add Python bin directory to PATH if not already present
+    current_path = os.environ.get("PATH", "")
+    path_entries = current_path.split(os.pathsep) if current_path else []
+
+    if python_bin_dir not in path_entries:
+        # Append to the end to avoid changing existing behavior
+        new_path = _pathsep_join(current_path, python_bin_dir)
+        os.environ["PATH"] = new_path
+
+    # Set library path for dynamic libraries
+    # Look for a "lib" folder next to the "bin" folder
+    python_parent_dir = os.path.dirname(python_bin_dir)
+    lib_dir = os.path.join(python_parent_dir, "lib")
+
+    if os.path.exists(lib_dir):
+        system = platform.system().lower()
+
+        if system == "linux":
+            # Set LD_LIBRARY_PATH on Linux
+            current_ld_path = os.environ.get("LD_LIBRARY_PATH", "")
+            os.environ["LD_LIBRARY_PATH"] = _pathsep_join(current_ld_path, lib_dir)
+
+        elif system == "darwin":  # macOS
+            # Set DYLD_FALLBACK_LIBRARY_PATH on macOS
+            current_dyld_path = os.environ.get("DYLD_FALLBACK_LIBRARY_PATH", "")
+            os.environ["DYLD_FALLBACK_LIBRARY_PATH"] = _pathsep_join(
+                current_dyld_path, lib_dir
+            )
