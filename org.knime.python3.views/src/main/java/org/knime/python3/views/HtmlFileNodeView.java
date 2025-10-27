@@ -61,6 +61,7 @@ import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.interactive.ReExecutable;
+import org.knime.core.node.workflow.NodeMessage;
 import org.knime.core.webui.data.ApplyDataService;
 import org.knime.core.webui.data.DisposeDataServicesOnNodeStateChange;
 import org.knime.core.webui.data.InitialDataService;
@@ -258,6 +259,16 @@ public final class HtmlFileNodeView implements NodeTableView, DisposeDataService
     @Override
     public boolean canBeUsedInReport() {
         return m_canBeUsedInReport.getAsBoolean();
+    }
+
+    @Override
+    public NodeMessage getViewNodeMessage(final NodeMessage nodeMessage) {
+        if (nodeMessage.getMessageType() == NodeMessage.Type.WARNING) {
+            // suppressing warnings for now - eventually to be controlled by the python node implementation
+            return NodeMessage.NONE;
+        } else {
+            return nodeMessage;
+        }
     }
 
     // ================= BUILDER
