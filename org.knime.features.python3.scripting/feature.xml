@@ -2,7 +2,7 @@
 <feature
       id="org.knime.features.python3.scripting"
       label="KNIME Python Integration"
-      version="5.8.0.qualifier"
+      version="5.9.0.qualifier"
       provider-name="KNIME AG, Zurich, Switzerland">
 
    <description>
