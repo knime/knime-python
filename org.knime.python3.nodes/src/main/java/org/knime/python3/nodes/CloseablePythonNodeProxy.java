@@ -990,6 +990,18 @@ final class CloseablePythonNodeProxy
                 new NotInWorkflowWriteFileStoreHandler(UUID.randomUUID(), originalFileStoreHandler.getDataRepository());
             temporaryFileStoreHandler.open();
             nodeContainer.getNode().setFileStoreHandler(temporaryFileStoreHandler);
+
+            // The FilestoreHandler is initialized lazily in the context of the workflow that first creates a filestore
+            // in case of detached mode, this is the first tool workflow which gets removed after execution leading
+            // all subsequent filestore creations to fail.
+            // In particular, the first 'createFileStore' call creates the temporary directory (fs-handler's 'base-dir')
+            // to write the file-stores into. The temporary directory is created within the workflow temp directory
+            // determined via the NodeContext.
+            try {
+                temporaryFileStoreHandler.createFileStore("dummy");
+            } catch (IOException ex) {
+                LOGGER.error("Failed to pin temporary filestore handler to agent workflow.", ex);
+            }
             return new FileStoreSwitcher(nodeContainer, originalFileStoreHandler, temporaryFileStoreHandler);
         }
 
