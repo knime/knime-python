@@ -54,11 +54,15 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import org.knime.core.data.filestore.FileStore;
+import org.knime.core.data.filestore.internal.IFileStoreHandler;
+import org.knime.core.data.filestore.internal.NotInWorkflowWriteFileStoreHandler;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.ExecutionContext;
+import org.knime.core.node.NodeLogger;
 import org.knime.core.node.agentic.tool.ToolValue;
 import org.knime.core.node.agentic.tool.ToolValue.ToolResult;
 import org.knime.core.node.agentic.tool.WorkflowToolValue;
@@ -105,6 +109,8 @@ final class ToolExecutor implements AutoCloseable {
 
     private boolean m_disposeCombinedToolsWorkflowOnClose;
 
+    private FileStoreHandlerSwitcher m_fileStoreSwitcher = new FileStoreHandlerSwitcher();
+
     ToolExecutor(final ExecutionContext exec, final NativeNodeContainer nodeContainer,
         final PythonArrowTableConverter tableManager) {
         m_exec = exec;
@@ -128,6 +134,9 @@ final class ToolExecutor implements AutoCloseable {
         if (m_nodeContainer == null) {
             throw new IllegalStateException("ToolExecutor has already been closed");
         }
+
+        m_fileStoreSwitcher.switchFileStoreHandler(m_nodeContainer, true);
+
         // TODO AP-24410: Properly register output file stores
         Map<String, FileStore> dummyFileStoreMap = Map.of();
         var conversionContext = new PortObjectConversionContext(dummyFileStoreMap, m_tableManager, m_exec);
@@ -159,6 +168,8 @@ final class ToolExecutor implements AutoCloseable {
 
     CombinedToolsWorkflowInfo initCombinedToolsWorkflow(final List<PythonPortObject> inputs,
         final String execModeString) {
+        m_fileStoreSwitcher.switchFileStoreHandler(m_nodeContainer, false);
+
         Map<String, FileStore> dummyFileStoreMap = Map.of();
         List<String> inputPortIds = null;
         var execMode = ExecutionMode.valueOf(execModeString);
@@ -310,6 +321,61 @@ final class ToolExecutor implements AutoCloseable {
         m_nodeContainer = null;
         m_onCloseRunnables.forEach(Runnable::run);
         m_onCloseRunnables.clear();
+
+        m_fileStoreSwitcher.close();
+        m_fileStoreSwitcher = null;
+    }
+
+    private static class FileStoreHandlerSwitcher implements AutoCloseable {
+
+        private NativeNodeContainer m_nodeContainer;
+
+        private IFileStoreHandler m_originalFileStoreHandler;
+
+        private NotInWorkflowWriteFileStoreHandler m_temporaryFileStoreHandler;
+
+        void switchFileStoreHandler(final NativeNodeContainer nodeContainer, final boolean createTempDirAlready) {
+            if (m_nodeContainer != null) {
+                return;
+            }
+            m_nodeContainer = nodeContainer;
+            m_originalFileStoreHandler = m_nodeContainer.getNode().getFileStoreHandler();
+
+            // Hack to make sure all nodes within the 'virtual workflow' used for the tool execution
+            // use a suitable file store handler in case the host node is already executed (e.g. Agent Chat View).
+            // We temporarily(!) replace the file store handler of the host node with a more suitable one (and make
+            // sure its available via the WorkflowDataRepository) such that
+            // FlowVirtualScopeContext.createFileStoreHandler returns it.
+            m_temporaryFileStoreHandler = new NotInWorkflowWriteFileStoreHandler(UUID.randomUUID(),
+                m_originalFileStoreHandler.getDataRepository());
+            m_temporaryFileStoreHandler.open();
+            m_nodeContainer.getNode().setFileStoreHandler(m_temporaryFileStoreHandler);
+
+            if (createTempDirAlready) {
+                // The FilestoreHandler is initialized lazily in the context of the workflow that first creates a filestore
+                // in case of detached mode, this is the first tool workflow which gets removed after execution leading
+                // all subsequent filestore creations to fail.
+                // In particular, the first 'createFileStore' call creates the temporary directory (fs-handler's 'base-dir')
+                // to write the file-stores into. The temporary directory is created within the workflow temp directory
+                // determined via the NodeContext.
+                try {
+                    m_temporaryFileStoreHandler.createFileStore("dummy");
+                } catch (IOException ex) {
+                    NodeLogger.getLogger(ToolExecutor.class)
+                        .error("Failed to pin temporary filestore handler to agent workflow.", ex);
+                }
+            }
+        }
+
+        @Override
+        public void close() {
+            if (m_temporaryFileStoreHandler == null) {
+                return;
+            }
+            m_temporaryFileStoreHandler.close();
+            m_temporaryFileStoreHandler.clearAndDispose();
+            m_nodeContainer.getNode().setFileStoreHandler(m_originalFileStoreHandler);
+        }
     }
 
 }

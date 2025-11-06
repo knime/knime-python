@@ -955,8 +955,7 @@ final class CloseablePythonNodeProxy
         m_proxy.initializeJavaCallback(callback);
 
         var nnc = (NativeNodeContainer)NodeContext.getContext().getNodeContainer();
-        var fileStoreSwitcher = FileStoreSwitcher.create(nnc);
-        var exec = fileStoreSwitcher.createExecutionContext();
+        var exec = nnc.createExecutionContext();
         var toolExecutor =
             new ToolExecutor(exec, nnc, m_tableManager, viewData == null ? null : viewData.virtualProject());
 
@@ -991,50 +990,8 @@ final class CloseablePythonNodeProxy
             @Override
             public void close() throws Exception {
                 toolExecutor.close();
-                fileStoreSwitcher.close();
             }
         };
-    }
-
-    private record FileStoreSwitcher(NativeNodeContainer nodeContainer, IFileStoreHandler originalFileStoreHandler,
-        IWriteFileStoreHandler temporaryFileStoreHandler) implements AutoCloseable {
-
-        static FileStoreSwitcher create(final NativeNodeContainer nodeContainer) {
-            var originalFileStoreHandler = nodeContainer.getNode().getFileStoreHandler();
-            // Hack to make sure all nodes within the 'virtual workflow' used for the tool execution
-            // use a suitable file store handler in case the host node is already executed (e.g. Agent Chat View).
-            // We temporarily(!) replace the file store handler of the host node with a more suitable one (and make
-            // sure its available via the WorkflowDataRepository) such that
-            // FlowVirtualScopeContext.createFileStoreHandler returns it.
-            final var temporaryFileStoreHandler =
-                new NotInWorkflowWriteFileStoreHandler(UUID.randomUUID(), originalFileStoreHandler.getDataRepository());
-            temporaryFileStoreHandler.open();
-            nodeContainer.getNode().setFileStoreHandler(temporaryFileStoreHandler);
-
-            // The FilestoreHandler is initialized lazily in the context of the workflow that first creates a filestore
-            // in case of detached mode, this is the first tool workflow which gets removed after execution leading
-            // all subsequent filestore creations to fail.
-            // In particular, the first 'createFileStore' call creates the temporary directory (fs-handler's 'base-dir')
-            // to write the file-stores into. The temporary directory is created within the workflow temp directory
-            // determined via the NodeContext.
-            try {
-                temporaryFileStoreHandler.createFileStore("dummy");
-            } catch (IOException ex) {
-                LOGGER.error("Failed to pin temporary filestore handler to agent workflow.", ex);
-            }
-            return new FileStoreSwitcher(nodeContainer, originalFileStoreHandler, temporaryFileStoreHandler);
-        }
-
-        ExecutionContext createExecutionContext() {
-            return nodeContainer.createExecutionContext();
-        }
-
-        @Override
-        public void close() {
-            temporaryFileStoreHandler.close();
-            temporaryFileStoreHandler.clearAndDispose();
-            nodeContainer.getNode().setFileStoreHandler(originalFileStoreHandler);
-        }
     }
 
     private PythonViewData toPythonViewData(final BackendViewData viewData,
