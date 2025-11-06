@@ -47,7 +47,7 @@ properties([
 ])
 
 try {
-    node('maven && java17 && ubuntu22.04 && workflow-tests') {
+    node('maven && java21 && ubuntu22.04 && workflow-tests') {
         knimetools.defaultTychoBuild(updateSiteProject: 'org.knime.update.python')
     }
 
@@ -65,7 +65,7 @@ try {
 
     parallel(parallelConfigs)
 
-    node('ubuntu22.04 && workflow-tests && java17') {
+    node('ubuntu22.04 && workflow-tests && java21') {
         stage('Clone') {
             env.lastStage = env.STAGE_NAME
             checkout scm
