@@ -474,9 +474,10 @@ final class CloseablePythonNodeProxy
 
         var nodeContainer = (NativeNodeContainer)NodeContext.getContext().getNodeContainer();
 
+        final var virtualProject = viewData == null ? null : viewData.virtualProject();
         final var pythonExecContext = new PythonNodeModelProxy.PythonExecutionContext() {
 
-            ToolExecutor m_toolExecutor = new ToolExecutor(exec, nodeContainer, m_tableManager);
+            final ToolExecutor m_toolExecutor = new ToolExecutor(exec, nodeContainer, m_tableManager, virtualProject);
 
             @Override
             public void set_progress(final double progress, final String message) {
@@ -561,7 +562,7 @@ final class CloseablePythonNodeProxy
 
             @Override
             public PythonPortObject get_combined_tools_workflow() {
-                throw new UnsupportedOperationException("Getting the combined tools workflow is not supported here.");
+                return m_toolExecutor.getCombinedToolsWorkflow();
             }
 
             @Override

@@ -120,7 +120,8 @@ final class DefaultViewContext implements PythonNodeViewProxy.PythonViewContext 
 
     @Override
     public PythonPortObject get_combined_tools_workflow() {
-        return m_toolExecutor.getCombinedToolsWorkflow();
+        throw new UnsupportedOperationException(
+            "Getting the combined-tools workflow is not supported from within a view context.");
     }
 
     @Override

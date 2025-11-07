@@ -519,9 +519,6 @@ class _ViewContext(kn._BaseContext):
         self._init_combined_tools_workflow = (
             self._tool_executor.init_combined_tools_workflow
         )
-        self._get_combined_tools_workflow = (
-            self._tool_executor.get_combined_tools_workflow
-        )
         self._type_registry = type_registry
 
     def get_input_port_map(self) -> Dict[str, List[int]]:
@@ -1487,9 +1484,14 @@ class _ToolExecutor:
         return result.projectId(), result.workflowId(), result.inputPortIds()
 
     def get_combined_tools_workflow(self):
-        return self._java_ctx.get_combined_tools_workflow()
+        res = self._java_ctx.get_combined_tools_workflow()
+        dummy_port = kn.Port(kn.PortType.WORKFLOW, name="dummy", description="dummy")
+        return self._type_registry.port_object_to_python(
+            res,
+            dummy_port,
+            None,
+        )
 
-    # TODO de-duplicate
     def execute_tool_in_combined_workflow(
         self, tool, parameters: dict, input_ids: List, execution_hints: dict
     ):
@@ -1557,6 +1559,9 @@ class _ExecutionContext(kn.ExecutionContext):
         self._type_registry = type_registry
         self._tool_executor = _ToolExecutor(java_exec_context, type_registry)
         self._execute_tool = self._tool_executor.execute_tool
+        self._get_combined_tools_workflow = (
+            self._tool_executor.get_combined_tools_workflow
+        )
 
     def _get_view_data(self) -> dict:
         view_data = self._java_ctx.get_view_data()

@@ -55,6 +55,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.knime.core.data.filestore.FileStore;
@@ -68,16 +69,29 @@ import org.knime.core.node.agentic.tool.ToolValue.ToolResult;
 import org.knime.core.node.agentic.tool.WorkflowToolValue;
 import org.knime.core.node.agentic.tool.WorkflowToolValue.WorkflowToolResult;
 import org.knime.core.node.port.PortObject;
+import org.knime.core.node.workflow.ConnectionContainer;
 import org.knime.core.node.workflow.NativeNodeContainer;
+import org.knime.core.node.workflow.NodeContainer;
 import org.knime.core.node.workflow.NodeContext;
+import org.knime.core.node.workflow.NodeID;
 import org.knime.core.node.workflow.NodeID.NodeIDSuffix;
+import org.knime.core.node.workflow.WorkflowCopyContent;
+import org.knime.core.node.workflow.WorkflowCreationHelper;
+import org.knime.core.node.workflow.WorkflowManager;
 import org.knime.core.node.workflow.capture.CombinedExecutor;
 import org.knime.core.node.workflow.capture.CombinedExecutor.PortId;
 import org.knime.core.node.workflow.capture.WorkflowPortObject;
 import org.knime.core.node.workflow.capture.WorkflowPortObjectSpec;
 import org.knime.core.node.workflow.capture.WorkflowSegment;
+import org.knime.core.node.workflow.capture.WorkflowSegment.Input;
+import org.knime.core.node.workflow.capture.WorkflowSegment.Output;
+import org.knime.core.node.workflow.capture.WorkflowSegment.PortID;
 import org.knime.core.node.workflow.capture.WorkflowSegmentExecutor;
 import org.knime.core.node.workflow.capture.WorkflowSegmentExecutor.ExecutionMode;
+import org.knime.core.node.workflow.contextv2.WorkflowContextV2;
+import org.knime.core.node.workflow.virtual.DefaultVirtualPortObjectInNodeModel;
+import org.knime.core.node.workflow.virtual.DefaultVirtualPortObjectOutNodeModel;
+import org.knime.core.util.FileUtil;
 import org.knime.gateway.impl.project.VirtualWorkflowProjects;
 import org.knime.python3.arrow.PythonArrowTableConverter;
 import org.knime.python3.nodes.DelegatingNodeModel.ViewData.VirtualProject;
@@ -229,8 +243,8 @@ final class ToolExecutor implements AutoCloseable {
                 .map(po -> PythonPortTypeRegistry.convertPortObjectToPython(po, conversionContext))//
                 .toArray(PythonPortObject[]::new);
 
-            var outputIds = Stream.of(result.outputIds()).map(id -> id.replaceFirst(combinedToolsWorkflowId + ":", "")) // TODO re-visit?
-                .toList();
+            var outputIds =
+                Stream.of(result.outputIds()).map(id -> id.replaceFirst(combinedToolsWorkflowId + ":", "")).toList();
             return new PythonToolResult(result.message(), pyOutputs, outputIds, viewNodeIds);
         } finally {
             NodeContext.removeLastContext();
@@ -243,19 +257,28 @@ final class ToolExecutor implements AutoCloseable {
     }
 
     PythonPortObject getCombinedToolsWorkflow() {
-        // TODO remove virtual I/O nodes and properly set inputs/outputs on workflow segment
-        var combinedToolsWorkflow = m_workflowExecutor.getWorkflow();
-        var ws = new WorkflowSegment(combinedToolsWorkflow, List.of(), List.of(), Set.of());
-        var spec = new WorkflowPortObjectSpec(ws, combinedToolsWorkflow.getName(), List.of(), List.of());
-        var po = new WorkflowPortObject(spec);
+        WorkflowPortObjectSpec spec;
+        if (m_combinedToolsWorkflow == null) {
+            // workflow segment with an empty workflow
+            var name = "Empty workflow";
+            var ws = createEmptyWorkflowSegment(name);
+            spec = new WorkflowPortObjectSpec(ws, name, List.of(), List.of());
+        } else {
+            var wfm = m_combinedToolsWorkflow.loadAndGetWorkflow();
+            var inputIds = new ArrayList<String>();
+            var outputIds = new ArrayList<String>();
+            var ws = createWorkflowSegmentWithRemovedIONodes(wfm, inputIds, outputIds);
+            spec = new WorkflowPortObjectSpec(ws, wfm.getName(), inputIds, outputIds);
+        }
+        var wpo = new WorkflowPortObject(spec);
         try {
-            ws.serializeAndDisposeWorkflow();
+            spec.getWorkflowSegment().serializeAndDisposeWorkflow();
         } catch (IOException ex) {
-            // TODO
-            throw new RuntimeException(ex);
+            // should never happen
+            throw new IllegalStateException("Failed to create combined tools workflow", ex);
         }
         var conversionContext = new PortObjectConversionContext(Map.of(), m_tableManager, m_exec);
-        return PythonPortTypeRegistry.convertPortObjectToPython(po, conversionContext);
+        return PythonPortTypeRegistry.convertPortObjectToPython(wpo, conversionContext);
     }
 
     VirtualProject getCombinedToolsWorkflowAndMarkToNotDisposeOnClose() {
@@ -375,6 +398,82 @@ final class ToolExecutor implements AutoCloseable {
             m_temporaryFileStoreHandler.close();
             m_temporaryFileStoreHandler.clearAndDispose();
             m_nodeContainer.getNode().setFileStoreHandler(m_originalFileStoreHandler);
+        }
+    }
+
+    private static WorkflowSegment createEmptyWorkflowSegment(final String name) {
+        return new WorkflowSegment(createEmptyWorkflow(name), List.of(), List.of(), Set.of());
+    }
+
+    private static WorkflowSegment createWorkflowSegmentWithRemovedIONodes(final WorkflowManager wfm,
+        final List<String> inputIds, final List<String> outputIds) {
+        WorkflowManager segmentWfm;
+        segmentWfm = createEmptyWorkflow("workflow_segment");
+        var copyContent = WorkflowCopyContent.builder()
+            .setNodeIDs(wfm.getNodeContainers().stream().map(NodeContainer::getID).toArray(NodeID[]::new)).build();
+        var persistor = wfm.copy(copyContent);
+        segmentWfm.paste(persistor);
+        List<Input> inputs = new ArrayList<>();
+        List<Output> outputs = new ArrayList<>();
+        removeAndCollectContainerInputsAndOutputs(segmentWfm, inputs, inputIds, outputs, outputIds);
+        return new WorkflowSegment(segmentWfm, inputs, outputs, Set.of());
+    }
+
+    private static WorkflowManager createEmptyWorkflow(final String name) {
+        try {
+            var tempDir = FileUtil.createTempDir(name);
+            return WorkflowManager.EXTRACTED_WORKFLOW_ROOT.createAndAddProject(name,
+                new WorkflowCreationHelper(WorkflowContextV2.forTemporaryWorkflow(tempDir.toPath(), null)));
+        } catch (IOException ex) {
+            // should never happen
+            throw new IllegalStateException("Failed to create temporary directory for empty workflow", ex);
+        }
+    }
+
+    private static void removeAndCollectContainerInputsAndOutputs(final WorkflowManager wfm, final List<Input> inputs,
+        final List<String> inputIds, final List<Output> outputs, final List<String> outputIds) {
+        List<NodeID> nodesToRemove = new ArrayList<>();
+        for (NodeContainer nc : wfm.getNodeContainers()) {
+            if (nc instanceof NativeNodeContainer nnc
+                && (collectInputs(wfm, inputs, inputIds, nnc) || collectOutputs(wfm, outputs, outputIds, nnc))) {
+                nodesToRemove.add(nnc.getID());
+            }
+        }
+        nodesToRemove.forEach(wfm::removeNode);
+    }
+
+    private static boolean collectOutputs(final WorkflowManager wfm, final List<Output> outputs,
+        final List<String> outputIds, final NativeNodeContainer nnc) {
+        if (nnc.getNodeModel() instanceof DefaultVirtualPortObjectOutNodeModel) {
+            for (ConnectionContainer cc : wfm.getIncomingConnectionsFor(nnc.getID())) {
+                outputs.add(new Output(nnc.getInPort(cc.getDestPort()).getPortType(), null,
+                    new PortID(NodeIDSuffix.create(wfm.getID(), cc.getSource()), cc.getSourcePort())));
+                outputIds.add(wfm.getNodeContainer(cc.getSource()).getOutPort(cc.getSourcePort()).getPortName() + "-"
+                    + outputIds.size());
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    private static boolean collectInputs(final WorkflowManager wfm, final List<Input> inputs,
+        final List<String> inputIds, final NativeNodeContainer nnc) {
+        if (nnc.getNodeModel() instanceof DefaultVirtualPortObjectInNodeModel) {
+            for (var i = 0; i < nnc.getNrOutPorts(); i++) {
+                Set<PortID> ports = wfm.getOutgoingConnectionsFor(nnc.getID(), i).stream()
+                    .map(cc -> new PortID(NodeIDSuffix.create(wfm.getID(), cc.getDest()), cc.getDestPort()))
+                    .collect(Collectors.toSet());
+                if (!ports.isEmpty()) {
+                    inputs.add(new Input(nnc.getOutputType(i), null, ports));
+                    var firstPort = ports.iterator().next();
+                    inputIds.add(wfm.getNodeContainer(firstPort.getNodeIDSuffix().prependParent(wfm.getID()))
+                        .getInPort(firstPort.getIndex()).getPortName() + "-" + inputIds.size());
+                }
+            }
+            return true;
+        } else {
+            return false;
         }
     }
 
