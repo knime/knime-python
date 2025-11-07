@@ -112,6 +112,13 @@ public final class PythonWorkflowPortObject implements PythonPortObject {
     }
 
     /**
+     * @return the actual {@link WorkflowPortObject}
+     */
+    public WorkflowPortObject getWorkflow() {
+        return m_workflow;
+    }
+
+    /**
      * Executes the workflow on the given inputs.
      *
      * NOTE: Currently only table inputs and outputs are fully supported.

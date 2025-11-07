@@ -202,12 +202,19 @@ public final class PortObjectConverters {
      * Uni-directional Port Object converter for {@link WorkflowPortObject}.
      */
     public static final class PythonWorkflowPortObjectConverter
-        implements KnimeToPythonPortObjectConverter<WorkflowPortObject, PythonWorkflowPortObject> {
+        implements KnimeToPythonPortObjectConverter<WorkflowPortObject, PythonWorkflowPortObject>,
+        PythonToKnimePortObjectConverter<PythonWorkflowPortObject, WorkflowPortObject> {
 
         @Override
         public PythonWorkflowPortObject toPython(final WorkflowPortObject workflow,
             final PortObjectConversionContext context) {
             return new PythonWorkflowPortObject(workflow, context.tableConverter());
+        }
+
+        @Override
+        public WorkflowPortObject fromPython(final PythonWorkflowPortObject purePythonPortObject,
+            final PortObjectConversionContext context) {
+            return purePythonPortObject.getWorkflow();
         }
     }
 

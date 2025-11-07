@@ -758,9 +758,8 @@ class _PortTypeRegistry:
             data = spec.serialize()
             class_name = "org.knime.core.node.port.image.ImagePortObjectSpec"
         elif port.type == kn.PortType.WORKFLOW:
-            raise AssertionError(
-                "WorkflowPortObjectSpecs can't be created in a Python node."
-            )
+            # TODO pass through the spec as well
+            return None
         else:  # custom spec
             assert port.type.id in self._port_types_by_id, (
                 f"Invalid output spec, no port type with id '{port.type.id}' registered. Please register the port type."
@@ -902,7 +901,7 @@ class _PortTypeRegistry:
         elif port.type == kn.PortType.CREDENTIAL:
             return _PythonCredentialPortObject(obj.spec)
         elif port.type == kn.PortType.WORKFLOW:
-            raise AssertionError("WorkflowPortObjects can't be created in Python.")
+            return obj._workflow
         else:
             assert port.type.id in self._port_types_by_id, (
                 f"Invalid output port value, no port type with id '{id}' registered. Please register the port type."
