@@ -1410,7 +1410,8 @@ class LocalPathParameter(StringParameter):
 
     def _get_options(self, dialog_creation_context) -> dict:
         options = {
-            "format": "localFileChooser",
+            "format": "stringFileChooser",
+            "fileSystem": "LOCAL",
             "placeholder": self.placeholder_text,
         }
 
