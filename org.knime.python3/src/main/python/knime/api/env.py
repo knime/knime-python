@@ -438,36 +438,55 @@ def _set_paths():
     Also set the LD_LIBRARY_PATH on linux and DYLD_FALLBACK_LIBRARY_PATH on macOS to the "lib"
     folder next to the "bin" folder that contains the Python executable if it exists, as we assume
     this to be a Python environment who's dynamic libraries should be loadable.
+
+    On Windows, we add the possible locations for DLLs inside the environment to the PATH so that
+    the system picks up DLLs in these folders, too.
     """
     # Get the directory containing the Python executable
     python_executable = sys.executable
-    python_bin_dir = os.path.dirname(python_executable)
+
+    python_bin_dir = os.path.normpath(os.path.dirname(python_executable))
 
     # Add Python bin directory to PATH if not already present
     current_path = os.environ.get("PATH", "")
     path_entries = current_path.split(os.pathsep) if current_path else []
 
-    if python_bin_dir not in path_entries:
+    # Normalize all path entries for comparison
+    normalized_entries = [os.path.normpath(entry) for entry in path_entries]
+
+    if python_bin_dir not in normalized_entries:
         # Append to the end to avoid changing existing behavior
         new_path = _pathsep_join(current_path, python_bin_dir)
         os.environ["PATH"] = new_path
 
     # Set library path for dynamic libraries
-    # Look for a "lib" folder next to the "bin" folder
     python_parent_dir = os.path.dirname(python_bin_dir)
-    lib_dir = os.path.join(python_parent_dir, "lib")
 
-    if os.path.exists(lib_dir):
-        system = platform.system().lower()
+    system = platform.system().lower()
+    if system == "windows":
+        # On Windows, DLLs are loaded from the PATH, there's no dedicated
+        # environment variable for DLLs.
+        current_path = os.environ["PATH"]
 
-        if system == "linux":
-            # Set LD_LIBRARY_PATH on Linux
-            current_ld_path = os.environ.get("LD_LIBRARY_PATH", "")
-            os.environ["LD_LIBRARY_PATH"] = _pathsep_join(current_ld_path, lib_dir)
+        for additional_dir in [os.path.join("Library", "bin"), "DLLs", "Scripts"]:
+            additional_dir = os.path.join(python_parent_dir, additional_dir)
+            if os.path.exists(additional_dir):
+                current_path = _pathsep_join(current_path, additional_dir)
 
-        elif system == "darwin":  # macOS
-            # Set DYLD_FALLBACK_LIBRARY_PATH on macOS
-            current_dyld_path = os.environ.get("DYLD_FALLBACK_LIBRARY_PATH", "")
-            os.environ["DYLD_FALLBACK_LIBRARY_PATH"] = _pathsep_join(
-                current_dyld_path, lib_dir
-            )
+        os.environ["PATH"] = current_path
+    else:
+        # Look for a "lib" folder next to the "bin" folder
+        lib_dir = os.path.join(python_parent_dir, "lib")
+
+        if os.path.exists(lib_dir):
+            if system == "linux":
+                # Set LD_LIBRARY_PATH on Linux
+                current_ld_path = os.environ.get("LD_LIBRARY_PATH", "")
+                os.environ["LD_LIBRARY_PATH"] = _pathsep_join(current_ld_path, lib_dir)
+
+            elif system == "darwin":  # macOS
+                # Set DYLD_FALLBACK_LIBRARY_PATH on macOS
+                current_dyld_path = os.environ.get("DYLD_FALLBACK_LIBRARY_PATH", "")
+                os.environ["DYLD_FALLBACK_LIBRARY_PATH"] = _pathsep_join(
+                    current_dyld_path, lib_dir
+                )
