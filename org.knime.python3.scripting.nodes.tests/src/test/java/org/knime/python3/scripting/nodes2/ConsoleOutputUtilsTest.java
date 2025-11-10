@@ -58,7 +58,7 @@ import java.util.stream.IntStream;
 
 import org.junit.Test;
 import org.knime.core.util.PathUtils;
-import org.knime.scripting.editor.ScriptingService.ConsoleText;
+import org.knime.core.webui.node.dialog.scripting.ScriptingService.ConsoleText;
 
 /**
  * Unit tests for the ConsoleOutputUtils.

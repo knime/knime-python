@@ -51,8 +51,8 @@ package org.knime.python3.scripting.nodes2;
 import java.io.IOException;
 import java.util.List;
 
+import org.knime.core.webui.node.dialog.scripting.lsp.LanguageServerProxy;
 import org.knime.python3.scripting.nodes.prefs.Python3ScriptingPreferences;
-import org.knime.scripting.editor.lsp.LanguageServerProxy;
 
 import com.google.gson.Gson;
 

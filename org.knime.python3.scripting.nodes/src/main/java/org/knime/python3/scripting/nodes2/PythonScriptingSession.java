@@ -84,6 +84,7 @@ import org.knime.core.util.FileUtil;
 import org.knime.core.util.ThreadUtils;
 import org.knime.core.util.asynclose.AsynchronousCloseable;
 import org.knime.core.util.pathresolve.ResolverUtil;
+import org.knime.core.webui.node.dialog.scripting.ScriptingService.ConsoleText;
 import org.knime.python3.Activator;
 import org.knime.python3.Python3SourceDirectory;
 import org.knime.python3.PythonCommand;
@@ -106,7 +107,6 @@ import org.knime.python3.utils.ProxyUtils;
 import org.knime.python3.views.Python3ViewsSourceDirectory;
 import org.knime.python3.views.PythonNodeViewStoragePath;
 import org.knime.python3.views.PythonViewsExtension;
-import org.knime.scripting.editor.ScriptingService.ConsoleText;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.gson.Gson;

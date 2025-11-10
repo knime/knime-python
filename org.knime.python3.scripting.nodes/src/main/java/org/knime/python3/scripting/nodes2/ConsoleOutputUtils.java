@@ -73,9 +73,9 @@ import org.knime.core.table.access.StringAccess.StringWriteAccess;
 import org.knime.core.table.row.ReadAccessRow;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.util.PathUtils;
+import org.knime.core.webui.node.dialog.scripting.ScriptingService.ConsoleText;
 import org.knime.python3.arrow.PythonArrowDataUtils;
 import org.knime.python3.scripting.nodes2.ConsoleOutputUtils.ConsoleOutputStorage;
-import org.knime.scripting.editor.ScriptingService.ConsoleText;
 
 /**
  * Utilities for saving and loading the standard streams output of a process.

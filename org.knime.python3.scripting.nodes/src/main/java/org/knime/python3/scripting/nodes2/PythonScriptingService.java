@@ -72,14 +72,14 @@ import org.knime.core.node.workflow.FlowObjectStack;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.util.ThreadUtils;
 import org.knime.core.webui.data.DataServiceContext;
+import org.knime.core.webui.node.dialog.scripting.CodeGenerationRequest;
+import org.knime.core.webui.node.dialog.scripting.InputOutputModel;
+import org.knime.core.webui.node.dialog.scripting.ScriptingService;
 import org.knime.python3.scripting.nodes2.PythonScriptingService.ExecutableOption.ExecutableOptionType;
 import org.knime.python3.scripting.nodes2.PythonScriptingSession.ExecutionInfo;
 import org.knime.python3.scripting.nodes2.PythonScriptingSession.ExecutionStatus;
 import org.knime.python3.scripting.nodes2.PythonScriptingSession.FileStoreHandlerSupplier;
 import org.knime.python3.views.PythonNodeViewStoragePath;
-import org.knime.scripting.editor.CodeGenerationRequest;
-import org.knime.scripting.editor.InputOutputModel;
-import org.knime.scripting.editor.ScriptingService;
 
 /**
  * A special {@link ScriptingService} for the Python scripting node.
@@ -221,8 +221,8 @@ final class PythonScriptingService extends ScriptingService {
     }
 
     /**
-     * An extension of the {@link org.knime.scripting.editor.ScriptingService.RpcService} that provides additional
-     * methods to the frontend of the Python scripting node.
+     * An extension of the {@link org.knime.core.webui.node.dialog.scripting.ScriptingService.RpcService} that provides
+     * additional methods to the frontend of the Python scripting node.
      *
      * NB: Must be public for the JSON-RPC server
      */
@@ -379,7 +379,8 @@ final class PythonScriptingService extends ScriptingService {
         @Override
         protected CodeGenerationRequest getCodeSuggestionRequest(final String userPrompt, final String currentCode,
             final InputOutputModel[] inputOutputModels) {
-            return PythonCodeAssistant.createCodeGenerationRequest(userPrompt, currentCode, inputOutputModels, m_hasView);
+            return PythonCodeAssistant.createCodeGenerationRequest(userPrompt, currentCode, inputOutputModels,
+                m_hasView);
         }
     }
 
