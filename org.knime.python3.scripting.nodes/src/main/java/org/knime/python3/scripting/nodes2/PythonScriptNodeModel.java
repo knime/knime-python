@@ -85,6 +85,7 @@ import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.node.workflow.VariableType;
 import org.knime.core.node.workflow.VariableTypeRegistry;
 import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
+import org.knime.core.webui.node.dialog.scripting.ScriptingService.ConsoleText;
 import org.knime.python3.PythonCommand;
 import org.knime.python3.PythonProcessTerminatedException;
 import org.knime.python3.scripting.nodes2.ConsoleOutputUtils.ConsoleOutputStorage;
@@ -93,7 +94,6 @@ import org.knime.python3.scripting.nodes2.PythonScriptingSession.ExecutionStatus
 import org.knime.python3.scripting.nodes2.PythonScriptingSession.FileStoreHandlerSupplier;
 import org.knime.python3.utils.FlowVariableUtils;
 import org.knime.python3.views.PythonNodeViewStoragePath;
-import org.knime.scripting.editor.ScriptingService.ConsoleText;
 
 import py4j.Py4JException;
 

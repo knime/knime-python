@@ -65,8 +65,8 @@ import org.knime.core.webui.node.dialog.VariableSettingsRO;
 import org.knime.core.webui.node.dialog.VariableSettingsWO;
 import org.knime.core.webui.node.dialog.configmapping.ConfigMappings;
 import org.knime.core.webui.node.dialog.configmapping.NodeSettingsCorrectionUtil;
-import org.knime.scripting.editor.GenericSettingsIOManager;
-import org.knime.scripting.editor.ScriptingNodeSettings;
+import org.knime.core.webui.node.dialog.scripting.GenericSettingsIOManager;
+import org.knime.core.webui.node.dialog.scripting.ScriptingNodeSettings;
 
 /**
  * The settings of a Python scripting node.

@@ -48,12 +48,12 @@
  */
 package org.knime.python3.scripting.nodes2;
 
-import org.knime.scripting.editor.CodeGenerationRequest;
-import org.knime.scripting.editor.CodeGenerationRequest.Inputs;
-import org.knime.scripting.editor.CodeGenerationRequest.Outputs;
-import org.knime.scripting.editor.CodeGenerationRequest.RequestBody;
-import org.knime.scripting.editor.InputOutputModel;
-import org.knime.scripting.editor.InputOutputModelNameAndTypeUtils;
+import org.knime.core.webui.node.dialog.scripting.CodeGenerationRequest;
+import org.knime.core.webui.node.dialog.scripting.CodeGenerationRequest.Inputs;
+import org.knime.core.webui.node.dialog.scripting.CodeGenerationRequest.Outputs;
+import org.knime.core.webui.node.dialog.scripting.CodeGenerationRequest.RequestBody;
+import org.knime.core.webui.node.dialog.scripting.InputOutputModel;
+import org.knime.core.webui.node.dialog.scripting.InputOutputModelNameAndTypeUtils;
 
 /**
  * This class provides methods to generate Python code with the help of AI

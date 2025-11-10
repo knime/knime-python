@@ -62,9 +62,9 @@ import org.knime.core.node.port.PortType;
 import org.knime.core.node.port.flowvariable.FlowVariablePortObject;
 import org.knime.core.node.port.image.ImagePortObject;
 import org.knime.core.node.workflow.FlowVariable;
+import org.knime.core.webui.node.dialog.scripting.InputOutputModel;
+import org.knime.core.webui.node.dialog.scripting.WorkflowControl.InputPortInfo;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
-import org.knime.scripting.editor.InputOutputModel;
-import org.knime.scripting.editor.WorkflowControl.InputPortInfo;
 
 /**
  * Utilities for providing the {@link InputOutputModel} for the scripting editor dialog.

@@ -66,8 +66,8 @@ import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.port.PortType;
 import org.knime.core.node.port.image.ImagePortObject;
 import org.knime.core.node.workflow.FlowVariable;
+import org.knime.core.webui.node.dialog.scripting.WorkflowControl.InputPortInfo;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
-import org.knime.scripting.editor.WorkflowControl.InputPortInfo;
 
 /**
  * Unit tests for the {@link PythonScriptingInputOutputModelUtils}.
