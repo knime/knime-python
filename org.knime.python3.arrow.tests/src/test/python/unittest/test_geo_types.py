@@ -53,6 +53,7 @@ import unittest
 import pandas as pd
 import pyarrow as pa
 import numpy as np
+import pytest
 
 import knime._arrow._backend as ka
 import knime.scripting._deprecated._arrow_table as kat
@@ -143,6 +144,38 @@ def _register_geospatial_col_converters():
         )
 
 
+# Function to check if geospatial types are available
+def _geospatial_types_available():
+    try:
+        import geopandas
+        import sys
+        import os
+
+        # we expect that the knime-geospatial git repository is located next to knime-python
+        this_file_path = os.path.dirname(os.path.realpath(__file__))
+        test_path = os.path.join(
+            this_file_path,
+            "..",
+            "..",
+            "..",
+            "..",
+            "..",
+            "..",
+            "knime-geospatial",
+            "org.knime.geospatial.python",
+            "src",
+            "main",
+            "python",
+        )
+        return os.path.exists(test_path)
+    except ImportError:
+        return False
+
+
+@pytest.mark.skipif(
+    not _geospatial_types_available(),
+    reason="Skipping GeoSpatial tests because knime-geospatial could not be found or 'geopandas' is not available",
+)
 class GeoSpatialExtensionTypeTest(unittest.TestCase):
     """
     We currently put the testcase for the GeoSpatial types here because the test needs access
@@ -153,49 +186,36 @@ class GeoSpatialExtensionTypeTest(unittest.TestCase):
     TODO: We should consider moving this test over to knime-geospatial as part of AP-18690.
     """
 
-    geospatial_types_found = False
-
     @classmethod
     def setUpClass(cls):
-        try:
-            import geopandas
-            import sys
-            import os
+        import geopandas
+        import sys
+        import os
 
-            # we expect that the knime-geospatial git repository is located next to knime-python
-            this_file_path = os.path.dirname(os.path.realpath(__file__))
-            sys.path.append(
-                os.path.join(
-                    this_file_path,
-                    "..",
-                    "..",
-                    "..",
-                    "..",
-                    "..",
-                    "..",
-                    "knime-geospatial",
-                    "org.knime.geospatial.python",
-                    "src",
-                    "main",
-                    "python",
-                )
+        # we expect that the knime-geospatial git repository is located next to knime-python
+        this_file_path = os.path.dirname(os.path.realpath(__file__))
+        sys.path.append(
+            os.path.join(
+                this_file_path,
+                "..",
+                "..",
+                "..",
+                "..",
+                "..",
+                "..",
+                "knime-geospatial",
+                "org.knime.geospatial.python",
+                "src",
+                "main",
+                "python",
             )
+        )
 
-            _register_geospatial_value_factories()
-            _register_geospatial_col_converters()
-            _register_extension_types()
-            # to register the arrow<->pandas column converters
-            import knime.types.geospatial
-
-            GeoSpatialExtensionTypeTest.geospatial_types_found = True
-        except ImportError as e:
-            raise unittest.SkipTest(
-                """
-                Skipping GeoSpatial tests because knime-geospatial could 
-                not be found or 'geopandas' is not available
-                """,
-                e,
-            )
+        _register_geospatial_value_factories()
+        _register_geospatial_col_converters()
+        _register_extension_types()
+        # to register the arrow<->pandas column converters
+        import knime.types.geospatial
 
     def _to_pandas(self, arrow):
         return kap.arrow_data_to_pandas_df(arrow)
@@ -379,8 +399,6 @@ class GeoSpatialExtensionTypeTest(unittest.TestCase):
         self.assertEqual(gdf.crs, crs)
 
     def test_setitem(self):
-        if not GeoSpatialExtensionTypeTest.geospatial_types_found:
-            return
         import geopandas as gpd
 
         # load test table
