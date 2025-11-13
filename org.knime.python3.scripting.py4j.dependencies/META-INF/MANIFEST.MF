@@ -8,6 +8,5 @@ Bundle-Vendor: KNIME AG, Zurich, Switzerland
 Bundle-RequiredExecutionEnvironment: JavaSE-17
 Fragment-Host: org.knime.ext.py4j;bundle-version="[0.10.9.2,0.11.0)"
 Automatic-Module-Name: org.knime.python3.scripting.py4j.dependencies
-Require-Bundle: org.knime.core.table;bundle-version="[5.6.0,6.0.0)",
- org.knime.python2;bundle-version="[5.6.0,6.0.0)"
-
+Require-Bundle: org.knime.core.table;bundle-version="[5.9.0,6.0.0)",
+ org.knime.python2;bundle-version="[5.9.0,6.0.0)"
