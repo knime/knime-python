@@ -1,4 +1,4 @@
-{% set version =  "5.8.0" %}
+{% set version =  "5.9.0" %}
 
 package:
   name: knime-extension
