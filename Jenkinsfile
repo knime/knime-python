@@ -8,13 +8,14 @@ static final String[] WF_TESTS_PYTHON_ENVS = [
     'env_py39_kn47.yml',
     'env_py312_kn56.yml',
     'env_py313_kn56.yml',
+    'env_py314_kn56.yml',
 ]
 
 @groovy.transform.Field
 static final String DEFAULT_WF_TESTS_PYTHON_ENV = 'bundled'
 
 @groovy.transform.Field
-static final List<String> PYTEST_PYTHON_ENVS = ['env_py38_legacy', 'env_py38', 'env_py39', 'env_py311', "env_py311kn55", "env_py312kn56", "env_py313kn56"]
+static final List<String> PYTEST_PYTHON_ENVS = ['env_py38_legacy', 'env_py38', 'env_py39', 'env_py311', "env_py311kn55", "env_py312kn56", "env_py313kn56", "env_py314kn56"]
 
 library "knime-pipeline@$BN"
 

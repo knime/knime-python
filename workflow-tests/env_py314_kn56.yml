@@ -1,0 +1,17 @@
+name: python_test_environment
+channels:
+  - conda-forge
+  - knime
+dependencies:
+  - python=3.14
+#  - knime-python-base=5.6
+  - coverage
+  - pytest
+  - matplotlib # View tests
+  - seaborn # View tests
+  - pyarrow=21.0.*
+  - pandas=2.3.*
+  - py4j=0.10.9
+  - markdown=3.8.*
+  - nbformat # Jupyter nodebook loading
+  - ipython # Jupyter nodebook loading
