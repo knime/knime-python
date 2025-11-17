@@ -66,3 +66,4 @@ You can find instructions on how to work with our code or develop extensions for
 ## Join the Community
 
 * [KNIME Forum](https://forum.knime.com/)
+
