@@ -52,6 +52,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.webui.data.RpcDataService;
@@ -59,7 +60,6 @@ import org.knime.core.webui.node.dialog.NodeDialog;
 import org.knime.core.webui.node.dialog.NodeSettingsService;
 import org.knime.core.webui.node.dialog.SettingsType;
 import org.knime.core.webui.node.dialog.scripting.GenericInitialDataBuilder;
-import org.knime.core.webui.node.dialog.scripting.GenericInitialDataBuilder.DataSupplier;
 import org.knime.core.webui.node.dialog.scripting.ScriptingNodeSettingsService;
 import org.knime.core.webui.node.dialog.scripting.WorkflowControl;
 import org.knime.core.webui.page.Page;
@@ -114,20 +114,20 @@ public final class PythonScriptNodeDialog implements NodeDialog {
     public NodeSettingsService getNodeSettingsService() {
         var workflowControl = new WorkflowControl(NodeContext.getContext().getNodeContainer());
 
-        DataSupplier inputObjectSupplier =
+        Supplier<Object> inputObjectSupplier =
             () -> PythonScriptingInputOutputModelUtils.getInputObjects(workflowControl.getInputInfo());
 
-        DataSupplier flowVariableSupplier = () -> {
+        Supplier<Object> flowVariableSupplier = () -> {
             var flowVariables = Optional.ofNullable(workflowControl.getFlowObjectStack()) //
                 .map(stack -> stack.getAllAvailableFlowVariables().values()) //
                 .orElseGet(List::of);
             return PythonScriptingInputOutputModelUtils.getFlowVariableInputs(flowVariables);
         };
 
-        DataSupplier outputObjectSupplier = () -> PythonScriptingInputOutputModelUtils
+        Supplier<Object> outputObjectSupplier = () -> PythonScriptingInputOutputModelUtils
             .getOutputObjects(workflowControl.getOutputPortTypes(), m_hasView);
 
-        DataSupplier executableOptionsListSupplier = () -> {
+        Supplier<Object> executableOptionsListSupplier = () -> {
             var executableOptions = ExecutableSelectionUtils.getExecutableOptions(workflowControl.getFlowObjectStack());
 
             return executableOptions.values().stream() //
