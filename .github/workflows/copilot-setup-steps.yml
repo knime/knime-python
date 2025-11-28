@@ -28,8 +28,8 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: "22.11.0"
-          cache: "npm"
+          node-version-file: org.knime.python3.scripting.nodes/js-src/package.json
+          cache: npm
           cache-dependency-path: org.knime.python3.scripting.nodes/js-src/package-lock.json
 
       - name: Install dependencies
