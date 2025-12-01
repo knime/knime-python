@@ -15,9 +15,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: astral-sh/ruff-action@v3
+      - uses: prefix-dev/setup-pixi@v0.9.3
         with:
-          args: "format --check --diff"
+          cache: true
+      - run: pixi run format --check --diff
 
   js-lint-test-build:
     name: JS lint, tests, and build
