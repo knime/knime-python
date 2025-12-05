@@ -181,6 +181,9 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
 
             pb.environment().put("PYTHONPATH", pythonPath.getPythonPath());
             m_process = pb.start();
+            LOGGER.info("Started Python process with executable: " + pythonProcessBuilder.command().get(0) + ", pid: "
+                + m_process.pid(), new Throwable());
+
             m_stdOutput = new UncloseableInputStream(m_process.getInputStream());
             m_stdError = new UncloseableInputStream(new BufferedInputStream(m_process.getErrorStream()));
 
@@ -348,6 +351,7 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
             }
         }
         if (m_process != null) {
+            LOGGER.info("Shutting down Python process with pid: " + m_process.pid(), new Throwable());
             m_process.destroy();
             try {
                 int terminationTimeout = getConnectionTimeoutInMillis();
@@ -362,6 +366,8 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
                 throw new IllegalStateException("Interrupted while waiting for the termination of the Python process.",
                     ex);
             }
+        } else {
+            LOGGER.warn("DefaultPythonGateway.close called, but process is null.", new Throwable());
         }
     }
 

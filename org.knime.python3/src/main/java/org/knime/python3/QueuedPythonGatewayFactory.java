@@ -251,6 +251,9 @@ public final class QueuedPythonGatewayFactory implements PythonGatewayFactory {
             }
             @SuppressWarnings({"resource", "unchecked"})
             final PythonGateway<E> gateway = (PythonGateway<E>)takeOrCreateGatewayAndEnqueue(description);
+            LOGGER.info("Removing from queue: Python process with executable: "
+                + description.getCommand().getPythonExecutablePath() + " , pid: " + gateway.getEntryPoint().getPid(),
+                new Throwable());
             return gateway;
         }
 
