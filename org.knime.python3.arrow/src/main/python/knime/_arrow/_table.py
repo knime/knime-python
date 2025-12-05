@@ -50,6 +50,7 @@ Arrow backend for tables used in pure-Python nodes and Python scripting nodes
 
 from typing import Iterator, List, Optional, Union
 import pyarrow as pa
+import pyarrow.dataset as ds
 import logging
 
 import knime._arrow._backend as _backend
@@ -316,7 +317,7 @@ class ArrowTable(knt.Table):
     def __str__(self):
         return f"ArrowTable[shape=({self.num_columns}, {self.num_rows})]"
 
-    def _write_to_sink(self, sink):
+    def _write_to_sink(self, sink, batch_size=None):
         """
         Used at the end of execute() to return the data to KNIME
         """
@@ -325,7 +326,7 @@ class ArrowTable(knt.Table):
         if isinstance(data, pa.RecordBatch):
             batches = [data]
         else:
-            batches = self._split_table(data)
+            batches = self._split_table(data, batch_size)
 
         for batch in batches:
             sink.write(batch)
@@ -334,7 +335,13 @@ class ArrowTable(knt.Table):
         1 << 26
     )  # same target batch size as in org.knime.core.columnar.cursor.ColumnarWriteCursor
 
-    def _split_table(self, data: pa.Table) -> List[pa.RecordBatch]:
+    def calculate_num_rows_per_batch(self, data: pa.Table):
+        desired_num_batches = data.nbytes / self._MAX_NUM_BYTES_PER_BATCH
+        if desired_num_batches < 1:
+            return 1
+        return int(len(data) // desired_num_batches)
+
+    def _split_table(self, data: pa.Table, batch_size: int = None) -> List[pa.RecordBatch]:
         """
         Split a table into batches of KNIMEs desired batch size.
         """
@@ -342,12 +349,9 @@ class ArrowTable(knt.Table):
             # Return data so that we write the schema even if no rows are present
             return [data]
 
-        desired_num_batches = data.nbytes / self._MAX_NUM_BYTES_PER_BATCH
-        if desired_num_batches < 1:
-            return data.to_batches()
-        num_rows_per_batch = int(len(data) // desired_num_batches)
-        return data.to_batches(max_chunksize=num_rows_per_batch)
-
+        num_rows_per_batch = batch_size if batch_size else self.calculate_num_rows_per_batch(data)
+        wrapped_data = ds.dataset(data)
+        return wrapped_data.to_batches(batch_size=num_rows_per_batch)
 
 class ArrowSourceTable(ArrowTable):
     def __init__(self, source: "_backend.ArrowDataSource"):

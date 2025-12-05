@@ -837,16 +837,16 @@ class _PortTypeRegistry:
 
         raise TypeError("Unsupported PortObject found in Python, got " + class_name)
 
-    def table_from_python(self, obj):
-        table, sink = self._table_from_python(obj)
+    def table_from_python(self, obj, batch_size=None):
+        table, sink = self._table_from_python(obj, batch_size)
         sink.close()
         return table
 
-    def _table_from_python(self, obj):  # -> tuple[_PythonTablePortObject, Any]:
+    def _table_from_python(self, obj, batch_size=None):  # -> tuple[_PythonTablePortObject, Any]:
         java_data_sink = None
         if isinstance(obj, kat.ArrowTable):
             sink = kt._backend.create_sink()
-            obj._write_to_sink(sink)
+            obj._write_to_sink(sink, batch_size)
             java_data_sink = sink._java_data_sink
         elif isinstance(obj, kat.ArrowBatchOutputTable):
             sink = obj._sink
