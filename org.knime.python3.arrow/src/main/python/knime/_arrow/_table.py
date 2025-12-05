@@ -341,7 +341,9 @@ class ArrowTable(knt.Table):
             return 1
         return int(len(data) // desired_num_batches)
 
-    def _split_table(self, data: pa.Table, batch_size: int = None) -> List[pa.RecordBatch]:
+    def _split_table(
+        self, data: pa.Table, batch_size: int = None
+    ) -> List[pa.RecordBatch]:
         """
         Split a table into batches of KNIMEs desired batch size.
         """
@@ -349,9 +351,12 @@ class ArrowTable(knt.Table):
             # Return data so that we write the schema even if no rows are present
             return [data]
 
-        num_rows_per_batch = batch_size if batch_size else self.calculate_num_rows_per_batch(data)
+        num_rows_per_batch = (
+            batch_size if batch_size else self.calculate_num_rows_per_batch(data)
+        )
         wrapped_data = ds.dataset(data)
         return wrapped_data.to_batches(batch_size=num_rows_per_batch)
+
 
 class ArrowSourceTable(ArrowTable):
     def __init__(self, source: "_backend.ArrowDataSource"):

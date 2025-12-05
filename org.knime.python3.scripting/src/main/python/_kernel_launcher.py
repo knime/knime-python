@@ -191,7 +191,7 @@ class ScriptingBackendV1(ScriptingBackend):
                     f"Output table '{idx}' must be of type knime.api.Table or knime.api.BatchOutputTable, but got {type(table)}"
                 )
 
-    def tear_down_arrow(self, flush: bool, batch_size: int=None):
+    def tear_down_arrow(self, flush: bool, batch_size: int = None):
         # we write all tables here and just read the sink in the get_output_table_sink method
         if flush:
             self._write_all_tables(batch_size)

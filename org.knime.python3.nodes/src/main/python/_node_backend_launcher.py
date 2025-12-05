@@ -842,7 +842,9 @@ class _PortTypeRegistry:
         sink.close()
         return table
 
-    def _table_from_python(self, obj, batch_size=None):  # -> tuple[_PythonTablePortObject, Any]:
+    def _table_from_python(
+        self, obj, batch_size=None
+    ):  # -> tuple[_PythonTablePortObject, Any]:
         java_data_sink = None
         if isinstance(obj, kat.ArrowTable):
             sink = kt._backend.create_sink()

@@ -163,7 +163,7 @@ class ScriptingBackendV1(ScriptingBackend):
         ktn._backend = katn._ArrowBackend(sink_factory)
         ktn._backend.file_store_handler = file_store_handler
 
-    def _write_all_tables(self, batch_size: int=None):
+    def _write_all_tables(self, batch_size: int = None):
         for idx, table in enumerate(_ioc._output_tables):
             if isinstance(table, ktn._TabularView):
                 table = table.get()
@@ -180,7 +180,7 @@ class ScriptingBackendV1(ScriptingBackend):
             else:
                 raise KnimeUserError(_wrong_table_type_error_msg(table, idx))
 
-    def tear_down_arrow(self, flush: bool, batch_size: int=None):
+    def tear_down_arrow(self, flush: bool, batch_size: int = None):
         # we write all tables here and just read the sink in the get_output_table_sink method
         if flush:
             self._write_all_tables(batch_size)
