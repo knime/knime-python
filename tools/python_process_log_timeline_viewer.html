@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Python Process Timeline Viewer</title>
+  <style>
+    :root { --bg:#0b1020; --fg:#e6e6e6; --muted:#96a0b5; --accent:#7aa2f7; --grid:#26324a; }
+    html,body{height:100%;}
+    body{margin:0; font-family:ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial; background:var(--bg); color:var(--fg);}    
+    header{display:flex; align-items:center; gap:.75rem; padding:1rem 1.25rem; border-bottom:1px solid var(--grid); position:sticky; top:0; background:linear-gradient(180deg, rgba(11,16,32,.95), rgba(11,16,32,.85)); backdrop-filter: blur(6px); z-index:2}
+    h1{font-size:1.1rem; font-weight:600; margin:0; letter-spacing:.2px}
+    input[type="file"]{display:none}
+    label.btn{padding:.6rem .9rem; border:1px solid var(--grid); border-radius:.6rem; color:var(--fg); cursor:pointer;}
+    label.btn:hover{border-color:#3b4e74}
+    .chip{display:inline-flex; align-items:center; gap:.3rem; padding:.25rem .5rem; border-radius:.5rem; border:1px solid var(--grid); color:var(--muted); font-size:.8rem}
+    .toolbar{display:flex; gap:.75rem; align-items:center; margin-left:auto}
+    .legend{display:flex; gap:.5rem; align-items:center; font-size:.85rem}
+    .swatch{width:12px; height:12px; border-radius:2px; display:inline-block}
+    main{display:grid; grid-template-columns: 16rem 1fr; height:calc(100% - 64px)}
+    aside{border-right:1px solid var(--grid); overflow:auto}
+    .proc{padding:.5rem .75rem; border-bottom:1px solid var(--grid);}
+    .proc .title{font-weight:600; font-size:.95rem}
+    .proc .meta{color:var(--muted); font-size:.8rem}
+    section#viz{position:relative; overflow:auto}
+    svg{display:block; width:100%; height:100%}
+    .axis text{fill:var(--muted); font-size:.8rem}
+    .axis line, .axis path{stroke:var(--grid)}
+    .lane-label{fill:var(--muted); font-size:.8rem}
+    .seg{rx:4; ry:4; cursor:pointer;}
+    .detail-panel{position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:#121a32; border:1px solid var(--grid); padding:1rem; border-radius:.75rem; font-size:.85rem; color:var(--fg); display:none; max-width:800px; max-height:80vh; overflow:auto; z-index:1000; box-shadow:0 8px 32px rgba(0,0,0,0.5);}
+    .detail-panel h2{margin:0 0 .75rem; font-size:1.1rem; color:var(--accent);}
+    .detail-panel .close{position:absolute; top:.75rem; right:.75rem; background:none; border:1px solid var(--grid); color:var(--muted); cursor:pointer; border-radius:.4rem; padding:.25rem .5rem; font-size:.9rem;}
+    .detail-panel .close:hover{border-color:var(--accent); color:var(--accent);}
+    .detail-panel .section{margin-bottom:1rem;}
+    .detail-panel .label{color:var(--muted); font-size:.8rem; margin-bottom:.25rem;}
+    .detail-panel .value{font-family:monospace; font-size:.85rem; line-height:1.5;}
+    .detail-panel .stack{font-family:monospace; font-size:.75rem; color:#96a0b5; line-height:1.6; white-space:pre-wrap; background:rgba(0,0,0,0.3); padding:.5rem; border-radius:.4rem; margin-top:.5rem;}
+    .overlay{position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6); display:none; z-index:999;}
+    .search{padding:.5rem .6rem; border:1px solid var(--grid); background:transparent; color:var(--fg); border-radius:.5rem}
+    .note{color:var(--muted); margin:.5rem 1rem; font-size:.85rem}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Python Process Timeline Viewer</h1>
+    <label class="btn" for="file">Open log file</label>
+    <input id="file" type="file" accept=".log,.txt,.jsonl,.json" />
+    <div class="toolbar">
+      <input id="q" class="search" placeholder="Filter by process id / env / purpose…" />
+      <span class="chip">Records: <span id="count">0</span></span>
+      <div class="legend">
+        <span class="swatch" style="background:#2e7d32"></span><span>Idle (warm)</span>
+        <span class="swatch" style="background:#1976d2"></span><span>In use</span>
+        <span class="swatch" style="background:#9c27b0"></span><span>Terminated</span>
+        <span class="swatch" style="background:#ef6c00"></span><span>Gaps</span>
+      </div>
+    </div>
+  </header>
+  <main>
+    <aside id="list">
+      <div id="parseError" style="display:none; padding:1rem; color:#ef5350; background:rgba(239,83,80,0.1); border:1px solid #ef5350; border-radius:.5rem; margin:1rem;">
+        <div style="font-weight:600; margin-bottom:.5rem;">⚠ Parsing Error</div>
+        <div id="errorMessage" style="font-size:.85rem; line-height:1.5;"></div>
+      </div>
+      <div id="listContent"></div>
+    </aside>
+    <section id="viz">
+      <svg id="svg" xmlns="http://www.w3.org/2000/svg"></svg>
+    </section>
+  </main>
+  <div class="overlay" id="overlay"></div>
+  <div class="detail-panel" id="detail">
+    <button class="close" id="closeBtn">✕ Close</button>
+    <div id="detailContent"></div>
+  </div>
+
+  <script>
+  // --- Parsing: expect KNIME log format:
+  // 2025-12-05 15:34:00,872 : INFO  : thread : : class : context : : message
+  // Messages:
+  // - Started Python process with executable: <path>, pid: <pid>
+  // - Removing from queue: Python process with executable: <path> , pid: <pid>
+  // - Shutting down Python process with pid: <pid>
+
+  const EL = sel => document.querySelector(sel);
+  const svg = EL('#svg');
+  const list = EL('#list');
+  const listContent = EL('#listContent');
+  const parseError = EL('#parseError');
+  const errorMessage = EL('#errorMessage');
+  const detail = EL('#detail');
+  const detailContent = EL('#detailContent');
+  const overlay = EL('#overlay');
+  const closeBtn = EL('#closeBtn');
+  const count = EL('#count');
+  const q = EL('#q');
+  
+  const closeDetail = () => {
+    detail.style.display = 'none';
+    overlay.style.display = 'none';
+  };
+  
+  closeBtn.addEventListener('click', closeDetail);
+  overlay.addEventListener('click', closeDetail);
+
+  let records = [];
+  let grouped = new Map();
+
+  function parseText(text){
+    const out=[];
+    let totalLines = 0;
+    let matchedLines = 0;
+    let relevantMessages = 0;
+    
+    // Two regex patterns for different log formats:
+    // Format 1 (with context-id): timestamp : LEVEL : thread : [context-id] : class : context : message
+    // Format 2 (without): timestamp : LEVEL : thread : : class : context : message
+    const logRegexWithContext = /^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d{3})\s+:\s+\w+\s+:\s+(.+?)\s+:\s+\[.*?\]\s+:\s+(\S+)\s+:\s+(.*)$/;
+    const logRegexSimple = /^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d{3})\s+:\s+\w+\s+:\s+(.+?)\s+:\s+:\s+(\S+)\s+:\s+(.*)$/;
+    
+    const lines = text.split(/\r?\n/);
+    for(let i = 0; i < lines.length; i++){
+      totalLines++;
+      const s = lines[i].trim();
+      if(!s) continue;
+      
+      // Try JSON format first (backward compatibility)
+      try{ 
+        out.push(JSON.parse(s)); 
+        relevantMessages++;
+        continue;
+      }
+      catch(e){ /* not JSON, try log format */ }
+      
+      // Parse KNIME log format - try both patterns
+      let match = s.match(logRegexWithContext);
+      if(!match) {
+        match = s.match(logRegexSimple);
+      }
+      if(!match) continue;
+      
+      matchedLines++;
+      const [, timestamp, thread, className, rest] = match;
+      
+      // Parse timestamp: "2025-12-05 15:34:00,872"
+      const [datePart, timePart] = timestamp.split(' ');
+      const [year, month, day] = datePart.split('-').map(Number);
+      const [time, ms] = timePart.split(',');
+      const [hour, min, sec] = time.split(':').map(Number);
+      const ts = new Date(year, month - 1, day, hour, min, sec, parseInt(ms)).getTime();
+      
+      // Parse context and message - rest can be "context1 : context2 : message" or just "message"
+      const parts = rest.split(' : ');
+      let context = '';
+      let message = rest;
+      
+      if(parts.length >= 2) {
+        // Has context
+        context = parts.slice(0, -1).join(' : ');
+        message = parts[parts.length - 1];
+      }
+      
+      // Check for stack trace following this line
+      let stackTrace = [];
+      let j = i + 1;
+      // First line after log might be "java.lang.Throwable"
+      if(j < lines.length && lines[j].trim() === 'java.lang.Throwable') {
+        j++;
+      }
+      // Collect all lines starting with tab/spaces followed by "at"
+      while(j < lines.length) {
+        const traceLine = lines[j];
+        if(/^\s+at\s/.test(traceLine)) {
+          stackTrace.push(traceLine.trim());
+          j++;
+        } else {
+          break;
+        }
+      }
+      
+      // Parse different message types
+      let event, pid, env, procId;
+      
+      // Started Python process with executable: <path>, pid: <pid>
+      if(message.includes('Started Python process with executable:')){
+        const startMatch = message.match(/executable:\s*(.+?),\s*pid:\s*(\d+)/);
+        if(startMatch){
+          env = startMatch[1].trim();
+          pid = parseInt(startMatch[2]);
+          procId = `pid-${pid}`;
+          event = 'warmstarted';
+          out.push({ts, event, procId, pid, env, thread, className, context, stackTrace: stackTrace.length > 0 ? stackTrace : undefined});
+        }
+      }
+      // Removing from queue: Python process with executable: <path> , pid: <pid>
+      else if(message.includes('Removing from queue:')){
+        const queueMatch = message.match(/executable:\s*(.+?)\s*,\s*pid:\s*(\d+)/);
+        if(queueMatch){
+          env = queueMatch[1].trim();
+          pid = parseInt(queueMatch[2]);
+          procId = `pid-${pid}`;
+          event = 'checked_out';
+          out.push({ts, event, procId, pid, env, thread, className, context, purpose: context || 'unknown', stackTrace: stackTrace.length > 0 ? stackTrace : undefined});
+        }
+      }
+      // Shutting down Python process with pid: <pid>
+      else if(message.includes('Shutting down Python process with pid:')){
+        const shutdownMatch = message.match(/pid:\s*(\d+)/);
+        if(shutdownMatch){
+          pid = parseInt(shutdownMatch[1]);
+          procId = `pid-${pid}`;
+          event = 'terminated';
+          out.push({ts, event, procId, pid, thread, className, context, stackTrace: stackTrace.length > 0 ? stackTrace : undefined});
+        }
+      }
+    }
+    
+    // Store parsing stats for error reporting
+    out._parseStats = {
+      totalLines,
+      matchedLines,
+      relevantMessages,
+      parsed: out.length
+    };
+    
+    return out;
+  }
+
+  function group(records){
+    const g = new Map();
+    for(const r of records){
+      const id = r.procId || r.processId || r.id;
+      if(!id) continue;
+      if(!g.has(id)) g.set(id, []);
+      g.get(id).push(r);
+    }
+    for(const [id,arr] of g){ arr.sort((a,b)=>a.ts-b.ts); }
+    return g;
+  }
+
+  function deriveSegments(events, maxTimestamp){
+    // Produce segments with {t0,t1,state,meta}
+    const segs=[];
+    let lastTs = events[0]?.ts ?? 0;
+    let state = 'idle'; // starts idle after warmstart
+    let openUse = null; // track checked_out
+    let warmstartEvent = null; // track warmstart for idle segments
+    const env = events[0]?.env; // Get executable from first event
+    
+    for(const ev of events){
+      if(ev.event==='warmstarted'){
+        lastTs = ev.ts; 
+        state='idle';
+        warmstartEvent = ev; // Store warmstart event for its stack trace
+      } else if(ev.event==='checked_out'){
+        // idle -> in_use
+        if(lastTs && ev.ts>lastTs){ 
+          segs.push({t0:lastTs,t1:ev.ts,state:'idle', meta:{env, stackTrace:warmstartEvent?.stackTrace}}); 
+        }
+        lastTs = ev.ts; 
+        state='in_use'; 
+        openUse = ev;
+      } else if(ev.event==='returned'){
+        if(lastTs && ev.ts>lastTs){ 
+          segs.push({t0:lastTs,t1:ev.ts,state:'in_use', meta:{purpose:openUse?.purpose, requestId:openUse?.requestId, env, stackTrace:openUse?.stackTrace}}); 
+        }
+        lastTs = ev.ts; 
+        state='idle'; 
+        openUse = null;
+      } else if(ev.event==='terminated'){
+        // finalize current state
+        if(lastTs && ev.ts>lastTs){ 
+          const meta = state === 'in_use' && openUse ? 
+            {purpose:openUse?.purpose, requestId:openUse?.requestId, env, stackTrace:openUse?.stackTrace} : 
+            {env, stackTrace:warmstartEvent?.stackTrace};
+          segs.push({t0:lastTs,t1:ev.ts,state:state, meta}); 
+        }
+        segs.push({t0:ev.ts, t1:ev.ts+1, state:'terminated', meta:{env, stackTrace:ev.stackTrace}});
+        lastTs = ev.ts;
+      }
+    }
+    
+    // If process never terminated, extend the current state to the end of the timeline
+    const lastEvent = events[events.length - 1];
+    if(lastEvent && lastEvent.event !== 'terminated' && lastTs && maxTimestamp > lastTs) {
+      const meta = state === 'in_use' && openUse ? 
+        {purpose:openUse?.purpose, requestId:openUse?.requestId, env, stackTrace:openUse?.stackTrace} : 
+        {env, stackTrace:warmstartEvent?.stackTrace};
+      segs.push({t0:lastTs, t1:maxTimestamp, state:state, meta});
+    }
+    
+    return segs;
+  }
+
+  function render(){
+    const filter = (q.value||'').toLowerCase();
+    const filtered = new Map();
+    for(const [id,ev] of grouped){
+      const hit = id.toLowerCase().includes(filter) || ev.some(r=> (r.env||'').toLowerCase().includes(filter) || (r.purpose||'').toLowerCase().includes(filter));
+      if(hit) filtered.set(id, ev);
+    }
+    
+    // aside list
+    listContent.innerHTML='';
+    for(const [id,ev] of filtered){
+      const first = ev[0];
+      const last = ev[ev.length-1];
+      const div = document.createElement('div');
+      div.className='proc';
+      div.innerHTML = `<div class="title">${id}</div>
+        <div class="meta">env: ${first?.env ?? '—'} · pid: ${first?.pid ?? '—'} · events: ${ev.length} · ${new Date(first?.ts||0).toLocaleString()} → ${new Date(last?.ts||0).toLocaleString()}</div>`;
+      listContent.appendChild(div);
+    }
+
+    // compute extents
+    let tmin=Infinity, tmax=-Infinity;
+    const lanes=[];
+    for(const [id,ev] of filtered){
+      if(!ev.length) continue;
+      tmin = Math.min(tmin, ev[0].ts);
+      tmax = Math.max(tmax, ev[ev.length-1].ts);
+    }
+    // Add padding to tmax for open processes
+    const timePadding = (tmax - tmin) * 0.05; // 5% padding
+    tmax = tmax + timePadding;
+    
+    // Now create lanes with segments
+    for(const [id,ev] of filtered){
+      if(!ev.length) continue;
+      lanes.push({id, segs:deriveSegments(ev, tmax)});
+    }
+    if(!isFinite(tmin) || !isFinite(tmax)){ svg.replaceChildren(); return; }
+
+    const laneH = 28, laneGap=8, leftPad=120, topPad=24, rightPad=24, bottomPad=28;
+    const W = Math.max(800, svg.clientWidth||800);
+    const H = Math.max(200, lanes.length*(laneH+laneGap)+topPad+bottomPad);
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    svg.style.minWidth = `${W}px`;
+    svg.style.minHeight = `${H}px`;
+    svg.innerHTML='';
+
+    const scaleX = x => leftPad + (x - tmin) / (tmax - tmin) * (W-leftPad-rightPad);
+
+    // grid (hour ticks)
+    const gGrid = document.createElementNS('http://www.w3.org/2000/svg','g');
+    const hour = 60*60*1000;
+    const tick0 = Math.floor(tmin/hour)*hour;
+    for(let t=tick0; t<=tmax+hour; t+=hour){
+      const x=scaleX(t);
+      const line=document.createElementNS('http://www.w3.org/2000/svg','line');
+      line.setAttribute('x1',x); line.setAttribute('x2',x);
+      line.setAttribute('y1',0); line.setAttribute('y2',H);
+      line.setAttribute('stroke','var(--grid)'); line.setAttribute('stroke-width','1');
+      gGrid.appendChild(line);
+      const label=document.createElementNS('http://www.w3.org/2000/svg','text');
+      label.setAttribute('x',x+3); label.setAttribute('y',16);
+      label.setAttribute('class','axis');
+      label.textContent=new Date(t).toLocaleTimeString();
+      gGrid.appendChild(label);
+    }
+    svg.appendChild(gGrid);
+
+    // lanes
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    let i=0;
+    for(const {id,segs} of lanes){
+      const y = topPad + i*(laneH+laneGap);
+      // label
+      const lbl=document.createElementNS('http://www.w3.org/2000/svg','text');
+      lbl.setAttribute('x', 6); lbl.setAttribute('y', y+laneH*0.7);
+      lbl.setAttribute('class','lane-label');
+      lbl.textContent=id;
+      g.appendChild(lbl);
+
+      // segments
+      let prevEnd=null;
+      for(const s of segs){
+        const x1=scaleX(s.t0), x2=scaleX(s.t1), w=Math.max(2, x2-x1);
+        const rect=document.createElementNS('http://www.w3.org/2000/svg','rect');
+        rect.setAttribute('x', x1); rect.setAttribute('y', y);
+        rect.setAttribute('width', w); rect.setAttribute('height', laneH);
+        rect.setAttribute('class','seg');
+        let fill = '#2e7d32';
+        if(s.state==='in_use') fill='#1976d2';
+        if(s.state==='terminated') fill='#9c27b0';
+        rect.setAttribute('fill', fill);
+        rect.addEventListener('click', ()=>{
+          const dt0=new Date(s.t0).toLocaleString();
+          const dt1=new Date(s.t1).toLocaleString();
+          const dur=((s.t1-s.t0)/1000).toFixed(1);
+          
+          let html = `<h2>${id}</h2>`;
+          
+          html += `<div class="section">`;
+          html += `<div class="label">State</div>`;
+          html += `<div class="value">${s.state}</div>`;
+          html += `</div>`;
+          
+          html += `<div class="section">`;
+          html += `<div class="label">Duration</div>`;
+          html += `<div class="value">${dur}s</div>`;
+          html += `</div>`;
+          
+          html += `<div class="section">`;
+          html += `<div class="label">Time Range</div>`;
+          html += `<div class="value">${dt0}<br/>\u2192 ${dt1}</div>`;
+          html += `</div>`;
+          
+          if(s.meta?.env) {
+            html += `<div class="section">`;
+            html += `<div class="label">Executable</div>`;
+            html += `<div class="value">${s.meta.env}</div>`;
+            html += `</div>`;
+          }
+          
+          if(s.meta?.purpose) {
+            html += `<div class="section">`;
+            html += `<div class="label">Purpose</div>`;
+            html += `<div class="value">${s.meta.purpose}</div>`;
+            html += `</div>`;
+          }
+          
+          if(s.meta?.requestId) {
+            html += `<div class="section">`;
+            html += `<div class="label">Request ID</div>`;
+            html += `<div class="value">${s.meta.requestId}</div>`;
+            html += `</div>`;
+          }
+          
+          if(s.meta?.exitCode != null) {
+            html += `<div class="section">`;
+            html += `<div class="label">Exit Code</div>`;
+            html += `<div class="value">${s.meta.exitCode}</div>`;
+            html += `</div>`;
+          }
+          
+          if(s.meta?.stackTrace && s.meta.stackTrace.length > 0) {
+            html += `<div class="section">`;
+            html += `<div class="label">Stack Trace (${s.meta.stackTrace.length} frames)</div>`;
+            html += `<div class="stack">${s.meta.stackTrace.join('\n')}</div>`;
+            html += `</div>`;
+          }
+          
+          detailContent.innerHTML = html;
+          detail.style.display = 'block';
+          overlay.style.display = 'block';
+        });
+        g.appendChild(rect);
+
+        // visualize gaps as orange when idle between events > 0
+        if(prevEnd && s.t0>prevEnd){
+          const gx1=scaleX(prevEnd), gx2=scaleX(s.t0);
+          const gap=document.createElementNS('http://www.w3.org/2000/svg','rect');
+          gap.setAttribute('x', gx1); gap.setAttribute('y', y+laneH*0.4);
+          gap.setAttribute('width', Math.max(1, gx2-gx1)); gap.setAttribute('height', laneH*0.2);
+          gap.setAttribute('fill', '#ef6c00'); gap.setAttribute('opacity','0.6');
+          g.appendChild(gap);
+        }
+        prevEnd = s.t1;
+      }
+      i++;
+    }
+    svg.appendChild(g);
+  }
+
+  EL('#file').addEventListener('change', async (e)=>{
+    const file=e.target.files[0]; if(!file) return;
+    const text=await file.text();
+    records=parseText(text);
+    
+    // Check if we successfully parsed any records
+    if(records.length === 0 && records._parseStats) {
+      const stats = records._parseStats;
+      parseError.style.display = 'block';
+      errorMessage.innerHTML = `
+        <div>Failed to parse any Python process lifecycle events from the log file.</div>
+        <div style="margin-top:.5rem;">Parsing statistics:</div>
+        <ul style="margin:.25rem 0 0 1.5rem; padding:0;">
+          <li>Total lines: ${stats.totalLines}</li>
+          <li>Matched log format: ${stats.matchedLines}</li>
+          <li>Relevant messages found: ${stats.relevantMessages}</li>
+        </ul>
+        <div style="margin-top:.5rem; font-size:.8rem; color:var(--muted);">
+          The parser looks for messages containing:<br/>
+          • "Started Python process with executable: ..."<br/>
+          • "Removing from queue: Python process with executable: ..."<br/>
+          • "Shutting down Python process with pid: ..."
+        </div>
+      `;
+    } else {
+      parseError.style.display = 'none';
+    }
+    
+    count.textContent=records.length;
+    grouped=group(records);
+    render();
+  });
+
+  q.addEventListener('input', render);
+
+  // Demo: small sample showing KNIME log format
+  const now = new Date();
+  const formatDate = (date) => {
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())},${String(date.getMilliseconds()).padStart(3,'0')}`;
+  };
+  
+  const demo = 
+    `${formatDate(new Date(now-600000))} : INFO  : python-gateway-creator-1 :  : DefaultPythonGateway :  :  : Started Python process with executable: /opt/conda/envs/py310/bin/python, pid: 1111\n`+
+    `${formatDate(new Date(now-540000))} : INFO  : KNIME-Worker-1-Script 3:2 :  : QueuedPythonGatewayFactory$PythonGatewayQueue : Script 3:2 : Removing from queue: Python process with executable: /opt/conda/envs/py310/bin/python , pid: 1111\n`+
+    `${formatDate(new Date(now-480000))} : INFO  : python-gateway-creator-2 :  : DefaultPythonGateway :  :  : Started Python process with executable: /opt/conda/envs/py39/bin/python, pid: 2222\n`+
+    `${formatDate(new Date(now-420000))} : INFO  : KNIME-Worker-2-Script 5:1 :  : QueuedPythonGatewayFactory$PythonGatewayQueue : Script 5:1 : Removing from queue: Python process with executable: /opt/conda/envs/py39/bin/python , pid: 2222\n`+
+    `${formatDate(new Date(now-300000))} : INFO  : pool-36-thread-1 :  : DefaultPythonGateway : Script 3:2 :  : Shutting down Python process with pid: 1111\n`+
+    `${formatDate(new Date(now-200000))} : INFO  : pool-41-thread-1 :  : DefaultPythonGateway : Script 5:1 :  : Shutting down Python process with pid: 2222`;
+  
+  records=parseText(demo);
+  grouped=group(records);
+  render();
+  </script>
+</body>
+</html>
