@@ -100,9 +100,11 @@ public interface PythonToolContext {
      *
      * @param inputs the source inputs of the combined-tools workflow
      * @param execMode DEFAUTL, DETACHED or DEBUG
+     * @param removeFailedTools whether to remove failed tools from the combined workflow
      * @return info about the initialized combined-tools workflow
      */
-    CombinedToolsWorkflowInfo init_combined_tools_workflow(List<PythonPortObject> inputs, String execMode);
+    CombinedToolsWorkflowInfo init_combined_tools_workflow(List<PythonPortObject> inputs, String execMode,
+        boolean removeFailedTools);
 
     /**
      * @return the combined-tools workflow as a Python port object
