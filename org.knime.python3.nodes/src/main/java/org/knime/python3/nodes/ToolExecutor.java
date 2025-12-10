@@ -181,7 +181,7 @@ final class ToolExecutor implements AutoCloseable {
     }
 
     CombinedToolsWorkflowInfo initCombinedToolsWorkflow(final List<PythonPortObject> inputs,
-        final String execModeString) {
+        final String execModeString, final boolean removeFailedTools) {
         m_fileStoreSwitcher.switchFileStoreHandler(m_nodeContainer, false);
 
         Map<String, FileStore> dummyFileStoreMap = Map.of();
@@ -194,7 +194,7 @@ final class ToolExecutor implements AutoCloseable {
                 .toArray(PortObject[]::new);
             m_workflowExecutor =
                 WorkflowSegmentExecutor.builder(m_nodeContainer, execMode, "Combined tools workflow", warning -> {
-                }, m_exec, false).combined(inputPortObjects).build();
+                }, m_exec, false).combined(inputPortObjects).removeFailedSegments(removeFailedTools).build();
             var combinedToolsWorkflowId = m_workflowExecutor.getWorkflow().getID();
             m_disposeCombinedToolsWorkflowOnClose = true;
             m_combinedToolsWorkflow = new VirtualProject(combinedToolsWorkflowId);
@@ -203,7 +203,8 @@ final class ToolExecutor implements AutoCloseable {
         } else {
             m_workflowExecutor =
                 WorkflowSegmentExecutor.builder(m_nodeContainer, execMode, "Combined tools workflow", warning -> {
-                }, m_exec, false).combined(m_combinedToolsWorkflow.loadAndGetWorkflow()).build();
+                }, m_exec, false).combined(m_combinedToolsWorkflow.loadAndGetWorkflow())
+                    .removeFailedSegments(removeFailedTools).build();
             assert inputs.isEmpty();
             inputPortIds = List.of();
         }
@@ -411,8 +412,7 @@ final class ToolExecutor implements AutoCloseable {
         segmentWfm = createEmptyWorkflow("workflow_segment");
         var copyContent = WorkflowCopyContent.builder()
             .setNodeIDs(wfm.getNodeContainers().stream().map(NodeContainer::getID).toArray(NodeID[]::new)).build();
-        var persistor = wfm.copy(copyContent);
-        segmentWfm.paste(persistor);
+        segmentWfm.copyFromAndPasteHere(wfm, copyContent);
         List<Input> inputs = new ArrayList<>();
         List<Output> outputs = new ArrayList<>();
         removeAndCollectContainerInputsAndOutputs(segmentWfm, inputs, inputIds, outputs, outputIds);

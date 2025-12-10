@@ -114,8 +114,8 @@ final class DefaultViewContext implements PythonNodeViewProxy.PythonViewContext 
 
     @Override
     public CombinedToolsWorkflowInfo init_combined_tools_workflow(final List<PythonPortObject> inputs,
-        final String execMode) {
-        return m_toolExecutor.initCombinedToolsWorkflow(inputs, execMode);
+        final String execMode, final boolean removeFailedTools) {
+        return m_toolExecutor.initCombinedToolsWorkflow(inputs, execMode, removeFailedTools);
     }
 
     @Override

@@ -1473,13 +1473,15 @@ class _ToolExecutor:
 
         return result.message(), outputs, result.viewNodeIds()
 
-    def init_combined_tools_workflow(self, inputs: List, execution_mode: str):
+    def init_combined_tools_workflow(
+        self, inputs: List, execution_mode: str, remove_failed_tools: bool
+    ):
         prepared_inputs = []
         for input in inputs:
             prepared_input = self._type_registry.table_from_python(input)
             prepared_inputs.append(prepared_input)
         result = self._java_ctx.init_combined_tools_workflow(
-            prepared_inputs, execution_mode
+            prepared_inputs, execution_mode, remove_failed_tools
         )
         return result.projectId(), result.workflowId(), result.inputPortIds()
 

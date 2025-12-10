@@ -555,7 +555,7 @@ final class CloseablePythonNodeProxy
 
             @Override
             public CombinedToolsWorkflowInfo init_combined_tools_workflow(final List<PythonPortObject> inputs,
-                final String execMode) {
+                final String execMode, final boolean removeFailedTools) {
                 throw new UnsupportedOperationException(
                     "Initializing a combined tools workflow is not supported here.");
             }
