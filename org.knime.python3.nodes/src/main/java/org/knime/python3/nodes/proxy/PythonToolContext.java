@@ -99,7 +99,7 @@ public interface PythonToolContext {
      * Initializes the combined-tools workflow for the given inputs.
      *
      * @param inputs the source inputs of the combined-tools workflow
-     * @param execMode DEFAUTL, DETACHED or DEBUG
+     * @param execMode DEFAULT, DETACHED or DEBUG
      * @param removeFailedTools whether to remove failed tools from the combined workflow
      * @return info about the initialized combined-tools workflow
      */
