@@ -179,18 +179,18 @@ watch(selectedExecutableOption, updateLiveExecutableSelection);
 
 <style scoped lang="postcss">
 .container {
-  margin-left: 80px;
   margin-top: 80px;
+  margin-left: 80px;
 
   & .flow-variable-selection {
     width: 400px;
     margin-left: 25px;
 
     & .error-text {
-      color: var(--knime-coral-dark);
+      margin-top: 8px;
       font-size: 12px;
       line-height: 14px;
-      margin-top: 8px;
+      color: var(--knime-coral-dark);
     }
   }
 }

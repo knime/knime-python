@@ -127,7 +127,7 @@ const onHoverRunButton = (
 }
 
 .run-all-button {
-  margin-left: 13px;
   width: 120px;
+  margin-left: 13px;
 }
 </style>

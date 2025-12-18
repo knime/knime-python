@@ -56,18 +56,18 @@ const executionStatusText = computed(() => {
 }
 
 .status-wrapper {
-  width: 180px;
   display: flex;
   flex-direction: row;
   gap: 10px;
   align-items: center;
   justify-content: left;
+  width: 180px;
   color: var(--status-color);
 }
 
 .dot {
-  height: 5px;
   width: 5px;
+  height: 5px;
   background-color: var(--status-color);
   border-radius: 50%;
 }

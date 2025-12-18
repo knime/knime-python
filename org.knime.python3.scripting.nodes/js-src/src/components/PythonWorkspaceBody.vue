@@ -42,27 +42,27 @@ const totalWidth = computed(() =>
 
 <style scoped lang="postcss">
 tbody {
-  color: var(--knime-dove-gray);
+  display: table;
+  font-size: 13px;
   font-weight: 400;
   line-height: 18px;
-  font-size: 13px;
+  color: var(--knime-dove-gray);
   letter-spacing: 0;
-  display: table;
 
   & tr {
-    border-bottom: 1px solid var(--knime-porcelain);
-    color: var(--knime-dove-gray);
     display: flex;
+    color: var(--knime-dove-gray);
+    border-bottom: 1px solid var(--knime-porcelain);
 
     &:hover {
-      cursor: pointer;
       color: var(--knime-masala);
+      cursor: pointer;
     }
 
     & td {
-      white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      white-space: nowrap;
 
       & span {
         width: inherit;
