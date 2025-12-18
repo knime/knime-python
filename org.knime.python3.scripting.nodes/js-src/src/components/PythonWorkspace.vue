@@ -90,48 +90,48 @@ onMounted(() => {
 
 <style scoped lang="postcss">
 .container {
-  background-color: var(--knime-gray-ultra-light);
-  height: 100%;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  height: 100%;
+  background-color: var(--knime-gray-ultra-light);
 }
 
 .workspace {
   --controls-height: 40px;
 
   position: relative;
-  overflow: hidden auto;
   min-width: 120px;
   margin-top: 0;
+  overflow: hidden auto;
 
   & table {
-    border-collapse: collapse;
+    flex: 1;
+    height: calc(100% - var(--controls-height));
     font-family: "Roboto Mono", sans-serif;
     font-size: 13px;
-    text-align: left;
     line-height: 24px;
-    flex: 1;
     color: var(--knime-masala);
-    height: calc(100% - var(--controls-height));
+    text-align: left;
+    border-collapse: collapse;
   }
 }
 
 .controls {
   display: flex;
-  overflow: hidden;
   flex-direction: row-reverse;
   place-content: center space-between;
   min-height: var(--controls-height);
   max-height: var(--controls-height);
+  overflow: hidden;
   border-top: 1px solid var(--knime-silver-sand);
 }
 
 .reset-button {
   height: 30px;
   margin-top: 5px;
-  margin-bottom: 5px;
   margin-right: 10px;
+  margin-bottom: 5px;
 }
 </style>
 @/python-initial-data-service

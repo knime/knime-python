@@ -63,21 +63,21 @@ onMounted(() => {
 iframe,
 .iframe-container,
 .container {
+  display: block;
   width: 100%;
   height: 100%;
   border: none;
-  display: block;
 }
 
 .placeholder-container {
-  width: 100%;
-  height: 100%;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
   gap: 20px;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
   min-width: 15vw;
+  height: 100%;
 }
 
 #preview-img {
@@ -87,8 +87,8 @@ iframe,
 }
 
 .placeholder-text {
-  text-align: center;
-  margin-left: 20px;
   margin-right: 20px;
+  margin-left: 20px;
+  text-align: center;
 }
 </style>
