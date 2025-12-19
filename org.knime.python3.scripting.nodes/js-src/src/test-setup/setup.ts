@@ -23,6 +23,7 @@ vi.mock("@knime/ui-extension-service", () => ({}));
 initMocked({
   scriptingService: {
     sendToService: vi.fn(),
+    callRpcMethod: vi.fn(),
     getOutputPreviewTableInitialData: vi.fn(() => Promise.resolve(undefined)),
     registerEventHandler: vi.fn(),
     // @ts-expect-error Mock doesn't fully implement MonacoLSPConnection interface
@@ -37,6 +38,7 @@ initMocked({
   },
   settingsService: {
     getSettings: vi.fn(() => Promise.resolve(DEFAULT_INITIAL_SETTINGS)),
+    getSettingsInitialData: vi.fn(),
     registerSettingsGetterForApply: vi.fn(),
     // @ts-expect-error Mock doesn't fully implement SettingState interface
     registerSettings: vi.fn(() =>

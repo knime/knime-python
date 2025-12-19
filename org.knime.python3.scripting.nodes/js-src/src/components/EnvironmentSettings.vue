@@ -63,7 +63,7 @@ onMounted(() => {
   const executableSettingState = useExecutableSettingStore();
   if (executableSettingState.value === null) {
     const register = getSettingsService().registerSettings("model");
-    const environmentSettingState = register("");
+    const environmentSettingState = register({ initialValue: "" });
     if (executableSelection.id === "") {
       executableSettingState.value =
         environmentSettingState.addControllingFlowVariable(null);

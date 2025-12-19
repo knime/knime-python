@@ -10,7 +10,9 @@ export default {
       getLanguageServerConfig: () => Promise.resolve(JSON.stringify({})),
     },
   }),
-  settingsService: createSettingsServiceMock(DEFAULT_INITIAL_SETTINGS),
+  settingsService: createSettingsServiceMock({
+    settings: DEFAULT_INITIAL_SETTINGS,
+  }),
   initialData: DEFAULT_INITIAL_DATA,
   displayMode: "large",
 } satisfies InitMockData;
