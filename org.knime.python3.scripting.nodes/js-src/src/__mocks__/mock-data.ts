@@ -122,4 +122,5 @@ export const DEFAULT_INITIAL_DATA: PythonInitialData = {
 
 export const createPythonSettingsServiceMock = (
   settings?: PythonScriptingNodeSettings,
-) => createSettingsServiceMock(settings ?? DEFAULT_INITIAL_SETTINGS);
+) =>
+  createSettingsServiceMock({ settings: settings ?? DEFAULT_INITIAL_SETTINGS });

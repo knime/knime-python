@@ -36,7 +36,7 @@ export const pythonScriptingService = {
   initExecutableSelection: (): void => {
     const settings = getSettingsService().getSettings();
 
-    setSelectedExecutable({ id: settings.executableSelection ?? "" });
+    setSelectedExecutable({ id: settings?.executableSelection ?? "" });
     pythonScriptingService.updateExecutableSelection(executableSelection.id);
     const executableInfo = getPythonInitialData().executableOptionsList.find(
       ({ id }) => id === executableSelection.id,
