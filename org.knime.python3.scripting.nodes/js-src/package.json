@@ -31,7 +31,7 @@
     "@knime/scripting-editor": "0.0.119",
     "@knime/styles": "1.8.0",
     "@knime/ui-extension-service": "2.6.0",
-    "@vueuse/core": "13.8.0",
+    "@vueuse/core": "14.1.0",
     "consola": "3.4.2",
     "vue": "3.5.18"
   },
