@@ -56,6 +56,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.knime.core.data.filestore.FileStore;
@@ -266,9 +267,9 @@ final class ToolExecutor implements AutoCloseable {
             spec = new WorkflowPortObjectSpec(ws, name, List.of(), List.of());
         } else {
             var wfm = m_combinedToolsWorkflow.loadAndGetWorkflow();
-            var inputIds = new ArrayList<String>();
-            var outputIds = new ArrayList<String>();
-            var ws = createWorkflowSegmentWithRemovedIONodes(wfm, inputIds, outputIds);
+            var ws = createWorkflowSegmentWithRemovedIONodes(wfm);
+            var inputIds = IntStream.range(0, ws.getConnectedInputs().size()).mapToObj(i -> "input-" + i).toList();
+            var outputIds = IntStream.range(0, ws.getConnectedOutputs().size()).mapToObj(i -> "output-" + i).toList();
             spec = new WorkflowPortObjectSpec(ws, wfm.getName(), inputIds, outputIds);
         }
         var wpo = new WorkflowPortObject(spec);
@@ -406,8 +407,7 @@ final class ToolExecutor implements AutoCloseable {
         return new WorkflowSegment(createEmptyWorkflow(name), List.of(), List.of(), Set.of());
     }
 
-    private static WorkflowSegment createWorkflowSegmentWithRemovedIONodes(final WorkflowManager wfm,
-        final List<String> inputIds, final List<String> outputIds) {
+    private static WorkflowSegment createWorkflowSegmentWithRemovedIONodes(final WorkflowManager wfm) {
         WorkflowManager segmentWfm;
         segmentWfm = createEmptyWorkflow("workflow_segment");
         var copyContent = WorkflowCopyContent.builder()
@@ -415,7 +415,7 @@ final class ToolExecutor implements AutoCloseable {
         segmentWfm.copyFromAndPasteHere(wfm, copyContent);
         List<Input> inputs = new ArrayList<>();
         List<Output> outputs = new ArrayList<>();
-        removeAndCollectContainerInputsAndOutputs(segmentWfm, inputs, inputIds, outputs, outputIds);
+        removeAndCollectContainerInputsAndOutputs(segmentWfm, inputs, outputs);
         return new WorkflowSegment(segmentWfm, inputs, outputs, Set.of());
     }
 
@@ -431,11 +431,11 @@ final class ToolExecutor implements AutoCloseable {
     }
 
     private static void removeAndCollectContainerInputsAndOutputs(final WorkflowManager wfm, final List<Input> inputs,
-        final List<String> inputIds, final List<Output> outputs, final List<String> outputIds) {
+        final List<Output> outputs) {
         List<NodeID> nodesToRemove = new ArrayList<>();
         for (NodeContainer nc : wfm.getNodeContainers()) {
             if (nc instanceof NativeNodeContainer nnc
-                && (collectInputs(wfm, inputs, inputIds, nnc) || collectOutputs(wfm, outputs, outputIds, nnc))) {
+                && (collectInputs(wfm, inputs, nnc) || collectOutputs(wfm, outputs, nnc))) {
                 nodesToRemove.add(nnc.getID());
             }
         }
@@ -443,13 +443,11 @@ final class ToolExecutor implements AutoCloseable {
     }
 
     private static boolean collectOutputs(final WorkflowManager wfm, final List<Output> outputs,
-        final List<String> outputIds, final NativeNodeContainer nnc) {
+        final NativeNodeContainer nnc) {
         if (nnc.getNodeModel() instanceof DefaultVirtualPortObjectOutNodeModel) {
             for (ConnectionContainer cc : wfm.getIncomingConnectionsFor(nnc.getID())) {
                 outputs.add(new Output(nnc.getInPort(cc.getDestPort()).getPortType(), null,
                     new PortID(NodeIDSuffix.create(wfm.getID(), cc.getSource()), cc.getSourcePort())));
-                outputIds.add(wfm.getNodeContainer(cc.getSource()).getOutPort(cc.getSourcePort()).getPortName() + "-"
-                    + outputIds.size());
             }
             return true;
         } else {
@@ -458,7 +456,7 @@ final class ToolExecutor implements AutoCloseable {
     }
 
     private static boolean collectInputs(final WorkflowManager wfm, final List<Input> inputs,
-        final List<String> inputIds, final NativeNodeContainer nnc) {
+        final NativeNodeContainer nnc) {
         if (nnc.getNodeModel() instanceof DefaultVirtualPortObjectInNodeModel) {
             for (var i = 0; i < nnc.getNrOutPorts(); i++) {
                 Set<PortID> ports = wfm.getOutgoingConnectionsFor(nnc.getID(), i).stream()
@@ -466,9 +464,6 @@ final class ToolExecutor implements AutoCloseable {
                     .collect(Collectors.toSet());
                 if (!ports.isEmpty()) {
                     inputs.add(new Input(nnc.getOutputType(i), null, ports));
-                    var firstPort = ports.iterator().next();
-                    inputIds.add(wfm.getNodeContainer(firstPort.getNodeIDSuffix().prependParent(wfm.getID()))
-                        .getInPort(firstPort.getIndex()).getPortName() + "-" + inputIds.size());
                 }
             }
             return true;
