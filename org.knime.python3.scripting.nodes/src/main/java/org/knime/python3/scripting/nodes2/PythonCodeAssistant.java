@@ -49,9 +49,9 @@
 package org.knime.python3.scripting.nodes2;
 
 import org.knime.core.webui.node.dialog.scripting.CodeGenerationRequest;
+import org.knime.core.webui.node.dialog.scripting.CodeGenerationRequest.CodeRequestBody;
 import org.knime.core.webui.node.dialog.scripting.CodeGenerationRequest.Inputs;
 import org.knime.core.webui.node.dialog.scripting.CodeGenerationRequest.Outputs;
-import org.knime.core.webui.node.dialog.scripting.CodeGenerationRequest.RequestBody;
 import org.knime.core.webui.node.dialog.scripting.InputOutputModel;
 import org.knime.core.webui.node.dialog.scripting.InputOutputModelNameAndTypeUtils;
 
@@ -101,7 +101,7 @@ public final class PythonCodeAssistant {
 
         return new CodeGenerationRequest( //
             "/code_generation/python", //
-            new RequestBody(//
+            new CodeRequestBody(//
                 oldCode, //
                 userPrompt, //
                 new Inputs( //
