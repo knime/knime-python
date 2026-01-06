@@ -2,7 +2,7 @@
 import { type Ref, onMounted, onUnmounted, ref } from "vue";
 import { useDebounceFn, useResizeObserver } from "@vueuse/core";
 
-import { Button } from "@knime/components";
+import { KdsButton } from "@knime/kds-components";
 
 import {
   getPythonInitialData,
@@ -18,11 +18,13 @@ import PythonWorkspaceHeader, {
 const resizeContainer = ref<HTMLElement | null>(null);
 const totalWidth: Ref<number> = ref(0);
 const headerWidths = ref<ColumnSizes>([100, 100, 100]);
+// TODO KDS-690: Replace it once the JS tokens are available
+const tableSidePadding = 8;
 
 const useTotalWidth = () => {
   const rootResizeCallback = useDebounceFn((entries) => {
     const rect = entries[0].contentRect;
-    totalWidth.value = rect.width;
+    totalWidth.value = rect.width - tableSidePadding * 2;
   });
   const resizeObserver = useResizeObserver(resizeContainer, rootResizeCallback);
 
@@ -75,15 +77,14 @@ onMounted(() => {
       </table>
     </div>
     <div class="controls">
-      <Button
+      <KdsButton
         class="reset-button"
-        :with-border="false"
-        compact
+        label="Reset Values"
+        leading-icon="reset-all"
+        variant="transparent"
         :disabled="!resetButtonEnabled"
         @click="resetWorkspace"
-      >
-        Reset values
-      </Button>
+      />
     </div>
   </div>
 </template>
@@ -94,7 +95,6 @@ onMounted(() => {
   flex-direction: column;
   justify-content: space-between;
   height: 100%;
-  background-color: var(--knime-gray-ultra-light);
 }
 
 .workspace {
@@ -102,17 +102,17 @@ onMounted(() => {
 
   position: relative;
   min-width: 120px;
+
+  /* padding to match tableSidePadding in script */
+  padding: var(--kds-spacing-container-0-5x) var(--kds-spacing-container-0-5x) 0
+    var(--kds-spacing-container-0-5x);
   margin-top: 0;
   overflow: hidden auto;
 
   & table {
     flex: 1;
+    max-width: 100%;
     height: calc(100% - var(--controls-height));
-    font-family: "Roboto Mono", sans-serif;
-    font-size: 13px;
-    line-height: 24px;
-    color: var(--knime-masala);
-    text-align: left;
     border-collapse: collapse;
   }
 }
@@ -121,17 +121,11 @@ onMounted(() => {
   display: flex;
   flex-direction: row-reverse;
   place-content: center space-between;
-  min-height: var(--controls-height);
-  max-height: var(--controls-height);
+  align-items: center;
+  height: var(--kds-dimension-component-height-2-25x);
+  padding-right: var(--kds-spacing-container-0-25x);
+  padding-left: var(--kds-spacing-container-0-25x);
   overflow: hidden;
-  border-top: 1px solid var(--knime-silver-sand);
-}
-
-.reset-button {
-  height: 30px;
-  margin-top: 5px;
-  margin-right: 10px;
-  margin-bottom: 5px;
+  border-top: var(--kds-border-base-subtle);
 }
 </style>
-@/python-initial-data-service

@@ -42,7 +42,9 @@ export default defineConfig({
     environment: "jsdom",
     reporters: ["default"],
     root: fileURLToPath(new URL("./", import.meta.url)),
-    server: { deps: { inline: ["@knime/scripting-editor"] } },
+    server: {
+      deps: { inline: ["@knime/scripting-editor", "@knime/kds-components"] },
+    },
     pool: "threads",
     alias: {
       "monaco-editor": fileURLToPath(

@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { type Ref } from "vue";
 import { flushPromises, mount } from "@vue/test-utils";
 
-import { Button } from "@knime/components";
+import { KdsButton } from "@knime/kds-components";
 import { getScriptingService, initMocked } from "@knime/scripting-editor";
 
 import { DEFAULT_INITIAL_DATA } from "@/__mocks__/mock-data";
@@ -113,7 +113,7 @@ describe("PythonWorkspace", () => {
 
   it("reset button enabled if inputs are available", async () => {
     const { wrapper } = await doMount();
-    const button = wrapper.findComponent(Button);
+    const button = wrapper.findComponent(KdsButton);
     expect(button.props().disabled).toBeFalsy();
   });
 
@@ -129,7 +129,7 @@ describe("PythonWorkspace", () => {
     });
 
     const { wrapper } = await doMount();
-    const button = wrapper.findComponent(Button);
+    const button = wrapper.findComponent(KdsButton);
     expect(button.props().disabled).toBeTruthy();
   });
 });
