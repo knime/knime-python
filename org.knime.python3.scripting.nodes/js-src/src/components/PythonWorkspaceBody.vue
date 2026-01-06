@@ -43,32 +43,32 @@ const totalWidth = computed(() =>
 <style scoped lang="postcss">
 tbody {
   display: table;
-  font-size: 13px;
-  font-weight: 400;
-  line-height: 18px;
-  color: var(--knime-dove-gray);
-  letter-spacing: 0;
 
   & tr {
     display: flex;
-    color: var(--knime-dove-gray);
-    border-bottom: 1px solid var(--knime-porcelain);
 
     &:hover {
       color: var(--knime-masala);
       cursor: pointer;
+      background-color: var(--kds-color-background-neutral-hover);
+      border-radius: var(--kds-border-radius-container-0-25x);
     }
 
     & td {
+      gap: var(--kds-spacing-container-0-12x);
+      height: var(--kds-dimension-component-height-1-5x);
+      padding-right: var(--kds-spacing-container-0-25x);
+      padding-left: var(--kds-spacing-container-0-25x);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
 
       & span {
         width: inherit;
-        margin: 6px;
         overflow: hidden;
         text-overflow: ellipsis;
+        font: var(--kds-font-base-interactive-small);
+        color: var(--kds-color-text-and-icon-neutral);
       }
     }
   }

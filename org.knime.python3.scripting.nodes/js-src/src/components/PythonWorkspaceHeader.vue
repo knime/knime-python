@@ -204,31 +204,28 @@ const onPointerMove = (event: { clientX: number }) => {
 
 <style lang="postcss" scoped>
 thead {
-  position: sticky;
-  top: 0;
-  width: calc(100% - 15px);
-  font-weight: 500;
-  line-height: 15px;
-  text-align: left;
-  letter-spacing: 0;
-  table-layout: fixed;
-  background-color: var(--knime-porcelain);
+  display: contents;
+  border-bottom: var(--kds-border-base-subtle);
 
   & tr {
+    position: sticky;
     display: flex;
+    height: var(--kds-spacing-container-1-5x);
+    padding-right: var(--kds-spacing-container-0-25x);
+    padding-left: var(--kds-spacing-container-0-25x);
 
     & th {
       display: flex;
       justify-content: space-between;
       overflow: hidden;
       text-overflow: ellipsis;
-      text-align: left;
       white-space: nowrap;
 
       & span {
-        margin: 0 5px;
         overflow: hidden;
         text-overflow: ellipsis;
+        font: var(--kds-font-base-interactive-small-strong);
+        color: var(--kds-color-text-and-icon-neutral);
       }
 
       & .drag-handle {
