@@ -88,7 +88,8 @@ public final class PythonViewNodeFactory extends ConfigurableNodeFactory<PythonV
     @Override
     protected PythonViewNodeModel createNodeModel(final NodeCreationConfiguration creationConfig) {
         final var config = creationConfig.getPortConfig().get(); // NOSONAR
-        return new PythonViewNodeModel(createInputPorts(config), createOutputPorts(config));
+        // Python View nodes currently don't support Pixi environment ports
+        return new PythonViewNodeModel(createInputPorts(config), createOutputPorts(config), false);
     }
 
     @Override

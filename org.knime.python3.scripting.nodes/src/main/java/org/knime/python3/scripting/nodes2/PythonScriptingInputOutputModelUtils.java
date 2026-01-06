@@ -64,6 +64,7 @@ import org.knime.core.node.port.image.ImagePortObject;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.webui.node.dialog.scripting.InputOutputModel;
 import org.knime.core.webui.node.dialog.scripting.WorkflowControl.InputPortInfo;
+import org.knime.pixi.nodes.PixiEnvironmentPortObject;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
 
 /**
@@ -127,6 +128,12 @@ final class PythonScriptingInputOutputModelUtils {
         var objectIdx = 0;
         for (int i = 0; i < inputPorts.length; i++) {
             final var type = inputPorts[i].portType();
+            
+            // Skip Pixi environment ports - they are not data ports
+            if (isPixiEnvironmentPort(type)) {
+                continue;
+            }
+            
             final var spec = inputPorts[i].portSpec();
             if (spec instanceof DataTableSpec dataTableSpec) {
                 // Table with specs available
@@ -202,6 +209,15 @@ final class PythonScriptingInputOutputModelUtils {
 
     private static boolean isNoFlowVariablePort(final PortType portType) {
         return !portType.acceptsPortObjectClass(FlowVariablePortObject.class);
+    }
+
+    private static boolean isPixiEnvironmentPort(final PortType portType) {
+        try {
+            return portType.acceptsPortObjectClass(PixiEnvironmentPortObject.class);
+        } catch (NoClassDefFoundError e) {
+            // Pixi nodes bundle not available
+            return false;
+        }
     }
 
     private static String portTypeToInputOutputType(final PortType portType) {
