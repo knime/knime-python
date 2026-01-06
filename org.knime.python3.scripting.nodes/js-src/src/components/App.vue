@@ -218,6 +218,8 @@ onMounted(async () => {
 
 <style>
 @import url("@knime/styles/css");
+@import url("@knime/kds-styles/kds-variables.css");
+@import url("@knime/kds-styles/kds-legacy-theme.css");
 </style>
 
 <style scoped lang="postcss">
