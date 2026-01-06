@@ -58,10 +58,12 @@ import org.knime.base.node.util.exttool.ExtToolStdoutNodeView;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.ConfigurableNodeFactory;
 import org.knime.core.node.NodeDialogPane;
+import org.knime.core.node.NodeLogger;
 import org.knime.core.node.NodeView;
 import org.knime.core.node.context.NodeCreationConfiguration;
 import org.knime.core.node.port.PortType;
 import org.knime.core.node.port.image.ImagePortObject;
+import org.knime.pixi.nodes.PixiEnvironmentPortObject;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
 import org.knime.python2.ports.InputPort;
 import org.knime.python2.ports.OutputPort;
@@ -72,12 +74,26 @@ import org.knime.python3.scripting.nodes.PortsConfigurationUtils;
  */
 public final class PythonScriptNodeFactory extends ConfigurableNodeFactory<PythonScriptNodeModel> {
 
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonScriptNodeFactory.class);
+
     @Override
     protected Optional<PortsConfigurationBuilder> createPortsConfigBuilder() {
         final var b = new PortsConfigurationBuilder();
         b.addExtendableInputPortGroup("Input object (pickled)", PickledObjectFileStorePortObject.TYPE);
         b.addExtendableInputPortGroupWithDefault("Input table", new PortType[0], new PortType[]{BufferedDataTable.TYPE},
             BufferedDataTable.TYPE);
+        boolean pixiPortAdded = false;
+        try {
+            final Class<?> pixiClass = PixiEnvironmentPortObject.class;
+            final PortType pixiPortType = PixiEnvironmentPortObject.TYPE_OPTIONAL;
+            b.addOptionalInputPortGroup("Pixi environment", pixiPortType);
+            pixiPortAdded = true;
+            LOGGER.info("Successfully added optional Pixi environment port");
+        } catch (NoClassDefFoundError e) {
+            LOGGER.warn("Could not add Pixi environment port - pixi bundle not available: " + e.getMessage());
+        } catch (Exception e) {
+            LOGGER.error("Unexpected error adding Pixi environment port", e);
+        } 
         b.addExtendableOutputPortGroupWithDefault("Output table", new PortType[0],
             new PortType[]{BufferedDataTable.TYPE}, BufferedDataTable.TYPE);
         b.addExtendableOutputPortGroup("Output image", ImagePortObject.TYPE);
@@ -92,7 +108,8 @@ public final class PythonScriptNodeFactory extends ConfigurableNodeFactory<Pytho
         if (urlConfig.isPresent()) {
             return PythonScriptNodeModel.createDnDNodeModel(urlConfig.get().getUrl());
         }
-        return new PythonScriptNodeModel(createInputPorts(config), createOutputPorts(config));
+        return new PythonScriptNodeModel(createInputPorts(config), createOutputPorts(config),
+            PortsConfigurationUtils.hasPixiPort(config));
     }
 
     @Override
