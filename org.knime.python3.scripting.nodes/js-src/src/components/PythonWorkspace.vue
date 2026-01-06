@@ -2,7 +2,7 @@
 import { type Ref, onMounted, onUnmounted, ref } from "vue";
 import { useDebounceFn, useResizeObserver } from "@vueuse/core";
 
-import { Button } from "@knime/components";
+import { KdsButton } from "@knime/kds-components";
 
 import {
   getPythonInitialData,
@@ -75,15 +75,16 @@ onMounted(() => {
       </table>
     </div>
     <div class="controls">
-      <Button
+      <KdsButton
         class="reset-button"
-        :with-border="false"
-        compact
+        label="Reset Values"
+        leading-icon="reset-all"
+        variant="transparent"
         :disabled="!resetButtonEnabled"
         @click="resetWorkspace"
       >
         Reset values
-      </Button>
+      </KdsButton>
     </div>
   </div>
 </template>
@@ -94,7 +95,6 @@ onMounted(() => {
   flex-direction: column;
   justify-content: space-between;
   height: 100%;
-  background-color: var(--knime-gray-ultra-light);
 }
 
 .workspace {
@@ -102,6 +102,7 @@ onMounted(() => {
 
   position: relative;
   min-width: 120px;
+  padding: var(--kds-spacing-container-0-5x) var(--kds-spacing-container-0-5x) none var(--kds-spacing-container-0-5x);
   margin-top: 0;
   overflow: hidden auto;
 
@@ -121,17 +122,12 @@ onMounted(() => {
   display: flex;
   flex-direction: row-reverse;
   place-content: center space-between;
-  min-height: var(--controls-height);
-  max-height: var(--controls-height);
+  align-items: center;
+  height: var(--kds-dimension-component-height-2-25x);
+  padding-right: var(--kds-spacing-container-0-25x);
+  padding-left: var(--kds-spacing-container-0-25x);
   overflow: hidden;
-  border-top: 1px solid var(--knime-silver-sand);
-}
-
-.reset-button {
-  height: 30px;
-  margin-top: 5px;
-  margin-right: 10px;
-  margin-bottom: 5px;
+  border-top: var(--kds-border-base-subtle);
 }
 </style>
 @/python-initial-data-service

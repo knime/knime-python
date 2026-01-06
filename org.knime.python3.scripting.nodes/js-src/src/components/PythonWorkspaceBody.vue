@@ -52,14 +52,18 @@ tbody {
   & tr {
     display: flex;
     color: var(--knime-dove-gray);
-    border-bottom: 1px solid var(--knime-porcelain);
 
     &:hover {
       color: var(--knime-masala);
       cursor: pointer;
+      background-color: var(--kds-color-background-neutral-hover);
+      border-radius: var(--kds-border-radius-container-0-25x);
     }
 
     & td {
+      height: var(--kds-dimension-component-height-1-5x);
+      padding-right: var(--kds-spacing-container-0-25x);
+      padding-left: var(--kds-spacing-container-0-25x);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -69,6 +73,8 @@ tbody {
         margin: 6px;
         overflow: hidden;
         text-overflow: ellipsis;
+        font: var(--kds-font-base-interactive-small);
+        color: var(--kds-color-text-and-icon-neutral);
       }
     }
   }
