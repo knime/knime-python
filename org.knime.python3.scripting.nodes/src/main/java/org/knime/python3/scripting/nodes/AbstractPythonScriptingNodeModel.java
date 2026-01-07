@@ -81,7 +81,7 @@ import org.knime.core.node.workflow.VariableTypeRegistry;
 import org.knime.core.util.PathUtils;
 import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
 import org.knime.core.webui.node.view.NodeView;
-import org.knime.pixi.nodes.PixiEnvironmentPortObject;
+import org.knime.pixi.port.PixiEnvironmentPortObject;
 import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonModuleSpec;
 import org.knime.python2.PythonVersion;

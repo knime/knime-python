@@ -88,7 +88,7 @@ import org.knime.core.node.workflow.VariableType;
 import org.knime.core.node.workflow.VariableTypeRegistry;
 import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
 import org.knime.core.webui.node.dialog.scripting.ScriptingService.ConsoleText;
-import org.knime.pixi.nodes.PixiEnvironmentPortObject;
+import org.knime.pixi.port.PixiEnvironmentPortObject;
 import org.knime.python3.AbstractCondaPythonCommand;
 import org.knime.python3.PythonCommand;
 import org.knime.python3.PythonProcessTerminatedException;

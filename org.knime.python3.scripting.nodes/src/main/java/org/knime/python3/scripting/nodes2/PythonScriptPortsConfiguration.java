@@ -55,7 +55,7 @@ import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.context.ports.PortsConfiguration;
 import org.knime.core.node.port.image.ImagePortObject;
 import org.knime.core.node.workflow.NodeContext;
-import org.knime.pixi.nodes.PixiEnvironmentPortObject;
+import org.knime.pixi.port.PixiEnvironmentPortObject;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
 
 /**

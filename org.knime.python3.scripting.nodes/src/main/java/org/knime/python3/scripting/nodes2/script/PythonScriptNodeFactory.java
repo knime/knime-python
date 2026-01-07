@@ -67,7 +67,7 @@ import org.knime.core.node.port.image.ImagePortObject;
 import org.knime.core.webui.node.dialog.NodeDialog;
 import org.knime.core.webui.node.dialog.NodeDialogFactory;
 import org.knime.core.webui.node.dialog.NodeDialogManager;
-import org.knime.pixi.nodes.PixiEnvironmentPortObject;
+import org.knime.pixi.port.PixiEnvironmentPortObject;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
 import org.knime.python3.scripting.nodes2.PythonScriptNodeDialog;
 import org.knime.python3.scripting.nodes2.PythonScriptNodeModel;
