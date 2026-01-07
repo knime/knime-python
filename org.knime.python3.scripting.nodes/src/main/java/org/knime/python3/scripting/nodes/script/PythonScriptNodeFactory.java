@@ -63,7 +63,7 @@ import org.knime.core.node.NodeView;
 import org.knime.core.node.context.NodeCreationConfiguration;
 import org.knime.core.node.port.PortType;
 import org.knime.core.node.port.image.ImagePortObject;
-import org.knime.pixi.nodes.PixiEnvironmentPortObject;
+import org.knime.pixi.port.PixiEnvironmentPortObject;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
 import org.knime.python2.ports.InputPort;
 import org.knime.python2.ports.OutputPort;

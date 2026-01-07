@@ -60,7 +60,7 @@ import org.knime.python2.ports.InputPort;
 import org.knime.python2.ports.OutputPort;
 import org.knime.python2.ports.PickledObjectInputPort;
 import org.knime.python2.ports.PickledObjectOutputPort;
-import org.knime.pixi.nodes.PixiEnvironmentPortObject;
+import org.knime.pixi.port.PixiEnvironmentPortObject;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany

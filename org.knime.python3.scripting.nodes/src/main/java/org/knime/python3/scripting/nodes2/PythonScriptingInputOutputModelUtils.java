@@ -64,7 +64,7 @@ import org.knime.core.node.port.image.ImagePortObject;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.webui.node.dialog.scripting.InputOutputModel;
 import org.knime.core.webui.node.dialog.scripting.WorkflowControl.InputPortInfo;
-import org.knime.pixi.nodes.PixiEnvironmentPortObject;
+import org.knime.pixi.port.PixiEnvironmentPortObject;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
 
 /**
