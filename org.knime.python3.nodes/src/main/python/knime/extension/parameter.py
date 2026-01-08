@@ -1514,7 +1514,16 @@ class EnumParameterOptions(Enum):
         self.description = description
 
     @classmethod
-    def _generate_options_description(cls, docstring: str):
+    def _generate_options_description(cls, docstring: str, visible_members=None):
+        """Generate options description.
+
+        Parameters
+        ----------
+        docstring : str
+            The parameter docstring
+        visible_members : list, optional
+            List of member names to include. If None, all members are included.
+        """
         # ensure that the options description is indented correctly
         if docstring:
             lines = docstring.expandtabs().splitlines()
@@ -1524,7 +1533,10 @@ class EnumParameterOptions(Enum):
             indent = ""
 
         options_description = f"\n\n{indent}**Available options:**\n\n"
-        for member in cls._member_names_:
+        members_to_show = (
+            visible_members if visible_members is not None else cls._member_names_
+        )
+        for member in members_to_show:
             options_description += (
                 f"{indent}- {cls[member].label}: {cls[member].description}\n"
             )
@@ -1580,6 +1592,59 @@ class EnumParameter(_BaseMultiChoiceParameter):
     ...     default_value=CoffeeOptions.CLASSIC.name,
     ...     enum=CoffeeOptions,
     ... )
+
+    Dynamic Filtering
+    -----------------
+    The optional ``visible_choices`` callable allows filtering which enum members are displayed in the
+    dialog and node description based on the runtime context. This is useful for hiding options that
+    are not applicable given the current input data.
+
+    The callable receives a ``DialogCreationContext`` (or ``None`` if the node is not connected or
+    during node description generation at startup) and must return a list of enum members to display.
+    If the callable returns an empty list or only invalid members, a warning is logged.
+
+    **Important:** Validation accepts any enum member regardless of filtering. This ensures that saved
+    workflows remain valid even when the context changes and different options are filtered.
+
+    The ``DialogCreationContext`` parameter can be ``None`` in two scenarios:
+
+    - During node description generation at KNIME startup
+    - When the node has no input connections
+
+    Your callable should handle ``None`` gracefully. By returning different options based on whether
+    the context is ``None``, you can control what appears in the node description versus the dialog.
+    For example, returning a subset when ``ctx is None`` effectively provides static subsetting in
+    the description while still allowing dynamic filtering in the dialog based on actual input data.
+
+    >>> class ModelOptions(EnumParameterOptions):
+    ...     LINEAR = ("Linear Regression", "Fits a linear model")
+    ...     RANDOM_FOREST = ("Random Forest", "Ensemble tree model")
+    ...     NEURAL_NET = ("Neural Network", "Deep learning model")
+    ...
+    ... def filter_by_model_support(context):
+    ...     # Handle None context (no connection or description generation)
+    ...     if context is None:
+    ...         # Return subset for description - these are the "primary" options
+    ...         return [ModelOptions.LINEAR, ModelOptions.RANDOM_FOREST]
+    ...
+    ...     # Get input specifications for dialog filtering
+    ...     specs = context.get_input_specs()
+    ...     if not specs:
+    ...         return list(ModelOptions)
+    ...
+    ...     # Filter based on model capabilities from input
+    ...     model_spec = specs[0]  # Assuming model is first input
+    ...     supported = model_spec.get_supported_options()  # Hypothetical method
+    ...
+    ...     return [opt for opt in ModelOptions if opt.name in supported]
+    ...
+    ... model_param = knext.EnumParameter(
+    ...     label="Model Type",
+    ...     description="Select the model to use.",
+    ...     default_value=ModelOptions.LINEAR,  # Can use enum member directly
+    ...     enum=ModelOptions,
+    ...     visible_choices=filter_by_model_support,
+    ... )
     """
 
     class Style(Enum):
@@ -1597,13 +1662,28 @@ class EnumParameter(_BaseMultiChoiceParameter):
         self,
         label: Optional[str] = None,
         description: Optional[str] = None,
-        default_value: Union[str, DefaultValueProvider[str]] = None,
+        default_value: Union[
+            str,
+            EnumParameterOptions,
+            DefaultValueProvider[Union[str, EnumParameterOptions]],
+        ] = None,
         enum: Optional[EnumParameterOptions] = None,
         validator: Optional[Callable[[str], None]] = None,
         since_version: Optional[Union[Version, str]] = None,
         is_advanced: bool = False,
         style: Optional[Style] = None,
+        visible_choices: Optional[
+            Callable[[Optional[Any]], List[EnumParameterOptions]]
+        ] = None,
     ):
+        """
+        Parameters
+        ----------
+        visible_choices : Optional[Callable[[Optional[DialogCreationContext]], List[EnumParameterOptions]]]
+            Optional callable that filters which enum members are displayed in the dialog.
+            The callable receives a DialogCreationContext (or None) and must return a list
+            of enum members to show. If None or not provided, all enum members are shown.
+        """
         if validator is None:
             validator = self._default_validator
         else:
@@ -1616,8 +1696,18 @@ class EnumParameter(_BaseMultiChoiceParameter):
             self._enum = enum
             if default_value is None:
                 default_value = self._enum.get_all_options()[0].name
+            elif hasattr(default_value, "name"):
+                # Support enum member as default_value
+                default_value = default_value.name
 
         self._style = style
+
+        # Store visible_choices callable wrapped with cache
+        # Cache size of 2 to handle both None (description) and actual context (schema)
+        if visible_choices is not None:
+            self._visible_choices = lru_cache(maxsize=2)(visible_choices)
+        else:
+            self._visible_choices = None
 
         super().__init__(
             label,
@@ -1628,24 +1718,125 @@ class EnumParameter(_BaseMultiChoiceParameter):
             is_advanced,
         )
 
+    def _get_visible_options(self, dialog_creation_context):
+        """Get the list of enum members to display in the dialog.
+
+        Returns the full enum if no visible_choices callable is set, otherwise
+        calls the callable and validates the returned members.
+        """
+        if self._visible_choices is None:
+            return list(self._enum)
+
+        # Call the cached callable with context (can be None)
+        try:
+            filtered_members = self._visible_choices(dialog_creation_context)
+        except Exception as e:
+            LOGGER.warning(
+                f"Error calling visible_choices for parameter '{self._label}': {e}. "
+                f"Showing all options."
+            )
+            return list(self._enum)
+
+        if not isinstance(filtered_members, (list, tuple)):
+            LOGGER.warning(
+                f"visible_choices for parameter '{self._label}' must return a list or tuple, "
+                f"got {type(filtered_members).__name__}. Showing all options."
+            )
+            return list(self._enum)
+
+        # Validate that all returned members exist in the enum
+        valid_names = set(self._enum._member_names_)
+        validated_members = []
+        invalid_members = []
+
+        for member in filtered_members:
+            if hasattr(member, "name") and member.name in valid_names:
+                validated_members.append(member)
+            else:
+                invalid_members.append(member)
+
+        # Warn about invalid members
+        if invalid_members:
+            valid_options = ", ".join(self._enum._member_names_)
+            LOGGER.warning(
+                f"visible_choices for parameter '{self._label}' returned invalid members: "
+                f"{invalid_members}. Valid options are: {valid_options}"
+            )
+
+        # Handle empty result - developer responsibility to implement correctly
+        if not validated_members:
+            if not filtered_members:
+                # Empty list returned - log warning and show empty
+                LOGGER.warning(
+                    f"visible_choices for parameter '{self._label}' returned an empty list. "
+                    f"Showing empty options."
+                )
+                return []
+            else:
+                # All members were invalid - already warned above
+                LOGGER.warning(
+                    f"visible_choices for parameter '{self._label}' returned no valid members. "
+                    f"Showing empty options."
+                )
+                return []
+
+        return validated_members
+
     def _get_options(self, dialog_creation_context) -> dict:
         if self._style:
             return {"format": self._style.value}
         return super()._get_options(dialog_creation_context)
 
-    def _generate_description(self):
-        return self._enum._generate_options_description(self.__doc__)
+    def _generate_description(self, visible_options=None):
+        """Generate description with optional visible options filtering.
+
+        Parameters
+        ----------
+        visible_options : list of EnumParameterOptions, optional
+            List of enum members to include in description. If None, all members
+            from self._enum are included. If provided, only these members appear
+            in the description.
+        """
+        if visible_options is None:
+            # No filtering - generate description for all options
+            return self._enum._generate_options_description(self.__doc__)
+
+        # Generate description for filtered options
+        visible_member_names = [opt.name for opt in visible_options]
+        return self._enum._generate_options_description(
+            self.__doc__, visible_member_names
+        )
 
     def _extract_schema(self, extension_version=None, dialog_creation_context=None):
         schema = super()._extract_schema(
             dialog_creation_context=dialog_creation_context
         )
-        schema["description"] = self._generate_description()
-        schema["oneOf"] = [{"const": e.name, "title": e.label} for e in self._enum]
+
+        # Use filtered options for dialog UI
+        visible_options = self._get_visible_options(dialog_creation_context)
+        schema["description"] = self._generate_description(visible_options)
+        schema["oneOf"] = [{"const": e.name, "title": e.label} for e in visible_options]
+
+        # Warn if default value is not in visible options
+        if visible_options and self._default_value:
+            visible_names = {e.name for e in visible_options}
+            if self._default_value not in visible_names:
+                LOGGER.warning(
+                    f"Default value '{self._default_value}' for parameter '{self._label}' "
+                    f"is not in the currently visible options: {', '.join(visible_names)}"
+                )
+
         return schema
 
     def _extract_description(self, name, parent_scope: _Scope):
-        return {"name": self._label, "description": self._generate_description()}
+        # Get visible options with None context for node description
+        visible_options = (
+            self._get_visible_options(None) if self._visible_choices else None
+        )
+        return {
+            "name": self._label,
+            "description": self._generate_description(visible_options),
+        }
 
     def validator(self, func):
         # we retain the default validator to ensure that value is always one of the available options

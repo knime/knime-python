@@ -1601,6 +1601,342 @@ class TestStringParameterStaticChoices(unittest.TestCase):
         self.assertEqual(obj.static_plain, "INVALID")
 
 
+class TestModelOptions(kp.EnumParameterOptions):
+    """Test enum for visible_choices testing"""
+
+    LINEAR = ("Linear Regression", "Fits a linear model")
+    RANDOM_FOREST = ("Random Forest", "Ensemble tree model")
+    NEURAL_NET = ("Neural Network", "Deep learning model")
+    SVM = ("Support Vector Machine", "SVM model")
+
+
+class ParameterizedWithVisibleChoices:
+    """Test class for EnumParameter with visible_choices callable"""
+
+    @staticmethod
+    def _filter_to_two(ctx):
+        """Filter to only LINEAR and RANDOM_FOREST"""
+        return [TestModelOptions.LINEAR, TestModelOptions.RANDOM_FOREST]
+
+    @staticmethod
+    def _filter_by_specs(ctx):
+        """Filter based on context specs"""
+        if ctx is None:
+            # No context - return subset (subsetting use-case)
+            return [TestModelOptions.LINEAR, TestModelOptions.SVM]
+
+        specs = ctx.get_input_specs()
+        if not specs or len(specs) == 0:
+            return list(TestModelOptions)
+
+        # Simulate filtering based on spec (e.g., spec has 'supported_models' attribute)
+        # For testing, we'll use spec count as a proxy
+        if len(specs) == 1:
+            return [TestModelOptions.LINEAR, TestModelOptions.RANDOM_FOREST]
+        else:
+            return [TestModelOptions.NEURAL_NET, TestModelOptions.SVM]
+
+    @staticmethod
+    def _filter_invalid():
+        """Returns invalid members for testing warnings"""
+        return ["INVALID_OPTION", TestModelOptions.LINEAR]
+
+    @staticmethod
+    def _filter_empty(ctx):
+        """Returns empty list"""
+        return []
+
+    param_filtered = kp.EnumParameter(
+        label="Filtered Model",
+        description="Model with filtered choices",
+        default_value=TestModelOptions.LINEAR.name,
+        enum=TestModelOptions,
+        visible_choices=_filter_to_two.__func__,
+    )
+
+    param_context_dependent = kp.EnumParameter(
+        label="Context Dependent",
+        description="Choices depend on context",
+        default_value=TestModelOptions.LINEAR,  # Using enum member as default
+        enum=TestModelOptions,
+        visible_choices=_filter_by_specs.__func__,
+    )
+
+    param_no_filter = kp.EnumParameter(
+        label="No Filter",
+        description="All options visible",
+        default_value=TestModelOptions.LINEAR.name,
+        enum=TestModelOptions,
+    )
+
+
+class TestEnumParameterVisibleChoices(unittest.TestCase):
+    """Test EnumParameter visible_choices functionality"""
+
+    def test_filtered_schema_contains_subset(self):
+        """Test that filtered options appear in schema oneOf"""
+        obj = ParameterizedWithVisibleChoices()
+        schema = kp.extract_schema(
+            obj, dialog_creation_context=DummyDialogCreationContext()
+        )
+        s = schema["properties"]["model"]["properties"]["param_filtered"]
+
+        self.assertIn("oneOf", s)
+        values = {entry["const"] for entry in s["oneOf"]}
+        # Should only contain LINEAR and RANDOM_FOREST
+        self.assertEqual(values, {"LINEAR", "RANDOM_FOREST"})
+        self.assertNotIn("NEURAL_NET", values)
+        self.assertNotIn("SVM", values)
+
+    def test_no_filter_shows_all_options(self):
+        """Test that parameter without visible_choices shows all options"""
+        obj = ParameterizedWithVisibleChoices()
+        schema = kp.extract_schema(
+            obj, dialog_creation_context=DummyDialogCreationContext()
+        )
+        s = schema["properties"]["model"]["properties"]["param_no_filter"]
+
+        self.assertIn("oneOf", s)
+        values = {entry["const"] for entry in s["oneOf"]}
+        self.assertEqual(values, {"LINEAR", "RANDOM_FOREST", "NEURAL_NET", "SVM"})
+
+    def test_context_dependent_filtering(self):
+        """Test that filtering works based on context"""
+        obj = ParameterizedWithVisibleChoices()
+
+        # With one spec
+        ctx_one = DummyDialogCreationContext(specs=[test_schema])
+        schema = kp.extract_schema(obj, dialog_creation_context=ctx_one)
+        s = schema["properties"]["model"]["properties"]["param_context_dependent"]
+        values = {entry["const"] for entry in s["oneOf"]}
+        self.assertEqual(values, {"LINEAR", "RANDOM_FOREST"})
+
+        # With two specs
+        ctx_two = DummyDialogCreationContext(specs=[test_schema, test_schema])
+        schema = kp.extract_schema(obj, dialog_creation_context=ctx_two)
+        s = schema["properties"]["model"]["properties"]["param_context_dependent"]
+        values = {entry["const"] for entry in s["oneOf"]}
+        self.assertEqual(values, {"NEURAL_NET", "SVM"})
+
+    def test_none_context_subsetting(self):
+        """Test that None context enables subsetting use-case"""
+        obj = ParameterizedWithVisibleChoices()
+
+        # Extract schema without context
+        schema = kp.extract_schema(obj, dialog_creation_context=None)
+        s = schema["properties"]["model"]["properties"]["param_context_dependent"]
+
+        self.assertIn("oneOf", s)
+        values = {entry["const"] for entry in s["oneOf"]}
+        # Should return subset defined for None case
+        self.assertEqual(values, {"LINEAR", "SVM"})
+
+    def test_description_respects_visible_choices(self):
+        """Test that description respects visible_choices based on None context"""
+
+        # param_filtered uses _filter_to_two which doesn't check context
+        # So description should show only LINEAR and RANDOM_FOREST
+        desc_dict = ParameterizedWithVisibleChoices.param_filtered._extract_description(
+            "param_filtered", None
+        )
+        description = desc_dict["description"]
+
+        # Description should contain only filtered options
+        self.assertIn("Linear Regression", description)
+        self.assertIn("Random Forest", description)
+        # Should NOT contain filtered-out options
+        self.assertNotIn("Neural Network", description)
+        self.assertNotIn("Support Vector Machine", description)
+
+    def test_description_with_context_dependent_filter(self):
+        """Test description with context-dependent filter (None case)"""
+
+        # param_context_dependent returns subset for None context
+        desc_dict = ParameterizedWithVisibleChoices.param_context_dependent._extract_description(
+            "param_context_dependent", None
+        )
+        description = desc_dict["description"]
+
+        # Description should show subset returned for None
+        self.assertIn("Linear Regression", description)
+        self.assertIn("Support Vector Machine", description)
+        # Should NOT contain other options
+        self.assertNotIn("Random Forest", description)
+        self.assertNotIn("Neural Network", description)
+
+    def test_description_without_filter_shows_all(self):
+        """Test that description without filter shows all options"""
+
+        # param_no_filter has no visible_choices
+        desc_dict = (
+            ParameterizedWithVisibleChoices.param_no_filter._extract_description(
+                "param_no_filter", None
+            )
+        )
+        description = desc_dict["description"]
+
+        # Description should contain all enum options
+        self.assertIn("Linear Regression", description)
+        self.assertIn("Random Forest", description)
+        self.assertIn("Neural Network", description)
+        self.assertIn("Support Vector Machine", description)
+
+    def test_validation_accepts_filtered_out_values(self):
+        """Test that validation accepts any enum member, even if filtered out"""
+        obj = ParameterizedWithVisibleChoices()
+
+        # Extract schema with filtering active
+        kp.extract_schema(obj, dialog_creation_context=DummyDialogCreationContext())
+
+        # NEURAL_NET is filtered out but should still be valid
+        obj.param_filtered = "NEURAL_NET"
+        self.assertEqual(obj.param_filtered, "NEURAL_NET")
+
+        # Invalid value should still fail validation
+        with self.assertRaises(ValueError):
+            obj.param_filtered = "INVALID_OPTION"
+
+    def test_default_as_enum_member(self):
+        """Test that default_value accepts enum member directly"""
+        obj = ParameterizedWithVisibleChoices()
+
+        # param_context_dependent uses enum member as default
+        self.assertEqual(obj.param_context_dependent, "LINEAR")
+
+    def test_empty_filter_result_shows_empty(self):
+        """Test that empty filter result shows no options with warning"""
+
+        def empty_filter(ctx):
+            return []
+
+        param = kp.EnumParameter(
+            label="Empty Filter",
+            description="Should be empty",
+            default_value=TestModelOptions.LINEAR.name,
+            enum=TestModelOptions,
+            visible_choices=empty_filter,
+        )
+
+        class TestObj:
+            empty_param = param
+
+        obj = TestObj()
+
+        # Should log warning and return empty
+        with self.assertLogs("Python backend", level="WARNING") as log:
+            schema = kp.extract_schema(
+                obj, dialog_creation_context=DummyDialogCreationContext()
+            )
+
+        # Check warning was logged
+        self.assertTrue(
+            any(
+                "returned an empty list" in msg or "empty options" in msg
+                for msg in log.output
+            )
+        )
+
+        s = schema["properties"]["model"]["properties"]["empty_param"]
+        self.assertEqual(s["oneOf"], [])
+
+    def test_invalid_members_filtered_with_warning(self):
+        """Test that invalid members are filtered out with warning"""
+
+        def invalid_filter(ctx):
+            # Return mix of valid and invalid
+            class FakeMember:
+                name = "INVALID"
+
+            return [TestModelOptions.LINEAR, FakeMember(), "not_a_member"]
+
+        param = kp.EnumParameter(
+            label="Invalid Filter",
+            description="Has invalid members",
+            default_value=TestModelOptions.LINEAR.name,
+            enum=TestModelOptions,
+            visible_choices=invalid_filter,
+        )
+
+        class TestObj:
+            invalid_param = param
+
+        obj = TestObj()
+
+        # Should log warning about invalid members
+        with self.assertLogs("Python backend", level="WARNING") as log:
+            schema = kp.extract_schema(
+                obj, dialog_creation_context=DummyDialogCreationContext()
+            )
+
+        # Check warning was logged with valid options listed
+        warning_msg = " ".join(log.output)
+        self.assertIn("invalid members", warning_msg.lower())
+        self.assertIn("Valid options", warning_msg)
+
+        # Schema should only contain valid member
+        s = schema["properties"]["model"]["properties"]["invalid_param"]
+        values = {entry["const"] for entry in s["oneOf"]}
+        self.assertEqual(values, {"LINEAR"})
+
+    def test_default_not_in_visible_options_warns(self):
+        """Test that warning is logged when default is not in visible options"""
+
+        def filter_without_default(ctx):
+            return [TestModelOptions.RANDOM_FOREST, TestModelOptions.SVM]
+
+        param = kp.EnumParameter(
+            label="Default Not Visible",
+            description="Default filtered out",
+            default_value=TestModelOptions.LINEAR.name,  # Not in visible choices
+            enum=TestModelOptions,
+            visible_choices=filter_without_default,
+        )
+
+        class TestObj:
+            param_with_hidden_default = param
+
+        obj = TestObj()
+
+        # Should log warning about default not visible
+        with self.assertLogs("Python backend", level="WARNING") as log:
+            kp.extract_schema(obj, dialog_creation_context=DummyDialogCreationContext())
+
+        warning_msg = " ".join(log.output)
+        self.assertIn("Default value", warning_msg)
+        self.assertIn("not in the currently visible options", warning_msg)
+
+    def test_caching_works(self):
+        """Test that visible_choices callable is cached per context"""
+        call_count = [0]
+
+        def counting_filter(ctx):
+            call_count[0] += 1
+            return [TestModelOptions.LINEAR, TestModelOptions.SVM]
+
+        param = kp.EnumParameter(
+            label="Cached",
+            description="Should cache",
+            default_value=TestModelOptions.LINEAR.name,
+            enum=TestModelOptions,
+            visible_choices=counting_filter,
+        )
+
+        class TestObj:
+            cached_param = param
+
+        obj = TestObj()
+        ctx = DummyDialogCreationContext()
+
+        # Extract schema multiple times with same context
+        kp.extract_schema(obj, dialog_creation_context=ctx)
+        kp.extract_schema(obj, dialog_creation_context=ctx)
+        kp.extract_schema(obj, dialog_creation_context=ctx)
+
+        # Should be called once: the same context is used for both description and schema
+        # generation, and the result is cached after the first call
+        self.assertEqual(call_count[0], 1)
+
+
 class DummyDialogCreationContext:
     def __init__(self, specs: List = None) -> None:
         class DummyJavaContext:
