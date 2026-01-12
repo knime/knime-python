@@ -1752,8 +1752,10 @@ class TestEnumParameterHiddenChoices(unittest.TestCase):
         """Test description with context-dependent filter (None case)"""
 
         # param_context_dependent hides NEURAL_NET and RANDOM_FOREST for None context
-        desc_dict = ParameterizedWithHiddenChoices.param_context_dependent._extract_description(
-            "param_context_dependent", None
+        desc_dict = (
+            ParameterizedWithHiddenChoices.param_context_dependent._extract_description(
+                "param_context_dependent", None
+            )
         )
         description = desc_dict["description"]
 
@@ -1768,10 +1770,8 @@ class TestEnumParameterHiddenChoices(unittest.TestCase):
         """Test that description without filter shows all options"""
 
         # param_no_filter has no hidden_choices
-        desc_dict = (
-            ParameterizedWithHiddenChoices.param_no_filter._extract_description(
-                "param_no_filter", None
-            )
+        desc_dict = ParameterizedWithHiddenChoices.param_no_filter._extract_description(
+            "param_no_filter", None
         )
         description = desc_dict["description"]
 
