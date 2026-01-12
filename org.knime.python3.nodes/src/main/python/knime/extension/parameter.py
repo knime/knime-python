@@ -1520,9 +1520,14 @@ class EnumParameterOptions(Enum):
         Parameters
         ----------
         docstring : str
-            The parameter docstring
+            The parameter docstring.
         visible_members : list, optional
             List of member names to include. If None, all members are included.
+
+        Returns
+        -------
+        str
+            The formatted options description including the available options.
         """
         # ensure that the options description is indented correctly
         if docstring:
@@ -1595,13 +1600,14 @@ class EnumParameter(_BaseMultiChoiceParameter):
 
     Dynamic Filtering
     -----------------
-    The optional ``visible_choices`` callable allows filtering which enum members are displayed in the
+    The optional ``hidden_choices`` callable allows filtering which enum members are hidden in the
     dialog and node description based on the runtime context. This is useful for hiding options that
     are not applicable given the current input data.
 
     The callable receives a ``DialogCreationContext`` (or ``None`` if the node is not connected or
-    during node description generation at startup) and must return a list of enum members to display.
-    If the callable returns an empty list or only invalid members, a warning is logged.
+    during node description generation at startup) and must return a list of enum members to hide.
+    If ``None`` or an empty list is returned, all options are shown. If the callable returns only
+    invalid members or all members, a warning is logged.
 
     **Important:** Validation accepts any enum member regardless of filtering. This ensures that saved
     workflows remain valid even when the context changes and different options are filtered.
@@ -1613,7 +1619,7 @@ class EnumParameter(_BaseMultiChoiceParameter):
 
     Your callable should handle ``None`` gracefully. By returning different options based on whether
     the context is ``None``, you can control what appears in the node description versus the dialog.
-    For example, returning a subset when ``ctx is None`` effectively provides static subsetting in
+    For example, returning items to hide when ``ctx is None`` effectively provides static filtering in
     the description while still allowing dynamic filtering in the dialog based on actual input data.
 
     >>> class ModelOptions(EnumParameterOptions):
@@ -1621,29 +1627,29 @@ class EnumParameter(_BaseMultiChoiceParameter):
     ...     RANDOM_FOREST = ("Random Forest", "Ensemble tree model")
     ...     NEURAL_NET = ("Neural Network", "Deep learning model")
     ...
-    ... def filter_by_model_support(context):
+    ... def hide_by_model_support(context):
     ...     # Handle None context (no connection or description generation)
     ...     if context is None:
-    ...         # Return subset for description - these are the "primary" options
-    ...         return [ModelOptions.LINEAR, ModelOptions.RANDOM_FOREST]
+    ...         # Hide advanced option in description
+    ...         return [ModelOptions.NEURAL_NET]
     ...
     ...     # Get input specifications for dialog filtering
     ...     specs = context.get_input_specs()
     ...     if not specs:
-    ...         return list(ModelOptions)
+    ...         return []  # Hide nothing, show all
     ...
     ...     # Filter based on model capabilities from input
     ...     model_spec = specs[0]  # Assuming model is first input
     ...     supported = model_spec.get_supported_options()  # Hypothetical method
     ...
-    ...     return [opt for opt in ModelOptions if opt.name in supported]
+    ...     return [opt for opt in ModelOptions if opt.name not in supported]
     ...
     ... model_param = knext.EnumParameter(
     ...     label="Model Type",
     ...     description="Select the model to use.",
     ...     default_value=ModelOptions.LINEAR,  # Can use enum member directly
     ...     enum=ModelOptions,
-    ...     visible_choices=filter_by_model_support,
+    ...     hidden_choices=hide_by_model_support,
     ... )
     """
 
@@ -1672,17 +1678,17 @@ class EnumParameter(_BaseMultiChoiceParameter):
         since_version: Optional[Union[Version, str]] = None,
         is_advanced: bool = False,
         style: Optional[Style] = None,
-        visible_choices: Optional[
+        hidden_choices: Optional[
             Callable[[Optional[Any]], List[EnumParameterOptions]]
         ] = None,
     ):
         """
         Parameters
         ----------
-        visible_choices : Optional[Callable[[Optional[DialogCreationContext]], List[EnumParameterOptions]]]
-            Optional callable that filters which enum members are displayed in the dialog.
+        hidden_choices : Optional[Callable[[Optional[DialogCreationContext]], List[EnumParameterOptions]]]
+            Optional callable that filters which enum members are hidden in the dialog.
             The callable receives a DialogCreationContext (or None) and must return a list
-            of enum members to show. If None or not provided, all enum members are shown.
+            of enum members to hide. If None, an empty list, or not provided, all enum members are shown.
         """
         if validator is None:
             validator = self._default_validator
@@ -1702,12 +1708,12 @@ class EnumParameter(_BaseMultiChoiceParameter):
 
         self._style = style
 
-        # Store visible_choices callable wrapped with cache
+        # Store hidden_choices callable wrapped with cache
         # Cache size of 2 to handle both None (description) and actual context (schema)
-        if visible_choices is not None:
-            self._visible_choices = lru_cache(maxsize=2)(visible_choices)
+        if hidden_choices is not None:
+            self._hidden_choices = lru_cache(maxsize=2)(hidden_choices)
         else:
-            self._visible_choices = None
+            self._hidden_choices = None
 
         super().__init__(
             label,
@@ -1721,37 +1727,42 @@ class EnumParameter(_BaseMultiChoiceParameter):
     def _get_visible_options(self, dialog_creation_context):
         """Get the list of enum members to display in the dialog.
 
-        Returns the full enum if no visible_choices callable is set, otherwise
-        calls the callable and validates the returned members.
+        Returns the full enum if no hidden_choices callable is set, otherwise
+        calls the callable and validates the returned members to hide, then returns
+        the remaining members.
         """
-        if self._visible_choices is None:
+        if self._hidden_choices is None:
             return list(self._enum)
 
         # Call the cached callable with context (can be None)
         try:
-            filtered_members = self._visible_choices(dialog_creation_context)
+            hidden_members = self._hidden_choices(dialog_creation_context)
         except Exception as e:
             LOGGER.warning(
-                f"Error calling visible_choices for parameter '{self._label}': {e}. "
+                f"Error calling hidden_choices for parameter '{self._label}': {e}. "
                 f"Showing all options."
             )
             return list(self._enum)
 
-        if not isinstance(filtered_members, (list, tuple)):
+        if not isinstance(hidden_members, (list, tuple)):
             LOGGER.warning(
-                f"visible_choices for parameter '{self._label}' must return a list or tuple, "
-                f"got {type(filtered_members).__name__}. Showing all options."
+                f"hidden_choices for parameter '{self._label}' must return a list or tuple, "
+                f"got {type(hidden_members).__name__}. Showing all options."
             )
+            return list(self._enum)
+
+        # Handle empty list - show all options (nothing hidden)
+        if not hidden_members:
             return list(self._enum)
 
         # Validate that all returned members exist in the enum
         valid_names = set(self._enum._member_names_)
-        validated_members = []
+        validated_hidden = []
         invalid_members = []
 
-        for member in filtered_members:
+        for member in hidden_members:
             if hasattr(member, "name") and member.name in valid_names:
-                validated_members.append(member)
+                validated_hidden.append(member)
             else:
                 invalid_members.append(member)
 
@@ -1759,28 +1770,24 @@ class EnumParameter(_BaseMultiChoiceParameter):
         if invalid_members:
             valid_options = ", ".join(self._enum._member_names_)
             LOGGER.warning(
-                f"visible_choices for parameter '{self._label}' returned invalid members: "
+                f"hidden_choices for parameter '{self._label}' returned invalid members: "
                 f"{invalid_members}. Valid options are: {valid_options}"
             )
 
-        # Handle empty result - developer responsibility to implement correctly
-        if not validated_members:
-            if not filtered_members:
-                # Empty list returned - log warning and show empty
-                LOGGER.warning(
-                    f"visible_choices for parameter '{self._label}' returned an empty list. "
-                    f"Showing empty options."
-                )
-                return []
-            else:
-                # All members were invalid - already warned above
-                LOGGER.warning(
-                    f"visible_choices for parameter '{self._label}' returned no valid members. "
-                    f"Showing empty options."
-                )
-                return []
+        # If all members are hidden or all returned members were invalid, show empty
+        all_members = list(self._enum)
+        if len(validated_hidden) >= len(all_members):
+            LOGGER.warning(
+                f"hidden_choices for parameter '{self._label}' would hide all options. "
+                f"Showing empty options."
+            )
+            return []
 
-        return validated_members
+        # Return members that are not in the hidden list
+        hidden_names = {member.name for member in validated_hidden}
+        visible_members = [member for member in all_members if member.name not in hidden_names]
+
+        return visible_members
 
     def _get_options(self, dialog_creation_context) -> dict:
         if self._style:
@@ -1796,6 +1803,12 @@ class EnumParameter(_BaseMultiChoiceParameter):
             List of enum members to include in description. If None, all members
             from self._enum are included. If provided, only these members appear
             in the description.
+
+        Returns
+        -------
+        str
+            A formatted description string containing the available options,
+            optionally restricted to the provided ``visible_options``.
         """
         if visible_options is None:
             # No filtering - generate description for all options
@@ -1831,7 +1844,7 @@ class EnumParameter(_BaseMultiChoiceParameter):
     def _extract_description(self, name, parent_scope: _Scope):
         # Get visible options with None context for node description
         visible_options = (
-            self._get_visible_options(None) if self._visible_choices else None
+            self._get_visible_options(None) if self._hidden_choices else None
         )
         return {
             "name": self._label,
