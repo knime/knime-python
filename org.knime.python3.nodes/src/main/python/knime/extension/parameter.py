@@ -1757,12 +1757,12 @@ class EnumParameter(_BaseMultiChoiceParameter):
 
         # Validate that all returned members exist in the enum
         valid_names = set(self._enum._member_names_)
-        validated_hidden = []
+        validated_members = []
         invalid_members = []
 
         for member in hidden_members:
             if hasattr(member, "name") and member.name in valid_names:
-                validated_hidden.append(member)
+                validated_members.append(member)
             else:
                 invalid_members.append(member)
 
@@ -1776,7 +1776,7 @@ class EnumParameter(_BaseMultiChoiceParameter):
 
         # If all members are hidden or all returned members were invalid, show empty
         all_members = list(self._enum)
-        if len(validated_hidden) >= len(all_members):
+        if len(validated_members) >= len(all_members):
             LOGGER.warning(
                 f"hidden_choices for parameter '{self._label}' would hide all options. "
                 f"Showing empty options."
@@ -1784,7 +1784,7 @@ class EnumParameter(_BaseMultiChoiceParameter):
             return []
 
         # Return members that are not in the hidden list
-        hidden_names = {member.name for member in validated_hidden}
+        hidden_names = {member.name for member in validated_members}
         visible_members = [member for member in all_members if member.name not in hidden_names]
 
         return visible_members

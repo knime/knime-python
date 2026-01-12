@@ -1866,7 +1866,8 @@ class TestEnumParameterHiddenChoices(unittest.TestCase):
         self.assertIn("invalid members", warning_msg.lower())
         self.assertIn("Valid options", warning_msg)
 
-        # Schema should hide only the valid member (LINEAR)
+        # Schema should hide only LINEAR (which is valid, but the only valid member in the hidden list)
+        # The invalid members in the list are filtered out
         s = schema["properties"]["model"]["properties"]["invalid_param"]
         values = {entry["const"] for entry in s["oneOf"]}
         # LINEAR is hidden, others remain visible
