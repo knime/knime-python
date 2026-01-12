@@ -1785,7 +1785,9 @@ class EnumParameter(_BaseMultiChoiceParameter):
 
         # Return members that are not in the hidden list
         hidden_names = {member.name for member in validated_members}
-        visible_members = [member for member in all_members if member.name not in hidden_names]
+        visible_members = [
+            member for member in all_members if member.name not in hidden_names
+        ]
 
         return visible_members
 
