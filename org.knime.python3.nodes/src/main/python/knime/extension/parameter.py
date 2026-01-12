@@ -1688,7 +1688,7 @@ class EnumParameter(_BaseMultiChoiceParameter):
         hidden_choices : Optional[Callable[[Optional[DialogCreationContext]], List[EnumParameterOptions]]]
             Optional callable that filters which enum members are hidden in the dialog.
             The callable receives a DialogCreationContext (or None) and must return a list
-            of enum members to hide. If None, an empty list, or not provided, all enum members are shown.
+            of enum members to hide. If None, empty list, or not provided, all enum members are shown.
         """
         if validator is None:
             validator = self._default_validator
