@@ -1602,7 +1602,7 @@ class TestStringParameterStaticChoices(unittest.TestCase):
 
 
 class TestModelOptions(kp.EnumParameterOptions):
-    """Test enum for visible_choices testing"""
+    """Test enum for hidden_choices testing"""
 
     LINEAR = ("Linear Regression", "Fits a linear model")
     RANDOM_FOREST = ("Random Forest", "Ensemble tree model")
@@ -1610,40 +1610,40 @@ class TestModelOptions(kp.EnumParameterOptions):
     SVM = ("Support Vector Machine", "SVM model")
 
 
-class ParameterizedWithVisibleChoices:
-    """Test class for EnumParameter with visible_choices callable"""
+class ParameterizedWithHiddenChoices:
+    """Test class for EnumParameter with hidden_choices callable"""
 
     @staticmethod
-    def _filter_to_two(ctx):
-        """Filter to only LINEAR and RANDOM_FOREST"""
-        return [TestModelOptions.LINEAR, TestModelOptions.RANDOM_FOREST]
+    def _hide_two(ctx):
+        """Hide NEURAL_NET and SVM"""
+        return [TestModelOptions.NEURAL_NET, TestModelOptions.SVM]
 
     @staticmethod
-    def _filter_by_specs(ctx):
-        """Filter based on context specs"""
+    def _hide_by_specs(ctx):
+        """Hide based on context specs"""
         if ctx is None:
-            # No context - return subset (subsetting use-case)
-            return [TestModelOptions.LINEAR, TestModelOptions.SVM]
+            # No context - hide advanced option (hiding use-case)
+            return [TestModelOptions.NEURAL_NET, TestModelOptions.RANDOM_FOREST]
 
         specs = ctx.get_input_specs()
         if not specs or len(specs) == 0:
-            return list(TestModelOptions)
+            return []  # Hide nothing
 
         # Simulate filtering based on spec (e.g., spec has 'supported_models' attribute)
         # For testing, we'll use spec count as a proxy
         if len(specs) == 1:
-            return [TestModelOptions.LINEAR, TestModelOptions.RANDOM_FOREST]
-        else:
             return [TestModelOptions.NEURAL_NET, TestModelOptions.SVM]
+        else:
+            return [TestModelOptions.LINEAR, TestModelOptions.RANDOM_FOREST]
 
     @staticmethod
-    def _filter_invalid():
+    def _hide_invalid():
         """Returns invalid members for testing warnings"""
         return ["INVALID_OPTION", TestModelOptions.LINEAR]
 
     @staticmethod
-    def _filter_empty(ctx):
-        """Returns empty list"""
+    def _hide_empty(ctx):
+        """Returns empty list - hide nothing"""
         return []
 
     param_filtered = kp.EnumParameter(
@@ -1651,7 +1651,7 @@ class ParameterizedWithVisibleChoices:
         description="Model with filtered choices",
         default_value=TestModelOptions.LINEAR.name,
         enum=TestModelOptions,
-        visible_choices=_filter_to_two.__func__,
+        hidden_choices=_hide_two.__func__,
     )
 
     param_context_dependent = kp.EnumParameter(
@@ -1659,7 +1659,7 @@ class ParameterizedWithVisibleChoices:
         description="Choices depend on context",
         default_value=TestModelOptions.LINEAR,  # Using enum member as default
         enum=TestModelOptions,
-        visible_choices=_filter_by_specs.__func__,
+        hidden_choices=_hide_by_specs.__func__,
     )
 
     param_no_filter = kp.EnumParameter(
@@ -1670,12 +1670,12 @@ class ParameterizedWithVisibleChoices:
     )
 
 
-class TestEnumParameterVisibleChoices(unittest.TestCase):
-    """Test EnumParameter visible_choices functionality"""
+class TestEnumParameterHiddenChoices(unittest.TestCase):
+    """Test EnumParameter hidden_choices functionality"""
 
     def test_filtered_schema_contains_subset(self):
         """Test that filtered options appear in schema oneOf"""
-        obj = ParameterizedWithVisibleChoices()
+        obj = ParameterizedWithHiddenChoices()
         schema = kp.extract_schema(
             obj, dialog_creation_context=DummyDialogCreationContext()
         )
@@ -1683,14 +1683,14 @@ class TestEnumParameterVisibleChoices(unittest.TestCase):
 
         self.assertIn("oneOf", s)
         values = {entry["const"] for entry in s["oneOf"]}
-        # Should only contain LINEAR and RANDOM_FOREST
+        # Should only contain LINEAR and RANDOM_FOREST (NEURAL_NET and SVM are hidden)
         self.assertEqual(values, {"LINEAR", "RANDOM_FOREST"})
         self.assertNotIn("NEURAL_NET", values)
         self.assertNotIn("SVM", values)
 
     def test_no_filter_shows_all_options(self):
-        """Test that parameter without visible_choices shows all options"""
-        obj = ParameterizedWithVisibleChoices()
+        """Test that parameter without hidden_choices shows all options"""
+        obj = ParameterizedWithHiddenChoices()
         schema = kp.extract_schema(
             obj, dialog_creation_context=DummyDialogCreationContext()
         )
@@ -1702,25 +1702,25 @@ class TestEnumParameterVisibleChoices(unittest.TestCase):
 
     def test_context_dependent_filtering(self):
         """Test that filtering works based on context"""
-        obj = ParameterizedWithVisibleChoices()
+        obj = ParameterizedWithHiddenChoices()
 
-        # With one spec
+        # With one spec - hide NEURAL_NET and SVM
         ctx_one = DummyDialogCreationContext(specs=[test_schema])
         schema = kp.extract_schema(obj, dialog_creation_context=ctx_one)
         s = schema["properties"]["model"]["properties"]["param_context_dependent"]
         values = {entry["const"] for entry in s["oneOf"]}
         self.assertEqual(values, {"LINEAR", "RANDOM_FOREST"})
 
-        # With two specs
+        # With two specs - hide LINEAR and RANDOM_FOREST
         ctx_two = DummyDialogCreationContext(specs=[test_schema, test_schema])
         schema = kp.extract_schema(obj, dialog_creation_context=ctx_two)
         s = schema["properties"]["model"]["properties"]["param_context_dependent"]
         values = {entry["const"] for entry in s["oneOf"]}
         self.assertEqual(values, {"NEURAL_NET", "SVM"})
 
-    def test_none_context_subsetting(self):
-        """Test that None context enables subsetting use-case"""
-        obj = ParameterizedWithVisibleChoices()
+    def test_none_context_hiding(self):
+        """Test that None context enables hiding use-case"""
+        obj = ParameterizedWithHiddenChoices()
 
         # Extract schema without context
         schema = kp.extract_schema(obj, dialog_creation_context=None)
@@ -1728,48 +1728,48 @@ class TestEnumParameterVisibleChoices(unittest.TestCase):
 
         self.assertIn("oneOf", s)
         values = {entry["const"] for entry in s["oneOf"]}
-        # Should return subset defined for None case
+        # Should hide NEURAL_NET and RANDOM_FOREST (defined for None case)
         self.assertEqual(values, {"LINEAR", "SVM"})
 
-    def test_description_respects_visible_choices(self):
-        """Test that description respects visible_choices based on None context"""
+    def test_description_respects_hidden_choices(self):
+        """Test that description respects hidden_choices based on None context"""
 
-        # param_filtered uses _filter_to_two which doesn't check context
+        # param_filtered uses _hide_two which doesn't check context
         # So description should show only LINEAR and RANDOM_FOREST
-        desc_dict = ParameterizedWithVisibleChoices.param_filtered._extract_description(
+        desc_dict = ParameterizedWithHiddenChoices.param_filtered._extract_description(
             "param_filtered", None
         )
         description = desc_dict["description"]
 
-        # Description should contain only filtered options
+        # Description should contain only non-hidden options
         self.assertIn("Linear Regression", description)
         self.assertIn("Random Forest", description)
-        # Should NOT contain filtered-out options
+        # Should NOT contain hidden options
         self.assertNotIn("Neural Network", description)
         self.assertNotIn("Support Vector Machine", description)
 
     def test_description_with_context_dependent_filter(self):
         """Test description with context-dependent filter (None case)"""
 
-        # param_context_dependent returns subset for None context
-        desc_dict = ParameterizedWithVisibleChoices.param_context_dependent._extract_description(
+        # param_context_dependent hides NEURAL_NET and RANDOM_FOREST for None context
+        desc_dict = ParameterizedWithHiddenChoices.param_context_dependent._extract_description(
             "param_context_dependent", None
         )
         description = desc_dict["description"]
 
-        # Description should show subset returned for None
+        # Description should show non-hidden options
         self.assertIn("Linear Regression", description)
         self.assertIn("Support Vector Machine", description)
-        # Should NOT contain other options
+        # Should NOT contain hidden options
         self.assertNotIn("Random Forest", description)
         self.assertNotIn("Neural Network", description)
 
     def test_description_without_filter_shows_all(self):
         """Test that description without filter shows all options"""
 
-        # param_no_filter has no visible_choices
+        # param_no_filter has no hidden_choices
         desc_dict = (
-            ParameterizedWithVisibleChoices.param_no_filter._extract_description(
+            ParameterizedWithHiddenChoices.param_no_filter._extract_description(
                 "param_no_filter", None
             )
         )
@@ -1783,12 +1783,12 @@ class TestEnumParameterVisibleChoices(unittest.TestCase):
 
     def test_validation_accepts_filtered_out_values(self):
         """Test that validation accepts any enum member, even if filtered out"""
-        obj = ParameterizedWithVisibleChoices()
+        obj = ParameterizedWithHiddenChoices()
 
         # Extract schema with filtering active
         kp.extract_schema(obj, dialog_creation_context=DummyDialogCreationContext())
 
-        # NEURAL_NET is filtered out but should still be valid
+        # NEURAL_NET is hidden but should still be valid
         obj.param_filtered = "NEURAL_NET"
         self.assertEqual(obj.param_filtered, "NEURAL_NET")
 
@@ -1798,23 +1798,23 @@ class TestEnumParameterVisibleChoices(unittest.TestCase):
 
     def test_default_as_enum_member(self):
         """Test that default_value accepts enum member directly"""
-        obj = ParameterizedWithVisibleChoices()
+        obj = ParameterizedWithHiddenChoices()
 
         # param_context_dependent uses enum member as default
         self.assertEqual(obj.param_context_dependent, "LINEAR")
 
-    def test_empty_filter_result_shows_empty(self):
-        """Test that empty filter result shows no options with warning"""
+    def test_empty_filter_result_shows_all(self):
+        """Test that empty filter result shows all options (hide nothing)"""
 
         def empty_filter(ctx):
             return []
 
         param = kp.EnumParameter(
             label="Empty Filter",
-            description="Should be empty",
+            description="Should show all",
             default_value=TestModelOptions.LINEAR.name,
             enum=TestModelOptions,
-            visible_choices=empty_filter,
+            hidden_choices=empty_filter,
         )
 
         class TestObj:
@@ -1822,22 +1822,15 @@ class TestEnumParameterVisibleChoices(unittest.TestCase):
 
         obj = TestObj()
 
-        # Should log warning and return empty
-        with self.assertLogs("Python backend", level="WARNING") as log:
-            schema = kp.extract_schema(
-                obj, dialog_creation_context=DummyDialogCreationContext()
-            )
-
-        # Check warning was logged
-        self.assertTrue(
-            any(
-                "returned an empty list" in msg or "empty options" in msg
-                for msg in log.output
-            )
+        # Should show all options (no warning expected for empty hide list)
+        schema = kp.extract_schema(
+            obj, dialog_creation_context=DummyDialogCreationContext()
         )
 
         s = schema["properties"]["model"]["properties"]["empty_param"]
-        self.assertEqual(s["oneOf"], [])
+        values = {entry["const"] for entry in s["oneOf"]}
+        # Should show all options
+        self.assertEqual(values, {"LINEAR", "RANDOM_FOREST", "NEURAL_NET", "SVM"})
 
     def test_invalid_members_filtered_with_warning(self):
         """Test that invalid members are filtered out with warning"""
@@ -1854,7 +1847,7 @@ class TestEnumParameterVisibleChoices(unittest.TestCase):
             description="Has invalid members",
             default_value=TestModelOptions.LINEAR.name,
             enum=TestModelOptions,
-            visible_choices=invalid_filter,
+            hidden_choices=invalid_filter,
         )
 
         class TestObj:
@@ -1873,23 +1866,25 @@ class TestEnumParameterVisibleChoices(unittest.TestCase):
         self.assertIn("invalid members", warning_msg.lower())
         self.assertIn("Valid options", warning_msg)
 
-        # Schema should only contain valid member
+        # Schema should hide only the valid member (LINEAR)
         s = schema["properties"]["model"]["properties"]["invalid_param"]
         values = {entry["const"] for entry in s["oneOf"]}
-        self.assertEqual(values, {"LINEAR"})
+        # LINEAR is hidden, others remain visible
+        self.assertEqual(values, {"RANDOM_FOREST", "NEURAL_NET", "SVM"})
 
     def test_default_not_in_visible_options_warns(self):
         """Test that warning is logged when default is not in visible options"""
 
-        def filter_without_default(ctx):
-            return [TestModelOptions.RANDOM_FOREST, TestModelOptions.SVM]
+        def hide_including_default(ctx):
+            # Hide LINEAR (which is the default) and NEURAL_NET
+            return [TestModelOptions.LINEAR, TestModelOptions.NEURAL_NET]
 
         param = kp.EnumParameter(
             label="Default Not Visible",
-            description="Default filtered out",
-            default_value=TestModelOptions.LINEAR.name,  # Not in visible choices
+            description="Default hidden",
+            default_value=TestModelOptions.LINEAR.name,  # Will be hidden
             enum=TestModelOptions,
-            visible_choices=filter_without_default,
+            hidden_choices=hide_including_default,
         )
 
         class TestObj:
@@ -1906,19 +1901,19 @@ class TestEnumParameterVisibleChoices(unittest.TestCase):
         self.assertIn("not in the currently visible options", warning_msg)
 
     def test_caching_works(self):
-        """Test that visible_choices callable is cached per context"""
+        """Test that hidden_choices callable is cached per context"""
         call_count = [0]
 
         def counting_filter(ctx):
             call_count[0] += 1
-            return [TestModelOptions.LINEAR, TestModelOptions.SVM]
+            return [TestModelOptions.NEURAL_NET, TestModelOptions.SVM]
 
         param = kp.EnumParameter(
             label="Cached",
             description="Should cache",
             default_value=TestModelOptions.LINEAR.name,
             enum=TestModelOptions,
-            visible_choices=counting_filter,
+            hidden_choices=counting_filter,
         )
 
         class TestObj:
@@ -1935,6 +1930,38 @@ class TestEnumParameterVisibleChoices(unittest.TestCase):
         # Should be called once: the same context is used for both description and schema
         # generation, and the result is cached after the first call
         self.assertEqual(call_count[0], 1)
+
+    def test_hiding_all_options_shows_empty(self):
+        """Test that hiding all options results in empty list with warning"""
+
+        def hide_all(ctx):
+            return list(TestModelOptions)
+
+        param = kp.EnumParameter(
+            label="Hide All",
+            description="All hidden",
+            default_value=TestModelOptions.LINEAR.name,
+            enum=TestModelOptions,
+            hidden_choices=hide_all,
+        )
+
+        class TestObj:
+            hide_all_param = param
+
+        obj = TestObj()
+
+        # Should log warning about hiding all options
+        with self.assertLogs("Python backend", level="WARNING") as log:
+            schema = kp.extract_schema(
+                obj, dialog_creation_context=DummyDialogCreationContext()
+            )
+
+        # Check warning was logged
+        warning_msg = " ".join(log.output)
+        self.assertIn("would hide all options", warning_msg.lower())
+
+        s = schema["properties"]["model"]["properties"]["hide_all_param"]
+        self.assertEqual(s["oneOf"], [])
 
 
 class DummyDialogCreationContext:
