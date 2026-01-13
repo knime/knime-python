@@ -103,6 +103,7 @@ import org.knime.python2.ports.OutputPort;
 import org.knime.python2.ports.PickledObjectOutputPort;
 import org.knime.python2.ports.Port;
 import org.knime.python3.AbstractCondaPythonCommand;
+import org.knime.python3.PixiPythonCommand;
 import org.knime.python3.scripting.Python3KernelBackend;
 import org.knime.python3.scripting.nodes.prefs.Python3ScriptingPreferences;
 
@@ -402,24 +403,20 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
             }
 
             final PixiEnvironmentPortObject pixiPort = (PixiEnvironmentPortObject)portObject;
-            final Path pythonExecPath = pixiPort.getPythonExecutablePath();
-
-            if (pythonExecPath == null) {
-                throw new InvalidSettingsException(
-                    "The Pixi environment does not contain a Python executable. "
-                        + "Please ensure the environment includes Python.");
-            }
-
+            
+            // Create PixiPythonCommand from the pixi.toml path
+            final Path pixiTomlPath = pixiPort.getPixiTomlPath();
+            final org.knime.python3.PythonCommand pythonCommand = new PixiPythonCommand(pixiTomlPath);
+            
+            // Verify that the Python executable exists
+            final Path pythonExecPath = pythonCommand.getPythonExecutablePath();
             if (!Files.exists(pythonExecPath)) {
                 throw new InvalidSettingsException(
                     "The Python executable from the Pixi environment does not exist at path: " + pythonExecPath
                         + ". Please check that the Pixi environment was created successfully.");
             }
-
-            // Use AbstractCondaPythonCommand which handles environment variable patching
-            final org.knime.python3.PythonCommand pythonCommand =
-                new AbstractCondaPythonCommand(pixiPort.getAsCondaEnvironmentDirectory()) {};
-
+            
+            LOGGER.debug("Using Python from Pixi environment via pixi run: " + pythonCommand);
             return new LegacyPythonCommand(pythonCommand);
 
         } catch (NoClassDefFoundError e) {
