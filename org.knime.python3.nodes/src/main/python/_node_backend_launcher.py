@@ -1795,9 +1795,9 @@ class _KnimeNodeBackend(kg.EntryPoint, kn._KnimeNodeBackend):
         implements = ["org.knime.python3.nodes.KnimeNodeBackend"]
 
 
-class KnimeLogHandler(logging.StreamHandler):
+class KnimeLogHandler(logging.Handler):
     def __init__(self, backend):
-        super().__init__(self)
+        super().__init__()
         self.setFormatter(logging.Formatter("%(name)s:%(message)s"))
         self._backend = backend
 
