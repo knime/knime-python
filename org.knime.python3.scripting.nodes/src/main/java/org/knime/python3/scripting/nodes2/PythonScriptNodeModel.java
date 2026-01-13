@@ -90,6 +90,7 @@ import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
 import org.knime.core.webui.node.dialog.scripting.ScriptingService.ConsoleText;
 import org.knime.pixi.port.PixiEnvironmentPortObject;
 import org.knime.python3.AbstractCondaPythonCommand;
+import org.knime.python3.PixiPythonCommand;
 import org.knime.python3.PythonCommand;
 import org.knime.python3.PythonProcessTerminatedException;
 import org.knime.python3.scripting.nodes2.ConsoleOutputUtils.ConsoleOutputStorage;
@@ -332,20 +333,20 @@ public final class PythonScriptNodeModel extends NodeModel {
             }
 
             final PixiEnvironmentPortObject pixiPort = (PixiEnvironmentPortObject)portObject;
-            final Path pythonExecPath = pixiPort.getPythonExecutablePath();
-
-            if (pythonExecPath == null) {
-                throw new InvalidSettingsException("The Pixi environment does not contain a Python executable.\nPlease ensure that Python is installed in the Pixi environment.");
-            }
-
+            
+            // Create PixiPythonCommand from the pixi.toml path
+            final Path pixiTomlPath = pixiPort.getPixiTomlPath();
+            final PythonCommand pythonCommand = new PixiPythonCommand(pixiTomlPath);
+            
+            // Verify that the Python executable exists
+            final Path pythonExecPath = pythonCommand.getPythonExecutablePath();
             if (!Files.exists(pythonExecPath)) {
                 throw new InvalidSettingsException("The Python executable from the Pixi environment does not exist: "
                     + pythonExecPath + ". Please check that the Pixi environment is valid.");
             }
-            LOGGER.debug("Using Python executable from Pixi environment: " + pythonExecPath);
-
-            // Use AbstractCondaPythonCommand which handles environment variable patching
-            return new AbstractCondaPythonCommand(pixiPort.getAsCondaEnvironmentDirectory()) {};
+            
+            LOGGER.debug("Using Python from Pixi environment via pixi run: " + pythonCommand);
+            return pythonCommand;
         } catch (NoClassDefFoundError e) {
             // Pixi bundle not available - this should not happen if the port was added successfully
             LOGGER.debug("PixiEnvironmentPortObject class not available", e);
