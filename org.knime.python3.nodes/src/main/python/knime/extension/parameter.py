@@ -1774,12 +1774,11 @@ class EnumParameter(_BaseMultiChoiceParameter):
                 f"{invalid_members}. Valid options are: {valid_options}"
             )
 
-        # If all members are hidden or all returned members were invalid, show empty
+        # If all members would be hidden, show none
         all_members = list(self._enum)
         if len(validated_members) >= len(all_members):
             LOGGER.warning(
-                f"hidden_choices for parameter '{self._label}' would hide all options. "
-                f"Showing empty options."
+                f"hidden_choices for parameter '{self._label}' would hide all options."
             )
             return []
 
