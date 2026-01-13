@@ -1928,8 +1928,8 @@ class TestEnumParameterHiddenChoices(unittest.TestCase):
         kp.extract_schema(obj, dialog_creation_context=ctx)
         kp.extract_schema(obj, dialog_creation_context=ctx)
 
-        # Should be called once: the same context is used for both description and schema
-        # generation, and the result is cached after the first call
+        # For a given dialog_creation_context, the callable should be invoked only once;
+        # subsequent uses with the same context reuse the cached result.
         self.assertEqual(call_count[0], 1)
 
     def test_hiding_all_options_shows_empty(self):
