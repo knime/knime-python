@@ -1810,6 +1810,12 @@ class EnumParameter(_BaseMultiChoiceParameter):
         str
             A formatted description string containing the available options,
             optionally restricted to the provided ``visible_options``.
+
+        Returns
+        -------
+        str
+            A formatted description string containing the available options,
+            optionally restricted to the provided ``visible_options``.
         """
         if visible_options is None:
             # No filtering - generate description for all options
