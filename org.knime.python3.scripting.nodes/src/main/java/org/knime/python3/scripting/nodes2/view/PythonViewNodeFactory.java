@@ -57,6 +57,7 @@ import java.util.Optional;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.ConfigurableNodeFactory;
 import org.knime.core.node.NodeDialogPane;
+import org.knime.core.node.NodeLogger;
 import org.knime.core.node.context.NodeCreationConfiguration;
 import org.knime.core.node.port.PortType;
 import org.knime.core.node.port.image.ImagePortObject;
@@ -65,6 +66,7 @@ import org.knime.core.webui.node.dialog.NodeDialogFactory;
 import org.knime.core.webui.node.dialog.NodeDialogManager;
 import org.knime.core.webui.node.view.NodeView;
 import org.knime.core.webui.node.view.NodeViewFactory;
+import org.knime.pixi.port.PixiEnvironmentPortObject;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
 import org.knime.python3.scripting.nodes2.PythonScriptNodeDialog;
 import org.knime.python3.scripting.nodes2.PythonScriptNodeModel;
@@ -78,6 +80,10 @@ import org.knime.python3.views.HtmlFileNodeView;
 @SuppressWarnings("restriction") // the UIExtension API is still restricted
 public class PythonViewNodeFactory extends ConfigurableNodeFactory<PythonScriptNodeModel>
     implements NodeDialogFactory, NodeViewFactory<PythonScriptNodeModel> {
+
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonViewNodeFactory.class);
+
+    private static final String PORTGR_ID_PIXI_ENV = "Pixi environment";
 
     @Override
     public NodeDialog createNodeDialog() {
@@ -127,6 +133,16 @@ public class PythonViewNodeFactory extends ConfigurableNodeFactory<PythonScriptN
         b.addExtendableInputPortGroup(PORTGR_ID_INP_OBJECT, PickledObjectFileStorePortObject.TYPE);
         b.addExtendableInputPortGroupWithDefault(PORTGR_ID_INP_TABLE, new PortType[0],
             new PortType[]{BufferedDataTable.TYPE}, BufferedDataTable.TYPE);
+        try {
+            final Class<?> pixiClass = PixiEnvironmentPortObject.class;
+            final PortType pixiPortType = PixiEnvironmentPortObject.TYPE_OPTIONAL;
+            b.addOptionalInputPortGroup(PORTGR_ID_PIXI_ENV, pixiPortType);
+            LOGGER.info("Successfully added optional Pixi environment port");
+        } catch (NoClassDefFoundError e) {
+            LOGGER.warn("Could not add Pixi environment port - pixi bundle not available: " + e.getMessage());
+        } catch (Exception e) {
+            LOGGER.error("Unexpected error adding Pixi environment port", e);
+        }
         b.addOptionalOutputPortGroup(PORTGR_ID_OUT_IMAGE, ImagePortObject.TYPE);
         return Optional.of(b);
     }

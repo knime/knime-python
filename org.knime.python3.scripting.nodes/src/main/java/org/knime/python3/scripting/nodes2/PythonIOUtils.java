@@ -79,6 +79,7 @@ import org.knime.core.node.port.image.ImagePortObject;
 import org.knime.core.node.port.image.ImagePortObjectSpec;
 import org.knime.core.node.port.inactive.InactiveBranchPortObject;
 import org.knime.core.util.PathUtils;
+import org.knime.pixi.port.PixiEnvironmentPortObject;
 import org.knime.python2.port.PickledObjectFile;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
 import org.knime.python3.PythonDataSource;
@@ -100,10 +101,12 @@ final class PythonIOUtils {
 
     /**
      * Create an array of Python data sources for the given input ports. The input ports can be either a
-     * {@link BufferedDataTable} or a {@link PickledObjectFileStorePortObject}.
+     * {@link BufferedDataTable}, a {@link PickledObjectFileStorePortObject}, or a {@link PixiEnvironmentPortObject}.
+     * Note that {@link PixiEnvironmentPortObject}s are filtered out as they are only used for environment
+     * configuration and not passed to Python as data.
      *
-     * @param data a list of port objects. Only {@link BufferedDataTable} and {@link PickledObjectFileStorePortObject}
-     *            are supported.
+     * @param data a list of port objects. Only {@link BufferedDataTable}, {@link PickledObjectFileStorePortObject},
+     *            and {@link PixiEnvironmentPortObject} are supported.
      * @param tableConverter a table converter that is used to convert the {@link BufferedDataTable}s to Python sources
      * @param exec for progress reporting and cancellation
      * @return an array of Python data sources
@@ -120,9 +123,12 @@ final class PythonIOUtils {
         final var tablePortObjects = Arrays.stream(data) //
             .filter(BufferedDataTable.class::isInstance) //
             .toArray(BufferedDataTable[]::new);
+        final var pixiPortObjects = Arrays.stream(data) //
+            .filter(PixiEnvironmentPortObject.class::isInstance) //
+            .toArray(PixiEnvironmentPortObject[]::new);
 
-        // Make sure that all ports are tables or pickled port objects
-        if (pickledPortObjects.length + tablePortObjects.length < data.length) {
+        // Make sure that all ports are tables, pickled port objects, or pixi environment ports
+        if (pickledPortObjects.length + tablePortObjects.length + pixiPortObjects.length < data.length) {
             throw new IllegalArgumentException("Unsupported port type connected. This is an implementation error.");
         }
 
