@@ -468,8 +468,8 @@ def _set_paths():
         # environment variable for DLLs.
         current_path = os.environ.get("PATH", "")
 
-        for additional_dir in [os.path.join("Library", "bin"), "DLLs", "Scripts"]:
-            additional_dir = os.path.join(python_parent_dir, additional_dir)
+        for relative_dir in [os.path.join("Library", "bin"), "DLLs", "Scripts"]:
+            additional_dir = os.path.join(python_parent_dir, relative_dir)
             if os.path.exists(additional_dir):
                 current_path = _pathsep_join(current_path, additional_dir)
 
