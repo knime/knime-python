@@ -466,7 +466,7 @@ def _set_paths():
     if system == "windows":
         # On Windows, DLLs are loaded from the PATH, there's no dedicated
         # environment variable for DLLs.
-        current_path = os.environ["PATH"]
+        current_path = os.environ.get("PATH", "")
 
         for additional_dir in [os.path.join("Library", "bin"), "DLLs", "Scripts"]:
             additional_dir = os.path.join(python_parent_dir, additional_dir)
