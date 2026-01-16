@@ -437,7 +437,7 @@ def _set_paths():
 
     Also set the LD_LIBRARY_PATH on linux and DYLD_FALLBACK_LIBRARY_PATH on macOS to the "lib"
     folder next to the "bin" folder that contains the Python executable if it exists, as we assume
-    this to be a Python environment who's dynamic libraries should be loadable.
+    this to be a Python environment whose dynamic libraries should be loadable.
 
     On Windows, we add the possible locations for DLLs inside the environment to the PATH so that
     the system picks up DLLs in these folders, too.
