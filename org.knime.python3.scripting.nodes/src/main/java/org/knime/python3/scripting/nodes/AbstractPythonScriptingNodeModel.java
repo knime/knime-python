@@ -81,7 +81,8 @@ import org.knime.core.node.workflow.VariableTypeRegistry;
 import org.knime.core.util.PathUtils;
 import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
 import org.knime.core.webui.node.view.NodeView;
-import org.knime.pixi.port.PixiEnvironmentPortObject;
+
+import org.knime.pixi.port.PythonEnvironmentPortObject;
 import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonModuleSpec;
 import org.knime.python2.PythonVersion;
@@ -188,15 +189,15 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
         if (!hasPixiPort) {
             return toPortTypes(ports);
         }
-        // Add the optional Pixi port at the end of the input ports
+        // Add the optional Python environment port at the end of the input ports
         final PortType[] portTypes = new PortType[ports.length + 1];
         for (int i = 0; i < ports.length; i++) {
             portTypes[i] = ports[i].getPortType();
         }
         try {
-            portTypes[ports.length] = PixiEnvironmentPortObject.TYPE_OPTIONAL;
+            portTypes[ports.length] = PythonEnvironmentPortObject.TYPE_OPTIONAL;
         } catch (NoClassDefFoundError e) {
-            throw new IllegalStateException("Could not load PixiEnvironmentPortObject class", e);
+            throw new IllegalStateException("Could not load PythonEnvironmentPortObject class", e);
         }
         return portTypes;
     }
@@ -385,7 +386,7 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
     }
 
     /**
-     * Extract the Python command from a PixiEnvironmentPortObject.
+     * Extract the Python command from a PythonEnvironmentPortObject.
      *
      * @param portObject the port object (may be null if optional port is not connected)
      * @return the Python command, or null if the port is not connected or doesn't contain a valid Python executable
@@ -398,14 +399,20 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
         }
 
         try {
-            if (!(portObject instanceof PixiEnvironmentPortObject)) {
+            if (!(portObject instanceof PythonEnvironmentPortObject)) {
                 return null;
             }
-
-            final PixiEnvironmentPortObject pixiPort = (PixiEnvironmentPortObject)portObject;
+            
+            // Handle PythonEnvironmentPortObject
+            final PythonEnvironmentPortObject pythonEnvPort = (PythonEnvironmentPortObject)portObject;
+            final Path pixiTomlPath;
+            try {
+                pixiTomlPath = pythonEnvPort.getPixiEnvironmentPath().resolve("pixi.toml");
+            } catch (IOException e) {
+                throw new InvalidSettingsException("Failed to get pixi.toml path from PythonEnvironmentPortObject: " + e.getMessage(), e);
+            }
             
             // Create PixiPythonCommand from the pixi.toml path
-            final Path pixiTomlPath = pixiPort.getPixiTomlPath();
             final org.knime.python3.PythonCommand pythonCommand = new PixiPythonCommand(pixiTomlPath);
             
             // Verify that the Python executable exists
@@ -420,8 +427,8 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
             return new LegacyPythonCommand(pythonCommand);
 
         } catch (NoClassDefFoundError e) {
-            // Pixi nodes bundle is not available - this is fine since it's optional
-            LOGGER.debug("PixiEnvironmentPortObject class not available - pixi nodes bundle may not be installed", e);
+            // Python environment bundle is not available - this is fine since it's optional
+            LOGGER.debug("PythonEnvironmentPortObject class not available - bundle may not be installed", e);
             return null;
         }
     }
@@ -470,7 +477,7 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
     }
 
     /**
-     * Wraps a {@link org.knime.python3.PythonCommand} into the legacy implementation for using it in a
+     * Wraps a {@link org.knime.pixi.port.PythonCommand} into the legacy implementation for using it in a
      * {@link PythonKernelBackend}.
      */
     private static final class LegacyPythonCommand implements PythonCommand {

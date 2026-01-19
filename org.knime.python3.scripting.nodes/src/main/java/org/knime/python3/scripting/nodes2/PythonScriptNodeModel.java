@@ -88,7 +88,8 @@ import org.knime.core.node.workflow.VariableType;
 import org.knime.core.node.workflow.VariableTypeRegistry;
 import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
 import org.knime.core.webui.node.dialog.scripting.ScriptingService.ConsoleText;
-import org.knime.pixi.port.PixiEnvironmentPortObject;
+
+import org.knime.pixi.port.PythonEnvironmentPortObject;
 import org.knime.python3.AbstractCondaPythonCommand;
 import org.knime.python3.PixiPythonCommand;
 import org.knime.python3.PythonCommand;
@@ -188,19 +189,18 @@ public final class PythonScriptNodeModel extends NodeModel {
             LOGGER.debug("Checking for Pixi environment port");
             // The Pixi port is after all regular input ports
             final int pixiPortIndex = inObjects.length - 1;
-            PythonCommand pixiCommand = null;
             try {
-                pixiCommand = extractPythonCommandFromPixiPort(inObjects[pixiPortIndex]);
+                final PythonCommand pixiCommand = extractPythonCommandFromPixiPort(inObjects[pixiPortIndex]);
+                if (pixiCommand != null) {
+                    LOGGER.debug("Using Python from Pixi environment");
+                    pythonCommand = pixiCommand;
+                    // TODO: Consider if flow variable should take precedence over Pixi port
+                } else {
+                    LOGGER.debug("Pixi port not connected, using configured Python command");
+                    pythonCommand = ExecutableSelectionUtils.getPythonCommand(m_settings.getExecutableSelection());
+                }
             } catch (InvalidSettingsException ex) {
-                // TODO Auto-generated catch block
-            }
-            if (pixiCommand != null) {
-                LOGGER.debug("Using Python from Pixi environment");
-                pythonCommand = pixiCommand;
-                // TODO: Consider if flow variable should take precedence over Pixi port
-            } else {
-                LOGGER.debug("Pixi port not connected, using configured Python command");
-                pythonCommand = ExecutableSelectionUtils.getPythonCommand(m_settings.getExecutableSelection());
+                throw new KNIMEException("Failed to extract Python command from environment port: " + ex.getMessage(), ex);
             }
         } else {
             pythonCommand = ExecutableSelectionUtils.getPythonCommand(m_settings.getExecutableSelection());
@@ -314,11 +314,11 @@ public final class PythonScriptNodeModel extends NodeModel {
     }
 
     /**
-     * Extract the Python command from a PixiEnvironmentPortObject.
+     * Extract the Python command from a PythonEnvironmentPortObject.
      *
      * @param portObject the port object (may be null if optional port is not connected)
      * @return the Python command, or null if the port is not connected or doesn't contain a valid Python executable
-     * @throws InvalidSettingsException if the Python executable path from the Pixi environment doesn't exist
+     * @throws InvalidSettingsException if the Python executable path from the environment doesn't exist
      */
     private static PythonCommand extractPythonCommandFromPixiPort(final PortObject portObject)
         throws InvalidSettingsException {
@@ -327,29 +327,26 @@ public final class PythonScriptNodeModel extends NodeModel {
         }
 
         try {
-            // Check if this is a Pixi environment port object
-            if (!(portObject instanceof PixiEnvironmentPortObject)) {
-                return null;
+            // Check if this is a PythonEnvironmentPortObject (new unified type)
+            if (portObject instanceof PythonEnvironmentPortObject) {
+                final PythonEnvironmentPortObject pythonEnvPort = (PythonEnvironmentPortObject)portObject;
+                try {
+                    // PythonEnvironmentPortObject.getPythonCommand() returns org.knime.pixi.port.PythonCommand,
+                    // but we need org.knime.python3.PythonCommand. Extract the pixi.toml path and create a new instance.
+                    final Path pixiToml = pythonEnvPort.getPixiEnvironmentPath().resolve("pixi.toml");
+                    final PythonCommand pythonCommand = new PixiPythonCommand(pixiToml);
+                    LOGGER.debug("Using Python from PythonEnvironmentPortObject: " + pythonCommand);
+                    return pythonCommand;
+                } catch (IOException e) {
+                    throw new InvalidSettingsException("Failed to get Python command from environment: " + e.getMessage(), e);
+                }
             }
 
-            final PixiEnvironmentPortObject pixiPort = (PixiEnvironmentPortObject)portObject;
             
-            // Create PixiPythonCommand from the pixi.toml path
-            final Path pixiTomlPath = pixiPort.getPixiTomlPath();
-            final PythonCommand pythonCommand = new PixiPythonCommand(pixiTomlPath);
-            
-            // Verify that the Python executable exists
-            final Path pythonExecPath = pythonCommand.getPythonExecutablePath();
-            if (!Files.exists(pythonExecPath)) {
-                throw new InvalidSettingsException("The Python executable from the Pixi environment does not exist: "
-                    + pythonExecPath + ". Please check that the Pixi environment is valid.");
-            }
-            
-            LOGGER.debug("Using Python from Pixi environment via pixi run: " + pythonCommand);
-            return pythonCommand;
+            return null;
         } catch (NoClassDefFoundError e) {
-            // Pixi bundle not available - this should not happen if the port was added successfully
-            LOGGER.debug("PixiEnvironmentPortObject class not available", e);
+            // Environment port bundle not available - this should not happen if the port was added successfully
+            LOGGER.debug("Environment port class not available", e);
             return null;
         }
     }

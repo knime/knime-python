@@ -425,8 +425,10 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
             throw new IOException(CondaEnvironmentIdentifier.NOT_EXECUTED_PATH_PLACEHOLDER);
         }
 
+        // Wrap internal PythonCommand in adapter for public API
+        final var pythonCommandAdapter = new PythonCommandAdapter(pythonCommand);
         final var gatewayDescriptionBuilder =
-            PythonGatewayDescription.builder(pythonCommand, LAUNCHER.toAbsolutePath(), PythonScriptingEntryPoint.class);
+            PythonGatewayDescription.builder(pythonCommandAdapter, LAUNCHER.toAbsolutePath(), PythonScriptingEntryPoint.class);
 
         gatewayDescriptionBuilder.withPreloaded(PythonArrowExtension.INSTANCE);
         gatewayDescriptionBuilder.withPreloaded(PythonViewsExtension.INSTANCE);
@@ -522,5 +524,48 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
 
         @Override
         void close();
+    }
+
+    /**
+     * Adapter that wraps org.knime.pixi.port.PythonCommand to implement org.knime.python3.PythonCommand.
+     * This is needed because PythonGatewayDescription.builder() requires the public API type.
+     */
+    private static final class PythonCommandAdapter implements org.knime.python3.PythonCommand {
+        private final org.knime.python3.PythonCommand m_delegate;
+
+        PythonCommandAdapter(final org.knime.python3.PythonCommand delegate) {
+            m_delegate = delegate;
+        }
+
+        @Override
+        public ProcessBuilder createProcessBuilder() {
+            return m_delegate.createProcessBuilder();
+        }
+
+        @Override
+        public Path getPythonExecutablePath() {
+            return m_delegate.getPythonExecutablePath();
+        }
+
+        @Override
+        public int hashCode() {
+            return m_delegate.hashCode();
+        }
+
+        @Override
+        public boolean equals(final Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (obj instanceof PythonCommandAdapter other) {
+                return m_delegate.equals(other.m_delegate);
+            }
+            return false;
+        }
+
+        @Override
+        public String toString() {
+            return m_delegate.toString();
+        }
     }
 }

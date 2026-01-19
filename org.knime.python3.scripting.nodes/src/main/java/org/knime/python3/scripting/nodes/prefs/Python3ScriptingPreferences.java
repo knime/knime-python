@@ -127,7 +127,7 @@ public final class Python3ScriptingPreferences {
      * @return The {@link PythonCommand} for the installed bundled environment.
      */
     public static BundledPythonCommand getBundledPythonCommand() {
-        return getBundledCondaEnvironmentConfig().getPythonCommand();
+        return (BundledPythonCommand)getBundledCondaEnvironmentConfig().getPythonCommand();
     }
 
     private static BundledCondaEnvironmentConfig getBundledCondaEnvironmentConfig() {

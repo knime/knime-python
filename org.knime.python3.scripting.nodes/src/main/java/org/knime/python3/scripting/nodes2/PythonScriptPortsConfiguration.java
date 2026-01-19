@@ -55,7 +55,8 @@ import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.context.ports.PortsConfiguration;
 import org.knime.core.node.port.image.ImagePortObject;
 import org.knime.core.node.workflow.NodeContext;
-import org.knime.pixi.port.PixiEnvironmentPortObject;
+
+import org.knime.pixi.port.PythonEnvironmentPortObject;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
 
 /**
@@ -80,8 +81,8 @@ public final class PythonScriptPortsConfiguration {
     /** Name of the object output port */
     public static final String PORTGR_ID_OUT_OBJECT = "Output object (pickled)";
 
-    /** Name of the Pixi environment port */
-    public static final String PORTGR_ID_PIXI_ENV = "Pixi environment";
+    /** Name of the Python environment port (accepts PythonEnvironmentPortObject) */
+    public static final String PORTGR_ID_PYTHON_ENV = "Python environment";
 
     private final int m_numInTables;
 
@@ -95,7 +96,7 @@ public final class PythonScriptPortsConfiguration {
 
     private final boolean m_hasView;
 
-    private final boolean m_hasPixiPort;
+    private final boolean m_hasEnvironmentPort;
 
     /**
      * Create a new {@link PythonScriptPortsConfiguration} from the given {@link PortsConfiguration}.
@@ -109,14 +110,15 @@ public final class PythonScriptPortsConfiguration {
         final Map<String, int[]> inPortsLocation = portsConfig.getInputPortLocation();
         final var numInTables = ArrayUtils.getLength(inPortsLocation.get(PORTGR_ID_INP_TABLE));
         final var numInObjects = ArrayUtils.getLength(inPortsLocation.get(PORTGR_ID_INP_OBJECT));
-        final var hasPixiPort = inPortsLocation.containsKey(PORTGR_ID_PIXI_ENV) 
-            && ArrayUtils.getLength(inPortsLocation.get(PORTGR_ID_PIXI_ENV)) > 0;
+        // Check for environment port (accepts PythonEnvironmentPortObject)
+        final var hasEnvironmentPort = inPortsLocation.containsKey(PORTGR_ID_PYTHON_ENV) 
+            && ArrayUtils.getLength(inPortsLocation.get(PORTGR_ID_PYTHON_ENV)) > 0;
 
         final Map<String, int[]> outPortsLocation = portsConfig.getOutputPortLocation();
         final var numOutTables = ArrayUtils.getLength(outPortsLocation.get(PORTGR_ID_OUT_TABLE));
         final var numOutImages = ArrayUtils.getLength(outPortsLocation.get(PORTGR_ID_OUT_IMAGE));
         final var numOutObjects = ArrayUtils.getLength(outPortsLocation.get(PORTGR_ID_OUT_OBJECT));
-        return new PythonScriptPortsConfiguration(numInTables, numInObjects, numOutTables, numOutImages, numOutObjects, hasView, hasPixiPort);
+        return new PythonScriptPortsConfiguration(numInTables, numInObjects, numOutTables, numOutImages, numOutObjects, hasView, hasEnvironmentPort);
     }
 
     /**
@@ -142,7 +144,7 @@ public final class PythonScriptPortsConfiguration {
         // Count the number of the different ports (skip the flow var port)
         var numInTables = 0;
         var numInObjects = 0;
-        var hasPixiPort = false;
+        var hasEnvironmentPort = false;
         for (int i = 1; i < nodeContainer.getNrInPorts(); i++) {
             var portType = nodeContainer.getInPort(i).getPortType();
             if (BufferedDataTable.TYPE.equals(portType)) {
@@ -150,15 +152,15 @@ public final class PythonScriptPortsConfiguration {
             } else if (PickledObjectFileStorePortObject.TYPE.equals(portType)) {
                 numInObjects++;
             } else {
-                // Check if it's a Pixi environment port
+                // Check if it's a Python environment port
                 try {
-                    if (PixiEnvironmentPortObject.TYPE.equals(portType)
-                        || PixiEnvironmentPortObject.TYPE_OPTIONAL.equals(portType)) {
-                        hasPixiPort = true;
+                    if (PythonEnvironmentPortObject.TYPE.equals(portType)
+                        || PythonEnvironmentPortObject.TYPE_OPTIONAL.equals(portType)) {
+                        hasEnvironmentPort = true;
                         continue; // Don't count as error
                     }
                 } catch (NoClassDefFoundError e) {
-                    // Pixi bundle not available, ignore
+                    // Python environment bundle not available, ignore
                 }
                 throw new IllegalStateException("Unsupported input port configured. This is an implementation error.");
             }
@@ -181,18 +183,18 @@ public final class PythonScriptPortsConfiguration {
         }
 
         var hasView = nodeContainer.getNrViews() > 0;
-        return new PythonScriptPortsConfiguration(numInTables, numInObjects, numOutTables, numOutImages, numOutObjects, hasView, hasPixiPort);
+        return new PythonScriptPortsConfiguration(numInTables, numInObjects, numOutTables, numOutImages, numOutObjects, hasView, hasEnvironmentPort);
     }
 
     private PythonScriptPortsConfiguration(final int numInTables, final int numInObjects, final int numOutTables,
-        final int numOutImages, final int numOutObjects, final boolean hasView, final boolean hasPixiPort) {
+        final int numOutImages, final int numOutObjects, final boolean hasView, final boolean hasEnvironmentPort) {
         m_numInTables = numInTables;
         m_numInObjects = numInObjects;
         m_numOutTables = numOutTables;
         m_numOutImages = numOutImages;
         m_numOutObjects = numOutObjects;
         m_hasView = hasView;
-        m_hasPixiPort = hasPixiPort;
+        m_hasEnvironmentPort = hasEnvironmentPort;
     }
 
     /**
@@ -237,9 +239,27 @@ public final class PythonScriptPortsConfiguration {
         return m_hasView;
     }
     /**
-     * @return if the node has a Pixi environment port
+     * @return if the node has a Python environment port (accepts PythonEnvironmentPortObject)
      */
+    public boolean hasEnvironmentPort() {
+        return m_hasEnvironmentPort;
+    }
+    
+    /**
+     * @deprecated Use {@link #hasEnvironmentPort()} instead
+     * @return if the node has a Python environment port
+     */
+    @Deprecated(since = "5.10", forRemoval = true)
     public boolean hasPixiPort() {
-        return m_hasPixiPort;
+        return m_hasEnvironmentPort;
+    }
+
+    /**
+     * @deprecated Use {@link #hasEnvironmentPort()} instead
+     * @return if the node has a Python environment port
+     */
+    @Deprecated(since = "5.10", forRemoval = true)
+    public boolean hasPythonEnvPort() {
+        return m_hasEnvironmentPort;
     }
 }

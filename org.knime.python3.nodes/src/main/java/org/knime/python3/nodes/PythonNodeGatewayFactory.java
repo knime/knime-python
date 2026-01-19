@@ -52,12 +52,12 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Objects;
 
+import org.knime.python3.BundledPythonCommand;
 import org.knime.conda.envbundling.environment.CondaEnvironmentRegistry;
 import org.knime.python3.Activator;
-import org.knime.python3.BundledPythonCommand;
 import org.knime.python3.FreshPythonGatewayFactory;
-import org.knime.python3.Python3SourceDirectory;
 import org.knime.python3.PythonCommand;
+import org.knime.python3.Python3SourceDirectory;
 import org.knime.python3.PythonEntryPointUtils;
 import org.knime.python3.PythonGateway;
 import org.knime.python3.PythonGatewayFactory;
