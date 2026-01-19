@@ -52,6 +52,7 @@ import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.context.ports.PortsConfiguration;
 import org.knime.core.node.port.PortType;
 import org.knime.core.node.port.image.ImagePortObject;
+import org.knime.pixi.port.PythonEnvironmentPortObject;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
 import org.knime.python2.ports.DataTableInputPort;
 import org.knime.python2.ports.DataTableOutputPort;
@@ -60,7 +61,7 @@ import org.knime.python2.ports.InputPort;
 import org.knime.python2.ports.OutputPort;
 import org.knime.python2.ports.PickledObjectInputPort;
 import org.knime.python2.ports.PickledObjectOutputPort;
-import org.knime.pixi.port.PixiEnvironmentPortObject;
+
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
@@ -73,22 +74,22 @@ public final class PortsConfigurationUtils {
     }
 
     /**
-     * Check if the ports configuration contains a Pixi environment port.
+     * Check if the ports configuration contains a Python environment port.
      *
      * @param config the ports configuration
-     * @return true if a Pixi environment port is present
+     * @return true if a Python environment port is present
      */
     public static boolean hasPixiPort(final PortsConfiguration config) {
         final PortType[] inTypes = config.getInputPorts();
         try {
-            // Check if any input port is a PixiEnvironmentPortObject
+            // Check if any input port is a PythonEnvironmentPortObject
             for (final PortType inType : inTypes) {
-                if (inType.equals(PixiEnvironmentPortObject.TYPE) || inType.equals(PixiEnvironmentPortObject.TYPE_OPTIONAL)) {
+                if (inType.equals(PythonEnvironmentPortObject.TYPE) || inType.equals(PythonEnvironmentPortObject.TYPE_OPTIONAL)) {
                     return true;
                 }
             }
         } catch (NoClassDefFoundError e) {
-            // Pixi nodes bundle is not available - this is fine since it's optional
+            // Python environment bundle is not available - this is fine since it's optional
         }
         return false;
     }
@@ -133,9 +134,9 @@ public final class PortsConfigurationUtils {
 
     private static boolean isPixiPort(final PortType inType) {
         try {
-            return inType.equals(PixiEnvironmentPortObject.TYPE) || inType.equals(PixiEnvironmentPortObject.TYPE_OPTIONAL);
+            return inType.equals(PythonEnvironmentPortObject.TYPE) || inType.equals(PythonEnvironmentPortObject.TYPE_OPTIONAL);
         } catch (NoClassDefFoundError e) {
-            // Pixi nodes bundle is not available - this is fine since it's optional
+            // Python environment bundle is not available - this is fine since it's optional
             return false;
         }
     }

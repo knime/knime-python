@@ -77,7 +77,8 @@ import org.knime.core.webui.data.DataServiceContext;
 import org.knime.core.webui.node.dialog.scripting.CodeGenerationRequest;
 import org.knime.core.webui.node.dialog.scripting.InputOutputModel;
 import org.knime.core.webui.node.dialog.scripting.ScriptingService;
-import org.knime.pixi.port.PixiEnvironmentPortObject;
+
+import org.knime.pixi.port.PythonEnvironmentPortObject;
 import org.knime.python3.PixiPythonCommand;
 import org.knime.python3.PythonCommand;
 import org.knime.python3.scripting.nodes2.PythonScriptingService.ExecutableOption.ExecutableOptionType;
@@ -531,11 +532,11 @@ final class PythonScriptingService extends ScriptingService {
     }
 
     /**
-     * Extract the Python command from a PixiEnvironmentPortObject.
+     * Extract the Python command from a PythonEnvironmentPortObject.
      *
      * @param portObject the port object (may be null if optional port is not connected)
      * @return the Python command, or null if the port is not connected or doesn't contain a valid Python executable
-     * @throws InvalidSettingsException if the Python executable path from the Pixi environment doesn't exist
+     * @throws InvalidSettingsException if the Python executable path from the environment doesn't exist
      */
     private static PythonCommand extractPythonCommandFromPixiPort(final PortObject portObject)
         throws InvalidSettingsException {
@@ -544,29 +545,26 @@ final class PythonScriptingService extends ScriptingService {
         }
 
         try {
-            // Check if this is a Pixi environment port object
-            if (!(portObject instanceof PixiEnvironmentPortObject)) {
-                return null;
+            // Check if this is a PythonEnvironmentPortObject (new unified type)
+            if (portObject instanceof PythonEnvironmentPortObject) {
+                final PythonEnvironmentPortObject pythonEnvPort = (PythonEnvironmentPortObject)portObject;
+                try {
+                    // PythonEnvironmentPortObject.getPythonCommand() returns org.knime.pixi.port.PythonCommand,
+                    // but we need org.knime.python3.PythonCommand. Extract the pixi.toml path and create a new instance.
+                    final Path pixiToml = pythonEnvPort.getPixiEnvironmentPath().resolve("pixi.toml");
+                    final PythonCommand pythonCommand = new PixiPythonCommand(pixiToml);
+                    LOGGER.debug("Using Python from PythonEnvironmentPortObject: " + pythonCommand);
+                    return pythonCommand;
+                } catch (IOException e) {
+                    throw new InvalidSettingsException("Failed to get Python command from environment: " + e.getMessage(), e);
+                }
             }
 
-            final PixiEnvironmentPortObject pixiPort = (PixiEnvironmentPortObject)portObject;
             
-            // Create PixiPythonCommand from the pixi.toml path
-            final Path pixiTomlPath = pixiPort.getPixiTomlPath();
-            final PythonCommand pythonCommand = new PixiPythonCommand(pixiTomlPath);
-            
-            // Verify that the Python executable exists
-            final Path pythonExecPath = pythonCommand.getPythonExecutablePath();
-            if (!Files.exists(pythonExecPath)) {
-                throw new InvalidSettingsException("The Python executable from the Pixi environment does not exist: "
-                    + pythonExecPath + ". Please check that the Pixi environment is valid.");
-            }
-            
-            LOGGER.debug("Using Python from Pixi environment via pixi run: " + pythonCommand);
-            return pythonCommand;
+            return null;
         } catch (NoClassDefFoundError e) {
-            // Pixi bundle not available - this should not happen if the port was added successfully
-            LOGGER.debug("PixiEnvironmentPortObject class not available", e);
+            // Environment port bundle not available - this should not happen if the port was added successfully
+            LOGGER.debug("Environment port class not available", e);
             return null;
         }
     }

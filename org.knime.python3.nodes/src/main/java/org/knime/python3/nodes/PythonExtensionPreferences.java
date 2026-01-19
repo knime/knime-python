@@ -59,9 +59,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import org.knime.python3.CondaPythonCommand;
 import org.knime.conda.prefs.CondaPreferences;
 import org.knime.core.node.NodeLogger;
-import org.knime.python3.CondaPythonCommand;
 import org.knime.python3.PythonCommand;
 import org.knime.python3.SimplePythonCommand;
 import org.yaml.snakeyaml.Yaml;

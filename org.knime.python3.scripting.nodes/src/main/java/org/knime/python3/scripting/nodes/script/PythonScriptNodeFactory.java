@@ -63,7 +63,8 @@ import org.knime.core.node.NodeView;
 import org.knime.core.node.context.NodeCreationConfiguration;
 import org.knime.core.node.port.PortType;
 import org.knime.core.node.port.image.ImagePortObject;
-import org.knime.pixi.port.PixiEnvironmentPortObject;
+
+import org.knime.pixi.port.PythonEnvironmentPortObject;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
 import org.knime.python2.ports.InputPort;
 import org.knime.python2.ports.OutputPort;
@@ -82,17 +83,13 @@ public final class PythonScriptNodeFactory extends ConfigurableNodeFactory<Pytho
         b.addExtendableInputPortGroup("Input object (pickled)", PickledObjectFileStorePortObject.TYPE);
         b.addExtendableInputPortGroupWithDefault("Input table", new PortType[0], new PortType[]{BufferedDataTable.TYPE},
             BufferedDataTable.TYPE);
-        boolean pixiPortAdded = false;
         try {
-            final Class<?> pixiClass = PixiEnvironmentPortObject.class;
-            final PortType pixiPortType = PixiEnvironmentPortObject.TYPE_OPTIONAL;
-            b.addOptionalInputPortGroup("Pixi environment", pixiPortType);
-            pixiPortAdded = true;
-            LOGGER.info("Successfully added optional Pixi environment port");
+            b.addOptionalInputPortGroup("Python environment", PythonEnvironmentPortObject.TYPE_OPTIONAL);
+            LOGGER.info("Successfully added optional Python environment port");
         } catch (NoClassDefFoundError e) {
-            LOGGER.warn("Could not add Pixi environment port - pixi bundle not available: " + e.getMessage());
+            LOGGER.warn("Could not add Python environment port - bundle not available: " + e.getMessage());
         } catch (Exception e) {
-            LOGGER.error("Unexpected error adding Pixi environment port", e);
+            LOGGER.error("Unexpected error adding Python environment port", e);
         } 
         b.addExtendableOutputPortGroupWithDefault("Output table", new PortType[0],
             new PortType[]{BufferedDataTable.TYPE}, BufferedDataTable.TYPE);

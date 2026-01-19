@@ -58,13 +58,14 @@ import java.util.stream.Stream;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.DataType;
 import org.knime.core.node.BufferedDataTable;
+import org.knime.core.node.NodeLogger;
 import org.knime.core.node.port.PortType;
 import org.knime.core.node.port.flowvariable.FlowVariablePortObject;
 import org.knime.core.node.port.image.ImagePortObject;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.webui.node.dialog.scripting.InputOutputModel;
 import org.knime.core.webui.node.dialog.scripting.WorkflowControl.InputPortInfo;
-import org.knime.pixi.port.PixiEnvironmentPortObject;
+import org.knime.pixi.port.PythonEnvironmentPortObject;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
 
 /**
@@ -73,6 +74,8 @@ import org.knime.python2.port.PickledObjectFileStorePortObject;
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
 final class PythonScriptingInputOutputModelUtils {
+
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonScriptingInputOutputModelUtils.class);
 
     /**
      * The type string used for tables
@@ -131,6 +134,7 @@ final class PythonScriptingInputOutputModelUtils {
             
             // Skip Pixi environment ports - they are not data ports
             if (isPixiEnvironmentPort(type)) {
+                LOGGER.debugWithFormat("Skipping environment port at index %d (type: %s) - not exposed to Python script", i, type.getName());
                 continue;
             }
             
@@ -213,9 +217,13 @@ final class PythonScriptingInputOutputModelUtils {
 
     private static boolean isPixiEnvironmentPort(final PortType portType) {
         try {
-            return portType.acceptsPortObjectClass(PixiEnvironmentPortObject.class);
+            final boolean isPythonEnvPort = portType.acceptsPortObjectClass(PythonEnvironmentPortObject.class);
+            LOGGER.debugWithFormat("Checking if port type '%s' is environment port: %s",
+                portType.getName(), isPythonEnvPort);
+            return isPythonEnvPort;
         } catch (NoClassDefFoundError e) {
             // Pixi nodes bundle not available
+            LOGGER.debugWithFormat("Pixi nodes bundle not available for port type '%s'", portType.getName());
             return false;
         }
     }
