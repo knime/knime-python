@@ -135,7 +135,7 @@ try {
             env.SONAR_ENV = "Sonarcloud"
             configs = workflowTests.ALL_CONFIGURATIONS + PYTEST_PYTHON_ENVS
             echo "running sonar on ${configs}"
-            workflowTests.runSonar(configs)
+            workflowTests.runSonar(stashes: configs, withOutNode: true)
         }
 
         owasp.sendNodeJSSBOMs(readMavenPom(file: 'pom.xml').properties['revision'])
