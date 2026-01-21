@@ -94,6 +94,7 @@ import org.knime.python3.AbstractCondaPythonCommand;
 import org.knime.python3.PixiPythonCommand;
 import org.knime.python3.PythonCommand;
 import org.knime.python3.PythonProcessTerminatedException;
+import org.knime.python3.scripting.nodes.PortsConfigurationUtils;
 import org.knime.python3.scripting.nodes2.ConsoleOutputUtils.ConsoleOutputStorage;
 import org.knime.python3.scripting.nodes2.PythonScriptingSession.ExecutionInfo;
 import org.knime.python3.scripting.nodes2.PythonScriptingSession.ExecutionStatus;
@@ -123,6 +124,8 @@ public final class PythonScriptNodeModel extends NodeModel {
     private final PythonScriptNodeSettings m_settings;
 
     private final PythonScriptPortsConfiguration m_ports;
+    
+    private final PortsConfiguration m_portsConfiguration;
 
     private final AsynchronousCloseableTracker<IOException> m_sessionShutdownTracker =
         new AsynchronousCloseableTracker<>(t -> LOGGER.debug("Kernel shutdown failed.", t));
@@ -153,9 +156,17 @@ public final class PythonScriptNodeModel extends NodeModel {
     public PythonScriptNodeModel(final PortsConfiguration portsConfiguration, final boolean hasView) {
         super(portsConfiguration.getInputPorts(), portsConfiguration.getOutputPorts());
         m_hasView = hasView;
+        m_portsConfiguration = portsConfiguration;
         m_ports = PythonScriptPortsConfiguration.fromPortsConfiguration(portsConfiguration, hasView);
         m_settings = new PythonScriptNodeSettings(m_ports);
         m_view = Optional.empty();
+    }
+    
+    /**
+     * @return the ports configuration
+     */
+    private PortsConfiguration getPortsConfiguration() {
+        return m_portsConfiguration;
     }
 
     /**
@@ -183,6 +194,18 @@ public final class PythonScriptNodeModel extends NodeModel {
     @Override
     protected PortObject[] execute(final PortObject[] inObjects, final ExecutionContext exec)
         throws IOException, InterruptedException, CanceledExecutionException, KNIMEException {
+        
+        // Install Python environment early to avoid timeout issues during gateway connection
+        // This must happen before creating the PythonScriptingSession
+        if (m_ports.hasPixiPort()) {
+            try {
+                PortsConfigurationUtils.installPythonEnvironmentIfPresent(
+                    getPortsConfiguration(), inObjects, exec);
+            } catch (IOException | CanceledExecutionException ex) {
+                throw ex; // Re-throw as-is
+            }
+        }
+        
         // Check if Pixi port is connected and use it, otherwise use configured Python command
         final PythonCommand pythonCommand;
         if (m_ports.hasPixiPort()) {
