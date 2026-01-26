@@ -51,7 +51,6 @@ package org.knime.python3.scripting.nodes2;
 import java.io.File;
 import java.io.IOException;
 import java.net.ConnectException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
@@ -88,12 +87,10 @@ import org.knime.core.node.workflow.VariableType;
 import org.knime.core.node.workflow.VariableTypeRegistry;
 import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
 import org.knime.core.webui.node.dialog.scripting.ScriptingService.ConsoleText;
-
+import org.knime.pixi.port.PixiPythonCommand;
 import org.knime.pixi.port.PythonEnvironmentPortObject;
-import org.knime.python3.AbstractCondaPythonCommand;
-import org.knime.python3.PixiPythonCommand;
-import org.knime.python3.processprovider.PythonProcessProvider;
 import org.knime.python3.PythonProcessTerminatedException;
+import org.knime.python3.processprovider.PythonProcessProvider;
 import org.knime.python3.scripting.nodes.PortsConfigurationUtils;
 import org.knime.python3.scripting.nodes2.ConsoleOutputUtils.ConsoleOutputStorage;
 import org.knime.python3.scripting.nodes2.PythonScriptingSession.ExecutionInfo;
@@ -124,7 +121,7 @@ public final class PythonScriptNodeModel extends NodeModel {
     private final PythonScriptNodeSettings m_settings;
 
     private final PythonScriptPortsConfiguration m_ports;
-    
+
     private final PortsConfiguration m_portsConfiguration;
 
     private final AsynchronousCloseableTracker<IOException> m_sessionShutdownTracker =
@@ -161,7 +158,7 @@ public final class PythonScriptNodeModel extends NodeModel {
         m_settings = new PythonScriptNodeSettings(m_ports);
         m_view = Optional.empty();
     }
-    
+
     /**
      * @return the ports configuration
      */
@@ -194,7 +191,7 @@ public final class PythonScriptNodeModel extends NodeModel {
     @Override
     protected PortObject[] execute(final PortObject[] inObjects, final ExecutionContext exec)
         throws IOException, InterruptedException, CanceledExecutionException, KNIMEException {
-        
+
         // Install Python environment early to avoid timeout issues during gateway connection
         // This must happen before creating the PythonScriptingSession
         if (m_ports.hasPixiPort()) {
@@ -205,7 +202,7 @@ public final class PythonScriptNodeModel extends NodeModel {
                 throw ex; // Re-throw as-is
             }
         }
-        
+
         // Check if Pixi port is connected and use it, otherwise use configured Python command
         final PythonProcessProvider pythonCommand;
         if (m_ports.hasPixiPort()) {
@@ -365,7 +362,7 @@ public final class PythonScriptNodeModel extends NodeModel {
                 }
             }
 
-            
+
             return null;
         } catch (NoClassDefFoundError e) {
             // Environment port bundle not available - this should not happen if the port was added successfully
