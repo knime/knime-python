@@ -1,4 +1,4 @@
-{% set version =  "5.9.0" %}
+{% set version =  "5.10.0" %}
 
 package:
   name: knime-extension
@@ -10,7 +10,7 @@ source:
 
 requirements:
   build:
-    - python=3.9
+    - python=3.13
     - pip
     - setuptools
     - build
