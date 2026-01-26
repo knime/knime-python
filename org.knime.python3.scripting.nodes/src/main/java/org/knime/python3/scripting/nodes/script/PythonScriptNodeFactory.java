@@ -85,7 +85,7 @@ public final class PythonScriptNodeFactory extends ConfigurableNodeFactory<Pytho
             BufferedDataTable.TYPE);
         try {
             b.addOptionalInputPortGroup("Python environment", PythonEnvironmentPortObject.TYPE_OPTIONAL);
-            LOGGER.info("Successfully added optional Python environment port");
+            LOGGER.debug("Successfully added optional Python environment port");
         } catch (NoClassDefFoundError e) {
             LOGGER.warn("Could not add Python environment port - bundle not available: " + e.getMessage());
         } catch (Exception e) {

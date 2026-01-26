@@ -263,7 +263,7 @@ final class PythonScriptingService extends ScriptingService {
                 try {
                     pythonCommand = extractPythonCommandFromPixiPort(inputData[pixiPortIndex]);
                     if (pythonCommand != null) {
-                        LOGGER.info("Using Python environment from connected Pixi port for interactive session");
+                        LOGGER.debug("Using Python environment from connected Pixi port for interactive session");
                         // Filter out Pixi port from data ports - it's not a data port for setupIO
                         dataPortObjects = java.util.Arrays.copyOf(inputData, inputData.length - 1);
                     }
