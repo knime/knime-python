@@ -77,9 +77,8 @@ import org.knime.core.webui.data.DataServiceContext;
 import org.knime.core.webui.node.dialog.scripting.CodeGenerationRequest;
 import org.knime.core.webui.node.dialog.scripting.InputOutputModel;
 import org.knime.core.webui.node.dialog.scripting.ScriptingService;
-
+import org.knime.pixi.port.PixiPythonCommand;
 import org.knime.pixi.port.PythonEnvironmentPortObject;
-import org.knime.python3.PixiPythonCommand;
 import org.knime.python3.processprovider.PythonProcessProvider;
 import org.knime.python3.scripting.nodes2.PythonScriptingService.ExecutableOption.ExecutableOptionType;
 import org.knime.python3.scripting.nodes2.PythonScriptingSession.ExecutionInfo;
@@ -253,11 +252,11 @@ final class PythonScriptingService extends ScriptingService {
             // Start the interactive Python session and setup the IO
             final var workflowControl = getWorkflowControl();
             final var inputData = workflowControl.getInputData();
-            
+
             // Check if Pixi port is connected (it's the last port if present)
             PythonProcessProvider pythonCommand = null;
             PortObject[] dataPortObjects = inputData; // By default, all inputs are data ports
-            
+
             if (m_ports.hasPixiPort() && inputData != null && inputData.length > 0) {
                 // The Pixi port is at the end, after all data ports
                 final int pixiPortIndex = inputData.length - 1;
@@ -272,7 +271,7 @@ final class PythonScriptingService extends ScriptingService {
                     LOGGER.warn("Failed to extract Python command from Pixi port: " + e.getMessage());
                 }
             }
-            
+
             // Fall back to user selection if no Pixi port or extraction failed
             if (pythonCommand == null) {
                 pythonCommand = ExecutableSelectionUtils.getPythonCommand(getExecutableOption(m_executableSelection));
@@ -560,7 +559,7 @@ final class PythonScriptingService extends ScriptingService {
                 }
             }
 
-            
+
             return null;
         } catch (NoClassDefFoundError e) {
             // Environment port bundle not available - this should not happen if the port was added successfully
