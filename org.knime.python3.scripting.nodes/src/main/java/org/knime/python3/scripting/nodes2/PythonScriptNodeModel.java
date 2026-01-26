@@ -92,7 +92,7 @@ import org.knime.core.webui.node.dialog.scripting.ScriptingService.ConsoleText;
 import org.knime.pixi.port.PythonEnvironmentPortObject;
 import org.knime.python3.AbstractCondaPythonCommand;
 import org.knime.python3.PixiPythonCommand;
-import org.knime.python3.PythonCommand;
+import org.knime.python3.processprovider.PythonProcessProvider;
 import org.knime.python3.PythonProcessTerminatedException;
 import org.knime.python3.scripting.nodes.PortsConfigurationUtils;
 import org.knime.python3.scripting.nodes2.ConsoleOutputUtils.ConsoleOutputStorage;
@@ -207,13 +207,13 @@ public final class PythonScriptNodeModel extends NodeModel {
         }
         
         // Check if Pixi port is connected and use it, otherwise use configured Python command
-        final PythonCommand pythonCommand;
+        final PythonProcessProvider pythonCommand;
         if (m_ports.hasPixiPort()) {
             LOGGER.debug("Checking for Pixi environment port");
             // The Pixi port is after all regular input ports
             final int pixiPortIndex = inObjects.length - 1;
             try {
-                final PythonCommand pixiCommand = extractPythonCommandFromPixiPort(inObjects[pixiPortIndex]);
+                final PythonProcessProvider pixiCommand = extractPythonCommandFromPixiPort(inObjects[pixiPortIndex]);
                 if (pixiCommand != null) {
                     LOGGER.debug("Using Python from Pixi environment");
                     pythonCommand = pixiCommand;
@@ -343,7 +343,7 @@ public final class PythonScriptNodeModel extends NodeModel {
      * @return the Python command, or null if the port is not connected or doesn't contain a valid Python executable
      * @throws InvalidSettingsException if the Python executable path from the environment doesn't exist
      */
-    private static PythonCommand extractPythonCommandFromPixiPort(final PortObject portObject)
+    private static PythonProcessProvider extractPythonCommandFromPixiPort(final PortObject portObject)
         throws InvalidSettingsException {
         if (portObject == null) {
             return null;
@@ -357,7 +357,7 @@ public final class PythonScriptNodeModel extends NodeModel {
                     // PythonEnvironmentPortObject.getPythonCommand() returns org.knime.pixi.port.PythonCommand,
                     // but we need org.knime.python3.PythonCommand. Extract the pixi.toml path and create a new instance.
                     final Path pixiToml = pythonEnvPort.getPixiEnvironmentPath().resolve("pixi.toml");
-                    final PythonCommand pythonCommand = new PixiPythonCommand(pixiToml);
+                    final PythonProcessProvider pythonCommand = new PixiPythonCommand(pixiToml);
                     LOGGER.debug("Using Python from PythonEnvironmentPortObject: " + pythonCommand);
                     return pythonCommand;
                 } catch (IOException e) {

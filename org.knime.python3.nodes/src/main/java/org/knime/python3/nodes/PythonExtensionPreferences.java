@@ -59,11 +59,11 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import org.knime.python3.CondaPythonCommand;
 import org.knime.conda.prefs.CondaPreferences;
 import org.knime.core.node.NodeLogger;
-import org.knime.python3.PythonCommand;
+import org.knime.python3.CondaPythonCommand;
 import org.knime.python3.SimplePythonCommand;
+import org.knime.python3.processprovider.PythonProcessProvider;
 import org.yaml.snakeyaml.Yaml;
 
 /**
@@ -91,7 +91,7 @@ final class PythonExtensionPreferences {
             .map(Optional::get);
     }
 
-    static Optional<PythonCommand> getCustomPythonCommand(final String extensionId) {
+    static Optional<PythonProcessProvider> getCustomPythonCommand(final String extensionId) {
         return loadConfigs()//
             .filter(e -> extensionId.equals(e.m_id))//
             .findFirst()//
@@ -307,7 +307,7 @@ final class PythonExtensionPreferences {
             }
         }
 
-        Optional<PythonCommand> getCommand() {
+        Optional<PythonProcessProvider> getCommand() {
             if (m_condaEnvPath != null) {
                 if (m_pythonExecutable != null) {
                     LOGGER.warnWithFormat("Both conda_env_path and python_executable are provided for extension '%s'."

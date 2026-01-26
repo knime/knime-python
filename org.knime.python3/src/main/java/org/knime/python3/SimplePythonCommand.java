@@ -51,7 +51,7 @@ package org.knime.python3;
 import java.util.List;
 
 /**
- * A simple implementation of {@link PythonCommand}. Runs a command that is given by a list of strings.
+ * A simple implementation of {@link PythonProcessProvider}. Runs a command that is given by a list of strings.
  *
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany

@@ -81,7 +81,6 @@ import org.knime.core.node.workflow.VariableTypeRegistry;
 import org.knime.core.util.PathUtils;
 import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
 import org.knime.core.webui.node.view.NodeView;
-
 import org.knime.pixi.port.PythonEnvironmentPortObject;
 import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonModuleSpec;
@@ -103,8 +102,8 @@ import org.knime.python2.ports.InputPort;
 import org.knime.python2.ports.OutputPort;
 import org.knime.python2.ports.PickledObjectOutputPort;
 import org.knime.python2.ports.Port;
-import org.knime.python3.AbstractCondaPythonCommand;
 import org.knime.python3.PixiPythonCommand;
+import org.knime.python3.processprovider.PythonProcessProvider;
 import org.knime.python3.scripting.Python3KernelBackend;
 import org.knime.python3.scripting.nodes.prefs.Python3ScriptingPreferences;
 
@@ -402,7 +401,7 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
             if (!(portObject instanceof PythonEnvironmentPortObject)) {
                 return null;
             }
-            
+
             // Handle PythonEnvironmentPortObject
             final PythonEnvironmentPortObject pythonEnvPort = (PythonEnvironmentPortObject)portObject;
             final Path pixiTomlPath;
@@ -411,10 +410,10 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
             } catch (IOException e) {
                 throw new InvalidSettingsException("Failed to get pixi.toml path from PythonEnvironmentPortObject: " + e.getMessage(), e);
             }
-            
+
             // Create PixiPythonCommand from the pixi.toml path
-            final org.knime.python3.PythonCommand pythonCommand = new PixiPythonCommand(pixiTomlPath);
-            
+            final PythonProcessProvider pythonCommand = new PixiPythonCommand(pixiTomlPath);
+
             // Verify that the Python executable exists
             final Path pythonExecPath = pythonCommand.getPythonExecutablePath();
             if (!Files.exists(pythonExecPath)) {
@@ -422,7 +421,7 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
                     "The Python executable from the Pixi environment does not exist at path: " + pythonExecPath
                         + ". Please check that the Pixi environment was created successfully.");
             }
-            
+
             LOGGER.debug("Using Python from Pixi environment via pixi run: " + pythonCommand);
             return new LegacyPythonCommand(pythonCommand);
 
@@ -477,14 +476,14 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
     }
 
     /**
-     * Wraps a {@link org.knime.pixi.port.PythonCommand} into the legacy implementation for using it in a
+     * Wraps a {@link org.knime.pixi.port.PythonProcessProvider} into the legacy implementation for using it in a
      * {@link PythonKernelBackend}.
      */
     private static final class LegacyPythonCommand implements PythonCommand {
 
-        private final org.knime.python3.PythonCommand m_pythonCommand;
+        private final PythonProcessProvider m_pythonCommand;
 
-        private LegacyPythonCommand(final org.knime.python3.PythonCommand pythonCommand) {
+        private LegacyPythonCommand(final PythonProcessProvider pythonCommand) {
             m_pythonCommand = pythonCommand;
         }
 

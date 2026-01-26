@@ -24,4 +24,5 @@ Automatic-Module-Name: org.knime.python3
 Eclipse-RegisterBuddy: org.knime.ext.py4j
 Eclipse-BundleShape: dir
 Bundle-Activator: org.knime.python3.Activator
-Import-Package: org.knime.conda.envinstall.pixi
+Import-Package: org.knime.conda.envinstall.pixi,
+ org.knime.python3.processprovider
