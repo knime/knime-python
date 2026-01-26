@@ -73,6 +73,7 @@ import java.util.stream.Collectors;
 
 import org.knime.core.node.NodeLogger;
 import org.knime.python3.PythonGatewayCreationGate.PythonGatewayCreationGateListener;
+import org.knime.python3.processprovider.PythonProcessProvider;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
@@ -153,7 +154,7 @@ public final class QueuedPythonGatewayFactory implements PythonGatewayFactory {
      *
      * @param command The Python command whose corresponding gateways to remove from the queue
      */
-    public synchronized void clearQueuedGateways(final PythonCommand command) {
+    public synchronized void clearQueuedGateways(final PythonProcessProvider command) {
         if (m_queue != null) {
             m_queue.clearQueuedGateways(command);
         }
@@ -316,7 +317,7 @@ public final class QueuedPythonGatewayFactory implements PythonGatewayFactory {
         }
 
         @Override
-        public synchronized void clearQueuedGateways(final PythonCommand command) {
+        public synchronized void clearQueuedGateways(final PythonProcessProvider command) {
             final List<GatewayHolder> gatewaysToEvict = new ArrayList<>();
             for (final var entry : m_gateways.entrySet()) {
                 if (entry.getKey().getCommand().equals(command)) {
@@ -467,7 +468,7 @@ public final class QueuedPythonGatewayFactory implements PythonGatewayFactory {
         }
 
         @Override
-        public void clearQueuedGateways(final PythonCommand command) {
+        public void clearQueuedGateways(final PythonProcessProvider command) {
             // Nothing to do.
         }
 
@@ -496,11 +497,11 @@ public final class QueuedPythonGatewayFactory implements PythonGatewayFactory {
             getNextGateway(PythonGatewayDescription<E> description) throws IOException, InterruptedException;
 
         /**
-         * Clears all queued gateways that were created with the specified {@link PythonCommand}.
+         * Clears all queued gateways that were created with the specified {@link PythonProcessProvider}.
          *
-         * @param command The {@link PythonCommand}
+         * @param command The {@link PythonProcessProvider}
          */
-        public abstract void clearQueuedGateways(PythonCommand command);
+        public abstract void clearQueuedGateways(PythonProcessProvider command);
 
         @Override
         public abstract void close();

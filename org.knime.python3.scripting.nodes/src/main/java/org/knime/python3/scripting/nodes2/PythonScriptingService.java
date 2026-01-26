@@ -80,7 +80,7 @@ import org.knime.core.webui.node.dialog.scripting.ScriptingService;
 
 import org.knime.pixi.port.PythonEnvironmentPortObject;
 import org.knime.python3.PixiPythonCommand;
-import org.knime.python3.PythonCommand;
+import org.knime.python3.processprovider.PythonProcessProvider;
 import org.knime.python3.scripting.nodes2.PythonScriptingService.ExecutableOption.ExecutableOptionType;
 import org.knime.python3.scripting.nodes2.PythonScriptingSession.ExecutionInfo;
 import org.knime.python3.scripting.nodes2.PythonScriptingSession.ExecutionStatus;
@@ -255,7 +255,7 @@ final class PythonScriptingService extends ScriptingService {
             final var inputData = workflowControl.getInputData();
             
             // Check if Pixi port is connected (it's the last port if present)
-            PythonCommand pythonCommand = null;
+            PythonProcessProvider pythonCommand = null;
             PortObject[] dataPortObjects = inputData; // By default, all inputs are data ports
             
             if (m_ports.hasPixiPort() && inputData != null && inputData.length > 0) {
@@ -538,7 +538,7 @@ final class PythonScriptingService extends ScriptingService {
      * @return the Python command, or null if the port is not connected or doesn't contain a valid Python executable
      * @throws InvalidSettingsException if the Python executable path from the environment doesn't exist
      */
-    private static PythonCommand extractPythonCommandFromPixiPort(final PortObject portObject)
+    private static PythonProcessProvider extractPythonCommandFromPixiPort(final PortObject portObject)
         throws InvalidSettingsException {
         if (portObject == null) {
             return null;
@@ -552,7 +552,7 @@ final class PythonScriptingService extends ScriptingService {
                     // PythonEnvironmentPortObject.getPythonCommand() returns org.knime.pixi.port.PythonCommand,
                     // but we need org.knime.python3.PythonCommand. Extract the pixi.toml path and create a new instance.
                     final Path pixiToml = pythonEnvPort.getPixiEnvironmentPath().resolve("pixi.toml");
-                    final PythonCommand pythonCommand = new PixiPythonCommand(pixiToml);
+                    final PythonProcessProvider pythonCommand = new PixiPythonCommand(pixiToml);
                     LOGGER.debug("Using Python from PythonEnvironmentPortObject: " + pythonCommand);
                     return pythonCommand;
                 } catch (IOException e) {

@@ -48,7 +48,6 @@
  */
 package org.knime.python3;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -56,6 +55,7 @@ import java.util.Objects;
 
 import org.knime.conda.envinstall.pixi.PixiBinary;
 import org.knime.conda.envinstall.pixi.PixiBinary.PixiBinaryLocationException;
+import org.knime.python3.processprovider.PythonProcessProvider;
 
 /**
  * Abstract base class for Python commands that use Pixi environments. Executes Python via {@code pixi run python}
@@ -66,7 +66,7 @@ import org.knime.conda.envinstall.pixi.PixiBinary.PixiBinaryLocationException;
  *
  * @author Marc Lehner, KNIME GmbH, Zurich, Switzerland
  */
-abstract class AbstractPixiPythonCommand implements PythonCommand {
+abstract class AbstractPixiPythonCommand implements PythonProcessProvider {
 
     private final Path m_pixiTomlPath;
 
@@ -115,10 +115,10 @@ abstract class AbstractPixiPythonCommand implements PythonCommand {
         final Path projectDir = m_pixiTomlPath.getParent();
         final Path envDir = projectDir.resolve(".pixi").resolve("envs").resolve(m_pixiEnvironmentName);
         final boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
-        final Path pythonPath = isWindows 
-            ? envDir.resolve("python.exe") 
+        final Path pythonPath = isWindows
+            ? envDir.resolve("python.exe")
             : envDir.resolve("bin").resolve("python");
-        
+
         // Return the path even if it doesn't exist yet - the environment might not be installed
         // The caller is responsible for checking existence if needed
         return pythonPath;
@@ -158,7 +158,7 @@ abstract class AbstractPixiPythonCommand implements PythonCommand {
 
     @Override
     public String toString() {
-        return "pixi run --manifest-path " + m_pixiTomlPath + " --environment " + m_pixiEnvironmentName 
+        return "pixi run --manifest-path " + m_pixiTomlPath + " --environment " + m_pixiEnvironmentName
             + " --no-progress python";
     }
 }
