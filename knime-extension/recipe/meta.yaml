@@ -10,7 +10,7 @@ source:
 
 requirements:
   build:
-    - python=3.13
+    - python=3.9
     - pip
     - setuptools
     - build
