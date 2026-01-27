@@ -10,10 +10,9 @@ source:
 
 requirements:
   build:
-    - python=3.9
+    - python=3.13
     - pip
     - setuptools
-    - build
     - wheel
   run:
     - python>=3.9
@@ -38,8 +37,7 @@ test:
     - knime.extension.testing
     - knime_extension
   requires:
-    - pandas
-    - python-dateutil
+    - pandas=2.3.*
     - pytz
     - requests
     - pytest
