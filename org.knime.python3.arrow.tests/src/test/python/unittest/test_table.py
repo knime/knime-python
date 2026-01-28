@@ -1,6 +1,7 @@
 import unittest
 import pyarrow as pa
 import pandas as pd
+import pytest
 
 import knime_schema as ks
 from knime.api.schema import _ColumnSlicingOperation
@@ -109,18 +110,28 @@ class DummyDataSink:
         pass
 
 
-class ArrowTableTest(unittest.TestCase):
-    @staticmethod
-    def _generate_test_table():
+@pytest.mark.parametrize(
+    ("file_name", "is_empty"),
+    [
+        ("generatedTestData.zip", False),  # Always test with data
+        *(
+            [("emptyGeneratedTestData.zip", True)]
+            if int(pa.__version__.split(".")[0]) > 6
+            else []
+        ),  # Test with empty table only for pyarrow>6
+    ],
+)
+class ArrowTableTest:
+    def _generate_test_table(self, file_name):
         """
         Creates a Dataframe from a KNIME table on disk
-        @param path: path for the KNIME Table
+        @param file_name: file name for the KNIME Table
         @return: Arrow Table containing data from KNIME's TestDataGenerator
         """
         import os
 
         knime_generated_table_path = os.path.normpath(
-            os.path.join(__file__, "..", "generatedTestData.zip")
+            os.path.join(__file__, "..", file_name)
         )
         column_names = [
             "StringCol",
@@ -173,170 +184,166 @@ class ArrowTableTest(unittest.TestCase):
         )
         return kt.Table.from_pyarrow(rowid_table, row_ids="generate")
 
-    @classmethod
-    def setUpClass(cls):
+    @pytest.fixture(scope="class", autouse=True)
+    def setup_class(self):
         import knime.api.table as ktn
 
         ktn._backend = kat._ArrowBackend(lambda: DummyDataSink())
-        cls._test_table = cls._generate_test_table()
+        yield
 
-    def test_table_setup(self):
-        table = self._test_table
-        self.assertTrue(table.num_columns > 0)
-        self.assertTrue(table.num_rows > 0)
-        self.assertIsInstance(table, kat.ArrowSourceTable)
-        self.assertIsInstance(table, kt.Table)
-        self.assertTrue(hasattr(table, "to_batches"))
+    def test_table_setup(self, file_name, is_empty):
+        table = self._generate_test_table(file_name)
+        assert table.num_columns > 0
+        assert table.num_rows == 0 if is_empty else table.num_rows > 0
+        assert isinstance(table, kat.ArrowSourceTable)
+        assert isinstance(table, kt.Table)
+        assert hasattr(table, "to_batches")
 
-    def test_table_view(self):
-        table = self._test_table
+    def test_table_view(self, file_name, is_empty):
+        table = self._generate_test_table(file_name)
         tv = table[:, :]
-        self.assertTrue(tv.num_columns > 0)
-        self.assertTrue(tv.num_rows > 0)
-        self.assertEqual(table.num_columns, tv.num_columns)
-        self.assertEqual(table.num_rows, tv.num_rows)
-        self.assertNotIsInstance(tv, kat.ArrowSourceTable)
-        self.assertIsInstance(tv, kt._Tabular)
-        self.assertIsInstance(tv, kt._TabularView)
-        with self.assertRaises(RuntimeError):
+        assert tv.num_columns > 0
+        assert tv.num_rows == 0 if is_empty else tv.num_rows > 0
+        assert table.num_columns == tv.num_columns
+        assert table.num_rows == tv.num_rows
+        assert not isinstance(tv, kat.ArrowSourceTable)
+        assert isinstance(tv, kt._Tabular)
+        assert isinstance(tv, kt._TabularView)
+        with pytest.raises(RuntimeError):
             for b in tv.to_batches():
                 print(b)
 
-    def test_row_slicing(self):
-        table = self._test_table
+    def test_row_slicing(self, file_name, is_empty):
+        table = self._generate_test_table(file_name)
         sliced = table[:, 3:13]
-        self.assertEqual(table.num_columns, sliced.num_columns)
-        self.assertEqual(10, sliced.num_rows)
+        assert table.num_columns == sliced.num_columns
+        assert sliced.num_rows == 0 if is_empty else 10 == sliced.num_rows
 
         sliced = table[:, :13]
-        self.assertEqual(table.num_columns, sliced.num_columns)
-        self.assertEqual(13, sliced.num_rows)
+        assert table.num_columns == sliced.num_columns
+        assert sliced.num_rows == 0 if is_empty else 13 == sliced.num_rows
 
         sliced = table[:, -5:]
-        self.assertEqual(table.num_columns, sliced.num_columns)
-        self.assertEqual(5, sliced.num_rows)
+        assert table.num_columns == sliced.num_columns
+        assert sliced.num_rows == 0 if is_empty else 5 == sliced.num_rows
 
-    def test_column_slicing_slice(self):
-        table = self._test_table
+    def test_column_slicing_slice(self, file_name, is_empty):
+        table = self._generate_test_table(file_name)
         # use a slice
         sliced = table[3:13]
-        self.assertEqual(table.num_rows, sliced.num_rows)
-        self.assertEqual(10, sliced.num_columns)
+        assert table.num_rows == sliced.num_rows
+        assert 10 == sliced.num_columns
 
         sliced = table[:13]
-        self.assertEqual(table.num_rows, sliced.num_rows)
-        self.assertEqual(13, sliced.num_columns)
+        assert table.num_rows == sliced.num_rows
+        assert 13 == sliced.num_columns
 
         sliced = table[-5:]
-        self.assertEqual(table.num_rows, sliced.num_rows)
-        self.assertEqual(5, sliced.num_columns)
+        assert table.num_rows == sliced.num_rows
+        assert 5 == sliced.num_columns
 
-    def test_column_slicing_int(self):
-        table = self._test_table
+    def test_column_slicing_int(self, file_name, is_empty):
+        table = self._generate_test_table(file_name)
         # use a single index
         sliced = table[2]
-        self.assertEqual(1, sliced.num_columns)
-        self.assertEqual(sliced.column_names[0], table.column_names[2])
+        assert 1 == sliced.num_columns
+        assert sliced.column_names[0] == table.column_names[2]
 
-    def test_column_slicing_str(self):
-        table = self._test_table
+    def test_column_slicing_str(self, file_name, is_empty):
+        table = self._generate_test_table(file_name)
         # use a single column name
         sliced = table[table.column_names[2]]
-        self.assertEqual(1, sliced.num_columns)
-        self.assertEqual(sliced.column_names[0], table.column_names[2])
+        assert 1 == sliced.num_columns
+        assert sliced.column_names[0] == table.column_names[2]
 
-    def test_column_slicing_int_list(self):
-        table = self._test_table
+    def test_column_slicing_int_list(self, file_name, is_empty):
+        table = self._generate_test_table(file_name)
         # use a list of indices in wild order
         indices = [3, 7, 2]
         sliced = table[indices]
-        self.assertEqual(len(indices), sliced.num_columns)
-        self.assertTrue(
-            all(
-                table.column_names[i] == sliced.column_names[e]
-                for e, i in enumerate(indices)
-            )
+        assert len(indices) == sliced.num_columns
+        assert all(
+            table.column_names[i] == sliced.column_names[e]
+            for e, i in enumerate(indices)
         )
 
-    def test_column_slicing_str_list(self):
-        table = self._test_table
+    def test_column_slicing_str_list(self, file_name, is_empty):
+        table = self._generate_test_table(file_name)
         # use a list of indices in wild order
         indices = [3, 7, 2]
         names = [table.column_names[i] for i in indices]
         sliced = table[names]
-        self.assertEqual(len(names), sliced.num_columns)
-        self.assertListEqual(
-            [table.column_names[i] for i in indices],
-            [sliced.column_names[i] for i in range(len(indices))],
-        )
+        assert len(names) == sliced.num_columns
+        assert [table.column_names[i] for i in indices] == [
+            sliced.column_names[i] for i in range(len(indices))
+        ]
 
         data = sliced.to_pyarrow()
-        self.assertEqual(data.schema.names[0], "<RowID>")
-        self.assertListEqual(
-            [table.column_names[i] for i in indices],
-            [data.schema.names[i + 1] for i in range(len(indices))],
-        )
+        assert data.schema.names[0] == "<RowID>"
+        assert [table.column_names[i] for i in indices] == [
+            data.schema.names[i + 1] for i in range(len(indices))
+        ]
 
-    def test_both_slicings(self):
-        table = self._test_table
+    def test_both_slicings(self, file_name, is_empty):
+        table = self._generate_test_table(file_name)
         sliced = table[5:10, 5:10]
-        self.assertEqual(5, sliced.num_columns)
-        self.assertEqual(5, sliced.num_rows)
+        assert 5 == sliced.num_columns
+        assert 0 == sliced.num_rows if is_empty else 5 == sliced.num_rows
         data = sliced.to_pyarrow()
-        self.assertEqual(5, len(data))
+        assert 0 == len(data) if is_empty else 5 == len(data)
 
-    def test_to_from_pyarrow(self):
-        table = self._test_table
+    def test_to_from_pyarrow(self, file_name, is_empty):
+        table = self._generate_test_table(file_name)
         data = table.to_pyarrow()
         other = kt.Table.from_pyarrow(data)
-        self.assertEqual(table.num_rows, other.num_rows)
-        self.assertEqual(table.num_columns, other.num_columns)
-        self.assertEqual(table.column_names, other.column_names)
+        assert table.num_rows == other.num_rows
+        assert table.num_columns == other.num_columns
+        assert table.column_names == other.column_names
 
-        with self.assertRaises(RuntimeError):
+        with pytest.raises(RuntimeError):
             self.generate_test_table_with_rowid_column().to_pyarrow()
 
-    def test_to_from_pandas(self):
-        table = self._test_table
+    def test_to_from_pandas(self, file_name, is_empty):
+        table = self._generate_test_table(file_name)
         data = table.to_pandas()
         other = kt.Table.from_pandas(data)
-        self.assertEqual(table.num_rows, other.num_rows)
-        self.assertEqual(table.num_columns, other.num_columns)
-        self.assertEqual(table.column_names, other.column_names)
+        assert table.num_rows == other.num_rows
+        assert table.num_columns == other.num_columns
+        assert table.column_names == other.column_names
 
-        with self.assertRaises(RuntimeError):
+        with pytest.raises(RuntimeError):
             self.generate_test_table_with_rowid_column().to_pandas()
 
-    def test_pandas_roundtrip_with_data(self):
-        table = self._test_table
+    def test_pandas_roundtrip_with_data(self, file_name, is_empty):
+        table = self._generate_test_table(file_name)
         data = table.to_pandas()
         other = kt.Table.from_pandas(data)
         data2 = other.to_pandas()
 
         pd.testing.assert_frame_equal(data, data2)
 
-    def test_to_batches(self):
-        table = self._test_table
+    def test_to_batches(self, file_name, is_empty):
+        table = self._generate_test_table(file_name)
         batches = list(table.to_batches())
-        self.assertTrue(len(batches) > 0)
-        self.assertIsInstance(batches[0], kt.Table)
-        self.assertEqual(table.num_columns, batches[0].num_columns)
+        assert len(batches) > 0
+        assert isinstance(batches[0], kt.Table)
+        assert table.num_columns == batches[0].num_columns
 
-    def test_batches(self):
-        table = self._test_table
+    def test_batches(self, file_name, is_empty):
+        table = self._generate_test_table(file_name)
         batches = list(table.batches())
-        self.assertTrue(len(batches) > 0)
-        self.assertIsInstance(batches[0], kt.Table)
-        self.assertEqual(table.num_columns, batches[0].num_columns)
+        assert len(batches) > 0
+        assert isinstance(batches[0], kt.Table)
+        assert table.num_columns == batches[0].num_columns
 
-    def test_schema(self):
-        table = self._test_table
+    def test_schema(self, file_name, is_empty):
+        table = self._generate_test_table(file_name)
         schema = table.schema
-        self.assertEqual(table.num_columns, schema.num_columns)
-        self.assertEqual(schema.column_names[0], "StringCol")
-        self.assertEqual(schema[3].ktype, ks.int32())
+        assert table.num_columns == schema.num_columns
+        assert schema.column_names[0] == "StringCol"
+        assert schema[3].ktype == ks.int32()
 
-    def test_row_ids_from_pandas(self):
+    def test_row_ids_from_pandas(self, file_name, is_empty):
         df_len = 5
 
         def create_df(index):
@@ -355,17 +362,17 @@ class ArrowTableTest(unittest.TestCase):
 
         # Simple range index
         table = kt.Table.from_pandas(create_df(pd.RangeIndex(df_len)), row_ids="keep")
-        self.assertListEqual(get_row_ids(table), [f"{i}" for i in range(df_len)])
+        assert get_row_ids(table) == [f"{i}" for i in range(df_len)]
 
         # Strings
         index = ["a", "b", "foo", "g", "e"]
         table = kt.Table.from_pandas(create_df(pd.Index(index)), row_ids="keep")
-        self.assertListEqual(get_row_ids(table), index)
+        assert get_row_ids(table) == index
 
         # Floats
         index = [2.0, 7.1, 1000.1, 0.0001, 3.14]
         table = kt.Table.from_pandas(create_df(pd.Index(index)), row_ids="keep")
-        self.assertListEqual(get_row_ids(table), [str(i) for i in index])
+        assert get_row_ids(table) == [str(i) for i in index]
 
         # ========== row_ids = "generate"
 
@@ -375,17 +382,17 @@ class ArrowTableTest(unittest.TestCase):
         table = kt.Table.from_pandas(
             create_df(pd.RangeIndex(df_len)), row_ids="generate"
         )
-        self.assertListEqual(get_row_ids(table), generated_keys)
+        assert get_row_ids(table) == generated_keys
 
         # Strings
         index = ["a", "b", "foo", "g", "e"]
         table = kt.Table.from_pandas(create_df(pd.Index(index)), row_ids="generate")
-        self.assertListEqual(get_row_ids(table), generated_keys)
+        assert get_row_ids(table) == generated_keys
 
         # Floats
         index = [2.0, 7.1, 1000.1, 0.0001, 3.14]
         table = kt.Table.from_pandas(create_df(pd.Index(index)), row_ids="generate")
-        self.assertListEqual(get_row_ids(table), generated_keys)
+        assert get_row_ids(table) == generated_keys
 
         # ========== row_ids = "auto"
 
@@ -393,35 +400,33 @@ class ArrowTableTest(unittest.TestCase):
 
         # Simple range index
         table = kt.Table.from_pandas(create_df(pd.RangeIndex(df_len)), row_ids="auto")
-        self.assertListEqual(get_row_ids(table), generated_keys)
+        assert get_row_ids(table) == generated_keys
 
         # Strings
         index = ["a", "b", "foo", "g", "e"]
         table = kt.Table.from_pandas(create_df(pd.Index(index)), row_ids="auto")
-        self.assertListEqual(get_row_ids(table), index)
+        assert get_row_ids(table) == index
 
         # Floats
         index = [2.0, 7.1, 1000.1, 0.0001, 3.14]
         table = kt.Table.from_pandas(create_df(pd.Index(index)), row_ids="auto")
-        self.assertListEqual(get_row_ids(table), [str(i) for i in index])
+        assert get_row_ids(table) == [str(i) for i in index]
 
         # Integers
         index = [5, 2, 1, 4, 7]
         table = kt.Table.from_pandas(create_df(pd.Index(index)), row_ids="auto")
-        self.assertListEqual(get_row_ids(table), [f"Row{i}" for i in index])
+        assert get_row_ids(table) == [f"Row{i}" for i in index]
 
         # Range starting at 10
         index = pd.RangeIndex(10, 10 + df_len)
         table = kt.Table.from_pandas(create_df(index), row_ids="auto")
-        self.assertListEqual(
-            get_row_ids(table), [f"Row{i}" for i in range(10, 10 + df_len)]
-        )
+        assert get_row_ids(table) == [f"Row{i}" for i in range(10, 10 + df_len)]
 
         # ========== row_ids = "unsupported"
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             kt.Table.from_pandas(create_df(None), row_ids="unsupported")
 
-    def test_row_ids_from_pyarrow(self):
+    def test_row_ids_from_pyarrow(self, file_name, is_empty):
         table_len = 5
 
         def create_table(row_key_col=None):
@@ -448,64 +453,64 @@ class ArrowTableTest(unittest.TestCase):
         # Correct string col for RowID
         row_ids = ["a", "b", "foo", "g", "e"]
         table = kt.Table.from_pyarrow(create_table(pa.array(row_ids)), row_ids="keep")
-        self.assertListEqual(get_row_ids(table), row_ids)
-        self.assertEqual(table.num_columns, 2)
+        assert get_row_ids(table) == row_ids
+        assert table.num_columns == 2
 
         # Use first string column as RowID
         table = kt.Table.from_pyarrow(create_table(), row_ids="keep")
-        self.assertListEqual(get_row_ids(table), create_table()[0].to_pylist())
-        self.assertEqual(table.num_columns, 1)
+        assert get_row_ids(table) == create_table()[0].to_pylist()
+        assert table.num_columns == 1
 
         # Column named "<RowID>" but with a wrong type
         row_ids = [4, 1, 3, 2, 8]
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             kt.Table.from_pyarrow(create_table(pa.array(row_ids)), row_ids="keep")
 
         # ========== row_ids = "generate"
 
         # Simple: Create new RowIDs
         table = kt.Table.from_pyarrow(create_table(), row_ids="generate")
-        self.assertListEqual(get_row_ids(table), [f"Row{i}" for i in range(table_len)])
-        self.assertEqual(table.num_columns, 2)
+        assert get_row_ids(table) == [f"Row{i}" for i in range(table_len)]
+        assert table.num_columns == 2
 
         # RowID column present but generate another one
         row_ids = ["a", "b", "foo", "g", "e"]
         table = kt.Table.from_pyarrow(
             create_table(pa.array(row_ids)), row_ids="generate"
         )
-        self.assertListEqual(get_row_ids(table), [f"Row{i}" for i in range(table_len)])
-        self.assertEqual(table.num_columns, 3)
+        assert get_row_ids(table) == [f"Row{i}" for i in range(table_len)]
+        assert table.num_columns == 3
 
         # ========== row_ids = "auto"
 
         # First column is string but not "<RowID>"
         table = kt.Table.from_pyarrow(create_table(), row_ids="auto")
-        self.assertListEqual(get_row_ids(table), [f"Row{i}" for i in range(table_len)])
-        self.assertEqual(table.num_columns, 2)
+        assert get_row_ids(table) == [f"Row{i}" for i in range(table_len)]
+        assert table.num_columns == 2
 
         # First column is string and "<RowID>"
         row_ids = ["a", "b", "foo", "g", "e"]
         table = kt.Table.from_pyarrow(create_table(pa.array(row_ids)), row_ids="auto")
-        self.assertListEqual(get_row_ids(table), row_ids)
-        self.assertEqual(table.num_columns, 2)
+        assert get_row_ids(table) == row_ids
+        assert table.num_columns == 2
 
         # First column is integer and "<RowID>"
         row_ids = [4, 1, 3, 2, 8]
         table = kt.Table.from_pyarrow(create_table(pa.array(row_ids)), row_ids="auto")
-        self.assertListEqual(get_row_ids(table), [f"Row{i}" for i in row_ids])
-        self.assertEqual(table.num_columns, 2)
+        assert get_row_ids(table) == [f"Row{i}" for i in row_ids]
+        assert table.num_columns == 2
 
         # First column cannot converted to RowID but is named "<RowID>"
         row_ids = [2.0, 7.1, 1000.1, 0.0001, 3.14]
         table = kt.Table.from_pyarrow(create_table(pa.array(row_ids)), row_ids="auto")
-        self.assertListEqual(get_row_ids(table), [f"Row{i}" for i in range(table_len)])
-        self.assertEqual(table.num_columns, 3)
+        assert get_row_ids(table) == [f"Row{i}" for i in range(table_len)]
+        assert table.num_columns == 3
 
         # ========== row_ids = "unsupported"
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             kt.Table.from_pyarrow(create_table(), row_ids="unsupported")
 
-    def test_constant_batch_size_check(self):
+    def test_constant_batch_size_check(self, file_name, is_empty):
         def _create_pyarrow_table(batch_sizes):
             return pa.Table.from_batches(
                 [
@@ -516,20 +521,16 @@ class ArrowTableTest(unittest.TestCase):
 
         # Constant batch sizes + last batch smaller - should work
         knime_table = kt.Table.from_pyarrow(_create_pyarrow_table([10, 10, 7]))
-        self.assertEqual(knime_table.num_rows, 27)
-        self.assertEqual(len(knime_table._table.to_batches()), 3)
+        assert knime_table.num_rows == 27
+        assert len(knime_table._table.to_batches()) == 3
 
         # Non-constant batch sizes - should fail
-        self.assertRaises(
-            ValueError,
-            lambda: kt.Table.from_pyarrow(_create_pyarrow_table([10, 10, 12, 10])),
-        )
+        with pytest.raises(ValueError):
+            kt.Table.from_pyarrow(_create_pyarrow_table([10, 10, 12, 10]))
 
         # Last batch bigger than the other batches - should fail
-        self.assertRaises(
-            ValueError,
-            lambda: kt.Table.from_pyarrow(_create_pyarrow_table([10, 10, 12])),
-        )
+        with pytest.raises(ValueError):
+            kt.Table.from_pyarrow(_create_pyarrow_table([10, 10, 12]))
 
 
 class BatchOutputTableTest(unittest.TestCase):
