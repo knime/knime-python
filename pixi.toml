@@ -27,12 +27,21 @@ coverage = "coverage run -m pytest && coverage xml && coverage html && coverage 
 
 [dependencies]
 python = "3.11.*"
-knime-python-base = "*"
+
+# knime-python-base
+py4j = "0.10.9.*"
+pyarrow = "21.0.*"
+markdown = "*"
+python-dateutil = "*"
+
+pandas = "2.1.0"
+
 pytest = "*"
 pytest-cov = "*"
 matplotlib = "*"
 seaborn = "*"
 ruff = "*"
+debugpy = "*"
 
 # Test Environments
 
