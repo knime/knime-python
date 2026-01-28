@@ -104,6 +104,10 @@ def _integrate_row_ids(data_frame: pd.DataFrame, row_ids: str) -> pd.DataFrame:
     # TODO in case of no rows we could maybe have special handling here?
     # However, how to prepend a column?
 
+
+    # Since pandas 2.1.0 concat for empty dataframes will call __getitem__ on the extension arrays
+    # However, our __getitem__ implementation does not seem to handle this well for nested extension arrays
+
     if row_ids in ["auto", "keep"]:
         row_ids_series = _create_row_ids_for_auto_keep(data_frame, row_ids)
         # Prepend the index to the data_frame:
