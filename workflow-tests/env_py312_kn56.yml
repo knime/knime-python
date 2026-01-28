@@ -11,7 +11,7 @@ dependencies:
   - seaborn # View tests
   - pyarrow=21.0.*
   - pandas=2.3.*
-  - py4j=0.10.19
+  - py4j=0.10.9
   - markdown=3.8.*
   - nbformat # Jupyter nodebook loading
   - ipython # Jupyter nodebook loading
