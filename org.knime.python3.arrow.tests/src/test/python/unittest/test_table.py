@@ -120,7 +120,7 @@ class ArrowTableTest(unittest.TestCase):
         import os
 
         knime_generated_table_path = os.path.normpath(
-            os.path.join(__file__, "..", "emptyGeneratedTestData.zip")
+            os.path.join(__file__, "..", "generatedTestData.zip")
         )
         column_names = [
             "StringCol",
@@ -161,37 +161,7 @@ class ArrowTableTest(unittest.TestCase):
         import knime._arrow._backend as ka
 
         ads = ka.ArrowDataSource(test_data_source)
-        table = kat.ArrowSourceTable(ads)
-        return table[[
-            "StringCol",
-            "StringSetCol",
-            "IntCol",
-            "IntListCol",
-            "IntSetCol",
-            "LongCol",
-            "LongSetCol",
-            "DoubleCol",
-            "DoubleSetCol",
-            "TimestampCol",
-            "TimestampListCol",
-            "TimestampSetCol",
-            "BooleanCol",
-            "BooleanSetCol",
-            "URICol",
-            "URIListCol",
-            "URISetCol",
-            "MissingValStringCol",
-            "MissingValStringSetCol",
-            "LongStringColumnName",
-            "LongDoubleColumnName",
-            "Local Date",
-            "Local Time",
-            "Local Date Time",
-            "Zoned Date Time",
-            "Period",
-            "Duration",
-        ]]
-
+        return kat.ArrowSourceTable(ads)
 
     def generate_test_table_with_rowid_column(self):
         """Creates a KNIME table that has a column named <RowID>"""
