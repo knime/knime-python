@@ -14,7 +14,7 @@ pixi run format       # Ruff (target: Python 3.8)
 
 ## Repository-Specific Conventions
 - **Path setup**: Root `conftest.py` adds all plugin paths to `sys.path` - **never modify `sys.path` in tests**
-- **Test style**: Function-based tests only (`pytest.ini` disables class discovery)
+- **Test style**: Primarily function-based tests. Class-based tests (`Test*` and `*Test` patterns) are enabled in `pytest.ini` to support parameterized tests.
 - **Multi-version**: Changes must work across Python 3.8-3.14 - test with `pixi run test-all`
 - **PyArrow versions**: Tightly coupled to Python version in `pixi.toml` - don't update independently
 
