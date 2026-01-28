@@ -52,6 +52,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
@@ -86,8 +87,11 @@ import org.knime.core.node.workflow.VariableType;
 import org.knime.core.node.workflow.VariableTypeRegistry;
 import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
 import org.knime.core.webui.node.dialog.scripting.ScriptingService.ConsoleText;
-import org.knime.python3.PythonCommand;
+import org.knime.pixi.port.PixiPythonCommand;
+import org.knime.pixi.port.PythonEnvironmentPortObject;
 import org.knime.python3.PythonProcessTerminatedException;
+import org.knime.python3.processprovider.PythonProcessProvider;
+import org.knime.python3.scripting.nodes.PortsConfigurationUtils;
 import org.knime.python3.scripting.nodes2.ConsoleOutputUtils.ConsoleOutputStorage;
 import org.knime.python3.scripting.nodes2.PythonScriptingSession.ExecutionInfo;
 import org.knime.python3.scripting.nodes2.PythonScriptingSession.ExecutionStatus;
@@ -118,6 +122,8 @@ public final class PythonScriptNodeModel extends NodeModel {
 
     private final PythonScriptPortsConfiguration m_ports;
 
+    private final PortsConfiguration m_portsConfiguration;
+
     private final AsynchronousCloseableTracker<IOException> m_sessionShutdownTracker =
         new AsynchronousCloseableTracker<>(t -> LOGGER.debug("Kernel shutdown failed.", t));
 
@@ -147,9 +153,17 @@ public final class PythonScriptNodeModel extends NodeModel {
     public PythonScriptNodeModel(final PortsConfiguration portsConfiguration, final boolean hasView) {
         super(portsConfiguration.getInputPorts(), portsConfiguration.getOutputPorts());
         m_hasView = hasView;
+        m_portsConfiguration = portsConfiguration;
         m_ports = PythonScriptPortsConfiguration.fromPortsConfiguration(portsConfiguration, hasView);
         m_settings = new PythonScriptNodeSettings(m_ports);
         m_view = Optional.empty();
+    }
+
+    /**
+     * @return the ports configuration
+     */
+    private PortsConfiguration getPortsConfiguration() {
+        return m_portsConfiguration;
     }
 
     /**
@@ -177,16 +191,57 @@ public final class PythonScriptNodeModel extends NodeModel {
     @Override
     protected PortObject[] execute(final PortObject[] inObjects, final ExecutionContext exec)
         throws IOException, InterruptedException, CanceledExecutionException, KNIMEException {
-        final PythonCommand pythonCommand =
-            ExecutableSelectionUtils.getPythonCommand(m_settings.getExecutableSelection());
+
+        // Install Python environment early to avoid timeout issues during gateway connection
+        // This must happen before creating the PythonScriptingSession
+        if (m_ports.hasPixiPort()) {
+            try {
+                PortsConfigurationUtils.installPythonEnvironmentIfPresent(
+                    getPortsConfiguration(), inObjects, exec);
+            } catch (IOException | CanceledExecutionException ex) {
+                throw ex; // Re-throw as-is
+            }
+        }
+
+        // Check if Pixi port is connected and use it, otherwise use configured Python command
+        final PythonProcessProvider pythonCommand;
+        if (m_ports.hasPixiPort()) {
+            LOGGER.debug("Checking for Pixi environment port");
+            // The Pixi port is after all regular input ports
+            final int pixiPortIndex = inObjects.length - 1;
+            try {
+                final PythonProcessProvider pixiCommand = extractPythonCommandFromPixiPort(inObjects[pixiPortIndex]);
+                if (pixiCommand != null) {
+                    LOGGER.debug("Using Python from Pixi environment");
+                    pythonCommand = pixiCommand;
+                    // TODO: Consider if flow variable should take precedence over Pixi port
+                } else {
+                    LOGGER.debug("Pixi port not connected, using configured Python command");
+                    pythonCommand = ExecutableSelectionUtils.getPythonCommand(m_settings.getExecutableSelection());
+                }
+            } catch (InvalidSettingsException ex) {
+                throw new KNIMEException("Failed to extract Python command from environment port: " + ex.getMessage(), ex);
+            }
+        } else {
+            pythonCommand = ExecutableSelectionUtils.getPythonCommand(m_settings.getExecutableSelection());
+        }
         m_consoleOutputStorage = null;
 
         final var consoleConsumer = ConsoleOutputUtils.createConsoleConsumer();
         try (final var session =
             new PythonScriptingSession(pythonCommand, consoleConsumer, new ModelFileStoreHandlerSupplier())) {
 
+            // Filter out Pixi port from inObjects - it's not a data port
+            final PortObject[] dataPortObjects;
+            if (m_ports.hasPixiPort()) {
+                // Pixi port is at the end, so exclude it
+                dataPortObjects = Arrays.copyOf(inObjects, inObjects.length - 1);
+            } else {
+                dataPortObjects = inObjects;
+            }
+
             exec.setProgress(0.0, "Setting up inputs");
-            session.setupIO(inObjects, getAvailableFlowVariables(KNOWN_FLOW_VARIABLE_TYPES).values(),
+            session.setupIO(dataPortObjects, getAvailableFlowVariables(KNOWN_FLOW_VARIABLE_TYPES).values(),
                 m_ports.getNumOutTables(), m_ports.getNumOutImages(), m_ports.getNumOutObjects(), m_hasView,
                 exec.createSubProgress(0.3));
             exec.setProgress(0.3, "Running script");
@@ -272,10 +327,48 @@ public final class PythonScriptNodeModel extends NodeModel {
         }
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings("unchecked")
     private void pushNewFlowVariable(final FlowVariable variable) {
         pushFlowVariable(variable.getName(), (VariableType)variable.getVariableType(),
             variable.getValue(variable.getVariableType()));
+    }
+
+    /**
+     * Extract the Python command from a PythonEnvironmentPortObject.
+     *
+     * @param portObject the port object (may be null if optional port is not connected)
+     * @return the Python command, or null if the port is not connected or doesn't contain a valid Python executable
+     * @throws InvalidSettingsException if the Python executable path from the environment doesn't exist
+     */
+    private static PythonProcessProvider extractPythonCommandFromPixiPort(final PortObject portObject)
+        throws InvalidSettingsException {
+        if (portObject == null) {
+            return null;
+        }
+
+        try {
+            // Check if this is a PythonEnvironmentPortObject (new unified type)
+            if (portObject instanceof PythonEnvironmentPortObject) {
+                final PythonEnvironmentPortObject pythonEnvPort = (PythonEnvironmentPortObject)portObject;
+                try {
+                    // PythonEnvironmentPortObject.getPythonCommand() returns org.knime.pixi.port.PythonCommand,
+                    // but we need org.knime.python3.PythonCommand. Extract the pixi.toml path and create a new instance.
+                    final Path pixiToml = pythonEnvPort.getPixiEnvironmentPath().resolve("pixi.toml");
+                    final PythonProcessProvider pythonCommand = new PixiPythonCommand(pixiToml);
+                    LOGGER.debug("Using Python from PythonEnvironmentPortObject: " + pythonCommand);
+                    return pythonCommand;
+                } catch (IOException e) {
+                    throw new InvalidSettingsException("Failed to get Python command from environment: " + e.getMessage(), e);
+                }
+            }
+
+
+            return null;
+        } catch (NoClassDefFoundError e) {
+            // Environment port bundle not available - this should not happen if the port was added successfully
+            LOGGER.debug("Environment port class not available", e);
+            return null;
+        }
     }
 
     /** Get the output view from the session if the node has a view and remember the path */

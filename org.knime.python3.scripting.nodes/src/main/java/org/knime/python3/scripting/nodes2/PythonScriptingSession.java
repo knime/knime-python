@@ -87,7 +87,6 @@ import org.knime.core.util.pathresolve.ResolverUtil;
 import org.knime.core.webui.node.dialog.scripting.ScriptingService.ConsoleText;
 import org.knime.python3.Activator;
 import org.knime.python3.Python3SourceDirectory;
-import org.knime.python3.PythonCommand;
 import org.knime.python3.PythonEntryPointUtils;
 import org.knime.python3.PythonFileStoreUtils;
 import org.knime.python3.PythonGateway;
@@ -100,6 +99,7 @@ import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.arrow.PythonArrowDataUtils;
 import org.knime.python3.arrow.PythonArrowExtension;
 import org.knime.python3.arrow.PythonArrowTableConverter;
+import org.knime.python3.processprovider.PythonProcessProvider;
 import org.knime.python3.types.PythonValueFactoryModule;
 import org.knime.python3.types.PythonValueFactoryRegistry;
 import org.knime.python3.utils.FlowVariableUtils;
@@ -155,7 +155,7 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
 
     private int m_numOutObjects;
 
-    PythonScriptingSession(final PythonCommand pythonCommand, final Consumer<ConsoleText> consoleTextConsumer,
+    PythonScriptingSession(final PythonProcessProvider pythonCommand, final Consumer<ConsoleText> consoleTextConsumer,
         final FileStoreHandlerSupplier fileStoreHandlerSupplier) throws IOException, InterruptedException {
         m_consoleTextConsumer = consoleTextConsumer;
         m_fileStoreHandlerSupplier = fileStoreHandlerSupplier;
@@ -418,15 +418,17 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
         }
     }
 
-    private static PythonGateway<PythonScriptingEntryPoint> createGateway(final PythonCommand pythonCommand)
+    private static PythonGateway<PythonScriptingEntryPoint> createGateway(final PythonProcessProvider pythonCommand)
         throws IOException, InterruptedException {
         if (pythonCommand.getPythonExecutablePath()
             .startsWith(CondaEnvironmentIdentifier.NOT_EXECUTED_PATH_PLACEHOLDER)) {
             throw new IOException(CondaEnvironmentIdentifier.NOT_EXECUTED_PATH_PLACEHOLDER);
         }
 
+        // Wrap internal PythonCommand in adapter for public API
+        final var pythonCommandAdapter = new PythonCommandAdapter(pythonCommand);
         final var gatewayDescriptionBuilder =
-            PythonGatewayDescription.builder(pythonCommand, LAUNCHER.toAbsolutePath(), PythonScriptingEntryPoint.class);
+            PythonGatewayDescription.builder(pythonCommandAdapter, LAUNCHER.toAbsolutePath(), PythonScriptingEntryPoint.class);
 
         gatewayDescriptionBuilder.withPreloaded(PythonArrowExtension.INSTANCE);
         gatewayDescriptionBuilder.withPreloaded(PythonViewsExtension.INSTANCE);
@@ -522,5 +524,48 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
 
         @Override
         void close();
+    }
+
+    /**
+     * Adapter that wraps org.knime.pixi.port.PythonCommand to implement org.knime.python3.PythonCommand.
+     * This is needed because PythonGatewayDescription.builder() requires the public API type.
+     */
+    private static final class PythonCommandAdapter implements PythonProcessProvider {
+        private final PythonProcessProvider m_delegate;
+
+        PythonCommandAdapter(final PythonProcessProvider delegate) {
+            m_delegate = delegate;
+        }
+
+        @Override
+        public ProcessBuilder createProcessBuilder() {
+            return m_delegate.createProcessBuilder();
+        }
+
+        @Override
+        public Path getPythonExecutablePath() {
+            return m_delegate.getPythonExecutablePath();
+        }
+
+        @Override
+        public int hashCode() {
+            return m_delegate.hashCode();
+        }
+
+        @Override
+        public boolean equals(final Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (obj instanceof PythonCommandAdapter other) {
+                return m_delegate.equals(other.m_delegate);
+            }
+            return false;
+        }
+
+        @Override
+        public String toString() {
+            return m_delegate.toString();
+        }
     }
 }

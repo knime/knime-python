@@ -53,13 +53,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import org.knime.python3.processprovider.PythonProcessProvider;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
  */
-abstract class AbstractPythonCommand implements PythonCommand {
+abstract class AbstractPythonCommand implements PythonProcessProvider {
 
     /** The Python command and possible arguments */
     protected final List<String> m_command;

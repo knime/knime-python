@@ -93,6 +93,7 @@ import org.knime.python3.arrow.Python3ArrowSourceDirectory;
 import org.knime.python3.arrow.PythonArrowDataSource;
 import org.knime.python3.arrow.PythonArrowDataUtils;
 import org.knime.python3.arrow.PythonArrowExtension;
+import org.knime.python3.processprovider.PythonProcessProvider;
 import org.knime.python3.testing.Python3ArrowTestUtils;
 import org.knime.python3.testing.Python3TestUtils;
 import org.knime.python3.views.Python3ViewsSourceDirectory;

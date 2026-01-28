@@ -81,6 +81,8 @@ import org.knime.core.node.workflow.VariableTypeRegistry;
 import org.knime.core.util.PathUtils;
 import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
 import org.knime.core.webui.node.view.NodeView;
+import org.knime.pixi.port.PixiPythonCommand;
+import org.knime.pixi.port.PythonEnvironmentPortObject;
 import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonModuleSpec;
 import org.knime.python2.PythonVersion;
@@ -101,6 +103,7 @@ import org.knime.python2.ports.InputPort;
 import org.knime.python2.ports.OutputPort;
 import org.knime.python2.ports.PickledObjectOutputPort;
 import org.knime.python2.ports.Port;
+import org.knime.python3.processprovider.PythonProcessProvider;
 import org.knime.python3.scripting.Python3KernelBackend;
 import org.knime.python3.scripting.nodes.prefs.Python3ScriptingPreferences;
 
@@ -155,6 +158,8 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
 
     private final boolean m_hasView;
 
+    private final boolean m_hasPixiPort;
+
     private String m_script;
 
     private final PythonCommandConfig m_command = createCommandConfig();
@@ -165,17 +170,35 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
         new AsynchronousCloseableTracker<>(t -> LOGGER.debug("Kernel shutdown failed.", t));
 
     protected AbstractPythonScriptingNodeModel(final InputPort[] inPorts, final OutputPort[] outPorts,
-        final boolean hasView, final String defaultScript) {
-        super(toPortTypes(inPorts), toPortTypes(outPorts));
+        final boolean hasView, final boolean hasPixiPort, final String defaultScript) {
+        super(toPortTypes(inPorts, hasPixiPort), toPortTypes(outPorts));
         m_inPorts = inPorts;
         m_outPorts = outPorts;
         m_hasView = hasView;
+        m_hasPixiPort = hasPixiPort;
         m_view = Optional.empty();
         m_script = defaultScript;
     }
 
     private static final PortType[] toPortTypes(final Port[] ports) {
         return Arrays.stream(ports).map(Port::getPortType).toArray(PortType[]::new);
+    }
+
+    private static final PortType[] toPortTypes(final Port[] ports, final boolean hasPixiPort) {
+        if (!hasPixiPort) {
+            return toPortTypes(ports);
+        }
+        // Add the optional Python environment port at the end of the input ports
+        final PortType[] portTypes = new PortType[ports.length + 1];
+        for (int i = 0; i < ports.length; i++) {
+            portTypes[i] = ports[i].getPortType();
+        }
+        try {
+            portTypes[ports.length] = PythonEnvironmentPortObject.TYPE_OPTIONAL;
+        } catch (NoClassDefFoundError e) {
+            throw new IllegalStateException("Could not load PythonEnvironmentPortObject class", e);
+        }
+        return portTypes;
     }
 
     @Override
@@ -198,7 +221,9 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
 
     @Override
     protected PortObjectSpec[] configure(final PortObjectSpec[] inSpecs) throws InvalidSettingsException {
-        for (int i = 0; i < m_inPorts.length; i++) {
+        // The Pixi port (if present) is at the end of the input specs
+        final int numRegularPorts = m_inPorts.length;
+        for (int i = 0; i < numRegularPorts; i++) {
             m_inPorts[i].configure(inSpecs[i]);
         }
         return null; // NOSONAR Conforms to KNIME API.
@@ -206,6 +231,15 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
 
     @Override
     protected PortObject[] execute(final PortObject[] inObjects, final ExecutionContext exec) throws Exception {
+        // Extract Pixi environment if present
+        // The Pixi port (if present) is at the end of the input objects
+        final PythonCommand pythonCommandFromPixi;
+        if (m_hasPixiPort && inObjects.length > m_inPorts.length) {
+            pythonCommandFromPixi = extractPythonCommandFromPixiPort(inObjects[inObjects.length - 1]);
+        } else {
+            pythonCommandFromPixi = null;
+        }
+
         double inWeight = 0d;
         final Set<PythonModuleSpec> requiredAdditionalModules = new HashSet<>();
         for (int i = 0; i < m_inPorts.length; i++) {
@@ -217,7 +251,8 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
 
         final var cancelable = new PythonExecutionMonitorCancelable(exec);
         try (final PythonKernel kernel =
-            getNextKernelFromQueue(requiredAdditionalModules, Collections.emptySet(), cancelable)) {
+            getNextKernelFromQueue(requiredAdditionalModules, Collections.emptySet(), cancelable,
+                pythonCommandFromPixi)) {
             final Collection<FlowVariable> inFlowVariables =
                 getAvailableFlowVariables(Python3KernelBackend.getCompatibleFlowVariableTypes()).values();
             kernel.putFlowVariables(null, inFlowVariables);
@@ -349,10 +384,70 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
         return nodeInternDir.toPath().resolve("view.html");
     }
 
+    /**
+     * Extract the Python command from a PythonEnvironmentPortObject.
+     *
+     * @param portObject the port object (may be null if optional port is not connected)
+     * @return the Python command, or null if the port is not connected or doesn't contain a valid Python executable
+     * @throws InvalidSettingsException if the Python executable path from the Pixi environment doesn't exist
+     */
+    private static PythonCommand extractPythonCommandFromPixiPort(final PortObject portObject)
+        throws InvalidSettingsException {
+        if (portObject == null) {
+            return null;
+        }
+
+        try {
+            if (!(portObject instanceof PythonEnvironmentPortObject)) {
+                return null;
+            }
+
+            // Handle PythonEnvironmentPortObject
+            final PythonEnvironmentPortObject pythonEnvPort = (PythonEnvironmentPortObject)portObject;
+            final Path pixiTomlPath;
+            try {
+                pixiTomlPath = pythonEnvPort.getPixiEnvironmentPath().resolve("pixi.toml");
+            } catch (IOException e) {
+                throw new InvalidSettingsException("Failed to get pixi.toml path from PythonEnvironmentPortObject: " + e.getMessage(), e);
+            }
+
+            // Create PixiPythonCommand from the pixi.toml path
+            final PythonProcessProvider pythonCommand = new PixiPythonCommand(pixiTomlPath);
+
+            // Verify that the Python executable exists
+            final Path pythonExecPath = pythonCommand.getPythonExecutablePath();
+            if (!Files.exists(pythonExecPath)) {
+                throw new InvalidSettingsException(
+                    "The Python executable from the Pixi environment does not exist at path: " + pythonExecPath
+                        + ". Please check that the Pixi environment was created successfully.");
+            }
+
+            LOGGER.debug("Using Python from Pixi environment via pixi run: " + pythonCommand);
+            return new LegacyPythonCommand(pythonCommand);
+
+        } catch (NoClassDefFoundError e) {
+            // Python environment bundle is not available - this is fine since it's optional
+            LOGGER.debug("PythonEnvironmentPortObject class not available - bundle may not be installed", e);
+            return null;
+        }
+    }
+
     protected PythonKernel getNextKernelFromQueue(final Set<PythonModuleSpec> requiredAdditionalModules,
         final Set<PythonModuleSpec> optionalAdditionalModules, final PythonCancelable cancelable)
         throws PythonCanceledExecutionException, PythonIOException {
-        return PythonKernelQueue.getNextKernel(m_command.getCommand(), PythonKernelBackendType.PYTHON3,
+        return getNextKernelFromQueue(requiredAdditionalModules, optionalAdditionalModules, cancelable, null);
+    }
+
+    protected PythonKernel getNextKernelFromQueue(final Set<PythonModuleSpec> requiredAdditionalModules,
+        final Set<PythonModuleSpec> optionalAdditionalModules, final PythonCancelable cancelable,
+        final PythonCommand pythonCommandFromPixi)
+        throws PythonCanceledExecutionException, PythonIOException {
+        // Use Python command from Pixi port if available
+        // TODO: We might want to consider flow variables in addition to the Pixi port in the future
+        final PythonCommand commandToUse =
+            pythonCommandFromPixi != null ? pythonCommandFromPixi : m_command.getCommand();
+
+        return PythonKernelQueue.getNextKernel(commandToUse, PythonKernelBackendType.PYTHON3,
             requiredAdditionalModules, optionalAdditionalModules, new PythonKernelOptions(), cancelable);
     }
 
@@ -381,14 +476,14 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
     }
 
     /**
-     * Wraps a {@link org.knime.python3.PythonCommand} into the legacy implementation for using it in a
+     * Wraps a {@link org.knime.pixi.port.PythonProcessProvider} into the legacy implementation for using it in a
      * {@link PythonKernelBackend}.
      */
     private static final class LegacyPythonCommand implements PythonCommand {
 
-        private final org.knime.python3.PythonCommand m_pythonCommand;
+        private final PythonProcessProvider m_pythonCommand;
 
-        private LegacyPythonCommand(final org.knime.python3.PythonCommand pythonCommand) {
+        private LegacyPythonCommand(final PythonProcessProvider pythonCommand) {
             m_pythonCommand = pythonCommand;
         }
 

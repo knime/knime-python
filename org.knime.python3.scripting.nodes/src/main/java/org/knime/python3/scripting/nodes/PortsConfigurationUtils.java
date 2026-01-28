@@ -48,10 +48,17 @@
  */
 package org.knime.python3.scripting.nodes;
 
+import java.io.IOException;
+
 import org.knime.core.node.BufferedDataTable;
+import org.knime.core.node.CanceledExecutionException;
+import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.context.ports.PortsConfiguration;
+import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortType;
 import org.knime.core.node.port.image.ImagePortObject;
+import org.knime.pixi.port.PixiInstallationProgressReporter;
+import org.knime.pixi.port.PythonEnvironmentPortObject;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
 import org.knime.python2.ports.DataTableInputPort;
 import org.knime.python2.ports.DataTableOutputPort;
@@ -60,6 +67,7 @@ import org.knime.python2.ports.InputPort;
 import org.knime.python2.ports.OutputPort;
 import org.knime.python2.ports.PickledObjectInputPort;
 import org.knime.python2.ports.PickledObjectOutputPort;
+
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
@@ -72,6 +80,27 @@ public final class PortsConfigurationUtils {
     }
 
     /**
+     * Check if the ports configuration contains a Python environment port.
+     *
+     * @param config the ports configuration
+     * @return true if a Python environment port is present
+     */
+    public static boolean hasPixiPort(final PortsConfiguration config) {
+        final PortType[] inTypes = config.getInputPorts();
+        try {
+            // Check if any input port is a PythonEnvironmentPortObject
+            for (final PortType inType : inTypes) {
+                if (inType.equals(PythonEnvironmentPortObject.TYPE) || inType.equals(PythonEnvironmentPortObject.TYPE_OPTIONAL)) {
+                    return true;
+                }
+            }
+        } catch (NoClassDefFoundError e) {
+            // Python environment bundle is not available - this is fine since it's optional
+        }
+        return false;
+    }
+
+    /**
      * Extract the input ports from the given ports configuration.
      *
      * @param config the ports configuration
@@ -81,9 +110,21 @@ public final class PortsConfigurationUtils {
         final PortType[] inTypes = config.getInputPorts();
         int inTableIndex = 0;
         int inObjectIndex = 0;
-        final var inPorts = new InputPort[inTypes.length];
+        // Count non-Pixi ports for the result array
+        int numNonPixiPorts = 0;
+        for (final PortType inType : inTypes) {
+            if (!isPixiPort(inType)) {
+                numNonPixiPorts++;
+            }
+        }
+        final var inPorts = new InputPort[numNonPixiPorts];
+        int portIndex = 0;
         for (int i = 0; i < inTypes.length; i++) {
             final PortType inType = inTypes[i];
+            // Skip Pixi ports - they are not InputPorts in the traditional sense
+            if (isPixiPort(inType)) {
+                continue;
+            }
             final InputPort inPort;
             if (BufferedDataTable.TYPE.equals(inType)) {
                 inPort = new DataTableInputPort("knio.input_tables[" + inTableIndex++ + "]");
@@ -92,9 +133,18 @@ public final class PortsConfigurationUtils {
             } else {
                 throw new IllegalStateException("Unsupported input type: " + inType.getName());
             }
-            inPorts[i] = inPort;
+            inPorts[portIndex++] = inPort;
         }
         return inPorts;
+    }
+
+    private static boolean isPixiPort(final PortType inType) {
+        try {
+            return inType.equals(PythonEnvironmentPortObject.TYPE) || inType.equals(PythonEnvironmentPortObject.TYPE_OPTIONAL);
+        } catch (NoClassDefFoundError e) {
+            // Python environment bundle is not available - this is fine since it's optional
+            return false;
+        }
     }
 
     /**
@@ -134,5 +184,59 @@ public final class PortsConfigurationUtils {
      */
     public static OutputPort createPickledObjectOutputPort(final int outObjectSuffix) {
         return new PickledObjectOutputPort("knio.output_objects[" + outObjectSuffix + "]");
+    }
+    
+    /**
+     * Extract the Python environment port object from the input port objects, if present.
+     *
+     * @param config the ports configuration
+     * @param inObjects the input port objects
+     * @return the Python environment port object, or null if not present
+     */
+    public static PythonEnvironmentPortObject extractPythonEnvironmentPort(
+            final PortsConfiguration config, final PortObject[] inObjects) {
+        final PortType[] inTypes = config.getInputPorts();
+        for (int i = 0; i < inTypes.length; i++) {
+            if (isPixiPort(inTypes[i]) && inObjects[i] instanceof PythonEnvironmentPortObject) {
+                return (PythonEnvironmentPortObject) inObjects[i];
+            }
+        }
+        return null;
+    }
+    
+    /**
+     * Install the Python environment port if present, with progress reporting.
+     * This should be called early in node execution to avoid installation timeout issues.
+     * Installation is thread-safe and will only happen once even if called multiple times.
+     *
+     * @param config the ports configuration
+     * @param inObjects the input port objects
+     * @param exec the execution monitor for progress reporting and cancellation
+     * @throws IOException if installation fails
+     * @throws CanceledExecutionException if the operation is canceled
+     */
+    public static void installPythonEnvironmentIfPresent(
+            final PortsConfiguration config, final PortObject[] inObjects, final ExecutionMonitor exec)
+            throws IOException, CanceledExecutionException {
+        final PythonEnvironmentPortObject envPort = extractPythonEnvironmentPort(config, inObjects);
+        if (envPort != null) {
+            exec.setMessage("Installing Python environment...");
+            // Create simulated progress reporter that maps internal progress to node progress
+            final PixiInstallationProgressReporter progressReporter = new PixiInstallationProgressReporter() {
+                @Override
+                public void setProgress(final double fraction, final String message) {
+                    exec.setProgress(fraction, message);
+                }
+
+                @Override
+                public void checkCanceled() throws CanceledExecutionException {
+                    exec.checkCanceled();
+                }
+            };
+            
+            // Use simulated progress since we don't yet capture pixi output
+            envPort.installPixiEnvironment(exec, 
+                PixiInstallationProgressReporter.createSimulated(progressReporter));
+        }
     }
 }

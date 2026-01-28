@@ -57,6 +57,7 @@ import java.util.Optional;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.ConfigurableNodeFactory;
 import org.knime.core.node.NodeDialogPane;
+import org.knime.core.node.NodeLogger;
 import org.knime.core.node.context.NodeCreationConfiguration;
 import org.knime.core.node.port.PortType;
 import org.knime.core.node.port.image.ImagePortObject;
@@ -65,6 +66,7 @@ import org.knime.core.webui.node.dialog.NodeDialogFactory;
 import org.knime.core.webui.node.dialog.NodeDialogManager;
 import org.knime.core.webui.node.view.NodeView;
 import org.knime.core.webui.node.view.NodeViewFactory;
+import org.knime.pixi.port.PythonEnvironmentPortObject;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
 import org.knime.python3.scripting.nodes2.PythonScriptNodeDialog;
 import org.knime.python3.scripting.nodes2.PythonScriptNodeModel;
@@ -78,6 +80,10 @@ import org.knime.python3.views.HtmlFileNodeView;
 @SuppressWarnings("restriction") // the UIExtension API is still restricted
 public class PythonViewNodeFactory extends ConfigurableNodeFactory<PythonScriptNodeModel>
     implements NodeDialogFactory, NodeViewFactory<PythonScriptNodeModel> {
+
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonViewNodeFactory.class);
+
+    private static final String PORTGR_ID_PYTHON_ENV = "Python environment";
 
     @Override
     public NodeDialog createNodeDialog() {
@@ -127,6 +133,16 @@ public class PythonViewNodeFactory extends ConfigurableNodeFactory<PythonScriptN
         b.addExtendableInputPortGroup(PORTGR_ID_INP_OBJECT, PickledObjectFileStorePortObject.TYPE);
         b.addExtendableInputPortGroupWithDefault(PORTGR_ID_INP_TABLE, new PortType[0],
             new PortType[]{BufferedDataTable.TYPE}, BufferedDataTable.TYPE);
+        
+        // Add Python environment port
+        try {
+            final Class<?> pythonEnvClass = PythonEnvironmentPortObject.class;
+            b.addOptionalInputPortGroup(PORTGR_ID_PYTHON_ENV, PythonEnvironmentPortObject.TYPE_OPTIONAL);
+            LOGGER.debug("Successfully added Python environment port");
+        } catch (NoClassDefFoundError e) {
+            LOGGER.debug("PythonEnvironmentPortObject not available: " + e.getMessage());
+        }
+        
         b.addOptionalOutputPortGroup(PORTGR_ID_OUT_IMAGE, ImagePortObject.TYPE);
         return Optional.of(b);
     }

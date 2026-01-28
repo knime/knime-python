@@ -79,6 +79,7 @@ import org.knime.core.node.port.image.ImagePortObject;
 import org.knime.core.node.port.image.ImagePortObjectSpec;
 import org.knime.core.node.port.inactive.InactiveBranchPortObject;
 import org.knime.core.util.PathUtils;
+import org.knime.pixi.port.PythonEnvironmentPortObject;
 import org.knime.python2.port.PickledObjectFile;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
 import org.knime.python3.PythonDataSource;
@@ -100,10 +101,12 @@ final class PythonIOUtils {
 
     /**
      * Create an array of Python data sources for the given input ports. The input ports can be either a
-     * {@link BufferedDataTable} or a {@link PickledObjectFileStorePortObject}.
+     * {@link BufferedDataTable}, a {@link PickledObjectFileStorePortObject}, or {@link PythonEnvironmentPortObject}.
+     * Note that {@link PythonEnvironmentPortObject}s are filtered out as they are only used for environment
+     * configuration and not passed to Python as data.
      *
-     * @param data a list of port objects. Only {@link BufferedDataTable} and {@link PickledObjectFileStorePortObject}
-     *            are supported.
+     * @param data a list of port objects. Only {@link BufferedDataTable}, {@link PickledObjectFileStorePortObject},
+     *            and {@link PythonEnvironmentPortObject} are supported.
      * @param tableConverter a table converter that is used to convert the {@link BufferedDataTable}s to Python sources
      * @param exec for progress reporting and cancellation
      * @return an array of Python data sources
@@ -120,9 +123,16 @@ final class PythonIOUtils {
         final var tablePortObjects = Arrays.stream(data) //
             .filter(BufferedDataTable.class::isInstance) //
             .toArray(BufferedDataTable[]::new);
+        final var pythonEnvPortObjects = Arrays.stream(data) //
+            .filter(PythonEnvironmentPortObject.class::isInstance) //
+            .toArray(PythonEnvironmentPortObject[]::new);
 
-        // Make sure that all ports are tables or pickled port objects
-        if (pickledPortObjects.length + tablePortObjects.length < data.length) {
+        NodeLogger.getLogger(PythonIOUtils.class).debugWithFormat(
+            "Creating sources from %d input ports: %d tables, %d pickled objects, %d PythonEnvironment ports (filtered out)",
+            data.length, tablePortObjects.length, pickledPortObjects.length, pythonEnvPortObjects.length);
+
+        // Make sure that all ports are tables, pickled port objects, or environment ports
+        if (pickledPortObjects.length + tablePortObjects.length + pythonEnvPortObjects.length < data.length) {
             throw new IllegalArgumentException("Unsupported port type connected. This is an implementation error.");
         }
 
