@@ -100,10 +100,15 @@ def _make_arrow_compatible(data_frame: pd.DataFrame) -> pd.DataFrame:
 
 def _integrate_row_ids(data_frame: pd.DataFrame, row_ids: str) -> pd.DataFrame:
     # Convert the index to a string series based on the row_ids argument
+
+    # TODO in case of no rows we could maybe have special handling here?
+    # However, how to prepend a column?
+
     if row_ids in ["auto", "keep"]:
         row_ids_series = _create_row_ids_for_auto_keep(data_frame, row_ids)
         # Prepend the index to the data_frame:
         row_ids_series.name = "<RowID>"
+        print(f"Integrating row IDs with row_ids='{row_ids}'")
         return pd.concat(
             [row_ids_series.reset_index(drop=True), data_frame.reset_index(drop=True)],
             axis=1,
@@ -413,6 +418,7 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
         -------
         ExtensionArray
         """
+        # print(f"Called _from_sequence with scalars: {str(scalars)}")
         if scalars is None:
             raise ValueError("Cannot create KnimePandasExtensionArray from empty data")
             # easy case
@@ -476,7 +482,9 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
 
             arrow_type = katy.ProxyExtensionType(converter, storage_type, logical_type)
 
-        print(storage_type)
+        print(f"Creating storage array of type: {str(storage_type)}")
+        print("Creating extension array of type:", str(arrow_type))
+        # raise ValueError("DEBUGGING DO WE GET HERE??")
         storage_array = pa.array(scalars, type=storage_type)
         extension_array = pa.ExtensionArray.from_storage(arrow_type, storage_array)
         return KnimePandasExtensionArray(
@@ -584,6 +592,7 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
         return self.take(index_list)
 
     def __getitem__(self, item):
+        # print(f"__getitem__ called with item: {item}")
         if isinstance(item, int):
             if (
                 isinstance(self._storage_type, pa.StructType)
@@ -837,12 +846,17 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
         numpy.take
         api.extensions.take
         """
+        print(f"Taking elements with indices: {indices}")
+        # TODO run workflow tests with an exception if len(indices) != 0 to check if this ever happens
         if (isinstance(indices, list) and indices == [None] * len(indices)) or (
             isinstance(indices, np.ndarray) and (indices == None).all()
         ):
+            if (len(indices) != 0):
+                raise ValueError("Cannot take with all None indices of length 0")
             return self._from_sequence(
                 [None] * len(indices),
-                storage_type=self._storage_type,
+                # NOTE: self._storage_type can contain extension types but we can remove them here
+                storage_type=katy.get_storage_type(self._storage_type),
                 logical_type=self._logical_type,
                 converter=self._converter,
             )
