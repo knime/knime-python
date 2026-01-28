@@ -476,6 +476,7 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
 
             arrow_type = katy.ProxyExtensionType(converter, storage_type, logical_type)
 
+        print(storage_type)
         storage_array = pa.array(scalars, type=storage_type)
         extension_array = pa.ExtensionArray.from_storage(arrow_type, storage_array)
         return KnimePandasExtensionArray(
