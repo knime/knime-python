@@ -422,7 +422,7 @@ def create_storage_for_struct_dict_encoded_array(
         else:
             entries_array = pa.array(entries, type=value_type)
 
-    mask_array = pa.array(mask)
+    mask_array = pa.array(mask, type=pa.bool_())
     if key_type is None:
         key_type = pa.uint64()
     keys_array = pa.array(keys, type=key_type)

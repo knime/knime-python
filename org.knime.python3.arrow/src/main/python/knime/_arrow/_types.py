@@ -198,7 +198,8 @@ def get_struct_arrays(arrays, inner_fns, dtype):
             [
                 not any([value.is_valid for value in values])
                 for values in zip(*struct_arrays)
-            ]
+            ],
+            type=pa.bool_(),
         ),
     )
 
