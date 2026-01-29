@@ -839,7 +839,7 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
         """
 
         if isinstance(indices, list):
-            indices = np.array(indices)
+            indices = np.array(indices, dtype=np.int64())
 
         storage = katy._to_storage_array(
             self._data
