@@ -788,6 +788,9 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
         return self._data.nbytes
 
     def isna(self):
+        if len(self) == 0:
+            return np.array([], dtype=bool)
+
         # needed for pandas ExtensionArray API
         if isinstance(self._data, pa.ChunkedArray):
             return np.concatenate(
