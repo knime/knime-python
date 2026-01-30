@@ -6,7 +6,7 @@ In der SDK ist der Error: `Cannot read the array length because "bytes" is null`
 
 Das ist das Struct Dict Encoding Array sieht so aus:
 - indices: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ... 0, 0, 0, 0, 0, 0, 0, 0, 0, null]
-- data: [null, null, null, null, null, null, null, null, null, null, ... null, null, null, null, null, null, null, null, null, null]]
+- data: [null, null, null, null, null, null, null, null, null, null, ... null, null, null, null, null, null, null, null, null, null]] ALL MISSING!
 - NOTE: Das data Array ist komplett null, aber sollte einen wert auf index 0 haben, weil darauf alle anderen indices verweisen.
 
 Carsten hat schon angebracht, dass es irgendwie mit dem batching zu tun hat.
@@ -121,3 +121,37 @@ Chunk 2 (rows 590-998):
 ### Summary
 
 The fundamental bug: **The key generator has global state across chunks, but the value dictionary (`entry_to_key`) has local state per chunk**. This creates a mismatch where indices reference keys that don't exist in the current chunk's dictionary.
+
+
+---
+
+# Manual Analysis by Marc and Benny
+
+
+## Struct Dict Encoded Arrays are re-batched in pandas 2.1.0
+
+In pandas 2.0.3 the Struct Dict Encoded Arrays stay chunked (as the orinial input into the node) when we do `kap.pandas_df_to_arrow(table.to_pandas())`:
+```
+# 1 for a single joined chunk of the primitive columns
+# 3 for the 3 chunks of the Struct Dict Encoded Columns (as they were in the input table)
+Chunks of the output columns: [1, 1, 1, 3, 1, 1, 3, 1, 1, 3, 1, 1, 3, 1, 1, 3, 1, 1, 3, 3, 3, 3, 3, 3]
+```
+Only the primitive columns are joined into a single chunk.
+
+In pandas 2.1.0 also the Struct Dict Encoded Arrays are re-batched into 1 chunks:
+```
+Chunks of the output columns: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+```
+Additional note: The call to `pandas_df_to_arrow` took noticably longer in pandas 2.1.0 (several seconds) compared to pandas 2.0.3 (instantaneous).
+
+## Table.to_batches experiments
+
+- If we force a single batch only, no chunking happens and the output is valid in both pandas versions.
+- If we force 20 batches, in pandas 2.0.3 the Struct Dict Encoded Arrays is chunked and the bug also happens for pandas 2.0.3.
+- Table.to_batches did split at the existing batch boundaries of the already chunked columns and did not re-batch to the given number of `max_chunksize`.
+
+## Open questions:
+- What are the other columns that have 3 chunks in pandas 2.0.3? We do not have this many Struct Dict Encoded Columns in the test table.
+- When does the re-batching happen in pandas 2.1.0? Why? Can we avoid it?
+- We probably need to handle Struct Dict Encoded Arrays being split into ChunkedArrays. How can we do that?
+- TODO: Integers can change to float if there are NaNs and there is no sentinel. This should be fixable now with a new pandas type.
