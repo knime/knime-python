@@ -844,6 +844,9 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
         if isinstance(indices, list):
             indices = np.array(indices, dtype=np.int64())
 
+        if len(indices) == len(self) and np.all(indices == np.arange(len(self))):
+            return self.copy()
+
         storage = katy._to_storage_array(
             self._data
         )  # decodes the data puts it in storage array

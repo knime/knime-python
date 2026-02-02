@@ -74,6 +74,7 @@ from testing_utility import (
     _generate_test_data_frame,
     _apply_to_array,
     _register_extension_types,
+    _generate_arrow_table,
 )
 
 
@@ -941,6 +942,48 @@ class PyArrowExtensionTypeTest(unittest.TestCase):
         self.assertEqual(df["Name"].iloc[4], "POINT (30 10)")
         self.assertEqual(df["Name"].iloc[5], "LINESTRING (40 20, 10 30, 35 40)")
         self.assertEqual(df["Name"].iloc[6], "LINESTRING (30 10, 10 30, 40 40)")
+
+    def test_struct_dict_encoding_with_chunks_regression(self):
+        """
+        Regression test for struct dict encoded array corruption during round-trip conversion.
+
+        Bug Context:
+        KNIME uses struct dict encoding to compress data: values are stored only on first
+        occurrence in a struct {key: uint, value: T}, with subsequent occurrences referencing
+        them by key. This creates an encoded array where keys point to indices in the data
+        array, and the data array contains actual values at those indices.
+
+        The Problem:
+        In pandas 2.1.0+, pd.concat changed and calls KnimePandasExtensionArray.take with indices
+        re-batches ChunkedArrays at different boundaries. When an already-encoded struct dict
+        array gets split incorrectly:
+        - Chunk 1 might contain data array with actual values at indices [0,1,2...]
+        - Chunk 2 gets keys [0,0,0...] referencing index 0, but chunk 2's data array has
+          null at index 0 (the actual value is in chunk 1)
+
+        This causes reads to fail with "Cannot read DataCell with empty type information"
+        because the dictionary structure is broken across chunks.
+
+        What This Test Does:
+        1. Loads structDictEncodedDataCellsWithBatches.zip which
+           - has 3 batches
+           - contains a struct dict encoded column for generic data cells
+        2. Performs arrow → pandas → arrow round-trip conversion
+        3. Asserts all columns remain equal after round-trip
+
+        This was fixed by shortcutting taking indices from the storage array in KnimePandasExtensionArray.take if
+        the indices cover the full array with the lines:
+        ```
+        if len(indices) == len(self) and np.all(indices == np.arange(len(self))):
+            return self.copy()
+        ```
+        """
+        arrow_table = _generate_arrow_table("structDictEncodedDataCellsWithBatches.zip")
+        df = kap.arrow_data_to_pandas_df(arrow_table)
+        arrow_table_2 = kap.pandas_df_to_arrow(df)
+
+        self.assertEqual(arrow_table.column(0), arrow_table_2.column(0))
+        self.assertEqual(arrow_table.column(1), arrow_table_2.column(1))
 
     def test_chunk_calculation(self):
         def _get_chunked_array_for_start_indices(chunk_start_indices):
