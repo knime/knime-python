@@ -104,6 +104,7 @@ def _integrate_row_ids(data_frame: pd.DataFrame, row_ids: str) -> pd.DataFrame:
         row_ids_series = _create_row_ids_for_auto_keep(data_frame, row_ids)
         # Prepend the index to the data_frame:
         row_ids_series.name = "<RowID>"
+        # NOTE(AP-25573) since pandas 2.1.0 pd.concat will call __getitem__ on our extension array
         return pd.concat(
             [row_ids_series.reset_index(drop=True), data_frame.reset_index(drop=True)],
             axis=1,
