@@ -870,6 +870,8 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
             taken = pa.array(taken, type=storage_type, mask=null_mask)
 
         else:
+            # TODO(AP-25592) storage.take on a ChunkedArray with an inner StructDictEncodedArray will merge
+            # the chunks without re-encoding the struct dict encoding properly
             taken = storage.take(indices)
         wrapped = katy._to_extension_array(taken, self._data.type)
 
