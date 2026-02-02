@@ -837,15 +837,6 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
         numpy.take
         api.extensions.take
         """
-        if (isinstance(indices, list) and indices == [None] * len(indices)) or (
-            isinstance(indices, np.ndarray) and (indices == None).all()
-        ):
-            return self._from_sequence(
-                [None] * len(indices),
-                storage_type=self._storage_type,
-                logical_type=self._logical_type,
-                converter=self._converter,
-            )
 
         if isinstance(indices, list):
             indices = np.array(indices)
