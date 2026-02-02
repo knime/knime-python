@@ -852,11 +852,12 @@ class KnimePandasExtensionArray(pdext.ExtensionArray):
         storage = katy._to_storage_array(
             self._data
         )  # decodes the data puts it in storage array
-        if allow_fill and fill_value is None:  # ensures the right fill value
-            fill_value = self.dtype.na_value
 
         if allow_fill:  # in this case -1's can be included in indices
             from pandas.core.algorithms import take
+
+            if fill_value is None:  # ensures the right fill value
+                fill_value = self.dtype.na_value
 
             taken = take(
                 storage, indices, fill_value=fill_value, allow_fill=allow_fill
