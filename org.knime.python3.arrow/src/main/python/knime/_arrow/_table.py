@@ -346,6 +346,8 @@ class ArrowTable(knt.Table):
         if desired_num_batches < 1:
             return data.to_batches()
         num_rows_per_batch = int(len(data) // desired_num_batches)
+        # TODO(AP-25594) this lead to re-batching of struct-dict-encoded arrays and they
+        # won't be re-encoded properly
         return data.to_batches(max_chunksize=num_rows_per_batch)
 
 
