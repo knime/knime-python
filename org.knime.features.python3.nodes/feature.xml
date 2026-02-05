@@ -2,7 +2,7 @@
 <feature
       id="org.knime.features.python3.nodes"
       label="KNIME Python Extension Development (Labs)"
-      version="5.3.3.qualifier"
+      version="5.3.4.qualifier"
       provider-name="KNIME AG, Zurich, Switzerland">
 
    <description>
@@ -728,7 +728,7 @@ propagated with or for interoperation with KNIME.
    </license>
 
    <requires>
-      <import feature="org.knime.features.core.columnar" version="5.3.0" match="greaterOrEqual"/>
+      <import feature="org.knime.features.core.columnar" version="5.3.2" match="greaterOrEqual"/>
    </requires>
 
    <plugin
