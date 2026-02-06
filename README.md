@@ -10,6 +10,10 @@ It provides nodes to write and execute Python scripts and functionality to make 
 
 _The legacy Python integrations can be found at [knime-python-legacy](https://github.com/KNIME/knime-python-legacy)._
 
+## Security
+
+For information about known security vulnerabilities and their impact, see [SECURITY-ADVISORY-CVE-2025-66293.md](SECURITY-ADVISORY-CVE-2025-66293.md).
+
 ## Content
 
 This repository contains the source code for the KNIME Python Integration.
