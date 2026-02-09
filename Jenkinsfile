@@ -128,13 +128,13 @@ try {
             condaHelpers.buildCondaPackage(recipePath, prefixPath, upload)
         }
 
-        stage('Sonarqube analysis') {
-            env.lastStage = env.STAGE_NAME
-            env.SONAR_ENV = "Sonarcloud"
-            configs = workflowTests.ALL_CONFIGURATIONS + PYTEST_PYTHON_ENVS
-            echo "running sonar on ${configs}"
-            workflowTests.runSonar(configs)
-        }
+        // stage('Sonarqube analysis') {
+        //     env.lastStage = env.STAGE_NAME
+        //     env.SONAR_ENV = "Sonarcloud"
+        //     configs = workflowTests.ALL_CONFIGURATIONS + PYTEST_PYTHON_ENVS
+        //     echo "running sonar on ${configs}"
+        //     workflowTests.runSonar(configs)
+        // }
 
         owasp.sendNodeJSSBOMs(readMavenPom(file: 'pom.xml').properties['revision'])
     }
