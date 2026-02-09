@@ -1,4 +1,4 @@
-{% set version =  "5.3.0" %}
+{% set version =  "5.3.4" %}
 
 package:
   name: knime-extension
@@ -16,7 +16,7 @@ requirements:
     - build
     - wheel
   run:
-    - python>=3.9
+    - python >=3.9
 
 build:
   noarch: python
@@ -38,7 +38,7 @@ test:
     - knime.extension.testing
     - knime_extension
   requires:
-    - pandas
+    - pandas <2.1.0
     - python-dateutil
     - pytz
     - requests
