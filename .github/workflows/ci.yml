@@ -14,7 +14,7 @@ jobs:
       contents: read
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: prefix-dev/setup-pixi@v0.9.3
         with:
           cache: true
@@ -29,7 +29,7 @@ jobs:
       run:
         working-directory: org.knime.python3.scripting.nodes/js-src
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Install Node.js
         uses: actions/setup-node@v6
         with:
