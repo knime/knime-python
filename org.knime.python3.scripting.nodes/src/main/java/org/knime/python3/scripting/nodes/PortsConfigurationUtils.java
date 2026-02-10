@@ -57,7 +57,6 @@ import org.knime.core.node.context.ports.PortsConfiguration;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortType;
 import org.knime.core.node.port.image.ImagePortObject;
-import org.knime.pixi.port.PixiInstallationProgressReporter;
 import org.knime.pixi.port.PythonEnvironmentPortObject;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
 import org.knime.python2.ports.DataTableInputPort;
@@ -90,7 +89,7 @@ public final class PortsConfigurationUtils {
         try {
             // Check if any input port is a PythonEnvironmentPortObject
             for (final PortType inType : inTypes) {
-                if (inType.equals(PythonEnvironmentPortObject.TYPE) || inType.equals(PythonEnvironmentPortObject.TYPE_OPTIONAL)) {
+                if (isPixiPort(inType)) {
                     return true;
                 }
             }
@@ -185,7 +184,7 @@ public final class PortsConfigurationUtils {
     public static OutputPort createPickledObjectOutputPort(final int outObjectSuffix) {
         return new PickledObjectOutputPort("knio.output_objects[" + outObjectSuffix + "]");
     }
-    
+
     /**
      * Extract the Python environment port object from the input port objects, if present.
      *
@@ -203,40 +202,12 @@ public final class PortsConfigurationUtils {
         }
         return null;
     }
-    
-    /**
-     * Install the Python environment port if present, with progress reporting.
-     * This should be called early in node execution to avoid installation timeout issues.
-     * Installation is thread-safe and will only happen once even if called multiple times.
-     *
-     * @param config the ports configuration
-     * @param inObjects the input port objects
-     * @param exec the execution monitor for progress reporting and cancellation
-     * @throws IOException if installation fails
-     * @throws CanceledExecutionException if the operation is canceled
-     */
-    public static void installPythonEnvironmentIfPresent(
-            final PortsConfiguration config, final PortObject[] inObjects, final ExecutionMonitor exec)
-            throws IOException, CanceledExecutionException {
+
+    public static void installPythonEnvironmentIfPresent(final PortsConfiguration config, final PortObject[] inObjects,
+        final ExecutionMonitor exec) throws IOException, CanceledExecutionException {
         final PythonEnvironmentPortObject envPort = extractPythonEnvironmentPort(config, inObjects);
         if (envPort != null) {
-            exec.setMessage("Installing Python environment...");
-            // Create simulated progress reporter that maps internal progress to node progress
-            final PixiInstallationProgressReporter progressReporter = new PixiInstallationProgressReporter() {
-                @Override
-                public void setProgress(final double fraction, final String message) {
-                    exec.setProgress(fraction, message);
-                }
-
-                @Override
-                public void checkCanceled() throws CanceledExecutionException {
-                    exec.checkCanceled();
-                }
-            };
-            
-            // Use simulated progress since we don't yet capture pixi output
-            envPort.installPixiEnvironment(exec, 
-                PixiInstallationProgressReporter.createSimulated(progressReporter));
+            PythonEnvironmentPortObject.installPythonEnvironmentWithProgress(config, inObjects, exec);
         }
     }
 }

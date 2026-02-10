@@ -193,11 +193,7 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
         for (int i = 0; i < ports.length; i++) {
             portTypes[i] = ports[i].getPortType();
         }
-        try {
-            portTypes[ports.length] = PythonEnvironmentPortObject.TYPE_OPTIONAL;
-        } catch (NoClassDefFoundError e) {
-            throw new IllegalStateException("Could not load PythonEnvironmentPortObject class", e);
-        }
+        portTypes[ports.length] = PythonEnvironmentPortObject.TYPE_OPTIONAL;
         return portTypes;
     }
 

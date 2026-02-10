@@ -338,36 +338,22 @@ public final class PythonScriptNodeModel extends NodeModel {
      *
      * @param portObject the port object (may be null if optional port is not connected)
      * @return the Python command, or null if the port is not connected or doesn't contain a valid Python executable
-     * @throws InvalidSettingsException if the Python executable path from the environment doesn't exist
+     * @throws InvalidSettingsException if the Python command cannot be obtained from the environment
      */
     private static PythonProcessProvider extractPythonCommandFromPixiPort(final PortObject portObject)
         throws InvalidSettingsException {
-        if (portObject == null) {
-            return null;
-        }
-
         try {
-            // Check if this is a PythonEnvironmentPortObject (new unified type)
-            if (portObject instanceof PythonEnvironmentPortObject) {
-                final PythonEnvironmentPortObject pythonEnvPort = (PythonEnvironmentPortObject)portObject;
-                try {
-                    // PythonEnvironmentPortObject.getPythonCommand() returns org.knime.pixi.port.PythonCommand,
-                    // but we need org.knime.python3.PythonCommand. Extract the pixi.toml path and create a new instance.
-                    final Path pixiToml = pythonEnvPort.getPixiEnvironmentPath().resolve("pixi.toml");
-                    final PythonProcessProvider pythonCommand = new PixiPythonCommand(pixiToml);
-                    LOGGER.debug("Using Python from PythonEnvironmentPortObject: " + pythonCommand);
-                    return pythonCommand;
-                } catch (IOException e) {
-                    throw new InvalidSettingsException("Failed to get Python command from environment: " + e.getMessage(), e);
-                }
+            final PythonProcessProvider pythonCommand = PythonEnvironmentPortObject.extractPythonCommand(portObject);
+            if (pythonCommand != null) {
+                LOGGER.debug("Using Python from PythonEnvironmentPortObject: " + pythonCommand);
             }
-
-
-            return null;
+            return pythonCommand;
         } catch (NoClassDefFoundError e) {
             // Environment port bundle not available - this should not happen if the port was added successfully
             LOGGER.debug("Environment port class not available", e);
             return null;
+        } catch (IOException e) {
+            throw new InvalidSettingsException("Failed to get Python command from environment: " + e.getMessage(), e);
         }
     }
 
