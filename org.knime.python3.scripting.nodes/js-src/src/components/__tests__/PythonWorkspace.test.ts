@@ -10,8 +10,6 @@ import { useSessionStatusStore, useWorkspaceStore } from "@/store";
 import PythonWorkspace from "../PythonWorkspace.vue";
 import { type ColumnSizes } from "../PythonWorkspaceHeader.vue";
 
-vi.mock("@/mock-data");
-
 type WorkspaceState = {
   headerWidths?: ColumnSizes;
   totalWidth?: number;
