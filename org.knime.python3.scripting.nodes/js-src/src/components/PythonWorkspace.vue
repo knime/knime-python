@@ -1,14 +1,18 @@
 <script setup lang="ts">
-import { type Ref, onMounted, onUnmounted, ref } from "vue";
+import { type Ref, computed, onMounted, onUnmounted, ref } from "vue";
 import { useDebounceFn, useResizeObserver } from "@vueuse/core";
 
-import { KdsButton } from "@knime/kds-components";
+import { KdsButton, KdsEmptyState } from "@knime/kds-components";
 
 import {
   getPythonInitialData,
   pythonScriptingService,
 } from "@/python-scripting-service";
-import { usePythonPreviewStatusStore, useSessionStatusStore } from "@/store";
+import {
+  usePythonPreviewStatusStore,
+  useSessionStatusStore,
+  useWorkspaceStore,
+} from "@/store";
 
 import PythonWorkspaceBody from "./PythonWorkspaceBody.vue";
 import PythonWorkspaceHeader, {
@@ -34,6 +38,10 @@ const useTotalWidth = () => {
 
   return { totalWidth, headerWidths };
 };
+
+// check workspace store for emptiness to decide whether to show the workspace or the empty state
+const workspaceStore = useWorkspaceStore();
+const isEmpty = computed(() => (workspaceStore?.workspace?.length ?? 0) === 0);
 
 const resetButtonEnabled: Ref<boolean> = ref(false);
 const pythonPreviewStatus = usePythonPreviewStatusStore();
@@ -62,7 +70,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div ref="resizeContainer" class="container">
+  <div v-if="!isEmpty" ref="resizeContainer" class="container">
     <div ref="workspaceRef" class="workspace">
       <table>
         <PythonWorkspaceHeader
@@ -87,6 +95,12 @@ onMounted(() => {
       />
     </div>
   </div>
+  <div v-else class="container-empty-state">
+    <KdsEmptyState
+      headline="No temporary values yet"
+      description="Run the Python script to display temporary values generated during execution."
+    />
+  </div>
 </template>
 
 <style scoped lang="postcss">
@@ -94,6 +108,13 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  height: 100%;
+}
+
+.container-empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   height: 100%;
 }
 

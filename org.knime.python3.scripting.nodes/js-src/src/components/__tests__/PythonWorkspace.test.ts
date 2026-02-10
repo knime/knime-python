@@ -10,6 +10,8 @@ import { useSessionStatusStore, useWorkspaceStore } from "@/store";
 import PythonWorkspace from "../PythonWorkspace.vue";
 import { type ColumnSizes } from "../PythonWorkspaceHeader.vue";
 
+vi.mock("@/mock-data");
+
 type WorkspaceState = {
   headerWidths?: ColumnSizes;
   totalWidth?: number;
@@ -17,13 +19,18 @@ type WorkspaceState = {
 };
 
 describe("PythonWorkspace", () => {
-  const doMount = async ({ props } = { props: {} }) => {
+  const defaultWorkspace = [{ name: "test", value: "test", type: "test" }];
+
+  const doMount = async (
+    { props, workspace } = { props: {}, workspace: defaultWorkspace },
+  ) => {
     vi.mocked(getScriptingService().sendToService).mockImplementation(() => {
       return Promise.resolve({
         status: "SUCCESS",
         description: "mocked execution info",
       });
     });
+    useWorkspaceStore().workspace = workspace;
     const wrapper = mount(PythonWorkspace, { props });
     await flushPromises();
     const sessionStatus = useSessionStatusStore();
@@ -102,13 +109,9 @@ describe("PythonWorkspace", () => {
 
   it("button click should reset store", async () => {
     const { resetButton } = await doMount();
-    const store = useWorkspaceStore();
-    expect(store.workspace).toBeUndefined();
-    store.workspace = [{ name: "test", value: "test", type: "test" }];
-    expect(store.workspace).toBeDefined();
     resetButton.trigger("click");
     await flushPromises();
-    expect(store.workspace).toStrictEqual([]);
+    expect(useWorkspaceStore().workspace).toStrictEqual([]);
   });
 
   it("reset button enabled if inputs are available", async () => {
