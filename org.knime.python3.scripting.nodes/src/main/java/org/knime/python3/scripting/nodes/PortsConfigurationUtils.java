@@ -48,11 +48,7 @@
  */
 package org.knime.python3.scripting.nodes;
 
-import java.io.IOException;
-
 import org.knime.core.node.BufferedDataTable;
-import org.knime.core.node.CanceledExecutionException;
-import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.context.ports.PortsConfiguration;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortType;
@@ -84,12 +80,12 @@ public final class PortsConfigurationUtils {
      * @param config the ports configuration
      * @return true if a Python environment port is present
      */
-    public static boolean hasPixiPort(final PortsConfiguration config) {
+    public static boolean hasPythonEnvironmentPort(final PortsConfiguration config) {
         final PortType[] inTypes = config.getInputPorts();
         try {
             // Check if any input port is a PythonEnvironmentPortObject
             for (final PortType inType : inTypes) {
-                if (isPixiPort(inType)) {
+                if (isPythonEnvironmentPort(inType)) {
                     return true;
                 }
             }
@@ -109,19 +105,19 @@ public final class PortsConfigurationUtils {
         final PortType[] inTypes = config.getInputPorts();
         int inTableIndex = 0;
         int inObjectIndex = 0;
-        // Count non-Pixi ports for the result array
-        int numNonPixiPorts = 0;
+        // Count non-environment ports for the result array
+        int numNonEnvironmentPorts = 0;
         for (final PortType inType : inTypes) {
-            if (!isPixiPort(inType)) {
-                numNonPixiPorts++;
+            if (!isPythonEnvironmentPort(inType)) {
+                numNonEnvironmentPorts++;
             }
         }
-        final var inPorts = new InputPort[numNonPixiPorts];
+        final var inPorts = new InputPort[numNonEnvironmentPorts];
         int portIndex = 0;
         for (int i = 0; i < inTypes.length; i++) {
             final PortType inType = inTypes[i];
-            // Skip Pixi ports - they are not InputPorts in the traditional sense
-            if (isPixiPort(inType)) {
+            // Skip Python environment ports - they are not InputPorts in the traditional sense
+            if (isPythonEnvironmentPort(inType)) {
                 continue;
             }
             final InputPort inPort;
@@ -137,7 +133,13 @@ public final class PortsConfigurationUtils {
         return inPorts;
     }
 
-    private static boolean isPixiPort(final PortType inType) {
+    /**
+     * Check if a port type is a Python environment port.
+     *
+     * @param inType the port type to check
+     * @return true if the port type is a Python environment port
+     */
+    public static boolean isPythonEnvironmentPort(final PortType inType) {
         try {
             return inType.equals(PythonEnvironmentPortObject.TYPE) || inType.equals(PythonEnvironmentPortObject.TYPE_OPTIONAL);
         } catch (NoClassDefFoundError e) {
@@ -196,18 +198,43 @@ public final class PortsConfigurationUtils {
             final PortsConfiguration config, final PortObject[] inObjects) {
         final PortType[] inTypes = config.getInputPorts();
         for (int i = 0; i < inTypes.length; i++) {
-            if (isPixiPort(inTypes[i]) && inObjects[i] instanceof PythonEnvironmentPortObject) {
+            if (isPythonEnvironmentPort(inTypes[i]) && PythonEnvironmentPortObject.isPythonEnvironmentPortObject(inObjects[i])) {
                 return (PythonEnvironmentPortObject) inObjects[i];
             }
         }
         return null;
     }
 
-    public static void installPythonEnvironmentIfPresent(final PortsConfiguration config, final PortObject[] inObjects,
+    /*public static void installPythonEnvironmentIfPresent(final PortsConfiguration config, final PortObject[] inObjects,
         final ExecutionMonitor exec) throws IOException, CanceledExecutionException {
         final PythonEnvironmentPortObject envPort = extractPythonEnvironmentPort(config, inObjects);
         if (envPort != null) {
             PythonEnvironmentPortObject.installPythonEnvironmentWithProgress(config, inObjects, exec);
         }
+    }*/
+
+    /**
+     * Filter out the Python environment port from the input port objects array.
+     * The environment port is not a data port and should not be passed to the session.
+     *
+     * @param config the ports configuration
+     * @param inObjects the input port objects
+     * @return the filtered array without the Python environment port
+     */
+    public static PortObject[] filterEnvironmentPort(final PortsConfiguration config, final PortObject[] inObjects) {
+        if (!hasPythonEnvironmentPort(config)) {
+            return inObjects;
+        }
+
+        // Find and exclude the environment port
+        final PortType[] inTypes = config.getInputPorts();
+        final PortObject[] filtered = new PortObject[inObjects.length - 1];
+        int filteredIndex = 0;
+        for (int i = 0; i < inTypes.length && i < inObjects.length; i++) {
+            if (!isPythonEnvironmentPort(inTypes[i])) {
+                filtered[filteredIndex++] = inObjects[i];
+            }
+        }
+        return filtered;
     }
 }

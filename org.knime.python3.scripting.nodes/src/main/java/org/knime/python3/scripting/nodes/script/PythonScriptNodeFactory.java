@@ -106,7 +106,7 @@ public final class PythonScriptNodeFactory extends ConfigurableNodeFactory<Pytho
             return PythonScriptNodeModel.createDnDNodeModel(urlConfig.get().getUrl());
         }
         return new PythonScriptNodeModel(createInputPorts(config), createOutputPorts(config),
-            PortsConfigurationUtils.hasPixiPort(config));
+            PortsConfigurationUtils.hasPythonEnvironmentPort(config));
     }
 
     @Override

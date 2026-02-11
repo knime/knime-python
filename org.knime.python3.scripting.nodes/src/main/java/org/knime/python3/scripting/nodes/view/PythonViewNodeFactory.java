@@ -103,7 +103,7 @@ public final class PythonViewNodeFactory extends ConfigurableNodeFactory<PythonV
     protected PythonViewNodeModel createNodeModel(final NodeCreationConfiguration creationConfig) {
         final var config = creationConfig.getPortConfig().get(); // NOSONAR
         return new PythonViewNodeModel(createInputPorts(config), createOutputPorts(config),
-            PortsConfigurationUtils.hasPixiPort(config));
+            PortsConfigurationUtils.hasPythonEnvironmentPort(config));
     }
 
     @Override

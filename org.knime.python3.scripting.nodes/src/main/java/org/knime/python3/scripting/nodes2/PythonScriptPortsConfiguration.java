@@ -55,9 +55,8 @@ import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.context.ports.PortsConfiguration;
 import org.knime.core.node.port.image.ImagePortObject;
 import org.knime.core.node.workflow.NodeContext;
-
-import org.knime.pixi.port.PythonEnvironmentPortObject;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
+import org.knime.python3.scripting.nodes.PortsConfigurationUtils;
 
 /**
  * Information about the configured ports of a Python scripting node.
@@ -96,7 +95,7 @@ public final class PythonScriptPortsConfiguration {
 
     private final boolean m_hasView;
 
-    private final boolean m_hasEnvironmentPort;
+    private final boolean m_hasPythonEnvironmentPort;
 
     /**
      * Create a new {@link PythonScriptPortsConfiguration} from the given {@link PortsConfiguration}.
@@ -111,7 +110,7 @@ public final class PythonScriptPortsConfiguration {
         final var numInTables = ArrayUtils.getLength(inPortsLocation.get(PORTGR_ID_INP_TABLE));
         final var numInObjects = ArrayUtils.getLength(inPortsLocation.get(PORTGR_ID_INP_OBJECT));
         // Check for environment port (accepts PythonEnvironmentPortObject)
-        final var hasEnvironmentPort = inPortsLocation.containsKey(PORTGR_ID_PYTHON_ENV) 
+        final var hasEnvironmentPort = inPortsLocation.containsKey(PORTGR_ID_PYTHON_ENV)
             && ArrayUtils.getLength(inPortsLocation.get(PORTGR_ID_PYTHON_ENV)) > 0;
 
         final Map<String, int[]> outPortsLocation = portsConfig.getOutputPortLocation();
@@ -151,17 +150,9 @@ public final class PythonScriptPortsConfiguration {
                 numInTables++;
             } else if (PickledObjectFileStorePortObject.TYPE.equals(portType)) {
                 numInObjects++;
+            } else if (PortsConfigurationUtils.isPythonEnvironmentPort(portType)) {
+                hasEnvironmentPort = true;
             } else {
-                // Check if it's a Python environment port
-                try {
-                    if (PythonEnvironmentPortObject.TYPE.equals(portType)
-                        || PythonEnvironmentPortObject.TYPE_OPTIONAL.equals(portType)) {
-                        hasEnvironmentPort = true;
-                        continue; // Don't count as error
-                    }
-                } catch (NoClassDefFoundError e) {
-                    // Python environment bundle not available, ignore
-                }
                 throw new IllegalStateException("Unsupported input port configured. This is an implementation error.");
             }
         }
@@ -187,14 +178,14 @@ public final class PythonScriptPortsConfiguration {
     }
 
     private PythonScriptPortsConfiguration(final int numInTables, final int numInObjects, final int numOutTables,
-        final int numOutImages, final int numOutObjects, final boolean hasView, final boolean hasEnvironmentPort) {
+        final int numOutImages, final int numOutObjects, final boolean hasView, final boolean hasPythonEnvironmentPort) {
         m_numInTables = numInTables;
         m_numInObjects = numInObjects;
         m_numOutTables = numOutTables;
         m_numOutImages = numOutImages;
         m_numOutObjects = numOutObjects;
         m_hasView = hasView;
-        m_hasEnvironmentPort = hasEnvironmentPort;
+        m_hasPythonEnvironmentPort = hasPythonEnvironmentPort;
     }
 
     /**
@@ -241,25 +232,7 @@ public final class PythonScriptPortsConfiguration {
     /**
      * @return if the node has a Python environment port (accepts PythonEnvironmentPortObject)
      */
-    public boolean hasEnvironmentPort() {
-        return m_hasEnvironmentPort;
-    }
-    
-    /**
-     * @deprecated Use {@link #hasEnvironmentPort()} instead
-     * @return if the node has a Python environment port
-     */
-    @Deprecated(since = "5.10", forRemoval = true)
-    public boolean hasPixiPort() {
-        return m_hasEnvironmentPort;
-    }
-
-    /**
-     * @deprecated Use {@link #hasEnvironmentPort()} instead
-     * @return if the node has a Python environment port
-     */
-    @Deprecated(since = "5.10", forRemoval = true)
-    public boolean hasPythonEnvPort() {
-        return m_hasEnvironmentPort;
+    public boolean hasPythonEnvironmentPort() {
+        return m_hasPythonEnvironmentPort;
     }
 }

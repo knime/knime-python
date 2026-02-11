@@ -52,7 +52,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
@@ -87,7 +86,6 @@ import org.knime.core.node.workflow.VariableType;
 import org.knime.core.node.workflow.VariableTypeRegistry;
 import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
 import org.knime.core.webui.node.dialog.scripting.ScriptingService.ConsoleText;
-import org.knime.pixi.port.PixiPythonCommand;
 import org.knime.pixi.port.PythonEnvironmentPortObject;
 import org.knime.python3.PythonProcessTerminatedException;
 import org.knime.python3.processprovider.PythonProcessProvider;
@@ -193,35 +191,25 @@ public final class PythonScriptNodeModel extends NodeModel {
         throws IOException, InterruptedException, CanceledExecutionException, KNIMEException {
 
         // Install Python environment early to avoid timeout issues during gateway connection
-        // This must happen before creating the PythonScriptingSession
-        if (m_ports.hasPixiPort()) {
-            try {
-                PortsConfigurationUtils.installPythonEnvironmentIfPresent(
-                    getPortsConfiguration(), inObjects, exec);
-            } catch (IOException | CanceledExecutionException ex) {
-                throw ex; // Re-throw as-is
-            }
+        final ExecutionMonitor restOfTheProgress;
+        if (m_ports.hasPythonEnvironmentPort()) {
+            //PortsConfigurationUtils.installPythonEnvironmentIfPresent(getPortsConfiguration(), inObjects,
+            //    exec.createSubProgress(0.2));
+            PythonEnvironmentPortObject.installPythonEnvironmentWithProgress(getPortsConfiguration(), inObjects,
+                exec.createSubProgress(0.2));
+            restOfTheProgress = exec.createSubProgress(0.8);
+        } else {
+            restOfTheProgress = exec;
         }
 
-        // Check if Pixi port is connected and use it, otherwise use configured Python command
+        // Extract Python command from environment port if connected, otherwise use configured command
         final PythonProcessProvider pythonCommand;
-        if (m_ports.hasPixiPort()) {
-            LOGGER.debug("Checking for Pixi environment port");
-            // The Pixi port is after all regular input ports
-            final int pixiPortIndex = inObjects.length - 1;
-            try {
-                final PythonProcessProvider pixiCommand = extractPythonCommandFromPixiPort(inObjects[pixiPortIndex]);
-                if (pixiCommand != null) {
-                    LOGGER.debug("Using Python from Pixi environment");
-                    pythonCommand = pixiCommand;
-                    // TODO: Consider if flow variable should take precedence over Pixi port
-                } else {
-                    LOGGER.debug("Pixi port not connected, using configured Python command");
-                    pythonCommand = ExecutableSelectionUtils.getPythonCommand(m_settings.getExecutableSelection());
-                }
-            } catch (InvalidSettingsException ex) {
-                throw new KNIMEException("Failed to extract Python command from environment port: " + ex.getMessage(), ex);
-            }
+        final PythonProcessProvider pythonCommandFromEnv = PythonEnvironmentPortObject.extractPythonCommand(
+            PortsConfigurationUtils.extractPythonEnvironmentPort(getPortsConfiguration(), inObjects));
+        if (pythonCommandFromEnv != null) {
+            LOGGER.debug("Using Python from environment port");
+            pythonCommand = pythonCommandFromEnv;
+            // TODO: Consider if flow variable should take precedence over environment port
         } else {
             pythonCommand = ExecutableSelectionUtils.getPythonCommand(m_settings.getExecutableSelection());
         }
@@ -231,24 +219,19 @@ public final class PythonScriptNodeModel extends NodeModel {
         try (final var session =
             new PythonScriptingSession(pythonCommand, consoleConsumer, new ModelFileStoreHandlerSupplier())) {
 
-            // Filter out Pixi port from inObjects - it's not a data port
-            final PortObject[] dataPortObjects;
-            if (m_ports.hasPixiPort()) {
-                // Pixi port is at the end, so exclude it
-                dataPortObjects = Arrays.copyOf(inObjects, inObjects.length - 1);
-            } else {
-                dataPortObjects = inObjects;
-            }
+            // Filter out environment port from inObjects - it's not a data port
+            final PortObject[] dataPortObjects =
+                PortsConfigurationUtils.filterEnvironmentPort(getPortsConfiguration(), inObjects);
 
-            exec.setProgress(0.0, "Setting up inputs");
+            restOfTheProgress.setProgress(0.0, "Setting up inputs");
             session.setupIO(dataPortObjects, getAvailableFlowVariables(KNOWN_FLOW_VARIABLE_TYPES).values(),
                 m_ports.getNumOutTables(), m_ports.getNumOutImages(), m_ports.getNumOutObjects(), m_hasView,
-                exec.createSubProgress(0.3));
-            exec.setProgress(0.3, "Running script");
+                restOfTheProgress.createSubProgress(0.3));
+            restOfTheProgress.setProgress(0.3, "Running script");
 
             runUserScript(session);
 
-            exec.setProgress(0.7, "Processing output");
+            restOfTheProgress.setProgress(0.7, "Processing output");
             final var outputs = session.getOutputs(exec.createSubExecutionContext(0.3));
             final var flowVars = session.getFlowVariables();
             addNewFlowVariables(flowVars);
@@ -333,29 +316,7 @@ public final class PythonScriptNodeModel extends NodeModel {
             variable.getValue(variable.getVariableType()));
     }
 
-    /**
-     * Extract the Python command from a PythonEnvironmentPortObject.
-     *
-     * @param portObject the port object (may be null if optional port is not connected)
-     * @return the Python command, or null if the port is not connected or doesn't contain a valid Python executable
-     * @throws InvalidSettingsException if the Python command cannot be obtained from the environment
-     */
-    private static PythonProcessProvider extractPythonCommandFromPixiPort(final PortObject portObject)
-        throws InvalidSettingsException {
-        try {
-            final PythonProcessProvider pythonCommand = PythonEnvironmentPortObject.extractPythonCommand(portObject);
-            if (pythonCommand != null) {
-                LOGGER.debug("Using Python from PythonEnvironmentPortObject: " + pythonCommand);
-            }
-            return pythonCommand;
-        } catch (NoClassDefFoundError e) {
-            // Environment port bundle not available - this should not happen if the port was added successfully
-            LOGGER.debug("Environment port class not available", e);
-            return null;
-        } catch (IOException e) {
-            throw new InvalidSettingsException("Failed to get Python command from environment: " + e.getMessage(), e);
-        }
-    }
+
 
     /** Get the output view from the session if the node has a view and remember the path */
     private void collectViewFromSession(final PythonScriptingSession session) throws IOException, KNIMEException {

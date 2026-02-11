@@ -560,6 +560,10 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
             if (obj instanceof PythonCommandAdapter other) {
                 return m_delegate.equals(other.m_delegate);
             }
+            // Add symmetric equality with delegate type for gateway queue cleanup
+            if (obj instanceof PythonProcessProvider) {
+                return m_delegate.equals(obj);
+            }
             return false;
         }
 

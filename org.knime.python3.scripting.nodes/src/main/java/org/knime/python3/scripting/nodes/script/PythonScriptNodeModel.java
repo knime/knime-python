@@ -66,13 +66,13 @@ import org.knime.python3.scripting.nodes.VariableNamesUtils;
  */
 final class PythonScriptNodeModel extends AbstractPythonScriptingNodeModel {
 
-    public PythonScriptNodeModel(final InputPort[] inPorts, final OutputPort[] outPorts, final boolean hasPixiPort) {
-        super(inPorts, outPorts, false, hasPixiPort, createDefaultScript(inPorts, outPorts));
+    public PythonScriptNodeModel(final InputPort[] inPorts, final OutputPort[] outPorts, final boolean hasPythonEnvironmentPort) {
+        super(inPorts, outPorts, false, hasPythonEnvironmentPort, createDefaultScript(inPorts, outPorts));
     }
 
-    PythonScriptNodeModel(final InputPort[] inPorts, final OutputPort[] outPorts, final boolean hasPixiPort,
+    PythonScriptNodeModel(final InputPort[] inPorts, final OutputPort[] outPorts, final boolean hasPythonEnvironmentPort,
         final String defaultScript) {
-        super(inPorts, outPorts, false, hasPixiPort, defaultScript);
+        super(inPorts, outPorts, false, hasPythonEnvironmentPort, defaultScript);
 
     }
 

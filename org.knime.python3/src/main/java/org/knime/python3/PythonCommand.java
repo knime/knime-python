@@ -64,14 +64,14 @@ import org.knime.python3.processprovider.PythonProcessProvider;
  * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
  * @deprecated Use {@link PythonProcessProvider} instead. This interface is kept for backward compatibility.
  */
-@Deprecated(since = "5.10")
+@Deprecated(since = "5.11", forRemoval = true)
 public interface PythonCommand extends PythonProcessProvider {
 
     /**
      * @return A {@link ProcessBuilder} that can be used to parameterize and start the Python process represented by
      *         this command instance.
      */
-    @Deprecated
+    @Deprecated(since = "5.11", forRemoval = true)
     @Override
     ProcessBuilder createProcessBuilder();
 
@@ -79,19 +79,19 @@ public interface PythonCommand extends PythonProcessProvider {
      * @return The path to the Python executable. Should only be used to gather information about the Python environment
      *         without running the Python executable. Use {@link #createProcessBuilder()} to start Python processes.
      */
-    @Deprecated
+    @Deprecated(since = "5.11", forRemoval = true)
     @Override
     Path getPythonExecutablePath();
 
-    @Deprecated
+    @Deprecated(since = "5.11", forRemoval = true)
     @Override
     int hashCode();
 
-    @Deprecated
+    @Deprecated(since = "5.11", forRemoval = true)
     @Override
     boolean equals(Object obj);
 
-    @Deprecated
+    @Deprecated(since = "5.11", forRemoval = true)
     @Override
     String toString();
 }

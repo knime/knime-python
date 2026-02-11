@@ -127,7 +127,14 @@ public final class Python3ScriptingPreferences {
      * @return The {@link PythonProcessProvider} for the installed bundled environment.
      */
     public static BundledPythonCommand getBundledPythonCommand() {
-        return (BundledPythonCommand)getBundledCondaEnvironmentConfig().getPythonCommand();
+        final var pythonCommand = getBundledCondaEnvironmentConfig().getPythonCommand();
+        if (!(pythonCommand instanceof BundledPythonCommand)) {
+            throw new IllegalStateException(
+                "Bundled Python environment '" + BUNDLED_PYTHON_ENV_ID
+                    + "' does not provide a BundledPythonCommand (got: "
+                    + (pythonCommand == null ? "null" : pythonCommand.getClass().getName()) + ")");
+        }
+        return (BundledPythonCommand)pythonCommand;
     }
 
     private static BundledCondaEnvironmentConfig getBundledCondaEnvironmentConfig() {

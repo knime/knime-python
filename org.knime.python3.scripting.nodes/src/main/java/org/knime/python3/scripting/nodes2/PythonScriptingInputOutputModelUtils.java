@@ -132,8 +132,8 @@ final class PythonScriptingInputOutputModelUtils {
         for (int i = 0; i < inputPorts.length; i++) {
             final var type = inputPorts[i].portType();
             
-            // Skip Pixi environment ports - they are not data ports
-            if (isPixiEnvironmentPort(type)) {
+            // Skip Python environment ports - they are not data ports
+            if (isPythonEnvironmentPort(type)) {
                 LOGGER.debugWithFormat("Skipping environment port at index %d (type: %s) - not exposed to Python script", i, type.getName());
                 continue;
             }
@@ -215,15 +215,15 @@ final class PythonScriptingInputOutputModelUtils {
         return !portType.acceptsPortObjectClass(FlowVariablePortObject.class);
     }
 
-    private static boolean isPixiEnvironmentPort(final PortType portType) {
+    private static boolean isPythonEnvironmentPort(final PortType portType) {
         try {
             final boolean isPythonEnvPort = portType.acceptsPortObjectClass(PythonEnvironmentPortObject.class);
             LOGGER.debugWithFormat("Checking if port type '%s' is environment port: %s",
                 portType.getName(), isPythonEnvPort);
             return isPythonEnvPort;
         } catch (NoClassDefFoundError e) {
-            // Pixi nodes bundle not available
-            LOGGER.debugWithFormat("Pixi nodes bundle not available for port type '%s'", portType.getName());
+            // Python environment bundle not available
+            LOGGER.debugWithFormat("Python environment bundle not available for port type '%s'", portType.getName());
             return false;
         }
     }

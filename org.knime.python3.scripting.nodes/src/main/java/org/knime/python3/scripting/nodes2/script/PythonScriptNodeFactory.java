@@ -127,7 +127,6 @@ public final class PythonScriptNodeFactory extends ConfigurableNodeFactory<Pytho
         
         // Add Python environment port
         try {
-            final Class<?> pythonEnvClass = PythonEnvironmentPortObject.class;
             b.addOptionalInputPortGroup(PORTGR_ID_PYTHON_ENV, PythonEnvironmentPortObject.TYPE_OPTIONAL);
             LOGGER.debug("Successfully added Python environment port");
         } catch (NoClassDefFoundError e) {
