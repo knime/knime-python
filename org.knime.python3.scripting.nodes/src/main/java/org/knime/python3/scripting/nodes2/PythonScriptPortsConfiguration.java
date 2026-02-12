@@ -103,7 +103,8 @@ public final class PythonScriptPortsConfiguration {
      * @param portsConfig
      * @return a new {@link PythonScriptPortsConfiguration}
      */
-    static PythonScriptPortsConfiguration fromPortsConfiguration(final PortsConfiguration portsConfig, final boolean hasView) {
+    static PythonScriptPortsConfiguration fromPortsConfiguration(final PortsConfiguration portsConfig,
+        final boolean hasView) {
         // Get the number of different output ports from the ports configuration (ArrayUtils#getLength handles null)
 
         final Map<String, int[]> inPortsLocation = portsConfig.getInputPortLocation();
@@ -117,7 +118,8 @@ public final class PythonScriptPortsConfiguration {
         final var numOutTables = ArrayUtils.getLength(outPortsLocation.get(PORTGR_ID_OUT_TABLE));
         final var numOutImages = ArrayUtils.getLength(outPortsLocation.get(PORTGR_ID_OUT_IMAGE));
         final var numOutObjects = ArrayUtils.getLength(outPortsLocation.get(PORTGR_ID_OUT_OBJECT));
-        return new PythonScriptPortsConfiguration(numInTables, numInObjects, numOutTables, numOutImages, numOutObjects, hasView, hasEnvironmentPort);
+        return new PythonScriptPortsConfiguration(numInTables, numInObjects, numOutTables, numOutImages, numOutObjects,
+            hasView, hasEnvironmentPort);
     }
 
     /**
@@ -174,11 +176,13 @@ public final class PythonScriptPortsConfiguration {
         }
 
         var hasView = nodeContainer.getNrViews() > 0;
-        return new PythonScriptPortsConfiguration(numInTables, numInObjects, numOutTables, numOutImages, numOutObjects, hasView, hasEnvironmentPort);
+        return new PythonScriptPortsConfiguration(numInTables, numInObjects, numOutTables, numOutImages, numOutObjects,
+            hasView, hasEnvironmentPort);
     }
 
     private PythonScriptPortsConfiguration(final int numInTables, final int numInObjects, final int numOutTables,
-        final int numOutImages, final int numOutObjects, final boolean hasView, final boolean hasPythonEnvironmentPort) {
+        final int numOutImages, final int numOutObjects, final boolean hasView,
+        final boolean hasPythonEnvironmentPort) {
         m_numInTables = numInTables;
         m_numInObjects = numInObjects;
         m_numOutTables = numOutTables;
@@ -229,6 +233,7 @@ public final class PythonScriptPortsConfiguration {
     public boolean hasView() {
         return m_hasView;
     }
+
     /**
      * @return if the node has a Python environment port (accepts PythonEnvironmentPortObject)
      */
