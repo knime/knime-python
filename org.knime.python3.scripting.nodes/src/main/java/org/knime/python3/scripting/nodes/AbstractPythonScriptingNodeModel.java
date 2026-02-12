@@ -82,8 +82,6 @@ import org.knime.core.util.PathUtils;
 import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
 import org.knime.core.webui.node.view.NodeView;
 import org.knime.externalprocessprovider.ExternalProcessProvider;
-import org.knime.pixi.port.PixiPythonCommand;
-import org.knime.pixi.port.PythonEnvironmentPortObject;
 import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonModuleSpec;
 import org.knime.python2.PythonVersion;
@@ -158,8 +156,6 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
 
     private final boolean m_hasView;
 
-    private final boolean m_hasPythonEnvironmentPort;
-
     private String m_script;
 
     private final PythonCommandConfig m_command = createCommandConfig();
@@ -170,31 +166,17 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
         new AsynchronousCloseableTracker<>(t -> LOGGER.debug("Kernel shutdown failed.", t));
 
     protected AbstractPythonScriptingNodeModel(final InputPort[] inPorts, final OutputPort[] outPorts,
-        final boolean hasView, final boolean hasPythonEnvironmentPort, final String defaultScript) {
-        super(toPortTypes(inPorts, hasPythonEnvironmentPort), toPortTypes(outPorts));
+        final boolean hasView, final String defaultScript) {
+        super(toPortTypes(inPorts), toPortTypes(outPorts));
         m_inPorts = inPorts;
         m_outPorts = outPorts;
         m_hasView = hasView;
-        m_hasPythonEnvironmentPort = hasPythonEnvironmentPort;
         m_view = Optional.empty();
         m_script = defaultScript;
     }
 
     private static final PortType[] toPortTypes(final Port[] ports) {
         return Arrays.stream(ports).map(Port::getPortType).toArray(PortType[]::new);
-    }
-
-    private static final PortType[] toPortTypes(final Port[] ports, final boolean hasPythonEnvironmentPort) {
-        if (!hasPythonEnvironmentPort) {
-            return toPortTypes(ports);
-        }
-        // Add the optional Python environment port at the end of the input ports
-        final PortType[] portTypes = new PortType[ports.length + 1];
-        for (int i = 0; i < ports.length; i++) {
-            portTypes[i] = ports[i].getPortType();
-        }
-        portTypes[ports.length] = PythonEnvironmentPortObject.TYPE_OPTIONAL;
-        return portTypes;
     }
 
     @Override
@@ -217,9 +199,7 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
 
     @Override
     protected PortObjectSpec[] configure(final PortObjectSpec[] inSpecs) throws InvalidSettingsException {
-        // The Python environment port (if present) is at the end of the input specs
-        final int numRegularPorts = m_inPorts.length;
-        for (int i = 0; i < numRegularPorts; i++) {
+        for (int i = 0; i < m_inPorts.length; i++) {
             m_inPorts[i].configure(inSpecs[i]);
         }
         return null; // NOSONAR Conforms to KNIME API.
@@ -227,21 +207,6 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
 
     @Override
     protected PortObject[] execute(final PortObject[] inObjects, final ExecutionContext exec) throws Exception {
-        // Extract Python command from environment port if present
-        final PythonCommand pythonCommandFromEnv;
-        if (m_hasPythonEnvironmentPort) {
-            try {
-                final ExternalProcessProvider pythonProvider = PythonEnvironmentPortObject.extractPythonCommand(
-                    PortsConfigurationUtils.extractPythonEnvironmentPort(getPortsConfiguration(), inObjects));
-                pythonCommandFromEnv = pythonProvider != null ? new LegacyPythonCommand(pythonProvider) : null;
-            } catch (NoClassDefFoundError e) {
-                LOGGER.debug("Environment port class not available", e);
-                pythonCommandFromEnv = null;
-            }
-        } else {
-            pythonCommandFromEnv = null;
-        }
-
         double inWeight = 0d;
         final Set<PythonModuleSpec> requiredAdditionalModules = new HashSet<>();
         for (int i = 0; i < m_inPorts.length; i++) {
@@ -253,8 +218,7 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
 
         final var cancelable = new PythonExecutionMonitorCancelable(exec);
         try (final PythonKernel kernel =
-            getNextKernelFromQueue(requiredAdditionalModules, Collections.emptySet(), cancelable,
-                pythonCommandFromEnv)) {
+            getNextKernelFromQueue(requiredAdditionalModules, Collections.emptySet(), cancelable)) {
             final Collection<FlowVariable> inFlowVariables =
                 getAvailableFlowVariables(Python3KernelBackend.getCompatibleFlowVariableTypes()).values();
             kernel.putFlowVariables(null, inFlowVariables);
@@ -389,19 +353,7 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
     protected PythonKernel getNextKernelFromQueue(final Set<PythonModuleSpec> requiredAdditionalModules,
         final Set<PythonModuleSpec> optionalAdditionalModules, final PythonCancelable cancelable)
         throws PythonCanceledExecutionException, PythonIOException {
-        return getNextKernelFromQueue(requiredAdditionalModules, optionalAdditionalModules, cancelable, null);
-    }
-
-    protected PythonKernel getNextKernelFromQueue(final Set<PythonModuleSpec> requiredAdditionalModules,
-        final Set<PythonModuleSpec> optionalAdditionalModules, final PythonCancelable cancelable,
-        final PythonCommand pythonCommandFromEnv)
-        throws PythonCanceledExecutionException, PythonIOException {
-        // Use Python command from environment port if available
-        // TODO: We might want to consider flow variables in addition to the environment port in the future
-        final PythonCommand commandToUse =
-            pythonCommandFromEnv != null ? pythonCommandFromEnv : m_command.getCommand();
-
-        return PythonKernelQueue.getNextKernel(commandToUse, PythonKernelBackendType.PYTHON3,
+        return PythonKernelQueue.getNextKernel(m_command.getCommand(), PythonKernelBackendType.PYTHON3,
             requiredAdditionalModules, optionalAdditionalModules, new PythonKernelOptions(), cancelable);
     }
 
