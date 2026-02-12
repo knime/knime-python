@@ -107,7 +107,7 @@ final class BundledCondaEnvironmentConfig extends AbstractPythonEnvironmentConfi
     }
 
     @Override
-    public ExternalProcessProvider getPythonCommand() {
+    public BundledPythonCommand getPythonCommand() {
         final var condaEnv = CondaEnvironmentRegistry.getEnvironment(m_bundledCondaEnvironment.getStringValue());
         if (condaEnv == null) {
             final var errorMsg = "You have selected the 'Bundled' option in KNIME Python preferences, "
