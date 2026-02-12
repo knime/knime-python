@@ -51,13 +51,13 @@ package org.knime.python3.scripting.nodes2.view;
 import static org.knime.python3.scripting.nodes2.PythonScriptPortsConfiguration.PORTGR_ID_INP_OBJECT;
 import static org.knime.python3.scripting.nodes2.PythonScriptPortsConfiguration.PORTGR_ID_INP_TABLE;
 import static org.knime.python3.scripting.nodes2.PythonScriptPortsConfiguration.PORTGR_ID_OUT_IMAGE;
+import static org.knime.python3.scripting.nodes2.PythonScriptPortsConfiguration.PORTGR_ID_PYTHON_ENV;
 
 import java.util.Optional;
 
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.ConfigurableNodeFactory;
 import org.knime.core.node.NodeDialogPane;
-import org.knime.core.node.NodeLogger;
 import org.knime.core.node.context.NodeCreationConfiguration;
 import org.knime.core.node.port.PortType;
 import org.knime.core.node.port.image.ImagePortObject;
@@ -80,10 +80,6 @@ import org.knime.python3.views.HtmlFileNodeView;
 @SuppressWarnings("restriction") // the UIExtension API is still restricted
 public class PythonViewNodeFactory extends ConfigurableNodeFactory<PythonScriptNodeModel>
     implements NodeDialogFactory, NodeViewFactory<PythonScriptNodeModel> {
-
-    private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonViewNodeFactory.class);
-
-    private static final String PORTGR_ID_PYTHON_ENV = "Python environment";
 
     @Override
     public NodeDialog createNodeDialog() {
@@ -133,15 +129,10 @@ public class PythonViewNodeFactory extends ConfigurableNodeFactory<PythonScriptN
         b.addExtendableInputPortGroup(PORTGR_ID_INP_OBJECT, PickledObjectFileStorePortObject.TYPE);
         b.addExtendableInputPortGroupWithDefault(PORTGR_ID_INP_TABLE, new PortType[0],
             new PortType[]{BufferedDataTable.TYPE}, BufferedDataTable.TYPE);
-        
+
         // Add Python environment port
-        try {
-            b.addOptionalInputPortGroup(PORTGR_ID_PYTHON_ENV, PythonEnvironmentPortObject.TYPE_OPTIONAL);
-            LOGGER.debug("Successfully added Python environment port");
-        } catch (NoClassDefFoundError e) {
-            LOGGER.debug("PythonEnvironmentPortObject not available: " + e.getMessage());
-        }
-        
+        b.addOptionalInputPortGroup(PORTGR_ID_PYTHON_ENV, PythonEnvironmentPortObject.TYPE_OPTIONAL);
+
         b.addOptionalOutputPortGroup(PORTGR_ID_OUT_IMAGE, ImagePortObject.TYPE);
         return Optional.of(b);
     }
