@@ -53,7 +53,6 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
@@ -78,7 +77,7 @@ import org.knime.core.webui.node.dialog.scripting.CodeGenerationRequest;
 import org.knime.core.webui.node.dialog.scripting.InputOutputModel;
 import org.knime.core.webui.node.dialog.scripting.ScriptingService;
 import org.knime.externalprocessprovider.ExternalProcessProvider;
-import org.knime.pixi.port.PythonEnvironmentPortObject;
+import org.knime.python3.scripting.nodes.PortsConfigurationUtils;
 import org.knime.python3.scripting.nodes2.PythonScriptingService.ExecutableOption.ExecutableOptionType;
 import org.knime.python3.scripting.nodes2.PythonScriptingSession.ExecutionInfo;
 import org.knime.python3.scripting.nodes2.PythonScriptingSession.ExecutionStatus;
@@ -257,31 +256,23 @@ final class PythonScriptingService extends ScriptingService {
             PortObject[] dataPortObjects = inputData; // By default, all inputs are data ports
 
             if (m_ports.hasPythonEnvironmentPort() && inputData != null && inputData.length > 0) {
-                try {
-                    // Environment port is always the last port when present
-                    final PortObject lastPort = inputData[inputData.length - 1];
-                    pythonCommand = PythonEnvironmentPortObject.extractPythonCommand(lastPort);
-                    if (pythonCommand != null) {
-                        LOGGER.debug("Using Python environment from connected port for interactive session");
-                        // Filter out environment port from data ports (it's the last one)
-                        dataPortObjects = Arrays.copyOf(inputData, inputData.length - 1);
-                    }
-                } catch (Exception e) {
-                    LOGGER.warn("Failed to extract Python command from environment port: " + e.getMessage());
-                }
-            }
-
-            // Fall back to user selection if no environment port or extraction failed
-            if (pythonCommand == null) {
+                // TODO only log about environment installation if it actually needs to be installed
+                addConsoleOutputEvent(
+                    new ConsoleText("Installing Python environment from environment port...\n", false));
+                var envPort = PortsConfigurationUtils.extractPythonEnvironmentPort(inputData);
+                envPort.installPythonEnvironmentWithProgress(new ExecutionMonitor()); // Do not report the progress
+                addConsoleOutputEvent(
+                    new ConsoleText("Successfully installed Python environment from environment port.\n", false));
+                pythonCommand = PortsConfigurationUtils.extractPythonEnvironmentPort(inputData).getPythonCommand();
+            } else {
                 pythonCommand = ExecutableSelectionUtils.getPythonCommand(getExecutableOption(m_executableSelection));
             }
 
             // TODO report the progress of converting the tables using the ExecutionMonitor?
             m_interactiveSession = new PythonScriptingSession(pythonCommand,
                 PythonScriptingService.this::addConsoleOutputEvent, new DialogFileStoreHandlerSupplier());
-            m_interactiveSession.setupIO(dataPortObjects, getSupportedFlowVariables(),
-                m_ports.getNumOutTables(), m_ports.getNumOutImages(), m_ports.getNumOutObjects(), m_hasView,
-                new ExecutionMonitor());
+            m_interactiveSession.setupIO(dataPortObjects, getSupportedFlowVariables(), m_ports.getNumOutTables(),
+                m_ports.getNumOutImages(), m_ports.getNumOutObjects(), m_hasView, new ExecutionMonitor());
         }
 
         private synchronized void executeScriptInternal(final String script, final boolean newSession,
@@ -289,7 +280,18 @@ final class PythonScriptingService extends ScriptingService {
             try {
                 // Restart the session if necessary
                 if (m_interactiveSession == null || newSession) {
-                    startNewInteractiveSession();
+                    try {
+                        startNewInteractiveSession();
+                    } catch (IOException | InterruptedException | CanceledExecutionException ex) {
+                        // TODO cleanup
+                        if (ex instanceof InterruptedException) {
+                            Thread.currentThread().interrupt(); // Re-interrupt
+                        }
+                        var message = "Failed to start interactive Python session: " + ex.getMessage();
+                        LOGGER.error(message, ex);
+                        sendExecutionFinishedEvent(new ExecutionInfo(ExecutionStatus.FATAL_ERROR, message));
+                        return;
+                    }
                 }
 
                 // Run the script
@@ -528,5 +530,4 @@ final class PythonScriptingService extends ScriptingService {
             }
         }
     }
-
 }

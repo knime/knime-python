@@ -87,7 +87,6 @@ import org.knime.core.node.workflow.VariableTypeRegistry;
 import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
 import org.knime.core.webui.node.dialog.scripting.ScriptingService.ConsoleText;
 import org.knime.externalprocessprovider.ExternalProcessProvider;
-import org.knime.pixi.port.PythonEnvironmentPortObject;
 import org.knime.python3.PythonProcessTerminatedException;
 import org.knime.python3.scripting.nodes.PortsConfigurationUtils;
 import org.knime.python3.scripting.nodes2.ConsoleOutputUtils.ConsoleOutputStorage;
@@ -120,8 +119,6 @@ public final class PythonScriptNodeModel extends NodeModel {
 
     private final PythonScriptPortsConfiguration m_ports;
 
-    private final PortsConfiguration m_portsConfiguration;
-
     private final AsynchronousCloseableTracker<IOException> m_sessionShutdownTracker =
         new AsynchronousCloseableTracker<>(t -> LOGGER.debug("Kernel shutdown failed.", t));
 
@@ -151,17 +148,9 @@ public final class PythonScriptNodeModel extends NodeModel {
     public PythonScriptNodeModel(final PortsConfiguration portsConfiguration, final boolean hasView) {
         super(portsConfiguration.getInputPorts(), portsConfiguration.getOutputPorts());
         m_hasView = hasView;
-        m_portsConfiguration = portsConfiguration;
         m_ports = PythonScriptPortsConfiguration.fromPortsConfiguration(portsConfiguration, hasView);
         m_settings = new PythonScriptNodeSettings(m_ports);
         m_view = Optional.empty();
-    }
-
-    /**
-     * @return the ports configuration
-     */
-    private PortsConfiguration getPortsConfiguration() {
-        return m_portsConfiguration;
     }
 
     /**
@@ -189,30 +178,21 @@ public final class PythonScriptNodeModel extends NodeModel {
     @Override
     protected PortObject[] execute(final PortObject[] inObjects, final ExecutionContext exec)
         throws IOException, InterruptedException, CanceledExecutionException, KNIMEException {
+        var pythonEnvironmentPort = PortsConfigurationUtils.extractPythonEnvironmentPort(inObjects);
 
         // Install Python environment early to avoid timeout issues during gateway connection
         final ExecutionMonitor remainingProgress;
+        final ExternalProcessProvider pythonCommand;
         if (m_ports.hasPythonEnvironmentPort()) {
-            //PortsConfigurationUtils.installPythonEnvironmentIfPresent(getPortsConfiguration(), inObjects,
-            //    exec.createSubProgress(0.2));
-            PythonEnvironmentPortObject.installPythonEnvironmentWithProgress(getPortsConfiguration(), inObjects,
-                exec.createSubProgress(0.2));
+            pythonEnvironmentPort.installPythonEnvironmentWithProgress(exec.createSubProgress(0.2));
+            pythonCommand = pythonEnvironmentPort.getPythonCommand();
             remainingProgress = exec.createSubProgress(0.8);
         } else {
+            // No environment port, just use the configured command and use the whole progress for the execution
             remainingProgress = exec;
-        }
-
-        // Extract Python command from environment port if connected, otherwise use configured command
-        final ExternalProcessProvider pythonCommand;
-        final ExternalProcessProvider pythonCommandFromEnv = PythonEnvironmentPortObject.extractPythonCommand(
-            PortsConfigurationUtils.extractPythonEnvironmentPort(getPortsConfiguration(), inObjects));
-        if (pythonCommandFromEnv != null) {
-            LOGGER.debug("Using Python from environment port");
-            pythonCommand = pythonCommandFromEnv;
-            // TODO: Consider if flow variable should take precedence over environment port
-        } else {
             pythonCommand = ExecutableSelectionUtils.getPythonCommand(m_settings.getExecutableSelection());
         }
+
         m_consoleOutputStorage = null;
 
         final var consoleConsumer = ConsoleOutputUtils.createConsoleConsumer();
@@ -220,8 +200,12 @@ public final class PythonScriptNodeModel extends NodeModel {
             new PythonScriptingSession(pythonCommand, consoleConsumer, new ModelFileStoreHandlerSupplier())) {
 
             // Filter out environment port from inObjects - it's not a data port
-            final PortObject[] dataPortObjects =
-                PortsConfigurationUtils.filterEnvironmentPort(getPortsConfiguration(), inObjects);
+            final PortObject[] dataPortObjects;
+            if (m_ports.hasPythonEnvironmentPort()) {
+                dataPortObjects = PortsConfigurationUtils.filterEnvironmentPort(inObjects);
+            } else {
+                dataPortObjects = inObjects;
+            }
 
             remainingProgress.setProgress(0.0, "Setting up inputs");
             session.setupIO(dataPortObjects, getAvailableFlowVariables(KNOWN_FLOW_VARIABLE_TYPES).values(),
@@ -315,8 +299,6 @@ public final class PythonScriptNodeModel extends NodeModel {
         pushFlowVariable(variable.getName(), (VariableType)variable.getVariableType(),
             variable.getValue(variable.getVariableType()));
     }
-
-
 
     /** Get the output view from the session if the node has a view and remember the path */
     private void collectViewFromSession(final PythonScriptingSession session) throws IOException, KNIMEException {

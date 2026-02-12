@@ -190,19 +190,18 @@ public final class PortsConfigurationUtils {
     /**
      * Extract the Python environment port object from the input port objects, if present.
      *
-     * @param config the ports configuration
      * @param inObjects the input port objects
      * @return the Python environment port object, or null if not present
+     * @throws IllegalArgumentException if a Python environment port is expected but not found
      */
-    public static PythonEnvironmentPortObject extractPythonEnvironmentPort(
-            final PortsConfiguration config, final PortObject[] inObjects) {
-        final PortType[] inTypes = config.getInputPorts();
-        for (int i = 0; i < inTypes.length; i++) {
-            if (isPythonEnvironmentPort(inTypes[i]) && PythonEnvironmentPortObject.isPythonEnvironmentPortObject(inObjects[i])) {
-                return (PythonEnvironmentPortObject) inObjects[i];
+    public static PythonEnvironmentPortObject extractPythonEnvironmentPort(final PortObject[] inObjects) {
+        for (final PortObject inObject : inObjects) {
+            if (inObject instanceof PythonEnvironmentPortObject envPort) {
+                return envPort;
             }
         }
-        return null;
+        throw new IllegalArgumentException(
+            "Expected a Python environment port object in the input ports, but none was found.");
     }
 
     /*public static void installPythonEnvironmentIfPresent(final PortsConfiguration config, final PortObject[] inObjects,
@@ -217,21 +216,15 @@ public final class PortsConfigurationUtils {
      * Filter out the Python environment port from the input port objects array.
      * The environment port is not a data port and should not be passed to the session.
      *
-     * @param config the ports configuration
      * @param inObjects the input port objects
      * @return the filtered array without the Python environment port
      */
-    public static PortObject[] filterEnvironmentPort(final PortsConfiguration config, final PortObject[] inObjects) {
-        if (!hasPythonEnvironmentPort(config)) {
-            return inObjects;
-        }
-
+    public static PortObject[] filterEnvironmentPort(final PortObject[] inObjects) {
         // Find and exclude the environment port
-        final PortType[] inTypes = config.getInputPorts();
         final PortObject[] filtered = new PortObject[inObjects.length - 1];
         int filteredIndex = 0;
-        for (int i = 0; i < inTypes.length && i < inObjects.length; i++) {
-            if (!isPythonEnvironmentPort(inTypes[i])) {
+        for (int i = 0; i < inObjects.length; i++) {
+            if (!(inObjects[i] instanceof PythonEnvironmentPortObject)) {
                 filtered[filteredIndex++] = inObjects[i];
             }
         }
