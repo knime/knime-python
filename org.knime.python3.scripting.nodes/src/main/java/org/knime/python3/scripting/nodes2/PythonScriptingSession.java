@@ -420,15 +420,12 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
 
     private static PythonGateway<PythonScriptingEntryPoint> createGateway(final ExternalProcessProvider pythonCommand)
         throws IOException, InterruptedException {
-        if (pythonCommand.getExecutablePath()
-            .startsWith(CondaEnvironmentIdentifier.NOT_EXECUTED_PATH_PLACEHOLDER)) {
+        if (pythonCommand.getExecutablePath().startsWith(CondaEnvironmentIdentifier.NOT_EXECUTED_PATH_PLACEHOLDER)) {
             throw new IOException(CondaEnvironmentIdentifier.NOT_EXECUTED_PATH_PLACEHOLDER);
         }
 
-        // Wrap internal PythonCommand in adapter for public API
-        final var pythonCommandAdapter = new PythonCommandAdapter(pythonCommand);
         final var gatewayDescriptionBuilder =
-            PythonGatewayDescription.builder(pythonCommandAdapter, LAUNCHER.toAbsolutePath(), PythonScriptingEntryPoint.class);
+            PythonGatewayDescription.builder(pythonCommand, LAUNCHER.toAbsolutePath(), PythonScriptingEntryPoint.class);
 
         gatewayDescriptionBuilder.withPreloaded(PythonArrowExtension.INSTANCE);
         gatewayDescriptionBuilder.withPreloaded(PythonViewsExtension.INSTANCE);
@@ -524,52 +521,5 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
 
         @Override
         void close();
-    }
-
-    /**
-     * Adapter that wraps org.knime.pixi.port.PythonCommand to implement org.knime.python3.PythonCommand.
-     * This is needed because PythonGatewayDescription.builder() requires the public API type.
-     */
-    private static final class PythonCommandAdapter implements ExternalProcessProvider {
-        private final ExternalProcessProvider m_delegate;
-
-        PythonCommandAdapter(final ExternalProcessProvider delegate) {
-            m_delegate = delegate;
-        }
-
-        @Override
-        public ProcessBuilder createProcessBuilder() {
-            return m_delegate.createProcessBuilder();
-        }
-
-        @Override
-        public Path getExecutablePath() {
-            return m_delegate.getExecutablePath();
-        }
-
-        @Override
-        public int hashCode() {
-            return m_delegate.hashCode();
-        }
-
-        @Override
-        public boolean equals(final Object obj) {
-            if (this == obj) {
-                return true;
-            }
-            if (obj instanceof PythonCommandAdapter other) {
-                return m_delegate.equals(other.m_delegate);
-            }
-            // Add symmetric equality with delegate type for gateway queue cleanup
-            if (obj instanceof ExternalProcessProvider) {
-                return m_delegate.equals(obj);
-            }
-            return false;
-        }
-
-        @Override
-        public String toString() {
-            return m_delegate.toString();
-        }
     }
 }
