@@ -51,7 +51,6 @@ package org.knime.python3.scripting.nodes.prefs;
 import org.knime.conda.envbundling.environment.CondaEnvironmentRegistry;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
-import org.knime.externalprocessprovider.ExternalProcessProvider;
 import org.knime.python3.BundledPythonCommand;
 
 /**
