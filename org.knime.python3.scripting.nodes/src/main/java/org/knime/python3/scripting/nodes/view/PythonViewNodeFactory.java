@@ -69,7 +69,6 @@ import org.knime.pixi.port.PythonEnvironmentPortObject;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
 import org.knime.python2.ports.ImageOutputPort;
 import org.knime.python2.ports.OutputPort;
-import org.knime.python3.scripting.nodes.PortsConfigurationUtils;
 import org.knime.python3.views.HtmlFileNodeView;
 
 /**
@@ -79,22 +78,12 @@ import org.knime.python3.views.HtmlFileNodeView;
 public final class PythonViewNodeFactory extends ConfigurableNodeFactory<PythonViewNodeModel>
     implements NodeViewFactory<PythonViewNodeModel> {
 
-    private static final NodeLogger LOGGER = NodeLogger.getLogger(PythonViewNodeFactory.class);
-
     @Override
     protected Optional<PortsConfigurationBuilder> createPortsConfigBuilder() {
         final var b = new PortsConfigurationBuilder();
         b.addExtendableInputPortGroup("Input object (pickled)", PickledObjectFileStorePortObject.TYPE);
         b.addExtendableInputPortGroupWithDefault("Input table", new PortType[0], new PortType[]{BufferedDataTable.TYPE},
             BufferedDataTable.TYPE);
-        try {
-            b.addOptionalInputPortGroup("Python environment", PythonEnvironmentPortObject.TYPE_OPTIONAL);
-            LOGGER.debug("Successfully added optional Python environment port");
-        } catch (NoClassDefFoundError e) {
-            LOGGER.warn("Could not add Python environment port - bundle not available: " + e.getMessage());
-        } catch (Exception e) {
-            LOGGER.error("Unexpected error adding Python environment port", e);
-        }
         b.addOptionalOutputPortGroup("Output image", ImagePortObject.TYPE);
         return Optional.of(b);
     }
@@ -102,8 +91,7 @@ public final class PythonViewNodeFactory extends ConfigurableNodeFactory<PythonV
     @Override
     protected PythonViewNodeModel createNodeModel(final NodeCreationConfiguration creationConfig) {
         final var config = creationConfig.getPortConfig().get(); // NOSONAR
-        return new PythonViewNodeModel(createInputPorts(config), createOutputPorts(config),
-            PortsConfigurationUtils.hasPythonEnvironmentPort(config));
+        return new PythonViewNodeModel(createInputPorts(config), createOutputPorts(config));
     }
 
     @Override

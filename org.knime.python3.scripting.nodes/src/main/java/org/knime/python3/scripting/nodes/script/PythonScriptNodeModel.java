@@ -66,13 +66,12 @@ import org.knime.python3.scripting.nodes.VariableNamesUtils;
  */
 final class PythonScriptNodeModel extends AbstractPythonScriptingNodeModel {
 
-    public PythonScriptNodeModel(final InputPort[] inPorts, final OutputPort[] outPorts, final boolean hasPythonEnvironmentPort) {
-        super(inPorts, outPorts, false, hasPythonEnvironmentPort, createDefaultScript(inPorts, outPorts));
+    public PythonScriptNodeModel(final InputPort[] inPorts, final OutputPort[] outPorts) {
+        super(inPorts, outPorts, false, createDefaultScript(inPorts, outPorts));
     }
 
-    PythonScriptNodeModel(final InputPort[] inPorts, final OutputPort[] outPorts, final boolean hasPythonEnvironmentPort,
-        final String defaultScript) {
-        super(inPorts, outPorts, false, hasPythonEnvironmentPort, defaultScript);
+    PythonScriptNodeModel(final InputPort[] inPorts, final OutputPort[] outPorts, final String defaultScript) {
+        super(inPorts, outPorts, false, defaultScript);
 
     }
 
@@ -82,7 +81,7 @@ final class PythonScriptNodeModel extends AbstractPythonScriptingNodeModel {
         var variableNames = VariableNamesUtils.getVariableNames(inPorts, outPorts);
         var defaultScript =
             "import knime.scripting.io as knio\n\n" + getPythonObjectReaderDefaultScript(variableNames, getPath(url));
-        return new PythonScriptNodeModel(inPorts, outPorts, false, defaultScript);
+        return new PythonScriptNodeModel(inPorts, outPorts, defaultScript);
     }
 
     private static String getPath(final URL url) {
