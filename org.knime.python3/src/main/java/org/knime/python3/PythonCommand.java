@@ -50,7 +50,7 @@ package org.knime.python3;
 
 import java.nio.file.Path;
 
-import org.knime.python3.processprovider.PythonProcessProvider;
+import org.knime.externalprocessprovider.ExternalProcessProvider;
 
 /**
  * Describes an external Python process. The process can be started via the {@link ProcessBuilder} returned by
@@ -62,10 +62,10 @@ import org.knime.python3.processprovider.PythonProcessProvider;
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
- * @deprecated Use {@link PythonProcessProvider} instead. This interface is kept for backward compatibility.
+ * @deprecated Use {@link ExternalProcessProvider} instead. This interface is kept for backward compatibility.
  */
 @Deprecated(since = "5.11", forRemoval = true)
-public interface PythonCommand extends PythonProcessProvider {
+public interface PythonCommand extends ExternalProcessProvider {
 
     /**
      * @return A {@link ProcessBuilder} that can be used to parameterize and start the Python process represented by
@@ -81,7 +81,7 @@ public interface PythonCommand extends PythonProcessProvider {
      */
     @Deprecated(since = "5.11", forRemoval = true)
     @Override
-    Path getPythonExecutablePath();
+    Path getExecutablePath();
 
     @Deprecated(since = "5.11", forRemoval = true)
     @Override

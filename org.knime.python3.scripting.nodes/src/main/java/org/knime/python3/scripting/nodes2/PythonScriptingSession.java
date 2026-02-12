@@ -85,6 +85,7 @@ import org.knime.core.util.ThreadUtils;
 import org.knime.core.util.asynclose.AsynchronousCloseable;
 import org.knime.core.util.pathresolve.ResolverUtil;
 import org.knime.core.webui.node.dialog.scripting.ScriptingService.ConsoleText;
+import org.knime.externalprocessprovider.ExternalProcessProvider;
 import org.knime.python3.Activator;
 import org.knime.python3.Python3SourceDirectory;
 import org.knime.python3.PythonEntryPointUtils;
@@ -99,7 +100,6 @@ import org.knime.python3.arrow.PythonArrowDataSink;
 import org.knime.python3.arrow.PythonArrowDataUtils;
 import org.knime.python3.arrow.PythonArrowExtension;
 import org.knime.python3.arrow.PythonArrowTableConverter;
-import org.knime.python3.processprovider.PythonProcessProvider;
 import org.knime.python3.types.PythonValueFactoryModule;
 import org.knime.python3.types.PythonValueFactoryRegistry;
 import org.knime.python3.utils.FlowVariableUtils;
@@ -155,7 +155,7 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
 
     private int m_numOutObjects;
 
-    PythonScriptingSession(final PythonProcessProvider pythonCommand, final Consumer<ConsoleText> consoleTextConsumer,
+    PythonScriptingSession(final ExternalProcessProvider pythonCommand, final Consumer<ConsoleText> consoleTextConsumer,
         final FileStoreHandlerSupplier fileStoreHandlerSupplier) throws IOException, InterruptedException {
         m_consoleTextConsumer = consoleTextConsumer;
         m_fileStoreHandlerSupplier = fileStoreHandlerSupplier;
@@ -418,9 +418,9 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
         }
     }
 
-    private static PythonGateway<PythonScriptingEntryPoint> createGateway(final PythonProcessProvider pythonCommand)
+    private static PythonGateway<PythonScriptingEntryPoint> createGateway(final ExternalProcessProvider pythonCommand)
         throws IOException, InterruptedException {
-        if (pythonCommand.getPythonExecutablePath()
+        if (pythonCommand.getExecutablePath()
             .startsWith(CondaEnvironmentIdentifier.NOT_EXECUTED_PATH_PLACEHOLDER)) {
             throw new IOException(CondaEnvironmentIdentifier.NOT_EXECUTED_PATH_PLACEHOLDER);
         }
@@ -530,10 +530,10 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
      * Adapter that wraps org.knime.pixi.port.PythonCommand to implement org.knime.python3.PythonCommand.
      * This is needed because PythonGatewayDescription.builder() requires the public API type.
      */
-    private static final class PythonCommandAdapter implements PythonProcessProvider {
-        private final PythonProcessProvider m_delegate;
+    private static final class PythonCommandAdapter implements ExternalProcessProvider {
+        private final ExternalProcessProvider m_delegate;
 
-        PythonCommandAdapter(final PythonProcessProvider delegate) {
+        PythonCommandAdapter(final ExternalProcessProvider delegate) {
             m_delegate = delegate;
         }
 
@@ -543,8 +543,8 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
         }
 
         @Override
-        public Path getPythonExecutablePath() {
-            return m_delegate.getPythonExecutablePath();
+        public Path getExecutablePath() {
+            return m_delegate.getExecutablePath();
         }
 
         @Override
@@ -561,7 +561,7 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
                 return m_delegate.equals(other.m_delegate);
             }
             // Add symmetric equality with delegate type for gateway queue cleanup
-            if (obj instanceof PythonProcessProvider) {
+            if (obj instanceof ExternalProcessProvider) {
                 return m_delegate.equals(obj);
             }
             return false;

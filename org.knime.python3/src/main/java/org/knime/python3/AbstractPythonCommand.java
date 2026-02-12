@@ -53,14 +53,15 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import org.knime.python3.processprovider.PythonProcessProvider;
+
+import org.knime.externalprocessprovider.ExternalProcessProvider;
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
  */
-abstract class AbstractPythonCommand implements PythonProcessProvider {
+abstract class AbstractPythonCommand implements ExternalProcessProvider {
 
     /** The Python command and possible arguments */
     protected final List<String> m_command;
@@ -76,7 +77,7 @@ abstract class AbstractPythonCommand implements PythonProcessProvider {
     }
 
     @Override
-    public Path getPythonExecutablePath() {
+    public Path getExecutablePath() {
         return Path.of(m_command.get(0));
     }
 

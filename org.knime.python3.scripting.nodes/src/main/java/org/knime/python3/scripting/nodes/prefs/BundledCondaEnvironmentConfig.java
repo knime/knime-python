@@ -51,8 +51,8 @@ package org.knime.python3.scripting.nodes.prefs;
 import org.knime.conda.envbundling.environment.CondaEnvironmentRegistry;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
+import org.knime.externalprocessprovider.ExternalProcessProvider;
 import org.knime.python3.BundledPythonCommand;
-import org.knime.python3.processprovider.PythonProcessProvider;
 
 /**
  * The BundledCondaEnvironmentConfig is a PythonEnvironmentConfig that points to a bundled conda environment which is
@@ -107,7 +107,7 @@ final class BundledCondaEnvironmentConfig extends AbstractPythonEnvironmentConfi
     }
 
     @Override
-    public PythonProcessProvider getPythonCommand() {
+    public ExternalProcessProvider getPythonCommand() {
         final var condaEnv = CondaEnvironmentRegistry.getEnvironment(m_bundledCondaEnvironment.getStringValue());
         if (condaEnv == null) {
             final var errorMsg = "You have selected the 'Bundled' option in KNIME Python preferences, "

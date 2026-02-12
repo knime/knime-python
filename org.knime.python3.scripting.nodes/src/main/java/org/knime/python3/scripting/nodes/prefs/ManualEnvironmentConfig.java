@@ -49,7 +49,7 @@
 package org.knime.python3.scripting.nodes.prefs;
 
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
-import org.knime.python3.processprovider.PythonProcessProvider;
+import org.knime.externalprocessprovider.ExternalProcessProvider;
 import org.knime.python3.SimplePythonCommand;
 
 /**
@@ -79,7 +79,7 @@ final class ManualEnvironmentConfig extends AbstractPythonEnvironmentConfig {
     }
 
     @Override
-    public PythonProcessProvider getPythonCommand() {
+    public ExternalProcessProvider getPythonCommand() {
         return new SimplePythonCommand(m_pythonPath.getStringValue());
     }
 

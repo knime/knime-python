@@ -81,6 +81,7 @@ import org.knime.core.node.workflow.VariableTypeRegistry;
 import org.knime.core.util.PathUtils;
 import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
 import org.knime.core.webui.node.view.NodeView;
+import org.knime.externalprocessprovider.ExternalProcessProvider;
 import org.knime.pixi.port.PixiPythonCommand;
 import org.knime.pixi.port.PythonEnvironmentPortObject;
 import org.knime.python2.PythonCommand;
@@ -103,7 +104,6 @@ import org.knime.python2.ports.InputPort;
 import org.knime.python2.ports.OutputPort;
 import org.knime.python2.ports.PickledObjectOutputPort;
 import org.knime.python2.ports.Port;
-import org.knime.python3.processprovider.PythonProcessProvider;
 import org.knime.python3.scripting.Python3KernelBackend;
 import org.knime.python3.scripting.nodes.prefs.Python3ScriptingPreferences;
 
@@ -231,7 +231,7 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
         final PythonCommand pythonCommandFromEnv;
         if (m_hasPythonEnvironmentPort) {
             try {
-                final PythonProcessProvider pythonProvider = PythonEnvironmentPortObject.extractPythonCommand(
+                final ExternalProcessProvider pythonProvider = PythonEnvironmentPortObject.extractPythonCommand(
                     PortsConfigurationUtils.extractPythonEnvironmentPort(getPortsConfiguration(), inObjects));
                 pythonCommandFromEnv = pythonProvider != null ? new LegacyPythonCommand(pythonProvider) : null;
             } catch (NoClassDefFoundError e) {
@@ -430,14 +430,14 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
     }
 
     /**
-     * Wraps a {@link PythonProcessProvider} into the legacy implementation for using it in a
+     * Wraps a {@link ExternalProcessProvider} into the legacy implementation for using it in a
      * {@link PythonKernelBackend}.
      */
     private static final class LegacyPythonCommand implements PythonCommand {
 
-        private final PythonProcessProvider m_pythonCommand;
+        private final ExternalProcessProvider m_pythonCommand;
 
-        private LegacyPythonCommand(final PythonProcessProvider pythonCommand) {
+        private LegacyPythonCommand(final ExternalProcessProvider pythonCommand) {
             m_pythonCommand = pythonCommand;
         }
 

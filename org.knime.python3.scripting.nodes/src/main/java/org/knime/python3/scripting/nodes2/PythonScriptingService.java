@@ -77,8 +77,8 @@ import org.knime.core.webui.data.DataServiceContext;
 import org.knime.core.webui.node.dialog.scripting.CodeGenerationRequest;
 import org.knime.core.webui.node.dialog.scripting.InputOutputModel;
 import org.knime.core.webui.node.dialog.scripting.ScriptingService;
+import org.knime.externalprocessprovider.ExternalProcessProvider;
 import org.knime.pixi.port.PythonEnvironmentPortObject;
-import org.knime.python3.processprovider.PythonProcessProvider;
 import org.knime.python3.scripting.nodes2.PythonScriptingService.ExecutableOption.ExecutableOptionType;
 import org.knime.python3.scripting.nodes2.PythonScriptingSession.ExecutionInfo;
 import org.knime.python3.scripting.nodes2.PythonScriptingSession.ExecutionStatus;
@@ -253,7 +253,7 @@ final class PythonScriptingService extends ScriptingService {
             final var inputData = workflowControl.getInputData();
 
             // Check if environment port is connected and extract Python command
-            PythonProcessProvider pythonCommand = null;
+            ExternalProcessProvider pythonCommand = null;
             PortObject[] dataPortObjects = inputData; // By default, all inputs are data ports
 
             if (m_ports.hasPythonEnvironmentPort() && inputData != null && inputData.length > 0) {
@@ -393,7 +393,7 @@ final class PythonScriptingService extends ScriptingService {
             var executableOption = getExecutableOption(executableSelection);
             String executablePath = null;
             if (executableOption.type != ExecutableOptionType.MISSING_VAR) {
-                executablePath = ExecutableSelectionUtils.getPythonCommand(executableOption).getPythonExecutablePath()
+                executablePath = ExecutableSelectionUtils.getPythonCommand(executableOption).getExecutablePath()
                     .toAbsolutePath().toString();
             }
             var extraPaths = PythonScriptingSession.getExtraPythonPaths().stream() //

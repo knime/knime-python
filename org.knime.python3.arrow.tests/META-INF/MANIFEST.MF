@@ -14,4 +14,4 @@ Require-Bundle: org.junit;bundle-version="[4.13.0,5.0.0)",
  org.knime.core.data.columnar;bundle-version="[5.6.0,6.0.0)",
  org.knime.python3.testing;bundle-version="[5.6.0,6.0.0)"
 Automatic-Module-Name: org.knime.python3.arrow.tests
-Import-Package: org.knime.python3.processprovider
+Import-Package: org.knime.externalprocessprovider

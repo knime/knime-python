@@ -53,6 +53,7 @@ import java.nio.file.Path;
 import java.util.Objects;
 
 import org.knime.conda.envbundling.environment.CondaEnvironmentRegistry;
+import org.knime.externalprocessprovider.ExternalProcessProvider;
 import org.knime.python3.Activator;
 import org.knime.python3.BundledPythonCommand;
 import org.knime.python3.FreshPythonGatewayFactory;
@@ -64,7 +65,6 @@ import org.knime.python3.PythonGatewayFactory.EntryPointCustomizer;
 import org.knime.python3.PythonGatewayFactory.PythonGatewayDescription;
 import org.knime.python3.arrow.Python3ArrowSourceDirectory;
 import org.knime.python3.arrow.PythonArrowExtension;
-import org.knime.python3.processprovider.PythonProcessProvider;
 import org.knime.python3.types.PythonValueFactoryModule;
 import org.knime.python3.types.PythonValueFactoryRegistry;
 import org.knime.python3.views.Python3ViewsSourceDirectory;
@@ -141,12 +141,12 @@ public final class PythonNodeGatewayFactory {
         return gateway;
     }
 
-    private static PythonProcessProvider createCommand(final String extensionId, final String environmentName) {
+    private static ExternalProcessProvider createCommand(final String extensionId, final String environmentName) {
         return PythonExtensionPreferences.getCustomPythonCommand(extensionId)//
             .orElseGet(() -> getPythonCommandForEnvironment(environmentName));
     }
 
-    private static PythonProcessProvider getPythonCommandForEnvironment(final String environmentName) {
+    private static ExternalProcessProvider getPythonCommandForEnvironment(final String environmentName) {
         final var environment = CondaEnvironmentRegistry.getEnvironment(environmentName);
         if (environment == null) {
             throw new IllegalStateException("Conda environment '" + environmentName + "' not found. "

@@ -44,4 +44,4 @@ Automatic-Module-Name: org.knime.python3.scripting.nodes
 Export-Package: org.knime.python3.scripting.nodes.prefs
 Eclipse-RegisterBuddy: org.knime.ext.py4j
 Eclipse-BundleShape: dir
-Import-Package: org.knime.python3.processprovider
+Import-Package: org.knime.externalprocessprovider

@@ -86,9 +86,9 @@ import org.knime.core.node.workflow.VariableType;
 import org.knime.core.node.workflow.VariableTypeRegistry;
 import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
 import org.knime.core.webui.node.dialog.scripting.ScriptingService.ConsoleText;
+import org.knime.externalprocessprovider.ExternalProcessProvider;
 import org.knime.pixi.port.PythonEnvironmentPortObject;
 import org.knime.python3.PythonProcessTerminatedException;
-import org.knime.python3.processprovider.PythonProcessProvider;
 import org.knime.python3.scripting.nodes.PortsConfigurationUtils;
 import org.knime.python3.scripting.nodes2.ConsoleOutputUtils.ConsoleOutputStorage;
 import org.knime.python3.scripting.nodes2.PythonScriptingSession.ExecutionInfo;
@@ -191,20 +191,20 @@ public final class PythonScriptNodeModel extends NodeModel {
         throws IOException, InterruptedException, CanceledExecutionException, KNIMEException {
 
         // Install Python environment early to avoid timeout issues during gateway connection
-        final ExecutionMonitor restOfTheProgress;
+        final ExecutionMonitor remainingProgress;
         if (m_ports.hasPythonEnvironmentPort()) {
             //PortsConfigurationUtils.installPythonEnvironmentIfPresent(getPortsConfiguration(), inObjects,
             //    exec.createSubProgress(0.2));
             PythonEnvironmentPortObject.installPythonEnvironmentWithProgress(getPortsConfiguration(), inObjects,
                 exec.createSubProgress(0.2));
-            restOfTheProgress = exec.createSubProgress(0.8);
+            remainingProgress = exec.createSubProgress(0.8);
         } else {
-            restOfTheProgress = exec;
+            remainingProgress = exec;
         }
 
         // Extract Python command from environment port if connected, otherwise use configured command
-        final PythonProcessProvider pythonCommand;
-        final PythonProcessProvider pythonCommandFromEnv = PythonEnvironmentPortObject.extractPythonCommand(
+        final ExternalProcessProvider pythonCommand;
+        final ExternalProcessProvider pythonCommandFromEnv = PythonEnvironmentPortObject.extractPythonCommand(
             PortsConfigurationUtils.extractPythonEnvironmentPort(getPortsConfiguration(), inObjects));
         if (pythonCommandFromEnv != null) {
             LOGGER.debug("Using Python from environment port");
@@ -223,15 +223,15 @@ public final class PythonScriptNodeModel extends NodeModel {
             final PortObject[] dataPortObjects =
                 PortsConfigurationUtils.filterEnvironmentPort(getPortsConfiguration(), inObjects);
 
-            restOfTheProgress.setProgress(0.0, "Setting up inputs");
+            remainingProgress.setProgress(0.0, "Setting up inputs");
             session.setupIO(dataPortObjects, getAvailableFlowVariables(KNOWN_FLOW_VARIABLE_TYPES).values(),
                 m_ports.getNumOutTables(), m_ports.getNumOutImages(), m_ports.getNumOutObjects(), m_hasView,
-                restOfTheProgress.createSubProgress(0.3));
-            restOfTheProgress.setProgress(0.3, "Running script");
+                remainingProgress.createSubProgress(0.3));
+            remainingProgress.setProgress(0.3, "Running script");
 
             runUserScript(session);
 
-            restOfTheProgress.setProgress(0.7, "Processing output");
+            remainingProgress.setProgress(0.7, "Processing output");
             final var outputs = session.getOutputs(exec.createSubExecutionContext(0.3));
             final var flowVars = session.getFlowVariables();
             addNewFlowVariables(flowVars);
