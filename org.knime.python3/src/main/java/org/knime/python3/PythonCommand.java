@@ -80,8 +80,12 @@ public interface PythonCommand extends ExternalProcessProvider {
      *         without running the Python executable. Use {@link #createProcessBuilder()} to start Python processes.
      */
     @Deprecated(since = "5.11", forRemoval = true)
+    Path getPythonExecutablePath();
+
     @Override
-    Path getExecutablePath();
+    default Path getExecutablePath() {
+        return getPythonExecutablePath();
+    }
 
     @Deprecated(since = "5.11", forRemoval = true)
     @Override
