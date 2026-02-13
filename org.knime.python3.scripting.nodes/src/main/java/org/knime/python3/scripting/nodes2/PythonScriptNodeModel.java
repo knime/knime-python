@@ -184,7 +184,7 @@ public final class PythonScriptNodeModel extends NodeModel {
         final ExecutionMonitor remainingProgress;
         final ExternalProcessProvider pythonCommand;
         if (m_ports.hasPythonEnvironmentPort()) {
-            pythonEnvironmentPort.installPythonEnvironmentWithProgress(exec.createSubProgress(0.2));
+            pythonEnvironmentPort.installPythonEnvironment(exec.createSubProgress(0.2));
             pythonCommand = pythonEnvironmentPort.getPythonCommand();
             remainingProgress = exec.createSubProgress(0.8);
         } else {

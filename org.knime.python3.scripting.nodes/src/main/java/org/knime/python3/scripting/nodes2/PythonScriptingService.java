@@ -260,7 +260,7 @@ final class PythonScriptingService extends ScriptingService {
                 addConsoleOutputEvent(
                     new ConsoleText("Installing Python environment from environment port...\n", false));
                 var envPort = PortsConfigurationUtils.extractPythonEnvironmentPort(inputData);
-                envPort.installPythonEnvironmentWithProgress(new ExecutionMonitor()); // Do not report the progress
+                envPort.installPythonEnvironment(new ExecutionMonitor()); // Do not report the progress
                 addConsoleOutputEvent(
                     new ConsoleText("Successfully installed Python environment from environment port.\n", false));
                 pythonCommand = PortsConfigurationUtils.extractPythonEnvironmentPort(inputData).getPythonCommand();
