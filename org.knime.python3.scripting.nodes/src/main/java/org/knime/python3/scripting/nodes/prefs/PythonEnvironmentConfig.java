@@ -50,7 +50,7 @@ package org.knime.python3.scripting.nodes.prefs;
 
 import org.knime.core.node.defaultnodesettings.SettingsModelBoolean;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
-import org.knime.python3.PythonCommand;
+import org.knime.externalprocessprovider.ExternalProcessProvider;
 
 /**
  * Copied from org.knime.python2.config.
@@ -63,7 +63,7 @@ interface PythonEnvironmentConfig extends PythonConfig {
     /**
      * @return The command that executes Python in the Python environment configured by this instance.
      */
-    PythonCommand getPythonCommand();
+    ExternalProcessProvider getPythonCommand();
 
     /**
      * @return If the Python environment configured by this instance is currently the default environment. Not meant for

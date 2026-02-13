@@ -52,8 +52,8 @@ import org.eclipse.core.runtime.preferences.DefaultScope;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.knime.conda.CondaEnvironmentIdentifier;
 import org.knime.conda.prefs.CondaPreferences;
+import org.knime.externalprocessprovider.ExternalProcessProvider;
 import org.knime.python3.BundledPythonCommand;
-import org.knime.python3.PythonCommand;
 
 /**
  * Convenience front-end of the preference-based configuration of the Python integration.
@@ -110,7 +110,7 @@ public final class Python3ScriptingPreferences {
     /**
      * @return The currently selected default Python command.
      */
-    public static PythonCommand getPythonCommandPreference() {
+    public static ExternalProcessProvider getPythonCommandPreference() {
         final var envType = getEnvironmentTypePreference();
         PythonEnvironmentsConfig environmentsConfig;
 
@@ -124,7 +124,7 @@ public final class Python3ScriptingPreferences {
     }
 
     /**
-     * @return The {@link PythonCommand} for the installed bundled environment.
+     * @return The {@link ExternalProcessProvider} for the installed bundled environment.
      */
     public static BundledPythonCommand getBundledPythonCommand() {
         return getBundledCondaEnvironmentConfig().getPythonCommand();

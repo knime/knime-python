@@ -56,8 +56,8 @@ import org.knime.conda.CondaEnvironmentIdentifier;
 import org.knime.conda.prefs.CondaPreferences;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
+import org.knime.externalprocessprovider.ExternalProcessProvider;
 import org.knime.python3.CondaPythonCommand;
-import org.knime.python3.PythonCommand;
 
 /**
  * Copied and modified from org.knime.python2.config.
@@ -113,7 +113,7 @@ final class CondaEnvironmentConfig extends AbstractPythonEnvironmentConfig {
     }
 
     @Override
-    public PythonCommand getPythonCommand() {
+    public ExternalProcessProvider getPythonCommand() {
         return new CondaPythonCommand(CondaPreferences.getCondaInstallationDirectory(),
             m_environmentDirectory.getStringValue());
     }

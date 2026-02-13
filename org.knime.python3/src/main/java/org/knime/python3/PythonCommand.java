@@ -50,6 +50,8 @@ package org.knime.python3;
 
 import java.nio.file.Path;
 
+import org.knime.externalprocessprovider.ExternalProcessProvider;
+
 /**
  * Describes an external Python process. The process can be started via the {@link ProcessBuilder} returned by
  * {@link #createProcessBuilder()}.
@@ -60,27 +62,40 @@ import java.nio.file.Path;
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @author Christian Dietz, KNIME GmbH, Konstanz, Germany
  * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
+ * @deprecated Use {@link ExternalProcessProvider} instead. This interface is kept for backward compatibility.
  */
-public interface PythonCommand {
+@Deprecated(since = "5.11", forRemoval = true)
+public interface PythonCommand extends ExternalProcessProvider {
 
     /**
      * @return A {@link ProcessBuilder} that can be used to parameterize and start the Python process represented by
      *         this command instance.
      */
+    @Deprecated(since = "5.11", forRemoval = true)
+    @Override
     ProcessBuilder createProcessBuilder();
 
     /**
      * @return The path to the Python executable. Should only be used to gather information about the Python environment
      *         without running the Python executable. Use {@link #createProcessBuilder()} to start Python processes.
      */
+    @Deprecated(since = "5.11", forRemoval = true)
     Path getPythonExecutablePath();
 
     @Override
+    default Path getExecutablePath() {
+        return getPythonExecutablePath();
+    }
+
+    @Deprecated(since = "5.11", forRemoval = true)
+    @Override
     int hashCode();
 
+    @Deprecated(since = "5.11", forRemoval = true)
     @Override
     boolean equals(Object obj);
 
+    @Deprecated(since = "5.11", forRemoval = true)
     @Override
     String toString();
 }

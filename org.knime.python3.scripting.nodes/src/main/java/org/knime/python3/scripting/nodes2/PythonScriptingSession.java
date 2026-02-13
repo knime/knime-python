@@ -85,9 +85,9 @@ import org.knime.core.util.ThreadUtils;
 import org.knime.core.util.asynclose.AsynchronousCloseable;
 import org.knime.core.util.pathresolve.ResolverUtil;
 import org.knime.core.webui.node.dialog.scripting.ScriptingService.ConsoleText;
+import org.knime.externalprocessprovider.ExternalProcessProvider;
 import org.knime.python3.Activator;
 import org.knime.python3.Python3SourceDirectory;
-import org.knime.python3.PythonCommand;
 import org.knime.python3.PythonEntryPointUtils;
 import org.knime.python3.PythonFileStoreUtils;
 import org.knime.python3.PythonGateway;
@@ -155,7 +155,7 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
 
     private int m_numOutObjects;
 
-    PythonScriptingSession(final PythonCommand pythonCommand, final Consumer<ConsoleText> consoleTextConsumer,
+    PythonScriptingSession(final ExternalProcessProvider pythonCommand, final Consumer<ConsoleText> consoleTextConsumer,
         final FileStoreHandlerSupplier fileStoreHandlerSupplier) throws IOException, InterruptedException {
         m_consoleTextConsumer = consoleTextConsumer;
         m_fileStoreHandlerSupplier = fileStoreHandlerSupplier;
@@ -418,10 +418,9 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
         }
     }
 
-    private static PythonGateway<PythonScriptingEntryPoint> createGateway(final PythonCommand pythonCommand)
+    private static PythonGateway<PythonScriptingEntryPoint> createGateway(final ExternalProcessProvider pythonCommand)
         throws IOException, InterruptedException {
-        if (pythonCommand.getPythonExecutablePath()
-            .startsWith(CondaEnvironmentIdentifier.NOT_EXECUTED_PATH_PLACEHOLDER)) {
+        if (pythonCommand.getExecutablePath().startsWith(CondaEnvironmentIdentifier.NOT_EXECUTED_PATH_PLACEHOLDER)) {
             throw new IOException(CondaEnvironmentIdentifier.NOT_EXECUTED_PATH_PLACEHOLDER);
         }
 

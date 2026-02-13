@@ -81,6 +81,7 @@ import org.knime.core.columnar.data.LongData.LongWriteData;
 import org.knime.core.columnar.data.StringData.StringWriteData;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.util.FileUtil;
+import org.knime.externalprocessprovider.ExternalProcessProvider;
 import org.knime.python2.kernel.PythonKernelBackendUtils;
 import org.knime.python3.DefaultPythonGateway;
 import org.knime.python3.Python3SourceDirectory;

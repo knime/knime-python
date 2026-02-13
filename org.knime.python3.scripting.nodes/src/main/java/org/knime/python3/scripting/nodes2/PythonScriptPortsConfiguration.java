@@ -56,6 +56,7 @@ import org.knime.core.node.context.ports.PortsConfiguration;
 import org.knime.core.node.port.image.ImagePortObject;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
+import org.knime.python3.scripting.nodes.PortsConfigurationUtils;
 
 /**
  * Information about the configured ports of a Python scripting node.
@@ -79,6 +80,9 @@ public final class PythonScriptPortsConfiguration {
     /** Name of the object output port */
     public static final String PORTGR_ID_OUT_OBJECT = "Output object (pickled)";
 
+    /** Name of the Python environment port (accepts PythonEnvironmentPortObject) */
+    public static final String PORTGR_ID_PYTHON_ENV = "Python environment";
+
     private final int m_numInTables;
 
     private final int m_numInObjects;
@@ -91,24 +95,31 @@ public final class PythonScriptPortsConfiguration {
 
     private final boolean m_hasView;
 
+    private final boolean m_hasPythonEnvironmentPort;
+
     /**
      * Create a new {@link PythonScriptPortsConfiguration} from the given {@link PortsConfiguration}.
      *
      * @param portsConfig
      * @return a new {@link PythonScriptPortsConfiguration}
      */
-    static PythonScriptPortsConfiguration fromPortsConfiguration(final PortsConfiguration portsConfig, final boolean hasView) {
+    static PythonScriptPortsConfiguration fromPortsConfiguration(final PortsConfiguration portsConfig,
+        final boolean hasView) {
         // Get the number of different output ports from the ports configuration (ArrayUtils#getLength handles null)
 
         final Map<String, int[]> inPortsLocation = portsConfig.getInputPortLocation();
         final var numInTables = ArrayUtils.getLength(inPortsLocation.get(PORTGR_ID_INP_TABLE));
         final var numInObjects = ArrayUtils.getLength(inPortsLocation.get(PORTGR_ID_INP_OBJECT));
+        // Check for environment port (accepts PythonEnvironmentPortObject)
+        final var hasEnvironmentPort = inPortsLocation.containsKey(PORTGR_ID_PYTHON_ENV)
+            && ArrayUtils.getLength(inPortsLocation.get(PORTGR_ID_PYTHON_ENV)) > 0;
 
         final Map<String, int[]> outPortsLocation = portsConfig.getOutputPortLocation();
         final var numOutTables = ArrayUtils.getLength(outPortsLocation.get(PORTGR_ID_OUT_TABLE));
         final var numOutImages = ArrayUtils.getLength(outPortsLocation.get(PORTGR_ID_OUT_IMAGE));
         final var numOutObjects = ArrayUtils.getLength(outPortsLocation.get(PORTGR_ID_OUT_OBJECT));
-        return new PythonScriptPortsConfiguration(numInTables, numInObjects, numOutTables, numOutImages, numOutObjects, hasView);
+        return new PythonScriptPortsConfiguration(numInTables, numInObjects, numOutTables, numOutImages, numOutObjects,
+            hasView, hasEnvironmentPort);
     }
 
     /**
@@ -134,12 +145,15 @@ public final class PythonScriptPortsConfiguration {
         // Count the number of the different ports (skip the flow var port)
         var numInTables = 0;
         var numInObjects = 0;
+        var hasEnvironmentPort = false;
         for (int i = 1; i < nodeContainer.getNrInPorts(); i++) {
             var portType = nodeContainer.getInPort(i).getPortType();
             if (BufferedDataTable.TYPE.equals(portType)) {
                 numInTables++;
             } else if (PickledObjectFileStorePortObject.TYPE.equals(portType)) {
                 numInObjects++;
+            } else if (PortsConfigurationUtils.isPythonEnvironmentPort(portType)) {
+                hasEnvironmentPort = true;
             } else {
                 throw new IllegalStateException("Unsupported input port configured. This is an implementation error.");
             }
@@ -162,17 +176,20 @@ public final class PythonScriptPortsConfiguration {
         }
 
         var hasView = nodeContainer.getNrViews() > 0;
-        return new PythonScriptPortsConfiguration(numInTables, numInObjects, numOutTables, numOutImages, numOutObjects, hasView);
+        return new PythonScriptPortsConfiguration(numInTables, numInObjects, numOutTables, numOutImages, numOutObjects,
+            hasView, hasEnvironmentPort);
     }
 
     private PythonScriptPortsConfiguration(final int numInTables, final int numInObjects, final int numOutTables,
-        final int numOutImages, final int numOutObjects, final boolean hasView) {
+        final int numOutImages, final int numOutObjects, final boolean hasView,
+        final boolean hasPythonEnvironmentPort) {
         m_numInTables = numInTables;
         m_numInObjects = numInObjects;
         m_numOutTables = numOutTables;
         m_numOutImages = numOutImages;
         m_numOutObjects = numOutObjects;
         m_hasView = hasView;
+        m_hasPythonEnvironmentPort = hasPythonEnvironmentPort;
     }
 
     /**
@@ -217,4 +234,10 @@ public final class PythonScriptPortsConfiguration {
         return m_hasView;
     }
 
+    /**
+     * @return if the node has a Python environment port (accepts PythonEnvironmentPortObject)
+     */
+    public boolean hasPythonEnvironmentPort() {
+        return m_hasPythonEnvironmentPort;
+    }
 }

@@ -50,8 +50,10 @@ package org.knime.python3.scripting.nodes;
 
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.context.ports.PortsConfiguration;
+import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortType;
 import org.knime.core.node.port.image.ImagePortObject;
+import org.knime.pixi.port.PythonEnvironmentPortObject;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
 import org.knime.python2.ports.DataTableInputPort;
 import org.knime.python2.ports.DataTableOutputPort;
@@ -60,6 +62,7 @@ import org.knime.python2.ports.InputPort;
 import org.knime.python2.ports.OutputPort;
 import org.knime.python2.ports.PickledObjectInputPort;
 import org.knime.python2.ports.PickledObjectOutputPort;
+
 
 /**
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
@@ -72,6 +75,27 @@ public final class PortsConfigurationUtils {
     }
 
     /**
+     * Check if the ports configuration contains a Python environment port.
+     *
+     * @param config the ports configuration
+     * @return true if a Python environment port is present
+     */
+    public static boolean hasPythonEnvironmentPort(final PortsConfiguration config) {
+        final PortType[] inTypes = config.getInputPorts();
+        try {
+            // Check if any input port is a PythonEnvironmentPortObject
+            for (final PortType inType : inTypes) {
+                if (isPythonEnvironmentPort(inType)) {
+                    return true;
+                }
+            }
+        } catch (NoClassDefFoundError e) {
+            // Python environment bundle is not available - this is fine since it's optional
+        }
+        return false;
+    }
+
+    /**
      * Extract the input ports from the given ports configuration.
      *
      * @param config the ports configuration
@@ -81,9 +105,21 @@ public final class PortsConfigurationUtils {
         final PortType[] inTypes = config.getInputPorts();
         int inTableIndex = 0;
         int inObjectIndex = 0;
-        final var inPorts = new InputPort[inTypes.length];
+        // Count non-environment ports for the result array
+        int numNonEnvironmentPorts = 0;
+        for (final PortType inType : inTypes) {
+            if (!isPythonEnvironmentPort(inType)) {
+                numNonEnvironmentPorts++;
+            }
+        }
+        final var inPorts = new InputPort[numNonEnvironmentPorts];
+        int portIndex = 0;
         for (int i = 0; i < inTypes.length; i++) {
             final PortType inType = inTypes[i];
+            // Skip Python environment ports - they are not InputPorts in the traditional sense
+            if (isPythonEnvironmentPort(inType)) {
+                continue;
+            }
             final InputPort inPort;
             if (BufferedDataTable.TYPE.equals(inType)) {
                 inPort = new DataTableInputPort("knio.input_tables[" + inTableIndex++ + "]");
@@ -92,9 +128,24 @@ public final class PortsConfigurationUtils {
             } else {
                 throw new IllegalStateException("Unsupported input type: " + inType.getName());
             }
-            inPorts[i] = inPort;
+            inPorts[portIndex++] = inPort;
         }
         return inPorts;
+    }
+
+    /**
+     * Check if a port type is a Python environment port.
+     *
+     * @param inType the port type to check
+     * @return true if the port type is a Python environment port
+     */
+    public static boolean isPythonEnvironmentPort(final PortType inType) {
+        try {
+            return inType.equals(PythonEnvironmentPortObject.TYPE) || inType.equals(PythonEnvironmentPortObject.TYPE_OPTIONAL);
+        } catch (NoClassDefFoundError e) {
+            // Python environment bundle is not available - this is fine since it's optional
+            return false;
+        }
     }
 
     /**
@@ -134,5 +185,49 @@ public final class PortsConfigurationUtils {
      */
     public static OutputPort createPickledObjectOutputPort(final int outObjectSuffix) {
         return new PickledObjectOutputPort("knio.output_objects[" + outObjectSuffix + "]");
+    }
+
+    /**
+     * Extract the Python environment port object from the input port objects, if present.
+     *
+     * @param inObjects the input port objects
+     * @return the Python environment port object, or null if not present
+     * @throws IllegalArgumentException if a Python environment port is expected but not found
+     */
+    public static PythonEnvironmentPortObject extractPythonEnvironmentPort(final PortObject[] inObjects) {
+        for (final PortObject inObject : inObjects) {
+            if (inObject instanceof PythonEnvironmentPortObject envPort) {
+                return envPort;
+            }
+        }
+        throw new IllegalArgumentException(
+            "Expected a Python environment port object in the input ports, but none was found.");
+    }
+
+    /*public static void installPythonEnvironmentIfPresent(final PortsConfiguration config, final PortObject[] inObjects,
+        final ExecutionMonitor exec) throws IOException, CanceledExecutionException {
+        final PythonEnvironmentPortObject envPort = extractPythonEnvironmentPort(config, inObjects);
+        if (envPort != null) {
+            PythonEnvironmentPortObject.installPythonEnvironmentWithProgress(config, inObjects, exec);
+        }
+    }*/
+
+    /**
+     * Filter out the Python environment port from the input port objects array.
+     * The environment port is not a data port and should not be passed to the session.
+     *
+     * @param inObjects the input port objects
+     * @return the filtered array without the Python environment port
+     */
+    public static PortObject[] filterEnvironmentPort(final PortObject[] inObjects) {
+        // Find and exclude the environment port
+        final PortObject[] filtered = new PortObject[inObjects.length - 1];
+        int filteredIndex = 0;
+        for (int i = 0; i < inObjects.length; i++) {
+            if (!(inObjects[i] instanceof PythonEnvironmentPortObject)) {
+                filtered[filteredIndex++] = inObjects[i];
+            }
+        }
+        return filtered;
     }
 }

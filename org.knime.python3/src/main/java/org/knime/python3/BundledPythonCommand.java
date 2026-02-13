@@ -51,7 +51,7 @@ package org.knime.python3;
 import org.knime.conda.CondaEnvironmentDirectory;
 
 /**
- * Conda-specific implementation of {@link PythonCommand} that works with bundled Python environments. Allows to build
+ * Conda-specific implementation of {@link ExternalProcessProvider} that works with bundled Python environments. Allows to build
  * Python processes for a given Conda environment. Takes care of resolving PATH-related issues on Windows.
  *
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
@@ -60,7 +60,7 @@ import org.knime.conda.CondaEnvironmentDirectory;
 public final class BundledPythonCommand extends AbstractCondaPythonCommand {
 
     /**
-     * Constructs a {@link PythonCommand} that describes a Python process that is run in the bundled Conda environment
+     * Constructs a {@link ExternalProcessProvider} that describes a Python process that is run in the bundled Conda environment
      * identified by the given Conda environment directory. The validity of the given argument is not tested.
      *
      * @param environmentDirectoryPath The path to the directory of the bundled Conda environment.

@@ -53,9 +53,9 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 
+import org.knime.externalprocessprovider.ExternalProcessProvider;
 import org.knime.python3.DefaultPythonGateway;
 import org.knime.python3.Python3SourceDirectory;
-import org.knime.python3.PythonCommand;
 import org.knime.python3.PythonDataSink;
 import org.knime.python3.PythonDataSource;
 import org.knime.python3.PythonEntryPoint;
@@ -83,7 +83,7 @@ public final class TestUtils {
      * @throws InterruptedException
      */
     public static PythonGateway<ArrowTestsEntryPoint> openPythonGateway() throws IOException, InterruptedException {
-        final PythonCommand command = Python3TestUtils.getPythonCommand();
+        final ExternalProcessProvider command = Python3TestUtils.getPythonCommand();
         final String launcherPath =
             Paths.get(System.getProperty("user.dir"), "src/test/python", "tests_launcher.py").toString();
         final PythonPath pythonPath = (new PythonPathBuilder()) //
