@@ -100,23 +100,23 @@
             modulePath="src/main/python" moduleName="knime.types.tool">
             <!-- Unified tool value factory (new) -->
             <PythonValueFactory
-               PythonClassName="ToolValueFactory"
-               ValueFactory="org.knime.ai.core.data.tool.ToolValueFactory"
-               ValueTypeName="knime.types.tool.Tool"
-               isDefaultPythonRepresentation="true">
+                        PythonClassName="ToolValueFactory"
+                        ValueFactory="org.knime.core.node.agentic.tool.ToolValueFactory"
+                        ValueTypeName="knime.types.tool.Tool"
+                        isDefaultPythonRepresentation="true">
             </PythonValueFactory>
-            <!-- Deprecated: kept for backward compatibility -->
+                  <!-- Deprecated: kept for backward compatibility -->
       		<PythonValueFactory
-               PythonClassName="WorkflowToolValueFactory"
-               ValueFactory="org.knime.ai.core.data.tool.WorkflowToolValueFactory"
-               ValueTypeName="knime.types.tool.WorkflowTool"
-               isDefaultPythonRepresentation="false">
+                        PythonClassName="WorkflowToolValueFactory"
+                        ValueFactory="org.knime.core.node.agentic.tool.WorkflowToolValueFactory"
+                        ValueTypeName="knime.types.tool.WorkflowTool"
+                        isDefaultPythonRepresentation="false">
             </PythonValueFactory>
             <PythonValueFactory
-               PythonClassName="MCPToolValueFactory"
-               ValueFactory="org.knime.ai.core.data.tool.MCPToolValueFactory"
-               ValueTypeName="knime.types.tool.MCPTool"
-               isDefaultPythonRepresentation="false">
+                        PythonClassName="MCPToolValueFactory"
+                        ValueFactory="org.knime.core.node.agentic.tool.MCPToolValueFactory"
+                        ValueTypeName="knime.types.tool.MCPTool"
+                        isDefaultPythonRepresentation="false">
             </PythonValueFactory>
       </Module>
    </extension>
