@@ -98,3 +98,66 @@ class WorkflowToolValueFactory(kt.FileStorePythonValueFactory):
             "0": value._filestore_keys,  # the filestore keys we read in the decode method
             "1": encoded["1"],  # the rest of the encoded data
         }
+
+
+@dataclass
+class MCPTool:
+    """
+    A class representing an MCP (Model Context Protocol) tool value in KNIME.
+    """
+
+    name: str
+    description: str
+    parameter_schema: dict
+    server_uri: str
+    tool_name: str
+    input_schema: Optional[dict] = None
+    output_type: Optional[str] = None
+
+
+class MCPToolValueFactory(kt.PythonValueFactory):
+    """
+    Python equivalent of MCPToolValueFactory that can read and write
+    the Arrow representation of an MCP tool value.
+    """
+
+    def __init__(self):
+        kt.PythonValueFactory.__init__(self, MCPTool)
+
+    def decode(self, storage):
+        import json
+
+        if storage is None:
+            return None
+
+        param_schema_json = storage.get("2")
+        param_schema = json.loads(param_schema_json) if param_schema_json else {}
+
+        input_schema_json = storage.get("5")
+        input_schema = json.loads(input_schema_json) if input_schema_json else None
+
+        return MCPTool(
+            name=storage["0"],
+            description=storage["1"],
+            parameter_schema=param_schema,
+            server_uri=storage["3"],
+            tool_name=storage["4"],
+            input_schema=input_schema,
+            output_type=storage.get("6"),
+        )
+
+    def encode(self, value: MCPTool):
+        import json
+
+        if value is None:
+            return None
+
+        return {
+            "0": value.name,
+            "1": value.description,
+            "2": json.dumps(value.parameter_schema),
+            "3": value.server_uri,
+            "4": value.tool_name,
+            "5": json.dumps(value.input_schema) if value.input_schema else None,
+            "6": value.output_type,
+        }
