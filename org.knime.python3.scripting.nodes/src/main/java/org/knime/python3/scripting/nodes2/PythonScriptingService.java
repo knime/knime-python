@@ -75,6 +75,7 @@ import org.knime.core.webui.data.DataServiceContext;
 import org.knime.core.webui.node.dialog.scripting.CodeGenerationRequest;
 import org.knime.core.webui.node.dialog.scripting.InputOutputModel;
 import org.knime.core.webui.node.dialog.scripting.ScriptingService;
+import org.knime.externalprocessprovider.ExternalProcessProvider;
 import org.knime.python3.scripting.nodes2.PythonScriptingService.ExecutableOption.ExecutableOptionType;
 import org.knime.python3.scripting.nodes2.PythonScriptingSession.ExecutionInfo;
 import org.knime.python3.scripting.nodes2.PythonScriptingSession.ExecutionStatus;
@@ -246,15 +247,32 @@ final class PythonScriptingService extends ScriptingService {
 
             // Start the interactive Python session and setup the IO
             final var workflowControl = getWorkflowControl();
-            final var pythonCommand =
-                ExecutableSelectionUtils.getPythonCommand(getExecutableOption(m_executableSelection));
+            final var inputData = workflowControl.getInputData();
+
+            // Check if environment port is connected and extract Python command
+            final ExternalProcessProvider pythonCommand;
+            if (m_ports.hasPythonEnvironmentPort() && inputData != null && inputData.length > 0) {
+                var envPort = PythonScriptPortsConfiguration.extractPythonEnvironmentPort(inputData);
+                var isInstalled = envPort.isEnvironmentInstalled();
+                LOGGER.debug("Environment port connected. Environment installed: " + isInstalled);
+                if (!isInstalled) {
+                    addConsoleOutputEvent(
+                        new ConsoleText("Installing Python environment from environment port...\n", false));
+                    envPort.installPythonEnvironment(new ExecutionMonitor()); // Do not report the progress
+                    LOGGER.debug("Environment installation finished.");
+                    addConsoleOutputEvent(
+                        new ConsoleText("Successfully installed Python environment from environment port.\n", false));
+                }
+                pythonCommand = envPort.getPythonCommand();
+            } else {
+                pythonCommand = ExecutableSelectionUtils.getPythonCommand(getExecutableOption(m_executableSelection));
+            }
 
             // TODO report the progress of converting the tables using the ExecutionMonitor?
             m_interactiveSession = new PythonScriptingSession(pythonCommand,
                 PythonScriptingService.this::addConsoleOutputEvent, new DialogFileStoreHandlerSupplier());
-            m_interactiveSession.setupIO(workflowControl.getInputData(), getSupportedFlowVariables(),
-                m_ports.getNumOutTables(), m_ports.getNumOutImages(), m_ports.getNumOutObjects(), m_hasView,
-                new ExecutionMonitor());
+            m_interactiveSession.setupIO(inputData, getSupportedFlowVariables(), m_ports.getNumOutTables(),
+                m_ports.getNumOutImages(), m_ports.getNumOutObjects(), m_hasView, new ExecutionMonitor());
         }
 
         private synchronized void executeScriptInternal(final String script, final boolean newSession,
@@ -262,7 +280,17 @@ final class PythonScriptingService extends ScriptingService {
             try {
                 // Restart the session if necessary
                 if (m_interactiveSession == null || newSession) {
-                    startNewInteractiveSession();
+                    try {
+                        startNewInteractiveSession();
+                    } catch (IOException | InterruptedException | CanceledExecutionException ex) {
+                        if (ex instanceof InterruptedException) {
+                            Thread.currentThread().interrupt(); // Re-interrupt
+                        }
+                        var message = "Failed to start interactive Python session: " + ex.getMessage();
+                        LOGGER.error(message, ex);
+                        sendExecutionFinishedEvent(new ExecutionInfo(ExecutionStatus.FATAL_ERROR, message));
+                        return;
+                    }
                 }
 
                 // Run the script
@@ -366,7 +394,7 @@ final class PythonScriptingService extends ScriptingService {
             var executableOption = getExecutableOption(executableSelection);
             String executablePath = null;
             if (executableOption.type != ExecutableOptionType.MISSING_VAR) {
-                executablePath = ExecutableSelectionUtils.getPythonCommand(executableOption).getPythonExecutablePath()
+                executablePath = ExecutableSelectionUtils.getPythonCommand(executableOption).getExecutablePath()
                     .toAbsolutePath().toString();
             }
             var extraPaths = PythonScriptingSession.getExtraPythonPaths().stream() //

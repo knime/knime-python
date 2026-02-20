@@ -64,6 +64,7 @@ import org.knime.core.node.port.image.ImagePortObject;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.webui.node.dialog.scripting.InputOutputModel;
 import org.knime.core.webui.node.dialog.scripting.WorkflowControl.InputPortInfo;
+import org.knime.pixi.port.PythonEnvironmentPortObject;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
 
 /**
@@ -149,6 +150,8 @@ final class PythonScriptingInputOutputModelUtils {
                 // Object (spec not used)
                 inputInfos.add(createInputModel(objectIdx, INPUT_OUTPUT_TYPE_OBJECT));
                 objectIdx++;
+            } else if (type.acceptsPortObjectClass(PythonEnvironmentPortObject.class)) {
+                // Skip Python environment ports - they are not data ports
             } else {
                 throw new IllegalStateException("Unsupported input port. This is an implementation error.");
             }
