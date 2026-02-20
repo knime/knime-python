@@ -49,9 +49,10 @@
 package org.knime.python3;
 
 import org.knime.conda.CondaEnvironmentDirectory;
+import org.knime.externalprocessprovider.ExternalProcessProvider;
 
 /**
- * Conda-specific implementation of {@link PythonCommand}. Allows to build Python processes for a given Conda
+ * Conda-specific implementation of {@link ExternalProcessProvider}. Allows to build Python processes for a given Conda
  * installation and environment. Takes care of resolving PATH-related issues on Windows.
  *
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
@@ -60,7 +61,7 @@ import org.knime.conda.CondaEnvironmentDirectory;
 public final class CondaPythonCommand extends AbstractCondaPythonCommand {
 
     /**
-     * Constructs a {@link PythonCommand} that describes a Python process that is run in the Conda environment
+     * Constructs a {@link ExternalProcessProvider} that describes a Python process that is run in the Conda environment
      * identified by the given Conda installation directory and the given Conda environment directory.<br>
      * The validity of the given arguments is not tested.
      *

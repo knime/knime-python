@@ -164,6 +164,7 @@ import org.knime.core.table.schema.DataSpecs;
 import org.knime.core.table.schema.DataSpecs.DataSpecWithTraits;
 import org.knime.core.table.schema.DefaultColumnarSchema;
 import org.knime.core.table.schema.traits.LogicalTypeTrait;
+import org.knime.externalprocessprovider.ExternalProcessProvider;
 import org.knime.filehandling.core.connections.FSCategory;
 import org.knime.filehandling.core.connections.FSLocation;
 import org.knime.filehandling.core.data.location.FSLocationValue;
@@ -172,7 +173,6 @@ import org.knime.filehandling.core.data.location.FSLocationValueFactory.FSLocati
 import org.knime.filehandling.core.data.location.cell.SimpleFSLocationCellFactory;
 import org.knime.python3.DefaultPythonGateway;
 import org.knime.python3.Python3SourceDirectory;
-import org.knime.python3.PythonCommand;
 import org.knime.python3.PythonDataSink;
 import org.knime.python3.PythonDataSource;
 import org.knime.python3.PythonEntryPoint;
@@ -893,7 +893,7 @@ public class KnimeArrowExtensionTypesTest {
 
 	private static <E extends PythonEntryPoint> PythonGateway<E> openPythonGateway(final Class<E> entryPointClass,
 			final String launcherModule, final PythonModule... modules) throws IOException, InterruptedException {
-		final PythonCommand command = Python3TestUtils.getPythonCommand();
+		final ExternalProcessProvider command = Python3TestUtils.getPythonCommand();
 		final String launcherPath = Paths.get(System.getProperty("user.dir"), "src/test/python", launcherModule)
 				.toString();
 		final PythonPathBuilder builder = PythonPath.builder()//

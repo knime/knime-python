@@ -66,7 +66,7 @@ import org.eclipse.core.runtime.Platform;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.util.FileUtil;
 import org.knime.core.util.Pair;
-import org.knime.python3.PythonCommand;
+import org.knime.externalprocessprovider.ExternalProcessProvider;
 
 /**
  * Copied from org.knime.python2.
@@ -94,7 +94,7 @@ final class PythonKernelTester {
      * Caches previous test results. Mapping from the Python command that was tested to a list of additional required
      * modules that were tested along the command and the test results of these combinations of command and modules.
      */
-    private static final Map<PythonCommand, List<Pair<Set<PythonModuleSpec>, PythonKernelTestResult>>> TEST_RESULTS =
+    private static final Map<ExternalProcessProvider, List<Pair<Set<PythonModuleSpec>, PythonKernelTestResult>>> TEST_RESULTS =
         new ConcurrentHashMap<>();
 
     private static String getPythonKernelTesterPath() throws IOException {
@@ -119,7 +119,7 @@ final class PythonKernelTester {
      * @param force Force the test to be rerun again even if the same configuration was successfully tested before.
      * @return The results of the installation test.
      */
-    public static PythonKernelTestResult testPython3Installation(final PythonCommand python3Command,
+    public static PythonKernelTestResult testPython3Installation(final ExternalProcessProvider python3Command,
         final Collection<PythonModuleSpec> additionalRequiredModules, final boolean force) {
         return testPythonInstallation(python3Command, PYTHON_MAJOR_VERSION_3, PYTHON_MINIMUM_VERSION_3,
             additionalRequiredModules, Collections.emptyList(), force);
@@ -128,7 +128,7 @@ final class PythonKernelTester {
     /**
      * @param minimumVersion May be {@code null} in the case where no minimum version is required.
      */
-    private static synchronized PythonKernelTestResult testPythonInstallation(final PythonCommand pythonCommand,
+    private static synchronized PythonKernelTestResult testPythonInstallation(final ExternalProcessProvider pythonCommand,
         final String majorVersion, final String minimumVersion,
         final Collection<PythonModuleSpec> additionalRequiredModules,
         final Collection<PythonModuleSpec> additionalOptionalModules, final boolean force) {
@@ -189,7 +189,7 @@ final class PythonKernelTester {
         return testResults;
     }
 
-    private static PythonKernelTestResult getPreviousTestResultsIfApplicable(final PythonCommand pythonCommand,
+    private static PythonKernelTestResult getPreviousTestResultsIfApplicable(final ExternalProcessProvider pythonCommand,
         final Set<PythonModuleSpec> additionalRequiredModules) {
         // If a previous, appropriate Python test already succeeded, we will not have to run it again and return the
         // old results here (except if we're forced to).
@@ -209,7 +209,7 @@ final class PythonKernelTester {
         return null;
     }
 
-    private static Process runPythonKernelTester(final PythonCommand pythonCommand, final String majorVersion,
+    private static Process runPythonKernelTester(final ExternalProcessProvider pythonCommand, final String majorVersion,
         final String minimumVersion, final Collection<PythonModuleSpec> additionalRequiredModules,
         final Collection<PythonModuleSpec> additionalOptionalModules, final StringBuilder testLogger)
         throws IOException {

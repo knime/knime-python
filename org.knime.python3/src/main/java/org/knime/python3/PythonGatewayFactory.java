@@ -54,6 +54,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import org.knime.externalprocessprovider.ExternalProcessProvider;
 import org.knime.python3.PythonPath.PythonPathBuilder;
 
 /**
@@ -105,7 +106,7 @@ public interface PythonGatewayFactory {
      */
     final class PythonGatewayDescription<E extends PythonEntryPoint> {
 
-        private final PythonCommand m_command;
+        private final ExternalProcessProvider m_command;
 
         private final Path m_launcherPath;
 
@@ -130,7 +131,7 @@ public interface PythonGatewayFactory {
             return m_launcherPath;
         }
 
-        PythonCommand getCommand() {
+        ExternalProcessProvider getCommand() {
             return m_command;
         }
 
@@ -188,7 +189,7 @@ public interface PythonGatewayFactory {
          * @param entryPointClass the type of entry point
          * @return a builder for a PythonGatewayDescription
          */
-        public static <E extends PythonEntryPoint> Builder<E> builder(final PythonCommand pythonCommand,
+        public static <E extends PythonEntryPoint> Builder<E> builder(final ExternalProcessProvider pythonCommand,
             final Path launcherPath, final Class<E> entryPointClass) {
             return new Builder<>(pythonCommand, launcherPath, entryPointClass);
         }
@@ -203,7 +204,7 @@ public interface PythonGatewayFactory {
 
             private final Path m_launcherPath;
 
-            private final PythonCommand m_pythonCommand;
+            private final ExternalProcessProvider m_pythonCommand;
 
             private final Class<E> m_entryPointClass;
 
@@ -213,7 +214,7 @@ public interface PythonGatewayFactory {
 
             private final List<EntryPointCustomizer<E>> m_entryPointCustomizers = new ArrayList<>();
 
-            private Builder(final PythonCommand pythonCommand, final Path launcherPath,
+            private Builder(final ExternalProcessProvider pythonCommand, final Path launcherPath,
                 final Class<E> entryPointClass) {
                 m_launcherPath = launcherPath;
                 m_pythonCommand = pythonCommand;

@@ -81,6 +81,7 @@ import org.knime.core.node.workflow.VariableTypeRegistry;
 import org.knime.core.util.PathUtils;
 import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
 import org.knime.core.webui.node.view.NodeView;
+import org.knime.externalprocessprovider.ExternalProcessProvider;
 import org.knime.python2.PythonCommand;
 import org.knime.python2.PythonModuleSpec;
 import org.knime.python2.PythonVersion;
@@ -381,14 +382,14 @@ public abstract class AbstractPythonScriptingNodeModel extends ExtToolOutputNode
     }
 
     /**
-     * Wraps a {@link org.knime.python3.PythonCommand} into the legacy implementation for using it in a
+     * Wraps a {@link ExternalProcessProvider} into the legacy implementation for using it in a
      * {@link PythonKernelBackend}.
      */
     private static final class LegacyPythonCommand implements PythonCommand {
 
-        private final org.knime.python3.PythonCommand m_pythonCommand;
+        private final ExternalProcessProvider m_pythonCommand;
 
-        private LegacyPythonCommand(final org.knime.python3.PythonCommand pythonCommand) {
+        private LegacyPythonCommand(final ExternalProcessProvider pythonCommand) {
             m_pythonCommand = pythonCommand;
         }
 
