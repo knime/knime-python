@@ -53,6 +53,7 @@ import static org.knime.python3.scripting.nodes2.PythonScriptPortsConfiguration.
 import static org.knime.python3.scripting.nodes2.PythonScriptPortsConfiguration.PORTGR_ID_OUT_IMAGE;
 import static org.knime.python3.scripting.nodes2.PythonScriptPortsConfiguration.PORTGR_ID_OUT_OBJECT;
 import static org.knime.python3.scripting.nodes2.PythonScriptPortsConfiguration.PORTGR_ID_OUT_TABLE;
+import static org.knime.python3.scripting.nodes2.PythonScriptPortsConfiguration.PORTGR_ID_PYTHON_ENV;
 
 import java.util.Optional;
 
@@ -66,6 +67,7 @@ import org.knime.core.node.port.image.ImagePortObject;
 import org.knime.core.webui.node.dialog.NodeDialog;
 import org.knime.core.webui.node.dialog.NodeDialogFactory;
 import org.knime.core.webui.node.dialog.NodeDialogManager;
+import org.knime.pixi.port.PythonEnvironmentPortObject;
 import org.knime.python2.port.PickledObjectFileStorePortObject;
 import org.knime.python3.scripting.nodes2.PythonScriptNodeDialog;
 import org.knime.python3.scripting.nodes2.PythonScriptNodeModel;
@@ -115,6 +117,7 @@ public final class PythonScriptNodeFactory extends ConfigurableNodeFactory<Pytho
     @Override
     protected Optional<PortsConfigurationBuilder> createPortsConfigBuilder() {
         final var b = new PortsConfigurationBuilder();
+        b.addOptionalInputPortGroup(PORTGR_ID_PYTHON_ENV, PythonEnvironmentPortObject.TYPE);
         b.addExtendableInputPortGroup(PORTGR_ID_INP_OBJECT, PickledObjectFileStorePortObject.TYPE);
         b.addExtendableInputPortGroupWithDefault(PORTGR_ID_INP_TABLE, new PortType[0],
             new PortType[]{BufferedDataTable.TYPE}, BufferedDataTable.TYPE);

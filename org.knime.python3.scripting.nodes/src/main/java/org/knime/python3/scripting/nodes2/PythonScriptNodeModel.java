@@ -86,7 +86,7 @@ import org.knime.core.node.workflow.VariableType;
 import org.knime.core.node.workflow.VariableTypeRegistry;
 import org.knime.core.util.asynclose.AsynchronousCloseableTracker;
 import org.knime.core.webui.node.dialog.scripting.ScriptingService.ConsoleText;
-import org.knime.python3.PythonCommand;
+import org.knime.externalprocessprovider.ExternalProcessProvider;
 import org.knime.python3.PythonProcessTerminatedException;
 import org.knime.python3.scripting.nodes2.ConsoleOutputUtils.ConsoleOutputStorage;
 import org.knime.python3.scripting.nodes2.PythonScriptingSession.ExecutionInfo;
@@ -177,24 +177,42 @@ public final class PythonScriptNodeModel extends NodeModel {
     @Override
     protected PortObject[] execute(final PortObject[] inObjects, final ExecutionContext exec)
         throws IOException, InterruptedException, CanceledExecutionException, KNIMEException {
-        final PythonCommand pythonCommand =
-            ExecutableSelectionUtils.getPythonCommand(m_settings.getExecutableSelection());
+
+        // Install Python environment early to avoid timeout issues during gateway connection
+        final ExecutionContext remainingProgress;
+        final ExternalProcessProvider pythonCommand;
+        if (m_ports.hasPythonEnvironmentPort()) {
+            var pythonEnvironmentPort = PythonScriptPortsConfiguration.extractPythonEnvironmentPort(inObjects);
+            if (!pythonEnvironmentPort.isEnvironmentInstalled()) {
+                pythonEnvironmentPort.installPythonEnvironment(exec.createSubProgress(0.2));
+                pythonCommand = pythonEnvironmentPort.getPythonCommand();
+                remainingProgress = exec.createSubExecutionContext(0.8);
+            } else {
+                pythonCommand = pythonEnvironmentPort.getPythonCommand();
+                remainingProgress = exec.createSubExecutionContext(1.0);
+            }
+        } else {
+            // No environment port, just use the configured command and use the whole progress for the execution
+            remainingProgress = exec;
+            pythonCommand = ExecutableSelectionUtils.getPythonCommand(m_settings.getExecutableSelection());
+        }
+
         m_consoleOutputStorage = null;
 
         final var consoleConsumer = ConsoleOutputUtils.createConsoleConsumer();
         try (final var session =
             new PythonScriptingSession(pythonCommand, consoleConsumer, new ModelFileStoreHandlerSupplier())) {
 
-            exec.setProgress(0.0, "Setting up inputs");
+            remainingProgress.setProgress(0.0, "Setting up inputs");
             session.setupIO(inObjects, getAvailableFlowVariables(KNOWN_FLOW_VARIABLE_TYPES).values(),
                 m_ports.getNumOutTables(), m_ports.getNumOutImages(), m_ports.getNumOutObjects(), m_hasView,
-                exec.createSubProgress(0.3));
-            exec.setProgress(0.3, "Running script");
+                remainingProgress.createSubProgress(0.3));
+            remainingProgress.setProgress(0.3, "Running script");
 
             runUserScript(session);
 
-            exec.setProgress(0.7, "Processing output");
-            final var outputs = session.getOutputs(exec.createSubExecutionContext(0.3));
+            remainingProgress.setProgress(0.7, "Processing output");
+            final var outputs = session.getOutputs(remainingProgress.createSubExecutionContext(0.3));
             final var flowVars = session.getFlowVariables();
             addNewFlowVariables(flowVars);
             collectViewFromSession(session);
