@@ -59,8 +59,8 @@ import org.knime.conda.CondaEnvironmentDirectory;
 import org.knime.conda.CondaEnvironmentPropagation.CondaEnvironmentType;
 import org.knime.conda.prefs.CondaPreferences;
 import org.knime.core.node.workflow.FlowObjectStack;
+import org.knime.externalprocessprovider.ExternalProcessProvider;
 import org.knime.python3.CondaPythonCommand;
-import org.knime.python3.PythonCommand;
 import org.knime.python3.SimplePythonCommand;
 import org.knime.python3.scripting.nodes.prefs.Python3ScriptingPreferences;
 import org.knime.python3.scripting.nodes2.PythonScriptingService.ExecutableOption;
@@ -83,7 +83,7 @@ final class ExecutableSelectionUtils {
     }
 
     /** Get the PythonCommand from the selected option */
-    static PythonCommand getPythonCommand(final ExecutableOption option) {
+    static ExternalProcessProvider getPythonCommand(final ExecutableOption option) {
         switch (option.type) {
             case CONDA_ENV_VAR:
                 return commandForConda(option.condaEnvDir);
@@ -106,7 +106,7 @@ final class ExecutableSelectionUtils {
     }
 
     /** Get the PythonCommand from the given settings String */
-    static PythonCommand getPythonCommand(final String commandString) {
+    static ExternalProcessProvider getPythonCommand(final String commandString) {
         if (commandString == null || EXEC_SELECTION_PREF_ID.equals(commandString)) {
             // Nothing configured -> Use preferences
             return commandForPreferences();
@@ -126,7 +126,7 @@ final class ExecutableSelectionUtils {
 
     private static ExecutableOption getPreferenceOption() {
         return new ExecutableOption(getPreferenceOptionType(), EXEC_SELECTION_PREF_ID,
-            commandForPreferences().getPythonExecutablePath().toString(), null, null);
+            commandForPreferences().getExecutablePath().toString(), null, null);
     }
 
     private static ExecutableOptionType getPreferenceOptionType() {
@@ -161,15 +161,15 @@ final class ExecutableSelectionUtils {
         }
     }
 
-    private static PythonCommand commandForConda(final String condaEnvDir) {
+    private static ExternalProcessProvider commandForConda(final String condaEnvDir) {
         return new CondaPythonCommand(CondaPreferences.getCondaInstallationDirectory(), condaEnvDir);
     }
 
-    private static PythonCommand commandForString(final String pythonExecutable) {
+    private static ExternalProcessProvider commandForString(final String pythonExecutable) {
         return new SimplePythonCommand(pythonExecutable);
     }
 
-    private static PythonCommand commandForPreferences() {
+    private static ExternalProcessProvider commandForPreferences() {
         return Python3ScriptingPreferences.getPythonCommandPreference();
     }
 }

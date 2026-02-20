@@ -51,7 +51,7 @@ package org.knime.python3.testing;
 import java.io.IOException;
 
 import org.apache.commons.lang3.SystemUtils;
-import org.knime.python3.PythonCommand;
+import org.knime.externalprocessprovider.ExternalProcessProvider;
 import org.knime.python3.SimplePythonCommand;
 
 /**
@@ -74,7 +74,7 @@ public final class Python3TestUtils {
      * @return The command created from environment variable.
      * @throws IOException If none of the environment variables is set.
      */
-    public static PythonCommand getPythonCommand() throws IOException {
+    public static ExternalProcessProvider getPythonCommand() throws IOException {
         final String osSuffix;
         if (SystemUtils.IS_OS_LINUX) {
             osSuffix = "LINUX";
