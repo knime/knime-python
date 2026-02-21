@@ -730,7 +730,7 @@ propagated with or for interoperation with KNIME.
    <requires>
       <import feature="org.knime.features.python2" version="5.11.0" match="greaterOrEqual"/>
       <import feature="org.knime.features.conda" version="5.11.0" match="greaterOrEqual"/>
-      <import feature="org.knime.features.core.columnar" version="5.9.0" match="greaterOrEqual"/>
+      <import feature="org.knime.features.core.columnar" version="5.11.0" match="greaterOrEqual"/>
       <import feature="org.knime.features.pythonscripting" version="5.11.0" match="greaterOrEqual"/>
    </requires>
 
