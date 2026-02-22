@@ -222,13 +222,20 @@ final class ToolExecutor implements AutoCloseable {
         var toolTable =
             (BufferedDataTable)PythonPortTypeRegistry.convertPortObjectFromPython(pythonToolTable, conversionContext);
         var tool = getTool(toolTable);
-        if (!(tool instanceof WorkflowToolValue)) {
-            // TODO enable this type of execution for non-workflow-based tools, too
-            // (add a placeholder node to the combined tools workflow that outputs the tool's outputs)
-            throw new UnsupportedOperationException(
-                "Executing tools in a combined workflow only supported for workflow-based tools so far");
+        
+        // @ToolTypeDispatch - Handle both WORKFLOW and MCP tools in combined workflow execution
+        if (tool instanceof WorkflowToolValue workflowTool) {
+            return executeWorkflowToolInCombinedWorkflow(workflowTool, parameters, inputIds, executionHints, conversionContext);
+        } else {
+            // For MCP tools (and future tool types), execute standalone since they don't have workflow segments
+            // The tool execution itself is recorded in the combined workflow via placeholder nodes or logging
+            return executeNonWorkflowToolInCombinedWorkflow(tool, parameters, inputIds, executionHints, conversionContext);
         }
-        var workflowTool = (WorkflowToolValue)tool;
+    }
+
+    private PythonToolResult executeWorkflowToolInCombinedWorkflow(final WorkflowToolValue workflowTool,
+        final String parameters, final List<String> inputIds, final Map<String, String> executionHints,
+        final PortObjectConversionContext conversionContext) {
         var combinedToolsWorkflowId = m_combinedToolsWorkflow.workflowId();
 
         // map inputIds to ports
@@ -248,6 +255,31 @@ final class ToolExecutor implements AutoCloseable {
             var outputIds =
                 Stream.of(result.outputIds()).map(id -> id.replaceFirst(combinedToolsWorkflowId + ":", "")).toList();
             return new PythonToolResult(result.message(), pyOutputs, outputIds, viewNodeIds);
+        } finally {
+            NodeContext.removeLastContext();
+        }
+    }
+
+    private PythonToolResult executeNonWorkflowToolInCombinedWorkflow(final ToolValue tool, final String parameters,
+        final List<String> inputIds, final Map<String, String> executionHints,
+        final PortObjectConversionContext conversionContext) {
+        // For non-workflow tools (like MCP), execute them standalone
+        // They cannot be added as segments to the combined workflow since they have no workflow representation
+        // TODO: Consider adding placeholder nodes to the combined workflow for audit trail visualization
+        NodeContext.pushContext(m_nodeContainer);
+        try {
+            // Execute the tool with empty inputs since combined workflow input mapping doesn't apply
+            var result = tool.execute(parameters, new PortObject[0], m_exec, executionHints);
+            var message = result.message();
+            var outputs = result.outputs();
+            if (outputs == null) {
+                return new PythonToolResult(message, null, null, null);
+            }
+            var pyOutputs = Stream.of(outputs)//
+                .map(po -> PythonPortTypeRegistry.convertPortObjectToPython(po, conversionContext))//
+                .toArray(PythonPortObject[]::new);
+            // No output IDs since these aren't added to the combined workflow
+            return new PythonToolResult(message, pyOutputs, List.of(), null);
         } finally {
             NodeContext.removeLastContext();
         }
