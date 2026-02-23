@@ -42,6 +42,7 @@ class ToolPort:
 class WorkflowTool:
     """
     A class representing a workflow-based tool in KNIME.
+    @deprecated Use Tool class instead.
     """
 
     name: str
@@ -116,6 +117,7 @@ class WorkflowToolValueFactory(kt.FileStorePythonValueFactory):
 class MCPTool:
     """
     A class representing an MCP (Model Context Protocol) tool value in KNIME.
+    @deprecated Use Tool class instead.
     """
 
     name: str
@@ -129,8 +131,77 @@ class MCPTool:
         return ToolType.MCP
 
 
-# Type alias for unified tool handling
-Tool = Union[WorkflowTool, MCPTool]
+@dataclass
+class Tool:
+    """
+    Unified tool class representing either a workflow-based tool or an MCP tool.
+
+    Mirrors the Java ToolCell architecture with internal type discrimination.
+    Use tool_type property to check which type, then access type-specific fields.
+    """
+
+    tool_type: ToolType
+    name: str
+    description: str
+    parameter_schema: dict
+
+    # Workflow-specific fields (None for MCP tools)
+    message_output_port_index: Optional[int] = None
+    input_ports: Optional[List[ToolPort]] = None
+    output_ports: Optional[List[ToolPort]] = None
+    _filestore_keys: Optional[List[str]] = None
+
+    # MCP-specific fields (None for workflow tools)
+    server_uri: Optional[str] = None
+    tool_name: Optional[str] = None
+
+    @classmethod
+    def create_workflow_tool(
+        cls,
+        name: str,
+        description: str,
+        parameter_schema: dict,
+        message_output_port_index: int,
+        input_ports: Optional[List[ToolPort]] = None,
+        output_ports: Optional[List[ToolPort]] = None,
+        filestore_keys: Optional[List[str]] = None,
+    ) -> "Tool":
+        """Create a workflow-based tool."""
+        return cls(
+            tool_type=ToolType.WORKFLOW,
+            name=name,
+            description=description,
+            parameter_schema=parameter_schema,
+            message_output_port_index=message_output_port_index,
+            input_ports=input_ports,
+            output_ports=output_ports,
+            _filestore_keys=filestore_keys,
+            server_uri=None,
+            tool_name=None,
+        )
+
+    @classmethod
+    def create_mcp_tool(
+        cls,
+        name: str,
+        description: str,
+        parameter_schema: dict,
+        server_uri: str,
+        tool_name: str,
+    ) -> "Tool":
+        """Create an MCP tool."""
+        return cls(
+            tool_type=ToolType.MCP,
+            name=name,
+            description=description,
+            parameter_schema=parameter_schema,
+            message_output_port_index=None,
+            input_ports=None,
+            output_ports=None,
+            _filestore_keys=None,
+            server_uri=server_uri,
+            tool_name=tool_name,
+        )
 
 
 class ToolValueFactory(kt.PythonValueFactory):
@@ -162,7 +233,7 @@ class ToolValueFactory(kt.PythonValueFactory):
             input_spec_json = storage.get("4")
             output_spec_json = storage.get("5")
 
-            tool = WorkflowTool(
+            tool = Tool.create_workflow_tool(
                 name=name,
                 description=description,
                 parameter_schema=param_schema,
@@ -177,14 +248,13 @@ class ToolValueFactory(kt.PythonValueFactory):
                 ]
                 if output_spec_json
                 else [],
+                filestore_keys=storage.get("7"),
             )
-            # Filestore keys from field 7
-            tool._filestore_keys = storage.get("7")
             return tool
 
         elif tool_type == ToolType.MCP:
             # Decode MCPTool from field 8
-            return MCPTool(
+            return Tool.create_mcp_tool(
                 name=name,
                 description=description,
                 parameter_schema=param_schema,
@@ -208,7 +278,7 @@ class ToolValueFactory(kt.PythonValueFactory):
             "3": json.dumps(value.parameter_schema),
         }
 
-        if isinstance(value, WorkflowTool):
+        if value.tool_type == ToolType.WORKFLOW:
             # Workflow-specific fields (4-7)
             encoded.update(
                 {
@@ -227,7 +297,7 @@ class ToolValueFactory(kt.PythonValueFactory):
                     "8": None,  # server_uri (MCP only)
                 }
             )
-        elif isinstance(value, MCPTool):
+        elif value.tool_type == ToolType.MCP:
             # MCP-specific fields (8), nulls for Workflow fields (4-7)
             encoded.update(
                 {
@@ -239,7 +309,7 @@ class ToolValueFactory(kt.PythonValueFactory):
                 }
             )
         else:
-            raise TypeError(f"Unknown tool type: {type(value)}")
+            raise TypeError(f"Unknown tool type: {value.tool_type}")
 
         return encoded
 
