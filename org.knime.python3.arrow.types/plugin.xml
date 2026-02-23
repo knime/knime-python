@@ -98,26 +98,20 @@
       </Module>
       <Module
             modulePath="src/main/python" moduleName="knime.types.tool">
-            <!-- Unified tool value factory (new) -->
-            <PythonValueFactory
+                  <!-- Unified tool value factory (new) -->
+                  <PythonValueFactory
                         PythonClassName="ToolValueFactory"
                         ValueFactory="org.knime.core.node.agentic.tool.ToolValueFactory"
                         ValueTypeName="knime.types.tool.Tool"
                         isDefaultPythonRepresentation="true">
-            </PythonValueFactory>
+                  </PythonValueFactory>
                   <!-- Deprecated: kept for backward compatibility -->
-      		<PythonValueFactory
+                  <PythonValueFactory
                         PythonClassName="WorkflowToolValueFactory"
                         ValueFactory="org.knime.core.node.agentic.tool.WorkflowToolValueFactory"
                         ValueTypeName="knime.types.tool.WorkflowTool"
-                        isDefaultPythonRepresentation="false">
-            </PythonValueFactory>
-            <PythonValueFactory
-                        PythonClassName="MCPToolValueFactory"
-                        ValueFactory="org.knime.core.node.agentic.tool.MCPToolValueFactory"
-                        ValueTypeName="knime.types.tool.MCPTool"
-                        isDefaultPythonRepresentation="false">
-            </PythonValueFactory>
+                        isDefaultPythonRepresentation="true">
+                  </PythonValueFactory>
       </Module>
    </extension>
 
