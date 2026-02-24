@@ -194,7 +194,6 @@ class _OffsetBasedRecordBatchFileReader:
         return self._java_data_source.numBatches()
 
     def get_batch(self, index: int) -> pa.RecordBatch:
-        # TODO(dictionary) handle dictionaries
         offset = self._java_data_source.getRecordBatchOffset(index)
         self._source_file.seek(offset)
         # TODO do we need to map columns somehow (in Java we have the factory versions)
