@@ -55,6 +55,8 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
+import org.knime.core.checkpoint.PhasedInit;
+import org.knime.core.checkpoint.PhasedInitSupport;
 import org.knime.core.node.NodeLogger;
 import org.knime.python3.PythonGatewayCreationGate.PythonGatewayCreationGateListener;
 
@@ -79,6 +81,17 @@ public final class PythonGatewayTracker implements PythonGatewayCreationGateList
 
     private PythonGatewayTracker() {
         m_openGateways = gatewaySet();
+        // Support CRaC (Coordinated Restore at Checkpoint) and close all connections prior checkpointing
+        PhasedInitSupport.registerOrActivate(new PhasedInit<RuntimeException>() {
+            @Override
+            public void beforeActivate() throws RuntimeException {
+                try {
+                    clear();
+                } catch (IOException ex) {
+                    LOGGER.warn("Error when forcefully terminating Python processes during phased initialization", ex);
+                }
+            }
+        });
     }
 
     /**
