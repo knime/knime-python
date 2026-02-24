@@ -52,10 +52,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import org.knime.core.columnar.arrow.ArrowBatchReadStore;
 import org.knime.core.columnar.arrow.ArrowBatchStore;
@@ -484,12 +482,6 @@ public final class PythonArrowDataUtils {
             public long getRecordBatchOffset(final int index) {
                 return dataSink.getRecordBatchOffsets().get(index);
             }
-
-            @Override
-            public long[] getDictionaryBatchOffsets(final int index) {
-                // TODO support dictionary batches
-                return new long[0];
-            }
         };
     }
 
@@ -547,12 +539,6 @@ public final class PythonArrowDataUtils {
         @Override
         public long getRecordBatchOffset(final int index) {
             return m_offsetProvider.getRecordBatchOffset(index);
-        }
-
-        @Override
-        public List<Long> getDictionaryBatchOffsets(final int index) {
-            return Arrays.stream(m_offsetProvider.getDictionaryBatchOffsets(index)).boxed()
-                .collect(Collectors.toList());
         }
 
         @Override

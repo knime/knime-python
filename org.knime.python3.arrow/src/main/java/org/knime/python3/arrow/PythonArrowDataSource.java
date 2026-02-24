@@ -48,8 +48,6 @@
  */
 package org.knime.python3.arrow;
 
-import java.util.List;
-
 import org.knime.python3.PythonTableDataSource;
 
 /**
@@ -85,16 +83,6 @@ public interface PythonArrowDataSource extends PythonTableDataSource {
      * @return the offset of the record batch for the given index
      */
     long getRecordBatchOffset(int index);
-
-    /**
-     * Get the offsets of the dictionary batches relating to the record batch at the given index. This method can lock
-     * if the dictionary batches are not yet written to the file. When it returns it guarantees that the dictionary
-     * batches can be read at the returned offsets from the file.
-     *
-     * @param index the index of the dictionary batches
-     * @return the offsets of all dictionary batches for the given index
-     */
-    List<Long> getDictionaryBatchOffsets(int index);
 
     /**
      * @return the total number of batches
