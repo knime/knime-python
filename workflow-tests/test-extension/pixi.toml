@@ -6,3 +6,4 @@ platforms = ["win-64", "linux-64", "osx-64", "osx-arm64"]
 [dependencies]
 python = ">=3.9"
 knime-python-versions = ">=5.7, <6.0"
+libpng = ">=1.6.52"

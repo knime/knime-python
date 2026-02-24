@@ -78,7 +78,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libopentelemetry-cpp-1.21.0-hb9b0907_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libopentelemetry-cpp-headers-1.21.0-ha770c72_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libparquet-21.0.0-h790f06f_1_cpu.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-64/libpng-1.6.50-h421ea60_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/libpng-1.6.54-h421ea60_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libprotobuf-6.31.1-h9ef548d_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libre2-11-2025.07.22-h7b12aa8_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libsodium-1.0.20-h4ab18f5_0.conda
@@ -197,7 +197,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-64/libopentelemetry-cpp-1.21.0-h7d3f41d_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/libopentelemetry-cpp-headers-1.21.0-h694c41f_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/libparquet-21.0.0-hbebc5f6_1_cpu.conda
-      - conda: https://conda.anaconda.org/conda-forge/osx-64/libpng-1.6.50-h84aeda2_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-64/libpng-1.6.54-h07817ec_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/libprotobuf-6.31.1-h6e993e7_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/libre2-11-2025.07.22-h358c03a_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/libsodium-1.0.20-hfdf4475_0.conda
@@ -312,7 +312,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libopentelemetry-cpp-1.21.0-he15edb5_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libopentelemetry-cpp-headers-1.21.0-hce30654_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libparquet-21.0.0-h3402b2e_1_cpu.conda
-      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libpng-1.6.50-h280e0eb_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libpng-1.6.54-h132b30e_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libprotobuf-6.31.1-h702a38d_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libre2-11-2025.07.22-hb7c0934_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libsodium-1.0.20-h99b78c6_0.conda
@@ -414,7 +414,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/liblapack-3.9.0-35_hf9ab0e9_mkl.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/liblzma-5.8.1-h2466b09_2.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/libparquet-21.0.0-h24c48c9_1_cpu.conda
-      - conda: https://conda.anaconda.org/conda-forge/win-64/libpng-1.6.50-h7351971_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/libpng-1.6.54-h7351971_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/libprotobuf-6.31.1-hdcda5b4_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/libre2-11-2025.07.22-h0eb2380_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/libsodium-1.0.20-hc70643c_0.conda
@@ -1721,7 +1721,7 @@ packages:
   - liblapack >=3.9.0,<3.10.0a0
   - liblzma >=5.8.1,<6.0a0
   - libparquet >=21.0.0,<21.1.0a0
-  - libpng >=1.6.50,<1.7.0a0
+  - libpng >=1.6.54,<1.7.0a0
   - libprotobuf >=6.31.1,<6.31.2.0a0
   - libre2-11 >=2025.7.22
   - libsodium >=1.0.20,<1.0.21.0a0
@@ -1787,7 +1787,7 @@ packages:
   - stack_data =0.6.3
   - decorator =5.2.1
   - libfreetype =2.13.3
-  - libpng =1.6.50
+  - libpng =1.6.54
   - libgoogle-cloud =2.39.0
   - aws-checksums =0.2.7
   - libarrow-acero =21.0.0
@@ -1984,7 +1984,7 @@ packages:
   - liblapack >=3.9.0,<3.10.0a0
   - liblzma >=5.8.1,<6.0a0
   - libparquet >=21.0.0,<21.1.0a0
-  - libpng >=1.6.50,<1.7.0a0
+  - libpng >=1.6.54,<1.7.0a0
   - libprotobuf >=6.31.1,<6.31.2.0a0
   - libre2-11 >=2025.7.22
   - libsodium >=1.0.20,<1.0.21.0a0
@@ -2021,7 +2021,7 @@ packages:
   - zeromq >=4.3.5,<4.4.0a0
   - zstd >=1.5.7,<1.6.0a0
   constrains:
-  - libpng =1.6.50
+  - libpng =1.6.54
   - libgoogle-cloud =2.39.0
   - lz4-c =1.10.0
   - libtiff =4.7.0
@@ -2247,7 +2247,7 @@ packages:
   - liblapack >=3.9.0,<3.10.0a0
   - liblzma >=5.8.1,<6.0a0
   - libparquet >=21.0.0,<21.1.0a0
-  - libpng >=1.6.50,<1.7.0a0
+  - libpng >=1.6.54,<1.7.0a0
   - libprotobuf >=6.31.1,<6.31.2.0a0
   - libre2-11 >=2025.7.22
   - libsodium >=1.0.20,<1.0.21.0a0
@@ -2394,7 +2394,7 @@ packages:
   - pyarrow-core =21.0.0
   - libcblas =3.9.0
   - charset-normalizer =3.4.3
-  - libpng =1.6.50
+  - libpng =1.6.54
   - idna =3.10
   - libiconv =1.18
   - aws-c-io =0.21.2
@@ -2510,7 +2510,7 @@ packages:
   - liblapack >=3.9.0,<3.10.0a0
   - liblzma >=5.8.1,<6.0a0
   - libparquet >=21.0.0,<21.1.0a0
-  - libpng >=1.6.50,<1.7.0a0
+  - libpng >=1.6.54,<1.7.0a0
   - libprotobuf >=6.31.1,<6.31.2.0a0
   - libre2-11 >=2025.7.22
   - libsodium >=1.0.20,<1.0.21.0a0
@@ -2603,7 +2603,7 @@ packages:
   - yaml =0.2.5
   - jsonschema-specifications =2025.4.1
   - snappy =1.2.2
-  - libpng =1.6.50
+  - libpng =1.6.54
   - libarrow-compute =21.0.0
   - libgrpc =1.73.1
   - ipykernel =6.30.1
@@ -4781,48 +4781,45 @@ packages:
   license_family: APACHE
   size: 909390
   timestamp: 1754309097970
-- conda: https://conda.anaconda.org/conda-forge/linux-64/libpng-1.6.50-h421ea60_1.conda
-  sha256: e75a2723000ce3a4b9fd9b9b9ce77553556c93e475a4657db6ed01abc02ea347
-  md5: 7af8e91b0deb5f8e25d1a595dea79614
+- conda: https://conda.anaconda.org/conda-forge/linux-64/libpng-1.6.54-h421ea60_0.conda
+  sha256: 5de60d34aac848a9991a09fcdea7c0e783d00024aefec279d55e87c0c44742cd
+  md5: d361fa2a59e53b61c2675bfa073e5b7e
   depends:
-  - libgcc >=14
   - __glibc >=2.17,<3.0.a0
+  - libgcc >=14
   - libzlib >=1.3.1,<2.0a0
   license: zlib-acknowledgement
-  size: 317390
-  timestamp: 1753879899951
-- conda: https://conda.anaconda.org/conda-forge/osx-64/libpng-1.6.50-h84aeda2_1.conda
-  sha256: 8d92c82bcb09908008d8cf5fab75e20733810d40081261d57ef8cd6495fc08b4
-  md5: 1fe32bb16991a24e112051cc0de89847
+  size: 317435
+  timestamp: 1768285668880
+- conda: https://conda.anaconda.org/conda-forge/osx-64/libpng-1.6.54-h07817ec_0.conda
+  sha256: c0efdf9b34132e7d4e0051bf65a97f1b9e1125c7f8a9067a35ec119af367eb38
+  md5: 3d43dcdfcc3971939c80f855cf2df235
   depends:
   - __osx >=10.13
   - libzlib >=1.3.1,<2.0a0
   license: zlib-acknowledgement
-  size: 297609
-  timestamp: 1753879919854
-- conda: https://conda.anaconda.org/conda-forge/osx-arm64/libpng-1.6.50-h280e0eb_1.conda
-  sha256: a2e0240fb0c79668047b528976872307ea80cb330baf8bf6624ac2c6443449df
-  md5: 4d0f5ce02033286551a32208a5519884
+  size: 298894
+  timestamp: 1768285676981
+- conda: https://conda.anaconda.org/conda-forge/osx-arm64/libpng-1.6.54-h132b30e_0.conda
+  sha256: 1c271c0ec73b69f7570c5da67d0e47ddf7ff079bc1ca2dfaccd267ea39314b06
+  md5: 1b80fd1eecb98f1cb7de4239f5d7dc15
   depends:
   - __osx >=11.0
   - libzlib >=1.3.1,<2.0a0
   license: zlib-acknowledgement
-  size: 287056
-  timestamp: 1753879907258
-- conda: https://conda.anaconda.org/conda-forge/win-64/libpng-1.6.50-h7351971_1.conda
-  sha256: e84b041f91c94841cb9b97952ab7f058d001d4a15ed4ce226ec5fdb267cc0fa5
-  md5: 3ae6e9f5c47c495ebeed95651518be61
+  size: 288910
+  timestamp: 1768285694469
+- conda: https://conda.anaconda.org/conda-forge/win-64/libpng-1.6.54-h7351971_0.conda
+  sha256: 6e269361aa18a57bd2e593e480d83d93fc5f839d33d3bfc31b4ffe10edf6751c
+  md5: 638ecb69e44b6a588afd5633e81f9e61
   depends:
-  - vc >=14.3,<15
-  - vc14_runtime >=14.44.35208
-  - ucrt >=10.0.20348.0
   - vc >=14.3,<15
   - vc14_runtime >=14.44.35208
   - ucrt >=10.0.20348.0
   - libzlib >=1.3.1,<2.0a0
   license: zlib-acknowledgement
-  size: 382709
-  timestamp: 1753879944850
+  size: 383094
+  timestamp: 1768285706434
 - conda: https://conda.anaconda.org/conda-forge/linux-64/libprotobuf-6.31.1-h9ef548d_1.conda
   sha256: b2a62237203a9f4d98bedb2dfc87b548cc7cede151f65589ced1e687a1c3f3b1
   md5: b92e2a26764fcadb4304add7e698ccf2
@@ -5679,7 +5676,7 @@ packages:
   depends:
   - __glibc >=2.17,<3.0.a0
   - libgcc >=14
-  - libpng >=1.6.50,<1.7.0a0
+  - libpng >=1.6.54,<1.7.0a0
   - libstdcxx >=14
   - libtiff >=4.7.0,<4.8.0a0
   - libzlib >=1.3.1,<2.0a0
@@ -5693,7 +5690,7 @@ packages:
   depends:
   - __osx >=10.13
   - libcxx >=19
-  - libpng >=1.6.50,<1.7.0a0
+  - libpng >=1.6.54,<1.7.0a0
   - libtiff >=4.7.0,<4.8.0a0
   - libzlib >=1.3.1,<2.0a0
   license: BSD-2-Clause
@@ -5706,7 +5703,7 @@ packages:
   depends:
   - __osx >=11.0
   - libcxx >=19
-  - libpng >=1.6.50,<1.7.0a0
+  - libpng >=1.6.54,<1.7.0a0
   - libtiff >=4.7.0,<4.8.0a0
   - libzlib >=1.3.1,<2.0a0
   license: BSD-2-Clause
@@ -5717,7 +5714,7 @@ packages:
   sha256: c29cb1641bc5cfc2197e9b7b436f34142be4766dd2430a937b48b7474935aa55
   md5: 25f45acb1a234ad1c9b9a20e1e6c559e
   depends:
-  - libpng >=1.6.50,<1.7.0a0
+  - libpng >=1.6.54,<1.7.0a0
   - libtiff >=4.7.0,<4.8.0a0
   - libzlib >=1.3.1,<2.0a0
   - ucrt >=10.0.20348.0
