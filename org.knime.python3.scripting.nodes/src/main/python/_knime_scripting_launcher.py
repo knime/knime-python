@@ -52,7 +52,7 @@ from typing import Any, Dict, List, TextIO, Callable, Optional
 import py4j.clientserver
 from py4j.java_gateway import JavaClass
 
-from knime.api.env import _set_proxy_settings, _set_tmp_directory
+from knime.api.env import _set_proxy_settings, _set_tmp_directory, _set_paths
 
 from knime.scripting._backend import (
     ScriptingBackendCollection,
@@ -137,6 +137,7 @@ class ScriptingEntryPoint(kg.EntryPoint):
         self._java_callback = java_callback
         _set_proxy_settings(java_callback)
         _set_tmp_directory(java_callback)
+        _set_paths()
 
         def create_python_sink():
             java_sink = java_callback.create_sink()
