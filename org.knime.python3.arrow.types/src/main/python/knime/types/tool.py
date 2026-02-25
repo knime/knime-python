@@ -1,8 +1,7 @@
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import List, Optional, Union
+from typing import List, Optional
 import knime.api.types as kt
-import warnings
 
 
 class ToolType(IntEnum):
@@ -109,26 +108,8 @@ class WorkflowToolValueFactory(kt.FileStorePythonValueFactory):
         encoded = super().encode(value)
         return {
             "0": value._filestore_keys,  # the filestore keys we read in the decode method
-            "1": encoded["1"],  # the rest of the encoded data
+            "1": encoded["1"] if encoded else "",  # the rest of the encoded data
         }
-
-
-@dataclass
-class MCPTool:
-    """
-    A class representing an MCP (Model Context Protocol) tool value in KNIME.
-    @deprecated Use Tool class instead.
-    """
-
-    name: str
-    description: str
-    parameter_schema: dict
-    server_uri: str
-    tool_name: str
-
-    @property
-    def tool_type(self) -> ToolType:
-        return ToolType.MCP
 
 
 @dataclass
@@ -154,6 +135,9 @@ class Tool:
     # MCP-specific fields (None for workflow tools)
     server_uri: Optional[str] = None
     tool_name: Optional[str] = None
+
+    # Credential reference for authenticated MCP servers (None if unauthenticated)
+    credential_name: Optional[str] = None
 
     @classmethod
     def create_workflow_tool(
@@ -188,8 +172,16 @@ class Tool:
         parameter_schema: dict,
         server_uri: str,
         tool_name: str,
+        credential_name: Optional[str] = None,
     ) -> "Tool":
-        """Create an MCP tool."""
+        """Create an MCP tool.
+
+        Parameters
+        ----------
+        credential_name : str, optional
+            Name of the KNIME credentials flow variable to use for
+            authenticating with the MCP server. ``None`` if no auth required.
+        """
         return cls(
             tool_type=ToolType.MCP,
             name=name,
@@ -201,43 +193,63 @@ class Tool:
             _filestore_keys=None,
             server_uri=server_uri,
             tool_name=tool_name,
+            credential_name=credential_name,
         )
 
 
-class ToolValueFactory(kt.PythonValueFactory):
+debugger_attached = False
+
+
+class ToolValueFactory(kt.FileStorePythonValueFactory):
     """
     Unified value factory for both workflow and MCP tools.
     Uses byte-indexed enum for tool type discrimination.
     """
 
     def __init__(self):
-        kt.PythonValueFactory.__init__(self, Tool)
+        kt.FileStorePythonValueFactory.__init__(self, Tool)
 
     def decode(self, storage):
+        # calls the read method and constructs the Python readable part of the tool
+        tool = super().decode(storage)
+        # the filestore is not accessed in Python but we need it to execute the tool
+        tool._filestore_keys = storage.get("0")
+        return tool
+
+    def encode(self, value: Tool):
+        encoded = super().encode(value)
+        return {
+            # the filestore keys we read in the decode method, if present
+            "0": value._filestore_keys or "",
+            "1": encoded["1"] if encoded else "",  # the rest of the encoded data
+        }
+
+    def read(self, file_paths, table_data):
+        # file_paths is not accessed because we only pass on the filestore keys
         import json
 
-        if storage is None:
+        if table_data is None:
             return None
 
-        tool_type_index = storage.get("0")
+        tool_type_index = table_data.get("0")
         tool_type = ToolType(tool_type_index)
 
         # Common fields
-        name = storage["1"]
-        description = storage["2"]
-        param_schema_json = storage.get("3")
+        name = table_data["1"]
+        description = table_data["2"]
+        param_schema_json = table_data.get("3")
         param_schema = json.loads(param_schema_json) if param_schema_json else {}
 
         if tool_type == ToolType.WORKFLOW:
             # Decode WorkflowTool from fields 4-7
-            input_spec_json = storage.get("4")
-            output_spec_json = storage.get("5")
+            input_spec_json = table_data.get("4")
+            output_spec_json = table_data.get("5")
 
             tool = Tool.create_workflow_tool(
                 name=name,
                 description=description,
                 parameter_schema=param_schema,
-                message_output_port_index=storage.get("6", -1),
+                message_output_port_index=table_data.get("6", -1),
                 input_ports=[
                     ToolPort._from_arrow_dict(p) for p in json.loads(input_spec_json)
                 ]
@@ -248,23 +260,26 @@ class ToolValueFactory(kt.PythonValueFactory):
                 ]
                 if output_spec_json
                 else [],
-                filestore_keys=storage.get("7"),
+                filestore_keys=table_data.get("7"),
             )
             return tool
 
         elif tool_type == ToolType.MCP:
-            # Decode MCPTool from field 8
+            # Decode MCPTool from fields 8-9
+            credential_name_raw = table_data.get("9")
             return Tool.create_mcp_tool(
                 name=name,
                 description=description,
                 parameter_schema=param_schema,
-                server_uri=storage["8"],
+                server_uri=table_data["8"],
                 tool_name=name,  # Use name as tool_name
+                credential_name=credential_name_raw if credential_name_raw else None,
             )
         else:
             raise ValueError(f"Unknown tool type index: {tool_type_index}")
 
-    def encode(self, value: Tool):
+    def write(self, file_store_creator, value: Tool):
+        # we don't create filestores here. The encode method takes care of passing the filestore keys along
         import json
 
         if value is None:
@@ -272,7 +287,7 @@ class ToolValueFactory(kt.PythonValueFactory):
 
         # Common fields (0-3)
         encoded = {
-            "0": value.tool_type.value,  # Byte: enum index
+            "0": value.tool_type.value,  # Int: enum index
             "1": value.name,
             "2": value.description,
             "3": json.dumps(value.parameter_schema),
@@ -282,23 +297,20 @@ class ToolValueFactory(kt.PythonValueFactory):
             # Workflow-specific fields (4-7)
             encoded.update(
                 {
-                    "4": json.dumps(
-                        [p._to_arrow_dict() for p in value.input_ports]
-                    )
+                    "4": json.dumps([p._to_arrow_dict() for p in value.input_ports])
                     if value.input_ports
                     else None,  # input_spec
-                    "5": json.dumps(
-                        [p._to_arrow_dict() for p in value.output_ports]
-                    )
+                    "5": json.dumps([p._to_arrow_dict() for p in value.output_ports])
                     if value.output_ports
                     else None,  # output_spec
                     "6": value.message_output_port_index,
                     "7": value._filestore_keys,  # workflow filestore
                     "8": None,  # server_uri (MCP only)
+                    "9": None,  # credential_name (MCP only)
                 }
             )
         elif value.tool_type == ToolType.MCP:
-            # MCP-specific fields (8), nulls for Workflow fields (4-7)
+            # MCP-specific fields (8-9), nulls for Workflow fields (4-7)
             encoded.update(
                 {
                     "4": None,  # input_spec (Workflow only)
@@ -306,25 +318,10 @@ class ToolValueFactory(kt.PythonValueFactory):
                     "6": -1,  # message_output_port_index
                     "7": None,  # workflow_filestore (Workflow only)
                     "8": value.server_uri,
+                    "9": value.credential_name,  # credential reference
                 }
             )
         else:
             raise TypeError(f"Unknown tool type: {value.tool_type}")
 
         return encoded
-
-
-# Deprecated: Old value factories kept for backward compatibility
-class MCPToolValueFactory(ToolValueFactory):
-    """
-    @deprecated Use ToolValueFactory instead.
-    Kept for backward compatibility during migration period.
-    """
-
-    def __init__(self):
-        super().__init__()
-        warnings.warn(
-            "MCPToolValueFactory is deprecated, use ToolValueFactory instead",
-            DeprecationWarning,
-            stacklevel=2,
-        )

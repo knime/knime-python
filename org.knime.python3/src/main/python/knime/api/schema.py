@@ -640,6 +640,9 @@ def logical(value_type) -> LogicalType:
         proxy_value_factory = None
 
     try:
+        # import debugpy
+
+        # debugpy.breakpoint()
         bundle = kt.get_value_factory_bundle_for_python_type(value_type)
         specs = bundle.data_spec_json
         traits = bundle.data_traits
