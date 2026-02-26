@@ -28,8 +28,8 @@
   },
   "dependencies": {
     "@knime/components": "1.43.0",
-    "@knime/kds-components": "0.6.6",
-    "@knime/scripting-editor": "0.0.121",
+    "@knime/kds-components": "0.9.1",
+    "@knime/scripting-editor": "0.0.122",
     "@knime/styles": "1.8.0",
     "@knime/ui-extension-service": "2.6.0",
     "@vueuse/core": "13.8.0",
