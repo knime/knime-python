@@ -263,12 +263,15 @@ final class ToolExecutor implements AutoCloseable {
     private PythonToolResult executeNonWorkflowToolInCombinedWorkflow(final ToolValue tool, final String parameters,
         final List<String> inputIds, final Map<String, String> executionHints,
         final PortObjectConversionContext conversionContext) {
-        // For non-workflow tools (like MCP), execute them standalone
-        // They cannot be added as segments to the combined workflow since they have no workflow representation
-        // TODO: Consider adding placeholder nodes to the combined workflow for audit trail visualization
+        // For non-workflow tools (e.g. MCP), execute them standalone via ToolValue.execute().
+        // Credentials are resolved inside ToolCell.execute() using the NodeContext pushed below.
+        //
+        // NOTE: MCP tools are *not yet* represented as nodes in the combined workflow.
+        // Ideally an MCPToolCallerNode would be inserted for audit-trail / reproducibility,
+        // but that requires a dependency on org.knime.ai.core which is not available here.
+        // The agent conversation history still records the call and its result.
         NodeContext.pushContext(m_nodeContainer);
         try {
-            // Execute the tool with empty inputs since combined workflow input mapping doesn't apply
             var result = tool.execute(parameters, new PortObject[0], m_exec, executionHints);
             var message = result.message();
             var outputs = result.outputs();
@@ -278,7 +281,6 @@ final class ToolExecutor implements AutoCloseable {
             var pyOutputs = Stream.of(outputs)//
                 .map(po -> PythonPortTypeRegistry.convertPortObjectToPython(po, conversionContext))//
                 .toArray(PythonPortObject[]::new);
-            // No output IDs since these aren't added to the combined workflow
             return new PythonToolResult(message, pyOutputs, List.of(), null);
         } finally {
             NodeContext.removeLastContext();
