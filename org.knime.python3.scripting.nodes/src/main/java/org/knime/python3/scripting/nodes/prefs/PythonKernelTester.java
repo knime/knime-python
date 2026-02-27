@@ -223,7 +223,7 @@ final class PythonKernelTester {
         }
         if (!additionalRequiredModules.isEmpty()) {
             commandArguments.add("-m"); // Flag for additional modules.
-            additionalOptionalModules.forEach(moduleSpec -> commandArguments.add(moduleSpec.toString()));
+            additionalRequiredModules.forEach(moduleSpec -> commandArguments.add(moduleSpec.toString()));
         }
         if (!additionalOptionalModules.isEmpty()) {
             commandArguments.add("-o");
