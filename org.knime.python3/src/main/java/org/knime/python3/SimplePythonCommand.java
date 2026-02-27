@@ -48,6 +48,8 @@
  */
 package org.knime.python3;
 
+import java.io.File;
+import java.nio.file.Path;
 import java.util.List;
 
 import org.knime.externalprocessprovider.ExternalProcessProvider;
@@ -77,5 +79,53 @@ public final class SimplePythonCommand extends AbstractPythonCommand {
      */
     public SimplePythonCommand(final List<String> command) {
         super(command);
+    }
+
+    /**
+     * Creates a {@link ProcessBuilder} for this command, prepending the Python executable's conda environment
+     * directories to {@code PATH}. On Windows, conda/pixi environments require several sub-directories to be on
+     * {@code PATH} for proper process startup:
+     * <ul>
+     * <li>The env root (contains the Python DLL)</li>
+     * <li>{@code Library/bin} (contains vcruntime, openssl, and other SxS-manifest DLLs)</li>
+     * <li>{@code Library/mingw-w64/bin} (contains mingw toolchain DLLs)</li>
+     * <li>{@code Library/usr/bin} (contains misc tools)</li>
+     * <li>{@code Scripts} (contains pip, etc.)</li>
+     * </ul>
+     * Without these, Python 3.12+ fails at startup with a Windows SxS assembly error because VC++ runtime DLLs
+     * cannot be located. Only directories that actually exist on disk are prepended to avoid polluting {@code PATH}
+     * for non-conda environments.
+     */
+    @Override
+    public ProcessBuilder createProcessBuilder() {
+        final var pb = super.createProcessBuilder();
+        final Path executableDir = getExecutablePath().getParent();
+        if (executableDir != null) {
+            final var env = pb.environment();
+            // ProcessBuilder.environment() on Windows stores keys case-insensitively but
+            // preserves the original casing. Find the existing key to avoid duplicates.
+            final String pathKey = env.keySet().stream() //
+                .filter(k -> k.equalsIgnoreCase("PATH")) //
+                .findFirst() //
+                .orElse("PATH");
+            final String existingPath = env.getOrDefault(pathKey, "");
+
+            // Standard conda/pixi activation paths for Windows, in activation order.
+            final var dirsToAdd = new StringBuilder();
+            for (final String subDir : new String[]{"", "Library\\bin", "Library\\mingw-w64\\bin",
+                "Library\\usr\\bin", "Scripts"}) {
+                final var candidate = subDir.isEmpty() ? executableDir : executableDir.resolve(subDir);
+                if (candidate.toFile().isDirectory()) {
+                    if (dirsToAdd.length() > 0) {
+                        dirsToAdd.append(File.pathSeparator);
+                    }
+                    dirsToAdd.append(candidate);
+                }
+            }
+            if (dirsToAdd.length() > 0) {
+                env.put(pathKey, dirsToAdd + File.pathSeparator + existingPath);
+            }
+        }
+        return pb;
     }
 }
