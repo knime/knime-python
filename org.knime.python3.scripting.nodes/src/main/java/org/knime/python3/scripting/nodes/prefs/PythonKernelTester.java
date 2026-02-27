@@ -149,21 +149,31 @@ final class PythonKernelTester {
             final var process = runPythonKernelTester(pythonCommand, majorVersion, minimumVersion,
                 additionalRequiredModules, additionalOptionalModules, testLogger);
 
-            // Get error output.
+            // Read stdout and stderr concurrently to avoid a deadlock: if Python fills
+            // one pipe buffer while Java blocks draining the other, both sides hang.
             final var errorWriter = new StringWriter();
-            try (var err = process.getErrorStream()) {
-                IOUtils.copy(err, errorWriter, StandardCharsets.UTF_8);
+            final var outputWriter = new StringWriter();
+            final var stderrReader = new Thread(() -> {
+                try (var err = process.getErrorStream()) {
+                    IOUtils.copy(err, errorWriter, StandardCharsets.UTF_8);
+                } catch (final IOException e) {
+                    LOGGER.debug("Error reading stderr of Python kernel tester", e);
+                }
+            }, "PythonKernelTester-stderr");
+            stderrReader.start();
+            try (var in = process.getInputStream()) {
+                IOUtils.copy(in, outputWriter, StandardCharsets.UTF_8);
             }
+            try {
+                stderrReader.join();
+            } catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+
             var errorOutput = errorWriter.toString();
             if (!errorOutput.isEmpty()) {
                 testLogger.append("Error during execution: " + errorOutput + "\n");
                 errorOutput = decorateErrorOutputForKnownProblems(errorOutput);
-            }
-
-            // Get regular output.
-            final var outputWriter = new StringWriter();
-            try (var in = process.getInputStream()) {
-                IOUtils.copy(in, outputWriter, StandardCharsets.UTF_8);
             }
             final String testOutput = outputWriter.toString();
             testLogger.append("Raw test output: \n" + testOutput + "\n");
