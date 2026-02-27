@@ -103,7 +103,7 @@ final class PythonKernelTester {
         if (url == null) {
             throw new IOException("Could not locate the python kernel tester script");
         }
-        return FileUtil.getFileFromURL(FileLocator.toFileURL(url)).getAbsolutePath();
+        return FileUtil.getFileFromURL(FileLocator.toFileURL(url)).getCanonicalPath();
     }
 
     private PythonKernelTester() {
