@@ -75,6 +75,9 @@
     "npm": "10.9.1"
   },
   "overrides": {
-    "lodash-es": "^4.17.23"
+    "lodash-es": "^4.17.23",
+    "postcss-url": {
+      "minimatch": "^10.2.4"
+    }
   }
 }
