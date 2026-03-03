@@ -157,6 +157,7 @@ onMounted(async () => {
         right: hasPreview ? 380 : 260,
         bottom: 300,
       }"
+      :max-pane-sizes="{ right: hasPreview ? 840 : 540 }"
       :additional-bottom-pane-tab-content="[
         {
           slotName: 'bottomPaneTabSlot:console',
