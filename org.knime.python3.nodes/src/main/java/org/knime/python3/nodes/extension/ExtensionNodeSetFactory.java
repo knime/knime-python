@@ -90,6 +90,7 @@ import org.knime.core.webui.node.dialog.kai.KaiNodeInterfaceFactory;
 import org.knime.core.webui.node.view.NodeView;
 import org.knime.core.webui.node.view.NodeViewFactory;
 import org.knime.python3.nodes.DelegatingNodeModel;
+import org.knime.python3.nodes.PythonExtensionPreferences;
 import org.knime.python3.nodes.dialog.DelegatingJsonSettingsDataService;
 import org.knime.python3.nodes.dialog.JsonFormsNodeDialog;
 import org.knime.python3.nodes.ports.PythonPortTypeRegistry;
@@ -108,6 +109,8 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
 
     private static final Map<String, KnimeExtension> ALL_EXTENSIONS = new ConcurrentHashMap<>();
 
+    private final Supplier<Stream<? extends KnimeExtension>> m_extensionSupplier;
+
     private final Map<String, KnimeExtension> m_extensions;
 
     private final Map<NodeId, ExtensionNode> m_allNodes;
@@ -120,15 +123,29 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
      * @param extensionSupplier supplier for a {@link Stream} of {@link KnimeExtension} objects.
      */
     protected ExtensionNodeSetFactory(final Supplier<Stream<? extends KnimeExtension>> extensionSupplier) {
-        m_extensions = extensionSupplier.get().collect(toMap(KnimeExtension::getId, Function.identity()));
-        ALL_EXTENSIONS.putAll(m_extensions);
+        m_extensionSupplier = extensionSupplier;
+        m_extensions = new HashMap<>();
         m_allNodes = new HashMap<>();
         m_allCategories = new ArrayList<>();
-        for (var extension : m_extensions.values()) {
+        refreshCaches();
+    }
+
+    private synchronized void refreshCaches() {
+        var extensions = m_extensionSupplier.get().collect(toMap(KnimeExtension::getId, Function.identity()));
+        m_extensions.clear();
+        m_extensions.putAll(extensions);
+        ALL_EXTENSIONS.putAll(extensions);
+        m_allNodes.clear();
+        m_allCategories.clear();
+        for (var extension : extensions.values()) {
             var extensionId = extension.getId();
             extension.getNodes().forEach(n -> m_allNodes.put(new NodeId(extensionId, n.getId()), n));
             extension.getCategories().forEach(c -> m_allCategories.add(c));
         }
+    }
+
+    private static boolean hasCustomExtensions() {
+        return PythonExtensionPreferences.getPathsToCustomExtensions().findAny().isPresent();
     }
 
     @Override
@@ -164,6 +181,9 @@ public abstract class ExtensionNodeSetFactory implements NodeSetFactory, Categor
 
     @Override
     public Collection<CategoryExtension> getCategories() {
+        if (hasCustomExtensions()) {
+            refreshCaches();
+        }
         return m_allCategories;
     }
 
