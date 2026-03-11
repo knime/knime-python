@@ -1,0 +1,31 @@
+name: Python CI
+
+on:
+  pull_request:
+    paths:
+      - "**.py"
+      - "pixi.toml"
+      - "ruff.toml"
+      - ".github/workflows/python-ci.yml"
+  push:
+    branches:
+      - master
+      - "releases/**"
+    paths:
+      - "**.py"
+      - "pixi.toml"
+      - "ruff.toml"
+      - ".github/workflows/python-ci.yml"
+
+jobs:
+  python-format:
+    name: Format
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: prefix-dev/setup-pixi@v0.9.3
+        with:
+          cache: true
+      - run: pixi run format --check --diff

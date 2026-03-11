@@ -1,0 +1,141 @@
+name: JS CI
+
+on:
+  pull_request:
+    paths:
+      - "org.knime.python3.scripting.nodes/js-src/**"
+      - ".github/workflows/js-ci.yml"
+  push:
+    branches:
+      - master
+      - "releases/**"
+
+jobs:
+  install:
+    name: Install dependencies
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: org.knime.python3.scripting.nodes/js-src
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: org.knime.python3.scripting.nodes/js-src/package.json
+          cache: npm
+          cache-dependency-path: org.knime.python3.scripting.nodes/js-src/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+
+  type-check:
+    name: Type check
+    needs: install
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: org.knime.python3.scripting.nodes/js-src
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: org.knime.python3.scripting.nodes/js-src/package.json
+          cache: npm
+          cache-dependency-path: org.knime.python3.scripting.nodes/js-src/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Type check
+        run: npm run type-check
+
+  lint:
+    name: Lint and format check
+    needs: install
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: org.knime.python3.scripting.nodes/js-src
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: org.knime.python3.scripting.nodes/js-src/package.json
+          cache: npm
+          cache-dependency-path: org.knime.python3.scripting.nodes/js-src/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Lint and format check
+        run: npm run ci:lint-format
+
+  unit-tests:
+    name: Unit tests
+    needs: install
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: org.knime.python3.scripting.nodes/js-src
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: org.knime.python3.scripting.nodes/js-src/package.json
+          cache: npm
+          cache-dependency-path: org.knime.python3.scripting.nodes/js-src/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Run coverage
+        run: npm run coverage
+
+  audit:
+    name: Audit
+    needs: install
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: org.knime.python3.scripting.nodes/js-src
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: org.knime.python3.scripting.nodes/js-src/package.json
+          cache: npm
+          cache-dependency-path: org.knime.python3.scripting.nodes/js-src/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Audit
+        run: npm run audit
+
+  build:
+    name: Build
+    needs: install
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: org.knime.python3.scripting.nodes/js-src
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: org.knime.python3.scripting.nodes/js-src/package.json
+          cache: npm
+          cache-dependency-path: org.knime.python3.scripting.nodes/js-src/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Build
+        run: npm run build
