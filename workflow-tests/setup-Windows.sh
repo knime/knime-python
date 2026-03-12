@@ -17,7 +17,7 @@ if [[ -n $KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT ]]; then
 	  # remove extension substring from name
 	  envName=${KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT%".yml"}
 
-		envPath="${WORKSPACE}\\\\${envName}"
+		envPath="${WORKSPACE}\\${envName}"
 		echo "Creating Conda environment for: ${KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT} at ${envPath}"
 
 		cmd /c C:/tools/micromamba.exe create \
@@ -31,7 +31,7 @@ if [[ -n $KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT ]]; then
 		# Configure environment for Python-based nodes testing extension (py36 is not supported)
 		if [[ $KNIME_WORKFLOWTEST_PYTHON_ENVIRONMENT != env_py36* ]]; then
 			ext_config="${WORKSPACE}/workflow-tests/python-test-ext-config.yaml"
-			sedi "s|<placeholder_for_env_path>|${envPath}|g" "${ext_config}"
+			sedi "s|<placeholder_for_env_path>|${envPath//\\/\\\\}|g" "${ext_config}"
 			echo "-Dknime.python.extension.config=${ext_config}" >> "${WORKSPACE}/workflow-tests/vmargs"
 		else
 			echo "Python 3.6 is not supported to run workflow-tests"
