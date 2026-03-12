@@ -38,7 +38,7 @@ test:
     - knime.extension.testing
     - knime_extension
   requires:
-    - pandas
+    - pandas <2.3.9 # pandas 3 causes test failures due to changes in the API
     - python-dateutil
     - pytz
     - requests
