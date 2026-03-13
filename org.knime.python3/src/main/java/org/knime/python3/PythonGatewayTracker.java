@@ -111,9 +111,11 @@ public final class PythonGatewayTracker implements PythonGatewayCreationGateList
             return;
         }
 
-        LOGGER.error("Found running Python processes. Aborting them to allow installation process. "
-            + "If this leads to failures in node execution, "
-            + "please restart those nodes once the installation has finished");
+        LOGGER.errorWithFormat(
+            "Found running Python processes (%d). Aborting them to allow installation process. "
+                + "If this leads to failures in node execution, "
+                + "please restart those nodes once the installation has finished. Triggered from thread '%s'.",
+            m_openGateways.size(), Thread.currentThread().getName());
 
         var exceptions = new ArrayList<Exception>();
         for (var gateway : m_openGateways) {

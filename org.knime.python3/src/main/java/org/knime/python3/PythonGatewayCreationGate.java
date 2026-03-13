@@ -182,18 +182,21 @@ public final class PythonGatewayCreationGate implements ProvisioningListener {
         if (o instanceof PhaseEvent && ((PhaseEvent)o).getPhaseId().equals(PhaseSetFactory.PHASE_INSTALL)
             && ((PhaseEvent)o).getType() == PhaseEvent.TYPE_START) {
             // lock if we enter the "install" phase
-            LOGGER.info("Blocking Python process startup during installation");
+            LOGGER.info("Blocking Python process startup during installation (thread='"
+                + Thread.currentThread().getName() + "')");
             INSTANCE.blockPythonCreation();
         } else if (o instanceof PhaseEvent && ((PhaseEvent)o).getPhaseId().equals(PhaseSetFactory.PHASE_CONFIGURE)
             && ((PhaseEvent)o).getType() == PhaseEvent.TYPE_START) {
             // "configure" is the normal phase after install, so we can unlock Python processes again
-            LOGGER.info("Allowing Python process startup again after installation");
+            LOGGER.info("Allowing Python process startup again after installation (thread='"
+                + Thread.currentThread().getName() + "')");
             INSTANCE.allowPythonCreation();
         } else if (o instanceof RollbackOperationEvent && !INSTANCE.isPythonGatewayCreationAllowed()) {
             // According to org.eclipse.equinox.internal.p2.engine.Engine.perform() -> L92,
             // a RollbackOperationEvent will be fired if an operation failed, and this event is only fired in that case,
             // so we unlock if we are currently locked.
-            LOGGER.info("Allowing Python process startup again after installation failed");
+            LOGGER.info("Allowing Python process startup again after installation failed (thread='"
+                + Thread.currentThread().getName() + "')");
             INSTANCE.allowPythonCreation();
         }
     }

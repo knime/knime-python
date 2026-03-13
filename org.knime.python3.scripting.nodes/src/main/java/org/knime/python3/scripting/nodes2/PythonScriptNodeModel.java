@@ -232,7 +232,7 @@ public final class PythonScriptNodeModel extends NodeModel {
 
     /**
      * Throw a nicer error message if the exception we are seeing is an "Error while obtaining a new communication
-     * channel"
+     * channel" or "Cannot obtain a new communication channel" (CallbackClient already shut down)
      *
      * @param ex The exception
      * @throws KNIMEException A more human-readable exception
@@ -243,6 +243,17 @@ public final class PythonScriptNodeModel extends NodeModel {
             messageBuilder.withSummary("Connecting to prefetched Python process failed.");
             messageBuilder.addResolutions(
                 "The Python process we prepared in the background got killed. Try again to start a new one.");
+            throw KNIMEException.of(messageBuilder.build().orElseThrow(), ex);
+        }
+        // Handle the case where the CallbackClient was already shut down (no cause)
+        if (ex.getCause() == null && ex.getMessage() != null
+            && ex.getMessage().startsWith("Cannot obtain a new communication channel")) {
+            var messageBuilder = createMessageBuilder();
+            messageBuilder.withSummary("The Python communication channel was unexpectedly shut down before use. "
+                + "Details: " + ex.getMessage());
+            messageBuilder.addResolutions("This is a known intermittent issue. Please try executing again.",
+                "Check the KNIME log for entries around this error for more information about "
+                    + "what shut down the communication channel.");
             throw KNIMEException.of(messageBuilder.build().orElseThrow(), ex);
         }
     }
