@@ -327,6 +327,8 @@ public final class DefaultPythonGateway<T extends PythonEntryPoint> implements P
     @Override
     public void close() throws IOException {
         if (m_clientServer != null) {
+            LOGGER.infoWithFormat("Closing PythonGateway (PID=%s) from thread '%s'", m_pid,
+                Thread.currentThread().getName());
             m_entryPoint = null;
             m_clientServer.shutdown();
             m_clientServer = null;

@@ -161,6 +161,8 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
         m_fileStoreHandlerSupplier = fileStoreHandlerSupplier;
         m_gateway = createGateway(pythonCommand);
         m_entryPoint = m_gateway.getEntryPoint();
+        LOGGER.infoWithFormat("PythonScriptingSession created gateway (hash=%s) on thread '%s'",
+            Integer.toHexString(System.identityHashCode(m_gateway)), Thread.currentThread().getName());
         m_tableConverter = new PythonArrowTableConverter(EXECUTOR_SERVICE, ARROW_STORE_FACTORY,
             fileStoreHandlerSupplier.getWriteFileStoreHandler());
         m_outputRedirector = PythonGatewayUtils.redirectGatewayOutput(m_gateway, LOGGER::info, LOGGER::info);
@@ -495,6 +497,13 @@ final class PythonScriptingSession implements AsynchronousCloseable<IOException>
             Optional.ofNullable(workflowDirRef).map(r -> r.getFile().toString())
                 .ifPresent(m_entryPoint::setCurrentWorkingDirectory);
         } catch (Py4JException ex) {
+            // Log detailed diagnostics if the CallbackClient was already shut down
+            if (ex.getCause() == null && ex.getMessage() != null
+                && ex.getMessage().startsWith("Cannot obtain a new communication channel")) {
+                LOGGER.error("CallbackClient was shut down before first use. " + "Gateway hash="
+                    + Integer.toHexString(System.identityHashCode(m_gateway)) + ", thread='"
+                    + Thread.currentThread().getName() + "'", ex);
+            }
             PythonProcessTerminatedException.throwIfTerminated(m_gateway, ex);
             throw ex;
         } catch (Exception ex) { // NOSONAR: We want to catch any exception here

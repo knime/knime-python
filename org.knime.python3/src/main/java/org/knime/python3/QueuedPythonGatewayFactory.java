@@ -217,11 +217,13 @@ public final class QueuedPythonGatewayFactory implements PythonGatewayFactory {
 
                 @Override
                 public void onPythonGatewayCreationGateClose() {
-                    evictGateways(//
-                        m_gateways.values().stream()//
-                            .flatMap(Collection::stream)//
-                            .collect(Collectors.toList())//
-                    );
+                    var gatewaysToEvict = m_gateways.values().stream()//
+                        .flatMap(Collection::stream)//
+                        .collect(Collectors.toList());
+                    LOGGER.warnWithFormat(
+                        "PythonGatewayCreationGate closed: evicting %d queued gateways from thread '%s'",
+                        gatewaysToEvict.size(), Thread.currentThread().getName());
+                    evictGateways(gatewaysToEvict);
                 }
             });
         }
